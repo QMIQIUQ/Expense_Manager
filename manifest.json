@@ -1,0 +1,12 @@
+{
+  "name": "Expense Monitor",
+  "short_name": "Expense Monitor",
+  "description": "Track and manage your expenses effortlessly, accessible from anywhere",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6366f1",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [],
+  "categories": ["finance", "productivity"]
+}
