@@ -92,17 +92,40 @@ The dashboard shows three key metrics:
 - Your expense information stays on your device
 - XSS protection with HTML escaping
 
+## ✨ React Web App (NEW!)
+
+A comprehensive React-based expense manager with Firebase integration is now available in the `/web` directory!
+
+### Features
+- ✅ Full expense CRUD operations with Firebase Firestore
+- ✅ Custom categories with icon and color customization
+- ✅ Budget tracking with visual progress indicators
+- ✅ Dashboard analytics with summary cards
+- ✅ Recurring expense management
+- ✅ CSV export functionality
+- ✅ Multi-device sync via Firebase
+- ✅ User authentication (Email/Password, Google)
+
+**[See web/README.md for setup instructions →](web/README.md)**
+
+**[See FEATURES.md for detailed feature documentation →](FEATURES.md)**
+
+**[See IMPLEMENTATION_SUMMARY.md for implementation details →](IMPLEMENTATION_SUMMARY.md)**
+
+**[See ARCHITECTURE.md for system architecture →](ARCHITECTURE.md)**
+
 ## 🚧 Future Enhancements
 
-- [ ] Backend API integration for cloud sync
-- [ ] User authentication and accounts
-- [ ] Export to CSV/PDF
-- [ ] Budget setting and alerts
-- [ ] Data visualization with charts
-- [ ] Receipt photo attachments
-- [ ] Recurring expense tracking
+- [x] Backend API integration for cloud sync ✅
+- [x] User authentication and accounts ✅
+- [x] Export to CSV ✅
+- [x] Budget setting and alerts ✅
+- [x] Recurring expense tracking ✅
+- [ ] Data visualization with charts (partially complete)
+- [ ] Receipt photo attachments with OCR
 - [ ] Multi-currency support
 - [ ] Dark mode toggle
+- [ ] PDF export
 
 ## 🤝 Contributing
 
