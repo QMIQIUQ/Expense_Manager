@@ -79,15 +79,4 @@ self.addEventListener('activate', (event) => {
     return self.clients.claim();
 });
 
-// Background sync for future real-time syncing
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'sync-expenses') {
-        event.waitUntil(syncExpenses());
-    }
-});
 
-async function syncExpenses() {
-    // Placeholder for syncing expenses to a backend
-    console.log('Syncing expenses...');
-    // This would be where you'd send data to your server
-}

@@ -268,11 +268,10 @@ class ExpenseManager {
         }, 3000);
     }
 
-    // Sync data (placeholder for future real-time sync)
+    // Sync data across tabs via localStorage
     syncData() {
-        // This is where you would implement real-time syncing
-        // For now, we're using localStorage which syncs across tabs
-        window.dispatchEvent(new Event('storage'));
+        // localStorage changes automatically trigger 'storage' events on other tabs
+        // No additional action needed here
     }
 
     // Register service worker for offline capability
