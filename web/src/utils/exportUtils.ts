@@ -27,6 +27,9 @@ export const exportToCSV = (expenses: Expense[], filename: string = 'expenses.cs
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  // Clean up the object URL to prevent memory leak
+  URL.revokeObjectURL(url);
 };
 
 export const filterExpensesByDateRange = (
