@@ -1,14 +1,61 @@
 # Expense Manager Web App
 
-A modern React application built with Vite, TypeScript, and Firebase Authentication.
+A comprehensive expense tracking application built with React, TypeScript, and Firebase. This app helps you track expenses, manage budgets, handle recurring expenses, and export data for analysis.
 
-## Features
+## 🚀 Features
 
-- ⚡️ Vite for fast development and building
-- ⚛️ React 18 with TypeScript
-- 🔐 Firebase Authentication (Email/Password + Google Sign-in)
-- 🔒 Protected routes with authentication
-- 🎨 Clean and responsive UI
+### 1. **Expense Tracking (費用記錄)**
+- ✅ Add, edit, and delete expenses
+- ✅ Categorize expenses
+- ✅ Add notes to expenses
+- ✅ Search and filter by description
+- ✅ Filter by category
+- ✅ Sort by date or amount
+- ✅ Real-time sync across devices via Firebase
+
+### 2. **Category Management (費用分類)**
+- ✅ Pre-loaded default categories (Food, Transport, Shopping, etc.)
+- ✅ Create custom categories
+- ✅ Choose from emoji icons
+- ✅ Customize category colors
+- ✅ Edit and delete custom categories
+
+### 3. **Budget Management (預算設定)**
+- ✅ Set budgets for each category
+- ✅ Choose budget period (weekly, monthly, yearly)
+- ✅ Visual progress bars showing budget usage
+- ✅ Alert thresholds (e.g., alert at 80% usage)
+- ✅ Color-coded indicators (green, orange, red)
+
+### 4. **Dashboard & Analytics (儀表板與數據分析)**
+- ✅ Summary cards (total, monthly, daily expenses)
+- ✅ Top spending categories breakdown
+- ✅ Visual percentage bars
+- ✅ Real-time updates
+
+### 5. **Recurring Expenses (定期/重複性費用)**
+- ✅ Set up recurring expenses (rent, subscriptions)
+- ✅ Frequency options: daily, weekly, monthly, yearly
+- ✅ Pause/resume recurring expenses
+- ✅ Edit and delete recurring expenses
+
+### 6. **Export Reports (報表匯出)**
+- ✅ Export all expenses to CSV
+- ✅ Compatible with Excel and spreadsheet applications
+
+### 7. **Multi-Device Sync (多裝置同步)**
+- ✅ Firebase Firestore for cloud storage
+- ✅ Real-time synchronization
+- ✅ Access from any device
+
+## 🛠️ Technology Stack
+
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Firebase Authentication** - User management
+- **Firebase Firestore** - Cloud database
+- **Vite** - Build tool
+- **React Router** - Navigation
 
 ## Getting Started
 
@@ -123,10 +170,51 @@ The app includes a complete authentication system with:
 - **Firebase** - Authentication backend
 - **ESLint** - Code linting
 
-## Next Steps
+## 📱 Usage Guide
 
-- Integrate expense tracking functionality
-- Add expense CRUD operations
-- Implement data persistence with Firebase Firestore
-- Add data visualization and charts
-- Improve UI/UX with a component library
+### Getting Started
+
+1. **Register/Login** - Create a new account or log in with existing credentials
+2. **Dashboard Tab** - View summary of your expenses and top spending categories
+3. **Expenses Tab** - Add, edit, delete, search, filter, and sort expenses
+4. **Categories Tab** - Create and manage custom categories with icons and colors
+5. **Budgets Tab** - Set budget limits for categories and track spending
+6. **Recurring Tab** - Add recurring expenses with frequency settings
+7. **Export** - Click "📊 Export CSV" button to download your data
+
+## 🏗️ Project Structure
+
+```
+web/
+├── src/
+│   ├── components/
+│   │   ├── budgets/          # Budget management UI
+│   │   ├── categories/       # Category management UI
+│   │   ├── dashboard/        # Dashboard summary
+│   │   ├── expenses/         # Expense CRUD UI
+│   │   └── recurring/        # Recurring expense UI
+│   ├── services/             # Firebase service layer
+│   │   ├── expenseService.ts
+│   │   ├── categoryService.ts
+│   │   ├── budgetService.ts
+│   │   └── recurringExpenseService.ts
+│   ├── types/                # TypeScript type definitions
+│   ├── utils/                # Utility functions (export, etc.)
+│   ├── contexts/             # React contexts (Auth)
+│   ├── config/               # Firebase configuration
+│   └── pages/                # Page components
+├── .env.example
+├── package.json
+└── vite.config.ts
+```
+
+## 🚀 Future Enhancements
+
+- [ ] Receipt scanning with OCR
+- [ ] Advanced data visualization with charts
+- [ ] Budget alerts and notifications
+- [ ] Automatic generation of recurring expenses
+- [ ] Multi-currency support
+- [ ] Dark mode
+- [ ] Mobile app version
+- [ ] PDF export
