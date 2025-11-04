@@ -45,6 +45,8 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, duration = 4000, onClo
 
   return (
     <div
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
       style={{
         backgroundColor: getBackgroundColor(),
         color: 'white',

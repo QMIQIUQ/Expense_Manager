@@ -41,6 +41,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onClick={onCancel}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
         style={{
           backgroundColor: 'white',
           borderRadius: '8px',
@@ -53,6 +56,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h3
+          id="confirm-dialog-title"
           style={{
             margin: '0 0 16px 0',
             fontSize: '1.25rem',

@@ -29,7 +29,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [toasts, setToasts] = useState<Omit<ToastProps, 'onClose'>[]>([]);
 
   const showNotification = useCallback((message: string, type: ToastType) => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 11);
     const newToast = {
       id,
       message,
