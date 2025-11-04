@@ -34,11 +34,21 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenseData = {
-      ...formData,
-      endDate: formData.endDate || undefined,
-      lastGenerated: undefined,
+    const expenseData: any = {
+      description: formData.description,
+      amount: formData.amount,
+      category: formData.category,
+      frequency: formData.frequency,
+      startDate: formData.startDate,
+      dayOfWeek: formData.dayOfWeek,
+      dayOfMonth: formData.dayOfMonth,
+      isActive: formData.isActive,
     };
+
+    // Only add endDate if it's set
+    if (formData.endDate) {
+      expenseData.endDate = formData.endDate;
+    }
 
     if (editingId) {
       onUpdate(editingId, expenseData);
@@ -224,11 +234,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this recurring expense?')) {
-                      onDelete(expense.id!);
-                    }
-                  }}
+                  onClick={() => onDelete(expense.id!)}
                   style={styles.deleteBtn}
                 >
                   Delete
