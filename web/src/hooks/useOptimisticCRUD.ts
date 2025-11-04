@@ -138,14 +138,15 @@ export const useOptimisticCRUD = <T,>() => {
     [showNotification, hideNotification, updateNotification]
   );
 
+  const hasId = (data: unknown): data is { id: string } => {
+    return typeof data === 'object' && data !== null && 'id' in data;
+  };
+
   const isPending = useCallback(
     (itemId: string) => {
-      return Array.from(pendingOperations.values()).some(
-        (op) => {
-          const data = op.data as Record<string, unknown>;
-          return data?.id === itemId;
-        }
-      );
+      return Array.from(pendingOperations.values()).some((op) => {
+        return hasId(op.data) && op.data.id === itemId;
+      });
     },
     [pendingOperations]
   );
@@ -153,8 +154,7 @@ export const useOptimisticCRUD = <T,>() => {
   const getPendingOperation = useCallback(
     (itemId: string) => {
       return Array.from(pendingOperations.values()).find((op) => {
-        const data = op.data as Record<string, unknown>;
-        return data?.id === itemId;
+        return hasId(op.data) && op.data.id === itemId;
       });
     },
     [pendingOperations]

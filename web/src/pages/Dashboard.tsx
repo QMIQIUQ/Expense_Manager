@@ -461,7 +461,7 @@ const Dashboard: React.FC = () => {
     return (
       <div style={styles.loading}>
         <InlineLoading size={24} />
-        <p style={{ marginLeft: '12px' }}>Loading...</p>
+        <p style={styles.loadingText}>Loading...</p>
       </div>
     );
   }
@@ -680,6 +680,9 @@ const styles = {
     height: '100vh',
     fontSize: '18px',
     color: '#666',
+  },
+  loadingText: {
+    marginLeft: '12px',
   },
   expensesTab: {
     display: 'flex',

@@ -14,7 +14,7 @@ export const offlineQueue = {
   // Add operation to queue
   enqueue(operation: Omit<QueuedOperation, 'id' | 'timestamp' | 'retryCount'>): string {
     const queue = this.getAll();
-    const id = `op-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `op-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const queuedOp: QueuedOperation = {
       ...operation,
       id,
