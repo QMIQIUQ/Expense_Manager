@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      setError('');
       setLoading(true);
       await login(email, password);
+      showSuccess('Login successful!');
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to log in. Please check your credentials.');
+      showError('Failed to log in. Please check your credentials.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -28,12 +30,12 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      setError('');
       setLoading(true);
       await loginWithGoogle();
+      showSuccess('Login successful!');
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to log in with Google.');
+      showError('Failed to log in with Google.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -42,8 +44,8 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
+      {loading && <LoadingSpinner fullScreen />}
       <h2>Login</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
@@ -84,7 +86,7 @@ const Login: React.FC = () => {
             marginBottom: '10px',
           }}
         >
-          {loading ? 'Loading...' : 'Login'}
+          Login
         </button>
       </form>
       <button

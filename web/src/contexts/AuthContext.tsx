@@ -8,6 +8,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -73,16 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {loading ? (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          fontSize: '1.2rem',
-          color: '#666'
-        }}>
-          Loading...
-        </div>
+        <LoadingSpinner fullScreen />
       ) : (
         children
       )}
