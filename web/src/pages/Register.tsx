@@ -1,30 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signup, loginWithGoogle } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+      return showError('Passwords do not match');
     }
 
     try {
-      setError('');
       setLoading(true);
       await signup(email, password);
+      showSuccess('Account created successfully!');
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to create an account. Email may already be in use.');
+      showError('Failed to create an account. Email may already be in use.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -33,12 +35,12 @@ const Register: React.FC = () => {
 
   const handleGoogleSignup = async () => {
     try {
-      setError('');
       setLoading(true);
       await loginWithGoogle();
+      showSuccess('Account created successfully!');
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to sign up with Google.');
+      showError('Failed to sign up with Google.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -47,8 +49,8 @@ const Register: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
+      {loading && <LoadingSpinner fullScreen />}
       <h2>Register</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
@@ -102,7 +104,7 @@ const Register: React.FC = () => {
             marginBottom: '10px',
           }}
         >
-          {loading ? 'Loading...' : 'Register'}
+          Register
         </button>
       </form>
       <button
