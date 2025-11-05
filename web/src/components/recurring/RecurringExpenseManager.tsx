@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RecurringExpense, Category } from '../../types';
+import ConfirmModal from '../ConfirmModal';
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
@@ -30,6 +31,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     dayOfWeek: 1,
     dayOfMonth: 1,
     isActive: true,
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; recurringId: string | null }>({
+    isOpen: false,
+    recurringId: null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -224,11 +229,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this recurring expense?')) {
-                      onDelete(expense.id!);
-                    }
-                  }}
+                  onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
                   style={styles.deleteBtn}
                 >
                   Delete
@@ -238,6 +239,21 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           ))
         )}
       </div>
+      
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Recurring Expense"
+        message="Are you sure you want to delete this recurring expense?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.recurringId) {
+            onDelete(deleteConfirm.recurringId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, recurringId: null })}
+      />
     </div>
   );
 };

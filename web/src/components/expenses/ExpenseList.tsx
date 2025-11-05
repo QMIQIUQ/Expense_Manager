@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Expense } from '../../types';
+import ConfirmModal from '../ConfirmModal';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -11,6 +12,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
+    isOpen: false,
+    expenseId: null,
+  });
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -101,11 +106,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this expense?')) {
-                      onDelete(expense.id!);
-                    }
-                  }}
+                  onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
                   style={styles.deleteButton}
                 >
                   Delete
@@ -115,6 +116,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
           ))}
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.expenseId) {
+            onDelete(deleteConfirm.expenseId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
+      />
     </div>
   );
 };

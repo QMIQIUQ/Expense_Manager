@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, RecurringExpense } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
@@ -13,24 +15,26 @@ import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import { exportToCSV } from '../utils/exportUtils';
+import InlineLoading from '../components/InlineLoading';
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
+  const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
 
     try {
-      setLoading(true);
       await categoryService.initializeDefaults(currentUser.uid);
       
       const [expensesData, categoriesData, budgetsData, recurringData] = await Promise.all([
@@ -46,11 +50,11 @@ const Dashboard: React.FC = () => {
       setRecurringExpenses(recurringData);
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Failed to load data. Please try again.');
+      showNotification('error', 'Failed to load data. Please refresh the page.');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, showNotification]);
 
   useEffect(() => {
     if (currentUser) {
@@ -70,153 +74,368 @@ const Dashboard: React.FC = () => {
   // Expense handlers
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
-    try {
-      await expenseService.create({ ...expenseData, userId: currentUser.uid });
-      await loadData();
-      alert('Expense added successfully!');
-    } catch (error) {
-      console.error('Error adding expense:', error);
-      alert('Failed to add expense. Please try again.');
-    }
+    
+    // Optimistic update: add temporary expense
+    const tempId = `temp-${Date.now()}`;
+    const optimisticExpense: Expense = {
+      ...expenseData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setExpenses((prev) => [optimisticExpense, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: expenseData },
+      () => expenseService.create({ ...expenseData, userId: currentUser.uid }),
+      {
+        entityType: 'expense',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          // Replace temp expense with real data
+          loadData();
+        },
+        onError: () => {
+          // Rollback optimistic update
+          setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!editingExpense?.id) return;
-    try {
-      await expenseService.update(editingExpense.id, expenseData);
-      setEditingExpense(null);
-      await loadData();
-      alert('Expense updated successfully!');
-    } catch (error) {
-      console.error('Error updating expense:', error);
-      alert('Failed to update expense. Please try again.');
-    }
+    
+    const expenseId = editingExpense.id;
+    const originalExpense = expenses.find((e) => e.id === expenseId);
+    
+    // Optimistic update
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === expenseId ? { ...e, ...expenseData } : e))
+    );
+    setEditingExpense(null);
+
+    await optimisticCRUD.run(
+      { type: 'update', data: expenseData, originalData: originalExpense },
+      () => expenseService.update(expenseId, expenseData),
+      {
+        entityType: 'expense',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          // Rollback optimistic update
+          if (originalExpense) {
+            setExpenses((prev) =>
+              prev.map((e) => (e.id === expenseId ? originalExpense : e))
+            );
+          }
+        },
+      }
+    );
   };
 
   const handleDeleteExpense = async (id: string) => {
-    try {
-      await expenseService.delete(id);
-      await loadData();
-      alert('Expense deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting expense:', error);
-      alert('Failed to delete expense. Please try again.');
-    }
+    const expenseToDelete = expenses.find((e) => e.id === id);
+    
+    // Optimistic update: remove expense
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: expenseToDelete },
+      () => expenseService.delete(id),
+      {
+        entityType: 'expense',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          // Rollback optimistic update
+          if (expenseToDelete) {
+            setExpenses((prev) => [expenseToDelete, ...prev]);
+          }
+        },
+      }
+    );
   };
 
   // Category handlers
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
-    try {
-      await categoryService.create({ ...categoryData, userId: currentUser.uid });
-      await loadData();
-      alert('Category added successfully!');
-    } catch (error) {
-      console.error('Error adding category:', error);
-      alert('Failed to add category. Please try again.');
-    }
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticCategory: Category = {
+      ...categoryData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+    };
+    setCategories((prev) => [...prev, optimisticCategory]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: categoryData },
+      () => categoryService.create({ ...categoryData, userId: currentUser.uid }),
+      {
+        entityType: 'category',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          setCategories((prev) => prev.filter((c) => c.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
-    try {
-      await categoryService.update(id, updates);
-      await loadData();
-      alert('Category updated successfully!');
-    } catch (error) {
-      console.error('Error updating category:', error);
-      alert('Failed to update category. Please try again.');
-    }
+    const originalCategory = categories.find((c) => c.id === id);
+    
+    // Optimistic update
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalCategory },
+      () => categoryService.update(id, updates),
+      {
+        entityType: 'category',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalCategory) {
+            setCategories((prev) =>
+              prev.map((c) => (c.id === id ? originalCategory : c))
+            );
+          }
+        },
+      }
+    );
   };
 
   const handleDeleteCategory = async (id: string) => {
-    try {
-      await categoryService.delete(id);
-      await loadData();
-      alert('Category deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      alert('Failed to delete category. Please try again.');
-    }
+    const categoryToDelete = categories.find((c) => c.id === id);
+    
+    // Optimistic update
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: categoryToDelete },
+      () => categoryService.delete(id),
+      {
+        entityType: 'category',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (categoryToDelete) {
+            setCategories((prev) => [...prev, categoryToDelete]);
+          }
+        },
+      }
+    );
   };
 
   // Budget handlers
   const handleAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
-    try {
-      await budgetService.create({ ...budgetData, userId: currentUser.uid });
-      await loadData();
-      alert('Budget set successfully!');
-    } catch (error) {
-      console.error('Error adding budget:', error);
-      alert('Failed to set budget. Please try again.');
-    }
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticBudget: Budget = {
+      ...budgetData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setBudgets((prev) => [...prev, optimisticBudget]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: budgetData },
+      () => budgetService.create({ ...budgetData, userId: currentUser.uid }),
+      {
+        entityType: 'budget',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          setBudgets((prev) => prev.filter((b) => b.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateBudget = async (id: string, updates: Partial<Budget>) => {
-    try {
-      await budgetService.update(id, updates);
-      await loadData();
-      alert('Budget updated successfully!');
-    } catch (error) {
-      console.error('Error updating budget:', error);
-      alert('Failed to update budget. Please try again.');
-    }
+    const originalBudget = budgets.find((b) => b.id === id);
+    
+    // Optimistic update
+    setBudgets((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalBudget },
+      () => budgetService.update(id, updates),
+      {
+        entityType: 'budget',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalBudget) {
+            setBudgets((prev) =>
+              prev.map((b) => (b.id === id ? originalBudget : b))
+            );
+          }
+        },
+      }
+    );
   };
 
   const handleDeleteBudget = async (id: string) => {
-    try {
-      await budgetService.delete(id);
-      await loadData();
-      alert('Budget deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting budget:', error);
-      alert('Failed to delete budget. Please try again.');
-    }
+    const budgetToDelete = budgets.find((b) => b.id === id);
+    
+    // Optimistic update
+    setBudgets((prev) => prev.filter((b) => b.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: budgetToDelete },
+      () => budgetService.delete(id),
+      {
+        entityType: 'budget',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (budgetToDelete) {
+            setBudgets((prev) => [...prev, budgetToDelete]);
+          }
+        },
+      }
+    );
   };
 
   // Recurring expense handlers
   const handleAddRecurring = async (recurringData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
-    try {
-      await recurringExpenseService.create({ ...recurringData, userId: currentUser.uid });
-      await loadData();
-      alert('Recurring expense added successfully!');
-    } catch (error) {
-      console.error('Error adding recurring expense:', error);
-      alert('Failed to add recurring expense. Please try again.');
-    }
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticRecurring: RecurringExpense = {
+      ...recurringData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setRecurringExpenses((prev) => [...prev, optimisticRecurring]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: recurringData },
+      () => recurringExpenseService.create({ ...recurringData, userId: currentUser.uid }),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          setRecurringExpenses((prev) => prev.filter((r) => r.id !== tempId));
+        },
+      }
+    );
   };
 
   const handleUpdateRecurring = async (id: string, updates: Partial<RecurringExpense>) => {
-    try {
-      await recurringExpenseService.update(id, updates);
-      await loadData();
-      alert('Recurring expense updated successfully!');
-    } catch (error) {
-      console.error('Error updating recurring expense:', error);
-      alert('Failed to update recurring expense. Please try again.');
-    }
+    const originalRecurring = recurringExpenses.find((r) => r.id === id);
+    
+    // Optimistic update
+    setRecurringExpenses((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalRecurring },
+      () => recurringExpenseService.update(id, updates),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalRecurring) {
+            setRecurringExpenses((prev) =>
+              prev.map((r) => (r.id === id ? originalRecurring : r))
+            );
+          }
+        },
+      }
+    );
   };
 
   const handleDeleteRecurring = async (id: string) => {
-    try {
-      await recurringExpenseService.delete(id);
-      await loadData();
-      alert('Recurring expense deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting recurring expense:', error);
-      alert('Failed to delete recurring expense. Please try again.');
-    }
+    const recurringToDelete = recurringExpenses.find((r) => r.id === id);
+    
+    // Optimistic update
+    setRecurringExpenses((prev) => prev.filter((r) => r.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: recurringToDelete },
+      () => recurringExpenseService.delete(id),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (recurringToDelete) {
+            setRecurringExpenses((prev) => [...prev, recurringToDelete]);
+          }
+        },
+      }
+    );
   };
 
   const handleToggleRecurring = async (id: string, isActive: boolean) => {
-    try {
-      await recurringExpenseService.toggleActive(id, isActive);
-      await loadData();
-    } catch (error) {
-      console.error('Error toggling recurring expense:', error);
-      alert('Failed to toggle recurring expense. Please try again.');
-    }
+    const originalRecurring = recurringExpenses.find((r) => r.id === id);
+    
+    // Optimistic update
+    setRecurringExpenses((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isActive } : r))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { isActive }, originalData: originalRecurring },
+      () => recurringExpenseService.toggleActive(id, isActive),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalRecurring) {
+            setRecurringExpenses((prev) =>
+              prev.map((r) => (r.id === id ? originalRecurring : r))
+            );
+          }
+        },
+      }
+    );
   };
 
   // Export handler
@@ -238,10 +457,11 @@ const Dashboard: React.FC = () => {
     return spent;
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div style={styles.loading}>
-        <p>Loading...</p>
+        <InlineLoading size={24} />
+        <p style={styles.loadingText}>Loading...</p>
       </div>
     );
   }
@@ -460,6 +680,9 @@ const styles = {
     height: '100vh',
     fontSize: '18px',
     color: '#666',
+  },
+  loadingText: {
+    marginLeft: '12px',
   },
   expensesTab: {
     display: 'flex',
