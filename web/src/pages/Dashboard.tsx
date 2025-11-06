@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -36,6 +36,8 @@ const Dashboard: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -71,6 +73,18 @@ const Dashboard: React.FC = () => {
       loadData();
     }
   }, [currentUser, loadData]);
+
+  // Click outside to close actions menu
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!showActionsMenu) return;
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showActionsMenu]);
 
   const handleLogout = async () => {
     try {
@@ -166,6 +180,31 @@ const Dashboard: React.FC = () => {
           // Rollback optimistic update
           if (expenseToDelete) {
             setExpenses((prev) => [expenseToDelete, ...prev]);
+          }
+        },
+      }
+    );
+  };
+
+  // Inline update by id (used by ExpenseList inline editing)
+  const handleInlineUpdateExpense = async (id: string, updates: Partial<Expense>) => {
+    const originalExpense = expenses.find((e) => e.id === id);
+
+    // Optimistic update
+    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalExpense },
+      () => expenseService.update(id, updates),
+      {
+        entityType: 'expense',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalExpense) {
+            setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
           }
         },
       }
@@ -477,84 +516,130 @@ const Dashboard: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div style={styles.loading}>
+      <div className="flex justify-center items-center min-h-screen">
         <InlineLoading size={24} />
-        <p style={styles.loadingText}>Loading...</p>
+        <p className="ml-3 text-lg text-gray-600">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div className="max-w-7xl mx-auto min-h-screen">
+      <div className="dashboard-card dashboard-header relative mb-8">
         <div>
-          <h1 style={styles.title}>💰 Expense Manager</h1>
-          <p style={styles.subtitle}>Welcome, {currentUser?.email}</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">💰 Expense Manager</h1>
+          <p className="text-sm text-gray-600">Welcome, {currentUser?.email}</p>
         </div>
-        <div style={styles.headerActions}>
-          <button onClick={handleDownloadTemplate} style={styles.templateButton}>
+        {/* Compact actions toggle for small screens */}
+        <div ref={actionsRef} className="flex items-center gap-2">
+          <button
+            className="actions-toggle"
+            aria-label="Open actions"
+            onClick={() => setShowActionsMenu((s) => !s)}
+          >
+            {/* hamburger icon */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="6" width="18" height="2" rx="1" fill="#444" />
+              <rect x="3" y="11" width="18" height="2" rx="1" fill="#444" />
+              <rect x="3" y="16" width="18" height="2" rx="1" fill="#444" />
+            </svg>
+          </button>
+          {showActionsMenu && (
+            <div className="action-dropdown" role="menu">
+              <button onClick={() => { handleDownloadTemplate(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📥 Template
+              </button>
+              <button onClick={() => { handleExportExcel(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📊 Export Excel
+              </button>
+              <button onClick={() => { setShowImportModal(true); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📤 Import
+              </button>
+              <button onClick={() => { handleLogout(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-sm font-medium text-left transition-colors">
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="header-actions">
+          <button onClick={handleDownloadTemplate} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors">
             📥 Template
           </button>
-          <button onClick={handleExportExcel} style={styles.exportButton}>
+          <button onClick={handleExportExcel} className="px-5 py-2.5 bg-success hover:bg-green-600 text-white rounded font-medium text-sm transition-colors">
             📊 Export Excel
           </button>
-          <button onClick={() => setShowImportModal(true)} style={styles.importButton}>
+          <button onClick={() => setShowImportModal(true)} className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded font-medium text-sm transition-colors">
             📤 Import
           </button>
-          <button onClick={handleLogout} style={styles.logoutButton}>
+          <button onClick={handleLogout} className="px-5 py-2.5 bg-danger hover:bg-red-600 text-white rounded font-medium text-sm transition-colors">
             Logout
           </button>
         </div>
       </div>
 
-      <div style={styles.tabs}>
+      <div className="dashboard-card dashboard-tabs">
         <button
           onClick={() => setActiveTab('dashboard')}
-          style={activeTab === 'dashboard' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Dashboard
         </button>
         <button
           onClick={() => setActiveTab('expenses')}
-          style={activeTab === 'expenses' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'expenses' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Expenses
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          style={activeTab === 'categories' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Categories
         </button>
         <button
           onClick={() => setActiveTab('budgets')}
-          style={activeTab === 'budgets' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'budgets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Budgets
         </button>
         <button
           onClick={() => setActiveTab('recurring')}
-          style={activeTab === 'recurring' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Recurring
         </button>
         <button
           onClick={() => setActiveTab('profile')}
-          style={activeTab === 'profile' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'profile' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           👤 Profile
         </button>
         {isAdmin && (
           <button
             onClick={() => setActiveTab('admin')}
-            style={activeTab === 'admin' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+            className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+              activeTab === 'admin' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+            }`}
           >
             👑 Admin
           </button>
         )}
       </div>
 
-      <div style={styles.content}>
+      <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div>
             <DashboardSummary expenses={expenses} />
@@ -562,9 +647,9 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'expenses' && (
-          <div style={styles.expensesTab}>
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold text-gray-800">
                 {editingExpense ? 'Edit Expense' : 'Add New Expense'}
               </h2>
               <ExpenseForm
@@ -575,19 +660,20 @@ const Dashboard: React.FC = () => {
               />
             </div>
 
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Expense History</h2>
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold text-gray-800">Expense History</h2>
               <ExpenseList
                 expenses={expenses}
-                onEdit={setEditingExpense}
+                categories={categories}
                 onDelete={handleDeleteExpense}
+                onInlineUpdate={handleInlineUpdateExpense}
               />
             </div>
           </div>
         )}
 
         {activeTab === 'categories' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <CategoryManager
               categories={categories}
               onAdd={handleAddCategory}
@@ -598,7 +684,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'budgets' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <BudgetManager
               budgets={budgets}
               categories={categories}
@@ -611,7 +697,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'recurring' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <RecurringExpenseManager
               recurringExpenses={recurringExpenses}
               categories={categories}
@@ -644,139 +730,6 @@ const Dashboard: React.FC = () => {
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  title: {
-    margin: '0 0 5px 0',
-    fontSize: '28px',
-    fontWeight: '700' as const,
-    color: '#333',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '14px',
-    color: '#666',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '10px',
-  },
-  templateButton: {
-    padding: '10px 20px',
-    backgroundColor: '#9C27B0',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  exportButton: {
-    padding: '10px 20px',
-    backgroundColor: '#4caf50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  importButton: {
-    padding: '10px 20px',
-    backgroundColor: '#4ECDC4',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  logoutButton: {
-    padding: '10px 20px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  tabs: {
-    display: 'flex',
-    gap: '5px',
-    marginBottom: '20px',
-    backgroundColor: 'white',
-    padding: '10px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  tab: {
-    flex: 1,
-    padding: '12px 20px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-    color: '#666',
-    transition: 'all 0.2s',
-  },
-  activeTab: {
-    backgroundColor: '#6366f1',
-    color: 'white',
-  },
-  content: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '18px',
-    color: '#666',
-  },
-  loadingText: {
-    marginLeft: '12px',
-  },
-  expensesTab: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '30px',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
 };
 
 export default Dashboard;

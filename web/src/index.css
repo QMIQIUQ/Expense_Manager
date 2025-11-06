@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * {
   margin: 0;
   padding: 0;
@@ -75,4 +79,155 @@ input:focus {
   filter: grayscale(0.3);
   pointer-events: none;
   transition: opacity 0.3s, filter 0.3s;
+}
+
+/* Dashboard responsive layout */
+.dashboard-container {
+  padding: 20px;
+  width: 100%;
+  overflow-x: hidden; /* prevent horizontal bleed on mobile */
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 12px;
+  }
+}
+
+.dashboard-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+@media (max-width: 640px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.header-actions button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .header-actions {
+    display: none; /* hide full set; use the toggle */
+  }
+  .actions-toggle {
+    display: inline-flex;
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+}
+
+/* Hide full header actions on small screens and show compact toggle */
+/* keep for extra-small screens (already handled at 640px) */
+
+.actions-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  z-index: 60;
+}
+
+.actions-toggle:focus {
+  outline: 2px solid rgba(99,102,241,0.25);
+}
+
+.action-dropdown {
+  position: absolute;
+  right: 12px;
+  top: 56px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  padding: 8px;
+  z-index: 50;
+  min-width: 180px;
+  display: grid;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+}
+
+.action-dropdown button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+}
+
+.action-dropdown button:hover:not(:disabled) {
+  opacity: 1;
+  background-color: #e9ecef !important;
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 5px;
+  padding: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.dashboard-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-tab {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
+@media (min-width: 640px) {
+  .dashboard-tab {
+    flex: 1 1 0;
+    min-width: auto;
+  }
+}
+
+.content-pad {
+  padding: 20px;
+  overflow-wrap: anywhere; /* long IDs/URLs won't overflow */
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .content-pad {
+    padding: 12px;
+  }
+}
+
+/* Space between tabs and content so they don't feel cramped */
+.dashboard-tabs { margin-bottom: 18px; }
+.content-pad { padding-top: 18px; }
+
+/* Ensure the three-dot toggle is visible on small screens (override order) */
+@media (max-width: 640px) {
+  .actions-toggle { display: inline-flex !important; }
 }
