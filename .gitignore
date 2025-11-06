@@ -43,3 +43,6 @@ package-lock.json
 # Ignore node_modules in subfolders explicitly
 tools/node_modules/
 web/node_modules/
+
+# Test data files
+test-data/
