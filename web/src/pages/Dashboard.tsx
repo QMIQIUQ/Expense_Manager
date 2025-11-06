@@ -36,6 +36,10 @@ const Dashboard: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showImportExportMenu, setShowImportExportMenu] = useState(false);
+  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -71,6 +75,29 @@ const Dashboard: React.FC = () => {
       loadData();
     }
   }, [currentUser, loadData]);
+
+  // Detect screen size for responsive button text
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowUserMenu(false);
+        setShowImportExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -485,25 +512,97 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div style={styles.container}>
+    <>
+      <style>{`
+        .dropdown-item-hover:hover {
+          background-color: #f5f5f5 !important;
+        }
+        .floating-btn-hover:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5) !important;
+        }
+        .dropdown-btn-hover:hover {
+          background-color: #5558e3 !important;
+        }
+      `}</style>
+      <div style={styles.container}>
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>💰 Expense Manager</h1>
           <p style={styles.subtitle}>Welcome, {currentUser?.email}</p>
         </div>
         <div style={styles.headerActions}>
-          <button onClick={handleDownloadTemplate} style={styles.templateButton}>
-            📥 Template
-          </button>
-          <button onClick={handleExportExcel} style={styles.exportButton}>
-            📊 Export Excel
-          </button>
-          <button onClick={() => setShowImportModal(true)} style={styles.importButton}>
-            📤 Import
-          </button>
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            Logout
-          </button>
+          {/* Import/Export Dropdown */}
+          <div className="dropdown-container" style={styles.dropdownContainer}>
+            <button 
+              onClick={() => {
+                setShowImportExportMenu(!showImportExportMenu);
+                setShowUserMenu(false);
+              }} 
+              style={styles.dropdownButton}
+              className="dropdown-btn-hover"
+            >
+              📁 Import/Export ▾
+            </button>
+            {showImportExportMenu && (
+              <div style={styles.dropdownMenu}>
+                <button onClick={() => {
+                  handleDownloadTemplate();
+                  setShowImportExportMenu(false);
+                }} style={styles.dropdownItem} className="dropdown-item-hover">
+                  📥 Download Template
+                </button>
+                <button onClick={() => {
+                  setShowImportModal(true);
+                  setShowImportExportMenu(false);
+                }} style={styles.dropdownItem} className="dropdown-item-hover">
+                  📤 Import Data
+                </button>
+                <button onClick={() => {
+                  handleExportExcel();
+                  setShowImportExportMenu(false);
+                }} style={styles.dropdownItem} className="dropdown-item-hover">
+                  📊 Export to Excel
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* User Menu Dropdown */}
+          <div className="dropdown-container" style={styles.dropdownContainer}>
+            <button 
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowImportExportMenu(false);
+              }} 
+              style={styles.dropdownButton}
+              className="dropdown-btn-hover"
+            >
+              👤 Menu ▾
+            </button>
+            {showUserMenu && (
+              <div style={styles.dropdownMenu}>
+                <button onClick={() => {
+                  setActiveTab('profile');
+                  setShowUserMenu(false);
+                }} style={styles.dropdownItem} className="dropdown-item-hover">
+                  👤 Profile
+                </button>
+                {isAdmin && (
+                  <button onClick={() => {
+                    setActiveTab('admin');
+                    setShowUserMenu(false);
+                  }} style={styles.dropdownItem} className="dropdown-item-hover">
+                    👑 Admin
+                  </button>
+                )}
+                <div style={styles.dropdownDivider} />
+                <button onClick={handleLogout} style={{...styles.dropdownItem, color: '#f44336'}} className="dropdown-item-hover">
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -538,20 +637,6 @@ const Dashboard: React.FC = () => {
         >
           Recurring
         </button>
-        <button
-          onClick={() => setActiveTab('profile')}
-          style={activeTab === 'profile' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-        >
-          👤 Profile
-        </button>
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('admin')}
-            style={activeTab === 'admin' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
-          >
-            👑 Admin
-          </button>
-        )}
       </div>
 
       <div style={styles.content}>
@@ -632,6 +717,43 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* Floating Add Expense Button - visible on all tabs except expenses tab where form is already visible */}
+      {activeTab !== 'expenses' && (
+        <button 
+          onClick={() => setShowAddExpenseForm(true)}
+          style={styles.floatingButton}
+          className="floating-btn-hover"
+          title="Add New Expense"
+        >
+          {isMobile ? '+' : '+ Add New Expense'}
+        </button>
+      )}
+
+      {/* Add Expense Modal */}
+      {showAddExpenseForm && activeTab !== 'expenses' && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddExpenseForm(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>Add New Expense</h2>
+              <button 
+                onClick={() => setShowAddExpenseForm(false)} 
+                style={styles.modalCloseButton}
+              >
+                ✕
+              </button>
+            </div>
+            <ExpenseForm
+              onSubmit={(data) => {
+                handleAddExpense(data);
+                setShowAddExpenseForm(false);
+              }}
+              onCancel={() => setShowAddExpenseForm(false)}
+              categories={categories}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Import/Export Modal */}
       {currentUser && (
         <ImportExportModal
@@ -643,6 +765,7 @@ const Dashboard: React.FC = () => {
         />
       )}
     </div>
+    </>
   );
 };
 
@@ -678,46 +801,53 @@ const styles = {
   headerActions: {
     display: 'flex',
     gap: '10px',
+    alignItems: 'center',
   },
-  templateButton: {
+  dropdownContainer: {
+    position: 'relative' as const,
+  },
+  dropdownButton: {
     padding: '10px 20px',
-    backgroundColor: '#9C27B0',
+    backgroundColor: '#6366f1',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
   },
-  exportButton: {
-    padding: '10px 20px',
-    backgroundColor: '#4caf50',
-    color: 'white',
-    border: 'none',
+  dropdownMenu: {
+    position: 'absolute' as const,
+    top: '100%',
+    right: 0,
+    marginTop: '5px',
+    backgroundColor: 'white',
+    border: '1px solid #ddd',
     borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    minWidth: '180px',
+    zIndex: 1000,
+    overflow: 'hidden',
   },
-  importButton: {
-    padding: '10px 20px',
-    backgroundColor: '#4ECDC4',
-    color: 'white',
+  dropdownItem: {
+    width: '100%',
+    padding: '12px 16px',
+    backgroundColor: 'transparent',
     border: 'none',
-    borderRadius: '4px',
+    textAlign: 'left' as const,
     fontSize: '14px',
-    fontWeight: '500' as const,
     cursor: 'pointer',
+    color: '#333',
+    transition: 'background-color 0.2s',
+    display: 'block',
   },
-  logoutButton: {
-    padding: '10px 20px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
+  dropdownDivider: {
+    height: '1px',
+    backgroundColor: '#e0e0e0',
+    margin: '4px 0',
   },
   tabs: {
     display: 'flex',
@@ -776,6 +906,71 @@ const styles = {
     fontSize: '20px',
     fontWeight: '600' as const,
     color: '#333',
+  },
+  floatingButton: {
+    position: 'fixed' as const,
+    bottom: '24px',
+    right: '24px',
+    padding: '16px 24px',
+    backgroundColor: '#6366f1',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50px',
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+    zIndex: 999,
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '56px',
+    minHeight: '56px',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+    padding: '20px',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '24px',
+    maxWidth: '600px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  modalCloseButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#666',
+    padding: '4px 8px',
+    lineHeight: 1,
   },
 };
 
