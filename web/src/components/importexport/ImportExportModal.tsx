@@ -167,6 +167,12 @@ const ImportExportModal: React.FC<Props> = ({
     const previewExpenses = parsedData.expenses.slice(0, 20);
     const hasUnmatchedCategories = Array.from(categoryMappings.values()).some(m => !m.matched);
 
+    // Detect blank / empty category names and rows that contain them
+    const blankCategoryRows: number[] = parsedData.expenses.reduce((acc: number[], e, idx) => {
+      if (!e.category || String(e.category).trim() === '') acc.push(idx + 2); // +2 for header + 1-index
+      return acc;
+    }, []);
+
     return (
       <div style={styles.stepContent}>
         <h3 style={styles.stepTitle}>Preview & Configure</h3>
@@ -209,7 +215,7 @@ const ImportExportModal: React.FC<Props> = ({
           <div style={styles.mappingList}>
             {Array.from(categoryMappings.entries()).map(([name, mapping]) => (
               <div key={name} style={styles.mappingItem}>
-                <span style={styles.mappingName}>{name}</span>
+                <span style={styles.mappingName}>{name === '' ? '(blank)' : name}</span>
                 <span style={mapping.matched ? styles.mappingMatched : styles.mappingUnmatched}>
                   {mapping.matched ? `✓ Matched: ${mapping.matched.name}` : '⚠️ Not found'}
                 </span>
@@ -251,17 +257,31 @@ const ImportExportModal: React.FC<Props> = ({
                 </tr>
               </thead>
               <tbody>
-                {previewExpenses.map((exp, idx) => (
-                  <tr key={idx} style={styles.tr}>
-                    <td style={styles.td}>{exp.date}</td>
-                    <td style={styles.td}>{exp.description}</td>
-                    <td style={styles.td}>{exp.category}</td>
-                    <td style={styles.td}>${exp.amount.toFixed(2)}</td>
-                  </tr>
-                ))}
+                {previewExpenses.map((exp, idx) => {
+                  const isBlank = !exp.category || String(exp.category).trim() === '';
+                  return (
+                    <tr key={idx} style={styles.tr}>
+                      <td style={styles.td}>{exp.date}</td>
+                      <td style={styles.td}>{exp.description}</td>
+                      <td style={{
+                        ...styles.td,
+                        ...(isBlank ? styles.blankCategoryCell : {}),
+                      }}>
+                        {isBlank ? <em style={styles.blankText}>(blank)</em> : exp.category}
+                      </td>
+                      <td style={styles.td}>${exp.amount.toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          {blankCategoryRows.length > 0 && (
+            <div style={styles.blankWarning}>
+              ⚠️ Found {blankCategoryRows.length} row(s) with a blank category (e.g. rows: {blankCategoryRows.slice(0,5).join(', ')}{blankCategoryRows.length > 5 ? `, ...` : ''}).
+              These rows will be skipped unless you provide a category or enable "Auto-create missing categories" and fill the category name. Please fix the source file before importing.
+            </div>
+          )}
           {parsedData.expenses.length > 20 && (
             <p style={styles.moreRows}>...and {parsedData.expenses.length - 20} more rows</p>
           )}
@@ -547,11 +567,29 @@ const styles = {
   td: {
     padding: '10px 12px',
   },
+  blankCategoryCell: {
+    backgroundColor: '#fff5f5',
+    border: '1px solid #f5c6cb',
+    color: '#721c24',
+  },
+  blankText: {
+    fontStyle: 'italic' as const,
+    color: '#721c24',
+  },
   moreRows: {
     margin: 0,
     fontSize: '14px',
     color: '#666',
     textAlign: 'center' as const,
+  },
+  blankWarning: {
+    marginTop: '10px',
+    padding: '12px',
+    backgroundColor: '#FFF3CD',
+    border: '1px solid #FFC107',
+    borderRadius: '6px',
+    color: '#856404',
+    fontSize: '14px',
   },
   actions: {
     display: 'flex',

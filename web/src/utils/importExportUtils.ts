@@ -380,15 +380,22 @@ export const importData = async (
           
           // Apply conflict strategy by creating new object without ID
           // (avoiding mutation of original expRow)
-          const expenseData = {
+          // Map category name to category id
+          const categoryId = categoryMap.get(categoryName)!;
+
+          // Build expense data and omit undefined fields (Firestore forbids undefined)
+          const expenseData: any = {
             userId,
             description: expRow.description,
-            amount: expRow.amount,
-            category: expRow.category,
+            amount: Number(expRow.amount),
+            category: categoryId,
             date: expRow.date,
-            notes: expRow.notes,
           };
-          
+
+          if (expRow.notes !== undefined && expRow.notes !== null && String(expRow.notes).trim() !== '') {
+            expenseData.notes = String(expRow.notes);
+          }
+
           // Create expense
           await expenseService.create(expenseData);
           
