@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Expense, Category } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 
 interface ExpenseListProps {
@@ -12,6 +13,7 @@ interface ExpenseListProps {
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate, onBulkDelete }) => {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
@@ -116,7 +118,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         <div style={{ flex: 1, minWidth: 0 }}>
           <input
             type="text"
-            placeholder="Search expenses..."
+            placeholder={t('searchExpenses')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={(e) => e.target.select()}
@@ -135,7 +137,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
           style={styles.select}
           aria-label="Filter by category"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('allCategories')}</option>
           {categoryNames.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -144,10 +146,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         </select>
 
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.select} aria-label="Sort expenses">
-          <option value="date-desc">Newest First</option>
-          <option value="date-asc">Oldest First</option>
-          <option value="amount-desc">Highest Amount</option>
-          <option value="amount-asc">Lowest Amount</option>
+          <option value="date-desc">{t('sortByDateDesc')}</option>
+          <option value="date-asc">{t('sortByDateAsc')}</option>
+          <option value="amount-desc">{t('sortByAmountDesc')}</option>
+          <option value="amount-asc">{t('sortByAmountAsc')}</option>
         </select>
       </div>
 
@@ -159,14 +161,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
           aria-pressed={multiSelectEnabled}
           aria-label="Toggle multi-select"
         >
-          {multiSelectEnabled ? 'Cancel Select' : 'Select'}
+          {multiSelectEnabled ? t('cancel') : t('multiSelect')}
         </button>
         {multiSelectEnabled && (
           <button
             onClick={() => {
               const ids = Array.from(selectedIds);
               if (ids.length === 0) return;
-              if (!window.confirm(`Delete ${ids.length} selected expenses?`)) return;
+              if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
               onBulkDelete && onBulkDelete(ids);
               setSelectedIds(new Set());
               setMultiSelectEnabled(false);
@@ -174,14 +176,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
             style={{ ...styles.deleteSelectedButton }}
             aria-label="Delete selected"
           >
-            🗑 Delete Selected {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+            🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
           </button>
         )}
       </div>
 
       {filteredAndSortedExpenses().length === 0 ? (
         <div style={styles.noData}>
-          <p>No expenses found. Add your first expense! 📝</p>
+          <p>{t('noExpenses')}</p>
         </div>
       ) : (
         <div style={styles.list}>
@@ -259,12 +261,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => saveInlineEdit(expense)} style={{ ...styles.iconButton, backgroundColor: 'rgba(33,150,83,0.08)' }} aria-label="Save">
+                    <button onClick={() => saveInlineEdit(expense)} style={{ ...styles.iconButton, backgroundColor: 'rgba(33,150,83,0.08)' }} aria-label={t('save')}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
                       </svg>
                     </button>
-                    <button onClick={cancelInlineEdit} style={{ ...styles.iconButton, backgroundColor: 'rgba(158,158,158,0.12)' }} aria-label="Cancel">
+                    <button onClick={cancelInlineEdit} style={{ ...styles.iconButton, backgroundColor: 'rgba(158,158,158,0.12)' }} aria-label={t('cancel')}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
                       </svg>
@@ -280,7 +282,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                   <div style={styles.rightCol}>
                     <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
                     <div style={styles.actions}>
-                      <button onClick={() => startInlineEdit(expense)} style={styles.iconButton} aria-label="Edit">
+                      <button onClick={() => startInlineEdit(expense)} style={styles.iconButton} aria-label={t('edit')}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
                           <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
@@ -289,7 +291,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
                         style={{ ...styles.iconButton, backgroundColor: 'rgba(244,67,54,0.08)' }}
-                        aria-label="Delete"
+                        aria-label={t('delete')}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
@@ -307,10 +309,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
-        title="Delete Expense"
-        message="Are you sure you want to delete this expense? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('delete') + ' ' + t('expenses')}
+        message={t('confirmDelete')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.expenseId) {

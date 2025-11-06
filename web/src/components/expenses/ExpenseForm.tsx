@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Expense, Category } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -14,6 +15,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   initialData,
   categories,
 }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
     amount: initialData?.amount || 0,
@@ -29,10 +31,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     
     // Validation
     const newErrors: { [key: string]: string } = {};
-    if (!formData.description.trim()) newErrors.description = 'Please fill in this field.';
-    if (!formData.amount || formData.amount <= 0) newErrors.amount = 'Please fill in this field.';
-    if (!formData.category) newErrors.category = 'Please select a category.';
-    if (!formData.date) newErrors.date = 'Please select a date.';
+    if (!formData.description.trim()) newErrors.description = t('pleaseFillField');
+    if (!formData.amount || formData.amount <= 0) newErrors.amount = t('pleaseFillField');
+    if (!formData.category) newErrors.category = t('pleaseSelectCategory');
+    if (!formData.date) newErrors.date = t('pleaseFillField');
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -70,14 +72,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Description *</label>
+        <label className="text-sm font-medium text-gray-700">{t('description')} *</label>
         <input
           type="text"
           name="description"
           value={formData.description}
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
-          placeholder="e.g., Grocery shopping"
+          placeholder={t('descriptionPlaceholder')}
           className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
@@ -87,7 +89,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="flex gap-4">
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-sm font-medium text-gray-700">Amount ($) *</label>
+          <label className="text-sm font-medium text-gray-700">{t('amount')} ($) *</label>
           <input
             type="number"
             name="amount"
@@ -105,7 +107,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
 
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-sm font-medium text-gray-700">Category *</label>
+          <label className="text-sm font-medium text-gray-700">{t('category')} *</label>
           <select
             name="category"
             value={formData.category}
@@ -114,7 +116,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               errors.category ? 'border-red-500' : 'border-gray-300'
             }`}
           >
-            <option value="">Select Category</option>
+            <option value="">{t('selectCategory')}</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.name}>
                 {cat.icon} {cat.name}
@@ -127,7 +129,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="flex gap-4">
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-sm font-medium text-gray-700">Date *</label>
+          <label className="text-sm font-medium text-gray-700">{t('date')} *</label>
           <input
             type="date"
             name="date"
@@ -141,7 +143,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
         </div>
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-sm font-medium text-gray-700">Time</label>
+          <label className="text-sm font-medium text-gray-700">{t('time')}</label>
           <input
             type="time"
             name="time"
@@ -153,12 +155,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Notes (Optional)</label>
+        <label className="text-sm font-medium text-gray-700">{t('notes')} ({t('optional')})</label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
-          placeholder="Additional notes..."
+          placeholder={t('notesPlaceholder')}
           rows={3}
           className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
         />
@@ -166,11 +168,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="flex gap-3 mt-2">
         <button type="submit" className="flex-1 px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-lg text-base font-medium transition-colors">
-          {initialData ? 'Update Expense' : 'Add Expense'}
+          {initialData ? t('editExpense') : t('addExpense')}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-base font-medium transition-colors">
-            Cancel
+            {t('cancel')}
           </button>
         )}
       </div>
