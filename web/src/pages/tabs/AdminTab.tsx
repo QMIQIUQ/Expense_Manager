@@ -1,0 +1,484 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { adminService, UserMetadata } from '../../services/adminService';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
+import InlineLoading from '../../components/InlineLoading';
+import ConfirmModal from '../../components/ConfirmModal';
+
+const AdminTab: React.FC = () => {
+  const { currentUser } = useAuth();
+  const { showNotification } = useNotification();
+  const [users, setUsers] = useState<UserMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  
+  // Form state
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [newIsAdmin, setNewIsAdmin] = useState(false);
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const usersData = await adminService.getAllUsers();
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      showNotification('error', 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newEmail || !newPassword) {
+      showNotification('error', 'Email and password are required');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      
+      // Note: Creating users with Firebase Auth from client-side has limitations
+      // This approach creates the user account but the current user will be signed out
+      // A better approach would be to use Firebase Admin SDK on a backend server
+      showNotification('info', 'Creating user account...');
+      
+      // For now, we'll just create the metadata
+      // In production, you should use Firebase Admin SDK on backend
+      const userId = `user-${Date.now()}`; // Temporary ID
+      await adminService.createUserMetadata(userId, newEmail, newIsAdmin);
+      
+      showNotification('success', `User account created. Please ask user to sign up with email: ${newEmail}`);
+      
+      // Reset form
+      setNewEmail('');
+      setNewPassword('');
+      setNewDisplayName('');
+      setNewIsAdmin(false);
+      setShowCreateForm(false);
+      
+      // Reload users
+      await loadUsers();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      showNotification('error', errorMessage);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleToggleActive = async (user: UserMetadata) => {
+    if (user.id === currentUser?.uid) {
+      showNotification('error', 'You cannot deactivate your own account');
+      return;
+    }
+
+    try {
+      if (user.isActive) {
+        await adminService.deactivateUser(user.id);
+        showNotification('success', 'User deactivated');
+      } else {
+        await adminService.activateUser(user.id);
+        showNotification('success', 'User activated');
+      }
+      await loadUsers();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      showNotification('error', 'Failed to update user status');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === currentUser?.uid) {
+      showNotification('error', 'You cannot delete your own account');
+      return;
+    }
+
+    try {
+      await adminService.deleteUserMetadata(userId);
+      showNotification('success', 'User deleted successfully');
+      setConfirmDelete(null);
+      await loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      showNotification('error', 'Failed to delete user');
+    }
+  };
+
+  const handleToggleAdmin = async (user: UserMetadata) => {
+    if (user.id === currentUser?.uid) {
+      showNotification('error', 'You cannot change your own admin status');
+      return;
+    }
+
+    try {
+      await adminService.updateUserMetadata(user.id, { isAdmin: !user.isAdmin });
+      showNotification('success', `Admin status ${!user.isAdmin ? 'granted' : 'removed'}`);
+      await loadUsers();
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      showNotification('error', 'Failed to update admin status');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <InlineLoading size={24} />
+        <p style={styles.loadingText}>Loading users...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h2 style={styles.title}>User Management</h2>
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          style={styles.createButton}
+        >
+          {showCreateForm ? '✕ Cancel' : '➕ Create User'}
+        </button>
+      </div>
+
+      {showCreateForm && (
+        <div style={styles.createForm}>
+          <h3 style={styles.formTitle}>Create New User</h3>
+          <p style={styles.notice}>
+            ⚠️ Note: Due to Firebase limitations, you'll need to manually create the authentication account 
+            or ask the user to register with the provided email.
+          </p>
+          <form onSubmit={handleCreateUser}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                required
+                style={styles.input}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Initial Password (optional)</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                style={styles.input}
+                placeholder="Leave empty for user setup"
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Display Name (optional)</label>
+              <input
+                type="text"
+                value={newDisplayName}
+                onChange={(e) => setNewDisplayName(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                style={styles.input}
+                placeholder="John Doe"
+              />
+            </div>
+            <div style={styles.checkboxGroup}>
+              <label style={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={newIsAdmin}
+                  onChange={(e) => setNewIsAdmin(e.target.checked)}
+                  style={styles.checkbox}
+                />
+                Grant admin privileges
+              </label>
+            </div>
+            <button
+              type="submit"
+              disabled={creating}
+              style={styles.submitButton}
+            >
+              {creating ? 'Creating...' : 'Create User'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div style={styles.userList}>
+        <div style={styles.userHeader}>
+          <div style={{ flex: 2 }}>Email</div>
+          <div style={{ flex: 1 }}>Status</div>
+          <div style={{ flex: 1 }}>Role</div>
+          <div style={{ flex: 1 }}>Actions</div>
+        </div>
+        {users.map(user => (
+          <div key={user.id} style={styles.userRow}>
+            <div style={{ flex: 2, ...styles.userEmail }}>
+              {user.email}
+              {user.id === currentUser?.uid && (
+                <span style={styles.youBadge}>(You)</span>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={user.isActive ? styles.activeBadge : styles.inactiveBadge}>
+                {user.isActive ? '✓ Active' : '✕ Inactive'}
+              </span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={user.isAdmin ? styles.adminBadge : styles.userBadge}>
+                {user.isAdmin ? '👑 Admin' : '👤 User'}
+              </span>
+            </div>
+            <div style={{ flex: 1, ...styles.actions }}>
+              <button
+                onClick={() => handleToggleActive(user)}
+                disabled={user.id === currentUser?.uid}
+                style={styles.actionButton}
+                title={user.isActive ? 'Deactivate' : 'Activate'}
+              >
+                {user.isActive ? '🔒' : '🔓'}
+              </button>
+              <button
+                onClick={() => handleToggleAdmin(user)}
+                disabled={user.id === currentUser?.uid}
+                style={styles.actionButton}
+                title={user.isAdmin ? 'Remove admin' : 'Make admin'}
+              >
+                {user.isAdmin ? '👤' : '👑'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(user.id)}
+                disabled={user.id === currentUser?.uid}
+                style={styles.deleteButton}
+                title="Delete user"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {users.length === 0 && (
+        <div style={styles.emptyState}>
+          <p>No users found</p>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={confirmDelete !== null}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This will permanently delete all their data including expenses, categories, and budgets. This action cannot be undone."
+        onConfirm={() => confirmDelete && handleDeleteUser(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+        danger={true}
+      />
+    </div>
+  );
+};
+
+const styles = {
+  container: {
+    padding: '20px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  title: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  createButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+  },
+  createForm: {
+    backgroundColor: '#f9f9f9',
+    padding: '20px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    border: '1px solid #e0e0e0',
+  },
+  formTitle: {
+    margin: '0 0 15px 0',
+    fontSize: '18px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  notice: {
+    backgroundColor: '#fff3cd',
+    border: '1px solid #ffeaa7',
+    borderRadius: '4px',
+    padding: '10px',
+    marginBottom: '15px',
+    fontSize: '13px',
+    color: '#856404',
+  },
+  formGroup: {
+    marginBottom: '15px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '5px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#555',
+  },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    boxSizing: 'border-box' as const,
+  },
+  checkboxGroup: {
+    marginBottom: '15px',
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: '14px',
+    color: '#555',
+    cursor: 'pointer',
+  },
+  checkbox: {
+    marginRight: '8px',
+    cursor: 'pointer',
+  },
+  submitButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+  },
+  userList: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    border: '1px solid #e0e0e0',
+  },
+  userHeader: {
+    display: 'flex',
+    padding: '12px 16px',
+    backgroundColor: '#f5f5f5',
+    fontWeight: '600' as const,
+    fontSize: '14px',
+    color: '#555',
+    borderBottom: '2px solid #e0e0e0',
+  },
+  userRow: {
+    display: 'flex',
+    padding: '12px 16px',
+    borderBottom: '1px solid #f0f0f0',
+    alignItems: 'center',
+    fontSize: '14px',
+  },
+  userEmail: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  youBadge: {
+    fontSize: '12px',
+    color: '#666',
+    fontStyle: 'italic' as const,
+  },
+  activeBadge: {
+    display: 'inline-block',
+    padding: '4px 8px',
+    backgroundColor: '#d4edda',
+    color: '#155724',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  inactiveBadge: {
+    display: 'inline-block',
+    padding: '4px 8px',
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  adminBadge: {
+    display: 'inline-block',
+    padding: '4px 8px',
+    backgroundColor: '#fff3cd',
+    color: '#856404',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  userBadge: {
+    display: 'inline-block',
+    padding: '4px 8px',
+    backgroundColor: '#e7f3ff',
+    color: '#004085',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  actions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  actionButton: {
+    padding: '6px 10px',
+    backgroundColor: '#f0f0f0',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  deleteButton: {
+    padding: '6px 10px',
+    backgroundColor: '#ffebee',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  loadingContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '40px',
+  },
+  loadingText: {
+    marginLeft: '12px',
+    color: '#666',
+  },
+  emptyState: {
+    padding: '40px',
+    textAlign: 'center' as const,
+    color: '#999',
+  },
+};
+
+export default AdminTab;
