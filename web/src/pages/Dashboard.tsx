@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
@@ -19,10 +20,10 @@ import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
-import Header from '../components/Header';
 
 const Dashboard: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const { showNotification } = useNotification();
   const optimisticCRUD = useOptimisticCRUD();
 
@@ -71,7 +72,14 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser, loadData]);
 
-
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
+  };
 
   // Expense handlers
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
@@ -469,26 +477,84 @@ const Dashboard: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <InlineLoading size={24} />
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div style={styles.loading}>
+        <InlineLoading size={24} />
+        <p style={styles.loadingText}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <Header
-        activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as typeof activeTab)}
-        onImportClick={() => setShowImportModal(true)}
-        onExportClick={handleExportExcel}
-        onDownloadTemplateClick={handleDownloadTemplate}
-      />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 min-h-screen">
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.title}>💰 Expense Manager</h1>
+          <p style={styles.subtitle}>Welcome, {currentUser?.email}</p>
+        </div>
+        <div style={styles.headerActions}>
+          <button onClick={handleDownloadTemplate} style={styles.templateButton}>
+            📥 Template
+          </button>
+          <button onClick={handleExportExcel} style={styles.exportButton}>
+            📊 Export Excel
+          </button>
+          <button onClick={() => setShowImportModal(true)} style={styles.importButton}>
+            📤 Import
+          </button>
+          <button onClick={handleLogout} style={styles.logoutButton}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.tabs}>
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          style={activeTab === 'dashboard' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('expenses')}
+          style={activeTab === 'expenses' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          Expenses
+        </button>
+        <button
+          onClick={() => setActiveTab('categories')}
+          style={activeTab === 'categories' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          Categories
+        </button>
+        <button
+          onClick={() => setActiveTab('budgets')}
+          style={activeTab === 'budgets' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          Budgets
+        </button>
+        <button
+          onClick={() => setActiveTab('recurring')}
+          style={activeTab === 'recurring' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          Recurring
+        </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          style={activeTab === 'profile' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          👤 Profile
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            style={activeTab === 'admin' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          >
+            👑 Admin
+          </button>
+        )}
+      </div>
+
+      <div style={styles.content}>
         {activeTab === 'dashboard' && (
           <div>
             <DashboardSummary expenses={expenses} />
@@ -496,9 +562,9 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'expenses' && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+          <div style={styles.expensesTab}>
+            <div style={styles.section}>
+              <h2 style={styles.sectionTitle}>
                 {editingExpense ? 'Edit Expense' : 'Add New Expense'}
               </h2>
               <ExpenseForm
@@ -509,8 +575,8 @@ const Dashboard: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Expense History</h2>
+            <div style={styles.section}>
+              <h2 style={styles.sectionTitle}>Expense History</h2>
               <ExpenseList
                 expenses={expenses}
                 onEdit={setEditingExpense}
@@ -521,7 +587,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'categories' && (
-          <div className="space-y-4">
+          <div style={styles.section}>
             <CategoryManager
               categories={categories}
               onAdd={handleAddCategory}
@@ -532,7 +598,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'budgets' && (
-          <div className="space-y-4">
+          <div style={styles.section}>
             <BudgetManager
               budgets={budgets}
               categories={categories}
@@ -545,7 +611,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'recurring' && (
-          <div className="space-y-4">
+          <div style={styles.section}>
             <RecurringExpenseManager
               recurringExpenses={recurringExpenses}
               categories={categories}
@@ -564,7 +630,6 @@ const Dashboard: React.FC = () => {
         {activeTab === 'admin' && isAdmin && (
           <AdminTab />
         )}
-        </div>
       </div>
 
       {/* Import/Export Modal */}
@@ -577,10 +642,141 @@ const Dashboard: React.FC = () => {
           onImportComplete={handleImportComplete}
         />
       )}
-    </>
+    </div>
   );
 };
 
-
+const styles = {
+  container: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: '#f5f5f5',
+    minHeight: '100vh',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '30px',
+    backgroundColor: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  title: {
+    margin: '0 0 5px 0',
+    fontSize: '28px',
+    fontWeight: '700' as const,
+    color: '#333',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#666',
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  templateButton: {
+    padding: '10px 20px',
+    backgroundColor: '#9C27B0',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
+  exportButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4caf50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
+  importButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4ECDC4',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
+  logoutButton: {
+    padding: '10px 20px',
+    backgroundColor: '#f44336',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
+  tabs: {
+    display: 'flex',
+    gap: '5px',
+    marginBottom: '20px',
+    backgroundColor: 'white',
+    padding: '10px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  tab: {
+    flex: 1,
+    padding: '12px 20px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+    color: '#666',
+    transition: 'all 0.2s',
+  },
+  activeTab: {
+    backgroundColor: '#6366f1',
+    color: 'white',
+  },
+  content: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '20px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '18px',
+    color: '#666',
+  },
+  loadingText: {
+    marginLeft: '12px',
+  },
+  expensesTab: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '30px',
+  },
+  section: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '15px',
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+};
 
 export default Dashboard;
