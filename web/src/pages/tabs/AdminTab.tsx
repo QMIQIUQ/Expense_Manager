@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import InlineLoading from '../../components/InlineLoading';
 import ConfirmModal from '../../components/ConfirmModal';
+// appConfig not needed after removing delete action
 
 const AdminTab: React.FC = () => {
   const { currentUser } = useAuth();
@@ -12,7 +13,7 @@ const AdminTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Delete action removed: no confirm dialog or delete state
   
   // Form state
   const [newEmail, setNewEmail] = useState('');
@@ -20,10 +21,8 @@ const AdminTab: React.FC = () => {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newIsAdmin, setNewIsAdmin] = useState(false);
   
-  // User management modals
-  const [editingUser, setEditingUser] = useState<UserMetadata | null>(null);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  // Change password/email actions removed from Admin UI
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -82,8 +81,20 @@ const AdminTab: React.FC = () => {
       await loadUsers();
     } catch (error) {
       console.error('Error creating user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
-      showNotification('error', errorMessage);
+      // If email already exists, offer/reset password flow
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/email-already-in-use') {
+        try {
+          await adminService.sendPasswordReset(newEmail);
+          showNotification('info', `此 Email 已存在。已發送重設密碼郵件至 ${newEmail}`);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Failed to send reset email';
+          showNotification('error', `無法發送重設密碼郵件：${msg}`);
+        }
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+        showNotification('error', errorMessage);
+      }
     } finally {
       setCreating(false);
     }
@@ -110,22 +121,7 @@ const AdminTab: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (userId === currentUser?.uid) {
-      showNotification('error', 'You cannot delete your own account');
-      return;
-    }
-
-    try {
-      await adminService.deleteUserMetadata(userId);
-      showNotification('success', 'User deleted successfully');
-      setConfirmDelete(null);
-      await loadUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      showNotification('error', 'Failed to delete user');
-    }
-  };
+  // Deletion of accounts handled outside the app (script or Firebase Console)
 
   const handleToggleAdmin = async (user: UserMetadata) => {
     if (user.id === currentUser?.uid) {
@@ -143,14 +139,23 @@ const AdminTab: React.FC = () => {
     }
   };
 
-  const handleChangePasswordClick = (user: UserMetadata) => {
-    setEditingUser(user);
-    setShowPasswordModal(true);
-  };
+  // No-op: removed
+  // Data-only delete to cleanup Firestore when Auth user was removed elsewhere
+  const handleDeleteUserData = async (userId: string) => {
+    if (userId === currentUser?.uid) {
+      showNotification('error', 'You cannot delete your own account data');
+      return;
+    }
 
-  const handleChangeEmailClick = (user: UserMetadata) => {
-    setEditingUser(user);
-    setShowEmailModal(true);
+    try {
+      await adminService.deleteUserMetadata(userId);
+      showNotification('success', '已刪除該使用者的應用資料');
+      setConfirmDelete(null);
+      await loadUsers();
+    } catch (error) {
+      console.error('Error deleting user data:', error);
+      showNotification('error', '刪除資料失敗');
+    }
   };
 
   if (loading) {
@@ -172,6 +177,14 @@ const AdminTab: React.FC = () => {
         >
           {showCreateForm ? '✕ Cancel' : '➕ Create User'}
         </button>
+      </div>
+
+      <div style={styles.notice}>
+        <p style={styles.noticeTitle}>ℹ️ 刪除帳號說明</p>
+        <p style={styles.noticeText}>
+          本系統已移除「刪除帳號」按鈕。若需完全刪除使用者（包含 Firebase Authentication 帳號），請使用指令腳本
+          <code> tools/delete-user.js </code>，或至 Firebase Console → Authentication → Users 進行刪除。
+        </p>
       </div>
 
       {showCreateForm && (
@@ -288,28 +301,16 @@ const AdminTab: React.FC = () => {
               >
                 {user.isAdmin ? '👤' : '👑'}
               </button>
-              <button
-                onClick={() => handleChangePasswordClick(user)}
-                style={styles.actionButton}
-                title="Change password"
-              >
-                🔑
-              </button>
-              <button
-                onClick={() => handleChangeEmailClick(user)}
-                style={styles.actionButton}
-                title="Change email"
-              >
-                ✉️
-              </button>
+              {/* Change password/email actions removed */}
               <button
                 onClick={() => setConfirmDelete(user.id)}
                 disabled={user.id === currentUser?.uid}
                 style={styles.deleteButton}
-                title="Delete user"
+                title="刪除資料（不會刪除 Auth 帳號）"
               >
-                🗑️
+                🗑️ 刪除資料
               </button>
+              {/* Delete action intentionally removed */}
             </div>
           </div>
         ))}
@@ -321,88 +322,17 @@ const AdminTab: React.FC = () => {
         </div>
       )}
 
+      {/* ConfirmModal removed as delete action is not available */}
+
+      {/* Data-only delete confirmation */}
       <ConfirmModal
         isOpen={confirmDelete !== null}
-        title="Delete User"
-        message="Are you sure you want to delete this user? This will permanently delete all their data including expenses, categories, and budgets. This action cannot be undone."
-        onConfirm={() => confirmDelete && handleDeleteUser(confirmDelete)}
+        title="刪除資料"
+        message="此操作只會刪除該使用者在本系統的資料（費用、分類、預算與使用者檔案），不會刪除 Firebase Authentication 帳號。若帳號已在 Console 移除，這裡可用來清理殘留資料。確定要刪除嗎？"
+        onConfirm={() => confirmDelete && handleDeleteUserData(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
         danger={true}
       />
-
-      {/* Password Change Modal */}
-      {showPasswordModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Change Password - {editingUser?.email}</h3>
-            <div style={styles.modalNotice}>
-              <p style={styles.noticeTitle}>⚠️ Limitation</p>
-              <p style={styles.noticeText}>
-                Changing passwords for other users requires Firebase Admin SDK access.
-                This feature is not available in the web interface.
-              </p>
-              <p style={styles.noticeText}>
-                <strong>To reset a user's password:</strong>
-              </p>
-              <ol style={styles.noticeList}>
-                <li>Go to Firebase Console</li>
-                <li>Navigate to Authentication → Users</li>
-                <li>Find and select the user</li>
-                <li>Click "Reset password"</li>
-                <li>Send the password reset email to the user</li>
-              </ol>
-            </div>
-            <div style={styles.modalActions}>
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setEditingUser(null);
-                }}
-                style={styles.cancelButton}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Email Change Modal */}
-      {showEmailModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Change Email - {editingUser?.email}</h3>
-            <div style={styles.modalNotice}>
-              <p style={styles.noticeTitle}>⚠️ Limitation</p>
-              <p style={styles.noticeText}>
-                Changing email addresses for other users requires Firebase Admin SDK access.
-                This feature is not available in the web interface.
-              </p>
-              <p style={styles.noticeText}>
-                <strong>To change a user's email:</strong>
-              </p>
-              <ol style={styles.noticeList}>
-                <li>Go to Firebase Console</li>
-                <li>Navigate to Authentication → Users</li>
-                <li>Find and select the user</li>
-                <li>Click the edit icon next to their email</li>
-                <li>Enter the new email address</li>
-              </ol>
-            </div>
-            <div style={styles.modalActions}>
-              <button
-                onClick={() => {
-                  setShowEmailModal(false);
-                  setEditingUser(null);
-                }}
-                style={styles.cancelButton}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

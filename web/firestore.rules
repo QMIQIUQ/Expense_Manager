@@ -16,7 +16,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+             ((get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) ||
+              (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminStatus == true));
     }
     
     // Users collection - for admin management
@@ -24,7 +25,7 @@ service cloud.firestore {
       // Users can read their own document; admins can read any
       allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
       // Allow users to create their own metadata on first login
-      allow create: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && (isOwner(userId) || isAdmin());
       // Allow users to update their own metadata; admins can update any
       allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
       // Only admins can delete user documents

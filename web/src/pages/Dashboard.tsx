@@ -43,7 +43,6 @@ const Dashboard: React.FC = () => {
       
       // Check if user is admin
       const adminStatus = await adminService.isAdmin(currentUser.uid);
-      console.log('DEBUG admin check:', { uid: currentUser.uid, adminStatus });
       setIsAdmin(adminStatus);
       
       const [expensesData, categoriesData, budgetsData, recurringData] = await Promise.all([

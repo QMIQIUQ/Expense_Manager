@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -15,6 +15,8 @@ const App: React.FC = () => {
           <HeaderNotification />
           <Routes>
             <Route path="/" element={<Login />} />
+            {/* Redirect legacy /login URL to root (login) to avoid unmatched-route warnings */}
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route
               path="/dashboard"
               element={

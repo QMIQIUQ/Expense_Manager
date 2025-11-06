@@ -1,0 +1,17 @@
+{
+  "name": "expense-manager-functions",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build step for JS'",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.5.0",
+    "firebase-functions": "^4.7.0"
+  }
+}

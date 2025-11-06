@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 const firebaseEnv = {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -44,3 +45,6 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Cloud Functions client
+export const functionsClient = getFunctions(app);

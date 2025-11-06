@@ -10,8 +10,18 @@ import {
   where,
   Timestamp 
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { db, auth } from '../config/firebase';
+import { 
+  createUserWithEmailAndPassword,
+  getAuth,
+  inMemoryPersistence,
+  setPersistence,
+  signOut,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { db, auth, functionsClient } from '../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { ENABLE_ADMIN_FUNCTIONS } from '../config/appConfig';
 import { COLLECTIONS, USER_DATA_COLLECTIONS } from '../constants/collections';
 
 export interface UserMetadata {
@@ -41,6 +51,11 @@ class AdminService {
     }
   }
 
+  // Send password reset email to an existing account
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
+  }
+
   // Get all users (admin only)
   async getAllUsers(): Promise<UserMetadata[]> {
     try {
@@ -66,8 +81,13 @@ class AdminService {
   // Create user with Firebase Auth account AND metadata
   async createUser(email: string, password: string, isAdmin: boolean = false): Promise<string> {
     try {
-      // Create Firebase Auth account
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Use a secondary, in-memory Auth instance so we don't affect the admin's session
+      const secondaryAppName = `admin-secondary-${Date.now()}`;
+      const secondaryApp = initializeApp((auth as unknown as { app: { options: object } }).app.options as object, secondaryAppName);
+      const secondaryAuth = getAuth(secondaryApp);
+      await setPersistence(secondaryAuth, inMemoryPersistence);
+
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
       const userId = userCredential.user.uid;
 
       // Create Firestore metadata
@@ -81,8 +101,9 @@ class AdminService {
         isActive: true,
       });
 
-      // Sign out the newly created user so admin stays logged in
-      await auth.signOut();
+      // Clean up: sign out and delete the secondary app (admin remains logged in on primary app)
+      await signOut(secondaryAuth);
+      await deleteApp(secondaryApp);
 
       return userId;
     } catch (error) {
@@ -154,9 +175,20 @@ class AdminService {
     }
   }
 
-  // Delete user metadata (Note: Firebase Auth user deletion requires special permissions)
+  // Delete user account (Auth via Cloud Function) and metadata
   async deleteUserMetadata(userId: string): Promise<void> {
     try {
+      // Attempt to delete the Firebase Auth user via a secured Cloud Function (only when enabled)
+      if (ENABLE_ADMIN_FUNCTIONS) {
+        try {
+          const deleteFn = httpsCallable(functionsClient, 'adminDeleteUser');
+          await deleteFn({ uid: userId });
+        } catch (fnErr) {
+          // If the function is not deployed or permission denied, proceed with metadata cleanup
+          console.warn('Auth user deletion via function failed or unavailable:', fnErr);
+        }
+      }
+
       // Also delete all user's data from all user-related collections
       for (const collectionName of USER_DATA_COLLECTIONS) {
         const q = query(collection(db, collectionName), where('userId', '==', userId));

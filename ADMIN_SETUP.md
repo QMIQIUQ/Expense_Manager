@@ -73,3 +73,38 @@ If you prefer automation (GitHub Actions), store the service account JSON in a r
 - Never commit the service account JSON to source control.
 - Use a separate service account with minimal required permissions if possible.
 - Consider using Cloud Functions or a private admin API to run admin tasks instead of running ad-hoc scripts from developer machines.
+
+## Additional Scripts (No Cloud Functions)
+
+If your Firebase project is on the Spark plan and cannot deploy Cloud Functions, use these Node scripts with a service account to manage users:
+
+### tools/delete-user.js
+- Deletes a Firebase Authentication user by UID
+- Removes user-owned documents from `expenses`, `categories`, `budgets`, `recurringExpenses`
+- Deletes the `users/{uid}` metadata doc
+
+Usage (PowerShell):
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS = 'C:\\path\\to\\serviceAccountKey.json'
+node tools/delete-user.js <uid>
+Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS
+```
+
+### tools/update-user.js
+Supported commands:
+- `set-admin <uid> <true|false>`: toggles admin; writes both `isAdmin` and legacy `adminStatus`
+- `set-active <uid> <true|false>`: toggles activation flag in metadata
+- `set-email <uid> <newEmail>`: updates email in Auth and Firestore metadata
+- `set-password <uid> <newPassword>`: updates password in Auth
+
+Usage (PowerShell):
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS = 'C:\\path\\to\\serviceAccountKey.json'
+node tools/update-user.js set-admin <uid> true
+node tools/update-user.js set-active <uid> false
+node tools/update-user.js set-email <uid> new@example.com
+node tools/update-user.js set-password <uid> NewStrongP@ss
+Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS
+```
+
+These scripts are safe alternatives when Cloud Functions deployment is blocked by billing. They require a service account; keep it secure and never commit it to source control.
