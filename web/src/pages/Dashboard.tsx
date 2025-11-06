@@ -742,7 +742,7 @@ const Dashboard: React.FC = () => {
       )}
     </div>
       {/* Floating Add button visible on Expenses tab */}
-      {activeTab === 'expenses' && (
+      {activeTab === 'expenses' && !showAddSheet && (
         <button
           aria-label="Add Expense"
           onClick={() => setShowAddSheet(true)}
