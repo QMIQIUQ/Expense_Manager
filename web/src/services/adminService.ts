@@ -11,6 +11,7 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { COLLECTIONS, USER_DATA_COLLECTIONS } from '../constants/collections';
 
 export interface UserMetadata {
   id: string;
@@ -22,13 +23,11 @@ export interface UserMetadata {
   isActive: boolean;
 }
 
-const USERS_COLLECTION = 'users';
-
 class AdminService {
   // Check if the current user is an admin
   async isAdmin(userId: string): Promise<boolean> {
     try {
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
       if (userDoc.exists()) {
         return userDoc.data().isAdmin === true;
       }
@@ -42,7 +41,7 @@ class AdminService {
   // Get all users (admin only)
   async getAllUsers(): Promise<UserMetadata[]> {
     try {
-      const usersSnapshot = await getDocs(collection(db, USERS_COLLECTION));
+      const usersSnapshot = await getDocs(collection(db, COLLECTIONS.USERS));
       return usersSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -64,7 +63,7 @@ class AdminService {
   // Create user metadata document
   async createUserMetadata(userId: string, email: string, isAdmin: boolean = false): Promise<void> {
     try {
-      await setDoc(doc(db, USERS_COLLECTION, userId), {
+      await setDoc(doc(db, COLLECTIONS.USERS, userId), {
         email,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
@@ -90,7 +89,7 @@ class AdminService {
       delete updateData.id;
       delete updateData.createdAt;
       
-      await updateDoc(doc(db, USERS_COLLECTION, userId), updateData);
+      await updateDoc(doc(db, COLLECTIONS.USERS, userId), updateData);
     } catch (error) {
       console.error('Error updating user metadata:', error);
       throw error;
@@ -120,10 +119,8 @@ class AdminService {
   // Delete user metadata (Note: Firebase Auth user deletion requires special permissions)
   async deleteUserMetadata(userId: string): Promise<void> {
     try {
-      // Also delete all user's data
-      const collections = ['expenses', 'categories', 'budgets', 'recurringExpenses'];
-      
-      for (const collectionName of collections) {
+      // Also delete all user's data from all user-related collections
+      for (const collectionName of USER_DATA_COLLECTIONS) {
         const q = query(collection(db, collectionName), where('userId', '==', userId));
         const snapshot = await getDocs(q);
         
@@ -132,7 +129,7 @@ class AdminService {
       }
       
       // Finally delete the user metadata
-      await deleteDoc(doc(db, USERS_COLLECTION, userId));
+      await deleteDoc(doc(db, COLLECTIONS.USERS, userId));
     } catch (error) {
       console.error('Error deleting user metadata:', error);
       throw error;
@@ -142,7 +139,7 @@ class AdminService {
   // Get user by ID
   async getUserById(userId: string): Promise<UserMetadata | null> {
     try {
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
       if (userDoc.exists()) {
         const data = userDoc.data();
         return {

@@ -16,7 +16,6 @@ const AdminTab: React.FC = () => {
   
   // Form state
   const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newIsAdmin, setNewIsAdmin] = useState(false);
 
@@ -40,29 +39,28 @@ const AdminTab: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newEmail || !newPassword) {
-      showNotification('error', 'Email and password are required');
+    if (!newEmail) {
+      showNotification('error', 'Email is required');
       return;
     }
 
     try {
       setCreating(true);
       
-      // Note: Creating users with Firebase Auth from client-side has limitations
-      // This approach creates the user account but the current user will be signed out
-      // A better approach would be to use Firebase Admin SDK on a backend server
-      showNotification('info', 'Creating user account...');
+      showNotification('info', 'Creating user metadata...');
       
-      // For now, we'll just create the metadata
-      // In production, you should use Firebase Admin SDK on backend
-      const userId = `user-${Date.now()}`; // Temporary ID
+      // Create metadata only - Firebase Auth account must be created separately
+      // Using a temporary ID - this will need to be matched with Firebase Auth UID
+      const userId = `user-${Date.now()}`; // Temporary ID until Firebase Auth account is created
       await adminService.createUserMetadata(userId, newEmail, newIsAdmin);
       
-      showNotification('success', `User account created. Please ask user to sign up with email: ${newEmail}`);
+      showNotification(
+        'success', 
+        `User metadata created for ${newEmail}. Remember to create Firebase Auth account in Firebase Console!`
+      );
       
       // Reset form
       setNewEmail('');
-      setNewPassword('');
       setNewDisplayName('');
       setNewIsAdmin(false);
       setShowCreateForm(false);
@@ -71,7 +69,7 @@ const AdminTab: React.FC = () => {
       await loadUsers();
     } catch (error) {
       console.error('Error creating user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user metadata';
       showNotification('error', errorMessage);
     } finally {
       setCreating(false);
@@ -155,11 +153,25 @@ const AdminTab: React.FC = () => {
 
       {showCreateForm && (
         <div style={styles.createForm}>
-          <h3 style={styles.formTitle}>Create New User</h3>
-          <p style={styles.notice}>
-            ⚠️ Note: Due to Firebase limitations, you'll need to manually create the authentication account 
-            or ask the user to register with the provided email.
-          </p>
+          <h3 style={styles.formTitle}>Create New User Metadata</h3>
+          <div style={styles.notice}>
+            <p style={styles.noticeTitle}>⚠️ Important Limitations</p>
+            <p style={styles.noticeText}>
+              This form creates user metadata only. Firebase Authentication accounts must be created separately.
+            </p>
+            <p style={styles.noticeText}>
+              <strong>Recommended workflow:</strong>
+            </p>
+            <ol style={styles.noticeList}>
+              <li>Create user metadata here</li>
+              <li>Go to Firebase Console → Authentication → Users</li>
+              <li>Click "Add User" and use the same email</li>
+              <li>Share login credentials with the user</li>
+            </ol>
+            <p style={styles.noticeText}>
+              See <code>ADMIN_SETUP.md</code> for detailed instructions.
+            </p>
+          </div>
           <form onSubmit={handleCreateUser}>
             <div style={styles.formGroup}>
               <label style={styles.label}>Email</label>
@@ -171,17 +183,6 @@ const AdminTab: React.FC = () => {
                 required
                 style={styles.input}
                 placeholder="user@example.com"
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Initial Password (optional)</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                style={styles.input}
-                placeholder="Leave empty for user setup"
               />
             </div>
             <div style={styles.formGroup}>
@@ -211,7 +212,7 @@ const AdminTab: React.FC = () => {
               disabled={creating}
               style={styles.submitButton}
             >
-              {creating ? 'Creating...' : 'Create User'}
+              {creating ? 'Creating Metadata...' : 'Create User Metadata'}
             </button>
           </form>
         </div>
@@ -333,10 +334,26 @@ const styles = {
     backgroundColor: '#fff3cd',
     border: '1px solid #ffeaa7',
     borderRadius: '4px',
-    padding: '10px',
+    padding: '15px',
     marginBottom: '15px',
-    fontSize: '13px',
     color: '#856404',
+  },
+  noticeTitle: {
+    margin: '0 0 8px 0',
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#856404',
+  },
+  noticeText: {
+    margin: '0 0 8px 0',
+    fontSize: '13px',
+    lineHeight: '1.4',
+  },
+  noticeList: {
+    margin: '8px 0',
+    paddingLeft: '20px',
+    fontSize: '13px',
+    lineHeight: '1.6',
   },
   formGroup: {
     marginBottom: '15px',
