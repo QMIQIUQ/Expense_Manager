@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Budget, Category } from '../../types';
+import ConfirmModal from '../ConfirmModal';
 
 interface BudgetManagerProps {
   budgets: Budget[];
@@ -27,6 +28,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     period: 'monthly' as 'monthly' | 'weekly' | 'yearly',
     startDate: new Date().toISOString().split('T')[0],
     alertThreshold: 80,
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; budgetId: string | null }>({
+    isOpen: false,
+    budgetId: null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -225,11 +230,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       Edit
                     </button>
                     <button
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this budget?')) {
-                          onDelete(budget.id!);
-                        }
-                      }}
+                      onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
                       style={styles.deleteBtn}
                     >
                       Delete
@@ -241,6 +242,21 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           })
         )}
       </div>
+      
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Budget"
+        message="Are you sure you want to delete this budget?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.budgetId) {
+            onDelete(deleteConfirm.budgetId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, budgetId: null })}
+      />
     </div>
   );
 };

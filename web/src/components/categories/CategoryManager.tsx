@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Category } from '../../types';
+import ConfirmModal from '../ConfirmModal';
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -20,6 +21,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     name: '',
     icon: '📦',
     color: '#95A5A6',
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; categoryId: string | null }>({
+    isOpen: false,
+    categoryId: null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,15 +140,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               </button>
               {!category.isDefault && (
                 <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        'Are you sure you want to delete this category? This action cannot be undone.'
-                      )
-                    ) {
-                      onDelete(category.id!);
-                    }
-                  }}
+                  onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
                   style={styles.deleteBtn}
                 >
                   Delete
@@ -153,6 +150,21 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           </div>
         ))}
       </div>
+      
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.categoryId) {
+            onDelete(deleteConfirm.categoryId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, categoryId: null })}
+      />
     </div>
   );
 };

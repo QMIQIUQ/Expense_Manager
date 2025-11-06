@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RecurringExpense, Category } from '../../types';
+import ConfirmModal from '../ConfirmModal';
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
@@ -31,24 +32,18 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     dayOfMonth: 1,
     isActive: true,
   });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; recurringId: string | null }>({
+    isOpen: false,
+    recurringId: null,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenseData: any = {
-      description: formData.description,
-      amount: formData.amount,
-      category: formData.category,
-      frequency: formData.frequency,
-      startDate: formData.startDate,
-      dayOfWeek: formData.dayOfWeek,
-      dayOfMonth: formData.dayOfMonth,
-      isActive: formData.isActive,
+    const expenseData = {
+      ...formData,
+      endDate: formData.endDate || undefined,
+      lastGenerated: undefined,
     };
-
-    // Only add endDate if it's set
-    if (formData.endDate) {
-      expenseData.endDate = formData.endDate;
-    }
 
     if (editingId) {
       onUpdate(editingId, expenseData);
@@ -234,7 +229,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   Edit
                 </button>
                 <button
-                  onClick={() => onDelete(expense.id!)}
+                  onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
                   style={styles.deleteBtn}
                 >
                   Delete
@@ -244,6 +239,21 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           ))
         )}
       </div>
+      
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Recurring Expense"
+        message="Are you sure you want to delete this recurring expense?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.recurringId) {
+            onDelete(deleteConfirm.recurringId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, recurringId: null })}
+      />
     </div>
   );
 };
