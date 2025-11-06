@@ -677,7 +677,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Floating Add Expense Button - visible on all tabs except expenses tab where form is already visible */}
-      {activeTab !== 'expenses' && (
+      {activeTab !== 'expenses' && !showAddExpenseForm && (
         <button 
           onClick={() => setShowAddExpenseForm(true)}
           style={styles.floatingButton}
