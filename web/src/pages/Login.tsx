@@ -7,7 +7,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,20 +20,6 @@ const Login: React.FC = () => {
       navigate('/dashboard');
     } catch (err) {
       setError('Failed to log in. Please check your credentials.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setError('');
-      setLoading(true);
-      await loginWithGoogle();
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to log in with Google.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -89,21 +75,6 @@ const Login: React.FC = () => {
           {loading ? 'Loading...' : 'Login'}
         </button>
       </form>
-      <button
-        onClick={handleGoogleLogin}
-        disabled={loading}
-        style={{
-          width: '100%',
-          padding: '10px',
-          backgroundColor: '#4285F4',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginBottom: '10px',
-        }}
-      >
-        Login with Google
-      </button>
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import PrivateRoute from './components/PrivateRoute';
 import HeaderNotification from './components/HeaderNotification';
-import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
@@ -15,8 +14,7 @@ const App: React.FC = () => {
         <NotificationProvider>
           <HeaderNotification />
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Login />} />
             <Route
               path="/dashboard"
               element={
