@@ -103,6 +103,23 @@ Build the app for production:
 npm run build
 ```
 
+### Deploying to GitHub Pages
+
+- Enable GitHub Pages in the repository settings (`Settings` → `Pages`) and choose **GitHub Actions** as the source.
+- Push to the `main1` branch (or run the workflow manually) to trigger `.github/workflows/deploy.yml`.
+- The workflow builds the app in `/web`, sets the correct base path for project pages, and publishes the contents of `web/dist` to GitHub Pages.
+- For a local build that mimics the production base path you can run:
+
+   ```bash
+   DEPLOY_BASE=/Expense_Manager/ npm run build
+   ```
+
+   On Windows PowerShell, use:
+
+   ```powershell
+   $env:DEPLOY_BASE = '/Expense_Manager/'; npm run build; Remove-Item Env:DEPLOY_BASE
+   ```
+
 ### Preview Production Build
 
 Preview the production build locally:
