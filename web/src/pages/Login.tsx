@@ -54,6 +54,7 @@ const Login: React.FC = () => {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={(e) => e.target.select()}
             required
             style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
           />
@@ -67,6 +68,7 @@ const Login: React.FC = () => {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onFocus={(e) => e.target.select()}
             required
             style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
           />

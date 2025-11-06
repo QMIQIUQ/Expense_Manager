@@ -55,6 +55,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           name="description"
           value={formData.description}
           onChange={handleChange}
+          onFocus={(e) => e.target.select()}
           placeholder="e.g., Grocery shopping"
           required
           style={styles.input}
@@ -69,6 +70,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             name="amount"
             value={formData.amount}
             onChange={handleChange}
+            onFocus={(e) => e.target.select()}
             placeholder="0.00"
             step="0.01"
             min="0.01"
