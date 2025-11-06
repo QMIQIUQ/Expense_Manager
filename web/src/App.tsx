@@ -11,7 +11,7 @@ import Dashboard from './pages/Dashboard';
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <NotificationProvider>
           <HeaderNotification />
