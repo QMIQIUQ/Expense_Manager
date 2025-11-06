@@ -8,9 +8,10 @@ interface ExpenseListProps {
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
+  onBulkDelete?: (ids: string[]) => void;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate, onBulkDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
@@ -27,6 +28,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     time?: string;
     notes?: string;
   }>({});
+  const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -109,19 +112,28 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
 
   return (
     <div style={styles.container}>
-      <div style={styles.filters}>
-        <input
-          type="text"
-          placeholder="Search expenses..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          style={styles.searchInput}
-        />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <input
+            type="text"
+            placeholder="Search expenses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            style={styles.searchInput}
+          />
+        </div>
+
+        
+      </div>
+
+      {/* Selects row moved below search to match layout */}
+      <div style={styles.selectRow}>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           style={styles.select}
+          aria-label="Filter by category"
         >
           <option value="">All Categories</option>
           {categoryNames.map((cat) => (
@@ -130,12 +142,41 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
             </option>
           ))}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.select}>
+
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.select} aria-label="Sort expenses">
           <option value="date-desc">Newest First</option>
           <option value="date-asc">Oldest First</option>
           <option value="amount-desc">Highest Amount</option>
           <option value="amount-asc">Lowest Amount</option>
         </select>
+      </div>
+
+      {/* Action buttons row - positioned at top-right of list */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={() => { setMultiSelectEnabled((s) => { if (s) setSelectedIds(new Set()); return !s; }); }}
+          style={{ ...styles.selectToggleButton, padding: '8px 12px' }}
+          aria-pressed={multiSelectEnabled}
+          aria-label="Toggle multi-select"
+        >
+          {multiSelectEnabled ? 'Cancel Select' : 'Select'}
+        </button>
+        {multiSelectEnabled && (
+          <button
+            onClick={() => {
+              const ids = Array.from(selectedIds);
+              if (ids.length === 0) return;
+              if (!window.confirm(`Delete ${ids.length} selected expenses?`)) return;
+              onBulkDelete && onBulkDelete(ids);
+              setSelectedIds(new Set());
+              setMultiSelectEnabled(false);
+            }}
+            style={{ ...styles.deleteSelectedButton }}
+            aria-label="Delete selected"
+          >
+            🗑 Delete Selected {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+          </button>
+        )}
       </div>
 
       {filteredAndSortedExpenses().length === 0 ? (
@@ -146,9 +187,26 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         <div style={styles.list}>
           {filteredAndSortedExpenses().map((expense) => (
             <div key={expense.id} className="expense-card" style={styles.expenseCard}>
-              <div style={styles.dateRow}>
-                <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
-                <span style={styles.category}>{expense.category}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {multiSelectEnabled && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(expense.id!)}
+                      onChange={() => setSelectedIds((prev) => {
+                        const copy = new Set(prev);
+                        if (copy.has(expense.id!)) copy.delete(expense.id!);
+                        else copy.add(expense.id!);
+                        return copy;
+                      })}
+                      aria-label={`Select expense ${expense.description}`}
+                    />
+                  )}
+                  <div style={styles.dateRow}>
+                    <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
+                    <span style={styles.category}>{expense.category}</span>
+                  </div>
+                </div>
               </div>
 
               {editingId === expense.id ? (
@@ -361,6 +419,29 @@ const styles = {
     border: '1px solid rgba(0,0,0,0.08)',
     backgroundColor: 'rgba(25,118,210,0.08)',
     cursor: 'pointer',
+  },
+  selectToggleButton: {
+    borderRadius: '8px',
+    border: '1px solid rgba(0,0,0,0.08)',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+    fontWeight: 600 as const,
+  },
+  deleteSelectedButton: {
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: 'rgba(244,67,54,0.08)',
+    color: '#b71c1c',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    fontWeight: 600 as const,
+  },
+  selectRow: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '10px',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
   },
 };
 

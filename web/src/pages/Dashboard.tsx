@@ -182,6 +182,38 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Bulk delete expenses (from ExpenseList multi-select)
+  const handleBulkDeleteExpenses = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const originals = expenses.filter((e) => ids.includes(e.id!));
+
+    // Optimistic update: remove selected expenses
+    setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
+
+    // Run delete for each id with optimisticCRUD so failures are retried/handled
+    await Promise.all(ids.map((id) => {
+      const original = originals.find((o) => o.id === id);
+      return optimisticCRUD.run(
+        { type: 'delete', data: { id }, originalData: original },
+        () => expenseService.delete(id),
+        {
+          entityType: 'expense',
+          retryToQueueOnFail: true,
+          onSuccess: () => {},
+          onError: () => {
+            // Rollback the specific failed deletion
+            if (original) {
+              setExpenses((prev) => [original!, ...prev]);
+            }
+          },
+        }
+      );
+    }));
+
+    // Refresh to ensure server state is in sync
+    loadData();
+  };
+
   // Category handlers
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
@@ -626,6 +658,7 @@ const Dashboard: React.FC = () => {
               categories={categories}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
+              onBulkDelete={handleBulkDeleteExpenses}
             />
           </div>
         )}
