@@ -8,20 +8,22 @@ const HeaderNotification: React.FC = () => {
     return null;
   }
 
-  const getNotificationClasses = (type: Notification['type']) => {
-    const baseClasses = 'flex items-center justify-between p-3 sm:p-4 rounded-lg text-white shadow-lg animate-slideIn gap-3';
-    
+  const getNotificationStyle = (type: Notification['type']) => {
+    const baseStyle = {
+      ...styles.notification,
+    };
+
     switch (type) {
       case 'success':
-        return `${baseClasses} bg-green-600`;
+        return { ...baseStyle, backgroundColor: '#4caf50' };
       case 'error':
-        return `${baseClasses} bg-red-600`;
+        return { ...baseStyle, backgroundColor: '#f44336' };
       case 'info':
-        return `${baseClasses} bg-blue-600`;
+        return { ...baseStyle, backgroundColor: '#2196f3' };
       case 'pending':
-        return `${baseClasses} bg-orange-600`;
+        return { ...baseStyle, backgroundColor: '#ff9800' };
       default:
-        return `${baseClasses} bg-gray-600`;
+        return baseStyle;
     }
   };
 
@@ -41,14 +43,14 @@ const HeaderNotification: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-full w-full sm:max-w-md px-4 sm:px-0">
+    <div style={styles.container}>
       {notifications.map((notification) => (
-        <div key={notification.id} className={getNotificationClasses(notification.type)}>
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <span className="text-xl font-bold flex-shrink-0">{getIcon(notification.type)}</span>
-            <span className="text-sm leading-relaxed break-words">{notification.message}</span>
+        <div key={notification.id} style={getNotificationStyle(notification.type)}>
+          <div style={styles.content}>
+            <span style={styles.icon}>{getIcon(notification.type)}</span>
+            <span style={styles.message}>{notification.message}</span>
           </div>
-          <div className="flex gap-2 items-center flex-shrink-0">
+          <div style={styles.actions}>
             {notification.actions?.map((action, index) => (
               <button
                 key={index}
@@ -56,14 +58,14 @@ const HeaderNotification: React.FC = () => {
                   action.onClick();
                   hideNotification(notification.id);
                 }}
-                className="px-3 py-1.5 bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded text-xs font-medium hover:bg-opacity-30 transition-colors"
+                style={styles.actionButton}
               >
                 {action.label}
               </button>
             ))}
             <button
               onClick={() => hideNotification(notification.id)}
-              className="p-1 sm:p-2 bg-transparent text-white border-none text-base cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+              style={styles.closeButton}
               aria-label="Close notification"
             >
               ✕
@@ -73,6 +75,71 @@ const HeaderNotification: React.FC = () => {
       ))}
     </div>
   );
+};
+
+const styles = {
+  container: {
+    position: 'fixed' as const,
+    top: '20px',
+    right: '20px',
+    zIndex: 9999,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
+    maxWidth: '400px',
+    width: '100%',
+  },
+  notification: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    color: 'white',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    animation: 'slideIn 0.3s ease-out',
+    gap: '12px',
+  },
+  content: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flex: 1,
+  },
+  icon: {
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+  },
+  message: {
+    fontSize: '14px',
+    lineHeight: '1.5',
+  },
+  actions: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    color: 'white',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  closeButton: {
+    padding: '4px 8px',
+    backgroundColor: 'transparent',
+    color: 'white',
+    border: 'none',
+    fontSize: '16px',
+    cursor: 'pointer',
+    opacity: 0.8,
+    transition: 'opacity 0.2s',
+  },
 };
 
 export default HeaderNotification;
