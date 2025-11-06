@@ -34,6 +34,7 @@ const Dashboard: React.FC = () => {
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -647,28 +648,14 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'expenses' && (
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-              </h2>
-              <ExpenseForm
-                onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense}
-                onCancel={editingExpense ? () => setEditingExpense(null) : undefined}
-                initialData={editingExpense || undefined}
-                categories={categories}
-              />
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold text-gray-800">Expense History</h2>
-              <ExpenseList
-                expenses={expenses}
-                categories={categories}
-                onDelete={handleDeleteExpense}
-                onInlineUpdate={handleInlineUpdateExpense}
-              />
-            </div>
+          <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold text-gray-800">Expense History</h2>
+            <ExpenseList
+              expenses={expenses}
+              categories={categories}
+              onDelete={handleDeleteExpense}
+              onInlineUpdate={handleInlineUpdateExpense}
+            />
           </div>
         )}
 
@@ -729,6 +716,57 @@ const Dashboard: React.FC = () => {
         />
       )}
     </div>
+      {/* Floating Add button visible on Expenses tab */}
+      {activeTab === 'expenses' && (
+        <button
+          aria-label="Add Expense"
+          onClick={() => setShowAddSheet(true)}
+          className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-primary hover:bg-indigo-700 text-white shadow-xl flex items-center justify-center transition-colors"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Bottom Sheet for adding expense */}
+      {activeTab === 'expenses' && showAddSheet && (
+        <div
+          className="fixed inset-0 z-[9998]"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowAddSheet(false)}
+          />
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="mx-auto w-full max-w-7xl">
+              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                  <button
+                    aria-label="Close"
+                    onClick={() => setShowAddSheet(false)}
+                    className="p-2 rounded-md hover:bg-gray-100"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                    </svg>
+                  </button>
+                </div>
+                <ExpenseForm
+                  onSubmit={(data) => { handleAddExpense(data); setShowAddSheet(false); }}
+                  onCancel={() => setShowAddSheet(false)}
+                  categories={categories}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
   );
 };
 
