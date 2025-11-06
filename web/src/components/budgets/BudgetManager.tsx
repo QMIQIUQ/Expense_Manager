@@ -127,6 +127,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 step="0.01"
                 min="0.01"
                 required
@@ -162,6 +163,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })
                 }
+                onFocus={(e) => e.target.select()}
                 min="1"
                 max="100"
                 required

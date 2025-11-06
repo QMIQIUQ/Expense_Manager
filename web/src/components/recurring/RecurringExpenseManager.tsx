@@ -104,6 +104,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onFocus={(e) => e.target.select()}
               placeholder="e.g., Netflix Subscription, Rent"
               required
               style={styles.input}
@@ -117,6 +118,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 step="0.01"
                 min="0.01"
                 required

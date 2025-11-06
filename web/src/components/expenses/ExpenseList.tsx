@@ -60,6 +60,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
           placeholder="Search expenses..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={(e) => e.target.select()}
           style={styles.searchInput}
         />
         <select
