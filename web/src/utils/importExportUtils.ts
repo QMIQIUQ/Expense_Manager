@@ -157,10 +157,18 @@ export const parseUploadedFile = async (
             const expensesJson = XLSX.utils.sheet_to_json<Record<string, unknown>>(expensesSheet);
             
             expenses = expensesJson.map((row, index: number) => {
-              // Handle Excel date serial numbers
+              // Handle Excel date serial numbers with error handling
               let date = row.date;
               if (typeof date === 'number') {
-                date = XLSX.SSF.format('yyyy-mm-dd', date);
+                try {
+                  // Excel date serial to JS Date, then to ISO string
+                  const excelEpoch = new Date(1899, 11, 30);
+                  const jsDate = new Date(excelEpoch.getTime() + date * 86400000);
+                  date = jsDate.toISOString().split('T')[0];
+                } catch {
+                  // Fallback to XLSX formatter
+                  date = XLSX.SSF.format('yyyy-mm-dd', date);
+                }
               }
               
               // Validate required fields
@@ -370,21 +378,19 @@ export const importData = async (
             continue;
           }
           
-          // Apply conflict strategy
-          if (expRow.id && !options.preserveIds) {
-            // Default behavior: ignore ID and create new
-            delete expRow.id;
-          }
-          
-          // Create expense
-          await expenseService.create({
+          // Apply conflict strategy by creating new object without ID
+          // (avoiding mutation of original expRow)
+          const expenseData = {
             userId,
             description: expRow.description,
             amount: expRow.amount,
             category: expRow.category,
             date: expRow.date,
             notes: expRow.notes,
-          });
+          };
+          
+          // Create expense
+          await expenseService.create(expenseData);
           
           result.success++;
         } catch (error) {

@@ -57,6 +57,7 @@ const ImportExportModal: React.FC<Props> = ({
   });
   const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -69,11 +70,12 @@ const ImportExportModal: React.FC<Props> = ({
     const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.'));
     
     if (!validExtensions.includes(fileExtension.toLowerCase())) {
-      alert('Please select a .xlsx or .csv file');
+      setErrorMessage('Please select a .xlsx or .csv file');
       return;
     }
 
     setFile(selectedFile);
+    setErrorMessage('');
     
     // Parse file
     try {
@@ -87,7 +89,7 @@ const ImportExportModal: React.FC<Props> = ({
       
       setStep('preview');
     } catch (error) {
-      alert(`Failed to parse file: ${(error as Error).message}`);
+      setErrorMessage(`Failed to parse file: ${(error as Error).message}`);
       setFile(null);
     }
   };
@@ -96,6 +98,7 @@ const ImportExportModal: React.FC<Props> = ({
     if (!parsedData || !userId) return;
 
     setStep('importing');
+    setErrorMessage('');
     setProgress({ current: 0, total: parsedData.expenses.length, message: 'Starting import...' });
 
     try {
@@ -114,7 +117,7 @@ const ImportExportModal: React.FC<Props> = ({
       setStep('complete');
       onImportComplete();
     } catch (error) {
-      alert(`Import failed: ${(error as Error).message}`);
+      setErrorMessage(`Import failed: ${(error as Error).message}`);
       setStep('preview');
     }
   };
@@ -126,6 +129,7 @@ const ImportExportModal: React.FC<Props> = ({
     setCategoryMappings(new Map());
     setImportResult(null);
     setProgress({ current: 0, total: 0, message: '' });
+    setErrorMessage('');
     onClose();
   };
 
@@ -135,6 +139,11 @@ const ImportExportModal: React.FC<Props> = ({
       <p style={styles.description}>
         Upload a .xlsx or .csv file containing your expense data.
       </p>
+      {errorMessage && (
+        <div style={styles.errorBox}>
+          <strong>⚠️ Error:</strong> {errorMessage}
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -161,6 +170,13 @@ const ImportExportModal: React.FC<Props> = ({
     return (
       <div style={styles.stepContent}>
         <h3 style={styles.stepTitle}>Preview & Configure</h3>
+        
+        {/* Import Error Message */}
+        {errorMessage && (
+          <div style={styles.errorBox}>
+            <strong>⚠️ Import Error:</strong> {errorMessage}
+          </div>
+        )}
         
         {/* Parse Errors */}
         {parsedData.errors.length > 0 && (
