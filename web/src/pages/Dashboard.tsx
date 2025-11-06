@@ -674,6 +674,43 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* Floating Add Expense Button - visible on all tabs except expenses tab where form is already visible */}
+      {activeTab !== 'expenses' && (
+        <button 
+          onClick={() => setShowAddExpenseForm(true)}
+          style={styles.floatingButton}
+          className="floating-btn-hover"
+          title="Add New Expense"
+        >
+          {isMobile ? '+' : '+ Add New Expense'}
+        </button>
+      )}
+
+      {/* Add Expense Modal */}
+      {showAddExpenseForm && activeTab !== 'expenses' && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddExpenseForm(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>Add New Expense</h2>
+              <button 
+                onClick={() => setShowAddExpenseForm(false)} 
+                style={styles.modalCloseButton}
+              >
+                ✕
+              </button>
+            </div>
+            <ExpenseForm
+              onSubmit={(data) => {
+                handleAddExpense(data);
+                setShowAddExpenseForm(false);
+              }}
+              onCancel={() => setShowAddExpenseForm(false)}
+              categories={categories}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Import/Export Modal */}
       {currentUser && (
         <ImportExportModal
