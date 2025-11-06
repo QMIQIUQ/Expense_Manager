@@ -1,6 +1,24 @@
 # Admin Setup & Scripts
 
-This document describes how to create admin accounts for the Expense Manager project using the included server script.
+This document describes how to create admin accounts for the Expense Manager project.
+
+## Quick Start: Web Interface (Recommended)
+
+The easiest way to create and manage users is through the admin panel in the web interface:
+
+1. Have an existing admin log into the application
+2. Navigate to the Admin tab (👑 icon)
+3. Click "➕ Create User"
+4. Fill in the email, password, and optionally grant admin privileges
+5. Click "Create User Account"
+
+This creates a complete Firebase Authentication account with metadata - no Firebase Console or server scripts needed!
+
+For more details, see [USER_MANAGEMENT_FEATURES.md](./USER_MANAGEMENT_FEATURES.md).
+
+## Alternative: Server Script (Advanced)
+
+If you need to create the first admin account or prefer command-line tools, you can use the included server script.
 
 ## tools/create-admin.js
 

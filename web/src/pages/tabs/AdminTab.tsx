@@ -78,8 +78,8 @@ const AdminTab: React.FC = () => {
       setNewIsAdmin(false);
       setShowCreateForm(false);
       
-      // Reload users after a short delay to ensure auth state has settled
-      setTimeout(() => loadUsers(), 1000);
+      // Reload users - the auth state has been handled by adminService
+      await loadUsers();
     } catch (error) {
       console.error('Error creating user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create user';

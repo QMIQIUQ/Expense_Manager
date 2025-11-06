@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
+import { COLLECTIONS } from '../constants/collections';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -45,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const ensureUserMetadata = async (user: User) => {
     try {
-      const userDocRef = doc(db, 'users', user.uid);
+      const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
       const userDoc = await getDoc(userDocRef);
       
       if (!userDoc.exists()) {
@@ -108,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await updateEmail(currentUser, newEmail);
 
     // Update email in Firestore metadata
-    const userDocRef = doc(db, 'users', currentUser.uid);
+    const userDocRef = doc(db, COLLECTIONS.USERS, currentUser.uid);
     await updateDoc(userDocRef, {
       email: newEmail,
       updatedAt: Timestamp.now(),
