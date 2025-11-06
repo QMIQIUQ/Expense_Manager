@@ -76,6 +76,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onFocus={(e) => e.target.select()}
               placeholder="e.g., Pets, Gifts"
               required
               style={styles.input}
