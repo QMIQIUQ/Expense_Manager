@@ -525,6 +525,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
+    <>
     <div className="max-w-7xl mx-auto min-h-screen">
       <div className="dashboard-card dashboard-header relative mb-8">
         <div>
@@ -767,6 +768,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+    </>
   );
 };
 
