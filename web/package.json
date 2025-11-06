@@ -28,5 +28,10 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
     "vite": "^7.1.12"
-  }
+  },
+  "description": "A comprehensive expense tracking application built with React, TypeScript, and Firebase. This app helps you track expenses, manage budgets, handle recurring expenses, and export data for analysis.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
