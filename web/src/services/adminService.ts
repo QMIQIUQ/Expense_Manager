@@ -10,7 +10,8 @@ import {
   where,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, auth } from '../config/firebase';
 import { COLLECTIONS, USER_DATA_COLLECTIONS } from '../constants/collections';
 
 export interface UserMetadata {
@@ -62,7 +63,35 @@ class AdminService {
     }
   }
 
-  // Create user metadata document
+  // Create user with Firebase Auth account AND metadata
+  async createUser(email: string, password: string, isAdmin: boolean = false): Promise<string> {
+    try {
+      // Create Firebase Auth account
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+
+      // Create Firestore metadata
+      await setDoc(doc(db, COLLECTIONS.USERS, userId), {
+        email,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        // write both fields to be compatible with older entries
+        isAdmin,
+        adminStatus: isAdmin,
+        isActive: true,
+      });
+
+      // Sign out the newly created user so admin stays logged in
+      await auth.signOut();
+
+      return userId;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  // Create user metadata document only (legacy method)
   async createUserMetadata(userId: string, email: string, isAdmin: boolean = false): Promise<void> {
     try {
       await setDoc(doc(db, COLLECTIONS.USERS, userId), {
@@ -92,6 +121,11 @@ class AdminService {
       // Remove fields that shouldn't be updated directly
       delete updateData.id;
       delete updateData.createdAt;
+      
+      // Sync adminStatus with isAdmin for compatibility
+      if ('isAdmin' in updateData) {
+        updateData.adminStatus = updateData.isAdmin;
+      }
       
       await updateDoc(doc(db, COLLECTIONS.USERS, userId), updateData);
     } catch (error) {
