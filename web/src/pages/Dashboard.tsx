@@ -33,7 +33,6 @@ const Dashboard: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
