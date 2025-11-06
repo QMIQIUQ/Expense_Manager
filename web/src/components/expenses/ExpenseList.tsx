@@ -53,20 +53,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
   const categories = Array.from(new Set(expenses.map((e) => e.category)));
 
   return (
-    <div style={styles.container}>
-      <div style={styles.filters}>
+    <div className="flex flex-col gap-4">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <input
           type="text"
           placeholder="Search expenses..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={(e) => e.target.select()}
-          style={styles.searchInput}
+          className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          style={styles.select}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="">All Categories</option>
           {categories.map((cat) => (
@@ -75,7 +76,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
             </option>
           ))}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.select}>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        >
           <option value="date-desc">Newest First</option>
           <option value="date-asc">Oldest First</option>
           <option value="amount-desc">Highest Amount</option>
@@ -83,32 +88,53 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
         </select>
       </div>
 
+      {/* Expense List */}
       {filteredAndSortedExpenses().length === 0 ? (
-        <div style={styles.noData}>
+        <div className="text-center py-10 text-gray-500">
           <p>No expenses found. Add your first expense! 📝</p>
         </div>
       ) : (
-        <div style={styles.list}>
+        <div className="flex flex-col gap-3">
           {filteredAndSortedExpenses().map((expense) => (
-            <div key={expense.id} style={styles.expenseCard}>
-              <div style={styles.expenseMain}>
-                <div style={styles.expenseInfo}>
-                  <h3 style={styles.description}>{expense.description}</h3>
-                  <span style={styles.category}>{expense.category}</span>
-                  {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
+            <div
+              key={expense.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+            >
+              {/* Main Content - Stacks on mobile, side-by-side on desktop */}
+              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* Expense Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-medium text-gray-900 mb-1 truncate">
+                    {expense.description}
+                  </h3>
+                  <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                    {expense.category}
+                  </span>
+                  {expense.notes && (
+                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">{expense.notes}</p>
+                  )}
                 </div>
-                <div style={styles.expenseDetails}>
-                  <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
-                  <div style={styles.date}>{formatDate(expense.date)}</div>
+
+                {/* Amount and Date */}
+                <div className="flex sm:flex-col items-baseline sm:items-end gap-2 sm:gap-1">
+                  <div className="text-xl sm:text-2xl font-semibold text-red-600">
+                    ${expense.amount.toFixed(2)}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-500">{formatDate(expense.date)}</div>
                 </div>
               </div>
-              <div style={styles.actions}>
-                <button onClick={() => onEdit(expense)} style={styles.editButton}>
+
+              {/* Actions - Full width on mobile, auto on desktop */}
+              <div className="flex gap-2 sm:flex-shrink-0">
+                <button
+                  onClick={() => onEdit(expense)}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+                >
                   Edit
                 </button>
                 <button
                   onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
-                  style={styles.deleteButton}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors min-h-[44px]"
                 >
                   Delete
                 </button>
@@ -134,119 +160,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
       />
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '20px',
-  },
-  filters: {
-    display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap' as const,
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: '200px',
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-  },
-  noData: {
-    textAlign: 'center' as const,
-    padding: '40px',
-    color: '#666',
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-  },
-  expenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '15px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  expenseMain: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  expenseInfo: {
-    flex: 1,
-  },
-  description: {
-    margin: '0 0 5px 0',
-    fontSize: '16px',
-    fontWeight: '500' as const,
-    color: '#333',
-  },
-  category: {
-    display: 'inline-block',
-    padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: '500' as const,
-  },
-  notes: {
-    margin: '8px 0 0 0',
-    fontSize: '14px',
-    color: '#666',
-  },
-  expenseDetails: {
-    textAlign: 'right' as const,
-  },
-  amount: {
-    fontSize: '20px',
-    fontWeight: '600' as const,
-    color: '#f44336',
-    marginBottom: '4px',
-  },
-  date: {
-    fontSize: '12px',
-    color: '#999',
-  },
-  actions: {
-    display: 'flex',
-    gap: '8px',
-  },
-  editButton: {
-    padding: '8px 16px',
-    backgroundColor: '#2196f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  deleteButton: {
-    padding: '8px 16px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
 };
 
 export default ExpenseList;

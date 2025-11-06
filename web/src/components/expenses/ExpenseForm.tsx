@@ -47,9 +47,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Description *</label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* Description */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Description *</label>
         <input
           type="text"
           name="description"
@@ -58,13 +59,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onFocus={(e) => e.target.select()}
           placeholder="e.g., Grocery shopping"
           required
-          style={styles.input}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
-      <div style={styles.row}>
-        <div style={{ ...styles.formGroup, flex: 1 }}>
-          <label style={styles.label}>Amount ($) *</label>
+      {/* Amount and Category - Stack on mobile, side-by-side on desktop */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Amount ($) *</label>
           <input
             type="number"
             name="amount"
@@ -75,18 +77,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             step="0.01"
             min="0.01"
             required
-            style={styles.input}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
 
-        <div style={{ ...styles.formGroup, flex: 1 }}>
-          <label style={styles.label}>Category *</label>
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Category *</label>
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
             required
-            style={styles.select}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
@@ -98,8 +100,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
       </div>
 
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Date *</label>
+      {/* Date */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Date *</label>
         <input
           type="date"
           name="date"
@@ -107,102 +110,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onChange={handleChange}
           required
           max={new Date().toISOString().split('T')[0]}
-          style={styles.input}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Notes (Optional)</label>
+      {/* Notes */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Notes (Optional)</label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
           placeholder="Additional notes..."
           rows={3}
-          style={styles.textarea}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm resize-vertical focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
-      <div style={styles.buttonGroup}>
-        <button type="submit" style={styles.submitButton}>
+      {/* Buttons */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2">
+        <button
+          type="submit"
+          className="flex-1 sm:flex-none px-6 py-3 bg-indigo-600 text-white rounded-md text-base font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+        >
           {initialData ? 'Update Expense' : 'Add Expense'}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-3 bg-gray-600 text-white rounded-md text-base font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+          >
             Cancel
           </button>
         )}
       </div>
     </form>
   );
-};
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '5px',
-  },
-  row: {
-    display: 'flex',
-    gap: '15px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: '#333',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-  },
-  textarea: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    resize: 'vertical' as const,
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '10px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '12px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    padding: '12px 24px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
 };
 
 export default ExpenseForm;

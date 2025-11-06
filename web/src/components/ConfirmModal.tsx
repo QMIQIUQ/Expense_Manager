@@ -29,17 +29,37 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   };
 
   return (
-    <div style={styles.overlay} onClick={onCancel}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={styles.title}>{title}</h3>
-        <p style={styles.message}>{message}</p>
-        <div style={styles.actions}>
-          <button onClick={onCancel} style={styles.cancelButton}>
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4" 
+      onClick={onCancel}
+    >
+      <div 
+        className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl" 
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <h3 id="modal-title" className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
+          {title}
+        </h3>
+        <p className="text-sm text-gray-600 leading-relaxed mb-5">
+          {message}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+          <button 
+            onClick={onCancel}
+            className="px-5 py-2.5 bg-gray-600 text-white rounded-md text-sm font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+          >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            style={danger ? { ...styles.confirmButton, ...styles.dangerButton } : styles.confirmButton}
+            className={`px-5 py-2.5 text-white rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors min-h-[44px] ${
+              danger
+                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+            }`}
           >
             {confirmText}
           </button>
@@ -47,69 +67,6 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </div>
     </div>
   );
-};
-
-const styles = {
-  overlay: {
-    position: 'fixed' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9998,
-  },
-  modal: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '24px',
-    maxWidth: '400px',
-    width: '90%',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-  },
-  title: {
-    margin: '0 0 12px 0',
-    fontSize: '20px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  message: {
-    margin: '0 0 20px 0',
-    fontSize: '14px',
-    color: '#666',
-    lineHeight: '1.5',
-  },
-  actions: {
-    display: 'flex',
-    gap: '10px',
-    justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  confirmButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  dangerButton: {
-    backgroundColor: '#f44336',
-  },
 };
 
 export default ConfirmModal;
