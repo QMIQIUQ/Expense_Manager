@@ -29,7 +29,9 @@ class AdminService {
     try {
       const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
       if (userDoc.exists()) {
-        return userDoc.data().isAdmin === true;
+          const data = userDoc.data();
+          // Support both `isAdmin` and legacy `adminStatus` field names
+          return data.isAdmin === true || data.adminStatus === true;
       }
       return false;
     } catch (error) {
@@ -67,7 +69,9 @@ class AdminService {
         email,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        isAdmin,
+          // write both fields to be compatible with older entries
+          isAdmin,
+          adminStatus: isAdmin,
         isActive: true,
       });
     } catch (error) {
@@ -148,7 +152,7 @@ class AdminService {
           displayName: data.displayName,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
-          isAdmin: data.isAdmin || false,
+            isAdmin: data.isAdmin || data.adminStatus || false,
           isActive: data.isActive !== false,
         };
       }

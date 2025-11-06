@@ -21,10 +21,14 @@ service cloud.firestore {
     
     // Users collection - for admin management
     match /users/{userId} {
-      // Users can read their own document
+      // Users can read their own document; admins can read any
       allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      // Only admins can create/update/delete user documents
-      allow create, update, delete: if isAdmin();
+      // Allow users to create their own metadata on first login
+      allow create: if isAuthenticated() && isOwner(userId);
+      // Allow users to update their own metadata; admins can update any
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      // Only admins can delete user documents
+      allow delete: if isAdmin();
     }
     
     // Categories collection
