@@ -8,12 +8,14 @@ import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
 import { recurringExpenseService } from '../services/recurringExpenseService';
+import { adminService } from '../services/adminService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
 import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
+import AdminTab from './tabs/AdminTab';
 import { exportToCSV } from '../utils/exportUtils';
 import InlineLoading from '../components/InlineLoading';
 
@@ -23,19 +25,24 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
 
     try {
       await categoryService.initializeDefaults(currentUser.uid);
+      
+      // Check if user is admin
+      const adminStatus = await adminService.isAdmin(currentUser.uid);
+      setIsAdmin(adminStatus);
       
       const [expensesData, categoriesData, budgetsData, recurringData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
@@ -514,6 +521,14 @@ const Dashboard: React.FC = () => {
         >
           Recurring
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            style={activeTab === 'admin' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          >
+            👑 Admin
+          </button>
+        )}
       </div>
 
       <div style={styles.content}>
@@ -583,6 +598,10 @@ const Dashboard: React.FC = () => {
               onToggleActive={handleToggleRecurring}
             />
           </div>
+        )}
+
+        {activeTab === 'admin' && isAdmin && (
+          <AdminTab />
         )}
       </div>
     </div>

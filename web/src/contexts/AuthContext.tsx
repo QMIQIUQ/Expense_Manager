@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   signInWithPopup,
 } from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../config/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -36,12 +37,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const ensureUserMetadata = async (user: User) => {
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        // Create user metadata document
+        await setDoc(userDocRef, {
+          email: user.email,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          isAdmin: false,
+          isActive: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error ensuring user metadata:', error);
+    }
+  };
+
   const signup = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await ensureUserMetadata(result.user);
   };
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await ensureUserMetadata(result.user);
   };
 
   const logout = async () => {
@@ -49,11 +72,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    await ensureUserMetadata(result.user);
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await ensureUserMetadata(user);
+      }
       setCurrentUser(user);
       setLoading(false);
     });
