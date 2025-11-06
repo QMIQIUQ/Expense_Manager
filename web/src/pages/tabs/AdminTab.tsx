@@ -16,8 +16,14 @@ const AdminTab: React.FC = () => {
   
   // Form state
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newIsAdmin, setNewIsAdmin] = useState(false);
+  
+  // User management modals
+  const [editingUser, setEditingUser] = useState<UserMetadata | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -39,37 +45,44 @@ const AdminTab: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newEmail) {
-      showNotification('error', 'Email is required');
+    if (!newEmail || !newPassword) {
+      showNotification('error', 'Email and password are required');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showNotification('error', 'Password must be at least 6 characters');
       return;
     }
 
     try {
       setCreating(true);
       
-      showNotification('info', 'Creating user metadata...');
+      showNotification('info', 'Creating user account...');
       
-      // Create metadata only - Firebase Auth account must be created separately
-      // Using a temporary ID - this will need to be matched with Firebase Auth UID
-      const userId = `user-${Date.now()}`; // Temporary ID until Firebase Auth account is created
-      await adminService.createUserMetadata(userId, newEmail, newIsAdmin);
+      // Create Firebase Auth account AND metadata
+      await adminService.createUser(newEmail, newPassword, newIsAdmin);
+      
+      // After creating user, we need to re-authenticate as admin
+      // The admin will automatically be logged back in through onAuthStateChanged
       
       showNotification(
         'success', 
-        `User metadata created for ${newEmail}. Remember to create Firebase Auth account in Firebase Console!`
+        `User account created successfully for ${newEmail}!`
       );
       
       // Reset form
       setNewEmail('');
+      setNewPassword('');
       setNewDisplayName('');
       setNewIsAdmin(false);
       setShowCreateForm(false);
       
-      // Reload users
+      // Reload users - the auth state has been handled by adminService
       await loadUsers();
     } catch (error) {
       console.error('Error creating user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create user metadata';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
       showNotification('error', errorMessage);
     } finally {
       setCreating(false);
@@ -130,6 +143,16 @@ const AdminTab: React.FC = () => {
     }
   };
 
+  const handleChangePasswordClick = (user: UserMetadata) => {
+    setEditingUser(user);
+    setShowPasswordModal(true);
+  };
+
+  const handleChangeEmailClick = (user: UserMetadata) => {
+    setEditingUser(user);
+    setShowEmailModal(true);
+  };
+
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
@@ -153,28 +176,19 @@ const AdminTab: React.FC = () => {
 
       {showCreateForm && (
         <div style={styles.createForm}>
-          <h3 style={styles.formTitle}>Create New User Metadata</h3>
+          <h3 style={styles.formTitle}>Create New User Account</h3>
           <div style={styles.notice}>
-            <p style={styles.noticeTitle}>⚠️ Important Limitations</p>
+            <p style={styles.noticeTitle}>✨ Direct User Creation</p>
             <p style={styles.noticeText}>
-              This form creates user metadata only. Firebase Authentication accounts must be created separately.
+              This form creates a complete Firebase Authentication account with user metadata.
             </p>
             <p style={styles.noticeText}>
-              <strong>Recommended workflow:</strong>
-            </p>
-            <ol style={styles.noticeList}>
-              <li>Create user metadata here</li>
-              <li>Go to Firebase Console → Authentication → Users</li>
-              <li>Click "Add User" and use the same email</li>
-              <li>Share login credentials with the user</li>
-            </ol>
-            <p style={styles.noticeText}>
-              See <code>ADMIN_SETUP.md</code> for detailed instructions.
+              <strong>Note:</strong> After creating the user, you will remain logged in as admin.
             </p>
           </div>
           <form onSubmit={handleCreateUser}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Email</label>
+              <label style={styles.label}>Email *</label>
               <input
                 type="email"
                 value={newEmail}
@@ -184,6 +198,20 @@ const AdminTab: React.FC = () => {
                 style={styles.input}
                 placeholder="user@example.com"
               />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Password *</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                required
+                minLength={6}
+                style={styles.input}
+                placeholder="Minimum 6 characters"
+              />
+              <small style={styles.helpText}>Password must be at least 6 characters long</small>
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Display Name (optional)</label>
@@ -212,7 +240,7 @@ const AdminTab: React.FC = () => {
               disabled={creating}
               style={styles.submitButton}
             >
-              {creating ? 'Creating Metadata...' : 'Create User Metadata'}
+              {creating ? 'Creating User...' : 'Create User Account'}
             </button>
           </form>
         </div>
@@ -223,7 +251,7 @@ const AdminTab: React.FC = () => {
           <div style={{ flex: 2 }}>Email</div>
           <div style={{ flex: 1 }}>Status</div>
           <div style={{ flex: 1 }}>Role</div>
-          <div style={{ flex: 1 }}>Actions</div>
+          <div style={{ flex: 2 }}>Actions</div>
         </div>
         {users.map(user => (
           <div key={user.id} style={styles.userRow}>
@@ -243,7 +271,7 @@ const AdminTab: React.FC = () => {
                 {user.isAdmin ? '👑 Admin' : '👤 User'}
               </span>
             </div>
-            <div style={{ flex: 1, ...styles.actions }}>
+            <div style={{ flex: 2, ...styles.actions }}>
               <button
                 onClick={() => handleToggleActive(user)}
                 disabled={user.id === currentUser?.uid}
@@ -259,6 +287,20 @@ const AdminTab: React.FC = () => {
                 title={user.isAdmin ? 'Remove admin' : 'Make admin'}
               >
                 {user.isAdmin ? '👤' : '👑'}
+              </button>
+              <button
+                onClick={() => handleChangePasswordClick(user)}
+                style={styles.actionButton}
+                title="Change password"
+              >
+                🔑
+              </button>
+              <button
+                onClick={() => handleChangeEmailClick(user)}
+                style={styles.actionButton}
+                title="Change email"
+              >
+                ✉️
               </button>
               <button
                 onClick={() => setConfirmDelete(user.id)}
@@ -287,6 +329,80 @@ const AdminTab: React.FC = () => {
         onCancel={() => setConfirmDelete(null)}
         danger={true}
       />
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Change Password - {editingUser?.email}</h3>
+            <div style={styles.modalNotice}>
+              <p style={styles.noticeTitle}>⚠️ Limitation</p>
+              <p style={styles.noticeText}>
+                Changing passwords for other users requires Firebase Admin SDK access.
+                This feature is not available in the web interface.
+              </p>
+              <p style={styles.noticeText}>
+                <strong>To reset a user's password:</strong>
+              </p>
+              <ol style={styles.noticeList}>
+                <li>Go to Firebase Console</li>
+                <li>Navigate to Authentication → Users</li>
+                <li>Find and select the user</li>
+                <li>Click "Reset password"</li>
+                <li>Send the password reset email to the user</li>
+              </ol>
+            </div>
+            <div style={styles.modalActions}>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setEditingUser(null);
+                }}
+                style={styles.cancelButton}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Change Modal */}
+      {showEmailModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Change Email - {editingUser?.email}</h3>
+            <div style={styles.modalNotice}>
+              <p style={styles.noticeTitle}>⚠️ Limitation</p>
+              <p style={styles.noticeText}>
+                Changing email addresses for other users requires Firebase Admin SDK access.
+                This feature is not available in the web interface.
+              </p>
+              <p style={styles.noticeText}>
+                <strong>To change a user's email:</strong>
+              </p>
+              <ol style={styles.noticeList}>
+                <li>Go to Firebase Console</li>
+                <li>Navigate to Authentication → Users</li>
+                <li>Find and select the user</li>
+                <li>Click the edit icon next to their email</li>
+                <li>Enter the new email address</li>
+              </ol>
+            </div>
+            <div style={styles.modalActions}>
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEditingUser(null);
+                }}
+                style={styles.cancelButton}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -495,6 +611,60 @@ const styles = {
     padding: '40px',
     textAlign: 'center' as const,
     color: '#999',
+  },
+  helpText: {
+    display: 'block',
+    marginTop: '4px',
+    fontSize: '12px',
+    color: '#666',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '24px',
+    maxWidth: '500px',
+    width: '90%',
+    maxHeight: '80vh',
+    overflow: 'auto',
+  },
+  modalTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '18px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  modalNotice: {
+    backgroundColor: '#fff3cd',
+    border: '1px solid #ffeaa7',
+    borderRadius: '4px',
+    padding: '15px',
+    marginBottom: '16px',
+    color: '#856404',
+  },
+  modalActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '8px',
+  },
+  cancelButton: {
+    padding: '8px 16px',
+    backgroundColor: '#f0f0f0',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
   },
 };
 

@@ -16,6 +16,7 @@ import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import AdminTab from './tabs/AdminTab';
+import UserProfile from './UserProfile';
 import { exportToCSV } from '../utils/exportUtils';
 import InlineLoading from '../components/InlineLoading';
 
@@ -25,7 +26,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'profile' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -522,6 +523,12 @@ const Dashboard: React.FC = () => {
         >
           Recurring
         </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          style={activeTab === 'profile' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+        >
+          👤 Profile
+        </button>
         {isAdmin && (
           <button
             onClick={() => setActiveTab('admin')}
@@ -599,6 +606,10 @@ const Dashboard: React.FC = () => {
               onToggleActive={handleToggleRecurring}
             />
           </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <UserProfile />
         )}
 
         {activeTab === 'admin' && isAdmin && (

@@ -6,9 +6,14 @@ import {
   signOut,
   onAuthStateChanged,
   signInWithPopup,
+  updatePassword,
+  updateEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
+import { COLLECTIONS } from '../constants/collections';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -17,6 +22,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  changeEmail: (currentPassword: string, newEmail: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const ensureUserMetadata = async (user: User) => {
     try {
-      const userDocRef = doc(db, 'users', user.uid);
+      const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
       const userDoc = await getDoc(userDocRef);
       
       if (!userDoc.exists()) {
@@ -76,6 +83,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await ensureUserMetadata(result.user);
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!currentUser || !currentUser.email) {
+      throw new Error('No user is currently logged in');
+    }
+
+    // Re-authenticate user before password change
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Update password
+    await updatePassword(currentUser, newPassword);
+  };
+
+  const changeEmail = async (currentPassword: string, newEmail: string) => {
+    if (!currentUser || !currentUser.email) {
+      throw new Error('No user is currently logged in');
+    }
+
+    // Re-authenticate user before email change
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Update email in Firebase Auth
+    await updateEmail(currentUser, newEmail);
+
+    // Update email in Firestore metadata
+    const userDocRef = doc(db, COLLECTIONS.USERS, currentUser.uid);
+    await updateDoc(userDocRef, {
+      email: newEmail,
+      updatedAt: Timestamp.now(),
+    });
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -95,6 +135,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     loginWithGoogle,
+    changePassword,
+    changeEmail,
   };
 
   return (
