@@ -17,7 +17,8 @@ import RecurringExpenseManager from '../components/recurring/RecurringExpenseMan
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
-import { exportToCSV } from '../utils/exportUtils';
+import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
+import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 
 const Dashboard: React.FC = () => {
@@ -34,6 +35,7 @@ const Dashboard: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -446,11 +448,19 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  // Export handler
-  const handleExport = () => {
-    const now = new Date();
-    const filename = `expenses_${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}.csv`;
-    exportToCSV(expenses, filename);
+  // Export handlers
+  const handleExportExcel = () => {
+    exportToExcel(expenses, categories);
+  };
+
+  const handleDownloadTemplate = () => {
+    downloadExpenseTemplate();
+  };
+
+  const handleImportComplete = () => {
+    // Reload data after import
+    loadData();
+    showNotification('success', 'Import completed successfully!');
   };
 
   // Calculate spending by category
@@ -482,8 +492,14 @@ const Dashboard: React.FC = () => {
           <p style={styles.subtitle}>Welcome, {currentUser?.email}</p>
         </div>
         <div style={styles.headerActions}>
-          <button onClick={handleExport} style={styles.exportButton}>
-            📊 Export CSV
+          <button onClick={handleDownloadTemplate} style={styles.templateButton}>
+            📥 Template
+          </button>
+          <button onClick={handleExportExcel} style={styles.exportButton}>
+            📊 Export Excel
+          </button>
+          <button onClick={() => setShowImportModal(true)} style={styles.importButton}>
+            📤 Import
           </button>
           <button onClick={handleLogout} style={styles.logoutButton}>
             Logout
@@ -615,6 +631,17 @@ const Dashboard: React.FC = () => {
           <AdminTab />
         )}
       </div>
+
+      {/* Import/Export Modal */}
+      {currentUser && (
+        <ImportExportModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          userId={currentUser.uid}
+          existingCategories={categories}
+          onImportComplete={handleImportComplete}
+        />
+      )}
     </div>
   );
 };
@@ -652,9 +679,29 @@ const styles = {
     display: 'flex',
     gap: '10px',
   },
+  templateButton: {
+    padding: '10px 20px',
+    backgroundColor: '#9C27B0',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
   exportButton: {
     padding: '10px 20px',
     backgroundColor: '#4caf50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+  },
+  importButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4ECDC4',
     color: 'white',
     border: 'none',
     borderRadius: '4px',

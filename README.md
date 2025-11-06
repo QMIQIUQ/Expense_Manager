@@ -102,7 +102,7 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - ✅ Budget tracking with visual progress indicators
 - ✅ Dashboard analytics with summary cards
 - ✅ Recurring expense management
-- ✅ CSV export functionality
+- ✅ Excel/CSV import/export functionality
 - ✅ Multi-device sync via Firebase
 - ✅ User authentication (Email/Password, Google)
 
@@ -114,11 +114,13 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 
 **[See ARCHITECTURE.md for system architecture →](ARCHITECTURE.md)**
 
+**[See IMPORT_EXPORT_GUIDE.md for import/export feature guide →](IMPORT_EXPORT_GUIDE.md)**
+
 ## 🚧 Future Enhancements
 
 - [x] Backend API integration for cloud sync ✅
 - [x] User authentication and accounts ✅
-- [x] Export to CSV ✅
+- [x] Import/Export to Excel/CSV ✅
 - [x] Budget setting and alerts ✅
 - [x] Recurring expense tracking ✅
 - [ ] Data visualization with charts (partially complete)
