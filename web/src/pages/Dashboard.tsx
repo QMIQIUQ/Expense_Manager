@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setInitialLoading(false);
     }
-  }, [currentUser, showNotification]);
+  }, [currentUser, showNotification, t]);
 
   useEffect(() => {
     if (currentUser) {
