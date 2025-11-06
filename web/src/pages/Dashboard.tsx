@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -33,13 +33,11 @@ const Dashboard: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showImportExportMenu, setShowImportExportMenu] = useState(false);
-  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -76,28 +74,17 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser, loadData]);
 
-  // Detect screen size for responsive button text
+  // Click outside to close actions menu
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container')) {
-        setShowUserMenu(false);
-        setShowImportExportMenu(false);
+    function onDocClick(e: MouseEvent) {
+      if (!showActionsMenu) return;
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showActionsMenu]);
 
   const handleLogout = async () => {
     try {
@@ -141,38 +128,7 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  const handleUpdateExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!editingExpense?.id) return;
-    
-    const expenseId = editingExpense.id;
-    const originalExpense = expenses.find((e) => e.id === expenseId);
-    
-    // Optimistic update
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === expenseId ? { ...e, ...expenseData } : e))
-    );
-    setEditingExpense(null);
 
-    await optimisticCRUD.run(
-      { type: 'update', data: expenseData, originalData: originalExpense },
-      () => expenseService.update(expenseId, expenseData),
-      {
-        entityType: 'expense',
-        retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
-        },
-        onError: () => {
-          // Rollback optimistic update
-          if (originalExpense) {
-            setExpenses((prev) =>
-              prev.map((e) => (e.id === expenseId ? originalExpense : e))
-            );
-          }
-        },
-      }
-    );
-  };
 
   const handleDeleteExpense = async (id: string) => {
     const expenseToDelete = expenses.find((e) => e.id === id);
@@ -193,6 +149,31 @@ const Dashboard: React.FC = () => {
           // Rollback optimistic update
           if (expenseToDelete) {
             setExpenses((prev) => [expenseToDelete, ...prev]);
+          }
+        },
+      }
+    );
+  };
+
+  // Inline update by id (used by ExpenseList inline editing)
+  const handleInlineUpdateExpense = async (id: string, updates: Partial<Expense>) => {
+    const originalExpense = expenses.find((e) => e.id === id);
+
+    // Optimistic update
+    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalExpense },
+      () => expenseService.update(id, updates),
+      {
+        entityType: 'expense',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalExpense) {
+            setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
           }
         },
       }
@@ -504,142 +485,131 @@ const Dashboard: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div style={styles.loading}>
+      <div className="flex justify-center items-center min-h-screen">
         <InlineLoading size={24} />
-        <p style={styles.loadingText}>Loading...</p>
+        <p className="ml-3 text-lg text-gray-600">Loading...</p>
       </div>
     );
   }
 
   return (
     <>
-      <style>{`
-        .dropdown-item-hover:hover {
-          background-color: #f5f5f5 !important;
-        }
-        .floating-btn-hover:hover {
-          transform: scale(1.05);
-          box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5) !important;
-        }
-        .dropdown-btn-hover:hover {
-          background-color: #5558e3 !important;
-        }
-      `}</style>
-      <div style={styles.container}>
-      <div style={styles.header}>
+    <div className="max-w-7xl mx-auto min-h-screen">
+      <div className="dashboard-card dashboard-header relative mb-8">
         <div>
-          <h1 style={styles.title}>💰 Expense Manager</h1>
-          <p style={styles.subtitle}>Welcome, {currentUser?.email}</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">💰 Expense Manager</h1>
+          <p className="text-sm text-gray-600">Welcome, {currentUser?.email}</p>
         </div>
-        <div style={styles.headerActions}>
-          {/* Import/Export Dropdown */}
-          <div className="dropdown-container" style={styles.dropdownContainer}>
-            <button 
-              onClick={() => {
-                setShowImportExportMenu(!showImportExportMenu);
-                setShowUserMenu(false);
-              }} 
-              style={styles.dropdownButton}
-              className="dropdown-btn-hover"
-            >
-              📁 Import/Export ▾
-            </button>
-            {showImportExportMenu && (
-              <div style={styles.dropdownMenu}>
-                <button onClick={() => {
-                  handleDownloadTemplate();
-                  setShowImportExportMenu(false);
-                }} style={styles.dropdownItem} className="dropdown-item-hover">
-                  📥 Download Template
-                </button>
-                <button onClick={() => {
-                  setShowImportModal(true);
-                  setShowImportExportMenu(false);
-                }} style={styles.dropdownItem} className="dropdown-item-hover">
-                  📤 Import Data
-                </button>
-                <button onClick={() => {
-                  handleExportExcel();
-                  setShowImportExportMenu(false);
-                }} style={styles.dropdownItem} className="dropdown-item-hover">
-                  📊 Export to Excel
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Compact actions toggle for small screens */}
+        <div ref={actionsRef} className="flex items-center gap-2">
+          <button
+            className="actions-toggle"
+            aria-label="Open actions"
+            onClick={() => setShowActionsMenu((s) => !s)}
+          >
+            {/* hamburger icon */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="6" width="18" height="2" rx="1" fill="#444" />
+              <rect x="3" y="11" width="18" height="2" rx="1" fill="#444" />
+              <rect x="3" y="16" width="18" height="2" rx="1" fill="#444" />
+            </svg>
+          </button>
+          {showActionsMenu && (
+            <div className="action-dropdown" role="menu">
+              <button onClick={() => { handleDownloadTemplate(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📥 Template
+              </button>
+              <button onClick={() => { handleExportExcel(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📊 Export Excel
+              </button>
+              <button onClick={() => { setShowImportModal(true); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
+                📤 Import
+              </button>
+              <button onClick={() => { handleLogout(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-sm font-medium text-left transition-colors">
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
 
-          {/* User Menu Dropdown */}
-          <div className="dropdown-container" style={styles.dropdownContainer}>
-            <button 
-              onClick={() => {
-                setShowUserMenu(!showUserMenu);
-                setShowImportExportMenu(false);
-              }} 
-              style={styles.dropdownButton}
-              className="dropdown-btn-hover"
-            >
-              👤 Menu ▾
-            </button>
-            {showUserMenu && (
-              <div style={styles.dropdownMenu}>
-                <button onClick={() => {
-                  setActiveTab('profile');
-                  setShowUserMenu(false);
-                }} style={styles.dropdownItem} className="dropdown-item-hover">
-                  👤 Profile
-                </button>
-                {isAdmin && (
-                  <button onClick={() => {
-                    setActiveTab('admin');
-                    setShowUserMenu(false);
-                  }} style={styles.dropdownItem} className="dropdown-item-hover">
-                    👑 Admin
-                  </button>
-                )}
-                <div style={styles.dropdownDivider} />
-                <button onClick={handleLogout} style={{...styles.dropdownItem, color: '#f44336'}} className="dropdown-item-hover">
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="header-actions">
+          <button onClick={handleDownloadTemplate} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors">
+            📥 Template
+          </button>
+          <button onClick={handleExportExcel} className="px-5 py-2.5 bg-success hover:bg-green-600 text-white rounded font-medium text-sm transition-colors">
+            📊 Export Excel
+          </button>
+          <button onClick={() => setShowImportModal(true)} className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded font-medium text-sm transition-colors">
+            📤 Import
+          </button>
+          <button onClick={handleLogout} className="px-5 py-2.5 bg-danger hover:bg-red-600 text-white rounded font-medium text-sm transition-colors">
+            Logout
+          </button>
         </div>
       </div>
 
-      <div style={styles.tabs}>
+      <div className="dashboard-card dashboard-tabs">
         <button
           onClick={() => setActiveTab('dashboard')}
-          style={activeTab === 'dashboard' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Dashboard
         </button>
         <button
           onClick={() => setActiveTab('expenses')}
-          style={activeTab === 'expenses' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'expenses' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Expenses
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          style={activeTab === 'categories' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Categories
         </button>
         <button
           onClick={() => setActiveTab('budgets')}
-          style={activeTab === 'budgets' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'budgets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Budgets
         </button>
         <button
           onClick={() => setActiveTab('recurring')}
-          style={activeTab === 'recurring' ? { ...styles.tab, ...styles.activeTab } : styles.tab}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
         >
           Recurring
         </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'profile' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          👤 Profile
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+              activeTab === 'admin' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            👑 Admin
+          </button>
+        )}
       </div>
 
-      <div style={styles.content}>
+      <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div>
             <DashboardSummary expenses={expenses} />
@@ -647,32 +617,19 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'expenses' && (
-          <div style={styles.expensesTab}>
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>
-                {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-              </h2>
-              <ExpenseForm
-                onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense}
-                onCancel={editingExpense ? () => setEditingExpense(null) : undefined}
-                initialData={editingExpense || undefined}
-                categories={categories}
-              />
-            </div>
-
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Expense History</h2>
-              <ExpenseList
-                expenses={expenses}
-                onEdit={setEditingExpense}
-                onDelete={handleDeleteExpense}
-              />
-            </div>
+          <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold text-gray-800">Expense History</h2>
+            <ExpenseList
+              expenses={expenses}
+              categories={categories}
+              onDelete={handleDeleteExpense}
+              onInlineUpdate={handleInlineUpdateExpense}
+            />
           </div>
         )}
 
         {activeTab === 'categories' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <CategoryManager
               categories={categories}
               onAdd={handleAddCategory}
@@ -683,7 +640,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'budgets' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <BudgetManager
               budgets={budgets}
               categories={categories}
@@ -696,7 +653,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'recurring' && (
-          <div style={styles.section}>
+          <div className="flex flex-col gap-4">
             <RecurringExpenseManager
               recurringExpenses={recurringExpenses}
               categories={categories}
@@ -765,213 +722,59 @@ const Dashboard: React.FC = () => {
         />
       )}
     </div>
+      {/* Floating Add button visible on Expenses tab */}
+      {activeTab === 'expenses' && (
+        <button
+          aria-label="Add Expense"
+          onClick={() => setShowAddSheet(true)}
+          className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-primary hover:bg-indigo-700 text-white shadow-xl flex items-center justify-center transition-colors"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Bottom Sheet for adding expense */}
+      {activeTab === 'expenses' && showAddSheet && (
+        <div
+          className="fixed inset-0 z-[9998]"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowAddSheet(false)}
+          />
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="mx-auto w-full max-w-7xl">
+              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                  <button
+                    aria-label="Close"
+                    onClick={() => setShowAddSheet(false)}
+                    className="p-2 rounded-md hover:bg-gray-100"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                    </svg>
+                  </button>
+                </div>
+                <ExpenseForm
+                  onSubmit={(data) => { handleAddExpense(data); setShowAddSheet(false); }}
+                  onCancel={() => setShowAddSheet(false)}
+                  categories={categories}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
-};
-
-const styles = {
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  title: {
-    margin: '0 0 5px 0',
-    fontSize: '28px',
-    fontWeight: '700' as const,
-    color: '#333',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '14px',
-    color: '#666',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'center',
-  },
-  dropdownContainer: {
-    position: 'relative' as const,
-  },
-  dropdownButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-  },
-  dropdownMenu: {
-    position: 'absolute' as const,
-    top: '100%',
-    right: 0,
-    marginTop: '5px',
-    backgroundColor: 'white',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    minWidth: '180px',
-    zIndex: 1000,
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    width: '100%',
-    padding: '12px 16px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    textAlign: 'left' as const,
-    fontSize: '14px',
-    cursor: 'pointer',
-    color: '#333',
-    transition: 'background-color 0.2s',
-    display: 'block',
-  },
-  dropdownDivider: {
-    height: '1px',
-    backgroundColor: '#e0e0e0',
-    margin: '4px 0',
-  },
-  tabs: {
-    display: 'flex',
-    gap: '5px',
-    marginBottom: '20px',
-    backgroundColor: 'white',
-    padding: '10px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  tab: {
-    flex: 1,
-    padding: '12px 20px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-    color: '#666',
-    transition: 'all 0.2s',
-  },
-  activeTab: {
-    backgroundColor: '#6366f1',
-    color: 'white',
-  },
-  content: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '18px',
-    color: '#666',
-  },
-  loadingText: {
-    marginLeft: '12px',
-  },
-  expensesTab: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '30px',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  floatingButton: {
-    position: 'fixed' as const,
-    bottom: '24px',
-    right: '24px',
-    padding: '16px 24px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '50px',
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-    zIndex: 999,
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '56px',
-    minHeight: '56px',
-  },
-  modalOverlay: {
-    position: 'fixed' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1001,
-    padding: '20px',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '24px',
-    maxWidth: '600px',
-    width: '100%',
-    maxHeight: '90vh',
-    overflow: 'auto',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-  },
-  modalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  modalTitle: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  modalCloseButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#666',
-    padding: '4px 8px',
-    lineHeight: 1,
-  },
 };
 
 export default Dashboard;

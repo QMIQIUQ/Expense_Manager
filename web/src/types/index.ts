@@ -7,6 +7,8 @@ export interface Expense {
   amount: number;
   category: string;
   date: string;
+  // Optional time in HH:mm (24h) format, for finer granularity
+  time?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

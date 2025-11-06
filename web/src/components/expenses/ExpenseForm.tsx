@@ -19,11 +19,27 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     amount: initialData?.amount || 0,
     category: initialData?.category || '',
     date: initialData?.date || new Date().toISOString().split('T')[0],
+    time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
     notes: initialData?.notes || '',
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.description.trim()) newErrors.description = 'Please fill in this field.';
+    if (!formData.amount || formData.amount <= 0) newErrors.amount = 'Please fill in this field.';
+    if (!formData.category) newErrors.category = 'Please select a category.';
+    if (!formData.date) newErrors.date = 'Please select a date.';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    setErrors({});
     onSubmit(formData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     if (!initialData) {
       setFormData({
@@ -31,6 +47,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         amount: 0,
         category: '',
         date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5), // Reset to current time
         notes: '',
       });
     }
@@ -44,12 +61,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       ...prev,
       [name]: name === 'amount' ? parseFloat(value) || 0 : value,
     }));
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Description *</label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Description *</label>
         <input
           type="text"
           name="description"
@@ -57,14 +78,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder="e.g., Grocery shopping"
-          required
-          style={styles.input}
+          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+            errors.description ? 'border-red-500' : 'border-gray-300'
+          }`}
         />
+        {errors.description && <span className="text-xs text-red-600">{errors.description}</span>}
       </div>
 
-      <div style={styles.row}>
-        <div style={{ ...styles.formGroup, flex: 1 }}>
-          <label style={styles.label}>Amount ($) *</label>
+      <div className="flex gap-4">
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Amount ($) *</label>
           <input
             type="number"
             name="amount"
@@ -74,19 +97,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             placeholder="0.00"
             step="0.01"
             min="0.01"
-            required
-            style={styles.input}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.amount ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div style={{ ...styles.formGroup, flex: 1 }}>
-          <label style={styles.label}>Category *</label>
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Category *</label>
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
-            required
-            style={styles.select}
+            className={`px-3 py-2 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.category ? 'border-red-500' : 'border-gray-300'
+            }`}
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
@@ -95,114 +121,61 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               </option>
             ))}
           </select>
+          {errors.category && <span className="text-xs text-red-600">{errors.category}</span>}
         </div>
       </div>
 
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Date *</label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          required
-          max={new Date().toISOString().split('T')[0]}
-          style={styles.input}
-        />
+      <div className="flex gap-4">
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Date *</label>
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            max={new Date().toISOString().split('T')[0]}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.date ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
+        </div>
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm font-medium text-gray-700">Time</label>
+          <input
+            type="time"
+            name="time"
+            value={formData.time}
+            onChange={handleChange}
+            className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
       </div>
 
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Notes (Optional)</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Notes (Optional)</label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
           placeholder="Additional notes..."
           rows={3}
-          style={styles.textarea}
+          className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      <div style={styles.buttonGroup}>
-        <button type="submit" style={styles.submitButton}>
+      <div className="flex gap-3 mt-2">
+        <button type="submit" className="flex-1 px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-lg text-base font-medium transition-colors">
           {initialData ? 'Update Expense' : 'Add Expense'}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+          <button type="button" onClick={onCancel} className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-base font-medium transition-colors">
             Cancel
           </button>
         )}
       </div>
     </form>
   );
-};
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '5px',
-  },
-  row: {
-    display: 'flex',
-    gap: '15px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: '#333',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-  },
-  textarea: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    resize: 'vertical' as const,
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '10px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '12px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    padding: '12px 24px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
 };
 
 export default ExpenseForm;

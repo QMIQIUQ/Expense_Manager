@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Expense } from '../../types';
+import { Expense, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 
 interface ExpenseListProps {
   expenses: Expense[];
-  onEdit: (expense: Expense) => void;
+  categories: Category[];
   onDelete: (id: string) => void;
+  onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
+  onEdit?: (exp: Expense | null) => void;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
@@ -16,6 +18,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
     isOpen: false,
     expenseId: null,
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    description?: string;
+    amount?: string;
+    category?: string;
+    date?: string;
+    time?: string;
+    notes?: string;
+  }>({});
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -29,10 +40,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
     const sorted = [...filtered];
     switch (sortBy) {
       case 'date-desc':
-        sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        sorted.sort((a, b) => {
+          const dateA = new Date(`${a.date} ${(a as Expense & { time?: string }).time || '00:00'}`).getTime();
+          const dateB = new Date(`${b.date} ${(b as Expense & { time?: string }).time || '00:00'}`).getTime();
+          return dateB - dateA;
+        });
         break;
       case 'date-asc':
-        sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        sorted.sort((a, b) => {
+          const dateA = new Date(`${a.date} ${(a as Expense & { time?: string }).time || '00:00'}`).getTime();
+          const dateB = new Date(`${b.date} ${(b as Expense & { time?: string }).time || '00:00'}`).getTime();
+          return dateA - dateB;
+        });
         break;
       case 'amount-desc':
         sorted.sort((a, b) => b.amount - a.amount);
@@ -45,12 +64,48 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
     return sorted;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, time?: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return time ? `${base} ${time}` : base;
   };
 
-  const categories = Array.from(new Set(expenses.map((e) => e.category)));
+  // Use unique category names to avoid duplicate option keys
+  const categoryNames = Array.from(new Set(categories.map((c) => c.name))).filter((n) => n);
+
+  const startInlineEdit = (expense: Expense) => {
+    setEditingId(expense.id!);
+    setDraft({
+      description: expense.description,
+      amount: expense.amount.toString(),
+      category: expense.category,
+      date: expense.date,
+      time: (expense as Expense & { time?: string }).time || '',
+      notes: expense.notes || '',
+    });
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingId(null);
+    setDraft({});
+  };
+
+  const saveInlineEdit = (expense: Expense) => {
+    const updates: Partial<Expense> = {};
+    const parsedAmount = parseFloat(draft.amount || '0');
+    if (expense.description !== draft.description && draft.description) updates.description = draft.description;
+    if (!isNaN(parsedAmount) && expense.amount !== parsedAmount) updates.amount = parsedAmount;
+    if (expense.category !== draft.category && draft.category) updates.category = draft.category;
+    if (expense.date !== draft.date && draft.date) updates.date = draft.date;
+    const currentTime = (expense as Expense & { time?: string }).time || '';
+    if (currentTime !== (draft.time || '')) updates.time = draft.time || undefined;
+    if ((expense.notes || '') !== (draft.notes || '')) updates.notes = draft.notes || undefined;
+
+    if (Object.keys(updates).length > 0) {
+      onInlineUpdate(expense.id!, updates);
+    }
+    cancelInlineEdit();
+  };
 
   return (
     <div style={styles.container}>
@@ -69,7 +124,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
           style={styles.select}
         >
           <option value="">All Categories</option>
-          {categories.map((cat) => (
+          {categoryNames.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
             </option>
@@ -90,29 +145,103 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete })
       ) : (
         <div style={styles.list}>
           {filteredAndSortedExpenses().map((expense) => (
-            <div key={expense.id} style={styles.expenseCard}>
-              <div style={styles.expenseMain}>
-                <div style={styles.expenseInfo}>
-                  <h3 style={styles.description}>{expense.description}</h3>
-                  <span style={styles.category}>{expense.category}</span>
-                  {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
-                </div>
-                <div style={styles.expenseDetails}>
-                  <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
-                  <div style={styles.date}>{formatDate(expense.date)}</div>
-                </div>
+            <div key={expense.id} className="expense-card" style={styles.expenseCard}>
+              <div style={styles.dateRow}>
+                <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
+                <span style={styles.category}>{expense.category}</span>
               </div>
-              <div style={styles.actions}>
-                <button onClick={() => onEdit(expense)} style={styles.editButton}>
-                  Edit
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
-                  style={styles.deleteButton}
-                >
-                  Delete
-                </button>
-              </div>
+
+              {editingId === expense.id ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                    <input
+                      type="text"
+                      value={draft.description || ''}
+                      placeholder="Description"
+                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                      style={{ ...styles.input, flex: 2, minWidth: '180px' }}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={draft.amount || ''}
+                      placeholder="Amount"
+                      onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
+                      style={{ ...styles.input, width: '140px' }}
+                    />
+                    <select
+                      value={draft.category || ''}
+                      onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+                      style={{ ...styles.select, minWidth: '160px' }}
+                    >
+                      {categoryNames.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                    <input
+                      type="date"
+                      value={draft.date || ''}
+                      onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
+                      style={{ ...styles.input, width: '160px' }}
+                    />
+                    <input
+                      type="time"
+                      value={draft.time || ''}
+                      onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
+                      style={{ ...styles.input, width: '140px' }}
+                    />
+                    <input
+                      type="text"
+                      value={draft.notes || ''}
+                      placeholder="Notes (optional)"
+                      onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                      style={{ ...styles.input, flex: 1, minWidth: '200px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => saveInlineEdit(expense)} style={{ ...styles.iconButton, backgroundColor: 'rgba(33,150,83,0.08)' }} aria-label="Save">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
+                      </svg>
+                    </button>
+                    <button onClick={cancelInlineEdit} style={{ ...styles.iconButton, backgroundColor: 'rgba(158,158,158,0.12)' }} aria-label="Cancel">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={styles.mainRow}>
+                  <div style={styles.leftCol}>
+                    <h3 style={styles.description}>{expense.description}</h3>
+                    {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
+                  </div>
+                  <div style={styles.rightCol}>
+                    <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                    <div style={styles.actions}>
+                      <button onClick={() => startInlineEdit(expense)} style={styles.iconButton} aria-label="Edit">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
+                          <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
+                        style={{ ...styles.iconButton, backgroundColor: 'rgba(244,67,54,0.08)' }}
+                        aria-label="Delete"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
+                          <path d="M8 7V5h8v2h3v2H5V7h3z" fill="#f44336"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -162,6 +291,13 @@ const styles = {
     fontSize: '14px',
     backgroundColor: 'white',
   },
+  input: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+  },
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
@@ -176,19 +312,15 @@ const styles = {
     backgroundColor: 'white',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
-    padding: '15px',
+    padding: '12px 12px 14px',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
+    flexDirection: 'column' as const,
+    gap: '10px',
   },
-  expenseMain: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
+  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px' },
+  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' },
+  leftCol: { flex: 1, minWidth: 0 },
+  rightCol: { display: 'flex', alignItems: 'center', gap: '10px' },
   expenseInfo: {
     flex: 1,
   },
@@ -212,39 +344,22 @@ const styles = {
     fontSize: '14px',
     color: '#666',
   },
-  expenseDetails: {
-    textAlign: 'right' as const,
-  },
   amount: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600' as const,
     color: '#f44336',
     marginBottom: '4px',
   },
-  date: {
-    fontSize: '12px',
-    color: '#999',
-  },
-  actions: {
-    display: 'flex',
-    gap: '8px',
-  },
-  editButton: {
-    padding: '8px 16px',
-    backgroundColor: '#2196f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  deleteButton: {
-    padding: '8px 16px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
+  actions: { display: 'flex', gap: '6px' },
+  iconButton: {
+    width: '34px',
+    height: '34px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '6px',
+    border: '1px solid rgba(0,0,0,0.08)',
+    backgroundColor: 'rgba(25,118,210,0.08)',
     cursor: 'pointer',
   },
 };

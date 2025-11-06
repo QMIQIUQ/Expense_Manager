@@ -232,7 +232,9 @@ const styles = {
   iconButton: {
     padding: '10px',
     fontSize: '24px',
-    border: '2px solid #ddd',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#ddd',
     borderRadius: '4px',
     backgroundColor: 'white',
     cursor: 'pointer',

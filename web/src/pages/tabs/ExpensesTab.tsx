@@ -40,8 +40,10 @@ const ExpensesTab: React.FC<Props> = ({
         <h2 style={styles.sectionTitle}>Expense History</h2>
         <ExpenseList
           expenses={expenses}
+          categories={categories}
           onEdit={onEdit}
           onDelete={onDeleteExpense}
+          onInlineUpdate={() => {}}
         />
       </div>
     </div>
