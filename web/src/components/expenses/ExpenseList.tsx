@@ -7,6 +7,7 @@ interface ExpenseListProps {
   categories: Category[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
+  onEdit?: (exp: Expense | null) => void;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate }) => {
@@ -18,7 +19,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     expenseId: null,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Record<string, any>>({});
+  const [draft, setDraft] = useState<{
+    description?: string;
+    amount?: string;
+    category?: string;
+    date?: string;
+    time?: string;
+    notes?: string;
+  }>({});
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -33,15 +41,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     switch (sortBy) {
       case 'date-desc':
         sorted.sort((a, b) => {
-          const dateA = new Date(`${a.date} ${(a as any).time || '00:00'}`).getTime();
-          const dateB = new Date(`${b.date} ${(b as any).time || '00:00'}`).getTime();
+          const dateA = new Date(`${a.date} ${(a as Expense & { time?: string }).time || '00:00'}`).getTime();
+          const dateB = new Date(`${b.date} ${(b as Expense & { time?: string }).time || '00:00'}`).getTime();
           return dateB - dateA;
         });
         break;
       case 'date-asc':
         sorted.sort((a, b) => {
-          const dateA = new Date(`${a.date} ${(a as any).time || '00:00'}`).getTime();
-          const dateB = new Date(`${b.date} ${(b as any).time || '00:00'}`).getTime();
+          const dateA = new Date(`${a.date} ${(a as Expense & { time?: string }).time || '00:00'}`).getTime();
+          const dateB = new Date(`${b.date} ${(b as Expense & { time?: string }).time || '00:00'}`).getTime();
           return dateA - dateB;
         });
         break;
@@ -72,7 +80,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
       amount: expense.amount.toString(),
       category: expense.category,
       date: expense.date,
-      time: (expense as any).time || '',
+      time: (expense as Expense & { time?: string }).time || '',
       notes: expense.notes || '',
     });
   };
@@ -84,12 +92,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
 
   const saveInlineEdit = (expense: Expense) => {
     const updates: Partial<Expense> = {};
-    const parsedAmount = parseFloat(draft.amount);
-    if (expense.description !== draft.description) updates.description = draft.description;
+    const parsedAmount = parseFloat(draft.amount || '0');
+    if (expense.description !== draft.description && draft.description) updates.description = draft.description;
     if (!isNaN(parsedAmount) && expense.amount !== parsedAmount) updates.amount = parsedAmount;
-    if (expense.category !== draft.category) updates.category = draft.category;
-    if (expense.date !== draft.date) updates.date = draft.date;
-    const currentTime = (expense as any).time || '';
+    if (expense.category !== draft.category && draft.category) updates.category = draft.category;
+    if (expense.date !== draft.date && draft.date) updates.date = draft.date;
+    const currentTime = (expense as Expense & { time?: string }).time || '';
     if (currentTime !== (draft.time || '')) updates.time = draft.time || undefined;
     if ((expense.notes || '') !== (draft.notes || '')) updates.notes = draft.notes || undefined;
 
@@ -139,7 +147,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
           {filteredAndSortedExpenses().map((expense) => (
             <div key={expense.id} className="expense-card" style={styles.expenseCard}>
               <div style={styles.dateRow}>
-                <span>{formatDate(expense.date, (expense as any).time)}</span>
+                <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
                 <span style={styles.category}>{expense.category}</span>
               </div>
 

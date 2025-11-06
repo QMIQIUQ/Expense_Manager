@@ -129,38 +129,7 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  const handleUpdateExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!editingExpense?.id) return;
-    
-    const expenseId = editingExpense.id;
-    const originalExpense = expenses.find((e) => e.id === expenseId);
-    
-    // Optimistic update
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === expenseId ? { ...e, ...expenseData } : e))
-    );
-    setEditingExpense(null);
 
-    await optimisticCRUD.run(
-      { type: 'update', data: expenseData, originalData: originalExpense },
-      () => expenseService.update(expenseId, expenseData),
-      {
-        entityType: 'expense',
-        retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
-        },
-        onError: () => {
-          // Rollback optimistic update
-          if (originalExpense) {
-            setExpenses((prev) =>
-              prev.map((e) => (e.id === expenseId ? originalExpense : e))
-            );
-          }
-        },
-      }
-    );
-  };
 
   const handleDeleteExpense = async (id: string) => {
     const expenseToDelete = expenses.find((e) => e.id === id);
