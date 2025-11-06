@@ -58,20 +58,25 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Manage Categories</h3>
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h3 className="text-xl font-semibold text-gray-900">Manage Categories</h3>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+          >
             + Add Category
           </button>
         )}
       </div>
 
+      {/* Add/Edit Form */}
       {isAdding && (
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Category Name *</label>
+        <form onSubmit={handleSubmit} className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">Category Name *</label>
             <input
               type="text"
               value={formData.name}
@@ -79,23 +84,25 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               onFocus={(e) => e.target.select()}
               placeholder="e.g., Pets, Gifts"
               required
-              style={styles.input}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
-          <div style={styles.formRow}>
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Icon</label>
-              <div style={styles.iconGrid}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Icon Selector */}
+            <div className="flex-1 flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Icon</label>
+              <div className="grid grid-cols-6 gap-2">
                 {commonIcons.map((icon) => (
                   <button
                     key={icon}
                     type="button"
                     onClick={() => setFormData({ ...formData, icon })}
-                    style={{
-                      ...styles.iconButton,
-                      ...(formData.icon === icon ? styles.iconButtonActive : {}),
-                    }}
+                    className={`p-2 sm:p-3 text-xl sm:text-2xl border rounded-md transition-all hover:scale-110 min-h-[44px] ${
+                      formData.icon === icon
+                        ? 'bg-indigo-100 border-indigo-500 shadow-sm'
+                        : 'bg-white border-gray-300 hover:border-indigo-300'
+                    }`}
                   >
                     {icon}
                   </button>
@@ -103,46 +110,72 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               </div>
             </div>
 
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Color</label>
+            {/* Color Picker */}
+            <div className="flex-1 flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Color</label>
               <input
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                style={styles.colorInput}
+                className="w-full h-12 sm:h-24 border border-gray-300 rounded-md cursor-pointer"
               />
             </div>
           </div>
 
-          <div style={styles.formActions}>
-            <button type="submit" style={styles.submitButton}>
+          {/* Form Actions */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 px-5 py-2.5 bg-indigo-600 text-white rounded-md text-base font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+            >
               {editingId ? 'Update' : 'Add'} Category
             </button>
-            <button type="button" onClick={handleCancel} style={styles.cancelButton}>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-5 py-2.5 bg-gray-600 text-white rounded-md text-base font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+            >
               Cancel
             </button>
           </div>
         </form>
       )}
 
-      <div style={styles.categoryList}>
+      {/* Category List */}
+      <div className="space-y-2">
         {categories.map((category) => (
-          <div key={category.id} style={styles.categoryCard}>
-            <div style={styles.categoryInfo}>
-              <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
+          <div
+            key={category.id}
+            className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+          >
+            {/* Category Info */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span
+                className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full text-xl sm:text-2xl flex-shrink-0"
+                style={{ backgroundColor: category.color }}
+              >
                 {category.icon}
               </span>
-              <span style={styles.categoryName}>{category.name}</span>
-              {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
+              <span className="text-base font-medium text-gray-900 truncate">{category.name}</span>
+              {category.isDefault && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded flex-shrink-0">
+                  Default
+                </span>
+              )}
             </div>
-            <div style={styles.categoryActions}>
-              <button onClick={() => handleEdit(category)} style={styles.editBtn}>
+
+            {/* Actions */}
+            <div className="flex gap-2 sm:flex-shrink-0">
+              <button
+                onClick={() => handleEdit(category)}
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors min-h-[44px]"
+              >
                 Edit
               </button>
               {!category.isDefault && (
                 <button
                   onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
-                  style={styles.deleteBtn}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors min-h-[44px]"
                 >
                   Delete
                 </button>
@@ -170,6 +203,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   );
 };
 
+export default CategoryManager;
+/*
 const styles = {
   container: {
     display: 'flex',
@@ -336,5 +371,4 @@ const styles = {
     cursor: 'pointer',
   },
 };
-
-export default CategoryManager;
+*/
