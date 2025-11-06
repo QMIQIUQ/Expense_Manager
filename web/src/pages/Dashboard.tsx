@@ -688,27 +688,44 @@ const Dashboard: React.FC = () => {
         </button>
       )}
 
-      {/* Add Expense Modal */}
+      {/* Add Expense Bottom Sheet - for all tabs except expenses */}
       {showAddExpenseForm && activeTab !== 'expenses' && (
-        <div style={styles.modalOverlay} onClick={() => setShowAddExpenseForm(false)}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>Add New Expense</h2>
-              <button 
-                onClick={() => setShowAddExpenseForm(false)} 
-                style={styles.modalCloseButton}
-              >
-                ✕
-              </button>
+        <div
+          className="fixed inset-0 z-[9998]"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowAddExpenseForm(false)}
+          />
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="mx-auto w-full max-w-7xl">
+              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                  <button
+                    aria-label="Close"
+                    onClick={() => setShowAddExpenseForm(false)}
+                    className="p-2 rounded-md hover:bg-gray-100"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                    </svg>
+                  </button>
+                </div>
+                <ExpenseForm
+                  onSubmit={(data) => {
+                    handleAddExpense(data);
+                    setShowAddExpenseForm(false);
+                  }}
+                  onCancel={() => setShowAddExpenseForm(false)}
+                  categories={categories}
+                />
+              </div>
             </div>
-            <ExpenseForm
-              onSubmit={(data) => {
-                handleAddExpense(data);
-                setShowAddExpenseForm(false);
-              }}
-              onCancel={() => setShowAddExpenseForm(false)}
-              categories={categories}
-            />
           </div>
         </div>
       )}
@@ -795,57 +812,6 @@ const styles = {
     boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
     zIndex: 9999,
     transition: 'all 0.3s ease',
-  },
-  modalOverlay: {
-    position: 'fixed' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000,
-    padding: '20px',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    maxWidth: '600px',
-    width: '100%',
-    maxHeight: '90vh',
-    overflow: 'auto',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-  },
-  modalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  modalTitle: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  modalCloseButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '28px',
-    cursor: 'pointer',
-    color: '#666',
-    lineHeight: '1',
-    padding: '0',
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '4px',
-    transition: 'background-color 0.2s',
   },
 };
 
