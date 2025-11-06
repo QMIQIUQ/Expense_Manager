@@ -34,10 +34,12 @@ const Dashboard: React.FC = () => {
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
+  const isMobile = window.innerWidth <= 768;
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -775,6 +777,76 @@ const Dashboard: React.FC = () => {
       )}
     </>
   );
+};
+
+const styles = {
+  floatingButton: {
+    position: 'fixed' as const,
+    bottom: '24px',
+    right: '24px',
+    padding: '16px 24px',
+    backgroundColor: '#6366f1',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50px',
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+    zIndex: 9999,
+    transition: 'all 0.3s ease',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10000,
+    padding: '20px',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '24px',
+    maxWidth: '600px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  modalCloseButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '28px',
+    cursor: 'pointer',
+    color: '#666',
+    lineHeight: '1',
+    padding: '0',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '4px',
+    transition: 'background-color 0.2s',
+  },
 };
 
 export default Dashboard;
