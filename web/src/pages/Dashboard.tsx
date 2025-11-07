@@ -41,8 +41,12 @@ const Dashboard: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
+  const hamburgerRef = useRef<HTMLDivElement | null>(null);
+  const importExportRef = useRef<HTMLDivElement | null>(null);
   const isMobile = window.innerWidth <= 768;
 
   const loadData = React.useCallback(async () => {
@@ -104,19 +108,29 @@ const Dashboard: React.FC = () => {
     return () => document.removeEventListener('click', onDocClick);
   }, [showLanguageMenu]);
 
-  // Get language display name
-  const getLanguageLabel = (lang: string) => {
-    switch (lang) {
-      case 'en':
-        return 'English';
-      case 'zh':
-        return '繁體中文';
-      case 'zh-CN':
-        return '简体中文';
-      default:
-        return 'English';
+  // Click outside to close hamburger menu
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!showHamburgerMenu) return;
+      if (hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node)) {
+        setShowHamburgerMenu(false);
+      }
     }
-  };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showHamburgerMenu]);
+
+  // Click outside to close import/export dropdown
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!showImportExportDropdown) return;
+      if (importExportRef.current && !importExportRef.current.contains(e.target as Node)) {
+        setShowImportExportDropdown(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showImportExportDropdown]);
 
   const handleLogout = async () => {
     try {
@@ -558,155 +572,166 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-    <div className="max-w-7xl mx-auto min-h-screen">
+    <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-card dashboard-header relative mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">{t('appTitle')}</h1>
-          <p className="text-sm text-gray-600">{t('welcome')}, {currentUser?.email}</p>
-        </div>
-        {/* Compact actions toggle for small screens */}
-        <div ref={actionsRef} className="flex items-center gap-2">
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-              className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1"
-              aria-label="Select language"
-            >
-              🌐
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            {showLanguageMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                <button
-                  onClick={() => {
-                    setLanguage('en');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  onClick={() => {
-                    setLanguage('zh');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  繁中
-                </button>
-                <button
-                  onClick={() => {
-                    setLanguage('zh-CN');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  简中
-                </button>
-              </div>
-            )}
-          </div>
-          <button
-            className="actions-toggle"
-            aria-label="Open actions"
-            onClick={() => setShowActionsMenu((s) => !s)}
-          >
-            {/* hamburger icon */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="6" width="18" height="2" rx="1" fill="#444" />
-              <rect x="3" y="11" width="18" height="2" rx="1" fill="#444" />
-              <rect x="3" y="16" width="18" height="2" rx="1" fill="#444" />
-            </svg>
-          </button>
-          {showActionsMenu && (
-            <div className="action-dropdown" role="menu">
-              <button onClick={() => { handleDownloadTemplate(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                {t('template')}
-              </button>
-              <button onClick={() => { handleExportExcel(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                {t('exportExcel')}
-              </button>
-              <button onClick={() => { setShowImportModal(true); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                {t('import')}
-              </button>
-              <button onClick={() => { handleLogout(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-sm font-medium text-left transition-colors">
-                {t('logout')}
-              </button>
-            </div>
-          )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-3xl font-bold text-gray-800 mb-1 truncate">{t('appTitle')}</h1>
+          <p className="text-sm text-gray-600 truncate">{t('welcome')}, {currentUser?.email}</p>
         </div>
 
         <div className="header-actions">
-          <div ref={languageRef} style={{ position: 'relative' }}>
+          {/* Hamburger Menu */}
+          <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-colors flex items-center gap-2"
-              aria-label="Select language"
+              onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
+              className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Menu"
+              aria-expanded={showHamburgerMenu}
             >
-              🌐 {getLanguageLabel(language)}
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
-            {showLanguageMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                <button
-                  onClick={() => {
-                    setLanguage('en');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  English
-                </button>
-                <button
-                  onClick={() => {
-                    setLanguage('zh');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  繁體中文
-                </button>
-                <button
-                  onClick={() => {
-                    setLanguage('zh-CN');
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  简体中文
-                </button>
+            {showHamburgerMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                {/* Language Section */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Language / 語言</div>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        setLanguage('en');
+                        setShowHamburgerMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                        language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🌐 English
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLanguage('zh');
+                        setShowHamburgerMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                        language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🌐 繁體中文
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLanguage('zh-CN');
+                        setShowHamburgerMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                        language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      🌐 简体中文
+                    </button>
+                  </div>
+                </div>
+
+                {/* Import/Export Section */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Import / Export</div>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        handleDownloadTemplate();
+                        setShowHamburgerMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition-colors flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {t('template') || 'Download Template'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleExportExcel();
+                        setShowHamburgerMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded transition-colors flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {t('exportExcel') || 'Export to Excel'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowImportModal(true);
+                        setShowHamburgerMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded transition-colors flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3v12m0-12l-4 4m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {t('import') || 'Import Data'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profile & Admin Section */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        setActiveTab('profile');
+                        setShowHamburgerMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
+                        activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {t('profile') || 'Profile'}
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setActiveTab('admin');
+                          setShowHamburgerMenu(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
+                          activeTab === 'admin' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        {t('admin') || 'Admin'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logout */}
+                <div className="px-4 py-2">
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowHamburgerMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-2 font-medium"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {t('logout') || 'Logout'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-          <button onClick={handleDownloadTemplate} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors">
-            {t('template')}
-          </button>
-          <button onClick={handleExportExcel} className="px-5 py-2.5 bg-success hover:bg-green-600 text-white rounded font-medium text-sm transition-colors">
-            {t('exportExcel')}
-          </button>
-          <button onClick={() => setShowImportModal(true)} className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded font-medium text-sm transition-colors">
-            {t('import')}
-          </button>
-          <button onClick={handleLogout} className="px-5 py-2.5 bg-danger hover:bg-red-600 text-white rounded font-medium text-sm transition-colors">
-            {t('logout')}
-          </button>
         </div>
       </div>
 
@@ -751,24 +776,6 @@ const Dashboard: React.FC = () => {
         >
           {t('recurring')}
         </button>
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'profile' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('profile')}
-        </button>
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('admin')}
-            className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-              activeTab === 'admin' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            {t('admin')}
-          </button>
-        )}
       </div>
 
       <div className="dashboard-card content-pad">
@@ -845,7 +852,10 @@ const Dashboard: React.FC = () => {
           className="floating-btn-hover"
           title={t('addNewExpense')}
         >
-          {isMobile ? '+' : `+ ${t('addNewExpense')}`}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: isMobile ? 0 : '8px' }}>
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+          </svg>
+          {!isMobile && t('addNewExpense')}
         </button>
       )}
 
@@ -907,11 +917,13 @@ const Dashboard: React.FC = () => {
         <button
           aria-label="Add Expense"
           onClick={() => setShowAddSheet(true)}
-          className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-primary hover:bg-indigo-700 text-white shadow-xl flex items-center justify-center transition-colors"
+          style={styles.floatingButton}
+          className="floating-btn-hover"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: isMobile ? 0 : '8px' }}>
             <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
           </svg>
+          {!isMobile && t('addNewExpense')}
         </button>
       )}
 
@@ -962,6 +974,9 @@ const styles = {
     position: 'fixed' as const,
     bottom: '24px',
     right: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '16px 24px',
     backgroundColor: '#6366f1',
     color: 'white',

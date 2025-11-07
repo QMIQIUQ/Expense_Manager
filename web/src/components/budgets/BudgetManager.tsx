@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Budget, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface BudgetManagerProps {
   budgets: Budget[];
@@ -19,6 +20,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   onDelete,
   spentByCategory,
 }) => {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -93,10 +95,13 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Budget Management</h3>
+        <h3 style={styles.title}>{t('budgetManagement')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + Set Budget
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '6px' }}>
+              <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+            </svg>
+            {t('setBudget')}
           </button>
         )}
       </div>
@@ -194,7 +199,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       <div style={styles.budgetList}>
         {budgets.length === 0 ? (
           <div style={styles.noData}>
-            <p>No budgets set yet. Create your first budget! 💰</p>
+            <p>{t('noBudgetsYet')}</p>
           </div>
         ) : (
           budgets.map((budget) => {
@@ -280,6 +285,9 @@ const styles = {
     fontWeight: '600' as const,
   },
   addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '10px 20px',
     backgroundColor: '#6366f1',
     color: 'white',
@@ -367,16 +375,25 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   budgetHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minWidth: 0,
+    gap: '10px',
   },
   budgetCategory: {
     margin: 0,
     fontSize: '16px',
     fontWeight: '600' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    flex: 1,
+    minWidth: 0,
   },
   budgetPeriod: {
     padding: '4px 8px',
