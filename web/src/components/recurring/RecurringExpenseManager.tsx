@@ -23,6 +23,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     description: '',
     amount: 0,
@@ -38,14 +39,23 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     isOpen: false,
     recurringId: null,
   });
+  
+  // Filter recurring expenses by search term
+  const filteredRecurringExpenses = recurringExpenses.filter((expense) =>
+    expense.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenseData = {
+    const expenseData: any = {
       ...formData,
-      endDate: formData.endDate || undefined,
       lastGenerated: undefined,
     };
+    
+    // Remove endDate if it's empty to avoid Firebase undefined error
+    if (!formData.endDate) {
+      delete expenseData.endDate;
+    }
 
     if (editingId) {
       onUpdate(editingId, expenseData);
@@ -197,13 +207,25 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
         </form>
       )}
 
+      {/* Search Bar */}
+      <div style={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder={t('searchByName') || 'Search by name...'}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          style={styles.searchInput}
+        />
+      </div>
+
       <div style={styles.expenseList}>
-        {recurringExpenses.length === 0 ? (
+        {filteredRecurringExpenses.length === 0 ? (
           <div style={styles.noData}>
-            <p>{t('noRecurringYet')}</p>
+            <p>{recurringExpenses.length === 0 ? t('noRecurringYet') : t('noResults') || 'No results found'}</p>
           </div>
         ) : (
-          recurringExpenses.map((expense) => (
+          filteredRecurringExpenses.map((expense) => (
             <div key={expense.id} style={styles.expenseCard}>
               <div style={styles.expenseMain}>
                 <div style={styles.expenseInfo}>
@@ -287,6 +309,17 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+  },
+  searchContainer: {
+    display: 'flex',
+    gap: '10px',
+  },
+  searchInput: {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
   },
   form: {
     backgroundColor: '#f8f9fa',

@@ -22,6 +22,7 @@ import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUti
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
+import { offlineQueue } from '../utils/offlineQueue';
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -61,12 +62,28 @@ const Dashboard: React.FC = () => {
     message: string;
     status: 'deleting' | 'complete' | 'error';
   } | null>(null);
+  const [queueCount, setQueueCount] = useState<number>(0);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  
+  // Track offline queue count
+  useEffect(() => {
+    const updateQueueCount = () => {
+      setQueueCount(offlineQueue.count());
+    };
+    
+    updateQueueCount();
+    
+    // Update queue count periodically
+    const interval = setInterval(updateQueueCount, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
@@ -758,16 +775,24 @@ const Dashboard: React.FC = () => {
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-3 hover:bg-gray-100 rounded-lg transition-colors relative"
               aria-label="Menu"
               aria-expanded={showHamburgerMenu}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 6h18M3 12h18M3 18h18" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
               </svg>
+              {queueCount > 0 && (
+                <span 
+                  className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  title={t('pendingUploads') || `${queueCount} pending uploads`}
+                >
+                  {queueCount}
+                </span>
+              )}
             </button>
             {showHamburgerMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1050]">
                 {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -882,6 +907,23 @@ const Dashboard: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Offline Queue Status Section */}
+                {queueCount > 0 && (
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-orange-600 text-lg">⚠️</span>
+                        <span className="text-sm font-semibold text-orange-800">
+                          {queueCount} {t('pendingUploads') || 'Pending Uploads'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-orange-700 mb-2">
+                        {t('pendingUploadsDesc') || 'Some changes are queued for upload. They will sync when connection is restored.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Profile & Admin Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
@@ -1226,7 +1268,7 @@ const styles = {
   floatingButton: {
     position: 'fixed' as const,
     bottom: '24px',
-    right: '24px',
+    left: '24px',
     padding: '16px 24px',
     backgroundColor: '#6366f1',
     color: 'white',

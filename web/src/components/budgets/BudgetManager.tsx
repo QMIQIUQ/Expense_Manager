@@ -23,6 +23,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     categoryId: '',
     categoryName: '',
@@ -35,6 +36,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     isOpen: false,
     budgetId: null,
   });
+  
+  // Filter budgets by search term
+  const filteredBudgets = budgets.filter((budget) =>
+    budget.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,13 +199,25 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         </form>
       )}
 
+      {/* Search Bar */}
+      <div style={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder={t('searchByName') || 'Search by category name...'}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          style={styles.searchInput}
+        />
+      </div>
+
       <div style={styles.budgetList}>
-        {budgets.length === 0 ? (
+        {filteredBudgets.length === 0 ? (
           <div style={styles.noData}>
-            <p>{t('noBudgetsYet')}</p>
+            <p>{budgets.length === 0 ? t('noBudgetsYet') : t('noResults') || 'No results found'}</p>
           </div>
         ) : (
-          budgets.map((budget) => {
+          filteredBudgets.map((budget) => {
             const spent = spentByCategory[budget.categoryName] || 0;
             const percentage = getProgressPercentage(budget.categoryName, budget.amount);
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
@@ -290,6 +308,17 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+  },
+  searchContainer: {
+    display: 'flex',
+    gap: '10px',
+  },
+  searchInput: {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
   },
   form: {
     backgroundColor: '#f8f9fa',

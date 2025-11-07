@@ -19,6 +19,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     icon: '📦',
@@ -39,6 +40,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   const duplicateNames = getDuplicateCategoryNames();
+  
+  // Sort categories by name
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+  
+  // Filter categories by search term
+  const filteredCategories = sortedCategories.filter((category) =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +78,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
-
-  // Sort categories by name
-  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div style={styles.container}>
@@ -141,17 +147,34 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         </form>
       )}
 
+      {/* Search Bar */}
+      <div style={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder={t('searchByName') || 'Search by name...'}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          style={styles.searchInput}
+        />
+      </div>
+
       <div style={styles.categoryList}>
-        {sortedCategories.map((category) => {
-          const isDuplicate = duplicateNames.has(category.name);
-          return (
-            <div key={category.id} style={{
-              ...styles.categoryCard,
-              ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: '#fff3e0' } : {})
-            }}>
-              <div style={styles.categoryInfo}>
-                <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
-                  {category.icon}
+        {filteredCategories.length === 0 ? (
+          <div style={styles.noData}>
+            <p>{categories.length === 0 ? t('noCategories') || 'No categories yet' : t('noResults') || 'No results found'}</p>
+          </div>
+        ) : (
+          filteredCategories.map((category) => {
+            const isDuplicate = duplicateNames.has(category.name);
+            return (
+              <div key={category.id} style={{
+                ...styles.categoryCard,
+                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: '#fff3e0' } : {})
+              }}>
+                <div style={styles.categoryInfo}>
+                  <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
+                    {category.icon}
                 </span>
                 <span style={styles.categoryName}>
                   {category.name}
@@ -174,7 +197,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
       
       <ConfirmModal
@@ -220,6 +243,22 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+  },
+  searchContainer: {
+    display: 'flex',
+    gap: '10px',
+  },
+  searchInput: {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+  },
+  noData: {
+    textAlign: 'center' as const,
+    padding: '40px',
+    color: '#666',
   },
   form: {
     backgroundColor: '#f8f9fa',

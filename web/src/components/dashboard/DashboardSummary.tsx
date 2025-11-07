@@ -71,7 +71,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
     
     // Accumulate expenses
     expenses.forEach(exp => {
-      if (last7Days.hasOwnProperty(exp.date)) {
+      if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
         last7Days[exp.date] += exp.amount;
       }
     });
@@ -233,35 +233,41 @@ const styles = {
   },
   summaryCards: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-    gap: '15px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: '12px',
   },
   card: {
     backgroundColor: 'white',
     border: '1px solid #e0e0e0',
     borderRadius: '12px',
-    padding: '20px',
+    padding: '16px',
     display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-start',
+    gap: '10px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
     minWidth: 0,
     overflow: 'hidden',
   },
   cardIcon: {
-    fontSize: '32px',
-    width: '50px',
-    height: '50px',
+    fontSize: '28px',
+    width: '40px',
+    height: '40px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f0f0f0',
-    borderRadius: '10px',
+    borderRadius: '8px',
+    alignSelf: 'center',
   },
   cardContent: {
-    flex: 1,
+    width: '100%',
     minWidth: 0,
     overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    textAlign: 'center' as const,
   },
   cardLabel: {
     fontSize: '12px',
@@ -273,11 +279,12 @@ const styles = {
     textOverflow: 'ellipsis',
   },
   cardValue: {
-    fontSize: '24px',
+    fontSize: '20px',
     fontWeight: '700' as const,
     color: '#333',
-    wordBreak: 'break-all' as const,
+    wordBreak: 'break-word' as const,
     lineHeight: '1.2',
+    width: '100%',
   },
   categoryBreakdown: {
     backgroundColor: 'white',
