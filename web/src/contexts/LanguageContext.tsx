@@ -13,7 +13,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Load language preference from localStorage or default to 'en'
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('language');
-    return (saved === 'zh' || saved === 'en') ? saved : 'en';
+    return (saved === 'zh' || saved === 'zh-CN' || saved === 'en') ? saved as Language : 'en';
   });
 
   // Save language preference to localStorage

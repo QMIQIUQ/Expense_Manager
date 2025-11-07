@@ -40,7 +40,9 @@ const Dashboard: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
+  const languageRef = useRef<HTMLDivElement | null>(null);
   const isMobile = window.innerWidth <= 768;
 
   const loadData = React.useCallback(async () => {
@@ -89,6 +91,32 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showActionsMenu]);
+
+  // Click outside to close language menu
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!showLanguageMenu) return;
+      if (languageRef.current && !languageRef.current.contains(e.target as Node)) {
+        setShowLanguageMenu(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showLanguageMenu]);
+
+  // Get language display name
+  const getLanguageLabel = (lang: string) => {
+    switch (lang) {
+      case 'en':
+        return 'English';
+      case 'zh':
+        return '繁體中文';
+      case 'zh-CN':
+        return '简体中文';
+      default:
+        return 'English';
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -538,13 +566,55 @@ const Dashboard: React.FC = () => {
         </div>
         {/* Compact actions toggle for small screens */}
         <div ref={actionsRef} className="flex items-center gap-2">
-          <button
-            onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
-            className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-            title={language === 'en' ? 'Switch to Chinese' : '切換至英文'}
-          >
-            {language === 'en' ? '中文' : 'EN'}
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+              aria-label="Select language"
+            >
+              🌐
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {showLanguageMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={() => {
+                    setLanguage('en');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  繁中
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh-CN');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  简中
+                </button>
+              </div>
+            )}
+          </div>
           <button
             className="actions-toggle"
             aria-label="Open actions"
@@ -576,13 +646,55 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-actions">
-          <button
-            onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-colors"
-            title={language === 'en' ? 'Switch to Chinese' : '切換至英文'}
-          >
-            {language === 'en' ? '中文' : 'English'}
-          </button>
+          <div ref={languageRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-colors flex items-center gap-2"
+              aria-label="Select language"
+            >
+              🌐 {getLanguageLabel(language)}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {showLanguageMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={() => {
+                    setLanguage('en');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  繁體中文
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh-CN');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  简体中文
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={handleDownloadTemplate} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors">
             {t('template')}
           </button>

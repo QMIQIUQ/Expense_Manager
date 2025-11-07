@@ -316,7 +316,165 @@ export const translations = {
     totalUsers: '總使用者數',
     systemSettings: '系統設定',
   },
+  'zh-CN': {
+    // Common
+    save: '保存',
+    cancel: '取消',
+    delete: '删除',
+    edit: '编辑',
+    add: '添加',
+    close: '关闭',
+    confirm: '确认',
+    loading: '加载中...',
+    search: '搜索',
+    filter: '筛选',
+    sort: '排序',
+    
+    // Header
+    appTitle: '💰 支出管理器',
+    welcome: '欢迎',
+    logout: '退出登录',
+    template: '📥 模板',
+    exportExcel: '📊 导出 Excel',
+    import: '📤 导入',
+    
+    // Tabs
+    dashboard: '仪表板',
+    expenses: '支出',
+    categories: '分类',
+    budgets: '预算',
+    recurring: '定期支出',
+    profile: '👤 个人资料',
+    admin: '👑 管理员',
+    
+    // Login
+    login: '登录',
+    email: '电子邮件',
+    password: '密码',
+    loginFailed: '登录失败。请检查您的凭据。',
+    
+    // Expense Form
+    description: '描述',
+    amount: '金额',
+    category: '分类',
+    date: '日期',
+    time: '时间',
+    notes: '备注',
+    descriptionPlaceholder: '例如：购物',
+    notesPlaceholder: '额外备注（选填）',
+    selectCategory: '选择分类',
+    pleaseSelectCategory: '请选择分类。',
+    pleaseFillField: '请填写此字段。',
+    addNewExpense: '添加支出',
+    editExpense: '编辑支出',
+    addExpense: '添加支出',
+    
+    // Expense List
+    expenseHistory: '支出记录',
+    searchExpenses: '搜索支出...',
+    allCategories: '所有分类',
+    sortByDateDesc: '日期（最新）',
+    sortByDateAsc: '日期（最旧）',
+    sortByAmountDesc: '金额（高至低）',
+    sortByAmountAsc: '金额（低至高）',
+    noExpenses: '找不到支出记录',
+    multiSelect: '多选',
+    deleteSelected: '删除选中项目',
+    selected: '已选中',
+    confirmDelete: '您确定要删除此支出吗？',
+    confirmBulkDelete: '您确定要删除 {count} 笔支出吗？',
+    
+    // Categories
+    categoryName: '分类名称',
+    categoryIcon: '图标',
+    categoryColor: '颜色',
+    addCategory: '添加分类',
+    editCategory: '编辑分类',
+    categoryNamePlaceholder: '例如：食物、交通',
+    noCategories: '找不到分类',
+    defaultCategories: '默认分类已初始化',
+    
+    // Budgets
+    budgetName: '预算名称',
+    budgetAmount: '预算金额',
+    budgetPeriod: '期间',
+    periodMonthly: '每月',
+    periodYearly: '每年',
+    addBudget: '添加预算',
+    editBudget: '编辑预算',
+    noBudgets: '找不到预算',
+    spent: '已花费',
+    remaining: '剩余',
+    exceeded: '超支',
+    
+    // Recurring Expenses
+    recurringExpense: '定期支出',
+    frequency: '频率',
+    freqDaily: '每日',
+    freqWeekly: '每周',
+    freqMonthly: '每月',
+    startDate: '开始日期',
+    endDate: '结束日期',
+    optional: '选填',
+    active: '启用',
+    inactive: '停用',
+    addRecurring: '添加定期支出',
+    editRecurring: '编辑定期支出',
+    noRecurring: '找不到定期支出',
+    
+    // Dashboard Summary
+    totalExpenses: '总支出',
+    thisMonth: '本月',
+    thisYear: '今年',
+    topCategories: '热门分类',
+    recentExpenses: '最近支出',
+    spendingTrend: '支出趋势',
+    
+    // Import/Export
+    importExport: '导入/导出',
+    importData: '导入数据',
+    exportData: '导出数据',
+    downloadTemplate: '下载模板',
+    selectFile: '选择文件',
+    importSuccess: '导入成功！',
+    importError: '导入数据失败',
+    exportSuccess: '导出成功！',
+    
+    // Notifications
+    expenseAdded: '支出已成功添加',
+    expenseUpdated: '支出已成功更新',
+    expenseDeleted: '支出已成功删除',
+    categoryAdded: '分类已成功添加',
+    categoryUpdated: '分类已成功更新',
+    categoryDeleted: '分类已成功删除',
+    budgetAdded: '预算已成功添加',
+    budgetUpdated: '预算已成功更新',
+    budgetDeleted: '预算已成功删除',
+    recurringAdded: '定期支出已成功添加',
+    recurringUpdated: '定期支出已成功更新',
+    recurringDeleted: '定期支出已成功删除',
+    
+    // Errors
+    errorLoadingData: '加载数据失败。请刷新页面。',
+    errorSavingData: '保存数据失败。请重试。',
+    errorDeletingData: '删除数据失败。请重试。',
+    
+    // User Profile
+    userProfile: '用户资料',
+    displayName: '显示名称',
+    updateProfile: '更新资料',
+    changePassword: '更改密码',
+    currentPassword: '当前密码',
+    newPassword: '新密码',
+    confirmPassword: '确认密码',
+    
+    // Admin
+    adminPanel: '管理员面板',
+    userManagement: '用户管理',
+    totalUsers: '总用户数',
+    systemSettings: '系统设置',
+  },
 };
 
-export type Language = 'en' | 'zh';
+export type Language = 'en' | 'zh' | 'zh-CN';
 export type TranslationKey = keyof typeof translations.en;
