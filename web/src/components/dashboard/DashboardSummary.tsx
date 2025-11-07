@@ -1,11 +1,13 @@
 import React from 'react';
 import { Expense } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
 }
 
 const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
+  const { t } = useLanguage();
   const calculateStats = () => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -46,7 +48,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
         <div style={styles.card}>
           <div style={styles.cardIcon}>💰</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Total Expenses</div>
+            <div style={styles.cardLabel}>{t('totalExpenses')}</div>
             <div style={styles.cardValue}>${stats.total.toFixed(2)}</div>
           </div>
         </div>
@@ -54,7 +56,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
         <div style={styles.card}>
           <div style={styles.cardIcon}>📅</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>This Month</div>
+            <div style={styles.cardLabel}>{t('thisMonth')}</div>
             <div style={styles.cardValue}>${stats.monthly.toFixed(2)}</div>
           </div>
         </div>
@@ -62,7 +64,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
         <div style={styles.card}>
           <div style={styles.cardIcon}>📊</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Today</div>
+            <div style={styles.cardLabel}>{t('today')}</div>
             <div style={styles.cardValue}>${stats.daily.toFixed(2)}</div>
           </div>
         </div>
@@ -70,7 +72,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
         <div style={styles.card}>
           <div style={styles.cardIcon}>🏷️</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Categories</div>
+            <div style={styles.cardLabel}>{t('categories')}</div>
             <div style={styles.cardValue}>{Object.keys(stats.byCategory).length}</div>
           </div>
         </div>
@@ -78,7 +80,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
 
       {categories.length > 0 && (
         <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>Top Spending Categories</h3>
+          <h3 style={styles.sectionTitle}>{t('topCategories')}</h3>
           <div style={styles.categoryList}>
             {categories.map(([category, amount]) => {
               const percentage = (amount / stats.total) * 100;
