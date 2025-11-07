@@ -374,15 +374,15 @@ export const importData = async (
             result.errors.push({
               row: rowNum,
               message: 'Invalid amount',
-                          // Update progress even for skipped items
-                          onProgress?.(
-                            currentProgress,
-                            totalExpenses,
-                            `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
-                          );
               data: expRow,
             });
             result.skipped++;
+            // Update progress even for skipped items
+            onProgress?.(
+              currentProgress,
+              totalExpenses,
+              `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+            );
             continue;
           }
           
@@ -419,18 +419,24 @@ export const importData = async (
           result.errors.push({
             row: rowNum,
             message: `Failed to import: ${(error as Error).message}`,
-                      // Update progress even for failed items
-                      onProgress?.(
-                        currentProgress,
-                        totalExpenses,
-                        `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
-                      );
             data: expRow,
           });
           result.failed++;
+          // Update progress even for failed items
+          onProgress?.(
+            currentProgress,
+            totalExpenses,
+            `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+          );
         }
       }
     }
+    // Final progress update when complete
+    onProgress?.(
+      totalExpenses,
+      totalExpenses,
+      `Import complete (${totalExpenses}/${totalExpenses})`
+    );
     
     return result;
   } catch (error) {

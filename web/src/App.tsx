@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import PrivateRoute from './components/PrivateRoute';
-import HeaderNotification from './components/HeaderNotification';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
@@ -14,7 +13,6 @@ const App: React.FC = () => {
       <LanguageProvider>
         <AuthProvider>
           <NotificationProvider>
-            <HeaderNotification />
             <Routes>
               <Route path="/" element={<Login />} />
               {/* Redirect legacy /login URL to root (login) to avoid unmatched-route warnings */}

@@ -21,11 +21,12 @@ import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
+import HeaderStatusBar from '../components/HeaderStatusBar';
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const { showNotification, updateNotification } = useNotification();
+  const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
@@ -46,6 +47,20 @@ const Dashboard: React.FC = () => {
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    id: string;
+    current: number;
+    total: number;
+    message: string;
+    status: 'importing' | 'complete' | 'error';
+  } | null>(null);
+  const [deleteProgress, setDeleteProgress] = useState<{
+    id: string;
+    current: number;
+    total: number;
+    message: string;
+    status: 'deleting' | 'complete' | 'error';
+  } | null>(null);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
@@ -251,54 +266,95 @@ const Dashboard: React.FC = () => {
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (ids.length === 0) return;
+    console.log(`[Dashboard] Starting bulk delete of ${ids.length} items`);
+    
     const originals = expenses.filter((e) => ids.includes(e.id!));
 
     // Optimistic update: remove selected expenses
     setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
 
-    // Show a single pending notification for the whole bulk operation
-    const bulkNotifId = showNotification('pending', `${ids.length} ${t('items') || 'items'} - ${t('deleteSelected') || 'Deleting...'}`, {
-      duration: 0,
+    // 設置刪除進度狀態
+    const deleteId = `delete-${Date.now()}`;
+    setDeleteProgress({
+      id: deleteId,
+      current: 0,
+      total: ids.length,
+      message: `${t('deleteSelected')} (0/${ids.length})`,
+      status: 'deleting',
     });
 
-    // Run delete for each id but suppress per-operation notifications so user sees only one
-    const results = await Promise.all(ids.map((id) => {
+    // 逐個刪除並更新進度
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
       const original = originals.find((o) => o.id === id);
-      return optimisticCRUD.run(
-        { type: 'delete', data: { id }, originalData: original },
-        () => expenseService.delete(id),
-        {
-          entityType: 'expense',
-          retryToQueueOnFail: true,
-          suppressNotification: true,
-          onSuccess: () => {},
-          onError: () => {
-            // Rollback the specific failed deletion
-            if (original) {
-              setExpenses((prev) => [original!, ...prev]);
-            }
-          },
+      
+      try {
+        const result = await optimisticCRUD.run(
+          { type: 'delete', data: { id }, originalData: original },
+          () => expenseService.delete(id),
+          {
+            entityType: 'expense',
+            retryToQueueOnFail: true,
+            suppressNotification: true,
+            onSuccess: () => {},
+            onError: () => {
+              // Rollback the specific failed deletion
+              if (original) {
+                setExpenses((prev) => [original!, ...prev]);
+              }
+            },
+          }
+        );
+        
+        if (result === null) {
+          failCount++;
+        } else {
+          successCount++;
         }
-      );
-    }));
-
-    // If any operation returned null -> some failed
-    const anyFailed = results.some((r) => r === null);
-    if (anyFailed) {
-      // Update notification to an error state
-      updateNotification?.(bulkNotifId, {
-        type: 'error',
-        message: t('errorDeletingData') || 'Failed to delete some items',
-        duration: 5000,
-      });
-    } else {
-      // Success
-      updateNotification?.(bulkNotifId, {
-        type: 'success',
-        message: `${ids.length} ${t('items') || 'items'} ${t('deleteSelected') ? '' : 'deleted'}`,
-        duration: 3000,
-      });
+      } catch (error) {
+        failCount++;
+        // Rollback on error
+        if (original) {
+          setExpenses((prev) => [original!, ...prev]);
+        }
+      }
+      
+      // 更新進度
+      const current = i + 1;
+      setDeleteProgress(prev => prev ? {
+        ...prev,
+        current,
+        message: `${t('deleteSelected')} (${current}/${ids.length})`,
+      } : null);
+      
+      console.log(`[Dashboard] Deleted ${current}/${ids.length}`);
     }
+
+    // 完成後更新狀態
+    if (failCount > 0) {
+      console.log(`[Dashboard] Bulk delete completed with errors: ${successCount} success, ${failCount} failed`);
+      setDeleteProgress(prev => prev ? {
+        ...prev,
+        status: 'error',
+        message: `${t('errorDeletingData')}: ${successCount}/${ids.length} ${t('success')}`,
+      } : null);
+    } else {
+      console.log(`[Dashboard] Bulk delete completed successfully: ${successCount}/${ids.length}`);
+      setDeleteProgress(prev => prev ? {
+        ...prev,
+        status: 'complete',
+        message: `${t('success')}: ${successCount} ${t('items')}`,
+      } : null);
+    }
+    
+    // 3秒後自動關閉
+    setTimeout(() => {
+      console.log('[Dashboard] Auto-dismissing delete notification');
+      setDeleteProgress(null);
+    }, 3000);
 
     // Refresh to ensure server state is in sync
     loadData();
@@ -590,9 +646,81 @@ const Dashboard: React.FC = () => {
   };
 
   const handleImportComplete = () => {
+    console.log('[Dashboard] Import completed, updating progress to complete');
+    
     // Reload data after import
     loadData();
-    showNotification('success', 'Import completed successfully!');
+    
+    // Update import progress to complete using functional update
+    setImportProgress(prev => {
+      console.log('[Dashboard] Previous progress state:', prev);
+      if (!prev) return null;
+      
+      const completedProgress = {
+        ...prev,
+        status: 'complete' as const,
+        message: t('importComplete'),
+        current: prev.total, // 確保顯示完成
+      };
+      
+      console.log('[Dashboard] Setting completed progress:', completedProgress);
+      
+      // 3秒後自動關閉完成通知
+      setTimeout(() => {
+        console.log('[Dashboard] Auto-dismissing completed import notification');
+        setImportProgress(null);
+      }, 3000);
+      
+      return completedProgress;
+    });
+  };
+
+  // 開始後台匯入
+  const handleStartBackgroundImport = (totalItems: number) => {
+    const importId = `import-${Date.now()}`;
+    setImportProgress({
+      id: importId,
+      current: 0,
+      total: totalItems,
+      message: t('startingImport'),
+      status: 'importing',
+    });
+    // 關閉 modal，讓匯入在後台進行
+    setShowImportModal(false);
+  };
+
+  // 更新匯入進度
+  const handleUpdateImportProgress = (current: number, total: number, message: string) => {
+    console.log(`[Dashboard] Progress update: ${current}/${total} - ${message}`);
+    setImportProgress(prev => prev ? {
+      ...prev,
+      current,
+      total,
+      message,
+    } : null);
+  };
+
+  // 匯入失敗
+  const handleImportError = (errorMessage: string) => {
+    setImportProgress(prev => {
+      if (!prev) return null;
+      
+      return {
+        ...prev,
+        status: 'error' as const,
+        message: errorMessage,
+      };
+    });
+  };
+
+  // 關閉匯入進度顯示
+  const handleDismissImport = () => {
+    setImportProgress(null);
+  };
+
+  // 關閉刪除進度顯示
+  const handleDismissDelete = () => {
+    setDeleteProgress(null);
   };
 
   // Calculate spending by category
@@ -619,7 +747,7 @@ const Dashboard: React.FC = () => {
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
-      <div className="dashboard-card dashboard-header relative mb-8">
+      <div className="dashboard-card dashboard-header relative mb-8" style={{ paddingTop: '20px' }}>
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold text-gray-800 mb-1 truncate">{t('appTitle')}</h1>
           <p className="text-sm text-gray-600 truncate">{t('welcome')}, {currentUser?.email}</p>
@@ -808,7 +936,15 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="dashboard-card dashboard-tabs">
+      {/* 通知和匯入/刪除進度區域 - 固定在頂部 */}
+      <HeaderStatusBar 
+        importProgress={importProgress || undefined}
+        deleteProgress={deleteProgress || undefined}
+        onDismissImport={handleDismissImport}
+        onDismissDelete={handleDismissDelete}
+      />
+
+      <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
@@ -1003,6 +1139,9 @@ const Dashboard: React.FC = () => {
           userId={currentUser.uid}
           existingCategories={categories}
           onImportComplete={handleImportComplete}
+          onStartBackgroundImport={handleStartBackgroundImport}
+          onUpdateProgress={handleUpdateImportProgress}
+          onImportError={handleImportError}
         />
       )}
     </div>

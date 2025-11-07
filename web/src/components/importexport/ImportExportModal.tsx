@@ -17,6 +17,9 @@ interface Props {
   userId: string;
   existingCategories: Category[];
   onImportComplete: () => void;
+  onStartBackgroundImport?: (totalItems: number) => void;
+  onUpdateProgress?: (current: number, total: number, message: string) => void;
+  onImportError?: (errorMessage: string) => void;
 }
 
 interface ExpenseRow {
@@ -46,6 +49,9 @@ const ImportExportModal: React.FC<Props> = ({
   userId,
   existingCategories,
   onImportComplete,
+  onStartBackgroundImport,
+  onUpdateProgress,
+  onImportError,
 }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<'select' | 'preview' | 'importing' | 'complete'>('select');
@@ -99,11 +105,24 @@ const ImportExportModal: React.FC<Props> = ({
   const handleImport = async () => {
     if (!parsedData || !userId) return;
 
-    setStep('importing');
-    setErrorMessage('');
-    setProgress({ current: 0, total: parsedData.expenses.length, message: t('startingImport') });
+    // 如果有後台模式回調，使用後台模式
+    const isBackgroundMode = !!onUpdateProgress;
+    
+    if (!isBackgroundMode) {
+      // 傳統模式：顯示 importing 畫面
+      setStep('importing');
+      setErrorMessage('');
+      setProgress({ current: 0, total: parsedData.expenses.length, message: t('startingImport') });
+    }
 
     try {
+      // 通知父組件開始後台匯入
+      if (isBackgroundMode && onStartBackgroundImport) {
+        onStartBackgroundImport(parsedData.expenses.length);
+        // 關閉 modal，讓用戶可以繼續使用其他功能
+        handleClose();
+      }
+
       const result = await importData(
         userId,
         parsedData.expenses,
@@ -111,16 +130,35 @@ const ImportExportModal: React.FC<Props> = ({
         existingCategories,
         options,
         (current, total, message) => {
-          setProgress({ current, total, message });
+          if (isBackgroundMode && onUpdateProgress) {
+            // 後台模式：更新父組件的進度
+            onUpdateProgress(current, total, message);
+          } else {
+            // 傳統模式：更新本地進度
+            setProgress({ current, total, message });
+          }
         }
       );
 
       setImportResult(result);
-      setStep('complete');
+      
+      if (!isBackgroundMode) {
+        setStep('complete');
+      }
+      
+      // 通知父組件匯入完成（這會觸發狀態更新為 complete）
       onImportComplete();
     } catch (error) {
-      setErrorMessage(`${t('importFailed')}: ${(error as Error).message}`);
-      setStep('preview');
+      const errorMsg = `${t('importFailed')}: ${(error as Error).message}`;
+      
+      if (isBackgroundMode && onImportError) {
+        // 後台模式：通知父組件錯誤
+        onImportError(errorMsg);
+      } else {
+        // 傳統模式：顯示錯誤
+        setErrorMessage(errorMsg);
+        setStep('preview');
+      }
     }
   };
 
