@@ -17,6 +17,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
   const today = new Date().toISOString().split('T')[0];
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [allDates, setAllDates] = useState(false);
@@ -44,9 +45,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesCategory = !categoryFilter || expense.category === categoryFilter;
-      const matchesDateFrom = allDates ? true : (!dateFrom || expense.date >= dateFrom);
-      const matchesDateTo = allDates ? true : (!dateTo || expense.date <= dateTo);
-      return matchesSearch && matchesCategory && matchesDateFrom && matchesDateTo;
+      
+      // Month filter logic
+      let matchesMonth = true;
+      if (monthFilter) {
+        const expenseDate = new Date(expense.date);
+        const [filterYear, filterMonth] = monthFilter.split('-').map(Number);
+        matchesMonth = expenseDate.getFullYear() === filterYear && expenseDate.getMonth() + 1 === filterMonth;
+      }
+      
+      const matchesDateFrom = allDates || monthFilter ? true : (!dateFrom || expense.date >= dateFrom);
+      const matchesDateTo = allDates || monthFilter ? true : (!dateTo || expense.date <= dateTo);
+      return matchesSearch && matchesCategory && matchesMonth && matchesDateFrom && matchesDateTo;
     });
 
     const sorted = [...filtered];
@@ -98,6 +108,26 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
 
   // Use unique category names to avoid duplicate option keys
   const categoryNames = Array.from(new Set(categories.map((c) => c.name))).filter((n) => n);
+
+  // Generate available months from expenses
+  const getAvailableMonths = () => {
+    const monthSet = new Set<string>();
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthSet.add(monthKey);
+    });
+    return Array.from(monthSet).sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
+  };
+
+  const availableMonths = getAvailableMonths();
+
+  // Format month for display
+  const formatMonthDisplay = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+  };
 
   const startInlineEdit = (expense: Expense) => {
     setEditingId(expense.id!);
@@ -186,6 +216,24 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               </option>
             ))}
           </select>
+          <select
+            value={monthFilter}
+            onChange={(e) => {
+              setMonthFilter(e.target.value);
+              if (e.target.value) {
+                setAllDates(false);
+              }
+            }}
+            style={styles.filterSelect}
+            aria-label="Filter by month"
+          >
+            <option value="">{t('allMonths')}</option>
+            {availableMonths.map((monthKey) => (
+              <option key={monthKey} value={monthKey}>
+                {formatMonthDisplay(monthKey)}
+              </option>
+            ))}
+          </select>
         </div>
         <div style={styles.filterRow}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -193,7 +241,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               id="allDatesToggle"
               type="checkbox"
               checked={allDates}
-              onChange={(e) => setAllDates(e.target.checked)}
+              onChange={(e) => {
+                setAllDates(e.target.checked);
+                if (e.target.checked) {
+                  setMonthFilter('');
+                }
+              }}
               aria-label={t('allDates')}
             />
             <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
@@ -205,7 +258,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               style={styles.dateInput}
-              disabled={allDates}
+              disabled={allDates || !!monthFilter}
             />
           </div>
           <div style={styles.dateFilterGroup}>
@@ -215,7 +268,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               style={styles.dateInput}
-              disabled={allDates}
+              disabled={allDates || !!monthFilter}
             />
           </div>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">

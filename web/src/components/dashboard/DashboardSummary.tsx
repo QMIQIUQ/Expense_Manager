@@ -1,6 +1,7 @@
 import React from 'react';
 import { Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -8,6 +9,10 @@ interface DashboardSummaryProps {
 
 const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
   const { t } = useLanguage();
+  
+  // Color palette for pie chart
+  const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+  
   const calculateStats = () => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -41,6 +46,15 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
   const categories = Object.entries(stats.byCategory)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
+
+  // Prepare pie chart data
+  const pieData = Object.entries(stats.byCategory)
+    .sort(([, a], [, b]) => b - a)
+    .map(([name, value]) => ({
+      name,
+      value,
+      percentage: ((value / stats.total) * 100).toFixed(1)
+    }));
 
   return (
     <div style={styles.container}>
@@ -103,6 +117,34 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {pieData.length > 0 && (
+        <div style={styles.pieChartContainer}>
+          <h3 style={styles.sectionTitle}>{t('categoryDistribution')}</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percentage }) => `${name}: ${percentage}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {pieData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value: number) => `$${value.toFixed(2)}`}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>
@@ -224,6 +266,12 @@ const styles = {
     fontSize: '12px',
     color: '#666',
     alignSelf: 'flex-end',
+  },
+  pieChartContainer: {
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '12px',
+    padding: '20px',
   },
 };
 
