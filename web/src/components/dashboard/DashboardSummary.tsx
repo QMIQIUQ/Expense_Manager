@@ -1,7 +1,7 @@
 import React from 'react';
 import { Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -47,7 +47,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
-  // Prepare pie chart data
+  // Prepare pie chart data - show all categories for complete view
   const pieData = Object.entries(stats.byCategory)
     .sort(([, a], [, b]) => b - a)
     .map(([name, value]) => ({
@@ -55,6 +55,43 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
       value,
       percentage: ((value / stats.total) * 100).toFixed(1)
     }));
+
+  // Prepare spending trend data (last 7 days)
+  const getSpendingTrend = () => {
+    const last7Days: { [date: string]: number } = {};
+    const today = new Date();
+    
+    // Initialize last 7 days with 0
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      last7Days[dateStr] = 0;
+    }
+    
+    // Accumulate expenses
+    expenses.forEach(exp => {
+      if (last7Days.hasOwnProperty(exp.date)) {
+        last7Days[exp.date] += exp.amount;
+      }
+    });
+    
+    return Object.entries(last7Days).map(([date, amount]) => ({
+      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      amount: parseFloat(amount.toFixed(2))
+    }));
+  };
+
+  const trendData = getSpendingTrend();
+
+  // Get recent expenses (last 5)
+  const recentExpenses = [...expenses]
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    })
+    .slice(0, 5);
 
   return (
     <div style={styles.container}>
@@ -145,6 +182,43 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
               <Legend />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {trendData.length > 0 && (
+        <div style={styles.trendChartContainer}>
+          <h3 style={styles.sectionTitle}>{t('spendingTrend')} (7 Days)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+              <Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {recentExpenses.length > 0 && (
+        <div style={styles.recentExpensesContainer}>
+          <h3 style={styles.sectionTitle}>{t('recentExpenses')}</h3>
+          <div style={styles.recentExpensesList}>
+            {recentExpenses.map((expense) => (
+              <div key={expense.id} style={styles.recentExpenseItem}>
+                <div style={styles.recentExpenseInfo}>
+                  <span style={styles.recentExpenseDesc}>{expense.description}</span>
+                  <span style={styles.recentExpenseCategory}>{expense.category}</span>
+                </div>
+                <div style={styles.recentExpenseRight}>
+                  <span style={styles.recentExpenseAmount}>${expense.amount.toFixed(2)}</span>
+                  <span style={styles.recentExpenseDate}>
+                    {new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -272,6 +346,71 @@ const styles = {
     border: '1px solid #e0e0e0',
     borderRadius: '12px',
     padding: '20px',
+  },
+  trendChartContainer: {
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '12px',
+    padding: '20px',
+  },
+  recentExpensesContainer: {
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '12px',
+    padding: '20px',
+  },
+  recentExpensesList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  recentExpenseItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    gap: '10px',
+  },
+  recentExpenseInfo: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    flex: 1,
+    minWidth: 0,
+  },
+  recentExpenseDesc: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#333',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  recentExpenseCategory: {
+    fontSize: '12px',
+    color: '#666',
+    display: 'inline-block',
+    padding: '2px 8px',
+    backgroundColor: '#e3f2fd',
+    borderRadius: '4px',
+    width: 'fit-content',
+  },
+  recentExpenseRight: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-end',
+    gap: '4px',
+  },
+  recentExpenseAmount: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: '#f44336',
+  },
+  recentExpenseDate: {
+    fontSize: '12px',
+    color: '#999',
   },
 };
 

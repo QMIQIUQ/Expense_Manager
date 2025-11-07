@@ -176,7 +176,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
-              {editingId ? t('edit') : t('add')} {t('budgets')}
+              {editingId ? t('updateBudget') : t('setBudgetButton')}
             </button>
             <button
               type="button"
