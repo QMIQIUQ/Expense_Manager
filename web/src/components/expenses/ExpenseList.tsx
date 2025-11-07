@@ -14,9 +14,13 @@ interface ExpenseListProps {
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate, onBulkDelete }) => {
   const { t } = useLanguage();
+  const today = new Date().toISOString().split('T')[0];
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [sortBy, setSortBy] = useState('date-desc');
+  const [showSummary, setShowSummary] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
     isOpen: false,
     expenseId: null,
@@ -39,7 +43,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesCategory = !categoryFilter || expense.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesDateFrom = !dateFrom || expense.date >= dateFrom;
+      const matchesDateTo = !dateTo || expense.date <= dateTo;
+      return matchesSearch && matchesCategory && matchesDateFrom && matchesDateTo;
     });
 
     const sorted = [...filtered];
@@ -73,6 +79,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     const date = new Date(dateString);
     const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return time ? `${base} ${time}` : base;
+  };
+
+  const calculateSummary = () => {
+    const filtered = filteredAndSortedExpenses();
+    const total = filtered.reduce((sum, exp) => sum + exp.amount, 0);
+    const byCategory: { [key: string]: number } = {};
+    filtered.forEach((exp) => {
+      if (!byCategory[exp.category]) byCategory[exp.category] = 0;
+      byCategory[exp.category] += exp.amount;
+    });
+    const categoryBreakdown = Object.entries(byCategory)
+      .sort(([, a], [, b]) => b - a)
+      .map(([category, amount]) => ({ category, amount }));
+    return { total, count: filtered.length, categoryBreakdown };
   };
 
   // Use unique category names to avoid duplicate option keys
@@ -112,49 +132,90 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     cancelInlineEdit();
   };
 
+  const summary = calculateSummary();
+
   return (
     <div style={styles.container}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Summary Section */}
+      <div style={styles.summaryCard}>
+        <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
+          <div style={styles.summaryMain}>
+            <span style={styles.summaryLabel}>{t('total')} </span>
+            <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
+            <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
+          </div>
+          <button style={styles.expandButton} aria-label="Toggle summary">
+            {showSummary ? '▼' : '▶'}
+          </button>
+        </div>
+        {showSummary && (
+          <div style={styles.summaryDetails}>
+            <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
+            {summary.categoryBreakdown.map(({ category, amount }) => (
+              <div key={category} style={styles.summaryDetailRow}>
+                <span style={styles.summaryDetailCategory}>{category}</span>
+                <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Filter Section */}
+      <div style={styles.filterSection}>
+        <div style={styles.filterRow}>
           <input
             type="text"
             placeholder={t('searchExpenses')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={(e) => e.target.select()}
-            style={styles.searchInput}
+            style={styles.filterInput}
           />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={styles.filterSelect}
+            aria-label="Filter by category"
+          >
+            <option value="">{t('allCategories')}</option>
+            {categoryNames.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
-
-        
-      </div>
-
-      {/* Selects row moved below search to match layout */}
-      <div style={styles.selectRow}>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          style={styles.select}
-          aria-label="Filter by category"
-        >
-          <option value="">{t('allCategories')}</option>
-          {categoryNames.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.select} aria-label="Sort expenses">
-          <option value="date-desc">{t('sortByDateDesc')}</option>
-          <option value="date-asc">{t('sortByDateAsc')}</option>
-          <option value="amount-desc">{t('sortByAmountDesc')}</option>
-          <option value="amount-asc">{t('sortByAmountAsc')}</option>
-        </select>
+        <div style={styles.filterRow}>
+          <div style={styles.dateFilterGroup}>
+            <label style={styles.dateLabel}>{t('from')}</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              style={styles.dateInput}
+            />
+          </div>
+          <div style={styles.dateFilterGroup}>
+            <label style={styles.dateLabel}>{t('to')}</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              style={styles.dateInput}
+            />
+          </div>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
+            <option value="date-desc">{t('sortByDateDesc')}</option>
+            <option value="date-asc">{t('sortByDateAsc')}</option>
+            <option value="amount-desc">{t('sortByAmountDesc')}</option>
+            <option value="amount-asc">{t('sortByAmountAsc')}</option>
+          </select>
+        </div>
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={() => { setMultiSelectEnabled((s) => { if (s) setSelectedIds(new Set()); return !s; }); }}
           style={{ ...styles.selectToggleButton, padding: '8px 12px' }}
@@ -164,20 +225,33 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
           {multiSelectEnabled ? t('cancel') : t('multiSelect')}
         </button>
         {multiSelectEnabled && (
-          <button
-            onClick={() => {
-              const ids = Array.from(selectedIds);
-              if (ids.length === 0) return;
-              if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
-              onBulkDelete && onBulkDelete(ids);
-              setSelectedIds(new Set());
-              setMultiSelectEnabled(false);
-            }}
-            style={{ ...styles.deleteSelectedButton }}
-            aria-label="Delete selected"
-          >
-            🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
-          </button>
+          <>
+            <button
+              onClick={() => {
+                const filtered = filteredAndSortedExpenses();
+                const allIds = new Set(filtered.map(exp => exp.id!));
+                setSelectedIds(allIds);
+              }}
+              style={{ ...styles.selectAllButton }}
+              aria-label="Select all"
+            >
+              ✓ {t('selectAll') || 'Select All'}
+            </button>
+            <button
+              onClick={() => {
+                const ids = Array.from(selectedIds);
+                if (ids.length === 0) return;
+                if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
+                onBulkDelete && onBulkDelete(ids);
+                setSelectedIds(new Set());
+                setMultiSelectEnabled(false);
+              }}
+              style={{ ...styles.deleteSelectedButton }}
+              aria-label="Delete selected"
+            >
+              🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+            </button>
+          </>
         )}
       </div>
 
@@ -331,6 +405,127 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '20px',
   },
+  summaryCard: {
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '10px',
+  },
+  summaryHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+  },
+  summaryMain: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  summaryLabel: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#666',
+  },
+  summaryTotal: {
+    fontSize: '24px',
+    fontWeight: '700' as const,
+    color: '#f44336',
+  },
+  summaryCount: {
+    fontSize: '14px',
+    color: '#888',
+  },
+  expandButton: {
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: '16px',
+    color: '#666',
+  },
+  summaryDetails: {
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid #ddd',
+  },
+  summaryDetailsTitle: {
+    margin: '0 0 12px 0',
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  summaryDetailRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '8px 0',
+    borderBottom: '1px solid #f0f0f0',
+  },
+  summaryDetailCategory: {
+    fontSize: '14px',
+    color: '#555',
+  },
+  summaryDetailAmount: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#f44336',
+  },
+  filterSection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
+    padding: '16px',
+  },
+  filterRow: {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+  },
+  filterInput: {
+    flex: 1,
+    minWidth: '200px',
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+  },
+  filterSelect: {
+    minWidth: '150px',
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+  },
+  dateFilterGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  dateLabel: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#555',
+    whiteSpace: 'nowrap' as const,
+  },
+  dateInput: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+    minWidth: '150px',
+  },
   filters: {
     display: 'flex',
     gap: '10px',
@@ -376,19 +571,25 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
-  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px' },
-  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' },
-  leftCol: { flex: 1, minWidth: 0 },
-  rightCol: { display: 'flex', alignItems: 'center', gap: '10px' },
+  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
+  leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
+  rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
   expenseInfo: {
     flex: 1,
+    minWidth: 0,
   },
   description: {
     margin: '0 0 5px 0',
     fontSize: '16px',
     fontWeight: '500' as const,
     color: '#333',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   category: {
     display: 'inline-block',
@@ -398,6 +599,10 @@ const styles = {
     borderRadius: '4px',
     fontSize: '12px',
     fontWeight: '500' as const,
+    maxWidth: '150px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   notes: {
     margin: '8px 0 0 0',
@@ -409,6 +614,8 @@ const styles = {
     fontWeight: '600' as const,
     color: '#f44336',
     marginBottom: '4px',
+    wordBreak: 'break-all' as const,
+    lineHeight: '1.2',
   },
   actions: { display: 'flex', gap: '6px' },
   iconButton: {
@@ -426,6 +633,15 @@ const styles = {
     borderRadius: '8px',
     border: '1px solid rgba(0,0,0,0.08)',
     backgroundColor: '#fff',
+    cursor: 'pointer',
+    fontWeight: 600 as const,
+  },
+  selectAllButton: {
+    borderRadius: '8px',
+    border: '1px solid rgba(33,150,83,0.2)',
+    backgroundColor: 'rgba(33,150,83,0.08)',
+    color: '#219653',
+    padding: '8px 12px',
     cursor: 'pointer',
     fontWeight: 600 as const,
   },

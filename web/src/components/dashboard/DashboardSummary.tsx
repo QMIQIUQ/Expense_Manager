@@ -117,7 +117,7 @@ const styles = {
   },
   summaryCards: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
     gap: '15px',
   },
   card: {
@@ -129,6 +129,8 @@ const styles = {
     alignItems: 'center',
     gap: '15px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   cardIcon: {
     fontSize: '32px',
@@ -142,17 +144,24 @@ const styles = {
   },
   cardContent: {
     flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   cardLabel: {
     fontSize: '12px',
     color: '#666',
     marginBottom: '4px',
     fontWeight: '500' as const,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   cardValue: {
     fontSize: '24px',
     fontWeight: '700' as const,
     color: '#333',
+    wordBreak: 'break-all' as const,
+    lineHeight: '1.2',
   },
   categoryBreakdown: {
     backgroundColor: 'white',
@@ -180,16 +189,25 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '8px',
+    minWidth: 0,
   },
   categoryName: {
     fontSize: '14px',
     fontWeight: '500' as const,
     color: '#333',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    flex: 1,
+    minWidth: 0,
   },
   categoryAmount: {
     fontSize: '14px',
     fontWeight: '600' as const,
     color: '#f44336',
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
   progressBar: {
     height: '8px',

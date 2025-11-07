@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RecurringExpense, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
@@ -19,6 +20,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   onDelete,
   onToggleActive,
 }) => {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -88,10 +90,13 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Recurring Expenses</h3>
+        <h3 style={styles.title}>{t('recurringExpense')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + Add Recurring
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '6px' }}>
+              <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+            </svg>
+            {t('addRecurring')}
           </button>
         )}
       </div>
@@ -277,6 +282,9 @@ const styles = {
     fontWeight: '600' as const,
   },
   addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '10px 20px',
     backgroundColor: '#6366f1',
     color: 'white',
@@ -336,9 +344,12 @@ const styles = {
     fontWeight: '500' as const,
     cursor: 'pointer',
   },
-  cancelButton: {
+  addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '10px 20px',
-    backgroundColor: '#6c757d',
+    backgroundColor: '#6366f1',
     color: 'white',
     border: 'none',
     borderRadius: '4px',

@@ -65,7 +65,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         <h3 style={styles.title}>{t('categories')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + {t('addCategory')}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '6px' }}>
+              <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+            </svg>
+            {t('addCategory')}
           </button>
         )}
       </div>
@@ -189,6 +192,9 @@ const styles = {
     fontWeight: '600' as const,
   },
   addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '10px 20px',
     backgroundColor: '#6366f1',
     color: 'white',
@@ -290,11 +296,16 @@ const styles = {
     backgroundColor: 'white',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
+    minWidth: 0,
+    gap: '10px',
   },
   categoryInfo: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   categoryIcon: {
     width: '40px',
@@ -304,10 +315,14 @@ const styles = {
     justifyContent: 'center',
     borderRadius: '8px',
     fontSize: '20px',
+    flexShrink: 0,
   },
   categoryName: {
     fontSize: '16px',
     fontWeight: '500' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   defaultBadge: {
     padding: '4px 8px',

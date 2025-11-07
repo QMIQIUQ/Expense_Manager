@@ -110,8 +110,8 @@ input:focus {
 
 @media (max-width: 640px) {
   .dashboard-header {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     padding: 14px;
   }
 }
@@ -128,7 +128,7 @@ input:focus {
 
 @media (max-width: 640px) {
   .header-actions {
-    display: none; /* hide full set; use the toggle */
+    justify-content: flex-end;
   }
   .actions-toggle {
     display: inline-flex;
@@ -230,4 +230,92 @@ input:focus {
 /* Ensure the three-dot toggle is visible on small screens (override order) */
 @media (max-width: 640px) {
   .actions-toggle { display: inline-flex !important; }
+}
+
+/* Prevent overflow on extremely small screens */
+@media (max-width: 360px) {
+  .dashboard-card {
+    padding: 10px;
+  }
+  
+  .dashboard-header {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+  
+  .dashboard-header p {
+    font-size: 0.75rem;
+  }
+  
+  /* Force content to wrap and not overflow */
+  .content-pad {
+    padding: 10px;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .dashboard-tabs {
+    padding: 8px;
+    gap: 4px;
+  }
+  
+  .dashboard-tab {
+    min-width: 80px;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+  
+  /* Ensure all containers respect viewport width */
+  * {
+    max-width: 100%;
+  }
+}
+
+/* Ultra-small screens (under 320px) */
+@media (max-width: 320px) {
+  .dashboard-header h1 {
+    font-size: 1rem;
+  }
+  
+  .dashboard-tab {
+    min-width: 70px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Global overflow prevention for all screen sizes */
+.expense-card,
+.category-card,
+.budget-card {
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure text in small containers doesn't overflow */
+@media (max-width: 480px) {
+  button {
+    font-size: 0.875rem;
+    padding: 8px 12px;
+  }
+  
+  input, select {
+    font-size: 14px;
+    min-width: 0;
+  }
+  
+  /* Prevent long IDs and text from breaking layout */
+  .expense-card > *,
+  .category-card > *,
+  .budget-card > * {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
 }
