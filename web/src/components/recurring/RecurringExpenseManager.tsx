@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RecurringExpense, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
@@ -19,6 +20,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   onDelete,
   onToggleActive,
 }) => {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -88,10 +90,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Recurring Expenses</h3>
+        <h3 style={styles.title}>{t('recurringExpenses')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + Add Recurring
+            + {t('addRecurring')}
           </button>
         )}
       </div>
@@ -99,7 +101,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       {isAdding && (
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Description *</label>
+            <label style={styles.label}>{t('description')} *</label>
             <input
               type="text"
               value={formData.description}
@@ -113,7 +115,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
           <div style={styles.formRow}>
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Amount ($) *</label>
+              <label style={styles.label}>{t('amount')} ($) *</label>
               <input
                 type="number"
                 value={formData.amount}
@@ -127,14 +129,14 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Category *</label>
+              <label style={styles.label}>{t('category')} *</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
                 style={styles.select}
               >
-                <option value="">Select Category</option>
+                <option value="">{t('selectCategory')}</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.name}>
                     {cat.icon} {cat.name}
@@ -146,7 +148,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
           <div style={styles.formRow}>
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Frequency *</label>
+              <label style={styles.label}>{t('frequency')} *</label>
               <select
                 value={formData.frequency}
                 onChange={(e) =>
@@ -157,15 +159,15 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 }
                 style={styles.select}
               >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
+                <option value="daily">{t('freqDaily')}</option>
+                <option value="weekly">{t('freqWeekly')}</option>
+                <option value="monthly">{t('freqMonthly')}</option>
+                <option value="yearly">{t('freqYearly')}</option>
               </select>
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Start Date *</label>
+              <label style={styles.label}>{t('startDate')} *</label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -178,7 +180,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
-              {editingId ? 'Update' : 'Add'} Recurring Expense
+              {editingId ? t('edit') : t('add')} {t('recurringExpense')}
             </button>
             <button
               type="button"
@@ -189,7 +191,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               }}
               style={styles.cancelButton}
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </form>
@@ -198,7 +200,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       <div style={styles.expenseList}>
         {recurringExpenses.length === 0 ? (
           <div style={styles.noData}>
-            <p>No recurring expenses set. Add your first one! 🔄</p>
+            <p>{t('noRecurringYet')}</p>
           </div>
         ) : (
           recurringExpenses.map((expense) => (
@@ -213,9 +215,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
                   <div style={styles.status}>
                     {expense.isActive ? (
-                      <span style={styles.activeStatus}>● Active</span>
+                      <span style={styles.activeStatus}>● {t('active')}</span>
                     ) : (
-                      <span style={styles.inactiveStatus}>● Inactive</span>
+                      <span style={styles.inactiveStatus}>● {t('inactive')}</span>
                     )}
                   </div>
                 </div>
@@ -225,16 +227,16 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   onClick={() => onToggleActive(expense.id!, !expense.isActive)}
                   style={expense.isActive ? styles.pauseBtn : styles.resumeBtn}
                 >
-                  {expense.isActive ? 'Pause' : 'Resume'}
+                  {expense.isActive ? t('pause') : t('resume')}
                 </button>
                 <button onClick={() => handleEdit(expense)} style={styles.editBtn}>
-                  Edit
+                  {t('edit')}
                 </button>
                 <button
                   onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
                   style={styles.deleteBtn}
                 >
-                  Delete
+                  {t('delete')}
                 </button>
               </div>
             </div>
@@ -244,10 +246,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
-        title="Delete Recurring Expense"
-        message="Are you sure you want to delete this recurring expense?"
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('deleteRecurringExpense')}
+        message={t('confirmDeleteRecurring')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.recurringId) {

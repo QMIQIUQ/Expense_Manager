@@ -55,6 +55,9 @@ export const translations = {
   total: { en: 'total:', zh: '總計:', 'zh-CN': '总计:' },
   from: { en: 'from:', zh: '從:', 'zh-CN': '从:' },
   allDates: { en: 'All Dates', zh: '所有日期', 'zh-CN': '所有日期' },
+  month: { en: 'Month', zh: '月份', 'zh-CN': '月份' },
+  selectMonth: { en: 'Select Month', zh: '選擇月份', 'zh-CN': '选择月份' },
+  allMonths: { en: 'All Months', zh: '所有月份', 'zh-CN': '所有月份' },
 
   // Expense List
   expenseHistory: { en: 'Expense History', zh: '支出記錄', 'zh-CN': '支出记录' },
@@ -92,6 +95,7 @@ export const translations = {
   budgetName: { en: 'Budget Name', zh: '預算名稱', 'zh-CN': '预算名称' },
   budgetAmount: { en: 'Budget Amount', zh: '預算金額', 'zh-CN': '预算金额' },
   budgetPeriod: { en: 'Period', zh: '期間', 'zh-CN': '期间' },
+  periodWeekly: { en: 'Weekly', zh: '每週', 'zh-CN': '每周' },
   periodMonthly: { en: 'Monthly', zh: '每月', 'zh-CN': '每月' },
   periodYearly: { en: 'Yearly', zh: '每年', 'zh-CN': '每年' },
   addBudget: { en: 'Add Budget', zh: '新增預算', 'zh-CN': '添加预算' },
@@ -100,13 +104,21 @@ export const translations = {
   spent: { en: 'Spent', zh: '已花費', 'zh-CN': '已花费' },
   remaining: { en: 'Remaining', zh: '剩餘', 'zh-CN': '剩余' },
   exceeded: { en: 'Exceeded', zh: '超支', 'zh-CN': '超支' },
+  alertAt: { en: 'Alert at (%)', zh: '警報於 (%)', 'zh-CN': '警报于 (%)' },
+  setBudgetButton: { en: 'Set Budget', zh: '設定預算', 'zh-CN': '设定预算' },
+  updateBudget: { en: 'Update Budget', zh: '更新預算', 'zh-CN': '更新预算' },
+  deleteBudget: { en: 'Delete Budget', zh: '刪除預算', 'zh-CN': '删除预算' },
+  confirmDeleteBudget: { en: 'Are you sure you want to delete this budget?', zh: '您確定要刪除此預算嗎？', 'zh-CN': '您确定要删除此预算吗？' },
+  used: { en: 'used', zh: '已使用', 'zh-CN': '已使用' },
 
   // Recurring Expenses
   recurringExpense: { en: 'Recurring Expense', zh: '定期支出', 'zh-CN': '定期支出' },
+  recurringExpenses: { en: 'Recurring Expenses', zh: '定期支出', 'zh-CN': '定期支出' },
   frequency: { en: 'Frequency', zh: '頻率', 'zh-CN': '频率' },
   freqDaily: { en: 'Daily', zh: '每日', 'zh-CN': '每日' },
   freqWeekly: { en: 'Weekly', zh: '每週', 'zh-CN': '每周' },
   freqMonthly: { en: 'Monthly', zh: '每月', 'zh-CN': '每月' },
+  freqYearly: { en: 'Yearly', zh: '每年', 'zh-CN': '每年' },
   startDate: { en: 'Start Date', zh: '開始日期', 'zh-CN': '开始日期' },
   endDate: { en: 'End Date', zh: '結束日期', 'zh-CN': '结束日期' },
   optional: { en: 'Optional', zh: '選填', 'zh-CN': '选填' },
@@ -115,6 +127,12 @@ export const translations = {
   addRecurring: { en: 'Add Recurring Expense', zh: '新增定期支出', 'zh-CN': '添加定期支出' },
   editRecurring: { en: 'Edit Recurring Expense', zh: '編輯定期支出', 'zh-CN': '编辑定期支出' },
   noRecurring: { en: 'No recurring expenses found', zh: '找不到定期支出', 'zh-CN': '找不到定期支出' },
+  noRecurringYet: { en: 'No recurring expenses set. Add your first one! 🔄', zh: '尚未設定定期支出。新增您的第一筆！🔄', 'zh-CN': '尚未设定定期支出。添加您的第一笔！🔄' },
+  pause: { en: 'Pause', zh: '暫停', 'zh-CN': '暂停' },
+  resume: { en: 'Resume', zh: '繼續', 'zh-CN': '继续' },
+  updateRecurringExpense: { en: 'Update Recurring Expense', zh: '更新定期支出', 'zh-CN': '更新定期支出' },
+  deleteRecurringExpense: { en: 'Delete Recurring Expense', zh: '刪除定期支出', 'zh-CN': '删除定期支出' },
+  confirmDeleteRecurring: { en: 'Are you sure you want to delete this recurring expense?', zh: '您確定要刪除此定期支出嗎？', 'zh-CN': '您确定要删除此定期支出吗？' },
 
   // Dashboard Summary
   totalExpenses: { en: 'Total Expenses', zh: '總支出', 'zh-CN': '总支出' },
@@ -124,6 +142,9 @@ export const translations = {
   topCategories: { en: 'Top Categories', zh: '熱門類別', 'zh-CN': '热门分类' },
   recentExpenses: { en: 'Recent Expenses', zh: '最近支出', 'zh-CN': '最近支出' },
   spendingTrend: { en: 'Spending Trend', zh: '支出趨勢', 'zh-CN': '支出趋势' },
+  spendingByCategory: { en: 'Spending by Category', zh: '分類支出', 'zh-CN': '分类支出' },
+  categoryDistribution: { en: 'Category Distribution', zh: '類別分布', 'zh-CN': '分类分布' },
+  noExpensesData: { en: 'No expenses to display', zh: '沒有支出數據', 'zh-CN': '没有支出数据' },
 
   // Import/Export
   importExport: { en: 'Import/Export', zh: '匯入/匯出', 'zh-CN': '导入/导出' },

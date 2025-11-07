@@ -29,6 +29,17 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     categoryId: null,
   });
 
+  // Detect duplicate category names
+  const getDuplicateCategoryNames = () => {
+    const nameCount: { [name: string]: number } = {};
+    categories.forEach(cat => {
+      nameCount[cat.name] = (nameCount[cat.name] || 0) + 1;
+    });
+    return new Set(Object.keys(nameCount).filter(name => nameCount[name] > 1));
+  };
+
+  const duplicateNames = getDuplicateCategoryNames();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
@@ -58,6 +69,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
+
+  // Sort categories by name
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div style={styles.container}>
@@ -128,30 +142,39 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       )}
 
       <div style={styles.categoryList}>
-        {categories.map((category) => (
-          <div key={category.id} style={styles.categoryCard}>
-            <div style={styles.categoryInfo}>
-              <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
-                {category.icon}
-              </span>
-              <span style={styles.categoryName}>{category.name}</span>
-              {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
-            </div>
-            <div style={styles.categoryActions}>
-              <button onClick={() => handleEdit(category)} style={styles.editBtn}>
-                {t('edit')}
-              </button>
-              {!category.isDefault && (
-                <button
-                  onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
-                  style={styles.deleteBtn}
-                >
-                  {t('delete')}
+        {sortedCategories.map((category) => {
+          const isDuplicate = duplicateNames.has(category.name);
+          return (
+            <div key={category.id} style={{
+              ...styles.categoryCard,
+              ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: '#fff3e0' } : {})
+            }}>
+              <div style={styles.categoryInfo}>
+                <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
+                  {category.icon}
+                </span>
+                <span style={styles.categoryName}>
+                  {category.name}
+                  {isDuplicate && <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
+                </span>
+                {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
+              </div>
+              <div style={styles.categoryActions}>
+                <button onClick={() => handleEdit(category)} style={styles.editBtn}>
+                  {t('edit')}
                 </button>
-              )}
+                {!category.isDefault && (
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
+                    style={styles.deleteBtn}
+                  >
+                    {t('delete')}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       <ConfirmModal
