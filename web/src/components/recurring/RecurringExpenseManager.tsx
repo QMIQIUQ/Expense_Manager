@@ -344,13 +344,10 @@ const styles = {
     fontWeight: '500' as const,
     cursor: 'pointer',
   },
-  addButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  cancelButton: {
     padding: '10px 20px',
-    backgroundColor: '#6366f1',
-    color: 'white',
+    backgroundColor: '#e0e0e0',
+    color: '#333',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
