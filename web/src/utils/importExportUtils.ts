@@ -251,11 +251,14 @@ export const importData = async (
   
   try {
     // Step 1: Process categories first
-    const categoryMap = new Map<string, string>(); // name -> id mapping
+    const categoryMap = new Map<string, string>(); // name (lowercase) -> id mapping
+    const categoryIdToName = new Map<string, string>(); // id -> original name mapping
     
     // Build map of existing categories
     existingCategories.forEach(cat => {
-      categoryMap.set(cat.name.toLowerCase().trim(), cat.id!);
+      const lowerName = cat.name.toLowerCase().trim();
+      categoryMap.set(lowerName, cat.id!);
+      categoryIdToName.set(cat.id!, cat.name);
     });
     
     // Import new categories if auto-create is enabled
@@ -276,6 +279,7 @@ export const importData = async (
               isDefault: false,
             });
             categoryMap.set(normalizedName, newCatId);
+            categoryIdToName.set(newCatId, catRow.name); // Store reverse mapping
             result.success++;
           } catch (error) {
             result.errors.push({
@@ -325,6 +329,7 @@ export const importData = async (
             isDefault: false,
           });
           categoryMap.set(catName, newCatId);
+          categoryIdToName.set(newCatId, originalName); // Store reverse mapping
         } catch (error) {
           result.errors.push({
             row: 0,
@@ -352,8 +357,8 @@ export const importData = async (
         
         try {
           // Validate category exists
-          const categoryName = expRow.category.toLowerCase().trim();
-          if (!categoryMap.has(categoryName)) {
+          const categoryNameLower = expRow.category.toLowerCase().trim();
+          if (!categoryMap.has(categoryNameLower)) {
             result.errors.push({
               row: rowNum,
               message: `Category not found: "${expRow.category}"`,
@@ -388,15 +393,18 @@ export const importData = async (
           
           // Apply conflict strategy by creating new object without ID
           // (avoiding mutation of original expRow)
-          // Map category name to category id
-          const categoryId = categoryMap.get(categoryName)!;
+          // Get category ID and find the proper category name
+          const categoryId = categoryMap.get(categoryNameLower)!;
+          
+          // Find the original category name (with proper casing) using reverse mapping
+          const categoryDisplayName = categoryIdToName.get(categoryId) || expRow.category;
 
           // Build expense data and omit undefined fields (Firestore forbids undefined)
-          const expenseData: any = {
+          const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
             userId,
             description: expRow.description,
             amount: Number(expRow.amount),
-            category: categoryId,
+            category: categoryDisplayName, // Use category NAME, not ID
             date: expRow.date,
           };
 

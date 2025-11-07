@@ -70,6 +70,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
 
+  // Sort categories by name
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -139,7 +142,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       )}
 
       <div style={styles.categoryList}>
-        {categories.map((category) => {
+        {sortedCategories.map((category) => {
           const isDuplicate = duplicateNames.has(category.name);
           return (
             <div key={category.id} style={{
