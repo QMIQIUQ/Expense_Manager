@@ -540,7 +540,7 @@ const Dashboard: React.FC = () => {
         <div ref={actionsRef} className="flex items-center gap-2">
           <button
             onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
-            className="px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium transition-colors"
+            className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
             title={language === 'en' ? 'Switch to Chinese' : '切換至英文'}
           >
             {language === 'en' ? '中文' : 'EN'}
@@ -578,7 +578,7 @@ const Dashboard: React.FC = () => {
         <div className="header-actions">
           <button
             onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
-            className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded font-medium text-sm transition-colors border border-gray-300"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-colors"
             title={language === 'en' ? 'Switch to Chinese' : '切換至英文'}
           >
             {language === 'en' ? '中文' : 'English'}
