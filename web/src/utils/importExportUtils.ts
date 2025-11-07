@@ -343,16 +343,12 @@ export const importData = async (
       const batchNum = Math.floor(i / BATCH_SIZE) + 1;
       const totalBatches = Math.ceil(totalExpenses / BATCH_SIZE);
       
-      onProgress?.(
-        i,
-        totalExpenses,
-        `Importing expenses batch ${batchNum}/${totalBatches}...`
-      );
       
       // Process batch
       for (let j = 0; j < batch.length; j++) {
         const expRow = batch[j];
         const rowNum = i + j + 2; // +2 for header and 1-indexing
+          const currentProgress = i + j + 1; // Current item being processed (1-indexed)
         
         try {
           // Validate category exists
@@ -364,6 +360,12 @@ export const importData = async (
               data: expRow,
             });
             result.skipped++;
+                        // Update progress even for skipped items
+                        onProgress?.(
+                          currentProgress,
+                          totalExpenses,
+                          `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+                        );
             continue;
           }
           
@@ -372,6 +374,12 @@ export const importData = async (
             result.errors.push({
               row: rowNum,
               message: 'Invalid amount',
+                          // Update progress even for skipped items
+                          onProgress?.(
+                            currentProgress,
+                            totalExpenses,
+                            `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+                          );
               data: expRow,
             });
             result.skipped++;
@@ -399,22 +407,29 @@ export const importData = async (
           // Create expense
           await expenseService.create(expenseData);
           
+                    // Update progress after each successful import
+                    onProgress?.(
+                      currentProgress,
+                      totalExpenses,
+                      `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+                    );
+          
           result.success++;
         } catch (error) {
           result.errors.push({
             row: rowNum,
             message: `Failed to import: ${(error as Error).message}`,
+                      // Update progress even for failed items
+                      onProgress?.(
+                        currentProgress,
+                        totalExpenses,
+                        `Importing expenses batch ${batchNum}/${totalBatches}... (${currentProgress}/${totalExpenses})`
+                      );
             data: expRow,
           });
           result.failed++;
         }
       }
-      
-      onProgress?.(
-        Math.min(i + BATCH_SIZE, totalExpenses),
-        totalExpenses,
-        `Completed batch ${batchNum}/${totalBatches}`
-      );
     }
     
     return result;

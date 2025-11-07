@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Category } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   parseUploadedFile,
   matchCategories,
@@ -46,6 +47,7 @@ const ImportExportModal: React.FC<Props> = ({
   existingCategories,
   onImportComplete,
 }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<'select' | 'preview' | 'importing' | 'complete'>('select');
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -70,7 +72,7 @@ const ImportExportModal: React.FC<Props> = ({
     const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.'));
     
     if (!validExtensions.includes(fileExtension.toLowerCase())) {
-      setErrorMessage('Please select a .xlsx or .csv file');
+      setErrorMessage(t('pleaseSelectFile'));
       return;
     }
 
@@ -89,7 +91,7 @@ const ImportExportModal: React.FC<Props> = ({
       
       setStep('preview');
     } catch (error) {
-      setErrorMessage(`Failed to parse file: ${(error as Error).message}`);
+      setErrorMessage(`${t('failedToParse')}: ${(error as Error).message}`);
       setFile(null);
     }
   };
@@ -99,7 +101,7 @@ const ImportExportModal: React.FC<Props> = ({
 
     setStep('importing');
     setErrorMessage('');
-    setProgress({ current: 0, total: parsedData.expenses.length, message: 'Starting import...' });
+    setProgress({ current: 0, total: parsedData.expenses.length, message: t('startingImport') });
 
     try {
       const result = await importData(
@@ -117,7 +119,7 @@ const ImportExportModal: React.FC<Props> = ({
       setStep('complete');
       onImportComplete();
     } catch (error) {
-      setErrorMessage(`Import failed: ${(error as Error).message}`);
+      setErrorMessage(`${t('importFailed')}: ${(error as Error).message}`);
       setStep('preview');
     }
   };
@@ -135,13 +137,13 @@ const ImportExportModal: React.FC<Props> = ({
 
   const renderSelectStep = () => (
     <div style={styles.stepContent}>
-      <h3 style={styles.stepTitle}>Import Expenses</h3>
+      <h3 style={styles.stepTitle}>{t('importExpenses')}</h3>
       <p style={styles.description}>
-        Upload a .xlsx or .csv file containing your expense data.
+        {t('uploadFileDescription')}
       </p>
       {errorMessage && (
         <div style={styles.errorBox}>
-          <strong>⚠️ Error:</strong> {errorMessage}
+          <strong>⚠️ {t('error')}:</strong> {errorMessage}
         </div>
       )}
       <input
@@ -155,16 +157,17 @@ const ImportExportModal: React.FC<Props> = ({
         onClick={() => fileInputRef.current?.click()}
         style={styles.uploadButton}
       >
-        📁 Choose File
+        📁 {t('chooseFile')}
       </button>
-      {file && <p style={styles.fileName}>Selected: {file.name}</p>}
+      {file && <p style={styles.fileName}>{t('selectedFile')}: {file.name}</p>}
     </div>
   );
 
   const renderPreviewStep = () => {
     if (!parsedData) return null;
 
-    const previewExpenses = parsedData.expenses.slice(0, 20);
+    // 顯示所有資料，不限制為20行
+    const previewExpenses = parsedData.expenses;
     const hasUnmatchedCategories = Array.from(categoryMappings.values()).some(m => !m.matched);
 
     // Detect blank / empty category names and rows that contain them
@@ -175,24 +178,24 @@ const ImportExportModal: React.FC<Props> = ({
 
     return (
       <div style={styles.stepContent}>
-        <h3 style={styles.stepTitle}>Preview & Configure</h3>
+        <h3 style={styles.stepTitle}>{t('previewAndConfigure')}</h3>
         
         {/* Import Error Message */}
         {errorMessage && (
           <div style={styles.errorBox}>
-            <strong>⚠️ Import Error:</strong> {errorMessage}
+            <strong>⚠️ {t('importError2')}:</strong> {errorMessage}
           </div>
         )}
         
         {/* Parse Errors */}
         {parsedData.errors.length > 0 && (
           <div style={styles.errorBox}>
-            <strong>⚠️ Parse Errors:</strong>
+            <strong>⚠️ {t('parseErrors')}:</strong>
             <ul style={styles.errorList}>
               {parsedData.errors.slice(0, 5).map((err, idx) => (
                 <li key={idx}>{err}</li>
               ))}
-              {parsedData.errors.length > 5 && <li>...and {parsedData.errors.length - 5} more</li>}
+              {parsedData.errors.length > 5 && <li>{t('andMore').replace('{count}', String(parsedData.errors.length - 5))}</li>}
             </ul>
           </div>
         )}
@@ -200,24 +203,24 @@ const ImportExportModal: React.FC<Props> = ({
         {/* Stats */}
         <div style={styles.stats}>
           <div style={styles.statItem}>
-            <span style={styles.statLabel}>Total Expenses:</span>
+            <span style={styles.statLabel}>{t('totalExpensesCount')}:</span>
             <span style={styles.statValue}>{parsedData.expenses.length}</span>
           </div>
           <div style={styles.statItem}>
-            <span style={styles.statLabel}>Categories:</span>
+            <span style={styles.statLabel}>{t('categories')}:</span>
             <span style={styles.statValue}>{categoryMappings.size}</span>
           </div>
         </div>
         
         {/* Category Mappings */}
         <div style={styles.mappingSection}>
-          <h4 style={styles.sectionTitle}>Category Mapping</h4>
+          <h4 style={styles.sectionTitle}>{t('categoryMapping')}</h4>
           <div style={styles.mappingList}>
             {Array.from(categoryMappings.entries()).map(([name, mapping]) => (
               <div key={name} style={styles.mappingItem}>
-                <span style={styles.mappingName}>{name === '' ? '(blank)' : name}</span>
+                <span style={styles.mappingName}>{name === '' ? t('blank') : name}</span>
                 <span style={mapping.matched ? styles.mappingMatched : styles.mappingUnmatched}>
-                  {mapping.matched ? `✓ Matched: ${mapping.matched.name}` : '⚠️ Not found'}
+                  {mapping.matched ? `✓ ${t('matched')}: ${mapping.matched.name}` : `⚠️ ${t('notFound')}`}
                 </span>
               </div>
             ))}
@@ -226,7 +229,7 @@ const ImportExportModal: React.FC<Props> = ({
         
         {/* Options */}
         <div style={styles.optionsSection}>
-          <h4 style={styles.sectionTitle}>Import Options</h4>
+          <h4 style={styles.sectionTitle}>{t('importOptions')}</h4>
           <label style={styles.checkboxLabel}>
             <input
               type="checkbox"
@@ -234,26 +237,27 @@ const ImportExportModal: React.FC<Props> = ({
               onChange={(e) => setOptions({ ...options, autoCreateCategories: e.target.checked })}
               style={styles.checkbox}
             />
-            <span>Auto-create missing categories</span>
+            <span>{t('autoCreateCategories')}</span>
           </label>
           {hasUnmatchedCategories && !options.autoCreateCategories && (
             <p style={styles.warning}>
-              ⚠️ Some categories don't exist. Enable auto-create or they will be skipped.
+              ⚠️ {t('autoCreateWarning')}
             </p>
           )}
         </div>
         
         {/* Preview Table */}
         <div style={styles.previewSection}>
-          <h4 style={styles.sectionTitle}>Preview (first 20 rows)</h4>
+          <h4 style={styles.sectionTitle}>{t('preview')} ({parsedData.expenses.length} {t('rows')})</h4>
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Date</th>
-                  <th style={styles.th}>Description</th>
-                  <th style={styles.th}>Category</th>
-                  <th style={styles.th}>Amount</th>
+                  <th style={styles.th}>{t('index')}</th>
+                  <th style={styles.th}>{t('date')}</th>
+                  <th style={styles.th}>{t('description')}</th>
+                  <th style={styles.th}>{t('category')}</th>
+                  <th style={styles.th}>{t('amount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,13 +265,14 @@ const ImportExportModal: React.FC<Props> = ({
                   const isBlank = !exp.category || String(exp.category).trim() === '';
                   return (
                     <tr key={idx} style={styles.tr}>
+                      <td style={styles.td}>{idx + 1}</td>
                       <td style={styles.td}>{exp.date}</td>
                       <td style={styles.td}>{exp.description}</td>
                       <td style={{
                         ...styles.td,
                         ...(isBlank ? styles.blankCategoryCell : {}),
                       }}>
-                        {isBlank ? <em style={styles.blankText}>(blank)</em> : exp.category}
+                        {isBlank ? <em style={styles.blankText}>{t('blank')}</em> : exp.category}
                       </td>
                       <td style={styles.td}>${exp.amount.toFixed(2)}</td>
                     </tr>
@@ -278,23 +283,9 @@ const ImportExportModal: React.FC<Props> = ({
           </div>
           {blankCategoryRows.length > 0 && (
             <div style={styles.blankWarning}>
-              ⚠️ Found {blankCategoryRows.length} row(s) with a blank category (e.g. rows: {blankCategoryRows.slice(0,5).join(', ')}{blankCategoryRows.length > 5 ? `, ...` : ''}).
-              These rows will be skipped unless you provide a category or enable "Auto-create missing categories" and fill the category name. Please fix the source file before importing.
+              ⚠️ {t('blankCategoryWarning').replace('{count}', String(blankCategoryRows.length))} ({t('rowsExample')}: {blankCategoryRows.slice(0,5).join(', ')}{blankCategoryRows.length > 5 ? `, ...` : ''})
             </div>
           )}
-          {parsedData.expenses.length > 20 && (
-            <p style={styles.moreRows}>...and {parsedData.expenses.length - 20} more rows</p>
-          )}
-        </div>
-        
-        {/* Actions */}
-        <div style={styles.actions}>
-          <button onClick={handleClose} style={styles.cancelButton}>
-            Cancel
-          </button>
-          <button onClick={handleImport} style={styles.importButton}>
-            Start Import
-          </button>
         </div>
       </div>
     );
@@ -302,7 +293,7 @@ const ImportExportModal: React.FC<Props> = ({
 
   const renderImportingStep = () => (
     <div style={styles.stepContent}>
-      <h3 style={styles.stepTitle}>Importing...</h3>
+      <h3 style={styles.stepTitle}>{t('importing')}</h3>
       <div style={styles.progressSection}>
         <div style={styles.progressBar}>
           <div
@@ -324,47 +315,47 @@ const ImportExportModal: React.FC<Props> = ({
 
     return (
       <div style={styles.stepContent}>
-        <h3 style={styles.stepTitle}>Import Complete</h3>
+        <h3 style={styles.stepTitle}>{t('importComplete')}</h3>
         <div style={styles.resultSection}>
           <div style={styles.resultItem}>
-            <span style={styles.resultLabel}>✅ Success:</span>
+            <span style={styles.resultLabel}>✅ {t('success')}:</span>
             <span style={styles.resultValue}>{importResult.success}</span>
           </div>
           <div style={styles.resultItem}>
-            <span style={styles.resultLabel}>⏭️ Skipped:</span>
+            <span style={styles.resultLabel}>⏭️ {t('skipped')}:</span>
             <span style={styles.resultValue}>{importResult.skipped}</span>
           </div>
           <div style={styles.resultItem}>
-            <span style={styles.resultLabel}>❌ Failed:</span>
+            <span style={styles.resultLabel}>❌ {t('failed')}:</span>
             <span style={styles.resultValue}>{importResult.failed}</span>
           </div>
         </div>
         
         {importResult.errors.length > 0 && (
           <div style={styles.errorSection}>
-            <h4 style={styles.sectionTitle}>Errors:</h4>
+            <h4 style={styles.sectionTitle}>{t('errors')}:</h4>
             <div style={styles.errorList}>
               {importResult.errors.slice(0, 10).map((err, idx) => (
                 <div key={idx} style={styles.errorItem}>
-                  {err.row > 0 && <strong>Row {err.row}: </strong>}
+                  {err.row > 0 && <strong>{t('row')} {err.row}: </strong>}
                   {err.message}
                 </div>
               ))}
               {importResult.errors.length > 10 && (
-                <div style={styles.errorItem}>...and {importResult.errors.length - 10} more errors</div>
+                <div style={styles.errorItem}>{t('andMoreErrors').replace('{count}', String(importResult.errors.length - 10))}</div>
               )}
             </div>
             <button
               onClick={() => exportErrorsToCSV(importResult.errors)}
               style={styles.downloadErrorsButton}
             >
-              📥 Download Error Report
+              📥 {t('downloadErrorReport')}
             </button>
           </div>
         )}
         
         <button onClick={handleClose} style={styles.closeButton}>
-          Close
+          {t('close')}
         </button>
       </div>
     );
@@ -373,10 +364,22 @@ const ImportExportModal: React.FC<Props> = ({
   return (
     <div style={styles.overlay} onClick={handleClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {step === 'select' && renderSelectStep()}
-        {step === 'preview' && renderPreviewStep()}
-        {step === 'importing' && renderImportingStep()}
-        {step === 'complete' && renderCompleteStep()}
+        <div style={styles.scrollableContent}>
+          {step === 'select' && renderSelectStep()}
+          {step === 'preview' && renderPreviewStep()}
+          {step === 'importing' && renderImportingStep()}
+          {step === 'complete' && renderCompleteStep()}
+        </div>
+        {step === 'preview' && (
+          <div style={styles.fixedActions}>
+            <button onClick={handleClose} style={styles.cancelButton}>
+              {t('cancel')}
+            </button>
+            <button onClick={handleImport} style={styles.importButton}>
+              {t('startImport')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -399,12 +402,27 @@ const styles = {
   modal: {
     backgroundColor: '#fff',
     borderRadius: '8px',
-    padding: '30px',
     maxWidth: '800px',
     width: '100%',
     maxHeight: '90vh',
-    overflowY: 'auto' as const,
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+  },
+  scrollableContent: {
+    flex: 1,
+    overflowY: 'auto' as const,
+    padding: '30px',
+  },
+  fixedActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    padding: '20px 30px',
+    borderTop: '1px solid #e0e0e0',
+    backgroundColor: '#fff',
+    flexShrink: 0,
   },
   stepContent: {
     display: 'flex',

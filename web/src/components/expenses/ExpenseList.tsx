@@ -19,6 +19,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
   const [categoryFilter, setCategoryFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
+  const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
   const [showSummary, setShowSummary] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
@@ -43,8 +44,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesCategory = !categoryFilter || expense.category === categoryFilter;
-      const matchesDateFrom = !dateFrom || expense.date >= dateFrom;
-      const matchesDateTo = !dateTo || expense.date <= dateTo;
+      const matchesDateFrom = allDates ? true : (!dateFrom || expense.date >= dateFrom);
+      const matchesDateTo = allDates ? true : (!dateTo || expense.date <= dateTo);
       return matchesSearch && matchesCategory && matchesDateFrom && matchesDateTo;
     });
 
@@ -187,6 +188,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
           </select>
         </div>
         <div style={styles.filterRow}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              id="allDatesToggle"
+              type="checkbox"
+              checked={allDates}
+              onChange={(e) => setAllDates(e.target.checked)}
+              aria-label={t('allDates')}
+            />
+            <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
+          </div>
           <div style={styles.dateFilterGroup}>
             <label style={styles.dateLabel}>{t('from')}</label>
             <input
@@ -194,6 +205,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               style={styles.dateInput}
+              disabled={allDates}
             />
           </div>
           <div style={styles.dateFilterGroup}>
@@ -203,6 +215,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               style={styles.dateInput}
+              disabled={allDates}
             />
           </div>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">

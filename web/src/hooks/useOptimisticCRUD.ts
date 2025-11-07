@@ -14,6 +14,7 @@ interface UseOptimisticCRUDOptions {
   onError?: (error: unknown) => void;
   retryToQueueOnFail?: boolean;
   entityType?: 'expense' | 'category' | 'budget' | 'recurring';
+  suppressNotification?: boolean;
 }
 
 export const useOptimisticCRUD = <T,>() => {
@@ -38,10 +39,13 @@ export const useOptimisticCRUD = <T,>() => {
       };
       setPendingOperations((prev) => new Map(prev).set(operationId, fullOperation));
 
-      // Show pending notification
-      const notificationId = showNotification('pending', 'Processing...', {
-        duration: 0, // Persistent
-      });
+      // Show pending notification unless suppressed (bulk operations may want one notification)
+      let notificationId: string | undefined;
+      if (!options?.suppressNotification) {
+        notificationId = showNotification('pending', 'Processing...', {
+          duration: 0, // Persistent
+        });
+      }
 
       try {
         // Execute API call
@@ -54,12 +58,14 @@ export const useOptimisticCRUD = <T,>() => {
           return newMap;
         });
 
-        // Update notification to success
-        updateNotification(notificationId, {
-          type: 'success',
-          message: getSuccessMessage(operation.type),
-          duration: 3000,
-        });
+        // Update notification to success (only if a notification was created)
+        if (notificationId) {
+          updateNotification(notificationId, {
+            type: 'success',
+            message: getSuccessMessage(operation.type),
+            duration: 3000,
+          });
+        }
 
         // Call success callback
         if (options?.onSuccess) {
@@ -89,14 +95,18 @@ export const useOptimisticCRUD = <T,>() => {
           });
 
           // Update notification
-          updateNotification(notificationId, {
-            type: 'info',
-            message: 'Operation saved offline. Will retry when connection is restored.',
-            duration: 5000,
-          });
+          if (notificationId) {
+            updateNotification(notificationId, {
+              type: 'info',
+              message: 'Operation saved offline. Will retry when connection is restored.',
+              duration: 5000,
+            });
+          }
         } else {
           // Show error notification with retry option
-          hideNotification(notificationId);
+          if (notificationId) {
+            hideNotification(notificationId);
+          }
           showNotification('error', getErrorMessage(operation.type, error), {
             duration: 0,
             actions: [

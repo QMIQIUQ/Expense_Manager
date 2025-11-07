@@ -98,9 +98,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <h3 style={styles.title}>{t('budgetManagement')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '6px' }}>
-              <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
-            </svg>
             {t('setBudget')}
           </button>
         )}
@@ -285,9 +282,6 @@ const styles = {
     fontWeight: '600' as const,
   },
   addButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: '10px 20px',
     backgroundColor: '#6366f1',
     color: 'white',

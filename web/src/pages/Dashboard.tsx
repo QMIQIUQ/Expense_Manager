@@ -25,7 +25,7 @@ import InlineLoading from '../components/InlineLoading';
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const { showNotification } = useNotification();
+  const { showNotification, updateNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
@@ -41,13 +41,26 @@ const Dashboard: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  // Collapsible sections inside hamburger
+  const [openLanguageSection, setOpenLanguageSection] = useState(false);
+  const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
   const importExportRef = useRef<HTMLDivElement | null>(null);
-  const isMobile = window.innerWidth <= 768;
+  // Reactive mobile breakpoint (updates on window resize)
+  const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile((prev) => (prev !== mobile ? mobile : prev));
+    };
+    // Use passive listener for performance
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
@@ -131,6 +144,15 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showImportExportDropdown]);
+
+  // Centralized flag to hide Floating Action Button when any popout/modal/menu is open
+  const shouldHideFab =
+    showHamburgerMenu ||
+    showLanguageMenu ||
+    showImportExportDropdown ||
+    showImportModal ||
+    showAddSheet ||
+    showAddExpenseForm;
 
   const handleLogout = async () => {
     try {
@@ -234,8 +256,13 @@ const Dashboard: React.FC = () => {
     // Optimistic update: remove selected expenses
     setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
 
-    // Run delete for each id with optimisticCRUD so failures are retried/handled
-    await Promise.all(ids.map((id) => {
+    // Show a single pending notification for the whole bulk operation
+    const bulkNotifId = showNotification('pending', `${ids.length} ${t('items') || 'items'} - ${t('deleteSelected') || 'Deleting...'}`, {
+      duration: 0,
+    });
+
+    // Run delete for each id but suppress per-operation notifications so user sees only one
+    const results = await Promise.all(ids.map((id) => {
       const original = originals.find((o) => o.id === id);
       return optimisticCRUD.run(
         { type: 'delete', data: { id }, originalData: original },
@@ -243,6 +270,7 @@ const Dashboard: React.FC = () => {
         {
           entityType: 'expense',
           retryToQueueOnFail: true,
+          suppressNotification: true,
           onSuccess: () => {},
           onError: () => {
             // Rollback the specific failed deletion
@@ -253,6 +281,24 @@ const Dashboard: React.FC = () => {
         }
       );
     }));
+
+    // If any operation returned null -> some failed
+    const anyFailed = results.some((r) => r === null);
+    if (anyFailed) {
+      // Update notification to an error state
+      updateNotification?.(bulkNotifId, {
+        type: 'error',
+        message: t('errorDeletingData') || 'Failed to delete some items',
+        duration: 5000,
+      });
+    } else {
+      // Success
+      updateNotification?.(bulkNotifId, {
+        type: 'success',
+        message: `${ids.length} ${t('items') || 'items'} ${t('deleteSelected') ? '' : 'deleted'}`,
+        duration: 3000,
+      });
+    }
 
     // Refresh to ensure server state is in sync
     loadData();
@@ -596,85 +642,117 @@ const Dashboard: React.FC = () => {
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                 {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Language / 語言</div>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        setLanguage('en');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                        language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
-                      }`}
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenLanguageSection(o => !o)}
+                    aria-expanded={openLanguageSection}
+                    aria-controls="hamburger-language-section"
+                  >
+                    <span> 🌐 Language / 語言</span>
+                    <svg
+                      className={`transition-transform ${openLanguageSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
                     >
-                      🌐 English
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLanguage('zh');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                        language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      🌐 繁體中文
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLanguage('zh-CN');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                        language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      🌐 简体中文
-                    </button>
-                  </div>
+                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openLanguageSection && (
+                    <div id="hamburger-language-section" className="mt-2 space-y-1">
+                      <button
+                        onClick={() => {
+                          setLanguage('en');
+                          setShowHamburgerMenu(false);
+                          setOpenLanguageSection(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        English
+                      </button>
+                      <button
+                        onClick={() => {
+                          setLanguage('zh');
+                          setShowHamburgerMenu(false);
+                          setOpenLanguageSection(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        繁體中文
+                      </button>
+                      <button
+                        onClick={() => {
+                          setLanguage('zh-CN');
+                          setShowHamburgerMenu(false);
+                          setOpenLanguageSection(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        简体中文
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Import/Export Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Import / Export</div>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        handleDownloadTemplate();
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition-colors flex items-center gap-2"
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenImportExportSection(o => !o)}
+                    aria-expanded={openImportExportSection}
+                    aria-controls="hamburger-importexport-section"
+                  >
+                    <span>Import / Export</span>
+                    <svg
+                      className={`transition-transform ${openImportExportSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {t('template') || 'Download Template'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleExportExcel();
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded transition-colors flex items-center gap-2"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {t('exportExcel') || 'Export to Excel'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowImportModal(true);
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded transition-colors flex items-center gap-2"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 3v12m0-12l-4 4m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {t('import') || 'Import Data'}
-                    </button>
-                  </div>
+                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openImportExportSection && (
+                    <div id="hamburger-importexport-section" className="mt-2 space-y-1">
+                      <button
+                        onClick={() => {
+                          handleDownloadTemplate();
+                          setShowHamburgerMenu(false);
+                          setOpenImportExportSection(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition-colors flex items-center gap-2"
+                      >
+
+                        {t('template') || 'Download Template'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleExportExcel();
+                          setShowHamburgerMenu(false);
+                          setOpenImportExportSection(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded transition-colors flex items-center gap-2"
+                      >
+
+                        {t('exportExcel') || 'Export to Excel'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowImportModal(true);
+                          setShowHamburgerMenu(false);
+                          setOpenImportExportSection(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded transition-colors flex items-center gap-2"
+                      >
+
+                        {t('import') || 'Import Data'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Profile & Admin Section */}
@@ -689,9 +767,7 @@ const Dashboard: React.FC = () => {
                         activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+
                       {t('profile') || 'Profile'}
                     </button>
                     {isAdmin && (
@@ -704,10 +780,7 @@ const Dashboard: React.FC = () => {
                           activeTab === 'admin' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+
                         {t('admin') || 'Admin'}
                       </button>
                     )}
@@ -844,18 +917,39 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Add Expense Button - visible on all tabs except expenses tab where form is already visible */}
-      {activeTab !== 'expenses' && !showAddExpenseForm && (
-        <button 
+      {/* Floating Add Expense Button - unified: desktop shows expanded, mobile shows icon only */}
+      {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
+        <button
           onClick={() => setShowAddExpenseForm(true)}
-          style={styles.floatingButton}
+          style={{
+            ...styles.floatingButton,
+            width: isMobile ? '56px' : 'auto',
+            height: '56px',
+            padding: isMobile ? '0' : '16px 24px',
+            borderRadius: isMobile ? '50%' : '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: isMobile ? '0' : '8px',
+            fontSize: isMobile ? '28px' : '16px',
+            fontWeight: isMobile ? 500 : 600,
+          }}
           className="floating-btn-hover"
           title={t('addNewExpense')}
+          aria-label={t('addNewExpense')}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: isMobile ? 0 : '8px' }}>
-            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+          {/* Plus icon unified */}
+          <svg
+            width={isMobile ? 28 : 20}
+            height={isMobile ? 28 : 20}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ flexShrink: 0 }}
+          >
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
           </svg>
-          {!isMobile && t('addNewExpense')}
+          {!isMobile && <span style={{ lineHeight: 1 }}>{t('addNewExpense')}</span>}
         </button>
       )}
 
@@ -912,18 +1006,38 @@ const Dashboard: React.FC = () => {
         />
       )}
     </div>
-      {/* Floating Add button visible on Expenses tab */}
-      {activeTab === 'expenses' && !showAddSheet && (
+      {/* Floating Add button visible on Expenses tab (responsive like others) */}
+      {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
         <button
-          aria-label="Add Expense"
+          aria-label={t('addNewExpense')}
           onClick={() => setShowAddSheet(true)}
-          style={styles.floatingButton}
-          className="floating-btn-hover"
+          style={{
+            ...styles.floatingButton,
+            width: isMobile ? '56px' : 'auto',
+            height: '56px',
+            padding: isMobile ? '0' : '16px 24px',
+            borderRadius: isMobile ? '50%' : '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: isMobile ? '0' : '8px',
+            fontSize: isMobile ? '28px' : '16px',
+            fontWeight: isMobile ? 500 : 600,
+          }}
+          className="floating-btn-hover text-white"
+          title={t('addNewExpense')}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: isMobile ? 0 : '8px' }}>
-            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+          <svg
+            width={isMobile ? 28 : 20}
+            height={isMobile ? 28 : 20}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ flexShrink: 0 }}
+          >
+            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
           </svg>
-          {!isMobile && t('addNewExpense')}
+          {!isMobile && <span style={{ lineHeight: 1 }}>{t('addNewExpense')}</span>}
         </button>
       )}
 
@@ -974,9 +1088,6 @@ const styles = {
     position: 'fixed' as const,
     bottom: '24px',
     right: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: '16px 24px',
     backgroundColor: '#6366f1',
     color: 'white',
