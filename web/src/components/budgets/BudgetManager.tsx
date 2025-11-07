@@ -107,14 +107,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formRow}>
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Category *</label>
+              <label style={styles.label}>{t('category')} *</label>
               <select
                 value={formData.categoryId}
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 required
                 style={styles.select}
               >
-                <option value="">Select Category</option>
+                <option value="">{t('selectCategory')}</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.icon} {cat.name}
@@ -124,7 +124,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Amount ($) *</label>
+              <label style={styles.label}>{t('amount')} ($) *</label>
               <input
                 type="number"
                 value={formData.amount}
@@ -140,7 +140,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
           <div style={styles.formRow}>
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Period *</label>
+              <label style={styles.label}>{t('budgetPeriod')} *</label>
               <select
                 value={formData.period}
                 onChange={(e) =>
@@ -151,14 +151,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 }
                 style={styles.select}
               >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
+                <option value="weekly">{t('periodWeekly')}</option>
+                <option value="monthly">{t('periodMonthly')}</option>
+                <option value="yearly">{t('periodYearly')}</option>
               </select>
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Alert at (%) *</label>
+              <label style={styles.label}>{t('alertAt')} *</label>
               <input
                 type="number"
                 value={formData.alertThreshold}
@@ -176,7 +176,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
-              {editingId ? 'Update' : 'Set'} Budget
+              {editingId ? t('edit') : t('add')} {t('budgets')}
             </button>
             <button
               type="button"
@@ -187,7 +187,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               }}
               style={styles.cancelButton}
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </form>
@@ -228,16 +228,16 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 </div>
 
                 <div style={styles.budgetFooter}>
-                  <span style={styles.percentage}>{percentage.toFixed(1)}% used</span>
+                  <span style={styles.percentage}>{percentage.toFixed(1)}% {t('used')}</span>
                   <div style={styles.actions}>
                     <button onClick={() => handleEdit(budget)} style={styles.editBtn}>
-                      Edit
+                      {t('edit')}
                     </button>
                     <button
                       onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
                       style={styles.deleteBtn}
                     >
-                      Delete
+                      {t('delete')}
                     </button>
                   </div>
                 </div>
@@ -249,10 +249,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
-        title="Delete Budget"
-        message="Are you sure you want to delete this budget?"
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('deleteBudget')}
+        message={t('confirmDeleteBudget')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.budgetId) {

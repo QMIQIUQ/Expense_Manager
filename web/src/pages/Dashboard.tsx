@@ -962,12 +962,12 @@ const Dashboard: React.FC = () => {
           {t('expenses')}
         </button>
         <button
-          onClick={() => setActiveTab('categories')}
+          onClick={() => setActiveTab('recurring')}
           className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          {t('categories')}
+          {t('recurring')}
         </button>
         <button
           onClick={() => setActiveTab('budgets')}
@@ -978,12 +978,12 @@ const Dashboard: React.FC = () => {
           {t('budgets')}
         </button>
         <button
-          onClick={() => setActiveTab('recurring')}
+          onClick={() => setActiveTab('categories')}
           className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          {t('recurring')}
+          {t('categories')}
         </button>
       </div>
 
