@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, RecurringExpense } from '../types';
 import { expenseService } from '../services/expenseService';
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'profile' | 'admin'>('dashboard');
@@ -38,7 +40,9 @@ const Dashboard: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
+  const languageRef = useRef<HTMLDivElement | null>(null);
   const isMobile = window.innerWidth <= 768;
 
   const loadData = React.useCallback(async () => {
@@ -64,11 +68,11 @@ const Dashboard: React.FC = () => {
       setRecurringExpenses(recurringData);
     } catch (error) {
       console.error('Error loading data:', error);
-      showNotification('error', 'Failed to load data. Please refresh the page.');
+      showNotification('error', t('errorLoadingData'));
     } finally {
       setInitialLoading(false);
     }
-  }, [currentUser, showNotification]);
+  }, [currentUser, showNotification, t]);
 
   useEffect(() => {
     if (currentUser) {
@@ -87,6 +91,32 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showActionsMenu]);
+
+  // Click outside to close language menu
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!showLanguageMenu) return;
+      if (languageRef.current && !languageRef.current.contains(e.target as Node)) {
+        setShowLanguageMenu(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [showLanguageMenu]);
+
+  // Get language display name
+  const getLanguageLabel = (lang: string) => {
+    switch (lang) {
+      case 'en':
+        return 'English';
+      case 'zh':
+        return '繁體中文';
+      case 'zh-CN':
+        return '简体中文';
+      default:
+        return 'English';
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -521,7 +551,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <InlineLoading size={24} />
-        <p className="ml-3 text-lg text-gray-600">Loading...</p>
+        <p className="ml-3 text-lg text-gray-600">{t('loading')}</p>
       </div>
     );
   }
@@ -531,11 +561,60 @@ const Dashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto min-h-screen">
       <div className="dashboard-card dashboard-header relative mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">💰 Expense Manager</h1>
-          <p className="text-sm text-gray-600">Welcome, {currentUser?.email}</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">{t('appTitle')}</h1>
+          <p className="text-sm text-gray-600">{t('welcome')}, {currentUser?.email}</p>
         </div>
         {/* Compact actions toggle for small screens */}
         <div ref={actionsRef} className="flex items-center gap-2">
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+              aria-label="Select language"
+            >
+              🌐
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {showLanguageMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={() => {
+                    setLanguage('en');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  繁中
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh-CN');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  简中
+                </button>
+              </div>
+            )}
+          </div>
           <button
             className="actions-toggle"
             aria-label="Open actions"
@@ -551,33 +630,82 @@ const Dashboard: React.FC = () => {
           {showActionsMenu && (
             <div className="action-dropdown" role="menu">
               <button onClick={() => { handleDownloadTemplate(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                📥 Template
+                {t('template')}
               </button>
               <button onClick={() => { handleExportExcel(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                📊 Export Excel
+                {t('exportExcel')}
               </button>
               <button onClick={() => { setShowImportModal(true); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-md text-sm font-medium text-left transition-colors">
-                📤 Import
+                {t('import')}
               </button>
               <button onClick={() => { handleLogout(); setShowActionsMenu(false); }} className="w-full px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-sm font-medium text-left transition-colors">
-                Logout
+                {t('logout')}
               </button>
             </div>
           )}
         </div>
 
         <div className="header-actions">
+          <div ref={languageRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-colors flex items-center gap-2"
+              aria-label="Select language"
+            >
+              🌐 {getLanguageLabel(language)}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {showLanguageMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={() => {
+                    setLanguage('en');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  繁體中文
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage('zh-CN');
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  简体中文
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={handleDownloadTemplate} className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors">
-            📥 Template
+            {t('template')}
           </button>
           <button onClick={handleExportExcel} className="px-5 py-2.5 bg-success hover:bg-green-600 text-white rounded font-medium text-sm transition-colors">
-            📊 Export Excel
+            {t('exportExcel')}
           </button>
           <button onClick={() => setShowImportModal(true)} className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded font-medium text-sm transition-colors">
-            📤 Import
+            {t('import')}
           </button>
           <button onClick={handleLogout} className="px-5 py-2.5 bg-danger hover:bg-red-600 text-white rounded font-medium text-sm transition-colors">
-            Logout
+            {t('logout')}
           </button>
         </div>
       </div>
@@ -589,7 +717,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Dashboard
+          {t('dashboard')}
         </button>
         <button
           onClick={() => setActiveTab('expenses')}
@@ -597,7 +725,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'expenses' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Expenses
+          {t('expenses')}
         </button>
         <button
           onClick={() => setActiveTab('categories')}
@@ -605,7 +733,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Categories
+          {t('categories')}
         </button>
         <button
           onClick={() => setActiveTab('budgets')}
@@ -613,7 +741,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'budgets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Budgets
+          {t('budgets')}
         </button>
         <button
           onClick={() => setActiveTab('recurring')}
@@ -621,7 +749,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Recurring
+          {t('recurring')}
         </button>
         <button
           onClick={() => setActiveTab('profile')}
@@ -629,7 +757,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'profile' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          👤 Profile
+          {t('profile')}
         </button>
         {isAdmin && (
           <button
@@ -638,7 +766,7 @@ const Dashboard: React.FC = () => {
               activeTab === 'admin' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
             }`}
           >
-            👑 Admin
+            {t('admin')}
           </button>
         )}
       </div>
@@ -652,7 +780,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-semibold text-gray-800">Expense History</h2>
+            <h2 className="text-xl font-semibold text-gray-800">{t('expenseHistory')}</h2>
             <ExpenseList
               expenses={expenses}
               categories={categories}
@@ -715,9 +843,9 @@ const Dashboard: React.FC = () => {
           onClick={() => setShowAddExpenseForm(true)}
           style={styles.floatingButton}
           className="floating-btn-hover"
-          title="Add New Expense"
+          title={t('addNewExpense')}
         >
-          {isMobile ? '+' : '+ Add New Expense'}
+          {isMobile ? '+' : `+ ${t('addNewExpense')}`}
         </button>
       )}
 
@@ -738,7 +866,7 @@ const Dashboard: React.FC = () => {
             <div className="mx-auto w-full max-w-7xl">
               <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddExpenseForm(false)}
@@ -804,7 +932,7 @@ const Dashboard: React.FC = () => {
             <div className="mx-auto w-full max-w-7xl">
               <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddSheet(false)}

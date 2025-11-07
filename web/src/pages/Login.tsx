@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,7 +21,7 @@ const Login: React.FC = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to log in. Please check your credentials.');
+      setError(t('loginFailed'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -28,12 +30,28 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
-      <h2>Login</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2>{t('login')}</h2>
+        <button
+          onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#f0f0f0',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+          title={language === 'en' ? 'Switch to Chinese' : '切換至英文'}
+        >
+          {language === 'en' ? '中文' : 'English'}
+        </button>
+      </div>
       {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
-            Email
+            {t('email')}
           </label>
           <input
             type="email"
@@ -47,7 +65,7 @@ const Login: React.FC = () => {
         </div>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>
-            Password
+            {t('password')}
           </label>
           <input
             type="password"
@@ -72,7 +90,7 @@ const Login: React.FC = () => {
             marginBottom: '10px',
           }}
         >
-          {loading ? 'Loading...' : 'Login'}
+          {loading ? t('loading') : t('login')}
         </button>
       </form>
     </div>

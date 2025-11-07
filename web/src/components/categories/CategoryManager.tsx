@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Category } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 
 interface CategoryManagerProps {
@@ -15,6 +16,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onUpdate,
   onDelete,
 }) => {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -60,10 +62,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.title}>Manage Categories</h3>
+        <h3 style={styles.title}>{t('categories')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + Add Category
+            + {t('addCategory')}
           </button>
         )}
       </div>
@@ -71,13 +73,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       {isAdding && (
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Category Name *</label>
+            <label style={styles.label}>{t('categoryName')} *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               onFocus={(e) => e.target.select()}
-              placeholder="e.g., Pets, Gifts"
+              placeholder={t('categoryNamePlaceholder')}
               required
               style={styles.input}
             />
@@ -85,7 +87,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
           <div style={styles.formRow}>
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Icon</label>
+              <label style={styles.label}>{t('categoryIcon')}</label>
               <div style={styles.iconGrid}>
                 {commonIcons.map((icon) => (
                   <button
@@ -104,7 +106,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>Color</label>
+              <label style={styles.label}>{t('categoryColor')}</label>
               <input
                 type="color"
                 value={formData.color}
@@ -116,10 +118,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
-              {editingId ? 'Update' : 'Add'} Category
+              {editingId ? t('editCategory') : t('addCategory')}
             </button>
             <button type="button" onClick={handleCancel} style={styles.cancelButton}>
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </form>
@@ -137,14 +139,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             </div>
             <div style={styles.categoryActions}>
               <button onClick={() => handleEdit(category)} style={styles.editBtn}>
-                Edit
+                {t('edit')}
               </button>
               {!category.isDefault && (
                 <button
                   onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
                   style={styles.deleteBtn}
                 >
-                  Delete
+                  {t('delete')}
                 </button>
               )}
             </div>
@@ -154,10 +156,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('delete') + ' ' + t('category')}
+        message={t('confirmDelete')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.categoryId) {
