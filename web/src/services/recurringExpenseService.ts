@@ -14,23 +14,27 @@ import { RecurringExpense } from '../types';
 
 const COLLECTION_NAME = 'recurringExpenses';
 
+// Helper function to remove undefined fields
+const removeUndefinedFields = (data: Record<string, unknown>): Record<string, unknown> => {
+  const cleaned: Record<string, unknown> = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      cleaned[key] = data[key];
+    }
+  });
+  return cleaned;
+};
+
 export const recurringExpenseService = {
   // Create a new recurring expense
   async create(
     recurringExpense: Omit<RecurringExpense, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     const now = Timestamp.now();
-    const dataToSave: Record<string, unknown> = {
+    const dataToSave = removeUndefinedFields({
       ...recurringExpense,
       createdAt: now,
       updatedAt: now,
-    };
-    
-    // Remove undefined fields to avoid Firebase errors
-    Object.keys(dataToSave).forEach(key => {
-      if (dataToSave[key] === undefined) {
-        delete dataToSave[key];
-      }
     });
     
     const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToSave);
@@ -68,16 +72,9 @@ export const recurringExpenseService = {
   // Update a recurring expense
   async update(id: string, updates: Partial<RecurringExpense>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    const dataToUpdate: Record<string, unknown> = {
+    const dataToUpdate = removeUndefinedFields({
       ...updates,
       updatedAt: Timestamp.now(),
-    };
-    
-    // Remove undefined fields to avoid Firebase errors
-    Object.keys(dataToUpdate).forEach(key => {
-      if (dataToUpdate[key] === undefined) {
-        delete dataToUpdate[key];
-      }
     });
     
     await updateDoc(docRef, dataToUpdate);

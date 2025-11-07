@@ -24,6 +24,17 @@ import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import { offlineQueue } from '../utils/offlineQueue';
 
+// Helper function to get display name
+const getDisplayName = (user: { displayName?: string | null; email?: string | null } | null): string => {
+  if (!user) return '';
+  if (user.displayName) return user.displayName;
+  if (user.email) {
+    const emailPrefix = user.email.split('@')[0];
+    return emailPrefix || user.email;
+  }
+  return '';
+};
+
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -78,8 +89,8 @@ const Dashboard: React.FC = () => {
     
     updateQueueCount();
     
-    // Update queue count periodically
-    const interval = setInterval(updateQueueCount, 1000);
+    // Update queue count every 5 seconds (reduced from 1 second for better performance)
+    const interval = setInterval(updateQueueCount, 5000);
     
     return () => clearInterval(interval);
   }, []);
@@ -773,7 +784,7 @@ const Dashboard: React.FC = () => {
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold text-white mb-1 truncate">{t('appTitle')}</h1>
           <p className="text-sm text-white/90 truncate">
-            {t('welcome')}, {currentUser?.displayName || currentUser?.email?.split('@')[0] || currentUser?.email}
+            {t('welcome')}, {getDisplayName(currentUser)}
           </p>
         </div>
 
