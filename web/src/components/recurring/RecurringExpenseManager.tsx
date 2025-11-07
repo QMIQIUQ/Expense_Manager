@@ -47,14 +47,14 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenseData: any = {
+    const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { lastGenerated?: undefined } = {
       ...formData,
       lastGenerated: undefined,
     };
     
     // Remove endDate if it's empty to avoid Firebase undefined error
     if (!formData.endDate) {
-      delete expenseData.endDate;
+      delete (expenseData as Record<string, unknown>).endDate;
     }
 
     if (editingId) {

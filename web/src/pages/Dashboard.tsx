@@ -764,10 +764,17 @@ const Dashboard: React.FC = () => {
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
-      <div className="dashboard-card dashboard-header relative mb-8" style={{ paddingTop: '20px' }}>
+      <div className="dashboard-card dashboard-header relative mb-8" style={{ 
+        paddingTop: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        border: 'none',
+        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+      }}>
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1 truncate">{t('appTitle')}</h1>
-          <p className="text-sm text-gray-600 truncate">{t('welcome')}, {currentUser?.email}</p>
+          <h1 className="text-3xl font-bold text-white mb-1 truncate">{t('appTitle')}</h1>
+          <p className="text-sm text-white/90 truncate">
+            {t('welcome')}, {currentUser?.displayName || currentUser?.email?.split('@')[0] || currentUser?.email}
+          </p>
         </div>
 
         <div className="header-actions">
@@ -775,12 +782,12 @@ const Dashboard: React.FC = () => {
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors relative"
+              className="p-3 hover:bg-white/20 rounded-lg transition-colors relative"
               aria-label="Menu"
               aria-expanded={showHamburgerMenu}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               {queueCount > 0 && (
                 <span 

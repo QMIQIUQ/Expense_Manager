@@ -20,7 +20,7 @@ export const recurringExpenseService = {
     recurringExpense: Omit<RecurringExpense, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     const now = Timestamp.now();
-    const dataToSave: any = {
+    const dataToSave: Record<string, unknown> = {
       ...recurringExpense,
       createdAt: now,
       updatedAt: now,
@@ -68,7 +68,7 @@ export const recurringExpenseService = {
   // Update a recurring expense
   async update(id: string, updates: Partial<RecurringExpense>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    const dataToUpdate: any = {
+    const dataToUpdate: Record<string, unknown> = {
       ...updates,
       updatedAt: Timestamp.now(),
     };
