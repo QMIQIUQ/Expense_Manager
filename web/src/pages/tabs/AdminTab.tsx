@@ -37,7 +37,7 @@ const AdminTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [showNotification, t]);
 
   useEffect(() => {
     loadUsers();

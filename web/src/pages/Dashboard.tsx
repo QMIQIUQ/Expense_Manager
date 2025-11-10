@@ -1071,6 +1071,7 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col gap-4">
             <CategoryManager
               categories={categories}
+              expenses={expenses}
               onAdd={handleAddCategory}
               onUpdate={handleUpdateCategory}
               onDelete={handleDeleteCategory}

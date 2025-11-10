@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Category } from '../../types';
+import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 
 interface CategoryManagerProps {
   categories: Category[];
+  expenses: Expense[];
   onAdd: (category: Omit<Category, 'id' | 'userId' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Category>) => void;
   onDelete: (id: string) => void;
@@ -12,6 +13,7 @@ interface CategoryManagerProps {
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({
   categories,
+  expenses,
   onAdd,
   onUpdate,
   onDelete,
@@ -25,9 +27,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     icon: '📦',
     color: '#95A5A6',
   });
-  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; categoryId: string | null }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{ 
+    isOpen: boolean; 
+    categoryId: string | null;
+    categoryName: string;
+    expensesUsingCategory: Expense[];
+  }>({
     isOpen: false,
     categoryId: null,
+    categoryName: '',
+    expensesUsingCategory: [],
   });
 
   // Detect duplicate category names
@@ -78,6 +87,22 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
+
+  // Get expenses that use a specific category
+  const getExpensesUsingCategory = (categoryName: string): Expense[] => {
+    return expenses.filter(expense => expense.category === categoryName);
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (category: Category) => {
+    const expensesUsingCategory = getExpensesUsingCategory(category.name);
+    setDeleteConfirm({
+      isOpen: true,
+      categoryId: category.id!,
+      categoryName: category.name,
+      expensesUsingCategory,
+    });
+  };
 
   return (
     <div style={styles.container}>
@@ -188,7 +213,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 </button>
                 {!category.isDefault && (
                   <button
-                    onClick={() => setDeleteConfirm({ isOpen: true, categoryId: category.id! })}
+                    onClick={() => handleDeleteClick(category)}
                     style={styles.deleteBtn}
                   >
                     {t('delete')}
@@ -203,7 +228,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('delete') + ' ' + t('category')}
-        message={t('confirmDelete')}
+        message={
+          deleteConfirm.expensesUsingCategory.length > 0
+            ? `⚠️ Warning: This category is being used by ${deleteConfirm.expensesUsingCategory.length} expense(s):\n\n${deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => `• ${exp.description} ($${exp.amount.toFixed(2)} - ${exp.date})`).join('\n')}${deleteConfirm.expensesUsingCategory.length > 5 ? `\n...and ${deleteConfirm.expensesUsingCategory.length - 5} more` : ''}\n\nAre you sure you want to delete this category? The expenses will keep their category name, but it will no longer appear in the category list.`
+            : t('confirmDelete')
+        }
         confirmText={t('delete')}
         cancelText={t('cancel')}
         danger={true}
@@ -211,8 +240,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           if (deleteConfirm.categoryId) {
             onDelete(deleteConfirm.categoryId);
           }
+          setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
         }}
-        onCancel={() => setDeleteConfirm({ isOpen: false, categoryId: null })}
+        onCancel={() => setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] })}
       />
     </div>
   );
