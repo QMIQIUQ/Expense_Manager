@@ -4,11 +4,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
 import { recurringExpenseService } from '../services/recurringExpenseService';
+import { incomeService } from '../services/incomeService';
 import { adminService } from '../services/adminService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
@@ -16,6 +17,7 @@ import CategoryManager from '../components/categories/CategoryManager';
 import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
+import IncomesTab from './tabs/IncomesTab';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
@@ -42,11 +44,13 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'profile' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -115,14 +119,16 @@ const Dashboard: React.FC = () => {
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
       
-      const [expensesData, categoriesData, budgetsData, recurringData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, recurringData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
+        incomeService.getAll(currentUser.uid),
         categoryService.getAll(currentUser.uid),
         budgetService.getAll(currentUser.uid),
         recurringExpenseService.getAll(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
+      setIncomes(incomesData);
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
@@ -664,6 +670,93 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Income handlers
+  const handleAddIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (!currentUser) return;
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticIncome: Income = {
+      ...incomeData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setIncomes((prev) => [optimisticIncome, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: incomeData },
+      () => incomeService.create({ ...incomeData, userId: currentUser.uid }),
+      {
+        entityType: 'income',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          setEditingIncome(null);
+        },
+        onError: () => {
+          setIncomes((prev) => prev.filter((i) => i.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleUpdateIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (!editingIncome?.id) return;
+    
+    const originalIncome = incomes.find((i) => i.id === editingIncome.id);
+    
+    // Optimistic update
+    setIncomes((prev) =>
+      prev.map((i) => (i.id === editingIncome.id ? { ...i, ...incomeData } : i))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: incomeData, originalData: originalIncome },
+      () => incomeService.update(editingIncome.id!, incomeData),
+      {
+        entityType: 'income',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          setEditingIncome(null);
+        },
+        onError: () => {
+          if (originalIncome) {
+            setIncomes((prev) =>
+              prev.map((i) => (i.id === editingIncome.id ? originalIncome : i))
+            );
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteIncome = async (id: string) => {
+    const incomeToDelete = incomes.find((i) => i.id === id);
+    
+    // Optimistic update
+    setIncomes((prev) => prev.filter((i) => i.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: incomeToDelete },
+      () => incomeService.delete(id),
+      {
+        entityType: 'income',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (incomeToDelete) {
+            setIncomes((prev) => [...prev, incomeToDelete]);
+          }
+        },
+      }
+    );
+  };
+
   // Export handlers
   const handleExportExcel = () => {
     exportToExcel(expenses, categories);
@@ -1022,6 +1115,14 @@ const Dashboard: React.FC = () => {
           {t('expenses')}
         </button>
         <button
+          onClick={() => setActiveTab('incomes')}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'incomes' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          Incomes
+        </button>
+        <button
           onClick={() => setActiveTab('recurring')}
           className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
             activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
@@ -1050,7 +1151,7 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div>
-            <DashboardSummary expenses={expenses} />
+            <DashboardSummary expenses={expenses} incomes={incomes} />
           </div>
         )}
 
@@ -1065,6 +1166,18 @@ const Dashboard: React.FC = () => {
               onBulkDelete={handleBulkDeleteExpenses}
             />
           </div>
+        )}
+
+        {activeTab === 'incomes' && (
+          <IncomesTab
+            incomes={incomes}
+            expenses={expenses}
+            editingIncome={editingIncome}
+            onAddIncome={handleAddIncome}
+            onUpdateIncome={handleUpdateIncome}
+            onEdit={setEditingIncome}
+            onDeleteIncome={handleDeleteIncome}
+          />
         )}
 
         {activeTab === 'categories' && (

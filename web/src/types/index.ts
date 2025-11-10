@@ -10,6 +10,9 @@ export interface Expense {
   // Optional time in HH:mm (24h) format, for finer granularity
   time?: string;
   notes?: string;
+  // New fields for income linking
+  originalReceiptAmount?: number; // Original receipt/invoice amount for tracking reimbursements
+  payerName?: string; // Who paid (e.g., "Me", "Friend A")
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +53,23 @@ export interface RecurringExpense {
   dayOfMonth?: number; // 1-31 for monthly
   lastGenerated?: string;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Income type enum
+export type IncomeType = 'salary' | 'reimbursement' | 'repayment' | 'other';
+
+export interface Income {
+  id?: string;
+  userId: string;
+  title?: string; // Optional title/source description
+  amount: number; // Positive number
+  date: string;
+  type: IncomeType;
+  payerName?: string; // For repayments from friends
+  linkedExpenseId?: string; // FK to expenses.id - can link to one expense
+  note?: string;
   createdAt: Date;
   updatedAt: Date;
 }
