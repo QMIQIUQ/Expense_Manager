@@ -15,10 +15,14 @@ interface ExpenseListProps {
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate, onBulkDelete }) => {
   const { t } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState(today);
+  const [dateFrom, setDateFrom] = useState(oneMonthAgoStr);
   const [dateTo, setDateTo] = useState(today);
   const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
@@ -106,6 +110,32 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     return { total, count: filtered.length, categoryBreakdown };
   };
 
+  // Group expenses by date for display
+  const groupExpensesByDate = () => {
+    const sorted = filteredAndSortedExpenses();
+    const grouped: { [date: string]: Expense[] } = {};
+    
+    sorted.forEach((expense) => {
+      const dateKey = expense.date;
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(expense);
+    });
+
+    // Convert to array and sort by date
+    return Object.entries(grouped).map(([date, exps]) => {
+      const dailyTotal = exps.reduce((sum, exp) => sum + exp.amount, 0);
+      return { date, expenses: exps, dailyTotal };
+    }).sort((a, b) => {
+      // Sort descending by default (newest first)
+      if (sortBy.includes('asc')) {
+        return a.date.localeCompare(b.date);
+      }
+      return b.date.localeCompare(a.date);
+    });
+  };
+
   // Use unique category names to avoid duplicate option keys
   const categoryNames = Array.from(new Set(categories.map((c) => c.name))).filter((n) => n);
 
@@ -165,35 +195,36 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
 
   const summary = calculateSummary();
 
+  const groupedExpenses = groupExpensesByDate();
+
   return (
     <div style={styles.container}>
-      {/* Summary Section */}
-      <div style={styles.summaryCard}>
-        <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
-          <div style={styles.summaryMain}>
-            <span style={styles.summaryLabel}>{t('total')} </span>
-            <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
-            <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
-          </div>
-          <button style={styles.expandButton} aria-label="Toggle summary">
-            {showSummary ? '▼' : '▶'}
-          </button>
-        </div>
-        {showSummary && (
-          <div style={styles.summaryDetails}>
-            <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
-            {summary.categoryBreakdown.map(({ category, amount }) => (
-              <div key={category} style={styles.summaryDetailRow}>
-                <span style={styles.summaryDetailCategory}>{category}</span>
-                <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Filter Section */}
+      {/* Filter Section with integrated summary */}
       <div style={styles.filterSection}>
+        {/* Summary row at the top of filter section */}
+        <div style={styles.summaryRow}>
+          <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
+            <div style={styles.summaryMain}>
+              <span style={styles.summaryLabel}>{t('total')} </span>
+              <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
+              <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
+            </div>
+            <button style={styles.expandButton} aria-label="Toggle summary">
+              {showSummary ? '▼' : '▶'}
+            </button>
+          </div>
+          {showSummary && (
+            <div style={styles.summaryDetails}>
+              <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
+              {summary.categoryBreakdown.map(({ category, amount }) => (
+                <div key={category} style={styles.summaryDetailRow}>
+                  <span style={styles.summaryDetailCategory}>{category}</span>
+                  <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div style={styles.filterRow}>
           <input
             type="text"
@@ -321,14 +352,23 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         )}
       </div>
 
-      {filteredAndSortedExpenses().length === 0 ? (
+      {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
           <p>{t('noExpenses')}</p>
         </div>
       ) : (
         <div style={styles.list}>
-          {filteredAndSortedExpenses().map((expense) => (
-            <div key={expense.id} className="expense-card" style={styles.expenseCard}>
+          {groupedExpenses.map(({ date, expenses: dayExpenses, dailyTotal }) => (
+            <div key={date} style={styles.dateGroup}>
+              {/* Date group header with daily subtotal */}
+              <div style={styles.dateGroupHeader}>
+                <span style={styles.dateGroupDate}>{formatDate(date)}</span>
+                <span style={styles.dateGroupTotal}>${dailyTotal.toFixed(2)}</span>
+              </div>
+              
+              {/* Expenses for this date */}
+              {dayExpenses.map((expense) => (
+                <div key={expense.id} className="expense-card" style={styles.expenseCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {multiSelectEnabled && (
@@ -344,8 +384,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                       aria-label={`Select expense ${expense.description}`}
                     />
                   )}
-                  <div style={styles.dateRow}>
-                    <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
+                  <div style={styles.categoryRow}>
+                    {(expense as Expense & { time?: string }).time && (
+                      <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
+                    )}
                     <span style={styles.category}>{expense.category}</span>
                   </div>
                 </div>
@@ -443,6 +485,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                 </div>
               )}
             </div>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -471,12 +515,12 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '20px',
   },
-  summaryCard: {
+  summaryRow: {
     backgroundColor: '#f8f9fa',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
     padding: '16px',
-    marginBottom: '10px',
+    marginBottom: '12px',
   },
   summaryHeader: {
     display: 'flex',
@@ -646,6 +690,8 @@ const styles = {
     overflow: 'hidden',
   },
   dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  timeDisplay: { fontSize: '12px', color: '#888', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
   leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
   rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
@@ -731,6 +777,31 @@ const styles = {
     marginTop: '10px',
     flexWrap: 'wrap' as const,
     alignItems: 'center',
+  },
+  dateGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
+    marginBottom: '20px',
+  },
+  dateGroupHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 16px',
+    backgroundColor: '#e8f4f8',
+    borderRadius: '8px',
+    borderLeft: '4px solid #1976d2',
+  },
+  dateGroupDate: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  dateGroupTotal: {
+    fontSize: '18px',
+    fontWeight: '700' as const,
+    color: '#1976d2',
   },
 };
 
