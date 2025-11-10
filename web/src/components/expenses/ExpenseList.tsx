@@ -42,6 +42,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
   }>({});
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -94,6 +95,45 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     const date = new Date(dateString);
     const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return time ? `${base} ${time}` : base;
+  };
+
+  const toggleGroupCollapse = (date: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleGroupSelection = (dayExpenses: Expense[]) => {
+    const dayExpenseIds = dayExpenses.map(exp => exp.id!).filter(Boolean);
+    const allSelected = dayExpenseIds.every(id => selectedIds.has(id));
+    
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (allSelected) {
+        // 如果全選了，則取消全選
+        dayExpenseIds.forEach(id => newSet.delete(id));
+      } else {
+        // 否則全選此 group
+        dayExpenseIds.forEach(id => newSet.add(id));
+      }
+      return newSet;
+    });
+  };
+
+  const getGroupCheckboxState = (dayExpenses: Expense[]): 'checked' | 'indeterminate' | 'unchecked' => {
+    const dayExpenseIds = dayExpenses.map(exp => exp.id!).filter(Boolean);
+    if (dayExpenseIds.length === 0) return 'unchecked';
+    
+    const selectedCount = dayExpenseIds.filter(id => selectedIds.has(id)).length;
+    if (selectedCount === 0) return 'unchecked';
+    if (selectedCount === dayExpenseIds.length) return 'checked';
+    return 'indeterminate';
   };
 
   const calculateSummary = () => {
@@ -358,16 +398,44 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         </div>
       ) : (
         <div style={styles.list}>
-          {groupedExpenses.map(({ date, expenses: dayExpenses, dailyTotal }) => (
+          {groupedExpenses.map(({ date, expenses: dayExpenses, dailyTotal }) => {
+            const isCollapsed = collapsedGroups.has(date);
+            return (
             <div key={date} style={styles.dateGroup}>
-              {/* Date group header with daily subtotal */}
+              {/* Date group header with daily subtotal - clickable to expand/collapse */}
               <div style={styles.dateGroupHeader}>
-                <span style={styles.dateGroupDate}>{formatDate(date)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {multiSelectEnabled && (
+                    <input
+                      type="checkbox"
+                      checked={getGroupCheckboxState(dayExpenses) === 'checked'}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = getGroupCheckboxState(dayExpenses) === 'indeterminate';
+                        }
+                      }}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleGroupSelection(dayExpenses);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select all expenses for ${formatDate(date)}`}
+                    />
+                  )}
+                  <div 
+                    onClick={() => toggleGroupCollapse(date)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer' }}
+                  >
+                    <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
+                    <span style={styles.dateGroupDate}>{formatDate(date)}</span>
+                    <span style={styles.expenseCount}>({dayExpenses.length})</span>
+                  </div>
+                </div>
                 <span style={styles.dateGroupTotal}>${dailyTotal.toFixed(2)}</span>
               </div>
               
-              {/* Expenses for this date */}
-              {dayExpenses.map((expense) => (
+              {/* Expenses for this date - hidden when collapsed */}
+              {!isCollapsed && dayExpenses.map((expense) => (
                 <div key={expense.id} className="expense-card" style={styles.expenseCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -487,7 +555,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
             </div>
               ))}
             </div>
-          ))}
+          )})}
         </div>
       )}
       
@@ -677,6 +745,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
+    paddingBottom: '100px',
   },
   expenseCard: {
     backgroundColor: 'white',
@@ -788,19 +857,34 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 16px',
+    padding: '8px 12px',
     backgroundColor: '#e8f4f8',
     borderRadius: '8px',
     borderLeft: '4px solid #1976d2',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    userSelect: 'none' as const,
   },
   dateGroupDate: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: '600' as const,
     color: '#333',
   },
+  expenseCount: {
+    fontSize: '12px',
+    fontWeight: '400' as const,
+    color: '#666',
+  },
+  collapseIcon: {
+    fontSize: '10px',
+    color: '#1976d2',
+    display: 'inline-block',
+    width: '12px',
+    transition: 'transform 0.2s',
+  },
   dateGroupTotal: {
-    fontSize: '18px',
-    fontWeight: '700' as const,
+    fontSize: '14px',
+    fontWeight: '600' as const,
     color: '#1976d2',
   },
 };
