@@ -57,6 +57,10 @@ export interface RecurringExpense {
   dayOfMonth?: number; // 1-31 for monthly
   lastGenerated?: string;
   isActive: boolean;
+  cardId?: string; // Optional: credit card used for this recurring expense
+  // Payment method information
+  paymentMethod?: PaymentMethodType; // Type of payment method
+  paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
   updatedAt: Date;
 }

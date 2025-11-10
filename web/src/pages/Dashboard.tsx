@@ -1228,6 +1228,7 @@ const Dashboard: React.FC = () => {
             <RecurringExpenseManager
               recurringExpenses={recurringExpenses}
               categories={categories}
+              cards={cards}
               onAdd={handleAddRecurring}
               onUpdate={handleUpdateRecurring}
               onDelete={handleDeleteRecurring}
