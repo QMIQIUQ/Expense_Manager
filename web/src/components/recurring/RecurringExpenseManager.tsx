@@ -294,10 +294,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
                       style={{ ...styles.inlineSelect, minWidth: '100px' }}
                     >
-                      <option value="daily">{t('daily')}</option>
-                      <option value="weekly">{t('weekly')}</option>
-                      <option value="monthly">{t('monthly')}</option>
-                      <option value="yearly">{t('yearly')}</option>
+                      <option value="daily">{t('freqDaily')}</option>
+                      <option value="weekly">{t('freqWeekly')}</option>
+                      <option value="monthly">{t('freqMonthly')}</option>
+                      <option value="yearly">{t('freqYearly')}</option>
                     </select>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
@@ -321,7 +321,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         max="7"
                         value={formData.dayOfWeek}
                         onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) })}
-                        placeholder={t('dayOfWeek')}
+                        placeholder="Day of Week (1-7)"
                         onFocus={(e) => e.target.select()}
                         style={{ ...styles.inlineInput, width: '80px' }}
                       />
@@ -333,7 +333,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         max="31"
                         value={formData.dayOfMonth}
                         onChange={(e) => setFormData({ ...formData, dayOfMonth: parseInt(e.target.value) })}
-                        placeholder={t('dayOfMonth')}
+                        placeholder="Day of Month (1-31)"
                         onFocus={(e) => e.target.select()}
                         style={{ ...styles.inlineInput, width: '80px' }}
                       />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, Category } from '../../types';
+import { Expense, Category, Card } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ExpenseFormProps {
@@ -7,6 +7,7 @@ interface ExpenseFormProps {
   onCancel?: () => void;
   initialData?: Expense;
   categories: Category[];
+  cards?: Card[];
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -14,6 +15,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   onCancel,
   initialData,
   categories,
+  cards = [],
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -23,6 +25,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     date: initialData?.date || new Date().toISOString().split('T')[0],
     time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
     notes: initialData?.notes || '',
+    cardId: initialData?.cardId || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -51,6 +54,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 5), // Reset to current time
         notes: '',
+        cardId: '',
       });
     }
   };
@@ -153,6 +157,26 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           />
         </div>
       </div>
+
+      {/* Card Selection */}
+      {cards.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">{t('selectCard')}</label>
+          <select
+            name="cardId"
+            value={formData.cardId}
+            onChange={handleChange}
+            className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">{t('noneOrCash')}</option>
+            {cards.map((card) => (
+              <option key={card.id} value={card.id}>
+                💳 {card.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-700">{t('notes')} ({t('optional')})</label>
