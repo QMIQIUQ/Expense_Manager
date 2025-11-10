@@ -119,19 +119,26 @@ const Dashboard: React.FC = () => {
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
       
-      const [expensesData, categoriesData, budgetsData, recurringData, cardsData] = await Promise.all([
+      const [expensesData, categoriesData, budgetsData, recurringData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
         categoryService.getAll(currentUser.uid),
         budgetService.getAll(currentUser.uid),
         recurringExpenseService.getAll(currentUser.uid),
-        cardService.getAll(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
-      setCards(cardsData);
+      
+      // Load cards separately with error handling to prevent breaking existing functionality
+      try {
+        const cardsData = await cardService.getAll(currentUser.uid);
+        setCards(cardsData);
+      } catch (cardError) {
+        console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
+        setCards([]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
