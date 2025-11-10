@@ -18,6 +18,7 @@ import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import CardManager from '../components/cards/CardManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
+import CardsSummary from '../components/dashboard/CardsSummary';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
@@ -687,7 +688,7 @@ const Dashboard: React.FC = () => {
       { type: 'create', data: cardData },
       () => cardService.create({ ...cardData, userId: currentUser.uid }),
       {
-        entityType: 'card' as any,
+        entityType: 'card',
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
@@ -710,7 +711,7 @@ const Dashboard: React.FC = () => {
       { type: 'update', data: updates, originalData: originalCard },
       () => cardService.update(id, updates),
       {
-        entityType: 'card' as any,
+        entityType: 'card',
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
@@ -735,7 +736,7 @@ const Dashboard: React.FC = () => {
       { type: 'delete', data: { id }, originalData: cardToDelete },
       () => cardService.delete(id),
       {
-        entityType: 'card' as any,
+        entityType: 'card',
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
@@ -1142,8 +1143,11 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
-          <div>
+          <div className="flex flex-col gap-6">
             <DashboardSummary expenses={expenses} />
+            {cards.length > 0 && (
+              <CardsSummary cards={cards} categories={categories} expenses={expenses} />
+            )}
           </div>
         )}
 
