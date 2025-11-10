@@ -560,14 +560,16 @@ const styles = {
   },
   filterInput: {
     flex: 1,
-    minWidth: '200px',
+    minWidth: '150px',
+    width: '100%',
     padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
   },
   filterSelect: {
-    minWidth: '150px',
+    flex: 1,
+    minWidth: '120px',
     padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '6px',
@@ -578,6 +580,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    flex: 1,
+    minWidth: '140px',
   },
   dateLabel: {
     fontSize: '14px',
@@ -586,11 +590,12 @@ const styles = {
     whiteSpace: 'nowrap' as const,
   },
   dateInput: {
+    flex: 1,
     padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
-    minWidth: '150px',
+    minWidth: '120px',
   },
   filters: {
     display: 'flex',

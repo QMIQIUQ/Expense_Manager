@@ -14,17 +14,30 @@ import { RecurringExpense } from '../types';
 
 const COLLECTION_NAME = 'recurringExpenses';
 
+// Helper function to remove undefined fields
+const removeUndefinedFields = (data: Record<string, unknown>): Record<string, unknown> => {
+  const cleaned: Record<string, unknown> = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      cleaned[key] = data[key];
+    }
+  });
+  return cleaned;
+};
+
 export const recurringExpenseService = {
   // Create a new recurring expense
   async create(
     recurringExpense: Omit<RecurringExpense, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    const dataToSave = removeUndefinedFields({
       ...recurringExpense,
       createdAt: now,
       updatedAt: now,
     });
+    
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToSave);
     return docRef.id;
   },
 
@@ -59,10 +72,12 @@ export const recurringExpenseService = {
   // Update a recurring expense
   async update(id: string, updates: Partial<RecurringExpense>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, {
+    const dataToUpdate = removeUndefinedFields({
       ...updates,
       updatedAt: Timestamp.now(),
     });
+    
+    await updateDoc(docRef, dataToUpdate);
   },
 
   // Delete a recurring expense

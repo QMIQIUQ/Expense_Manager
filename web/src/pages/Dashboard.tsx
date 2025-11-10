@@ -22,6 +22,18 @@ import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUti
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
+import { offlineQueue } from '../utils/offlineQueue';
+
+// Helper function to get display name
+const getDisplayName = (user: { displayName?: string | null; email?: string | null } | null): string => {
+  if (!user) return '';
+  if (user.displayName) return user.displayName;
+  if (user.email) {
+    const emailPrefix = user.email.split('@')[0];
+    return emailPrefix || user.email;
+  }
+  return '';
+};
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -61,12 +73,28 @@ const Dashboard: React.FC = () => {
     message: string;
     status: 'deleting' | 'complete' | 'error';
   } | null>(null);
+  const [queueCount, setQueueCount] = useState<number>(0);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  
+  // Track offline queue count
+  useEffect(() => {
+    const updateQueueCount = () => {
+      setQueueCount(offlineQueue.count());
+    };
+    
+    updateQueueCount();
+    
+    // Update queue count every 5 seconds (reduced from 1 second for better performance)
+    const interval = setInterval(updateQueueCount, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
@@ -747,10 +775,17 @@ const Dashboard: React.FC = () => {
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
-      <div className="dashboard-card dashboard-header relative mb-8" style={{ paddingTop: '20px' }}>
+      <div className="dashboard-card dashboard-header relative mb-8" style={{ 
+        paddingTop: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        border: 'none',
+        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+      }}>
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1 truncate">{t('appTitle')}</h1>
-          <p className="text-sm text-gray-600 truncate">{t('welcome')}, {currentUser?.email}</p>
+          <h1 className="text-3xl font-bold text-white mb-1 truncate">{t('appTitle')}</h1>
+          <p className="text-sm text-white/90 truncate">
+            {t('welcome')}, {getDisplayName(currentUser)}
+          </p>
         </div>
 
         <div className="header-actions">
@@ -758,16 +793,24 @@ const Dashboard: React.FC = () => {
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-3 hover:bg-white/20 rounded-lg transition-colors relative"
               aria-label="Menu"
               aria-expanded={showHamburgerMenu}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"/>
               </svg>
+              {queueCount > 0 && (
+                <span 
+                  className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  title={t('pendingUploads') || `${queueCount} pending uploads`}
+                >
+                  {queueCount}
+                </span>
+              )}
             </button>
             {showHamburgerMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1050]">
                 {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -882,6 +925,23 @@ const Dashboard: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Offline Queue Status Section */}
+                {queueCount > 0 && (
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-orange-600 text-lg">⚠️</span>
+                        <span className="text-sm font-semibold text-orange-800">
+                          {queueCount} {t('pendingUploads') || 'Pending Uploads'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-orange-700 mb-2">
+                        {t('pendingUploadsDesc') || 'Some changes are queued for upload. They will sync when connection is restored.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Profile & Admin Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
@@ -1011,9 +1071,12 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col gap-4">
             <CategoryManager
               categories={categories}
+              expenses={expenses}
               onAdd={handleAddCategory}
               onUpdate={handleUpdateCategory}
               onDelete={handleDeleteCategory}
+              onUpdateExpense={handleInlineUpdateExpense}
+              onDeleteExpense={handleDeleteExpense}
             />
           </div>
         )}
@@ -1226,7 +1289,7 @@ const styles = {
   floatingButton: {
     position: 'fixed' as const,
     bottom: '24px',
-    right: '24px',
+    left: '24px',
     padding: '16px 24px',
     backgroundColor: '#6366f1',
     color: 'white',
