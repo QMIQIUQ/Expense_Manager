@@ -66,6 +66,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   const startInlineEdit = (category: Category) => {
+    // Close the add form if it's open
+    setIsAdding(false);
     setEditingId(category.id!);
     setFormData({
       name: category.name,
@@ -119,7 +121,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       <div style={styles.header}>
         <h3 style={styles.title}>{t('categories')}</h3>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+          <button onClick={() => {
+            setIsAdding(true);
+            // Cancel any inline editing when opening add form
+            setEditingId(null);
+            setFormData({ name: '', icon: '📦', color: '#95A5A6' });
+          }} style={styles.addButton}>
             + {t('addCategory')}
           </button>
         )}
@@ -173,7 +180,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
-              {editingId ? t('editCategory') : t('addCategory')}
+              {t('addCategory')}
             </button>
             <button type="button" onClick={handleCancel} style={styles.cancelButton}>
               {t('cancel')}
@@ -280,20 +287,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     </div>
                     <div style={styles.categoryActions}>
                       <button onClick={() => startInlineEdit(category)} style={styles.editBtn}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
-                          <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
-                        </svg>
+                        {t('edit')}
                       </button>
                       {!category.isDefault && (
                         <button
                           onClick={() => handleDeleteClick(category)}
                           style={{ ...styles.deleteBtn }}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
-                            <path d="M8 7V5h8v2h3v2H5V7h3z" fill="#f44336"/>
-                          </svg>
+                          {t('delete')}
                         </button>
                       )}
                     </div>
@@ -502,8 +503,8 @@ const styles = {
     gap: '8px',
   },
   editBtn: {
-    padding: '8px',
-    backgroundColor: 'rgba(33, 150, 243, 0.08)',
+    padding: '8px 16px',
+    backgroundColor: '#2196f3',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
@@ -514,8 +515,8 @@ const styles = {
     justifyContent: 'center',
   },
   deleteBtn: {
-    padding: '8px',
-    backgroundColor: 'rgba(244, 67, 54, 0.08)',
+    padding: '8px 16px',
+    backgroundColor: '#f44336',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
