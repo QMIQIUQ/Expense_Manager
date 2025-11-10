@@ -60,29 +60,39 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      onUpdate(editingId, formData);
-      setEditingId(null);
-    } else {
-      onAdd({ ...formData, isDefault: false });
-      setIsAdding(false);
-    }
+    onAdd({ ...formData, isDefault: false });
+    setIsAdding(false);
     setFormData({ name: '', icon: '📦', color: '#95A5A6' });
   };
 
-  const handleEdit = (category: Category) => {
+  const startInlineEdit = (category: Category) => {
     setEditingId(category.id!);
     setFormData({
       name: category.name,
       icon: category.icon,
       color: category.color,
     });
-    setIsAdding(true);
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingId(null);
+    setFormData({ name: '', icon: '📦', color: '#95A5A6' });
+  };
+
+  const saveInlineEdit = (category: Category) => {
+    const updates: Partial<Category> = {};
+    if (category.name !== formData.name && formData.name) updates.name = formData.name;
+    if (category.icon !== formData.icon) updates.icon = formData.icon;
+    if (category.color !== formData.color) updates.color = formData.color;
+
+    if (Object.keys(updates).length > 0) {
+      onUpdate(category.id!, updates);
+    }
+    cancelInlineEdit();
   };
 
   const handleCancel = () => {
     setIsAdding(false);
-    setEditingId(null);
     setFormData({ name: '', icon: '📦', color: '#95A5A6' });
   };
 
@@ -197,32 +207,101 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 ...styles.categoryCard,
                 ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: '#fff3e0' } : {})
               }}>
-                <div style={styles.categoryInfo}>
-                  <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
-                    {category.icon}
-                </span>
-                <span style={styles.categoryName}>
-                  {category.name}
-                  {isDuplicate && <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
-                </span>
-                {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
-              </div>
-              <div style={styles.categoryActions}>
-                <button onClick={() => handleEdit(category)} style={styles.editBtn}>
-                  {t('edit')}
-                </button>
-                {!category.isDefault && (
-                  <button
-                    onClick={() => handleDeleteClick(category)}
-                    style={styles.deleteBtn}
-                  >
-                    {t('delete')}
-                  </button>
+                {editingId === category.id ? (
+                  // Inline Edit Mode
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        placeholder={t('categoryName')}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, flex: 2, minWidth: '150px' }}
+                      />
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        style={{ ...styles.colorInput, width: '60px', height: '38px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '5px', display: 'block' }}>
+                        {t('categoryIcon')}
+                      </label>
+                      <div style={styles.iconGrid}>
+                        {commonIcons.map((icon) => (
+                          <button
+                            key={icon}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, icon })}
+                            style={{
+                              ...styles.iconButton,
+                              ...(formData.icon === icon ? styles.iconButtonActive : {}),
+                            }}
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button 
+                        onClick={() => saveInlineEdit(category)} 
+                        style={{ ...styles.saveButton }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={cancelInlineEdit} 
+                        style={{ ...styles.cancelIconButton }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <>
+                    <div style={styles.categoryInfo}>
+                      <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
+                        {category.icon}
+                      </span>
+                      <span style={styles.categoryName}>
+                        {category.name}
+                        {isDuplicate && <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
+                      </span>
+                      {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
+                    </div>
+                    <div style={styles.categoryActions}>
+                      <button onClick={() => startInlineEdit(category)} style={styles.editBtn}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
+                          <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
+                        </svg>
+                      </button>
+                      {!category.isDefault && (
+                        <button
+                          onClick={() => handleDeleteClick(category)}
+                          style={{ ...styles.deleteBtn }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
+                            <path d="M8 7V5h8v2h3v2H5V7h3z" fill="#f44336"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
-            </div>
-          );
-        }))}
+            );
+          }))}
       </div>
       
       <ConfirmModal
@@ -423,22 +502,54 @@ const styles = {
     gap: '8px',
   },
   editBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#2196f3',
+    padding: '8px',
+    backgroundColor: 'rgba(33, 150, 243, 0.08)',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#f44336',
+    padding: '8px',
+    backgroundColor: 'rgba(244, 67, 54, 0.08)',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineInput: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+  },
+  saveButton: {
+    padding: '8px',
+    backgroundColor: 'rgba(33,150,83,0.08)',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelIconButton: {
+    padding: '8px',
+    backgroundColor: 'rgba(158,158,158,0.12)',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };
 
