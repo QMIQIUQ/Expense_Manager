@@ -289,7 +289,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       <button onClick={() => startInlineEdit(category)} style={styles.editBtn}>
                         {t('edit')}
                       </button>
-                      {!category.isDefault && (
+                      {category.isDefault ? (
+                        <button
+                          disabled
+                          title={t('cannotDeleteDefault') || 'Cannot delete default categories'}
+                          style={{ ...styles.deleteBtn, opacity: 0.5, cursor: 'not-allowed' }}
+                        >
+                          {t('delete')}
+                        </button>
+                      ) : (
                         <button
                           onClick={() => handleDeleteClick(category)}
                           style={{ ...styles.deleteBtn }}
