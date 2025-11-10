@@ -135,6 +135,12 @@ const Dashboard: React.FC = () => {
       try {
         const cardsData = await cardService.getAll(currentUser.uid);
         setCards(cardsData);
+        
+        // Save unique bank names to localStorage for autocomplete
+        const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
+        if (bankNames.length > 0) {
+          localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+        }
       } catch (cardError) {
         console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
         setCards([]);

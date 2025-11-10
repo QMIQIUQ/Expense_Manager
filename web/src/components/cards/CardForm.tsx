@@ -46,6 +46,7 @@ const CardForm: React.FC<CardFormProps> = ({
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
+    bankName: initialData?.bankName || '',
     cardLimit: initialData?.cardLimit || 0,
     billingDay: initialData?.billingDay || 1,
     benefitMinSpend: initialData?.benefitMinSpend || 0,
@@ -57,6 +58,8 @@ const CardForm: React.FC<CardFormProps> = ({
   );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showBankSuggestions, setShowBankSuggestions] = useState(false);
+  const [bankSuggestions, setBankSuggestions] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,11 +79,27 @@ const CardForm: React.FC<CardFormProps> = ({
 
     setErrors({});
 
+    // Build card data, omitting undefined fields to avoid Firebase errors
     const cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-      ...formData,
-      cashbackRules: formData.cardType === 'cashback' ? cashbackRules : undefined,
-      perMonthOverrides: initialData?.perMonthOverrides,
+      name: formData.name,
+      cardLimit: formData.cardLimit,
+      billingDay: formData.billingDay,
+      cardType: formData.cardType,
     };
+
+    // Only add optional fields if they have values
+    if (formData.bankName) {
+      cardData.bankName = formData.bankName;
+    }
+    if (formData.benefitMinSpend && formData.benefitMinSpend > 0) {
+      cardData.benefitMinSpend = formData.benefitMinSpend;
+    }
+    if (formData.cardType === 'cashback' && cashbackRules.length > 0) {
+      cardData.cashbackRules = cashbackRules;
+    }
+    if (initialData?.perMonthOverrides && initialData.perMonthOverrides.length > 0) {
+      cardData.perMonthOverrides = initialData.perMonthOverrides;
+    }
 
     onSubmit(cardData);
   };
@@ -98,6 +117,35 @@ const CardForm: React.FC<CardFormProps> = ({
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleBankNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, bankName: value }));
+    
+    // Get bank name suggestions from localStorage (previously saved cards)
+    if (value.length > 0) {
+      const savedBanks = localStorage.getItem('cardBankNames');
+      if (savedBanks) {
+        try {
+          const banks: string[] = JSON.parse(savedBanks);
+          const filtered = banks.filter((bank) =>
+            bank.toLowerCase().includes(value.toLowerCase())
+          );
+          setBankSuggestions(filtered);
+          setShowBankSuggestions(filtered.length > 0);
+        } catch (error) {
+          console.error('Error parsing bank names:', error);
+        }
+      }
+    } else {
+      setShowBankSuggestions(false);
+    }
+  };
+
+  const handleSelectBankSuggestion = (bankName: string) => {
+    setFormData((prev) => ({ ...prev, bankName }));
+    setShowBankSuggestions(false);
   };
 
   const handleAddCashbackRule = () => {
@@ -158,6 +206,38 @@ const CardForm: React.FC<CardFormProps> = ({
           }`}
         />
         {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+      </div>
+
+      {/* Bank Name with Autocomplete */}
+      <div className="flex flex-col gap-1 relative">
+        <label className="text-sm font-medium text-gray-700">{t('bankName')}</label>
+        <input
+          type="text"
+          name="bankName"
+          value={formData.bankName}
+          onChange={handleBankNameChange}
+          onFocus={(e) => e.target.select()}
+          onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
+          placeholder="e.g., Chase, Citibank, HSBC"
+          className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {showBankSuggestions && bankSuggestions.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg top-full max-h-40 overflow-y-auto">
+            {bankSuggestions.map((bank, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleSelectBankSuggestion(bank)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              >
+                {bank}
+              </button>
+            ))}
+          </div>
+        )}
+        <span className="text-xs text-gray-500">
+          Optional: Bank name for easier organization
+        </span>
       </div>
 
       {/* Card Limit */}

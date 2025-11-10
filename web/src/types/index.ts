@@ -92,6 +92,7 @@ export interface Card {
   id?: string;
   userId: string;
   name: string;
+  bankName?: string; // Optional: bank name for the card
   cardLimit: number;
   billingDay: number; // 1-28, fixed billing day each month
   perMonthOverrides?: MonthOverride[]; // Optional month-specific overrides

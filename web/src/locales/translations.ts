@@ -255,6 +255,7 @@ export const translations = {
   addCard: { en: 'Add Card', zh: '新增卡片', 'zh-CN': '添加卡片' },
   editCard: { en: 'Edit Card', zh: '編輯卡片', 'zh-CN': '编辑卡片' },
   cardName: { en: 'Card Name', zh: '卡片名稱', 'zh-CN': '卡片名称' },
+  bankName: { en: 'Bank Name', zh: '銀行名稱', 'zh-CN': '银行名称' },
   cardLimit: { en: 'Card Limit', zh: '信用額度', 'zh-CN': '信用额度' },
   billingDay: { en: 'Billing Day', zh: '結帳日', 'zh-CN': '结账日' },
   cardType: { en: 'Card Type', zh: '卡片類型', 'zh-CN': '卡片类型' },
