@@ -28,6 +28,7 @@ export const translations = {
   categories: { en: 'Categories', zh: '類別', 'zh-CN': '分类' },
   budgets: { en: 'Budgets', zh: '預算', 'zh-CN': '预算' },
   recurring: { en: 'Recurring', zh: '定期支出', 'zh-CN': '定期支出' },
+  cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
   profile: { en: '👤 Profile', zh: '👤 個人資料', 'zh-CN': '👤 个人资料' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
 
@@ -44,6 +45,13 @@ export const translations = {
   date: { en: 'Date', zh: '日期', 'zh-CN': '日期' },
   time: { en: 'Time', zh: '時間', 'zh-CN': '时间' },
   notes: { en: 'Notes', zh: '備註', 'zh-CN': '备注' },
+  paymentMethod: { en: 'Payment Method', zh: '付款方式', 'zh-CN': '付款方式' },
+  selectPaymentMethod: { en: 'Select payment method', zh: '選擇付款方式', 'zh-CN': '选择付款方式' },
+  cash: { en: 'Cash', zh: '現金', 'zh-CN': '现金' },
+  creditCard: { en: 'Credit Card', zh: '信用卡', 'zh-CN': '信用卡' },
+  eWallet: { en: 'E-Wallet', zh: '電子錢包', 'zh-CN': '电子钱包' },
+  eWalletName: { en: 'E-Wallet Name', zh: '電子錢包名稱', 'zh-CN': '电子钱包名称' },
+  eWalletPlaceholder: { en: 'e.g., PayPal, Apple Pay, Alipay', zh: '例如：PayPal、Apple Pay、支付寶', 'zh-CN': '例如：PayPal、Apple Pay、支付宝' },
   descriptionPlaceholder: { en: 'e.g., Grocery shopping', zh: '例如：購物', 'zh-CN': '例如：购物' },
   notesPlaceholder: { en: 'Additional notes (optional)', zh: '額外備註（選填）', 'zh-CN': '额外备注（选填）' },
   selectCategory: { en: 'Select a category', zh: '選擇類別', 'zh-CN': '选择分类' },
@@ -253,7 +261,6 @@ export const translations = {
   cannotChangeOwnAdmin: { en: 'You cannot change your own admin status', zh: '無法變更自己的管理員狀態', 'zh-CN': '无法更改自己的管理员状态' },
 
   // Credit Cards
-  cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
   creditCards: { en: 'Credit Cards', zh: '信用卡管理', 'zh-CN': '信用卡管理' },
   addCard: { en: 'Add Card', zh: '新增卡片', 'zh-CN': '添加卡片' },
   editCard: { en: 'Edit Card', zh: '編輯卡片', 'zh-CN': '编辑卡片' },

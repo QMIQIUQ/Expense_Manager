@@ -528,6 +528,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                   <div style={styles.leftCol}>
                     <h3 style={styles.description}>{expense.description}</h3>
                     {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
+                    {/* Payment Method Display */}
+                    {expense.paymentMethod && (
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
+                        {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                        {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
+                      </p>
+                    )}
                   </div>
                   <div style={styles.rightCol}>
                     <div style={styles.amount}>${expense.amount.toFixed(2)}</div>

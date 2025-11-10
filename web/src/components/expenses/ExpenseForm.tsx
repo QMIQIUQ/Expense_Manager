@@ -26,6 +26,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
     notes: initialData?.notes || '',
     cardId: initialData?.cardId || '',
+    paymentMethod: initialData?.paymentMethod || 'cash',
+    paymentMethodName: initialData?.paymentMethodName || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -38,6 +40,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (!formData.amount || formData.amount <= 0) newErrors.amount = t('pleaseFillField');
     if (!formData.category) newErrors.category = t('pleaseSelectCategory');
     if (!formData.date) newErrors.date = t('pleaseFillField');
+    if (formData.paymentMethod === 'e_wallet' && !formData.paymentMethodName.trim()) {
+      newErrors.paymentMethodName = t('pleaseFillField');
+    }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -45,7 +50,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
     
     setErrors({});
-    onSubmit(formData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+    
+    // Prepare data based on payment method
+    const submitData: any = { ...formData };
+    if (formData.paymentMethod === 'cash') {
+      // Clear card and e-wallet info for cash
+      delete submitData.cardId;
+      delete submitData.paymentMethodName;
+    } else if (formData.paymentMethod === 'credit_card') {
+      // Clear e-wallet info for credit card
+      delete submitData.paymentMethodName;
+    } else if (formData.paymentMethod === 'e_wallet') {
+      // Clear card info for e-wallet
+      delete submitData.cardId;
+    }
+    
+    onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     if (!initialData) {
       setFormData({
         description: '',
@@ -55,6 +75,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         time: new Date().toTimeString().slice(0, 5), // Reset to current time
         notes: '',
         cardId: '',
+        paymentMethod: 'cash',
+        paymentMethodName: '',
       });
     }
   };
@@ -158,8 +180,23 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
       </div>
 
-      {/* Card Selection */}
-      {cards.length > 0 && (
+      {/* Payment Method Selection */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">{t('paymentMethod')}</label>
+        <select
+          name="paymentMethod"
+          value={formData.paymentMethod}
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="cash">💵 {t('cash')}</option>
+          <option value="credit_card">💳 {t('creditCard')}</option>
+          <option value="e_wallet">📱 {t('eWallet')}</option>
+        </select>
+      </div>
+
+      {/* Card Selection - Only shown when credit card is selected */}
+      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">{t('selectCard')}</label>
           <select
@@ -168,13 +205,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             onChange={handleChange}
             className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="">{t('noneOrCash')}</option>
+            <option value="">{t('selectPaymentMethod')}</option>
             {cards.map((card) => (
               <option key={card.id} value={card.id}>
                 💳 {card.name}
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* E-Wallet Name - Only shown when e-wallet is selected */}
+      {formData.paymentMethod === 'e_wallet' && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">{t('eWalletName')}</label>
+          <input
+            type="text"
+            name="paymentMethodName"
+            value={formData.paymentMethodName}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder={t('eWalletPlaceholder')}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.paymentMethodName ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
         </div>
       )}
 

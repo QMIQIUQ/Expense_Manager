@@ -1,5 +1,8 @@
 // Type definitions for Expense Manager
 
+// Payment method types
+export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet';
+
 export interface Expense {
   id?: string;
   userId: string;
@@ -11,6 +14,9 @@ export interface Expense {
   time?: string;
   notes?: string;
   cardId?: string; // Optional: credit card used for this expense
+  // Payment method information
+  paymentMethod?: PaymentMethodType; // Type of payment method
+  paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
   updatedAt: Date;
 }
