@@ -134,6 +134,7 @@ const Dashboard: React.FC = () => {
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
         const cardsData = await cardService.getAll(currentUser.uid);
+        console.log('Cards loaded successfully:', cardsData.length, 'cards');
         setCards(cardsData);
         
         // Save unique bank names to localStorage for autocomplete
@@ -762,6 +763,15 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  
+  // Clear offline queue (utility function)
+  const handleClearOfflineQueue = () => {
+    if (confirm(t('confirmClearQueue') || 'Clear all pending operations? This cannot be undone.')) {
+      offlineQueue.clear();
+      setQueueCount(0);
+      showNotification('success', t('queueCleared') || 'Offline queue cleared');
+    }
+  };
 
   // Export handlers
   const handleExportExcel = () => {
@@ -1038,6 +1048,15 @@ const Dashboard: React.FC = () => {
                       <p className="text-xs text-orange-700 mb-2">
                         {t('pendingUploadsDesc') || 'Some changes are queued for upload. They will sync when connection is restored.'}
                       </p>
+                      <button
+                        onClick={() => {
+                          handleClearOfflineQueue();
+                          setShowHamburgerMenu(false);
+                        }}
+                        className="w-full mt-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 border border-red-300 rounded transition-colors font-medium"
+                      >
+                        {t('clearQueue') || 'Clear Queue'}
+                      </button>
                     </div>
                   </div>
                 )}

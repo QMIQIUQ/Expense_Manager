@@ -220,6 +220,9 @@ export const translations = {
   // Offline/Upload Queue
   pendingUploads: { en: 'Pending Uploads', zh: '待上傳項目', 'zh-CN': '待上传项目' },
   pendingUploadsDesc: { en: 'Some changes are queued for upload. They will sync when connection is restored.', zh: '部分變更已加入待上傳佇列。網路連線恢復後將自動同步。', 'zh-CN': '部分更改已加入待上传队列。网络连接恢复后将自动同步。' },
+  confirmClearQueue: { en: 'Clear all pending operations? This cannot be undone.', zh: '清除所有待處理的操作？此操作無法復原。', 'zh-CN': '清除所有待处理的操作？此操作无法撤销。' },
+  queueCleared: { en: 'Offline queue cleared', zh: '離線佇列已清除', 'zh-CN': '离线队列已清除' },
+  clearQueue: { en: 'Clear Queue', zh: '清除佇列', 'zh-CN': '清除队列' },
 
   // User Profile
   userProfile: { en: 'User Profile', zh: '使用者資料', 'zh-CN': '用户资料' },
