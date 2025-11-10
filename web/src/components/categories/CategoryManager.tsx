@@ -9,6 +9,8 @@ interface CategoryManagerProps {
   onAdd: (category: Omit<Category, 'id' | 'userId' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Category>) => void;
   onDelete: (id: string) => void;
+  onUpdateExpense?: (id: string, updates: Partial<Expense>) => void;
+  onDeleteExpense?: (id: string) => void;
 }
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({
@@ -17,6 +19,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onAdd,
   onUpdate,
   onDelete,
+  onUpdateExpense,
+  onDeleteExpense,
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
@@ -38,6 +42,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     categoryName: '',
     expensesUsingCategory: [],
   });
+  
+  const [deleteAction, setDeleteAction] = useState<'reassign' | 'deleteExpenses' | null>(null);
+  const [reassignToCategoryId, setReassignToCategoryId] = useState<string>('');
 
   // Detect duplicate category names
   const getDuplicateCategoryNames = () => {
@@ -287,24 +294,20 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     </div>
                     <div style={styles.categoryActions}>
                       <button onClick={() => startInlineEdit(category)} style={styles.editBtn}>
-                        {t('edit')}
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="currentColor"/>
+                          <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                        </svg>
                       </button>
-                      {category.isDefault ? (
-                        <button
-                          disabled
-                          title={t('cannotDeleteDefault') || 'Cannot delete default categories'}
-                          style={{ ...styles.deleteBtn, opacity: 0.5, cursor: 'not-allowed' }}
-                        >
-                          {t('delete')}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleDeleteClick(category)}
-                          style={{ ...styles.deleteBtn }}
-                        >
-                          {t('delete')}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDeleteClick(category)}
+                        style={{ ...styles.deleteBtn }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 7h12l-1 14H7L6 7z" fill="currentColor"/>
+                          <path d="M8 7V5h8v2h3v2H5V7h3z" fill="currentColor"/>
+                        </svg>
+                      </button>
                     </div>
                   </>
                 )}
@@ -313,25 +316,166 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           }))}
       </div>
       
-      <ConfirmModal
-        isOpen={deleteConfirm.isOpen}
-        title={t('delete') + ' ' + t('category')}
-        message={
-          deleteConfirm.expensesUsingCategory.length > 0
-            ? `⚠️ Warning: This category is being used by ${deleteConfirm.expensesUsingCategory.length} expense(s):\n\n${deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => `• ${exp.description} ($${exp.amount.toFixed(2)} - ${exp.date})`).join('\n')}${deleteConfirm.expensesUsingCategory.length > 5 ? `\n...and ${deleteConfirm.expensesUsingCategory.length - 5} more` : ''}\n\nAre you sure you want to delete this category? The expenses will keep their category name, but it will no longer appear in the category list.`
-            : t('confirmDelete')
-        }
-        confirmText={t('delete')}
-        cancelText={t('cancel')}
-        danger={true}
-        onConfirm={() => {
-          if (deleteConfirm.categoryId) {
-            onDelete(deleteConfirm.categoryId);
-          }
-          setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
-        }}
-        onCancel={() => setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] })}
-      />
+      {/* Enhanced Delete Confirmation Dialog */}
+      {deleteConfirm.isOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>{t('delete')} {t('category')}</h3>
+            
+            {deleteConfirm.expensesUsingCategory.length > 0 ? (
+              <>
+                <div style={styles.modalWarning}>
+                  ⚠️ {t('warning')}: {t('categoryInUse') || 'This category is being used by'} {deleteConfirm.expensesUsingCategory.length} {t('expenses') || 'expense(s)'}:
+                </div>
+                
+                <div style={styles.expenseList}>
+                  {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
+                    <div key={exp.id} style={styles.expenseItem}>
+                      • {exp.description} (${exp.amount.toFixed(2)} - {exp.date})
+                    </div>
+                  ))}
+                  {deleteConfirm.expensesUsingCategory.length > 5 && (
+                    <div style={styles.expenseItem}>...{t('and') || 'and'} {deleteConfirm.expensesUsingCategory.length - 5} {t('more') || 'more'}</div>
+                  )}
+                </div>
+                
+                <div style={styles.modalQuestion}>
+                  {t('chooseDeletionAction') || 'What would you like to do with these expenses?'}
+                </div>
+                
+                <div style={styles.radioGroup}>
+                  <label style={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="deleteAction"
+                      value="reassign"
+                      checked={deleteAction === 'reassign'}
+                      onChange={(e) => setDeleteAction(e.target.value as 'reassign')}
+                      style={styles.radio}
+                    />
+                    <span>{t('reassignToCategory') || 'Reassign expenses to another category'}</span>
+                  </label>
+                  
+                  {deleteAction === 'reassign' && (
+                    <select
+                      value={reassignToCategoryId}
+                      onChange={(e) => setReassignToCategoryId(e.target.value)}
+                      style={styles.reassignSelect}
+                    >
+                      <option value="">{t('selectCategory') || 'Select a category...'}</option>
+                      {categories
+                        .filter(cat => cat.id !== deleteConfirm.categoryId)
+                        .map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.name}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                  
+                  <label style={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="deleteAction"
+                      value="deleteExpenses"
+                      checked={deleteAction === 'deleteExpenses'}
+                      onChange={(e) => setDeleteAction(e.target.value as 'deleteExpenses')}
+                      style={styles.radio}
+                    />
+                    <span style={{ color: '#f44336' }}>
+                      {t('deleteExpensesToo') || 'Delete all expenses in this category'}
+                    </span>
+                  </label>
+                </div>
+                
+                <div style={styles.modalActions}>
+                  <button
+                    onClick={() => {
+                      if (!deleteAction) {
+                        alert(t('pleaseSelectAction') || 'Please select an action');
+                        return;
+                      }
+                      
+                      if (deleteAction === 'reassign') {
+                        if (!reassignToCategoryId) {
+                          alert(t('pleaseSelectCategory') || 'Please select a category');
+                          return;
+                        }
+                        
+                        // Reassign all expenses to the selected category
+                        if (onUpdateExpense) {
+                          const targetCategory = categories.find(c => c.id === reassignToCategoryId);
+                          if (targetCategory) {
+                            deleteConfirm.expensesUsingCategory.forEach(exp => {
+                              onUpdateExpense(exp.id!, { category: targetCategory.name });
+                            });
+                          }
+                        }
+                      } else if (deleteAction === 'deleteExpenses') {
+                        // Delete all expenses
+                        if (onDeleteExpense) {
+                          deleteConfirm.expensesUsingCategory.forEach(exp => {
+                            onDeleteExpense(exp.id!);
+                          });
+                        }
+                      }
+                      
+                      // Delete the category
+                      if (deleteConfirm.categoryId) {
+                        onDelete(deleteConfirm.categoryId);
+                      }
+                      
+                      // Reset state
+                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
+                      setDeleteAction(null);
+                      setReassignToCategoryId('');
+                    }}
+                    style={styles.confirmButton}
+                    disabled={!deleteAction || (deleteAction === 'reassign' && !reassignToCategoryId)}
+                  >
+                    {t('delete')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
+                      setDeleteAction(null);
+                      setReassignToCategoryId('');
+                    }}
+                    style={styles.cancelButton}
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={styles.modalMessage}>
+                  {t('confirmDelete') || 'Are you sure you want to delete this category?'}
+                </div>
+                <div style={styles.modalActions}>
+                  <button
+                    onClick={() => {
+                      if (deleteConfirm.categoryId) {
+                        onDelete(deleteConfirm.categoryId);
+                      }
+                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
+                    }}
+                    style={styles.confirmButton}
+                  >
+                    {t('delete')}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] })}
+                    style={styles.cancelButton}
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -559,6 +703,106 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '24px',
+    maxWidth: '600px',
+    width: '90%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+  },
+  modalTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '20px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  modalWarning: {
+    padding: '12px',
+    backgroundColor: '#fff3e0',
+    border: '1px solid #ff9800',
+    borderRadius: '4px',
+    marginBottom: '16px',
+    color: '#e65100',
+    fontSize: '14px',
+  },
+  expenseList: {
+    marginBottom: '16px',
+    padding: '12px',
+    backgroundColor: '#f5f5f5',
+    borderRadius: '4px',
+    maxHeight: '200px',
+    overflow: 'auto',
+  },
+  expenseItem: {
+    padding: '4px 0',
+    fontSize: '14px',
+    color: '#666',
+  },
+  modalQuestion: {
+    marginBottom: '16px',
+    fontSize: '16px',
+    fontWeight: '500' as const,
+    color: '#333',
+  },
+  radioGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    marginBottom: '24px',
+  },
+  radioLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: '#333',
+    cursor: 'pointer',
+  },
+  radio: {
+    cursor: 'pointer',
+  },
+  reassignSelect: {
+    marginLeft: '28px',
+    padding: '8px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    width: 'calc(100% - 28px)',
+  },
+  modalMessage: {
+    marginBottom: '24px',
+    fontSize: '14px',
+    color: '#666',
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+  },
+  confirmButton: {
+    padding: '10px 20px',
+    backgroundColor: '#f44336',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
   },
 };
 

@@ -1075,6 +1075,8 @@ const Dashboard: React.FC = () => {
               onAdd={handleAddCategory}
               onUpdate={handleUpdateCategory}
               onDelete={handleDeleteCategory}
+              onUpdateExpense={handleInlineUpdateExpense}
+              onDeleteExpense={handleDeleteExpense}
             />
           </div>
         )}
