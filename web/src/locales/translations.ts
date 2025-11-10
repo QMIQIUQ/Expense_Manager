@@ -304,6 +304,43 @@ export const translations = {
   reassignToCategory: { en: 'Reassign expenses to another category', zh: '將支出重新分配到其他類別', 'zh-CN': '将支出重新分配到其他分类' },
   deleteExpensesToo: { en: 'Delete all expenses in this category', zh: '刪除此類別中的所有支出', 'zh-CN': '删除此分类中的所有支出' },
   pleaseSelectAction: { en: 'Please select an action', zh: '請選擇一個操作', 'zh-CN': '请选择一个操作' },
+  
+  // Tooltips for credit card fields
+  tooltipLinkedCategory: { 
+    en: 'Select which spending category this cashback rule applies to', 
+    zh: '選擇此回饋規則適用的消費類別', 
+    'zh-CN': '选择此回馈规则适用的消费类别' 
+  },
+  tooltipMinSpendForRate: { 
+    en: 'Minimum spending in this category to unlock the higher cashback rate. Set to 0 if no threshold is needed.', 
+    zh: '在此類別需達到的最低消費金額才能獲得較高回饋率。若無門檻可設為 0。', 
+    'zh-CN': '在此分类需达到的最低消费金额才能获得较高回馈率。若无门槛可设为 0。' 
+  },
+  tooltipRateIfMet: { 
+    en: 'Cashback percentage when minimum spend is met (e.g., 8% = 8)', 
+    zh: '達到最低消費時的回饋百分比（例如：8% = 8）', 
+    'zh-CN': '达到最低消费时的回馈百分比（例如：8% = 8）' 
+  },
+  tooltipCapIfMet: { 
+    en: 'Maximum cashback amount when minimum spend is met', 
+    zh: '達到最低消費時的回饋上限金額', 
+    'zh-CN': '达到最低消费时的回馈上限金额' 
+  },
+  tooltipRateIfNotMet: { 
+    en: 'Cashback percentage when minimum spend is NOT met (e.g., 1% = 1)', 
+    zh: '未達最低消費時的回饋百分比（例如：1% = 1）', 
+    'zh-CN': '未达最低消费时的回馈百分比（例如：1% = 1）' 
+  },
+  tooltipCapIfNotMet: { 
+    en: 'Maximum cashback amount when minimum spend is NOT met', 
+    zh: '未達最低消費時的回饋上限金額', 
+    'zh-CN': '未达最低消费时的回馈上限金额' 
+  },
+  tooltipSpendToReachCap: { 
+    en: 'How much you need to spend in this category to maximize cashback', 
+    zh: '在此類別需消費多少才能達到回饋上限', 
+    'zh-CN': '在此分类需消费多少才能达到回馈上限' 
+  },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

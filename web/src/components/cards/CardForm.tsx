@@ -9,6 +9,34 @@ interface CardFormProps {
   categories: Category[];
 }
 
+// Simple Tooltip Component
+const Tooltip: React.FC<{ text: string }> = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <button
+        type="button"
+        className="inline-flex items-center justify-center w-4 h-4 text-xs text-gray-500 hover:text-gray-700 border border-gray-400 rounded-full"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={(e) => {
+          e.preventDefault();
+          setIsVisible(!isVisible);
+        }}
+      >
+        ?
+      </button>
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-800 rounded shadow-lg -top-2 left-6">
+          {text}
+          <div className="absolute w-2 h-2 bg-gray-800 transform rotate-45 -left-1 top-3"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CardForm: React.FC<CardFormProps> = ({
   onSubmit,
   onCancel,
@@ -246,8 +274,9 @@ const CardForm: React.FC<CardFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Linked Category */}
                 <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('linkedCategory')} *
+                    <Tooltip text={t('tooltipLinkedCategory')} />
                   </label>
                   <select
                     value={rule.linkedCategoryId}
@@ -267,8 +296,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Min Spend for Higher Rate */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('minSpendForRate')} ($)
+                    <Tooltip text={t('tooltipMinSpendForRate')} />
                   </label>
                   <input
                     type="number"
@@ -290,8 +320,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Rate if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('rateIfMet')}
+                    <Tooltip text={t('tooltipRateIfMet')} />
                   </label>
                   <input
                     type="number"
@@ -314,8 +345,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Cap if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('capIfMet')} ($)
+                    <Tooltip text={t('tooltipCapIfMet')} />
                   </label>
                   <input
                     type="number"
@@ -337,8 +369,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Display: Spend to reach cap */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-500">
+                  <label className="text-xs font-medium text-gray-500 flex items-center">
                     {t('spendToReachCap')}
+                    <Tooltip text={t('tooltipSpendToReachCap')} />
                   </label>
                   <div className="px-2 py-1.5 text-sm bg-gray-100 rounded text-gray-700">
                     ${calculateSpendToReachCap(rule.rateIfMet, rule.capIfMet)}
@@ -347,8 +380,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Rate if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('rateIfNotMet')}
+                    <Tooltip text={t('tooltipRateIfNotMet')} />
                   </label>
                   <input
                     type="number"
@@ -371,8 +405,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Cap if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-gray-600 flex items-center">
                     {t('capIfNotMet')} ($)
+                    <Tooltip text={t('tooltipCapIfNotMet')} />
                   </label>
                   <input
                     type="number"
