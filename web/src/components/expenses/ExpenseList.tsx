@@ -15,10 +15,14 @@ interface ExpenseListProps {
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete, onInlineUpdate, onBulkDelete }) => {
   const { t } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState(today);
+  const [dateFrom, setDateFrom] = useState(oneMonthAgoStr);
   const [dateTo, setDateTo] = useState(today);
   const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
@@ -38,6 +42,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
   }>({});
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -92,6 +97,45 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
     return time ? `${base} ${time}` : base;
   };
 
+  const toggleGroupCollapse = (date: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleGroupSelection = (dayExpenses: Expense[]) => {
+    const dayExpenseIds = dayExpenses.map(exp => exp.id!).filter(Boolean);
+    const allSelected = dayExpenseIds.every(id => selectedIds.has(id));
+    
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (allSelected) {
+        // 如果全選了，則取消全選
+        dayExpenseIds.forEach(id => newSet.delete(id));
+      } else {
+        // 否則全選此 group
+        dayExpenseIds.forEach(id => newSet.add(id));
+      }
+      return newSet;
+    });
+  };
+
+  const getGroupCheckboxState = (dayExpenses: Expense[]): 'checked' | 'indeterminate' | 'unchecked' => {
+    const dayExpenseIds = dayExpenses.map(exp => exp.id!).filter(Boolean);
+    if (dayExpenseIds.length === 0) return 'unchecked';
+    
+    const selectedCount = dayExpenseIds.filter(id => selectedIds.has(id)).length;
+    if (selectedCount === 0) return 'unchecked';
+    if (selectedCount === dayExpenseIds.length) return 'checked';
+    return 'indeterminate';
+  };
+
   const calculateSummary = () => {
     const filtered = filteredAndSortedExpenses();
     const total = filtered.reduce((sum, exp) => sum + exp.amount, 0);
@@ -104,6 +148,32 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
       .sort(([, a], [, b]) => b - a)
       .map(([category, amount]) => ({ category, amount }));
     return { total, count: filtered.length, categoryBreakdown };
+  };
+
+  // Group expenses by date for display
+  const groupExpensesByDate = () => {
+    const sorted = filteredAndSortedExpenses();
+    const grouped: { [date: string]: Expense[] } = {};
+    
+    sorted.forEach((expense) => {
+      const dateKey = expense.date;
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(expense);
+    });
+
+    // Convert to array and sort by date
+    return Object.entries(grouped).map(([date, exps]) => {
+      const dailyTotal = exps.reduce((sum, exp) => sum + exp.amount, 0);
+      return { date, expenses: exps, dailyTotal };
+    }).sort((a, b) => {
+      // Sort descending by default (newest first)
+      if (sortBy.includes('asc')) {
+        return a.date.localeCompare(b.date);
+      }
+      return b.date.localeCompare(a.date);
+    });
   };
 
   // Use unique category names to avoid duplicate option keys
@@ -165,35 +235,36 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
 
   const summary = calculateSummary();
 
+  const groupedExpenses = groupExpensesByDate();
+
   return (
     <div style={styles.container}>
-      {/* Summary Section */}
-      <div style={styles.summaryCard}>
-        <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
-          <div style={styles.summaryMain}>
-            <span style={styles.summaryLabel}>{t('total')} </span>
-            <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
-            <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
-          </div>
-          <button style={styles.expandButton} aria-label="Toggle summary">
-            {showSummary ? '▼' : '▶'}
-          </button>
-        </div>
-        {showSummary && (
-          <div style={styles.summaryDetails}>
-            <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
-            {summary.categoryBreakdown.map(({ category, amount }) => (
-              <div key={category} style={styles.summaryDetailRow}>
-                <span style={styles.summaryDetailCategory}>{category}</span>
-                <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Filter Section */}
+      {/* Filter Section with integrated summary */}
       <div style={styles.filterSection}>
+        {/* Summary row at the top of filter section */}
+        <div style={styles.summaryRow}>
+          <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
+            <div style={styles.summaryMain}>
+              <span style={styles.summaryLabel}>{t('total')} </span>
+              <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
+              <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
+            </div>
+            <button style={styles.expandButton} aria-label="Toggle summary">
+              {showSummary ? '▼' : '▶'}
+            </button>
+          </div>
+          {showSummary && (
+            <div style={styles.summaryDetails}>
+              <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
+              {summary.categoryBreakdown.map(({ category, amount }) => (
+                <div key={category} style={styles.summaryDetailRow}>
+                  <span style={styles.summaryDetailCategory}>{category}</span>
+                  <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div style={styles.filterRow}>
           <input
             type="text"
@@ -321,14 +392,51 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
         )}
       </div>
 
-      {filteredAndSortedExpenses().length === 0 ? (
+      {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
           <p>{t('noExpenses')}</p>
         </div>
       ) : (
         <div style={styles.list}>
-          {filteredAndSortedExpenses().map((expense) => (
-            <div key={expense.id} className="expense-card" style={styles.expenseCard}>
+          {groupedExpenses.map(({ date, expenses: dayExpenses, dailyTotal }) => {
+            const isCollapsed = collapsedGroups.has(date);
+            return (
+            <div key={date} style={styles.dateGroup}>
+              {/* Date group header with daily subtotal - clickable to expand/collapse */}
+              <div style={styles.dateGroupHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {multiSelectEnabled && (
+                    <input
+                      type="checkbox"
+                      checked={getGroupCheckboxState(dayExpenses) === 'checked'}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = getGroupCheckboxState(dayExpenses) === 'indeterminate';
+                        }
+                      }}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleGroupSelection(dayExpenses);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select all expenses for ${formatDate(date)}`}
+                    />
+                  )}
+                  <div 
+                    onClick={() => toggleGroupCollapse(date)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer' }}
+                  >
+                    <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
+                    <span style={styles.dateGroupDate}>{formatDate(date)}</span>
+                    <span style={styles.expenseCount}>({dayExpenses.length})</span>
+                  </div>
+                </div>
+                <span style={styles.dateGroupTotal}>${dailyTotal.toFixed(2)}</span>
+              </div>
+              
+              {/* Expenses for this date - hidden when collapsed */}
+              {!isCollapsed && dayExpenses.map((expense) => (
+                <div key={expense.id} className="expense-card" style={styles.expenseCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {multiSelectEnabled && (
@@ -344,8 +452,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                       aria-label={`Select expense ${expense.description}`}
                     />
                   )}
-                  <div style={styles.dateRow}>
-                    <span>{formatDate(expense.date, (expense as Expense & { time?: string }).time)}</span>
+                  <div style={styles.categoryRow}>
+                    {(expense as Expense & { time?: string }).time && (
+                      <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
+                    )}
                     <span style={styles.category}>{expense.category}</span>
                   </div>
                 </div>
@@ -443,7 +553,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
                 </div>
               )}
             </div>
-          ))}
+              ))}
+            </div>
+          )})}
         </div>
       )}
       
@@ -471,12 +583,12 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '20px',
   },
-  summaryCard: {
+  summaryRow: {
     backgroundColor: '#f8f9fa',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
     padding: '16px',
-    marginBottom: '10px',
+    marginBottom: '12px',
   },
   summaryHeader: {
     display: 'flex',
@@ -633,6 +745,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
+    paddingBottom: '100px',
   },
   expenseCard: {
     backgroundColor: 'white',
@@ -646,6 +759,8 @@ const styles = {
     overflow: 'hidden',
   },
   dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  timeDisplay: { fontSize: '12px', color: '#888', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
   leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
   rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
@@ -731,6 +846,46 @@ const styles = {
     marginTop: '10px',
     flexWrap: 'wrap' as const,
     alignItems: 'center',
+  },
+  dateGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
+    marginBottom: '20px',
+  },
+  dateGroupHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 12px',
+    backgroundColor: '#e8f4f8',
+    borderRadius: '8px',
+    borderLeft: '4px solid #1976d2',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    userSelect: 'none' as const,
+  },
+  dateGroupDate: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  expenseCount: {
+    fontSize: '12px',
+    fontWeight: '400' as const,
+    color: '#666',
+  },
+  collapseIcon: {
+    fontSize: '10px',
+    color: '#1976d2',
+    display: 'inline-block',
+    width: '12px',
+    transition: 'transform 0.2s',
+  },
+  dateGroupTotal: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#1976d2',
   },
 };
 
