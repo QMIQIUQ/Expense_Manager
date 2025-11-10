@@ -52,13 +52,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       categoryName: selectedCategory.name,
     };
 
-    if (editingId) {
-      onUpdate(editingId, budgetData);
-      setEditingId(null);
-    } else {
-      onAdd(budgetData);
-      setIsAdding(false);
-    }
+    onAdd(budgetData);
+    setIsAdding(false);
     resetForm();
   };
 
@@ -73,7 +68,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     });
   };
 
-  const handleEdit = (budget: Budget) => {
+  const startInlineEdit = (budget: Budget) => {
     const category = categories.find((cat) => cat.name === budget.categoryName);
     setEditingId(budget.id!);
     setFormData({
@@ -84,7 +79,31 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       startDate: budget.startDate,
       alertThreshold: budget.alertThreshold,
     });
-    setIsAdding(true);
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingId(null);
+    resetForm();
+  };
+
+  const saveInlineEdit = (budget: Budget) => {
+    const selectedCategory = categories.find((cat) => cat.id === formData.categoryId);
+    if (!selectedCategory) return;
+
+    const updates: Partial<Budget> = {};
+    if (budget.categoryId !== formData.categoryId) {
+      updates.categoryId = formData.categoryId;
+      updates.categoryName = selectedCategory.name;
+    }
+    if (budget.amount !== formData.amount) updates.amount = formData.amount;
+    if (budget.period !== formData.period) updates.period = formData.period;
+    if (budget.startDate !== formData.startDate) updates.startDate = formData.startDate;
+    if (budget.alertThreshold !== formData.alertThreshold) updates.alertThreshold = formData.alertThreshold;
+
+    if (Object.keys(updates).length > 0) {
+      onUpdate(budget.id!, updates);
+    }
+    cancelInlineEdit();
   };
 
   const getProgressPercentage = (categoryName: string, budgetAmount: number) => {
@@ -224,41 +243,121 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
             return (
               <div key={budget.id} style={styles.budgetCard}>
-                <div style={styles.budgetHeader}>
-                  <h4 style={styles.budgetCategory}>{budget.categoryName}</h4>
-                  <span style={styles.budgetPeriod}>{budget.period}</span>
-                </div>
-
-                <div style={styles.budgetAmount}>
-                  <span style={styles.spent}>${spent.toFixed(2)}</span>
-                  <span style={styles.separator}>/</span>
-                  <span style={styles.total}>${budget.amount.toFixed(2)}</span>
-                </div>
-
-                <div style={styles.progressBar}>
-                  <div
-                    style={{
-                      ...styles.progressFill,
-                      width: `${percentage}%`,
-                      backgroundColor: progressColor,
-                    }}
-                  />
-                </div>
-
-                <div style={styles.budgetFooter}>
-                  <span style={styles.percentage}>{percentage.toFixed(1)}% {t('used')}</span>
-                  <div style={styles.actions}>
-                    <button onClick={() => handleEdit(budget)} style={styles.editBtn}>
-                      {t('edit')}
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
-                      style={styles.deleteBtn}
-                    >
-                      {t('delete')}
-                    </button>
+                {editingId === budget.id ? (
+                  // Inline Edit Mode
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                      <select
+                        value={formData.categoryId}
+                        onChange={(e) => {
+                          const cat = categories.find((c) => c.id === e.target.value);
+                          setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
+                        }}
+                        style={{ ...styles.inlineSelect, flex: 2, minWidth: '150px' }}
+                      >
+                        <option value="">{t('selectCategory')}</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        placeholder={t('amount')}
+                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, width: '140px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                      <select
+                        value={formData.period}
+                        onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
+                        style={{ ...styles.inlineSelect, minWidth: '120px' }}
+                      >
+                        <option value="weekly">{t('periodWeekly')}</option>
+                        <option value="monthly">{t('periodMonthly')}</option>
+                        <option value="yearly">{t('periodYearly')}</option>
+                      </select>
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        style={{ ...styles.inlineInput, minWidth: '140px' }}
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={formData.alertThreshold}
+                        placeholder={t('alertAt')}
+                        onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, width: '100px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button onClick={() => saveInlineEdit(budget)} style={styles.saveButton}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
+                        </svg>
+                      </button>
+                      <button onClick={cancelInlineEdit} style={styles.cancelIconButton}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  // View Mode
+                  <>
+                    <div style={styles.budgetHeader}>
+                      <h4 style={styles.budgetCategory}>{budget.categoryName}</h4>
+                      <span style={styles.budgetPeriod}>{budget.period}</span>
+                    </div>
+
+                    <div style={styles.budgetAmount}>
+                      <span style={styles.spent}>${spent.toFixed(2)}</span>
+                      <span style={styles.separator}>/</span>
+                      <span style={styles.total}>${budget.amount.toFixed(2)}</span>
+                    </div>
+
+                    <div style={styles.progressBar}>
+                      <div
+                        style={{
+                          ...styles.progressFill,
+                          width: `${percentage}%`,
+                          backgroundColor: progressColor,
+                        }}
+                      />
+                    </div>
+
+                    <div style={styles.budgetFooter}>
+                      <span style={styles.percentage}>{percentage.toFixed(1)}% {t('used')}</span>
+                      <div style={styles.actions}>
+                        <button onClick={() => startInlineEdit(budget)} style={styles.editBtn}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
+                            <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
+                          style={styles.deleteBtn}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
+                            <path d="M8 7V5h8v2h3v2H5V7h3z" fill="#f44336"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })
@@ -470,22 +569,61 @@ const styles = {
     gap: '8px',
   },
   editBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#2196f3',
+    padding: '8px',
+    backgroundColor: 'rgba(33, 150, 243, 0.08)',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     fontSize: '12px',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#f44336',
+    padding: '8px',
+    backgroundColor: 'rgba(244, 67, 54, 0.08)',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     fontSize: '12px',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineInput: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+  },
+  inlineSelect: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+  },
+  saveButton: {
+    padding: '8px',
+    backgroundColor: 'rgba(33,150,83,0.08)',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelIconButton: {
+    padding: '8px',
+    backgroundColor: 'rgba(158,158,158,0.12)',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };
 
