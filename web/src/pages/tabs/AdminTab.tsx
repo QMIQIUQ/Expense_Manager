@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { adminService, UserMetadata } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import InlineLoading from '../../components/InlineLoading';
 import ConfirmModal from '../../components/ConfirmModal';
 // appConfig not needed after removing delete action
@@ -9,6 +10,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 const AdminTab: React.FC = () => {
   const { currentUser } = useAuth();
   const { showNotification } = useNotification();
+  const { t } = useLanguage();
   const [users, setUsers] = useState<UserMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -31,7 +33,7 @@ const AdminTab: React.FC = () => {
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
-      showNotification('error', 'Failed to load users');
+      showNotification('error', t('failedLoadUsers'));
     } finally {
       setLoading(false);
     }
@@ -45,19 +47,19 @@ const AdminTab: React.FC = () => {
     e.preventDefault();
     
     if (!newEmail || !newPassword) {
-      showNotification('error', 'Email and password are required');
+      showNotification('error', t('emailPasswordRequired'));
       return;
     }
 
     if (newPassword.length < 6) {
-      showNotification('error', 'Password must be at least 6 characters');
+      showNotification('error', t('passwordAtLeast6'));
       return;
     }
 
     try {
       setCreating(true);
       
-      showNotification('info', 'Creating user account...');
+      showNotification('info', t('creatingUser'));
       
       // Create Firebase Auth account AND metadata
       await adminService.createUser(newEmail, newPassword, newIsAdmin);
@@ -65,10 +67,7 @@ const AdminTab: React.FC = () => {
       // After creating user, we need to re-authenticate as admin
       // The admin will automatically be logged back in through onAuthStateChanged
       
-      showNotification(
-        'success', 
-        `User account created successfully for ${newEmail}!`
-      );
+      showNotification('success', `${t('userCreated')} (${newEmail})`);
       
       // Reset form
       setNewEmail('');
@@ -86,10 +85,10 @@ const AdminTab: React.FC = () => {
       if (code === 'auth/email-already-in-use') {
         try {
           await adminService.sendPasswordReset(newEmail);
-          showNotification('info', `此 Email 已存在。已發送重設密碼郵件至 ${newEmail}`);
+          showNotification('info', `${t('emailExistsResetSent')} ${newEmail}`);
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Failed to send reset email';
-          showNotification('error', `無法發送重設密碼郵件：${msg}`);
+          showNotification('error', `${t('failedSendResetEmail')}: ${msg}`);
         }
       } else {
         const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
@@ -102,22 +101,22 @@ const AdminTab: React.FC = () => {
 
   const handleToggleActive = async (user: UserMetadata) => {
     if (user.id === currentUser?.uid) {
-      showNotification('error', 'You cannot deactivate your own account');
+      showNotification('error', t('cannotDeactivateSelf'));
       return;
     }
 
     try {
       if (user.isActive) {
         await adminService.deactivateUser(user.id);
-        showNotification('success', 'User deactivated');
+        showNotification('success', t('userDeactivated'));
       } else {
         await adminService.activateUser(user.id);
-        showNotification('success', 'User activated');
+        showNotification('success', t('userActivated'));
       }
       await loadUsers();
     } catch (error) {
       console.error('Error toggling user status:', error);
-      showNotification('error', 'Failed to update user status');
+      showNotification('error', t('failedUpdateUserStatus'));
     }
   };
 
@@ -125,17 +124,17 @@ const AdminTab: React.FC = () => {
 
   const handleToggleAdmin = async (user: UserMetadata) => {
     if (user.id === currentUser?.uid) {
-      showNotification('error', 'You cannot change your own admin status');
+      showNotification('error', t('cannotChangeOwnAdmin'));
       return;
     }
 
     try {
       await adminService.updateUserMetadata(user.id, { isAdmin: !user.isAdmin });
-      showNotification('success', `Admin status ${!user.isAdmin ? 'granted' : 'removed'}`);
+      showNotification('success', !user.isAdmin ? t('adminGranted') : t('adminRemoved'));
       await loadUsers();
     } catch (error) {
       console.error('Error updating admin status:', error);
-      showNotification('error', 'Failed to update admin status');
+      showNotification('error', t('failedUpdateAdminStatus'));
     }
   };
 
@@ -143,18 +142,18 @@ const AdminTab: React.FC = () => {
   // Data-only delete to cleanup Firestore when Auth user was removed elsewhere
   const handleDeleteUserData = async (userId: string) => {
     if (userId === currentUser?.uid) {
-      showNotification('error', 'You cannot delete your own account data');
+      showNotification('error', t('cannotDeleteOwnData'));
       return;
     }
 
     try {
       await adminService.deleteUserMetadata(userId);
-      showNotification('success', '已刪除該使用者的應用資料');
+      showNotification('success', t('userDataDeleted'));
       setConfirmDelete(null);
       await loadUsers();
     } catch (error) {
       console.error('Error deleting user data:', error);
-      showNotification('error', '刪除資料失敗');
+      showNotification('error', t('deleteDataFailed'));
     }
   };
 
@@ -162,7 +161,7 @@ const AdminTab: React.FC = () => {
     return (
       <div style={styles.loadingContainer}>
         <InlineLoading size={24} />
-        <p style={styles.loadingText}>Loading users...</p>
+        <p style={styles.loadingText}>{t('loadingUsers')}</p>
       </div>
     );
   }

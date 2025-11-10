@@ -68,6 +68,8 @@ export const translations = {
   sortByAmountDesc: { en: 'Amount (High to Low)', zh: '金額（高至低）', 'zh-CN': '金额（高至低）' },
   sortByAmountAsc: { en: 'Amount (Low to High)', zh: '金額（低至高）', 'zh-CN': '金额（低至高）' },
   noExpenses: { en: 'No expenses found', zh: '找不到支出記錄', 'zh-CN': '找不到支出记录' },
+  noResults: { en: 'No results found', zh: '找不到結果', 'zh-CN': '找不到结果' },
+  searchByName: { en: 'Search by name...', zh: '依名稱搜尋...', 'zh-CN': '按名称搜索...' },
   multiSelect: { en: 'Multi-select', zh: '多選', 'zh-CN': '多选' },
   deleteSelected: { en: 'Delete Selected', zh: '刪除選取項目', 'zh-CN': '删除选中项目' },
   selectAll: { en: 'Select All', zh: '全選', 'zh-CN': '全选' },
@@ -215,6 +217,10 @@ export const translations = {
   errorSavingData: { en: 'Failed to save data. Please try again.', zh: '儲存資料失敗。請重試。', 'zh-CN': '保存数据失败。请重试。' },
   errorDeletingData: { en: 'Failed to delete data. Please try again.', zh: '刪除資料失敗。請重試。', 'zh-CN': '删除数据失败。请重试。' },
 
+  // Offline/Upload Queue
+  pendingUploads: { en: 'Pending Uploads', zh: '待上傳項目', 'zh-CN': '待上传项目' },
+  pendingUploadsDesc: { en: 'Some changes are queued for upload. They will sync when connection is restored.', zh: '部分變更已加入待上傳佇列。網路連線恢復後將自動同步。', 'zh-CN': '部分更改已加入待上传队列。网络连接恢复后将自动同步。' },
+
   // User Profile
   userProfile: { en: 'User Profile', zh: '使用者資料', 'zh-CN': '用户资料' },
   displayName: { en: 'Display Name', zh: '顯示名稱', 'zh-CN': '显示名称' },
@@ -229,6 +235,26 @@ export const translations = {
   userManagement: { en: 'User Management', zh: '使用者管理', 'zh-CN': '用户管理' },
   totalUsers: { en: 'Total Users', zh: '總使用者數', 'zh-CN': '总用户数' },
   systemSettings: { en: 'System Settings', zh: '系統設定', 'zh-CN': '系统设置' },
+  // Admin / Notifications (new localized keys)
+  failedLoadUsers: { en: 'Failed to load users', zh: '載入使用者失敗', 'zh-CN': '载入用户失败' },
+  emailPasswordRequired: { en: 'Email and password are required', zh: '必須輸入 Email 與密碼', 'zh-CN': '必须输入 Email 和密码' },
+  passwordAtLeast6: { en: 'Password must be at least 6 characters', zh: '密碼至少需 6 碼', 'zh-CN': '密码至少需 6 位' },
+  creatingUser: { en: 'Creating user account...', zh: '正在建立使用者帳號...', 'zh-CN': '正在创建用户账号...' },
+  userCreated: { en: 'User created successfully', zh: '使用者已建立', 'zh-CN': '用户已创建' },
+  emailExistsResetSent: { en: 'Email already exists. Reset email sent to', zh: 'Email 已存在。已寄出重設密碼郵件至', 'zh-CN': 'Email 已存在。已发送重置密码邮件至' },
+  failedSendResetEmail: { en: 'Failed to send reset email', zh: '重設密碼郵件發送失敗', 'zh-CN': '重置密码邮件发送失败' },
+  cannotDeactivateSelf: { en: 'You cannot deactivate your own account', zh: '無法停用自己的帳號', 'zh-CN': '无法停用自己的账号' },
+  userDeactivated: { en: 'User deactivated', zh: '使用者已停用', 'zh-CN': '用户已停用' },
+  userActivated: { en: 'User activated', zh: '使用者已啟用', 'zh-CN': '用户已启用' },
+  failedUpdateUserStatus: { en: 'Failed to update user status', zh: '更新使用者狀態失敗', 'zh-CN': '更新用户状态失败' },
+  cannotChangeOwnAdmin: { en: 'You cannot change your own admin status', zh: '無法變更自己的管理員狀態', 'zh-CN': '无法更改自己的管理员状态' },
+  adminGranted: { en: 'Admin status granted', zh: '已賦予管理員權限', 'zh-CN': '已授予管理员权限' },
+  adminRemoved: { en: 'Admin status removed', zh: '已移除管理員權限', 'zh-CN': '已移除管理员权限' },
+  failedUpdateAdminStatus: { en: 'Failed to update admin status', zh: '更新管理員狀態失敗', 'zh-CN': '更新管理员状态失败' },
+  cannotDeleteOwnData: { en: 'You cannot delete your own account data', zh: '無法刪除自己的資料', 'zh-CN': '无法删除自己的数据' },
+  userDataDeleted: { en: 'User data deleted', zh: '已刪除使用者資料', 'zh-CN': '已删除用户数据' },
+  deleteDataFailed: { en: 'Failed to delete user data', zh: '刪除使用者資料失敗', 'zh-CN': '删除用户数据失败' },
+  loadingUsers: { en: 'Loading users...', zh: '載入使用者中...', 'zh-CN': '载入用户中...' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
