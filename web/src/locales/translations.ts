@@ -255,6 +255,16 @@ export const translations = {
   userDataDeleted: { en: 'User data deleted', zh: '已刪除使用者資料', 'zh-CN': '已删除用户数据' },
   deleteDataFailed: { en: 'Failed to delete user data', zh: '刪除使用者資料失敗', 'zh-CN': '删除用户数据失败' },
   loadingUsers: { en: 'Loading users...', zh: '載入使用者中...', 'zh-CN': '载入用户中...' },
+  
+  // Category deletion with expense management
+  warning: { en: 'Warning', zh: '警告', 'zh-CN': '警告' },
+  categoryInUse: { en: 'This category is being used by', zh: '此類別正被使用於', 'zh-CN': '此分类正被使用于' },
+  and: { en: 'and', zh: '以及', 'zh-CN': '以及' },
+  more: { en: 'more', zh: '更多', 'zh-CN': '更多' },
+  chooseDeletionAction: { en: 'What would you like to do with these expenses?', zh: '您想如何處理這些支出？', 'zh-CN': '您想如何处理这些支出？' },
+  reassignToCategory: { en: 'Reassign expenses to another category', zh: '將支出重新分配到其他類別', 'zh-CN': '将支出重新分配到其他分类' },
+  deleteExpensesToo: { en: 'Delete all expenses in this category', zh: '刪除此類別中的所有支出', 'zh-CN': '删除此分类中的所有支出' },
+  pleaseSelectAction: { en: 'Please select an action', zh: '請選擇一個操作', 'zh-CN': '请选择一个操作' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
