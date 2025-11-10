@@ -195,11 +195,21 @@ function getSuccessMessage(type: 'create' | 'update' | 'delete'): string {
 function getErrorMessage(type: 'create' | 'update' | 'delete', error: unknown): string {
   const action = type === 'create' ? 'create' : type === 'update' ? 'update' : 'delete';
   const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+  
+  // Check for Firebase permission errors
+  if (errorMsg.includes('Missing or insufficient permissions') || errorMsg.includes('permission-denied')) {
+    return `Failed to ${action}: Please configure Firebase security rules for the cards collection. See PR description for instructions.`;
+  }
+  
   return `Failed to ${action}: ${errorMsg}`;
 }
 
 function isOfflineError(error: unknown): boolean {
   if (error instanceof Error) {
+    // Don't treat permission errors as offline errors
+    if (error.message.includes('Missing or insufficient permissions') || error.message.includes('permission-denied')) {
+      return false;
+    }
     return (
       error.message.includes('network') ||
       error.message.includes('offline') ||
