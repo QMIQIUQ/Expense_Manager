@@ -21,13 +21,13 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onEdit, onDe
   const getIncomeTypeLabel = (type: string) => {
     switch (type) {
       case 'salary':
-        return 'Salary';
+        return t('salary');
       case 'reimbursement':
-        return 'Reimbursement';
+        return t('reimbursement');
       case 'repayment':
-        return 'Repayment';
+        return t('repayment');
       case 'other':
-        return 'Other';
+        return t('other');
       default:
         return type;
     }
@@ -52,9 +52,9 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onEdit, onDe
     return (
       <div style={styles.emptyState}>
         <div style={styles.emptyIcon}>💰</div>
-        <div style={styles.emptyText}>No incomes yet</div>
+        <div style={styles.emptyText}>{t('noIncomesYet')}</div>
         <div style={styles.emptySubtext}>
-          Add your first income to get started
+          {t('startTrackingIncome')}
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onEdit, onDe
             </div>
             {income.linkedExpenseId && (
               <div style={styles.linkedExpense}>
-                🔗 Linked to: {getExpenseDescription(income.linkedExpenseId)}
+                🔗 {t('linkedTo')}: {getExpenseDescription(income.linkedExpenseId)}
               </div>
             )}
             {income.note && <div style={styles.incomeNote}>📝 {income.note}</div>}

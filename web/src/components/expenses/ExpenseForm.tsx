@@ -70,6 +70,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       delete submitData.cardId;
     }
     
+    // Remove undefined fields to prevent Firestore errors
+    if (submitData.originalReceiptAmount === undefined) {
+      delete submitData.originalReceiptAmount;
+    }
+    if (!submitData.payerName) {
+      delete submitData.payerName;
+    }
+    
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     if (!initialData) {
       setFormData({
@@ -276,7 +284,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
           />
           <label htmlFor="isReimbursable" className="text-sm font-medium text-gray-700">
-            This is a reimbursable expense (e.g., paid for someone else)
+            {t('reimbursableExpense')}
           </label>
         </div>
 
@@ -284,7 +292,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           <div className="flex flex-col gap-3 bg-gray-50 p-3 rounded">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
-                Receipt Amount ($) ({t('optional')})
+                {t('receiptAmountOptional')}
               </label>
               <input
                 type="number"
@@ -292,30 +300,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={formData.originalReceiptAmount || ''}
                 onChange={handleChange}
                 onFocus={(e) => e.target.select()}
-                placeholder="Original receipt amount"
+                placeholder={t('originalReceiptAmount')}
                 step="0.01"
                 min="0"
                 className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <span className="text-xs text-gray-500">
-                Amount on receipt/invoice for tracking reimbursements
+                {t('receiptAmountHelp')}
               </span>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
-                Paid By ({t('optional')})
+                {t('paidByOptional')}
               </label>
               <input
                 type="text"
                 name="payerName"
                 value={formData.payerName}
                 onChange={handleChange}
-                placeholder="e.g., Me, Friend A"
+                placeholder={t('paidByPlaceholder')}
                 className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <span className="text-xs text-gray-500">
-                Who initially paid for this expense
+                {t('paidByHelp')}
               </span>
             </div>
           </div>

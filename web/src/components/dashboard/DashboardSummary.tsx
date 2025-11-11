@@ -155,7 +155,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         <div style={styles.card}>
           <div style={{ ...styles.cardIcon, backgroundColor: '#e8f5e9' }}>💵</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Monthly Income</div>
+            <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
             <div style={{ ...styles.cardValue, color: '#4caf50' }}>
               ${stats.monthlyIncome.toFixed(2)}
             </div>
@@ -172,7 +172,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
             {stats.netCashflow >= 0 ? '📈' : '📉'}
           </div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Net Cashflow</div>
+            <div style={styles.cardLabel}>{t('netCashflow')}</div>
             <div
               style={{
                 ...styles.cardValue,
@@ -187,7 +187,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         <div style={styles.card}>
           <div style={{ ...styles.cardIcon, backgroundColor: '#fff3e0' }}>💸</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Unrecovered</div>
+            <div style={styles.cardLabel}>{t('unrecovered')}</div>
             <div style={{ ...styles.cardValue, color: '#ff9800' }}>
               ${stats.totalUnrecovered.toFixed(2)}
             </div>
@@ -197,7 +197,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
 
       {stats.unrecoveredExpenses.length > 0 && (
         <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>Top Unrecovered Expenses</h3>
+          <h3 style={styles.sectionTitle}>{t('topUnrecoveredExpenses')}</h3>
           <div style={styles.categoryList}>
             {stats.unrecoveredExpenses.slice(0, 5).map((item) => {
               const percentage = (item.recovered / item.targetAmount) * 100;
@@ -219,7 +219,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                     />
                   </div>
                   <span style={styles.categoryPercentage}>
-                    {percentage.toFixed(1)}% recovered
+                    {percentage.toFixed(1)}% {t('recovered')}
                   </span>
                 </div>
               );

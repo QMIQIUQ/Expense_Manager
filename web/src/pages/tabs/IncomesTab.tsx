@@ -2,6 +2,7 @@ import React from 'react';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { Income, Expense } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface Props {
   incomes: Income[];
@@ -22,11 +23,13 @@ const IncomesTab: React.FC<Props> = ({
   onEdit,
   onDeleteIncome,
 }) => {
+  const { t } = useLanguage();
+  
   return (
     <div style={styles.incomesTab}>
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>
-          {editingIncome ? 'Edit Income' : 'Add New Income'}
+          {editingIncome ? t('editIncome') : t('addNewIncome')}
         </h2>
         <IncomeForm
           onSubmit={editingIncome ? onUpdateIncome : onAddIncome}
@@ -37,7 +40,7 @@ const IncomesTab: React.FC<Props> = ({
       </div>
 
       <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>Income History</h2>
+        <h2 style={styles.sectionTitle}>{t('incomeHistory')}</h2>
         <IncomeList
           incomes={incomes}
           expenses={expenses}

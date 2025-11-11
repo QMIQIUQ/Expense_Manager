@@ -1237,7 +1237,7 @@ const Dashboard: React.FC = () => {
             activeTab === 'incomes' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Incomes
+          {t('incomes')}
         </button>
         <button
           onClick={() => setActiveTab('recurring')}
