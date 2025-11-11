@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import ConfirmModal from '../ConfirmModal';
 
 interface CategoryManagerProps {
   categories: Category[];

@@ -4,18 +4,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Card } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
 import { recurringExpenseService } from '../services/recurringExpenseService';
+import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
 import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
+import CardManager from '../components/cards/CardManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
+import CardsSummary from '../components/dashboard/CardsSummary';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
@@ -42,11 +45,12 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -126,6 +130,22 @@ const Dashboard: React.FC = () => {
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
+      
+      // Load cards separately with error handling to prevent breaking existing functionality
+      try {
+        const cardsData = await cardService.getAll(currentUser.uid);
+        console.log('Cards loaded successfully:', cardsData.length, 'cards');
+        setCards(cardsData);
+        
+        // Save unique bank names to localStorage for autocomplete
+        const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
+        if (bankNames.length > 0) {
+          localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+        }
+      } catch (cardError) {
+        console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
+        setCards([]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
@@ -664,6 +684,95 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Card handlers
+  const handleAddCard = async (cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!currentUser) return;
+    
+    const tempId = `temp-${Date.now()}`;
+    const optimisticCard: Card = {
+      ...cardData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setCards((prev) => [...prev, optimisticCard]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: cardData },
+      () => cardService.create({ ...cardData, userId: currentUser.uid }),
+      {
+        entityType: 'card',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          setCards((prev) => prev.filter((c) => c.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleUpdateCard = async (id: string, updates: Partial<Card>) => {
+    const originalCard = cards.find((c) => c.id === id);
+    
+    setCards((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalCard },
+      () => cardService.update(id, updates),
+      {
+        entityType: 'card',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalCard) {
+            setCards((prev) =>
+              prev.map((c) => (c.id === id ? originalCard : c))
+            );
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    const cardToDelete = cards.find((c) => c.id === id);
+    
+    setCards((prev) => prev.filter((c) => c.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: cardToDelete },
+      () => cardService.delete(id),
+      {
+        entityType: 'card',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (cardToDelete) {
+            setCards((prev) => [...prev, cardToDelete]);
+          }
+        },
+      }
+    );
+  };
+  
+  // Clear offline queue (utility function)
+  const handleClearOfflineQueue = () => {
+    if (confirm(t('confirmClearQueue') || 'Clear all pending operations? This cannot be undone.')) {
+      offlineQueue.clear();
+      setQueueCount(0);
+      showNotification('success', t('queueCleared') || 'Offline queue cleared');
+    }
+  };
+
   // Export handlers
   const handleExportExcel = () => {
     exportToExcel(expenses, categories);
@@ -939,6 +1048,15 @@ const Dashboard: React.FC = () => {
                       <p className="text-xs text-orange-700 mb-2">
                         {t('pendingUploadsDesc') || 'Some changes are queued for upload. They will sync when connection is restored.'}
                       </p>
+                      <button
+                        onClick={() => {
+                          handleClearOfflineQueue();
+                          setShowHamburgerMenu(false);
+                        }}
+                        className="w-full mt-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 border border-red-300 rounded transition-colors font-medium"
+                      >
+                        {t('clearQueue') || 'Clear Queue'}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1045,12 +1163,23 @@ const Dashboard: React.FC = () => {
         >
           {t('categories')}
         </button>
+        <button
+          onClick={() => setActiveTab('cards')}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'cards' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          {t('cards')}
+        </button>
       </div>
 
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
-          <div>
+          <div className="flex flex-col gap-6">
             <DashboardSummary expenses={expenses} />
+            {cards.length > 0 && (
+              <CardsSummary cards={cards} categories={categories} expenses={expenses} />
+            )}
           </div>
         )}
 
@@ -1099,10 +1228,24 @@ const Dashboard: React.FC = () => {
             <RecurringExpenseManager
               recurringExpenses={recurringExpenses}
               categories={categories}
+              cards={cards}
               onAdd={handleAddRecurring}
               onUpdate={handleUpdateRecurring}
               onDelete={handleDeleteRecurring}
               onToggleActive={handleToggleRecurring}
+            />
+          </div>
+        )}
+
+        {activeTab === 'cards' && (
+          <div className="flex flex-col gap-4">
+            <CardManager
+              cards={cards}
+              categories={categories}
+              expenses={expenses}
+              onAdd={handleAddCard}
+              onUpdate={handleUpdateCard}
+              onDelete={handleDeleteCard}
             />
           </div>
         )}
@@ -1187,6 +1330,7 @@ const Dashboard: React.FC = () => {
                   }}
                   onCancel={() => setShowAddExpenseForm(false)}
                   categories={categories}
+                  cards={cards}
                 />
               </div>
             </div>
@@ -1275,6 +1419,7 @@ const Dashboard: React.FC = () => {
                   onSubmit={(data) => { handleAddExpense(data); setShowAddSheet(false); }}
                   onCancel={() => setShowAddSheet(false)}
                   categories={categories}
+                  cards={cards}
                 />
               </div>
             </div>

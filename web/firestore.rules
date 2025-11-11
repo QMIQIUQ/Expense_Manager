@@ -59,5 +59,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // Cards collection (credit cards)
+    match /cards/{cardId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
   }
 }

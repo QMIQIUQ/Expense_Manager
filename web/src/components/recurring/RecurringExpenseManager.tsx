@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { RecurringExpense, Category } from '../../types';
+import { RecurringExpense, Category, Card } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
   categories: Category[];
+  cards?: Card[];
   onAdd: (expense: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   onUpdate: (id: string, updates: Partial<RecurringExpense>) => void;
   onDelete: (id: string) => void;
@@ -15,6 +16,7 @@ interface RecurringExpenseManagerProps {
 const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   recurringExpenses,
   categories,
+  cards = [],
   onAdd,
   onUpdate,
   onDelete,
@@ -34,6 +36,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     dayOfWeek: 1,
     dayOfMonth: 1,
     isActive: true,
+    paymentMethod: 'cash' as 'cash' | 'credit_card' | 'e_wallet',
+    cardId: '',
+    paymentMethodName: '',
   });
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; recurringId: string | null }>({
     isOpen: false,
@@ -59,10 +64,13 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       isActive: formData.isActive,
     };
     
-    // Only add endDate if it's not empty
+    // Only add optional fields if they have values
     const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastGenerated'> & { endDate?: string } = {
       ...baseData,
       ...(formData.endDate ? { endDate: formData.endDate } : {}),
+      ...(formData.paymentMethod ? { paymentMethod: formData.paymentMethod } : {}),
+      ...(formData.paymentMethod === 'credit_card' && formData.cardId ? { cardId: formData.cardId } : {}),
+      ...(formData.paymentMethod === 'e_wallet' && formData.paymentMethodName ? { paymentMethodName: formData.paymentMethodName } : {}),
     };
 
     onAdd(expenseData);
@@ -81,6 +89,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       dayOfWeek: 1,
       dayOfMonth: 1,
       isActive: true,
+      paymentMethod: 'cash',
+      cardId: '',
+      paymentMethodName: '',
     });
   };
 
@@ -96,6 +107,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       dayOfWeek: expense.dayOfWeek || 1,
       dayOfMonth: expense.dayOfMonth || 1,
       isActive: expense.isActive,
+      paymentMethod: expense.paymentMethod || 'cash',
+      cardId: expense.cardId || '',
+      paymentMethodName: expense.paymentMethodName || '',
     });
   };
 
@@ -117,6 +131,13 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     if (expense.dayOfWeek !== formData.dayOfWeek) updates.dayOfWeek = formData.dayOfWeek;
     if (expense.dayOfMonth !== formData.dayOfMonth) updates.dayOfMonth = formData.dayOfMonth;
     if (expense.isActive !== formData.isActive) updates.isActive = formData.isActive;
+    if ((expense.paymentMethod || 'cash') !== formData.paymentMethod) updates.paymentMethod = formData.paymentMethod;
+    if ((expense.cardId || '') !== formData.cardId) {
+      updates.cardId = formData.cardId || undefined;
+    }
+    if ((expense.paymentMethodName || '') !== formData.paymentMethodName) {
+      updates.paymentMethodName = formData.paymentMethodName || undefined;
+    }
 
     if (Object.keys(updates).length > 0) {
       onUpdate(expense.id!, updates);
@@ -215,6 +236,59 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             </div>
           </div>
 
+          {/* Payment Method Selection */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>{t('paymentMethod')}</label>
+            <select
+              value={formData.paymentMethod}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
+                cardId: e.target.value !== 'credit_card' ? '' : formData.cardId,
+                paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
+              })}
+              style={styles.select}
+            >
+              <option value="cash">💵 {t('cash')}</option>
+              <option value="credit_card">💳 {t('creditCard')}</option>
+              <option value="e_wallet">📱 {t('eWallet')}</option>
+            </select>
+          </div>
+
+          {/* Card Selection (only when credit card is selected) */}
+          {formData.paymentMethod === 'credit_card' && (
+            <div style={styles.formGroup}>
+              <label style={styles.label}>{t('selectCard')}</label>
+              <select
+                value={formData.cardId}
+                onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
+                style={styles.select}
+              >
+                <option value="">{t('selectCard')}</option>
+                {cards.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* E-Wallet Name Input (only when e-wallet is selected) */}
+          {formData.paymentMethod === 'e_wallet' && (
+            <div style={styles.formGroup}>
+              <label style={styles.label}>{t('eWalletName')}</label>
+              <input
+                type="text"
+                value={formData.paymentMethodName}
+                onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
+                onFocus={(e) => e.target.select()}
+                placeholder={t('eWalletPlaceholder')}
+                style={styles.input}
+              />
+            </div>
+          )}
+
           <div style={styles.formActions}>
             <button type="submit" style={styles.submitButton}>
               {editingId ? t('edit') : t('add')} {t('recurringExpense')}
@@ -294,11 +368,52 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
                       style={{ ...styles.inlineSelect, minWidth: '100px' }}
                     >
-                      <option value="daily">{t('daily')}</option>
-                      <option value="weekly">{t('weekly')}</option>
-                      <option value="monthly">{t('monthly')}</option>
-                      <option value="yearly">{t('yearly')}</option>
+                      <option value="daily">{t('freqDaily')}</option>
+                      <option value="weekly">{t('freqWeekly')}</option>
+                      <option value="monthly">{t('freqMonthly')}</option>
+                      <option value="yearly">{t('freqYearly')}</option>
                     </select>
+                  </div>
+                  {/* Payment Method Selection in inline edit */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                    <select
+                      value={formData.paymentMethod || 'cash'}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        paymentMethod: e.target.value as any,
+                        cardId: e.target.value === 'credit_card' ? formData.cardId : undefined,
+                        paymentMethodName: e.target.value === 'e_wallet' ? formData.paymentMethodName : undefined
+                      })}
+                      style={{ ...styles.inlineSelect, minWidth: '130px' }}
+                    >
+                      <option value="cash">💵 {t('cash')}</option>
+                      <option value="credit_card">💳 {t('creditCard')}</option>
+                      <option value="e_wallet">📱 {t('eWallet')}</option>
+                    </select>
+                    {formData.paymentMethod === 'credit_card' && (
+                      <select
+                        value={formData.cardId || ''}
+                        onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
+                        style={{ ...styles.inlineSelect, minWidth: '130px' }}
+                      >
+                        <option value="">{t('selectCard')}</option>
+                        {cards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {formData.paymentMethod === 'e_wallet' && (
+                      <input
+                        type="text"
+                        value={formData.paymentMethodName || ''}
+                        onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
+                        placeholder={t('eWalletPlaceholder')}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, minWidth: '130px' }}
+                      />
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <input
@@ -321,7 +436,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         max="7"
                         value={formData.dayOfWeek}
                         onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) })}
-                        placeholder={t('dayOfWeek')}
+                        placeholder="Day of Week (1-7)"
                         onFocus={(e) => e.target.select()}
                         style={{ ...styles.inlineInput, width: '80px' }}
                       />
@@ -333,7 +448,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         max="31"
                         value={formData.dayOfMonth}
                         onChange={(e) => setFormData({ ...formData, dayOfMonth: parseInt(e.target.value) })}
-                        placeholder={t('dayOfMonth')}
+                        placeholder="Day of Month (1-31)"
                         onFocus={(e) => e.target.select()}
                         style={{ ...styles.inlineInput, width: '80px' }}
                       />
@@ -360,6 +475,17 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       <h4 style={styles.description}>{expense.description}</h4>
                       <span style={styles.category}>{expense.category}</span>
                       <span style={styles.frequency}>{expense.frequency}</span>
+                      {/* Display Payment Method */}
+                      {expense.paymentMethod && expense.paymentMethod !== 'cash' && (
+                        <span style={{ ...styles.category, fontSize: '12px', marginTop: '4px' }}>
+                          {expense.paymentMethod === 'credit_card' && (
+                            <>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</>
+                          )}
+                          {expense.paymentMethod === 'e_wallet' && (
+                            <>📱 {expense.paymentMethodName || t('eWallet')}</>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <div style={styles.expenseDetails}>
                       <div style={styles.amount}>${expense.amount.toFixed(2)}</div>

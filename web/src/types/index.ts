@@ -1,5 +1,8 @@
 // Type definitions for Expense Manager
 
+// Payment method types
+export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet';
+
 export interface Expense {
   id?: string;
   userId: string;
@@ -10,6 +13,10 @@ export interface Expense {
   // Optional time in HH:mm (24h) format, for finer granularity
   time?: string;
   notes?: string;
+  cardId?: string; // Optional: credit card used for this expense
+  // Payment method information
+  paymentMethod?: PaymentMethodType; // Type of payment method
+  paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +57,10 @@ export interface RecurringExpense {
   dayOfMonth?: number; // 1-31 for monthly
   lastGenerated?: string;
   isActive: boolean;
+  cardId?: string; // Optional: credit card used for this recurring expense
+  // Payment method information
+  paymentMethod?: PaymentMethodType; // Type of payment method
+  paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +76,62 @@ export interface ExpenseStats {
     spent: number;
     budget: number;
     percentage: number;
+  }[];
+}
+
+// Credit Card Types
+export type CardType = 'cashback' | 'points';
+
+export interface MonthOverride {
+  year: number;
+  month: number; // 1-12
+  day: number; // 1-31
+}
+
+export interface CashbackRule {
+  id?: string;
+  linkedCategoryId: string; // Links to existing category
+  minSpendForRate: number; // Minimum spend to get the higher rate
+  rateIfMet: number; // e.g., 0.08 for 8%
+  capIfMet: number; // Max cashback when condition is met
+  rateIfNotMet: number; // e.g., 0.01 for 1%
+  capIfNotMet: number; // Max cashback when condition is not met
+}
+
+export interface Card {
+  id?: string;
+  userId: string;
+  name: string;
+  bankName?: string; // Optional: bank name for the card
+  cardLimit: number;
+  billingDay: number; // 1-28, fixed billing day each month
+  perMonthOverrides?: MonthOverride[]; // Optional month-specific overrides
+  benefitMinSpend?: number; // Optional: minimum spend for card benefits
+  cardType: CardType;
+  cashbackRules?: CashbackRule[]; // Only for cashback cards
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BillingCycle {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+}
+
+export interface CardStats {
+  cardId: string;
+  cardName: string;
+  currentCycleSpending: number;
+  availableCredit: number;
+  estimatedTotalCashback: number;
+  nextBillingDate: string;
+  cashbackByRule: {
+    ruleId: string;
+    categoryName: string;
+    categorySpend: number;
+    estimatedCashback: number;
+    requiredToReachCap: number;
+    requiredToReachMinSpend: number;
   }[];
 }
 

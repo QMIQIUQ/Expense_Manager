@@ -28,6 +28,7 @@ export const translations = {
   categories: { en: 'Categories', zh: '類別', 'zh-CN': '分类' },
   budgets: { en: 'Budgets', zh: '預算', 'zh-CN': '预算' },
   recurring: { en: 'Recurring', zh: '定期支出', 'zh-CN': '定期支出' },
+  cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
   profile: { en: '👤 Profile', zh: '👤 個人資料', 'zh-CN': '👤 个人资料' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
 
@@ -44,6 +45,13 @@ export const translations = {
   date: { en: 'Date', zh: '日期', 'zh-CN': '日期' },
   time: { en: 'Time', zh: '時間', 'zh-CN': '时间' },
   notes: { en: 'Notes', zh: '備註', 'zh-CN': '备注' },
+  paymentMethod: { en: 'Payment Method', zh: '付款方式', 'zh-CN': '付款方式' },
+  selectPaymentMethod: { en: 'Select payment method', zh: '選擇付款方式', 'zh-CN': '选择付款方式' },
+  cash: { en: 'Cash', zh: '現金', 'zh-CN': '现金' },
+  creditCard: { en: 'Credit Card', zh: '信用卡', 'zh-CN': '信用卡' },
+  eWallet: { en: 'E-Wallet', zh: '電子錢包', 'zh-CN': '电子钱包' },
+  eWalletName: { en: 'E-Wallet Name', zh: '電子錢包名稱', 'zh-CN': '电子钱包名称' },
+  eWalletPlaceholder: { en: 'e.g., PayPal, Apple Pay, Alipay', zh: '例如：PayPal、Apple Pay、支付寶', 'zh-CN': '例如：PayPal、Apple Pay、支付宝' },
   descriptionPlaceholder: { en: 'e.g., Grocery shopping', zh: '例如：購物', 'zh-CN': '例如：购物' },
   notesPlaceholder: { en: 'Additional notes (optional)', zh: '額外備註（選填）', 'zh-CN': '额外备注（选填）' },
   selectCategory: { en: 'Select a category', zh: '選擇類別', 'zh-CN': '选择分类' },
@@ -220,6 +228,9 @@ export const translations = {
   // Offline/Upload Queue
   pendingUploads: { en: 'Pending Uploads', zh: '待上傳項目', 'zh-CN': '待上传项目' },
   pendingUploadsDesc: { en: 'Some changes are queued for upload. They will sync when connection is restored.', zh: '部分變更已加入待上傳佇列。網路連線恢復後將自動同步。', 'zh-CN': '部分更改已加入待上传队列。网络连接恢复后将自动同步。' },
+  confirmClearQueue: { en: 'Clear all pending operations? This cannot be undone.', zh: '清除所有待處理的操作？此操作無法復原。', 'zh-CN': '清除所有待处理的操作？此操作无法撤销。' },
+  queueCleared: { en: 'Offline queue cleared', zh: '離線佇列已清除', 'zh-CN': '离线队列已清除' },
+  clearQueue: { en: 'Clear Queue', zh: '清除佇列', 'zh-CN': '清除队列' },
 
   // User Profile
   userProfile: { en: 'User Profile', zh: '使用者資料', 'zh-CN': '用户资料' },
@@ -248,6 +259,45 @@ export const translations = {
   userActivated: { en: 'User activated', zh: '使用者已啟用', 'zh-CN': '用户已启用' },
   failedUpdateUserStatus: { en: 'Failed to update user status', zh: '更新使用者狀態失敗', 'zh-CN': '更新用户状态失败' },
   cannotChangeOwnAdmin: { en: 'You cannot change your own admin status', zh: '無法變更自己的管理員狀態', 'zh-CN': '无法更改自己的管理员状态' },
+
+  // Credit Cards
+  creditCards: { en: 'Credit Cards', zh: '信用卡管理', 'zh-CN': '信用卡管理' },
+  addCard: { en: 'Add Card', zh: '新增卡片', 'zh-CN': '添加卡片' },
+  editCard: { en: 'Edit Card', zh: '編輯卡片', 'zh-CN': '编辑卡片' },
+  cardName: { en: 'Card Name', zh: '卡片名稱', 'zh-CN': '卡片名称' },
+  bankName: { en: 'Bank Name', zh: '銀行名稱', 'zh-CN': '银行名称' },
+  cardLimit: { en: 'Card Limit', zh: '信用額度', 'zh-CN': '信用额度' },
+  billingDay: { en: 'Billing Day', zh: '結帳日', 'zh-CN': '结账日' },
+  cardType: { en: 'Card Type', zh: '卡片類型', 'zh-CN': '卡片类型' },
+  cashback: { en: 'Cashback', zh: '現金回饋', 'zh-CN': '现金回馈' },
+  points: { en: 'Points', zh: '點數', 'zh-CN': '点数' },
+  cashbackRules: { en: 'Cashback Rules', zh: '回饋規則', 'zh-CN': '回馈规则' },
+  addCashbackRule: { en: 'Add Cashback Rule', zh: '新增回饋規則', 'zh-CN': '添加回馈规则' },
+  linkedCategory: { en: 'Linked Category', zh: '關聯類別', 'zh-CN': '关联分类' },
+  minSpendForRate: { en: 'Min Spend for Higher Rate', zh: '較高回饋門檻', 'zh-CN': '较高回馈门槛' },
+  rateIfMet: { en: 'Rate if Met (%)', zh: '達標回饋率 (%)', 'zh-CN': '达标回馈率 (%)' },
+  capIfMet: { en: 'Cap if Met', zh: '達標上限', 'zh-CN': '达标上限' },
+  rateIfNotMet: { en: 'Rate if Not Met (%)', zh: '未達標回饋率 (%)', 'zh-CN': '未达标回馈率 (%)' },
+  capIfNotMet: { en: 'Cap if Not Met', zh: '未達標上限', 'zh-CN': '未达标上限' },
+  currentCycleSpending: { en: 'Current Cycle Spending', zh: '本期消費', 'zh-CN': '本期消费' },
+  availableCredit: { en: 'Available Credit', zh: '可用額度', 'zh-CN': '可用额度' },
+  estimatedCashback: { en: 'Estimated Cashback', zh: '預估回饋', 'zh-CN': '预估回馈' },
+  nextBillingDate: { en: 'Next Billing Date', zh: '下次結帳日', 'zh-CN': '下次结账日' },
+  spendToReachCap: { en: 'Spend to Reach Cap', zh: '還需消費達上限', 'zh-CN': '还需消费达上限' },
+  spendToReachMinSpend: { en: 'Spend to Reach Min', zh: '還需消費達門檻', 'zh-CN': '还需消费达门槛' },
+  noCardsYet: { en: 'No cards yet. Add your first card!', zh: '尚未新增卡片。新增您的第一張卡片！', 'zh-CN': '尚未添加卡片。添加您的第一张卡片！' },
+  selectCard: { en: 'Select Card', zh: '選擇卡片', 'zh-CN': '选择卡片' },
+  noneOrCash: { en: 'None / Cash', zh: '無 / 現金', 'zh-CN': '无 / 现金' },
+  cardAdded: { en: 'Card added successfully', zh: '卡片已成功新增', 'zh-CN': '卡片已成功添加' },
+  cardUpdated: { en: 'Card updated successfully', zh: '卡片已成功更新', 'zh-CN': '卡片已成功更新' },
+  cardDeleted: { en: 'Card deleted successfully', zh: '卡片已成功刪除', 'zh-CN': '卡片已成功删除' },
+  confirmDeleteCard: { en: 'Are you sure you want to delete this card?', zh: '您確定要刪除此卡片嗎？', 'zh-CN': '您确定要删除此卡片吗？' },
+  benefitMinSpend: { en: 'Min Spend for Benefits (Optional)', zh: '整體達標金額（選填）', 'zh-CN': '整体达标金额（选填）' },
+  billingCycle: { en: 'Billing Cycle', zh: '帳單週期', 'zh-CN': '账单周期' },
+  categorySpend: { en: 'Category Spend', zh: '分類消費', 'zh-CN': '分类消费' },
+  toReachCap: { en: 'to reach cap', zh: '達上限', 'zh-CN': '达上限' },
+  toReachMinSpend: { en: 'to reach min spend', zh: '達門檻', 'zh-CN': '达门槛' },
+  cashbackBreakdown: { en: 'Cashback Breakdown', zh: '回饋明細', 'zh-CN': '回馈明细' },
   adminGranted: { en: 'Admin status granted', zh: '已賦予管理員權限', 'zh-CN': '已授予管理员权限' },
   adminRemoved: { en: 'Admin status removed', zh: '已移除管理員權限', 'zh-CN': '已移除管理员权限' },
   failedUpdateAdminStatus: { en: 'Failed to update admin status', zh: '更新管理員狀態失敗', 'zh-CN': '更新管理员状态失败' },
@@ -265,6 +315,43 @@ export const translations = {
   reassignToCategory: { en: 'Reassign expenses to another category', zh: '將支出重新分配到其他類別', 'zh-CN': '将支出重新分配到其他分类' },
   deleteExpensesToo: { en: 'Delete all expenses in this category', zh: '刪除此類別中的所有支出', 'zh-CN': '删除此分类中的所有支出' },
   pleaseSelectAction: { en: 'Please select an action', zh: '請選擇一個操作', 'zh-CN': '请选择一个操作' },
+  
+  // Tooltips for credit card fields
+  tooltipLinkedCategory: { 
+    en: 'Select which spending category this cashback rule applies to', 
+    zh: '選擇此回饋規則適用的消費類別', 
+    'zh-CN': '选择此回馈规则适用的消费类别' 
+  },
+  tooltipMinSpendForRate: { 
+    en: 'Minimum spending in this category to unlock the higher cashback rate. Set to 0 if no threshold is needed.', 
+    zh: '在此類別需達到的最低消費金額才能獲得較高回饋率。若無門檻可設為 0。', 
+    'zh-CN': '在此分类需达到的最低消费金额才能获得较高回馈率。若无门槛可设为 0。' 
+  },
+  tooltipRateIfMet: { 
+    en: 'Cashback percentage when minimum spend is met (e.g., 8% = 8)', 
+    zh: '達到最低消費時的回饋百分比（例如：8% = 8）', 
+    'zh-CN': '达到最低消费时的回馈百分比（例如：8% = 8）' 
+  },
+  tooltipCapIfMet: { 
+    en: 'Maximum cashback amount when minimum spend is met', 
+    zh: '達到最低消費時的回饋上限金額', 
+    'zh-CN': '达到最低消费时的回馈上限金额' 
+  },
+  tooltipRateIfNotMet: { 
+    en: 'Cashback percentage when minimum spend is NOT met (e.g., 1% = 1)', 
+    zh: '未達最低消費時的回饋百分比（例如：1% = 1）', 
+    'zh-CN': '未达最低消费时的回馈百分比（例如：1% = 1）' 
+  },
+  tooltipCapIfNotMet: { 
+    en: 'Maximum cashback amount when minimum spend is NOT met', 
+    zh: '未達最低消費時的回饋上限金額', 
+    'zh-CN': '未达最低消费时的回馈上限金额' 
+  },
+  tooltipSpendToReachCap: { 
+    en: 'How much you need to spend in this category to maximize cashback', 
+    zh: '在此類別需消費多少才能達到回饋上限', 
+    'zh-CN': '在此分类需消费多少才能达到回馈上限' 
+  },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
