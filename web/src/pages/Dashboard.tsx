@@ -869,6 +869,11 @@ const Dashboard: React.FC = () => {
     downloadExpenseTemplate();
   };
 
+  const handleClearOfflineQueue = () => {
+    offlineQueue.clear();
+    showNotification('success', 'Offline queue cleared');
+  };
+
   const handleImportComplete = () => {
     console.log('[Dashboard] Import completed, updating progress to complete');
     
