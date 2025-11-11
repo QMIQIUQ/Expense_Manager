@@ -57,7 +57,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     setErrors({});
     
     // Prepare data based on payment method
-    const submitData: any = { ...formData };
+    const submitData: Partial<typeof formData> = { ...formData };
     if (formData.paymentMethod === 'cash') {
       // Clear card and e-wallet info for cash
       delete submitData.cardId;
