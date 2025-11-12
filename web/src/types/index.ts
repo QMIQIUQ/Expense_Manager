@@ -31,7 +31,22 @@ export interface Category {
   icon: string;
   color: string;
   isDefault: boolean;
+  type?: 'expense' | 'e-wallet'; // Type of category (expense categories vs e-wallet categories)
   createdAt: Date;
+}
+
+// E-Wallet type - A specialized category for electronic payment methods
+export interface EWallet {
+  id?: string;
+  userId: string;
+  name: string; // E.g., "PayPal", "Apple Pay", "LINE Pay"
+  icon: string;
+  color: string;
+  provider?: string; // Optional: provider/company name
+  accountNumber?: string; // Optional: last 4 digits or identifier
+  isDefault?: boolean; // Whether this is a default/system e-wallet
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Budget {
@@ -155,6 +170,29 @@ export interface CardStats {
   }[];
 }
 
+// Feature tab type
+export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin';
+
+// Feature settings for tab visibility and ordering
+export interface FeatureSettings {
+  id?: string;
+  userId: string;
+  enabledFeatures: FeatureTab[]; // List of enabled features in display order
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Default feature configuration
+export const DEFAULT_FEATURES: FeatureTab[] = [
+  'dashboard',
+  'expenses',
+  'incomes',
+  'categories',
+  'budgets',
+  'recurring',
+  'cards',
+];
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B' },
@@ -165,4 +203,13 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Healthcare', icon: '🏥', color: '#F7DC6F' },
   { name: 'Education', icon: '📚', color: '#BB8FCE' },
   { name: 'Other', icon: '📦', color: '#95A5A6' },
+];
+
+// Default e-wallets
+export const DEFAULT_EWALLETS = [
+  { name: 'PayPal', icon: '💳', color: '#003087', provider: 'PayPal' },
+  { name: 'Apple Pay', icon: '🍎', color: '#000000', provider: 'Apple' },
+  { name: 'Google Pay', icon: '📱', color: '#4285F4', provider: 'Google' },
+  { name: 'Alipay', icon: '🅰️', color: '#1677FF', provider: 'Alibaba' },
+  { name: 'WeChat Pay', icon: '💬', color: '#07C160', provider: 'Tencent' },
 ];
