@@ -438,6 +438,11 @@ export const translations = {
   createNew: { en: 'Create new', zh: '新增', 'zh-CN': '创建新' },
   typeToSearch: { en: 'Type to search', zh: '輸入以搜尋', 'zh-CN': '输入以搜索' },
   unsavedChanges: { en: 'You have unsaved changes', zh: '您有未儲存的變更', 'zh-CN': '您有未保存的更改' },
+  
+  // E-Wallet notifications
+  eWalletAdded: { en: 'E-wallet added successfully', zh: '電子錢包已成功新增', 'zh-CN': '电子钱包已成功添加' },
+  eWalletUpdated: { en: 'E-wallet updated successfully', zh: '電子錢包已成功更新', 'zh-CN': '电子钱包已成功更新' },
+  eWalletDeleted: { en: 'E-wallet deleted successfully', zh: '電子錢包已成功刪除', 'zh-CN': '电子钱包已成功删除' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

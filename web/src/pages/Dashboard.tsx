@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -12,6 +12,8 @@ import { recurringExpenseService } from '../services/recurringExpenseService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
+import { ewalletService } from '../services/ewalletService';
+import { featureSettingsService } from '../services/featureSettingsService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
@@ -23,6 +25,8 @@ import CardsSummary from '../components/dashboard/CardsSummary';
 import IncomesTab from './tabs/IncomesTab';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
+import EWalletManager from '../components/ewallet/EWalletManager';
+import FeatureManager from '../components/settings/FeatureManager';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
@@ -47,13 +51,15 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'ewallets' | 'settings' | 'profile' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [ewallets, setEWallets] = useState<EWallet[]>([]);
+  const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -150,6 +156,27 @@ const Dashboard: React.FC = () => {
       } catch (cardError) {
         console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
         setCards([]);
+      }
+      
+      // Load e-wallets with error handling
+      try {
+        await ewalletService.initializeDefaults(currentUser.uid);
+        const ewalletsData = await ewalletService.getAll(currentUser.uid);
+        console.log('E-wallets loaded successfully:', ewalletsData.length, 'e-wallets');
+        setEWallets(ewalletsData);
+      } catch (ewalletError) {
+        console.warn('Could not load e-wallets:', ewalletError);
+        setEWallets([]);
+      }
+      
+      // Load feature settings with error handling
+      try {
+        const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
+        console.log('Feature settings loaded successfully');
+        setFeatureSettings(settingsData);
+      } catch (settingsError) {
+        console.warn('Could not load feature settings:', settingsError);
+        setFeatureSettings(null);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -851,6 +878,144 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // E-Wallet handlers
+  const handleAddEWallet = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!currentUser) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticWallet: EWallet = {
+      ...walletData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setEWallets((prev) => [...prev, optimisticWallet]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: walletData },
+      () => ewalletService.create({ ...walletData, userId: currentUser.uid }),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletAdded'));
+        },
+        onError: () => {
+          setEWallets((prev) => prev.filter((w) => w.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleUpdateEWallet = async (id: string, updates: Partial<EWallet>) => {
+    const originalWallet = ewallets.find((w) => w.id === id);
+
+    // Optimistic update
+    setEWallets((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...updates, updatedAt: new Date() } : w))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { id, updates }, originalData: originalWallet },
+      () => ewalletService.update(id, updates),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletUpdated'));
+        },
+        onError: () => {
+          if (originalWallet) {
+            setEWallets((prev) => prev.map((w) => (w.id === id ? originalWallet : w)));
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteEWallet = async (id: string) => {
+    const walletToDelete = ewallets.find((w) => w.id === id);
+
+    // Optimistic update
+    setEWallets((prev) => prev.filter((w) => w.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: walletToDelete },
+      () => ewalletService.delete(id),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletDeleted'));
+        },
+        onError: () => {
+          if (walletToDelete) {
+            setEWallets((prev) => [...prev, walletToDelete]);
+          }
+        },
+      }
+    );
+  };
+
+  // Feature Settings handlers
+  const handleUpdateFeatureSettings = async (enabledFeatures: FeatureTab[]) => {
+    if (!currentUser) return;
+
+    const originalSettings = featureSettings;
+
+    // Optimistic update
+    setFeatureSettings(
+      originalSettings
+        ? { ...originalSettings, enabledFeatures, updatedAt: new Date() }
+        : {
+            userId: currentUser.uid,
+            enabledFeatures,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { enabledFeatures }, originalData: originalSettings },
+      () => featureSettingsService.update(currentUser.uid, enabledFeatures),
+      {
+        entityType: 'budget', // Using budget type as settings is configuration-like
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('featuresUpdated'));
+        },
+        onError: () => {
+          if (originalSettings) {
+            setFeatureSettings(originalSettings);
+          }
+        },
+      }
+    );
+  };
+
+  const handleResetFeatureSettings = async () => {
+    if (!currentUser) return;
+
+    await optimisticCRUD.run(
+      { type: 'update', data: {} },
+      () => featureSettingsService.resetToDefaults(currentUser.uid),
+      {
+        entityType: 'budget', // Using budget type as settings is configuration-like
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('featuresReset'));
+        },
+        onError: () => {},
+      }
+    );
+  };
+
   // Export handlers
   const handleExportExcel = () => {
     exportToExcel(expenses, categories);
@@ -1262,6 +1427,22 @@ const Dashboard: React.FC = () => {
         >
           {t('cards')}
         </button>
+        <button
+          onClick={() => setActiveTab('ewallets')}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'ewallets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          {t('eWallets')}
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+            activeTab === 'settings' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          {t('featureSettings')}
+        </button>
       </div>
 
       <div className="dashboard-card content-pad">
@@ -1351,6 +1532,27 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'ewallets' && (
+          <div className="flex flex-col gap-4">
+            <EWalletManager
+              ewallets={ewallets}
+              onAdd={handleAddEWallet}
+              onUpdate={handleUpdateEWallet}
+              onDelete={handleDeleteEWallet}
+            />
+          </div>
+        )}
+
+        {activeTab === 'settings' && featureSettings && (
+          <div className="flex flex-col gap-4">
+            <FeatureManager
+              enabledFeatures={featureSettings.enabledFeatures}
+              onUpdate={handleUpdateFeatureSettings}
+              onReset={handleResetFeatureSettings}
+            />
+          </div>
+        )}
+
         {activeTab === 'profile' && (
           <UserProfile />
         )}
@@ -1432,6 +1634,11 @@ const Dashboard: React.FC = () => {
                   onCancel={() => setShowAddExpenseForm(false)}
                   categories={categories}
                   cards={cards}
+                  ewallets={ewallets}
+                  onCreateEWallet={() => {
+                    setShowAddExpenseForm(false);
+                    setActiveTab('ewallets');
+                  }}
                 />
               </div>
             </div>
@@ -1521,6 +1728,11 @@ const Dashboard: React.FC = () => {
                   onCancel={() => setShowAddSheet(false)}
                   categories={categories}
                   cards={cards}
+                  ewallets={ewallets}
+                  onCreateEWallet={() => {
+                    setShowAddSheet(false);
+                    setActiveTab('ewallets');
+                  }}
                 />
               </div>
             </div>
