@@ -319,3 +319,28 @@ input:focus {
     overflow-wrap: break-word;
   }
 }
+
+/* Toggle Switch Styles */
+.switch input:checked + .slider {
+  background-color: #6366f1;
+}
+
+.switch input:focus + .slider {
+  box-shadow: 0 0 1px #6366f1;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}

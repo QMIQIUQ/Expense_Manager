@@ -1,14 +1,15 @@
 import React from 'react';
-import { Expense, Income } from '../../types';
+import { Expense, Income, GrabEarning } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
   incomes?: Income[];
+  grabEarnings?: GrabEarning[];
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [] }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], grabEarnings = [] }) => {
   const { t } = useLanguage();
   
   // Color palette for pie chart
@@ -17,6 +18,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
   const calculateStats = () => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
+    const totalGrabNet = grabEarnings.reduce((sum, earning) => sum + earning.netAmount, 0);
+    const combinedIncome = totalIncome + totalGrabNet;
 
     const now = new Date();
     const monthly = expenses
@@ -36,6 +39,17 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         );
       })
       .reduce((sum, inc) => sum + inc.amount, 0);
+
+    const monthlyGrabNet = grabEarnings
+      .filter((earning) => {
+        const earningDate = new Date(earning.date);
+        return (
+          earningDate.getMonth() === now.getMonth() && earningDate.getFullYear() === now.getFullYear()
+        );
+      })
+      .reduce((sum, earning) => sum + earning.netAmount, 0);
+
+    const combinedMonthlyIncome = monthlyIncome + monthlyGrabNet;
 
     const today = new Date().toISOString().split('T')[0];
     const daily = expenses
@@ -75,13 +89,16 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       0
     );
 
-    const netCashflow = monthlyIncome - monthly;
+    const netCashflow = combinedMonthlyIncome - monthly;
 
     return {
       total,
       totalIncome,
+      combinedIncome,
       monthly,
       monthlyIncome,
+      monthlyGrabNet,
+      combinedMonthlyIncome,
       daily,
       byCategory,
       unrecoveredExpenses,
@@ -157,8 +174,13 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div style={styles.cardContent}>
             <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
             <div style={{ ...styles.cardValue, color: '#4caf50' }}>
-              ${stats.monthlyIncome.toFixed(2)}
+              ${stats.combinedMonthlyIncome.toFixed(2)}
             </div>
+            {stats.monthlyGrabNet > 0 && (
+              <div style={styles.cardSubtext}>
+                {t('incomes')}: ${stats.monthlyIncome.toFixed(2)} + Grab: ${stats.monthlyGrabNet.toFixed(2)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -384,6 +406,12 @@ const styles = {
     wordBreak: 'break-word' as const,
     lineHeight: '1.2',
     width: '100%',
+  },
+  cardSubtext: {
+    fontSize: '10px',
+    color: '#999',
+    marginTop: '4px',
+    textAlign: 'center' as const,
   },
   categoryBreakdown: {
     backgroundColor: 'white',

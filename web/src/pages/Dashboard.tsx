@@ -1394,7 +1394,7 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div className="flex flex-col gap-6">
-            <DashboardSummary expenses={expenses} incomes={incomes} />
+            <DashboardSummary expenses={expenses} incomes={incomes} grabEarnings={grabEarnings} />
             {cards.length > 0 && (
               <CardsSummary cards={cards} categories={categories} expenses={expenses} />
             )}
