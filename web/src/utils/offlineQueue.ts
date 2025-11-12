@@ -1,7 +1,7 @@
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card';
+  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'card';
   payload: unknown;
   timestamp: number;
   retryCount: number;

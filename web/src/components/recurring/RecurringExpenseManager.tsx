@@ -378,15 +378,12 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <select
                       value={formData.paymentMethod || 'cash'}
-                      onChange={(e) => {
-                        const newPaymentMethod = e.target.value as 'cash' | 'credit_card' | 'e_wallet';
-                        setFormData({ 
-                          ...formData, 
-                          paymentMethod: newPaymentMethod,
-                          cardId: newPaymentMethod === 'credit_card' ? formData.cardId : '',
-                          paymentMethodName: newPaymentMethod === 'e_wallet' ? formData.paymentMethodName : ''
-                        });
-                      }}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        paymentMethod: e.target.value as any,
+                        cardId: e.target.value === 'credit_card' ? formData.cardId : undefined,
+                        paymentMethodName: e.target.value === 'e_wallet' ? formData.paymentMethodName : undefined
+                      })}
                       style={{ ...styles.inlineSelect, minWidth: '130px' }}
                     >
                       <option value="cash">💵 {t('cash')}</option>

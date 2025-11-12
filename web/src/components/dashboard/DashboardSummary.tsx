@@ -1,14 +1,13 @@
 import React from 'react';
-import { Expense, Income } from '../../types';
+import { Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
-  incomes?: Income[];
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [] }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses }) => {
   const { t } = useLanguage();
   
   // Color palette for pie chart
@@ -16,7 +15,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
   
   const calculateStats = () => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
 
     const now = new Date();
     const monthly = expenses
@@ -27,15 +25,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         );
       })
       .reduce((sum, exp) => sum + exp.amount, 0);
-
-    const monthlyIncome = incomes
-      .filter((inc) => {
-        const incDate = new Date(inc.date);
-        return (
-          incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
-        );
-      })
-      .reduce((sum, inc) => sum + inc.amount, 0);
 
     const today = new Date().toISOString().split('T')[0];
     const daily = expenses
@@ -50,44 +39,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       byCategory[exp.category] += exp.amount;
     });
 
-    // Calculate unrecovered amounts
-    const incomesByExpense: { [expenseId: string]: number } = {};
-    incomes.forEach((inc) => {
-      if (inc.linkedExpenseId) {
-        incomesByExpense[inc.linkedExpenseId] =
-          (incomesByExpense[inc.linkedExpenseId] || 0) + inc.amount;
-      }
-    });
-
-    const unrecoveredExpenses = expenses
-      .filter((exp) => exp.originalReceiptAmount || incomesByExpense[exp.id || ''])
-      .map((exp) => {
-        const targetAmount = exp.originalReceiptAmount || exp.amount;
-        const recovered = incomesByExpense[exp.id || ''] || 0;
-        const unrecovered = Math.max(0, targetAmount - recovered);
-        return { expense: exp, recovered, unrecovered, targetAmount };
-      })
-      .filter((item) => item.unrecovered > 0)
-      .sort((a, b) => b.unrecovered - a.unrecovered);
-
-    const totalUnrecovered = unrecoveredExpenses.reduce(
-      (sum, item) => sum + item.unrecovered,
-      0
-    );
-
-    const netCashflow = monthlyIncome - monthly;
-
-    return {
-      total,
-      totalIncome,
-      monthly,
-      monthlyIncome,
-      daily,
-      byCategory,
-      unrecoveredExpenses,
-      totalUnrecovered,
-      netCashflow,
-    };
+    return { total, monthly, daily, byCategory };
   };
 
   const stats = calculateStats();
@@ -147,86 +99,35 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         <div style={styles.card}>
           <div style={styles.cardIcon}>💰</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Monthly Expense</div>
+            <div style={styles.cardLabel}>{t('totalExpenses')}</div>
+            <div style={styles.cardValue}>${stats.total.toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardIcon}>📅</div>
+          <div style={styles.cardContent}>
+            <div style={styles.cardLabel}>{t('thisMonth')}</div>
             <div style={styles.cardValue}>${stats.monthly.toFixed(2)}</div>
           </div>
         </div>
 
         <div style={styles.card}>
-          <div style={{ ...styles.cardIcon, backgroundColor: '#e8f5e9' }}>💵</div>
+          <div style={styles.cardIcon}>📊</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
-            <div style={{ ...styles.cardValue, color: '#4caf50' }}>
-              ${stats.monthlyIncome.toFixed(2)}
-            </div>
+            <div style={styles.cardLabel}>{t('today')}</div>
+            <div style={styles.cardValue}>${stats.daily.toFixed(2)}</div>
           </div>
         </div>
 
         <div style={styles.card}>
-          <div
-            style={{
-              ...styles.cardIcon,
-              backgroundColor: stats.netCashflow >= 0 ? '#e8f5e9' : '#ffebee',
-            }}
-          >
-            {stats.netCashflow >= 0 ? '📈' : '📉'}
-          </div>
+          <div style={styles.cardIcon}>🏷️</div>
           <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('netCashflow')}</div>
-            <div
-              style={{
-                ...styles.cardValue,
-                color: stats.netCashflow >= 0 ? '#4caf50' : '#f44336',
-              }}
-            >
-              ${stats.netCashflow.toFixed(2)}
-            </div>
-          </div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={{ ...styles.cardIcon, backgroundColor: '#fff3e0' }}>💸</div>
-          <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('unrecovered')}</div>
-            <div style={{ ...styles.cardValue, color: '#ff9800' }}>
-              ${stats.totalUnrecovered.toFixed(2)}
-            </div>
+            <div style={styles.cardLabel}>{t('categories')}</div>
+            <div style={styles.cardValue}>{Object.keys(stats.byCategory).length}</div>
           </div>
         </div>
       </div>
-
-      {stats.unrecoveredExpenses.length > 0 && (
-        <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>{t('topUnrecoveredExpenses')}</h3>
-          <div style={styles.categoryList}>
-            {stats.unrecoveredExpenses.slice(0, 5).map((item) => {
-              const percentage = (item.recovered / item.targetAmount) * 100;
-              return (
-                <div key={item.expense.id} style={styles.categoryItem}>
-                  <div style={styles.categoryInfo}>
-                    <span style={styles.categoryName}>{item.expense.description}</span>
-                    <span style={{ ...styles.categoryAmount, color: '#ff9800' }}>
-                      ${item.unrecovered.toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={styles.progressBar}>
-                    <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${percentage}%`,
-                        backgroundColor: '#4caf50',
-                      }}
-                    />
-                  </div>
-                  <span style={styles.categoryPercentage}>
-                    {percentage.toFixed(1)}% {t('recovered')}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {categories.length > 0 && (
         <div style={styles.categoryBreakdown}>

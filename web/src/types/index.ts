@@ -13,11 +13,8 @@ export interface Expense {
   // Optional time in HH:mm (24h) format, for finer granularity
   time?: string;
   notes?: string;
-  // New fields for income linking
-  originalReceiptAmount?: number; // Original receipt/invoice amount for tracking reimbursements
-  payerName?: string; // Who paid (e.g., "Me", "Friend A")
-  // Credit card and payment method fields
   cardId?: string; // Optional: credit card used for this expense
+  // Payment method information
   paymentMethod?: PaymentMethodType; // Type of payment method
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
@@ -64,23 +61,6 @@ export interface RecurringExpense {
   // Payment method information
   paymentMethod?: PaymentMethodType; // Type of payment method
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Income type enum
-export type IncomeType = 'salary' | 'reimbursement' | 'repayment' | 'other';
-
-export interface Income {
-  id?: string;
-  userId: string;
-  title?: string; // Optional title/source description
-  amount: number; // Positive number
-  date: string;
-  type: IncomeType;
-  payerName?: string; // For repayments from friends
-  linkedExpenseId?: string; // FK to expenses.id - can link to one expense
-  note?: string;
   createdAt: Date;
   updatedAt: Date;
 }
