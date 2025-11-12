@@ -80,13 +80,21 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
     const updates: Partial<Income> = {};
     const parsedAmount = parseFloat(draft.amount || '0');
     
-    if ((income.title || '') !== (draft.title || '')) updates.title = draft.title || undefined;
+    if ((income.title || '') !== (draft.title || '')) {
+      updates.title = draft.title && draft.title.trim() !== '' ? draft.title : undefined;
+    }
     if (!isNaN(parsedAmount) && income.amount !== parsedAmount) updates.amount = parsedAmount;
     if (income.date !== draft.date && draft.date) updates.date = draft.date;
     if (income.type !== draft.type && draft.type) updates.type = draft.type;
-    if ((income.payerName || '') !== (draft.payerName || '')) updates.payerName = draft.payerName || undefined;
-    if ((income.linkedExpenseId || '') !== (draft.linkedExpenseId || '')) updates.linkedExpenseId = draft.linkedExpenseId || undefined;
-    if ((income.note || '') !== (draft.note || '')) updates.note = draft.note || undefined;
+    if ((income.payerName || '') !== (draft.payerName || '')) {
+      updates.payerName = draft.payerName && draft.payerName.trim() !== '' ? draft.payerName : undefined;
+    }
+    if ((income.linkedExpenseId || '') !== (draft.linkedExpenseId || '')) {
+      updates.linkedExpenseId = draft.linkedExpenseId && draft.linkedExpenseId !== '' ? draft.linkedExpenseId : undefined;
+    }
+    if ((income.note || '') !== (draft.note || '')) {
+      updates.note = draft.note && draft.note.trim() !== '' ? draft.note : undefined;
+    }
 
     if (Object.keys(updates).length > 0) {
       onInlineUpdate(income.id!, updates);
