@@ -7,20 +7,16 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface Props {
   incomes: Income[];
   expenses: Expense[];
-  editingIncome: Income | null;
   onAddIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onUpdateIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onEdit: (income: Income | null) => void;
+  onInlineUpdate: (id: string, updates: Partial<Income>) => void;
   onDeleteIncome: (id: string) => void;
 }
 
 const IncomesTab: React.FC<Props> = ({
   incomes,
   expenses,
-  editingIncome,
   onAddIncome,
-  onUpdateIncome,
-  onEdit,
+  onInlineUpdate,
   onDeleteIncome,
 }) => {
   const { t } = useLanguage();
@@ -29,12 +25,10 @@ const IncomesTab: React.FC<Props> = ({
     <div style={styles.incomesTab}>
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>
-          {editingIncome ? t('editIncome') : t('addNewIncome')}
+          {t('addNewIncome')}
         </h2>
         <IncomeForm
-          onSubmit={editingIncome ? onUpdateIncome : onAddIncome}
-          onCancel={editingIncome ? () => onEdit(null) : undefined}
-          initialData={editingIncome || undefined}
+          onSubmit={onAddIncome}
           expenses={expenses}
         />
       </div>
@@ -44,8 +38,8 @@ const IncomesTab: React.FC<Props> = ({
         <IncomeList
           incomes={incomes}
           expenses={expenses}
-          onEdit={onEdit}
           onDelete={onDeleteIncome}
+          onInlineUpdate={onInlineUpdate}
         />
       </div>
     </div>

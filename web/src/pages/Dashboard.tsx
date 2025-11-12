@@ -54,7 +54,6 @@ const Dashboard: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
-  const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -713,7 +712,6 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
-          setEditingIncome(null);
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== tempId));
@@ -722,31 +720,24 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  const handleUpdateIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!editingIncome?.id) return;
-    
-    const originalIncome = incomes.find((i) => i.id === editingIncome.id);
+  const handleInlineUpdateIncome = async (id: string, updates: Partial<Income>) => {
+    const originalIncome = incomes.find((i) => i.id === id);
     
     // Optimistic update
-    setIncomes((prev) =>
-      prev.map((i) => (i.id === editingIncome.id ? { ...i, ...incomeData } : i))
-    );
+    setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
 
     await optimisticCRUD.run(
-      { type: 'update', data: incomeData, originalData: originalIncome },
-      () => incomeService.update(editingIncome.id!, incomeData),
+      { type: 'update', data: updates, originalData: originalIncome },
+      () => incomeService.update(id, updates),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
-          setEditingIncome(null);
         },
         onError: () => {
           if (originalIncome) {
-            setIncomes((prev) =>
-              prev.map((i) => (i.id === editingIncome.id ? originalIncome : i))
-            );
+            setIncomes((prev) => prev.map((i) => (i.id === id ? originalIncome : i)));
           }
         },
       }
@@ -1300,10 +1291,8 @@ const Dashboard: React.FC = () => {
           <IncomesTab
             incomes={incomes}
             expenses={expenses}
-            editingIncome={editingIncome}
             onAddIncome={handleAddIncome}
-            onUpdateIncome={handleUpdateIncome}
-            onEdit={setEditingIncome}
+            onInlineUpdate={handleInlineUpdateIncome}
             onDeleteIncome={handleDeleteIncome}
           />
         )}

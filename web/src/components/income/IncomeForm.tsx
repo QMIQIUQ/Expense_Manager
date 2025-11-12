@@ -54,13 +54,25 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     }
 
     setErrors({});
-    onSubmit({
-      ...formData,
-      title: formData.title || undefined,
-      payerName: formData.payerName || undefined,
-      linkedExpenseId: formData.linkedExpenseId || undefined,
-      note: formData.note || undefined,
-    });
+    
+    // Prepare data and remove undefined/empty fields to prevent Firestore errors
+    const submitData: Partial<typeof formData> = { ...formData };
+    
+    // Remove empty optional fields
+    if (!submitData.title || submitData.title.trim() === '') {
+      delete submitData.title;
+    }
+    if (!submitData.payerName || submitData.payerName.trim() === '') {
+      delete submitData.payerName;
+    }
+    if (!submitData.linkedExpenseId || submitData.linkedExpenseId === '') {
+      delete submitData.linkedExpenseId;
+    }
+    if (!submitData.note || submitData.note.trim() === '') {
+      delete submitData.note;
+    }
+    
+    onSubmit(submitData as Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     
     if (!initialData) {
       setFormData({
