@@ -128,7 +128,6 @@ export const ewalletService = {
 
   // Get e-wallet by ID
   async getById(id: string): Promise<EWallet | null> {
-    const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDocs(query(collection(db, COLLECTION_NAME), where('__name__', '==', id)));
     if (docSnap.empty) return null;
     

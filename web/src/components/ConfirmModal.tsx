@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   danger?: boolean;
+  variant?: 'default' | 'danger' | 'warning'; // Added variant prop
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -20,7 +21,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   onCancel,
   danger = false,
+  variant = 'default',
 }) => {
+  // Determine button style based on variant or danger prop
+  const isDanger = danger || variant === 'danger';
+  const isWarning = variant === 'warning';
   if (!isOpen) return null;
 
   const handleConfirm = () => {
@@ -39,7 +44,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
           <button
             onClick={handleConfirm}
-            style={danger ? { ...styles.confirmButton, ...styles.dangerButton } : styles.confirmButton}
+            style={
+              isDanger
+                ? { ...styles.confirmButton, ...styles.dangerButton }
+                : isWarning
+                ? { ...styles.confirmButton, ...styles.warningButton }
+                : styles.confirmButton
+            }
           >
             {confirmText}
           </button>
@@ -114,6 +125,9 @@ const styles = {
   },
   dangerButton: {
     backgroundColor: '#f44336',
+  },
+  warningButton: {
+    backgroundColor: '#f59e0b',
   },
 };
 

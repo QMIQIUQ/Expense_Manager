@@ -397,6 +397,47 @@ export const translations = {
   update: { en: 'Update', zh: '更新', 'zh-CN': '更新' },
   expense: { en: 'Expense', zh: '支出', 'zh-CN': '支出' },
   receipt: { en: 'Receipt', zh: '收據', 'zh-CN': '收据' },
+  
+  // E-Wallet Management
+  eWallets: { en: 'E-Wallets', zh: '電子錢包', 'zh-CN': '电子钱包' },
+  addEWallet: { en: 'Add E-Wallet', zh: '新增電子錢包', 'zh-CN': '添加电子钱包' },
+  editEWallet: { en: 'Edit E-Wallet', zh: '編輯電子錢包', 'zh-CN': '编辑电子钱包' },
+  eWalletNameLabel: { en: 'E-Wallet Name', zh: '電子錢包名稱', 'zh-CN': '电子钱包名称' },
+  eWalletNamePlaceholder2: { en: 'e.g., PayPal, Apple Pay', zh: '例如：PayPal、Apple Pay', 'zh-CN': '例如：PayPal、Apple Pay' },
+  provider: { en: 'Provider', zh: '服務提供商', 'zh-CN': '服务提供商' },
+  providerPlaceholder: { en: 'e.g., PayPal, Apple', zh: '例如：PayPal、Apple', 'zh-CN': '例如：PayPal、Apple' },
+  accountNumber: { en: 'Account Number', zh: '帳號後四碼', 'zh-CN': '账号后四码' },
+  accountNumberPlaceholder: { en: 'Last 4 digits', zh: '後四碼', 'zh-CN': '后四码' },
+  accountNumberHelp: { en: 'Optional: Last 4 digits or identifier', zh: '選填：後四碼或識別碼', 'zh-CN': '选填：后四码或识别码' },
+  manageEWallets: { en: 'Manage your electronic payment methods', zh: '管理您的電子支付方式', 'zh-CN': '管理您的电子支付方式' },
+  searchEWallets: { en: 'Search e-wallets...', zh: '搜尋電子錢包...', 'zh-CN': '搜索电子钱包...' },
+  noEWalletsYet: { en: 'No e-wallets yet', zh: '尚未新增電子錢包', 'zh-CN': '尚未添加电子钱包' },
+  addYourFirstEWallet: { en: 'Add your first e-wallet to get started', zh: '新增您的第一個電子錢包', 'zh-CN': '添加您的第一个电子钱包' },
+  confirmDeleteEWallet: { en: 'Are you sure you want to delete this e-wallet? This action cannot be undone.', zh: '您確定要刪除此電子錢包嗎？此操作無法復原。', 'zh-CN': '您确定要删除此电子钱包吗？此操作无法撤销。' },
+  default: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
+  saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
+  
+  // Feature Manager
+  featureManager: { en: 'Feature Manager', zh: '功能管理', 'zh-CN': '功能管理' },
+  manageFeatures: { en: 'Manage Features', zh: '管理功能', 'zh-CN': '管理功能' },
+  featureSettings: { en: 'Feature Settings', zh: '功能設定', 'zh-CN': '功能设置' },
+  manageFeaturesDesc: { en: 'Choose which features to display and customize the tab order', zh: '選擇要顯示的功能並自訂頁籤順序', 'zh-CN': '选择要显示的功能并自定义标签顺序' },
+  enabledFeatures: { en: 'Enabled Features', zh: '已啟用功能', 'zh-CN': '已启用功能' },
+  availableFeatures: { en: 'Available Features', zh: '可用功能', 'zh-CN': '可用功能' },
+  dragToReorder: { en: 'Drag to reorder', zh: '拖曳以重新排序', 'zh-CN': '拖动以重新排序' },
+  resetToDefaults: { en: 'Reset to Defaults', zh: '重設為預設', 'zh-CN': '重置为默认' },
+  saveSettings: { en: 'Save Settings', zh: '儲存設定', 'zh-CN': '保存设置' },
+  featureVisibility: { en: 'Feature Visibility', zh: '功能顯示', 'zh-CN': '功能显示' },
+  confirmResetFeatures: { en: 'Reset all features to default settings?', zh: '將所有功能重設為預設值？', 'zh-CN': '将所有功能重置为默认值？' },
+  featuresUpdated: { en: 'Features updated successfully', zh: '功能已成功更新', 'zh-CN': '功能已成功更新' },
+  featuresReset: { en: 'Features reset to defaults', zh: '功能已重設為預設', 'zh-CN': '功能已重置为默认' },
+  
+  // Autocomplete
+  searchOrSelect: { en: 'Search or select...', zh: '搜尋或選擇...', 'zh-CN': '搜索或选择...' },
+  noResultsFound: { en: 'No results found', zh: '找不到結果', 'zh-CN': '找不到结果' },
+  createNew: { en: 'Create new', zh: '新增', 'zh-CN': '创建新' },
+  typeToSearch: { en: 'Type to search', zh: '輸入以搜尋', 'zh-CN': '输入以搜索' },
+  unsavedChanges: { en: 'You have unsaved changes', zh: '您有未儲存的變更', 'zh-CN': '您有未保存的更改' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

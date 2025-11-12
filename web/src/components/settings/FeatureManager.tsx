@@ -1,0 +1,308 @@
+import React, { useState, useEffect } from 'react';
+import { FeatureTab, DEFAULT_FEATURES } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { TranslationKey } from '../../locales/translations';
+import { DragIcon, CheckIcon } from '../icons';
+import ConfirmModal from '../ConfirmModal';
+
+interface FeatureManagerProps {
+  enabledFeatures: FeatureTab[];
+  onUpdate: (features: FeatureTab[]) => Promise<void>;
+  onReset: () => Promise<void>;
+}
+
+// Feature metadata for display
+const FEATURE_METADATA: Record<FeatureTab, { icon: string; labelKey: TranslationKey; description: string }> = {
+  dashboard: {
+    icon: '📊',
+    labelKey: 'dashboard' as TranslationKey,
+    description: 'View expense summaries and analytics',
+  },
+  expenses: {
+    icon: '💸',
+    labelKey: 'expenses' as TranslationKey,
+    description: 'Track and manage your expenses',
+  },
+  incomes: {
+    icon: '💰',
+    labelKey: 'incomes' as TranslationKey,
+    description: 'Record and track income sources',
+  },
+  categories: {
+    icon: '📁',
+    labelKey: 'categories' as TranslationKey,
+    description: 'Manage expense categories',
+  },
+  budgets: {
+    icon: '🎯',
+    labelKey: 'budgets' as TranslationKey,
+    description: 'Set and track budget limits',
+  },
+  recurring: {
+    icon: '🔄',
+    labelKey: 'recurring' as TranslationKey,
+    description: 'Manage recurring expenses',
+  },
+  cards: {
+    icon: '💳',
+    labelKey: 'cards' as TranslationKey,
+    description: 'Manage credit cards',
+  },
+  profile: {
+    icon: '👤',
+    labelKey: 'profile' as TranslationKey,
+    description: 'User profile and settings',
+  },
+  admin: {
+    icon: '👑',
+    labelKey: 'admin' as TranslationKey,
+    description: 'Admin panel (for admins only)',
+  },
+};
+
+const ALL_FEATURES: FeatureTab[] = [
+  'dashboard',
+  'expenses',
+  'incomes',
+  'categories',
+  'budgets',
+  'recurring',
+  'cards',
+  'profile',
+  'admin',
+];
+
+const FeatureManager: React.FC<FeatureManagerProps> = ({
+  enabledFeatures,
+  onUpdate,
+  onReset,
+}) => {
+  const { t } = useLanguage();
+  const [localEnabled, setLocalEnabled] = useState<FeatureTab[]>(enabledFeatures);
+  const [draggedItem, setDraggedItem] = useState<FeatureTab | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update local state when props change
+  useEffect(() => {
+    setLocalEnabled(enabledFeatures);
+  }, [enabledFeatures]);
+
+  // Check if there are unsaved changes
+  useEffect(() => {
+    const changed =
+      localEnabled.length !== enabledFeatures.length ||
+      localEnabled.some((feature, index) => feature !== enabledFeatures[index]);
+    setHasChanges(changed);
+  }, [localEnabled, enabledFeatures]);
+
+  // Get disabled features
+  const disabledFeatures = ALL_FEATURES.filter((feature) => !localEnabled.includes(feature));
+
+  const handleToggleFeature = (feature: FeatureTab) => {
+    if (localEnabled.includes(feature)) {
+      // Disable feature (must have at least one enabled)
+      if (localEnabled.length > 1) {
+        setLocalEnabled(localEnabled.filter((f) => f !== feature));
+      }
+    } else {
+      // Enable feature (add to end)
+      setLocalEnabled([...localEnabled, feature]);
+    }
+  };
+
+  const handleDragStart = (feature: FeatureTab) => {
+    setDraggedItem(feature);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    
+    if (!draggedItem) return;
+
+    const currentIndex = localEnabled.indexOf(draggedItem);
+    if (currentIndex === -1) return;
+
+    const newOrder = [...localEnabled];
+    newOrder.splice(currentIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedItem);
+
+    setLocalEnabled(newOrder);
+    setDraggedItem(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverIndex(null);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onUpdate(localEnabled);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setIsSaving(true);
+    try {
+      await onReset();
+      setLocalEnabled([...DEFAULT_FEATURES]);
+      setShowResetConfirm(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{t('featureManager')}</h2>
+          <p className="text-sm text-gray-600 mt-1">{t('manageFeaturesDesc')}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={isSaving}
+          >
+            {t('resetToDefaults')}
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasChanges || isSaving}
+          >
+            {isSaving ? t('saving') : t('saveSettings')}
+          </button>
+        </div>
+      </div>
+
+      {/* Changes indicator */}
+      {hasChanges && (
+        <div className="px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+          ⚠️ {t('unsavedChanges')}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Enabled Features */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            {t('enabledFeatures')} ({localEnabled.length})
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">{t('dragToReorder')}</p>
+          
+          <div className="flex flex-col gap-2">
+            {localEnabled.map((feature, index) => {
+              const metadata = FEATURE_METADATA[feature];
+              return (
+                <div
+                  key={feature}
+                  draggable
+                  onDragStart={() => handleDragStart(feature)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-3 p-4 bg-white border rounded-lg cursor-move transition-all ${
+                    draggedItem === feature
+                      ? 'opacity-50'
+                      : dragOverIndex === index
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                >
+                  <DragIcon size={20} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-2xl flex-shrink-0">{metadata.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900">{t(metadata.labelKey)}</div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {metadata.description}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature(feature)}
+                    className="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors flex-shrink-0"
+                    aria-label="Disable feature"
+                    disabled={localEnabled.length === 1}
+                  >
+                    <CheckIcon size={20} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Available Features */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            {t('availableFeatures')} ({disabledFeatures.length})
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Click to enable a feature
+          </p>
+          
+          <div className="flex flex-col gap-2">
+            {disabledFeatures.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm">
+                All features are enabled
+              </div>
+            ) : (
+              disabledFeatures.map((feature) => {
+                const metadata = FEATURE_METADATA[feature];
+                return (
+                  <div
+                    key={feature}
+                    className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={() => handleToggleFeature(feature)}
+                  >
+                    <span className="text-2xl flex-shrink-0 opacity-50">{metadata.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-700">{t(metadata.labelKey)}</div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {metadata.description}
+                      </div>
+                    </div>
+                    <button
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                      aria-label="Enable feature"
+                    >
+                      +
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title={t('resetToDefaults')}
+        message={t('confirmResetFeatures')}
+        confirmText={t('confirm')}
+        cancelText={t('cancel')}
+        onConfirm={handleReset}
+        onCancel={() => setShowResetConfirm(false)}
+        variant="warning"
+      />
+    </div>
+  );
+};
+
+export default FeatureManager;
