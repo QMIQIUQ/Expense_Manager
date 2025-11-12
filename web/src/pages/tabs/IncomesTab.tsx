@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { Income, Expense } from '../../types';
@@ -7,67 +7,92 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface Props {
   incomes: Income[];
   expenses: Expense[];
-  editingIncome: Income | null;
   onAddIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onUpdateIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onEdit: (income: Income | null) => void;
+  onInlineUpdate: (id: string, updates: Partial<Income>) => void;
   onDeleteIncome: (id: string) => void;
 }
 
 const IncomesTab: React.FC<Props> = ({
   incomes,
   expenses,
-  editingIncome,
   onAddIncome,
-  onUpdateIncome,
-  onEdit,
+  onInlineUpdate,
   onDeleteIncome,
 }) => {
   const { t } = useLanguage();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleSubmit = (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onAddIncome(data);
+    setIsAdding(false);
+  };
   
   return (
-    <div style={styles.incomesTab}>
-      <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>
-          {editingIncome ? t('editIncome') : t('addNewIncome')}
-        </h2>
-        <IncomeForm
-          onSubmit={editingIncome ? onUpdateIncome : onAddIncome}
-          onCancel={editingIncome ? () => onEdit(null) : undefined}
-          initialData={editingIncome || undefined}
-          expenses={expenses}
-        />
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h3 style={styles.title}>{t('incomeHistory')}</h3>
+        {!isAdding && (
+          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+            + {t('addNewIncome')}
+          </button>
+        )}
       </div>
 
-      <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>{t('incomeHistory')}</h2>
-        <IncomeList
-          incomes={incomes}
-          expenses={expenses}
-          onEdit={onEdit}
-          onDelete={onDeleteIncome}
-        />
-      </div>
+      {isAdding && (
+        <div style={styles.formContainer}>
+          <IncomeForm
+            onSubmit={handleSubmit}
+            onCancel={() => setIsAdding(false)}
+            expenses={expenses}
+          />
+        </div>
+      )}
+
+      <IncomeList
+        incomes={incomes}
+        expenses={expenses}
+        onDelete={onDeleteIncome}
+        onInlineUpdate={onInlineUpdate}
+      />
     </div>
   );
 };
 
 const styles = {
-  incomesTab: {
+  container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '30px',
+    gap: '20px',
   },
-  section: {
+  header: {
     display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '10px',
   },
-  sectionTitle: {
+  title: {
     margin: 0,
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: 600 as const,
     color: '#333',
+  },
+  addButton: {
+    padding: '10px 20px',
+    backgroundColor: '#6366f1',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  formContainer: {
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '10px',
   },
 };
 
