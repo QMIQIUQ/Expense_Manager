@@ -9,6 +9,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Income } from '../types';
@@ -81,8 +82,19 @@ export const incomeService = {
   // Update an income
   async update(id: string, updates: Partial<Income>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
+    
+    // Handle undefined values: use deleteField() to remove them from Firestore
+    const cleanedUpdates: Record<string, unknown> = {};
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === undefined) {
+        cleanedUpdates[key] = deleteField();
+      } else {
+        cleanedUpdates[key] = value;
+      }
+    });
+    
     await updateDoc(docRef, {
-      ...updates,
+      ...cleanedUpdates,
       updatedAt: Timestamp.now(),
     });
   },
