@@ -80,5 +80,36 @@ service cloud.firestore {
                        request.resource.data.amount > 0;
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // Grab earnings collection
+    match /grab-earnings/{earningId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.grossAmount is number &&
+                      request.resource.data.grossAmount >= 0 &&
+                      request.resource.data.platformFees is number &&
+                      request.resource.data.platformFees >= 0 &&
+                      request.resource.data.tips is number &&
+                      request.resource.data.tips >= 0 &&
+                      request.resource.data.netAmount is number;
+      allow update: if isAuthenticated() && 
+                       (isOwner(resource.data.userId) || isAdmin()) &&
+                       request.resource.data.grossAmount is number &&
+                       request.resource.data.grossAmount >= 0 &&
+                       request.resource.data.platformFees is number &&
+                       request.resource.data.platformFees >= 0 &&
+                       request.resource.data.tips is number &&
+                       request.resource.data.tips >= 0 &&
+                       request.resource.data.netAmount is number;
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+    
+    // Feature toggles collection
+    match /feature_toggles/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create, update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
   }
 }

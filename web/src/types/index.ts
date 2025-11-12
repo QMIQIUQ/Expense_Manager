@@ -155,6 +155,27 @@ export interface CardStats {
   }[];
 }
 
+// Grab Earnings Types
+export type GrabTripType = 'ride' | 'delivery' | 'other';
+
+export interface GrabEarning {
+  id?: string;
+  userId: string;
+  date: string; // YYYY-MM-DD format
+  grossAmount: number; // Total fare shown to customer
+  platformFees: number; // Commission/service fees deducted by Grab
+  tips: number; // Tips received
+  netAmount: number; // grossAmount - platformFees + tips (actual payout)
+  tripType: GrabTripType;
+  tripIdOrRef?: string; // Optional trip ID from Grab
+  payoutDate?: string; // YYYY-MM-DD when payment was received
+  payoutReference?: string; // Bank transaction reference
+  notes?: string;
+  linkedExpenseId?: string; // Link to related expense (e.g., fuel cost)
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B' },

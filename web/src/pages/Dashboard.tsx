@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, GrabEarning } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -12,6 +12,8 @@ import { recurringExpenseService } from '../services/recurringExpenseService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
+import { grabEarningsService } from '../services/grabEarningsService';
+import { featureToggleService } from '../services/featureToggleService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
@@ -21,6 +23,7 @@ import CardManager from '../components/cards/CardManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import CardsSummary from '../components/dashboard/CardsSummary';
 import IncomesTab from './tabs/IncomesTab';
+import GrabEarningsTab from './tabs/GrabEarningsTab';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
@@ -47,13 +50,15 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'grab-earnings' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin'>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [grabEarnings, setGrabEarnings] = useState<GrabEarning[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [grabFeatureEnabled, setGrabFeatureEnabled] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -122,6 +127,10 @@ const Dashboard: React.FC = () => {
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
       
+      // Check feature toggles
+      const features = await featureToggleService.getFeatures(currentUser.uid);
+      setGrabFeatureEnabled(features.grabEarningsEnabled);
+      
       const [expensesData, incomesData, categoriesData, budgetsData, recurringData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
         incomeService.getAll(currentUser.uid),
@@ -135,6 +144,17 @@ const Dashboard: React.FC = () => {
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
+      
+      // Load Grab earnings if feature is enabled
+      if (features.grabEarningsEnabled) {
+        try {
+          const grabData = await grabEarningsService.getAll(currentUser.uid);
+          setGrabEarnings(grabData);
+        } catch (grabError) {
+          console.warn('Could not load Grab earnings:', grabError);
+          setGrabEarnings([]);
+        }
+      }
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
@@ -768,6 +788,103 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Grab earnings handlers
+  const handleAddGrabEarning = async (earningData: Omit<GrabEarning, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (!currentUser) return;
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticEarning: GrabEarning = {
+      ...earningData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setGrabEarnings((prev) => [optimisticEarning, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: earningData },
+      () => grabEarningsService.create({ ...earningData, userId: currentUser.uid }),
+      {
+        entityType: 'grab-earning',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          setGrabEarnings((prev) => prev.filter((e) => e.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleInlineUpdateGrabEarning = async (id: string, updates: Partial<GrabEarning>) => {
+    const originalEarning = grabEarnings.find((e) => e.id === id);
+    
+    // Optimistic update
+    setGrabEarnings((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: originalEarning },
+      () => grabEarningsService.update(id, updates),
+      {
+        entityType: 'grab-earning',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (originalEarning) {
+            setGrabEarnings((prev) => prev.map((e) => (e.id === id ? originalEarning : e)));
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteGrabEarning = async (id: string) => {
+    const earningToDelete = grabEarnings.find((e) => e.id === id);
+    
+    // Optimistic update
+    setGrabEarnings((prev) => prev.filter((e) => e.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: earningToDelete },
+      () => grabEarningsService.delete(id),
+      {
+        entityType: 'grab-earning',
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+        },
+        onError: () => {
+          if (earningToDelete) {
+            setGrabEarnings((prev) => [...prev, earningToDelete]);
+          }
+        },
+      }
+    );
+  };
+
+  // Feature toggle handler
+  const handleToggleGrabFeature = async (enabled: boolean) => {
+    if (!currentUser) return;
+    try {
+      await featureToggleService.setFeature(currentUser.uid, 'grabEarningsEnabled', enabled);
+      setGrabFeatureEnabled(enabled);
+      if (enabled) {
+        // Load Grab earnings when feature is enabled
+        const grabData = await grabEarningsService.getAll(currentUser.uid);
+        setGrabEarnings(grabData);
+      }
+      showNotification('success', enabled ? 'Grab earnings feature enabled' : 'Grab earnings feature disabled');
+    } catch (error) {
+      console.error('Error toggling Grab feature:', error);
+      showNotification('error', 'Failed to update feature settings');
+    }
+  };
+
   // Card handlers
   const handleAddCard = async (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
@@ -1230,6 +1347,16 @@ const Dashboard: React.FC = () => {
         >
           {t('incomes')}
         </button>
+        {grabFeatureEnabled && (
+          <button
+            onClick={() => setActiveTab('grab-earnings')}
+            className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+              activeTab === 'grab-earnings' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            🚗 {t('grabEarnings')}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('recurring')}
           className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
@@ -1297,6 +1424,23 @@ const Dashboard: React.FC = () => {
           />
         )}
 
+        {activeTab === 'grab-earnings' && grabFeatureEnabled && (
+          <GrabEarningsTab
+            grabEarnings={grabEarnings}
+            expenses={expenses}
+            monthlyExpenses={expenses
+              .filter(e => {
+                const expDate = new Date(e.date);
+                const now = new Date();
+                return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
+              })
+              .reduce((sum, e) => sum + e.amount, 0)}
+            onAddGrabEarning={handleAddGrabEarning}
+            onInlineUpdate={handleInlineUpdateGrabEarning}
+            onDeleteGrabEarning={handleDeleteGrabEarning}
+          />
+        )}
+
         {activeTab === 'categories' && (
           <div className="flex flex-col gap-4">
             <CategoryManager
@@ -1352,7 +1496,10 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'profile' && (
-          <UserProfile />
+          <UserProfile 
+            grabFeatureEnabled={grabFeatureEnabled}
+            onToggleGrabFeature={handleToggleGrabFeature}
+          />
         )}
 
         {activeTab === 'admin' && isAdmin && (
