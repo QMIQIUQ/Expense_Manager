@@ -1372,36 +1372,49 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
         {/* Dynamically render tabs based on enabled features */}
-        {(featureSettings?.enabledFeatures || DEFAULT_FEATURES).map((feature) => {
-          // Skip profile and admin from main tabs (they're in hamburger menu)
-          if (feature === 'profile' || feature === 'admin') return null;
-          
-          // Map feature to display label
-          const labelMap: Record<FeatureTab, string> = {
-            dashboard: t('dashboard'),
-            expenses: t('expenses'),
-            incomes: t('incomes'),
-            categories: t('categories'),
-            budgets: t('budgets'),
-            recurring: t('recurring'),
-            paymentMethods: t('paymentMethods'),
-            settings: t('featureSettings'),
-            profile: t('profile'),
-            admin: t('admin'),
-          };
-          
-          return (
-            <button
-              key={feature}
-              onClick={() => setActiveTab(feature)}
-              className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-                activeTab === feature ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {labelMap[feature]}
-            </button>
-          );
-        })}
+        {(featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+          .map((feature) => {
+            // Migrate old feature names to new ones
+            const featureStr = feature as string;
+            if (featureStr === 'cards' || featureStr === 'ewallets') {
+              return 'paymentMethods' as FeatureTab;
+            }
+            return feature;
+          })
+          .filter((feature, index, array) => {
+            // Remove duplicates (e.g., both 'cards' and 'ewallets' -> 'paymentMethods')
+            return array.indexOf(feature) === index;
+          })
+          .map((feature) => {
+            // Skip profile and admin from main tabs (they're in hamburger menu)
+            if (feature === 'profile' || feature === 'admin') return null;
+            
+            // Map feature to display label
+            const labelMap: Record<FeatureTab, string> = {
+              dashboard: t('dashboard'),
+              expenses: t('expenses'),
+              incomes: t('incomes'),
+              categories: t('categories'),
+              budgets: t('budgets'),
+              recurring: t('recurring'),
+              paymentMethods: t('paymentMethods'),
+              settings: t('featureSettings'),
+              profile: t('profile'),
+              admin: t('admin'),
+            };
+            
+            return (
+              <button
+                key={feature}
+                onClick={() => setActiveTab(feature)}
+                className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+                  activeTab === feature ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {labelMap[feature]}
+              </button>
+            );
+          })}
       </div>
 
       <div className="dashboard-card content-pad">

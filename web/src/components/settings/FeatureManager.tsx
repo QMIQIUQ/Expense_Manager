@@ -84,7 +84,28 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   onReset,
 }) => {
   const { t } = useLanguage();
-  const [localEnabled, setLocalEnabled] = useState<FeatureTab[]>(enabledFeatures);
+  // Migrate old feature names to new ones
+  const migrateFeatures = (features: FeatureTab[]): FeatureTab[] => {
+    return features
+      .map((feature) => {
+        // Convert old 'cards' and 'ewallets' to new 'paymentMethods'
+        const featureStr = feature as string;
+        if (featureStr === 'cards' || featureStr === 'ewallets') {
+          return 'paymentMethods' as FeatureTab;
+        }
+        return feature;
+      })
+      .filter((feature, index, array) => {
+        // Remove duplicates (e.g., both 'cards' and 'ewallets' -> 'paymentMethods')
+        return array.indexOf(feature) === index;
+      })
+      .filter((feature) => {
+        // Filter out any features that don't have metadata
+        return FEATURE_METADATA[feature] !== undefined;
+      });
+  };
+
+  const [localEnabled, setLocalEnabled] = useState<FeatureTab[]>(migrateFeatures(enabledFeatures));
   const [draggedItem, setDraggedItem] = useState<FeatureTab | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -93,7 +114,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
 
   // Update local state when props change
   useEffect(() => {
-    setLocalEnabled(enabledFeatures);
+    setLocalEnabled(migrateFeatures(enabledFeatures));
   }, [enabledFeatures]);
 
   // Check if there are unsaved changes
@@ -214,6 +235,9 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
           <div className="flex flex-col gap-2">
             {localEnabled.map((feature, index) => {
               const metadata = FEATURE_METADATA[feature];
+              // Skip if metadata is not found (safety check)
+              if (!metadata) return null;
+              
               return (
                 <div
                   key={feature}
@@ -289,6 +313,9 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
             ) : (
               disabledFeatures.map((feature) => {
                 const metadata = FEATURE_METADATA[feature];
+                // Skip if metadata is not found (safety check)
+                if (!metadata) return null;
+                
                 return (
                   <div
                     key={feature}
