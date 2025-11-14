@@ -29,8 +29,13 @@ export const translations = {
   budgets: { en: 'Budgets', zh: '預算', 'zh-CN': '预算' },
   recurring: { en: 'Recurring', zh: '定期支出', 'zh-CN': '定期支出' },
   cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
+  paymentMethods: { en: 'Payment Methods', zh: '支付方式', 'zh-CN': '支付方式' },
   profile: { en: '👤 Profile', zh: '👤 個人資料', 'zh-CN': '👤 个人资料' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
+  tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
+  hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
+  position: { en: 'Position', zh: '位置', 'zh-CN': '位置' },
+  enterPosition: { en: 'Enter position (1-{max})', zh: '輸入位置 (1-{max})', 'zh-CN': '输入位置 (1-{max})' },
 
   // Login
   login: { en: 'Login', zh: '登入', 'zh-CN': '登录' },

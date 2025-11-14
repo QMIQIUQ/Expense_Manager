@@ -51,7 +51,7 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'ewallets' | 'settings' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -1384,8 +1384,7 @@ const Dashboard: React.FC = () => {
             categories: t('categories'),
             budgets: t('budgets'),
             recurring: t('recurring'),
-            cards: t('cards'),
-            ewallets: t('eWallets'),
+            paymentMethods: t('paymentMethods'),
             settings: t('featureSettings'),
             profile: t('profile'),
             admin: t('admin'),
@@ -1479,27 +1478,30 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'cards' && (
-          <div className="flex flex-col gap-4">
-            <CardManager
-              cards={cards}
-              categories={categories}
-              expenses={expenses}
-              onAdd={handleAddCard}
-              onUpdate={handleUpdateCard}
-              onDelete={handleDeleteCard}
-            />
-          </div>
-        )}
-
-        {activeTab === 'ewallets' && (
-          <div className="flex flex-col gap-4">
-            <EWalletManager
-              ewallets={ewallets}
-              onAdd={handleAddEWallet}
-              onUpdate={handleUpdateEWallet}
-              onDelete={handleDeleteEWallet}
-            />
+        {activeTab === 'paymentMethods' && (
+          <div className="flex flex-col gap-6">
+            {/* Unified Payment Methods - Cards and E-Wallets */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('cards')}</h2>
+              <CardManager
+                cards={cards}
+                categories={categories}
+                expenses={expenses}
+                onAdd={handleAddCard}
+                onUpdate={handleUpdateCard}
+                onDelete={handleDeleteCard}
+              />
+            </div>
+            <div className="border-t border-gray-200"></div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('eWallets')}</h2>
+              <EWalletManager
+                ewallets={ewallets}
+                onAdd={handleAddEWallet}
+                onUpdate={handleUpdateEWallet}
+                onDelete={handleDeleteEWallet}
+              />
+            </div>
           </div>
         )}
 
@@ -1597,7 +1599,7 @@ const Dashboard: React.FC = () => {
                   ewallets={ewallets}
                   onCreateEWallet={() => {
                     setShowAddExpenseForm(false);
-                    setActiveTab('ewallets');
+                    setActiveTab('paymentMethods');
                   }}
                 />
               </div>
@@ -1691,7 +1693,7 @@ const Dashboard: React.FC = () => {
                   ewallets={ewallets}
                   onCreateEWallet={() => {
                     setShowAddSheet(false);
-                    setActiveTab('ewallets');
+                    setActiveTab('paymentMethods');
                   }}
                 />
               </div>

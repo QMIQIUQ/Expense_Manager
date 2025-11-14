@@ -43,15 +43,10 @@ const FEATURE_METADATA: Record<FeatureTab, { icon: string; labelKey: Translation
     labelKey: 'recurring' as TranslationKey,
     description: 'Manage recurring expenses',
   },
-  cards: {
+  paymentMethods: {
     icon: '💳',
-    labelKey: 'cards' as TranslationKey,
-    description: 'Manage credit cards',
-  },
-  ewallets: {
-    icon: '📱',
-    labelKey: 'eWallets' as TranslationKey,
-    description: 'Manage electronic wallets',
+    labelKey: 'paymentMethods' as TranslationKey,
+    description: 'Manage payment methods (cards & e-wallets)',
   },
   settings: {
     icon: '⚙️',
@@ -77,8 +72,7 @@ const ALL_FEATURES: FeatureTab[] = [
   'categories',
   'budgets',
   'recurring',
-  'cards',
-  'ewallets',
+  'paymentMethods',
   'settings',
   'profile',
   'admin',
@@ -243,6 +237,26 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                     <div className="text-xs text-gray-500 truncate">
                       {metadata.description}
                     </div>
+                  </div>
+                  {/* Position input field */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <input
+                      type="number"
+                      min="1"
+                      max={localEnabled.length}
+                      value={index + 1}
+                      onChange={(e) => {
+                        const newPosition = parseInt(e.target.value) - 1;
+                        if (newPosition >= 0 && newPosition < localEnabled.length && newPosition !== index) {
+                          const newOrder = [...localEnabled];
+                          newOrder.splice(index, 1);
+                          newOrder.splice(newPosition, 0, feature);
+                          setLocalEnabled(newOrder);
+                        }
+                      }}
+                      className="w-14 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      title={t('position')}
+                    />
                   </div>
                   <button
                     onClick={() => handleToggleFeature(feature)}

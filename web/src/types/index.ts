@@ -170,14 +170,20 @@ export interface CardStats {
   }[];
 }
 
-// Feature tab type
-export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'ewallets' | 'settings' | 'profile' | 'admin';
+// Feature tab type - merged cards and ewallets into paymentMethods
+export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'paymentMethods' | 'settings' | 'profile' | 'admin';
 
-// Feature settings for tab visibility and ordering
+// Feature location type - different UI locations can have different orderings
+export type FeatureLocation = 'tabs' | 'hamburger';
+
+// Feature settings for tab visibility and ordering (enhanced with location-specific ordering)
 export interface FeatureSettings {
   id?: string;
   userId: string;
-  enabledFeatures: FeatureTab[]; // List of enabled features in display order
+  enabledFeatures: FeatureTab[]; // Deprecated: kept for backward compatibility
+  // Location-specific feature ordering
+  tabFeatures?: FeatureTab[]; // Features shown in main tabs
+  hamburgerFeatures?: FeatureTab[]; // Features shown in hamburger menu
   createdAt: Date;
   updatedAt: Date;
 }
@@ -190,9 +196,25 @@ export const DEFAULT_FEATURES: FeatureTab[] = [
   'categories',
   'budgets',
   'recurring',
-  'cards',
-  'ewallets',
+  'paymentMethods',
   'settings',
+];
+
+// Default features for different locations
+export const DEFAULT_TAB_FEATURES: FeatureTab[] = [
+  'dashboard',
+  'expenses',
+  'incomes',
+  'categories',
+  'budgets',
+  'recurring',
+  'paymentMethods',
+  'settings',
+];
+
+export const DEFAULT_HAMBURGER_FEATURES: FeatureTab[] = [
+  'profile',
+  'admin',
 ];
 
 // Default categories
