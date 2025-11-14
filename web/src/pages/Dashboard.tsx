@@ -19,14 +19,13 @@ import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
 import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
-import CardManager from '../components/cards/CardManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import CardsSummary from '../components/dashboard/CardsSummary';
 import IncomesTab from './tabs/IncomesTab';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
-import EWalletManager from '../components/ewallet/EWalletManager';
 import FeatureManager from '../components/settings/FeatureManager';
+import PaymentMethodsTab from '../components/payment/PaymentMethodsTab';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
@@ -1227,6 +1226,56 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
 
+                {/* Features Section */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                    {t('features') || 'Features'}
+                  </div>
+                  <div className="space-y-1">
+                    {(featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+                      .map((feature) => {
+                        const featureStr = feature as string;
+                        if (featureStr === 'cards' || featureStr === 'ewallets') {
+                          return 'paymentMethods' as FeatureTab;
+                        }
+                        return feature;
+                      })
+                      .filter((feature, index, array) => array.indexOf(feature) === index)
+                      .filter((feature) => feature !== 'profile' && feature !== 'admin')
+                      .map((feature) => {
+                        const labelMap: Record<FeatureTab, string> = {
+                          dashboard: t('dashboard'),
+                          expenses: t('expenses'),
+                          incomes: t('incomes'),
+                          categories: t('categories'),
+                          budgets: t('budgets'),
+                          recurring: t('recurring'),
+                          paymentMethods: t('paymentMethods'),
+                          settings: t('featureSettings'),
+                          profile: t('profile'),
+                          admin: t('admin'),
+                        };
+
+                        return (
+                          <button
+                            key={feature}
+                            onClick={() => {
+                              setActiveTab(feature);
+                              setShowHamburgerMenu(false);
+                            }}
+                            className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                              activeTab === feature
+                                ? 'bg-blue-50 text-blue-700 font-medium'
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {labelMap[feature]}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+
                 {/* Import/Export Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -1492,30 +1541,18 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'paymentMethods' && (
-          <div className="flex flex-col gap-6">
-            {/* Unified Payment Methods - Cards and E-Wallets */}
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('cards')}</h2>
-              <CardManager
-                cards={cards}
-                categories={categories}
-                expenses={expenses}
-                onAdd={handleAddCard}
-                onUpdate={handleUpdateCard}
-                onDelete={handleDeleteCard}
-              />
-            </div>
-            <div className="border-t border-gray-200"></div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('eWallets')}</h2>
-              <EWalletManager
-                ewallets={ewallets}
-                onAdd={handleAddEWallet}
-                onUpdate={handleUpdateEWallet}
-                onDelete={handleDeleteEWallet}
-              />
-            </div>
-          </div>
+          <PaymentMethodsTab
+            cards={cards}
+            ewallets={ewallets}
+            categories={categories}
+            expenses={expenses}
+            onAddCard={handleAddCard}
+            onUpdateCard={handleUpdateCard}
+            onDeleteCard={handleDeleteCard}
+            onAddEWallet={handleAddEWallet}
+            onUpdateEWallet={handleUpdateEWallet}
+            onDeleteEWallet={handleDeleteEWallet}
+          />
         )}
 
         {activeTab === 'settings' && featureSettings && (

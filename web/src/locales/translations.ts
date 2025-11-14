@@ -423,6 +423,7 @@ export const translations = {
   saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
   
   // Feature Manager
+  features: { en: 'Features', zh: '功能', 'zh-CN': '功能' },
   featureManager: { en: 'Feature Manager', zh: '功能管理', 'zh-CN': '功能管理' },
   manageFeatures: { en: 'Manage Features', zh: '管理功能', 'zh-CN': '管理功能' },
   featureSettings: { en: 'Feature Settings', zh: '功能設定', 'zh-CN': '功能设置' },
@@ -436,6 +437,7 @@ export const translations = {
   confirmResetFeatures: { en: 'Reset all features to default settings?', zh: '將所有功能重設為預設值？', 'zh-CN': '将所有功能重置为默认值？' },
   featuresUpdated: { en: 'Features updated successfully', zh: '功能已成功更新', 'zh-CN': '功能已成功更新' },
   featuresReset: { en: 'Features reset to defaults', zh: '功能已重設為預設', 'zh-CN': '功能已重置为默认' },
+  cannotDeleteDefault: { en: 'Cannot delete default item', zh: '無法刪除預設項目', 'zh-CN': '无法删除默认项目' },
   
   // Autocomplete
   searchOrSelect: { en: 'Search or select...', zh: '搜尋或選擇...', 'zh-CN': '搜索或选择...' },
