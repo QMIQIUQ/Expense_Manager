@@ -48,6 +48,16 @@ const FEATURE_METADATA: Record<FeatureTab, { icon: string; labelKey: Translation
     labelKey: 'cards' as TranslationKey,
     description: 'Manage credit cards',
   },
+  ewallets: {
+    icon: '📱',
+    labelKey: 'eWallets' as TranslationKey,
+    description: 'Manage electronic wallets',
+  },
+  settings: {
+    icon: '⚙️',
+    labelKey: 'featureSettings' as TranslationKey,
+    description: 'Manage feature visibility',
+  },
   profile: {
     icon: '👤',
     labelKey: 'profile' as TranslationKey,
@@ -68,6 +78,8 @@ const ALL_FEATURES: FeatureTab[] = [
   'budgets',
   'recurring',
   'cards',
+  'ewallets',
+  'settings',
   'profile',
   'admin',
 ];

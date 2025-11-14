@@ -171,7 +171,7 @@ export interface CardStats {
 }
 
 // Feature tab type
-export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin';
+export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'ewallets' | 'settings' | 'profile' | 'admin';
 
 // Feature settings for tab visibility and ordering
 export interface FeatureSettings {
@@ -191,6 +191,8 @@ export const DEFAULT_FEATURES: FeatureTab[] = [
   'budgets',
   'recurring',
   'cards',
+  'ewallets',
+  'settings',
 ];
 
 // Default categories

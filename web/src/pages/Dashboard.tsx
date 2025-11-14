@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -1371,78 +1371,38 @@ const Dashboard: React.FC = () => {
       />
 
       <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('dashboard')}
-        </button>
-        <button
-          onClick={() => setActiveTab('expenses')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'expenses' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('expenses')}
-        </button>
-        <button
-          onClick={() => setActiveTab('incomes')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'incomes' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('incomes')}
-        </button>
-        <button
-          onClick={() => setActiveTab('recurring')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('recurring')}
-        </button>
-        <button
-          onClick={() => setActiveTab('budgets')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'budgets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('budgets')}
-        </button>
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('categories')}
-        </button>
-        <button
-          onClick={() => setActiveTab('cards')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'cards' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('cards')}
-        </button>
-        <button
-          onClick={() => setActiveTab('ewallets')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'ewallets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('eWallets')}
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'settings' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('featureSettings')}
-        </button>
+        {/* Dynamically render tabs based on enabled features */}
+        {(featureSettings?.enabledFeatures || DEFAULT_FEATURES).map((feature) => {
+          // Skip profile and admin from main tabs (they're in hamburger menu)
+          if (feature === 'profile' || feature === 'admin') return null;
+          
+          // Map feature to display label
+          const labelMap: Record<FeatureTab, string> = {
+            dashboard: t('dashboard'),
+            expenses: t('expenses'),
+            incomes: t('incomes'),
+            categories: t('categories'),
+            budgets: t('budgets'),
+            recurring: t('recurring'),
+            cards: t('cards'),
+            ewallets: t('eWallets'),
+            settings: t('featureSettings'),
+            profile: t('profile'),
+            admin: t('admin'),
+          };
+          
+          return (
+            <button
+              key={feature}
+              onClick={() => setActiveTab(feature)}
+              className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+                activeTab === feature ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {labelMap[feature]}
+            </button>
+          );
+        })}
       </div>
 
       <div className="dashboard-card content-pad">
