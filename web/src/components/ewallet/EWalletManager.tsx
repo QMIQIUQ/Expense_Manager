@@ -148,26 +148,14 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(wallet)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      wallet.isDefault
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-red-600 hover:bg-red-50 cursor-pointer'
-                    }`}
+                    className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 cursor-pointer"
                     aria-label={t('delete')}
-                    disabled={wallet.isDefault}
-                    title={wallet.isDefault ? t('cannotDeleteDefault') : t('delete')}
+                    title={t('delete')}
                   >
                     <DeleteIcon size={18} />
                   </button>
                 </div>
               </div>
-              {wallet.isDefault && (
-                <div className="mt-2">
-                  <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                    {t('default')}
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>

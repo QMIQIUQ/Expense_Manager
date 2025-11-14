@@ -231,9 +231,6 @@ export const DEFAULT_CATEGORIES = [
 
 // Default e-wallets
 export const DEFAULT_EWALLETS = [
-  { name: 'PayPal', icon: '💳', color: '#003087', provider: 'PayPal' },
-  { name: 'Apple Pay', icon: '🍎', color: '#000000', provider: 'Apple' },
-  { name: 'Google Pay', icon: '📱', color: '#4285F4', provider: 'Google' },
-  { name: 'Alipay', icon: '🅰️', color: '#1677FF', provider: 'Alibaba' },
-  { name: 'WeChat Pay', icon: '💬', color: '#07C160', provider: 'Tencent' },
+  { name: 'Touch \'n Go', icon: '🔵', color: '#0066CC', provider: 'Touch \'n Go' },
+  { name: 'Setel', icon: '⚡', color: '#FF6B00', provider: 'Setel' },
 ];
