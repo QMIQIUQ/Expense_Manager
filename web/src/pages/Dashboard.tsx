@@ -69,6 +69,7 @@ const Dashboard: React.FC = () => {
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
+  const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [importProgress, setImportProgress] = useState<{
@@ -961,7 +962,11 @@ const Dashboard: React.FC = () => {
   };
 
   // Feature Settings handlers
-  const handleUpdateFeatureSettings = async (enabledFeatures: FeatureTab[]) => {
+  const handleUpdateFeatureSettings = async (
+    enabledFeatures: FeatureTab[],
+    tabFeatures?: FeatureTab[],
+    hamburgerFeatures?: FeatureTab[]
+  ) => {
     if (!currentUser) return;
 
     const originalSettings = featureSettings;
@@ -969,18 +974,20 @@ const Dashboard: React.FC = () => {
     // Optimistic update
     setFeatureSettings(
       originalSettings
-        ? { ...originalSettings, enabledFeatures, updatedAt: new Date() }
+        ? { ...originalSettings, enabledFeatures, tabFeatures, hamburgerFeatures, updatedAt: new Date() }
         : {
             userId: currentUser.uid,
             enabledFeatures,
+            tabFeatures,
+            hamburgerFeatures,
             createdAt: new Date(),
             updatedAt: new Date(),
           }
     );
 
     await optimisticCRUD.run(
-      { type: 'update', data: { enabledFeatures }, originalData: originalSettings },
-      () => featureSettingsService.update(currentUser.uid, enabledFeatures),
+      { type: 'update', data: { enabledFeatures, tabFeatures, hamburgerFeatures }, originalData: originalSettings },
+      () => featureSettingsService.update(currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures),
       {
         entityType: 'budget', // Using budget type as settings is configuration-like
         retryToQueueOnFail: true,
@@ -1226,54 +1233,69 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* Features Section */}
+                {/* Features Section - Collapsible */}
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                    {t('features') || 'Features'}
-                  </div>
-                  <div className="space-y-1">
-                    {(featureSettings?.enabledFeatures || DEFAULT_FEATURES)
-                      .map((feature) => {
-                        const featureStr = feature as string;
-                        if (featureStr === 'cards' || featureStr === 'ewallets') {
-                          return 'paymentMethods' as FeatureTab;
-                        }
-                        return feature;
-                      })
-                      .filter((feature, index, array) => array.indexOf(feature) === index)
-                      .filter((feature) => feature !== 'profile' && feature !== 'admin')
-                      .map((feature) => {
-                        const labelMap: Record<FeatureTab, string> = {
-                          dashboard: t('dashboard'),
-                          expenses: t('expenses'),
-                          incomes: t('incomes'),
-                          categories: t('categories'),
-                          budgets: t('budgets'),
-                          recurring: t('recurring'),
-                          paymentMethods: t('paymentMethods'),
-                          settings: t('featureSettings'),
-                          profile: t('profile'),
-                          admin: t('admin'),
-                        };
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenFeaturesSection(o => !o)}
+                    aria-expanded={openFeaturesSection}
+                    aria-controls="hamburger-features-section"
+                  >
+                    <span>{t('features') || 'Features'}</span>
+                    <svg
+                      className={`transition-transform ${openFeaturesSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openFeaturesSection && (
+                    <div id="hamburger-features-section" className="mt-2 space-y-1">
+                      {(featureSettings?.hamburgerFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+                        .map((feature) => {
+                          const featureStr = feature as string;
+                          if (featureStr === 'cards' || featureStr === 'ewallets') {
+                            return 'paymentMethods' as FeatureTab;
+                          }
+                          return feature;
+                        })
+                        .filter((feature, index, array) => array.indexOf(feature) === index)
+                        .filter((feature) => feature !== 'profile' && feature !== 'admin')
+                        .map((feature) => {
+                          const labelMap: Record<FeatureTab, string> = {
+                            dashboard: t('dashboard'),
+                            expenses: t('expenses'),
+                            incomes: t('incomes'),
+                            categories: t('categories'),
+                            budgets: t('budgets'),
+                            recurring: t('recurring'),
+                            paymentMethods: t('paymentMethods'),
+                            settings: t('featureSettings'),
+                            profile: t('profile'),
+                            admin: t('admin'),
+                          };
 
-                        return (
-                          <button
-                            key={feature}
-                            onClick={() => {
-                              setActiveTab(feature);
-                              setShowHamburgerMenu(false);
-                            }}
-                            className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                              activeTab === feature
-                                ? 'bg-blue-50 text-blue-700 font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {labelMap[feature]}
-                          </button>
-                        );
-                      })}
-                  </div>
+                          return (
+                            <button
+                              key={feature}
+                              onClick={() => {
+                                setActiveTab(feature);
+                                setShowHamburgerMenu(false);
+                                setOpenFeaturesSection(false);
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                                activeTab === feature
+                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {labelMap[feature]}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Import/Export Section */}
@@ -1420,8 +1442,8 @@ const Dashboard: React.FC = () => {
       />
 
       <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
-        {/* Dynamically render tabs based on enabled features */}
-        {(featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+        {/* Dynamically render tabs based on enabled features (use tabFeatures if available, fallback to enabledFeatures) */}
+        {(featureSettings?.tabFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
           .map((feature) => {
             // Migrate old feature names to new ones
             const featureStr = feature as string;
@@ -1559,6 +1581,8 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col gap-4">
             <FeatureManager
               enabledFeatures={featureSettings.enabledFeatures}
+              tabFeatures={featureSettings.tabFeatures}
+              hamburgerFeatures={featureSettings.hamburgerFeatures}
               onUpdate={handleUpdateFeatureSettings}
               onReset={handleResetFeatureSettings}
             />

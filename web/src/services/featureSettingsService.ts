@@ -52,7 +52,12 @@ export const featureSettingsService = {
   },
 
   // Update feature settings
-  async update(userId: string, enabledFeatures: FeatureTab[]): Promise<void> {
+  async update(
+    userId: string,
+    enabledFeatures: FeatureTab[],
+    tabFeatures?: FeatureTab[],
+    hamburgerFeatures?: FeatureTab[]
+  ): Promise<void> {
     const q = query(collection(db, COLLECTION_NAME), where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
     
@@ -61,6 +66,8 @@ export const featureSettingsService = {
       await setDoc(docRef, {
         userId,
         enabledFeatures,
+        tabFeatures,
+        hamburgerFeatures,
         updatedAt: Timestamp.now(),
         createdAt: querySnapshot.docs[0].data().createdAt, // Preserve original creation time
       });
@@ -70,6 +77,8 @@ export const featureSettingsService = {
       await setDoc(docRef, {
         userId,
         enabledFeatures,
+        tabFeatures,
+        hamburgerFeatures,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
@@ -78,6 +87,6 @@ export const featureSettingsService = {
 
   // Reset to defaults
   async resetToDefaults(userId: string): Promise<void> {
-    await this.update(userId, [...DEFAULT_FEATURES]);
+    await this.update(userId, [...DEFAULT_FEATURES], [...DEFAULT_FEATURES], [...DEFAULT_FEATURES]);
   },
 };

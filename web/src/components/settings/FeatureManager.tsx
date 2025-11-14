@@ -6,8 +6,10 @@ import { DragIcon, CheckIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 interface FeatureManagerProps {
-  enabledFeatures: FeatureTab[];
-  onUpdate: (features: FeatureTab[]) => Promise<void>;
+  enabledFeatures: FeatureTab[]; // Deprecated: for backward compatibility
+  tabFeatures?: FeatureTab[];
+  hamburgerFeatures?: FeatureTab[];
+  onUpdate: (features: FeatureTab[], tabFeatures?: FeatureTab[], hamburgerFeatures?: FeatureTab[]) => Promise<void>;
   onReset: () => Promise<void>;
 }
 
@@ -80,6 +82,8 @@ const ALL_FEATURES: FeatureTab[] = [
 
 const FeatureManager: React.FC<FeatureManagerProps> = ({
   enabledFeatures,
+  tabFeatures,
+  hamburgerFeatures,
   onUpdate,
   onReset,
 }) => {
@@ -105,7 +109,14 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
       });
   };
 
-  const [localEnabled, setLocalEnabled] = useState<FeatureTab[]>(migrateFeatures(enabledFeatures));
+  // Initialize with separate tab and hamburger features, or fall back to enabledFeatures
+  const [localTabFeatures, setLocalTabFeatures] = useState<FeatureTab[]>(
+    migrateFeatures(tabFeatures || enabledFeatures)
+  );
+  const [localHamburgerFeatures, setLocalHamburgerFeatures] = useState<FeatureTab[]>(
+    migrateFeatures(hamburgerFeatures || enabledFeatures)
+  );
+  const [activeLocation, setActiveLocation] = useState<'tab' | 'hamburger'>('tab');
   const [draggedItem, setDraggedItem] = useState<FeatureTab | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -114,16 +125,24 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
 
   // Update local state when props change
   useEffect(() => {
-    setLocalEnabled(migrateFeatures(enabledFeatures));
-  }, [enabledFeatures]);
+    setLocalTabFeatures(migrateFeatures(tabFeatures || enabledFeatures));
+    setLocalHamburgerFeatures(migrateFeatures(hamburgerFeatures || enabledFeatures));
+  }, [enabledFeatures, tabFeatures, hamburgerFeatures]);
 
   // Check if there are unsaved changes
   useEffect(() => {
-    const changed =
-      localEnabled.length !== enabledFeatures.length ||
-      localEnabled.some((feature, index) => feature !== enabledFeatures[index]);
-    setHasChanges(changed);
-  }, [localEnabled, enabledFeatures]);
+    const tabChanged =
+      localTabFeatures.length !== (tabFeatures || enabledFeatures).length ||
+      localTabFeatures.some((feature, index) => feature !== (tabFeatures || enabledFeatures)[index]);
+    const hamburgerChanged =
+      localHamburgerFeatures.length !== (hamburgerFeatures || enabledFeatures).length ||
+      localHamburgerFeatures.some((feature, index) => feature !== (hamburgerFeatures || enabledFeatures)[index]);
+    setHasChanges(tabChanged || hamburgerChanged);
+  }, [localTabFeatures, localHamburgerFeatures, enabledFeatures, tabFeatures, hamburgerFeatures]);
+
+  // Get current features based on active location
+  const localEnabled = activeLocation === 'tab' ? localTabFeatures : localHamburgerFeatures;
+  const setLocalEnabled = activeLocation === 'tab' ? setLocalTabFeatures : setLocalHamburgerFeatures;
 
   // Get disabled features
   const disabledFeatures = ALL_FEATURES.filter((feature) => !localEnabled.includes(feature));
@@ -174,7 +193,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onUpdate(localEnabled);
+      await onUpdate(localTabFeatures, localTabFeatures, localHamburgerFeatures);
     } finally {
       setIsSaving(false);
     }
@@ -184,7 +203,8 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
     setIsSaving(true);
     try {
       await onReset();
-      setLocalEnabled([...DEFAULT_FEATURES]);
+      setLocalTabFeatures([...DEFAULT_FEATURES]);
+      setLocalHamburgerFeatures([...DEFAULT_FEATURES]);
       setShowResetConfirm(false);
     } finally {
       setIsSaving(false);
@@ -223,6 +243,32 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
           ⚠️ {t('unsavedChanges')}
         </div>
       )}
+
+      {/* Location selector tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveLocation('tab')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeLocation === 'tab'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            📑 {t('tabsLocation') || 'Tabs'}
+          </button>
+          <button
+            onClick={() => setActiveLocation('hamburger')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeLocation === 'hamburger'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            ☰ {t('hamburgerLocation') || 'Hamburger Menu'}
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Enabled Features */}
