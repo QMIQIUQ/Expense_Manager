@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Expense, Category, Card, EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
+import Modal from '../Modal';
+import RepaymentManager from '../repayment/RepaymentManager';
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
 
 interface ExpenseListProps {
@@ -57,6 +59,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [repaymentModalOpen, setRepaymentModalOpen] = useState(false);
+  const [selectedExpenseForRepayment, setSelectedExpenseForRepayment] = useState<Expense | null>(null);
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -634,6 +638,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   <div style={styles.rightCol}>
                     <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
                     <div style={styles.actions}>
+                      <button 
+                        onClick={() => {
+                          setSelectedExpenseForRepayment(expense);
+                          setRepaymentModalOpen(true);
+                        }} 
+                        style={{ ...styles.iconButton, ...styles.successChip }} 
+                        aria-label={t('repayments')}
+                        title={t('repayments')}
+                      >
+                        💰
+                      </button>
                       <button onClick={() => startInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.primaryChip }} aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -669,6 +684,25 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
       />
+
+      <Modal
+        isOpen={repaymentModalOpen}
+        onClose={() => {
+          setRepaymentModalOpen(false);
+          setSelectedExpenseForRepayment(null);
+        }}
+        maxWidth="700px"
+      >
+        {selectedExpenseForRepayment && (
+          <RepaymentManager
+            expense={selectedExpenseForRepayment}
+            onClose={() => {
+              setRepaymentModalOpen(false);
+              setSelectedExpenseForRepayment(null);
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

@@ -450,6 +450,34 @@ export const translations = {
   eWalletAdded: { en: 'E-wallet added successfully', zh: '電子錢包已成功新增', 'zh-CN': '电子钱包已成功添加' },
   eWalletUpdated: { en: 'E-wallet updated successfully', zh: '電子錢包已成功更新', 'zh-CN': '电子钱包已成功更新' },
   eWalletDeleted: { en: 'E-wallet deleted successfully', zh: '電子錢包已成功刪除', 'zh-CN': '电子钱包已成功删除' },
+  
+  // Repayment Feature
+  repayments: { en: 'Repayments', zh: '還款記錄', 'zh-CN': '还款记录' },
+  addRepayment: { en: 'Add Repayment', zh: '新增還款', 'zh-CN': '添加还款' },
+  editRepayment: { en: 'Edit Repayment', zh: '編輯還款', 'zh-CN': '编辑还款' },
+  repaymentHistory: { en: 'Repayment History', zh: '還款歷史', 'zh-CN': '还款历史' },
+  totalRepaid: { en: 'Total Repaid', zh: '已還款', 'zh-CN': '已还款' },
+  remainingAmount: { en: 'Remaining Amount', zh: '剩餘金額', 'zh-CN': '剩余金额' },
+  excessAmount: { en: 'Excess Amount', zh: '多還金額', 'zh-CN': '多还金额' },
+  fullyRepaid: { en: 'Fully Repaid', zh: '已全額還款', 'zh-CN': '已全额还款' },
+  noRepaymentsYet: { en: 'No repayments yet', zh: '尚無還款記錄', 'zh-CN': '尚无还款记录' },
+  repaymentAmount: { en: 'Repayment Amount', zh: '還款金額', 'zh-CN': '还款金额' },
+  repaymentDate: { en: 'Repayment Date', zh: '還款日期', 'zh-CN': '还款日期' },
+  repaymentNote: { en: 'Repayment Note', zh: '還款備註', 'zh-CN': '还款备注' },
+  repaymentAdded: { en: 'Repayment added successfully', zh: '還款已成功新增', 'zh-CN': '还款已成功添加' },
+  repaymentUpdated: { en: 'Repayment updated successfully', zh: '還款已成功更新', 'zh-CN': '还款已成功更新' },
+  repaymentDeleted: { en: 'Repayment deleted successfully', zh: '還款已成功刪除', 'zh-CN': '还款已成功删除' },
+  confirmDeleteRepayment: { en: 'Are you sure you want to delete this repayment?', zh: '您確定要刪除此還款記錄嗎？', 'zh-CN': '您确定要删除此还款记录吗？' },
+  excessConvertedToIncome: { en: 'Excess amount converted to income', zh: '多還金額已轉為收入', 'zh-CN': '多还金额已转为收入' },
+  viewRepayments: { en: 'View Repayments', zh: '查看還款', 'zh-CN': '查看还款' },
+  hideRepayments: { en: 'Hide Repayments', zh: '隱藏還款', 'zh-CN': '隐藏还款' },
+  originalExpenseAmount: { en: 'Original Expense Amount', zh: '原始支出金額', 'zh-CN': '原始支出金额' },
+  
+  // Income Categories
+  incomeCategory: { en: 'Income Category', zh: '收入類別', 'zh-CN': '收入类别' },
+  defaultIncome: { en: 'Default Income', zh: '一般收入', 'zh-CN': '一般收入' },
+  ewalletReload: { en: 'E-Wallet Reload', zh: '電子錢包儲值', 'zh-CN': '电子钱包充值' },
+  ewalletReloadDesc: { en: 'Credit card to e-wallet transfer', zh: '信用卡轉電子錢包', 'zh-CN': '信用卡转电子钱包' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

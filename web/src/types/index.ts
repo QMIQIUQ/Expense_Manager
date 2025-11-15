@@ -83,6 +83,22 @@ export interface RecurringExpense {
   updatedAt: Date;
 }
 
+// Repayment type - tracks repayments against expenses
+export interface Repayment {
+  id?: string;
+  userId: string;
+  expenseId: string; // FK to expenses.id - which expense this repays
+  amount: number; // Positive number - amount repaid
+  date: string;
+  payerName?: string; // Who made the repayment
+  note?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Income category enum - for categorizing different income sources
+export type IncomeCategory = 'default' | 'ewallet_reload' | 'other';
+
 // Income type enum
 export type IncomeType = 'salary' | 'reimbursement' | 'repayment' | 'other';
 
@@ -93,8 +109,9 @@ export interface Income {
   amount: number; // Positive number
   date: string;
   type: IncomeType;
+  category?: IncomeCategory; // Category for special income types like e-wallet reloads
   payerName?: string; // For repayments from friends
-  linkedExpenseId?: string; // FK to expenses.id - can link to one expense
+  linkedExpenseId?: string; // FK to expenses.id - can link to one expense (deprecated, use Repayment instead)
   note?: string;
   createdAt: Date;
   updatedAt: Date;
