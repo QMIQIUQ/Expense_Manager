@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -14,6 +14,7 @@ import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
 import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
+import { repaymentService } from '../services/repaymentService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
@@ -53,6 +54,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
@@ -128,12 +130,13 @@ const Dashboard: React.FC = () => {
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
       
-      const [expensesData, incomesData, categoriesData, budgetsData, recurringData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
         incomeService.getAll(currentUser.uid),
         categoryService.getAll(currentUser.uid),
         budgetService.getAll(currentUser.uid),
         recurringExpenseService.getAll(currentUser.uid),
+        repaymentService.getAll(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
@@ -141,6 +144,7 @@ const Dashboard: React.FC = () => {
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
+      setRepayments(repaymentsData);
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
@@ -1491,7 +1495,7 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div className="flex flex-col gap-6">
-            <DashboardSummary expenses={expenses} incomes={incomes} />
+            <DashboardSummary expenses={expenses} incomes={incomes} repayments={repayments} />
             {cards.length > 0 && (
               <CardsSummary cards={cards} categories={categories} expenses={expenses} />
             )}

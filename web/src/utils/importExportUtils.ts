@@ -175,16 +175,16 @@ export const parseUploadedFile = async (
           await wb.xlsx.load(arrayBuffer);
 
           // Helper to read a worksheet by headers
-          const readSheetByHeaders = (sheetName: string): { headers: string[]; rows: any[][] } | null => {
+          const readSheetByHeaders = (sheetName: string): { headers: string[]; rows: unknown[][] } | null => {
             const ws = wb.getWorksheet(sheetName);
             if (!ws) return null;
             const headerRow = ws.getRow(1);
-            const headers = (headerRow.values as any[]).slice(1).map(v => String(v));
-            const rows: any[][] = [];
+            const headers = (headerRow.values as unknown[]).slice(1).map(v => String(v));
+            const rows: unknown[][] = [];
             for (let r = 2; r <= ws.rowCount; r++) {
               const row = ws.getRow(r);
               if (!row || row.cellCount === 0) continue;
-              const values = (row.values as any[]).slice(1);
+              const values = (row.values as unknown[]).slice(1);
               // Skip fully empty rows
               if (values.every(v => v === null || v === undefined || v === '')) continue;
               rows.push(values);
@@ -205,7 +205,7 @@ export const parseUploadedFile = async (
             const notesIdx = colIndex('notes');
 
             expenses = rows.map((vals, i) => {
-              let rawDate = vals[dateIdx];
+              const rawDate = vals[dateIdx];
               let dateStr = '';
               if (rawDate instanceof Date) {
                 dateStr = rawDate.toISOString().split('T')[0];

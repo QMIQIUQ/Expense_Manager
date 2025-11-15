@@ -1,14 +1,15 @@
 import React from 'react';
-import { Expense, Income } from '../../types';
+import { Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
   incomes?: Income[];
+  repayments?: Repayment[];
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [] }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [] }) => {
   const { t } = useLanguage();
   
   // Color palette for pie chart
@@ -50,20 +51,20 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       byCategory[exp.category] += exp.amount;
     });
 
-    // Calculate unrecovered amounts
-    const incomesByExpense: { [expenseId: string]: number } = {};
-    incomes.forEach((inc) => {
-      if (inc.linkedExpenseId) {
-        incomesByExpense[inc.linkedExpenseId] =
-          (incomesByExpense[inc.linkedExpenseId] || 0) + inc.amount;
+    // Calculate unrecovered amounts using new Repayment collection
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    repayments.forEach((rep) => {
+      if (rep.expenseId) {
+        repaymentsByExpense[rep.expenseId] =
+          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
       }
     });
 
     const unrecoveredExpenses = expenses
-      .filter((exp) => exp.originalReceiptAmount || incomesByExpense[exp.id || ''])
+      .filter((exp) => repaymentsByExpense[exp.id || ''])
       .map((exp) => {
-        const targetAmount = exp.originalReceiptAmount || exp.amount;
-        const recovered = incomesByExpense[exp.id || ''] || 0;
+        const targetAmount = exp.amount;
+        const recovered = repaymentsByExpense[exp.id || ''] || 0;
         const unrecovered = Math.max(0, targetAmount - recovered);
         return { expense: exp, recovered, unrecovered, targetAmount };
       })
