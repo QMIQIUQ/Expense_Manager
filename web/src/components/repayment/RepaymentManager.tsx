@@ -6,6 +6,7 @@ import { incomeService } from '../../services/incomeService';
 import RepaymentForm from './RepaymentForm';
 import RepaymentList from './RepaymentList';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface RepaymentManagerProps {
   expense: Expense;
@@ -15,6 +16,7 @@ interface RepaymentManagerProps {
 const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
+  const { showNotification } = useNotification();
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingRepayment, setEditingRepayment] = useState<Repayment | null>(null);
@@ -66,15 +68,15 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose })
           title: `Excess repayment for ${expense.description}`,
           note: `Automatically created from excess repayment`,
         });
-        alert(t('excessConvertedToIncome'));
+        showNotification('info', t('excessConvertedToIncome'));
       }
 
       await loadRepayments();
       setShowForm(false);
-      alert(t('repaymentAdded'));
+      showNotification('success', t('repaymentAdded'));
     } catch (error) {
       console.error('Failed to add repayment:', error);
-      alert(t('errorSavingData'));
+      showNotification('error', t('errorSavingData'));
     } finally {
       setSaving(false);
     }
@@ -103,16 +105,16 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose })
           title: `Excess repayment for ${expense.description}`,
           note: `Automatically created from excess repayment`,
         });
-        alert(t('excessConvertedToIncome'));
+        showNotification('info', t('excessConvertedToIncome'));
       }
 
       await loadRepayments();
       setShowForm(false);
       setEditingRepayment(null);
-      alert(t('repaymentUpdated'));
+      showNotification('success', t('repaymentUpdated'));
     } catch (error) {
       console.error('Failed to update repayment:', error);
-      alert(t('errorSavingData'));
+      showNotification('error', t('errorSavingData'));
     } finally {
       setSaving(false);
     }
@@ -122,10 +124,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose })
     try {
       await repaymentService.delete(id);
       await loadRepayments();
-      alert(t('repaymentDeleted'));
+      showNotification('success', t('repaymentDeleted'));
     } catch (error) {
       console.error('Failed to delete repayment:', error);
-      alert(t('errorDeletingData'));
+      showNotification('error', t('errorDeletingData'));
     }
   };
 

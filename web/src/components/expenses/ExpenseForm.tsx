@@ -118,8 +118,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         {errors.description && <span className="text-xs text-red-600">{errors.description}</span>}
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex flex-col gap-1 flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">{t('amount')} ($) *</label>
           <input
             type="number"
@@ -137,7 +137,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex-1">
+        <div className="min-w-0">
           <AutocompleteDropdown
             options={categories.map((cat): AutocompleteOption => ({
               id: cat.name,
@@ -156,12 +156,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             placeholder={t('selectCategory')}
             error={errors.category}
             allowClear={false}
+            className="w-full"
           />
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex flex-col gap-1 flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">{t('date')} *</label>
           <input
             type="date"
@@ -175,7 +176,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           />
           {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
         </div>
-        <div className="flex flex-col gap-1 flex-1">
+        <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">{t('time')}</label>
           <input
             type="time"
