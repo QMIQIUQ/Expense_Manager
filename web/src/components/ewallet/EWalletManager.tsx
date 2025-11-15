@@ -61,45 +61,47 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div style={styles.container}>
+      <div style={styles.header}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('eWallets')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('manageEWallets')}</p>
+          <h2 style={styles.title}>{t('eWallets')}</h2>
+          <p style={styles.subtitle}>{t('manageEWallets')}</p>
         </div>
         <button
           onClick={() => {
             setEditingWallet(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          style={styles.addButton}
         >
-          <PlusIcon size={20} />
+          <PlusIcon size={18} />
           <span>{t('addEWallet')}</span>
         </button>
       </div>
 
-      {/* Search bar */}
-      <div className="relative">
-        <SearchIcon size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={t('searchEWallets')}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div style={styles.searchRow}>
+        <div style={styles.searchWrapper}>
+          <SearchIcon size={18} className="text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t('searchEWallets')}
+            style={styles.searchInput}
+          />
+        </div>
       </div>
 
-      {/* E-Wallet Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                {editingWallet ? t('editEWallet') : t('addEWallet')}
-              </h3>
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>{editingWallet ? t('editEWallet') : t('addEWallet')}</h3>
+              <button style={styles.closeButton} onClick={handleCancelForm} aria-label={t('cancel')}>
+                ×
+              </button>
+            </div>
+            <div style={styles.modalBody}>
               <EWalletForm
                 onSubmit={editingWallet ? handleUpdate : handleAdd}
                 onCancel={handleCancelForm}
@@ -110,45 +112,37 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         </div>
       )}
 
-      {/* E-Wallets list */}
       {filteredWallets.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">{t('noEWalletsYet')}</p>
-          <p className="text-sm text-gray-400 mt-2">{t('addYourFirstEWallet')}</p>
+        <div style={styles.emptyState}>
+          <p style={styles.emptyText}>{t('noEWalletsYet')}</p>
+          <p style={styles.emptySubtext}>{t('addYourFirstEWallet')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style={styles.walletGrid}>
           {filteredWallets.map((wallet) => (
-            <div
-              key={wallet.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="text-3xl">{wallet.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{wallet.name}</h3>
-                    {wallet.provider && (
-                      <p className="text-sm text-gray-500 truncate">{wallet.provider}</p>
-                    )}
+            <div key={wallet.id} style={styles.walletCard}>
+              <div style={styles.walletHeader}>
+                <div style={styles.walletInfo}>
+                  <span style={styles.walletIcon}>{wallet.icon}</span>
+                  <div style={styles.walletText}>
+                    <h3 style={styles.walletName}>{wallet.name}</h3>
+                    {wallet.provider && <p style={styles.walletProvider}>{wallet.provider}</p>}
                     {wallet.accountNumber && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        ···· {wallet.accountNumber}
-                      </p>
+                      <p style={styles.walletAccount}>···· {wallet.accountNumber}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div style={styles.walletActions}>
                   <button
                     onClick={() => handleEdit(wallet)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    style={styles.iconButton}
                     aria-label={t('edit')}
                   >
                     <EditIcon size={18} />
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(wallet)}
-                    className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 cursor-pointer"
+                    style={styles.deleteButton}
                     aria-label={t('delete')}
                     title={t('delete')}
                   >
@@ -161,7 +155,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={!!deleteConfirm}
         title={t('confirmDelete')}
@@ -177,3 +170,199 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 };
 
 export default EWalletManager;
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap' as const,
+  },
+  title: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  subtitle: {
+    margin: '4px 0 0 0',
+    color: '#6b7280',
+    fontSize: '14px',
+  },
+  addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+  searchRow: {
+    display: 'flex',
+  },
+  searchWrapper: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    backgroundColor: '#fff',
+  },
+  searchInput: {
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    fontSize: '14px',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+    zIndex: 50,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: '16px',
+    width: '100%',
+    maxWidth: '520px',
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px 0 24px',
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: 600 as const,
+  },
+  closeButton: {
+    background: 'transparent',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#6b7280',
+  },
+  modalBody: {
+    padding: '20px 24px 24px 24px',
+    overflowY: 'auto' as const,
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '40px 20px',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+  },
+  emptyText: {
+    margin: 0,
+    color: '#4b5563',
+    fontSize: '16px',
+    fontWeight: 500 as const,
+  },
+  emptySubtext: {
+    marginTop: '4px',
+    color: '#9ca3af',
+    fontSize: '14px',
+  },
+  walletGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: '16px',
+  },
+  walletCard: {
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '16px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+  },
+  walletHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  walletInfo: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'flex-start',
+    flex: 1,
+    minWidth: 0,
+  },
+  walletIcon: {
+    fontSize: '32px',
+  },
+  walletText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  walletName: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: 600 as const,
+    color: '#111827',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  walletProvider: {
+    margin: '4px 0 0 0',
+    color: '#6b7280',
+    fontSize: '14px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  walletAccount: {
+    margin: '6px 0 0 0',
+    color: '#9ca3af',
+    fontSize: '12px',
+  },
+  walletActions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  iconButton: {
+    padding: '8px',
+    border: 'none',
+    borderRadius: '6px',
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    color: '#1d4ed8',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    padding: '8px',
+    border: 'none',
+    borderRadius: '6px',
+    backgroundColor: 'rgba(244,63,94,0.12)',
+    color: '#b91c1c',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+};

@@ -58,13 +58,23 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
     setIsSubmitting(true);
 
     try {
-      await onSubmit({
+      const payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
         name: formData.name.trim(),
         icon: formData.icon,
         color: formData.color,
-        provider: formData.provider.trim() || undefined,
-        accountNumber: formData.accountNumber.trim() || undefined,
-      });
+      };
+
+      const trimmedProvider = formData.provider.trim();
+      if (trimmedProvider) {
+        payload.provider = trimmedProvider;
+      }
+
+      const trimmedAccount = formData.accountNumber.trim();
+      if (trimmedAccount) {
+        payload.accountNumber = trimmedAccount;
+      }
+
+      await onSubmit(payload);
     } catch (error) {
       console.error('Error submitting e-wallet:', error);
     } finally {
@@ -82,29 +92,26 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {/* Name */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('eWalletNameLabel')} *
-        </label>
+    <form onSubmit={handleSubmit} style={styles.form}>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('eWalletNameLabel')} *</label>
         <input
           type="text"
           name="name"
           value={formData.name}
           onChange={handleChange}
           placeholder={t('eWalletNamePlaceholder2')}
-          className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.name ? 'border-red-500' : 'border-gray-300'
-          }`}
+          style={{
+            ...styles.input,
+            borderColor: errors.name ? '#f87171' : '#d1d5db',
+          }}
           disabled={isSubmitting}
         />
-        {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+        {errors.name && <span style={styles.errorText}>{errors.name}</span>}
       </div>
 
-      {/* Provider */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>
           {t('provider')} ({t('optional')})
         </label>
         <input
@@ -113,14 +120,13 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           value={formData.provider}
           onChange={handleChange}
           placeholder={t('providerPlaceholder')}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={styles.input}
           disabled={isSubmitting}
         />
       </div>
 
-      {/* Account Number */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>
           {t('accountNumber')} ({t('optional')})
         </label>
         <input
@@ -129,19 +135,16 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           value={formData.accountNumber}
           onChange={handleChange}
           placeholder={t('accountNumberPlaceholder')}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={styles.input}
           disabled={isSubmitting}
           maxLength={20}
         />
-        <p className="text-xs text-gray-500">{t('accountNumberHelp')}</p>
+        <p style={styles.helpText}>{t('accountNumberHelp')}</p>
       </div>
 
-      {/* Icon Picker */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('categoryIcon')} *
-        </label>
-        <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md max-h-40 overflow-y-auto">
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('categoryIcon')} *</label>
+        <div style={styles.iconGrid}>
           {EWALLET_ICONS.map((icon) => (
             <button
               key={icon}
@@ -150,24 +153,22 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
                 setFormData((prev) => ({ ...prev, icon }));
                 if (errors.icon) setErrors((prev) => ({ ...prev, icon: '' }));
               }}
-              className={`text-2xl p-2 rounded hover:bg-gray-100 transition-colors ${
-                formData.icon === icon ? 'bg-blue-100 ring-2 ring-blue-500' : ''
-              }`}
+              style={{
+                ...styles.iconChoice,
+                ...(formData.icon === icon ? styles.iconChoiceActive : {}),
+              }}
               disabled={isSubmitting}
             >
               {icon}
             </button>
           ))}
         </div>
-        {errors.icon && <span className="text-xs text-red-600">{errors.icon}</span>}
+        {errors.icon && <span style={styles.errorText}>{errors.icon}</span>}
       </div>
 
-      {/* Color Picker */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('categoryColor')} *
-        </label>
-        <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md">
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('categoryColor')} *</label>
+        <div style={styles.colorGrid}>
           {PRESET_COLORS.map((color) => (
             <button
               key={color}
@@ -176,15 +177,16 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
                 setFormData((prev) => ({ ...prev, color }));
                 if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
               }}
-              className={`w-8 h-8 rounded-full transition-all ${
-                formData.color === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'
-              }`}
-              style={{ backgroundColor: color }}
+              style={{
+                ...styles.colorSwatch,
+                backgroundColor: color,
+                ...(formData.color === color ? styles.colorSwatchActive : {}),
+              }}
               disabled={isSubmitting}
             />
           ))}
         </div>
-        <div className="flex items-center gap-2 mt-2">
+        <div style={styles.colorInputs}>
           <input
             type="color"
             value={formData.color}
@@ -192,7 +194,7 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
               setFormData((prev) => ({ ...prev, color: e.target.value }));
               if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
             }}
-            className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+            style={styles.colorPicker}
             disabled={isSubmitting}
           />
           <input
@@ -203,48 +205,46 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
               if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
             }}
             placeholder="#000000"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={styles.input}
             disabled={isSubmitting}
           />
         </div>
-        {errors.color && <span className="text-xs text-red-600">{errors.color}</span>}
+        {errors.color && <span style={styles.errorText}>{errors.color}</span>}
       </div>
 
-      {/* Preview */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('preview')}</label>
-        <div
-          className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg"
-          style={{ borderColor: formData.color }}
-        >
-          <span className="text-3xl">{formData.icon}</span>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('preview')}</label>
+        <div style={{
+          ...styles.previewCard,
+          borderColor: formData.color,
+        }}>
+          <span style={styles.previewIcon}>{formData.icon}</span>
           <div>
-            <div className="font-semibold text-gray-900">
-              {formData.name || t('eWalletNameLabel')}
-            </div>
-            {formData.provider && (
-              <div className="text-sm text-gray-500">{formData.provider}</div>
-            )}
+            <div style={styles.previewName}>{formData.name || t('eWalletNameLabel')}</div>
+            {formData.provider && <div style={styles.previewProvider}>{formData.provider}</div>}
             {formData.accountNumber && (
-              <div className="text-xs text-gray-400">···· {formData.accountNumber}</div>
+              <div style={styles.previewAccount}>···· {formData.accountNumber}</div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 mt-2">
+      <div style={styles.actions}>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+          style={styles.cancelButton}
           disabled={isSubmitting}
         >
           {t('cancel')}
         </button>
         <button
           type="submit"
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            ...styles.submitButton,
+            opacity: isSubmitting ? 0.7 : 1,
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+          }}
           disabled={isSubmitting}
         >
           {isSubmitting ? t('saving') : initialData ? t('update') : t('add')}
@@ -255,3 +255,137 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
 };
 
 export default EWalletForm;
+
+const styles = {
+  form: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  label: {
+    fontSize: '14px',
+    fontWeight: 600 as const,
+    color: '#374151',
+  },
+  input: {
+    padding: '10px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+  },
+  helpText: {
+    fontSize: '12px',
+    color: '#6b7280',
+    margin: 0,
+  },
+  errorText: {
+    fontSize: '12px',
+    color: '#ef4444',
+  },
+  iconGrid: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '8px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '12px',
+    maxHeight: '180px',
+    overflowY: 'auto' as const,
+  },
+  iconChoice: {
+    fontSize: '24px',
+    padding: '8px',
+    border: '1px solid transparent',
+    borderRadius: '8px',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+  },
+  iconChoiceActive: {
+    borderColor: '#6366f1',
+    backgroundColor: '#eef2ff',
+  },
+  colorGrid: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '10px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '12px',
+  },
+  colorSwatch: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    border: '2px solid transparent',
+    cursor: 'pointer',
+  },
+  colorSwatchActive: {
+    borderColor: '#6366f1',
+    boxShadow: '0 0 0 3px rgba(99,102,241,0.2)',
+  },
+  colorInputs: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center',
+  },
+  colorPicker: {
+    width: '48px',
+    height: '40px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    padding: 0,
+  },
+  previewCard: {
+    display: 'flex',
+    gap: '12px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '12px',
+    alignItems: 'center',
+  },
+  previewIcon: {
+    fontSize: '32px',
+  },
+  previewName: {
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  previewProvider: {
+    color: '#6b7280',
+    fontSize: '14px',
+  },
+  previewAccount: {
+    color: '#9ca3af',
+    fontSize: '12px',
+  },
+  actions: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '8px',
+  },
+  cancelButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #d1d5db',
+    backgroundColor: '#fff',
+    color: '#374151',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+  submitButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: '#6366f1',
+    color: '#fff',
+    fontWeight: 600 as const,
+  },
+};

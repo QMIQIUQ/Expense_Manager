@@ -181,15 +181,18 @@ export const { colors, spacing, typography, borderRadius, shadows, transitions, 
 // Helper function to get color value
 export const getColor = (path: string): string => {
   const parts = path.split('.');
-  let value: any = colors;
+  let value: unknown = colors as unknown;
   
   for (const part of parts) {
-    value = value[part];
-    if (value === undefined) {
+    if (typeof value === 'object' && value !== null && part in (value as Record<string, unknown>)) {
+      value = (value as Record<string, unknown>)[part];
+    } else {
       console.warn(`Color path "${path}" not found in design tokens`);
       return '#000000';
     }
   }
   
-  return value as string;
+  if (typeof value === 'string') return value;
+  console.warn(`Color path "${path}" did not resolve to a string`);
+  return '#000000';
 };

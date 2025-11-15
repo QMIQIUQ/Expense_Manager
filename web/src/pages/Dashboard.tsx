@@ -1500,10 +1500,12 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-semibold text-gray-800">{t('expenseHistory')}</h2>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: '#111827' }}>{t('expenseHistory')}</h2>
             <ExpenseList
               expenses={expenses}
               categories={categories}
+              cards={cards}
+              ewallets={ewallets}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}

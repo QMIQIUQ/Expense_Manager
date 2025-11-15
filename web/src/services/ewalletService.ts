@@ -18,6 +18,16 @@ import { EWallet, DEFAULT_EWALLETS } from '../types';
 
 const COLLECTION_NAME = 'ewallets';
 
+const sanitizePayload = <T extends Record<string, unknown>>(data: T): T => {
+  const sanitized = { ...data } as Record<string, unknown>;
+  Object.keys(sanitized).forEach((key) => {
+    if (sanitized[key] === undefined) {
+      delete sanitized[key];
+    }
+  });
+  return sanitized as T;
+};
+
 export const ewalletService = {
   // Initialize default e-wallets for a new user
   async initializeDefaults(userId: string): Promise<void> {
@@ -43,11 +53,14 @@ export const ewalletService = {
   // Create a new e-wallet
   async create(ewallet: Omit<EWallet, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...ewallet,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const docRef = await addDoc(
+      collection(db, COLLECTION_NAME),
+      sanitizePayload({
+        ...ewallet,
+        createdAt: now,
+        updatedAt: now,
+      })
+    );
     return docRef.id;
   },
 
@@ -114,10 +127,13 @@ export const ewalletService = {
   // Update an e-wallet
   async update(id: string, updates: Partial<EWallet>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizePayload({
+        ...updates,
+        updatedAt: Timestamp.now(),
+      })
+    );
   },
 
   // Delete an e-wallet

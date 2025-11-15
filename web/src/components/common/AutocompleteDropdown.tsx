@@ -2,19 +2,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from '../icons';
 import { designTokens } from '../../styles/designTokens';
 
-export interface AutocompleteOption {
+export interface AutocompleteOption<T = unknown> {
   id: string;
   label: string;
   icon?: string;
   subtitle?: string;
   color?: string;
-  data?: any; // Additional data to pass through
+  data?: T; // Additional data to pass through
 }
 
-interface AutocompleteDropdownProps {
-  options: AutocompleteOption[];
+interface AutocompleteDropdownProps<T = unknown> {
+  options: AutocompleteOption<T>[];
   value?: string; // Selected option ID
-  onChange: (optionId: string, option: AutocompleteOption | null) => void;
+  onChange: (optionId: string, option: AutocompleteOption<T> | null) => void;
   onSearch?: (searchTerm: string) => void; // For server-side search
   placeholder?: string;
   label?: string;
@@ -29,7 +29,7 @@ interface AutocompleteDropdownProps {
   onCreateNew?: () => void; // Callback for creating new item
 }
 
-const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
+function AutocompleteDropdown<T = unknown>({
   options,
   value,
   onChange,
@@ -45,11 +45,11 @@ const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
   loading = false,
   createNewLabel,
   onCreateNew,
-}) => {
+}: AutocompleteDropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption[]>(options);
+  const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption<T>[]>(options);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -103,6 +103,13 @@ const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
   }, [isOpen]);
 
   // Keyboard navigation
+  const handleSelect = useCallback((option: AutocompleteOption<T>) => {
+    onChange(option.id, option);
+    setSearchTerm('');
+    setIsOpen(false);
+    setHighlightedIndex(0);
+  }, [onChange]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!isOpen && (e.key === 'Enter' || e.key === 'ArrowDown')) {
@@ -143,7 +150,7 @@ const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
           break;
       }
     },
-    [isOpen, filteredOptions, highlightedIndex, createNewLabel, onCreateNew]
+    [isOpen, filteredOptions, highlightedIndex, createNewLabel, onCreateNew, handleSelect]
   );
 
   // Scroll highlighted option into view
@@ -158,12 +165,7 @@ const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
     }
   }, [highlightedIndex, isOpen]);
 
-  const handleSelect = (option: AutocompleteOption) => {
-    onChange(option.id, option);
-    setSearchTerm('');
-    setIsOpen(false);
-    setHighlightedIndex(0);
-  };
+  // handleSelect is memoized above
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -339,6 +341,6 @@ const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
-};
+}
 
 export default AutocompleteDropdown;

@@ -3,6 +3,7 @@ import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { Income, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { PlusIcon } from '../../components/icons';
 
 interface Props {
   incomes: Income[];
@@ -33,7 +34,8 @@ const IncomesTab: React.FC<Props> = ({
         <h3 style={styles.title}>{t('incomeHistory')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            + {t('addNewIncome')}
+            <PlusIcon size={18} />
+            <span>{t('addNewIncome')}</span>
           </button>
         )}
       </div>
@@ -68,31 +70,36 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '10px',
+    gap: '16px',
+    flexWrap: 'wrap' as const,
   },
   title: {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#333',
+    color: '#111827',
   },
   addButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6366f1',
-    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
     border: 'none',
     borderRadius: '8px',
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: 600 as const,
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
   formContainer: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
     borderRadius: '12px',
     padding: '20px',
     marginBottom: '10px',
+    boxShadow: '0 2px 4px rgba(15,23,42,0.05)',
   },
 };
 

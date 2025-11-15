@@ -102,11 +102,9 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('titleOptional')}
-        </label>
+    <form onSubmit={handleSubmit} style={styles.form}>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('titleOptional')}</label>
         <input
           type="text"
           name="title"
@@ -114,14 +112,12 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder={t('enterTitleOrSource')}
-          className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={styles.input}
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('amount')} *
-        </label>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('amount')} *</label>
         <input
           type="number"
           name="amount"
@@ -131,75 +127,71 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           placeholder="0.00"
           step="0.01"
           min="0"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.amount ? 'border-red-500' : 'border-gray-300'
-          }`}
+          style={{
+            ...styles.input,
+            borderColor: errors.amount ? '#ef4444' : '#d1d5db',
+          }}
         />
-        {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
+        {errors.amount && <span style={styles.errorText}>{errors.amount}</span>}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('date')} *
-        </label>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('date')} *</label>
         <input
           type="date"
           name="date"
           value={formData.date}
           onChange={handleChange}
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.date ? 'border-red-500' : 'border-gray-300'
-          }`}
+          style={{
+            ...styles.input,
+            borderColor: errors.date ? '#ef4444' : '#d1d5db',
+          }}
         />
-        {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
+        {errors.date && <span style={styles.errorText}>{errors.date}</span>}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('type')} *
-        </label>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('type')} *</label>
         <select
           name="type"
           value={formData.type}
           onChange={handleChange}
-          className={`px-3 py-2 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.type ? 'border-red-500' : 'border-gray-300'
-          }`}
+          style={{
+            ...styles.input,
+            borderColor: errors.type ? '#ef4444' : '#d1d5db',
+            backgroundColor: '#fff',
+          }}
         >
           <option value="salary">{t('salary')}</option>
           <option value="reimbursement">{t('reimbursement')}</option>
           <option value="repayment">{t('repayment')}</option>
           <option value="other">{t('other')}</option>
         </select>
-        {errors.type && <span className="text-xs text-red-600">{errors.type}</span>}
+        {errors.type && <span style={styles.errorText}>{errors.type}</span>}
       </div>
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">
-            {t('payerNameOptional')}
-          </label>
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>{t('payerNameOptional')}</label>
           <input
             type="text"
             name="payerName"
             value={formData.payerName}
             onChange={handleChange}
             placeholder={t('payerNamePlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={styles.input}
           />
         </div>
       )}
 
       {expenses.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">
-            {t('linkToExpenseOptional')}
-          </label>
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>{t('linkToExpenseOptional')}</label>
           <select
             name="linkedExpenseId"
             value={formData.linkedExpenseId}
             onChange={handleChange}
-            className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{ ...styles.input, backgroundColor: '#fff' }}
           >
             <option value="">-- {t('noLink')} --</option>
             {expenses.map((expense) => (
@@ -209,15 +201,13 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             ))}
           </select>
           {selectedExpense && (
-            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded mt-1">
+            <div style={styles.linkedInfo}>
               <div>
-                <strong>{t('expense')}:</strong> $
-                {selectedExpense.amount.toFixed(2)}
+                <strong>{t('expense')}:</strong> ${selectedExpense.amount.toFixed(2)}
               </div>
               {selectedExpense.originalReceiptAmount && (
                 <div>
-                  <strong>{t('receipt')}:</strong> $
-                  {selectedExpense.originalReceiptAmount.toFixed(2)}
+                  <strong>{t('receipt')}:</strong> ${selectedExpense.originalReceiptAmount.toFixed(2)}
                 </div>
               )}
             </div>
@@ -225,33 +215,24 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          {t('notesOptional')}
-        </label>
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('notesOptional')}</label>
         <textarea
           name="note"
           value={formData.note}
           onChange={handleChange}
           placeholder={t('addAnyNotes')}
           rows={3}
-          className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{ ...styles.input, resize: 'vertical' as const }}
         />
       </div>
 
-      <div className="flex gap-3 mt-2">
-        <button
-          type="submit"
-          className="flex-1 px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-lg text-base font-medium transition-colors"
-        >
+      <div style={styles.actions}>
+        <button type="submit" style={styles.submitButton}>
           {initialData ? t('update') : t('addIncome')}
         </button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-base font-medium transition-colors"
-          >
+          <button type="button" onClick={onCancel} style={styles.cancelButton}>
             {t('cancel')}
           </button>
         )}
@@ -261,3 +242,63 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 };
 
 export default IncomeForm;
+
+const styles = {
+  form: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  label: {
+    fontSize: '14px',
+    fontWeight: 600 as const,
+    color: '#374151',
+  },
+  input: {
+    padding: '10px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+  },
+  errorText: {
+    fontSize: '12px',
+    color: '#ef4444',
+  },
+  linkedInfo: {
+    fontSize: '12px',
+    color: '#1d4ed8',
+    backgroundColor: '#e0f2fe',
+    padding: '8px',
+    borderRadius: '8px',
+  },
+  actions: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '8px',
+  },
+  submitButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: '#6366f1',
+    color: '#fff',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+  cancelButton: {
+    padding: '12px 24px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: '#6b7280',
+    color: '#fff',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+};
