@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RecurringExpense, Category, EWallet, CreditCard } from '../../types';
+import { RecurringExpense, Category, Card } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
