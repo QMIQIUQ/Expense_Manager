@@ -20,6 +20,9 @@ export interface Expense {
   cardId?: string; // Optional: credit card used for this expense
   paymentMethod?: PaymentMethodType; // Type of payment method
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
+  // Repayment tracking
+  needsRepaymentTracking?: boolean; // Whether this expense needs repayment tracking in dashboard
+  repaymentTrackingCompleted?: boolean; // Whether tracking has been marked as completed
   createdAt: Date;
   updatedAt: Date;
 }

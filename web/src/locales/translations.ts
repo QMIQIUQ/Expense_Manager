@@ -478,6 +478,12 @@ export const translations = {
   defaultIncome: { en: 'Default Income', zh: '一般收入', 'zh-CN': '一般收入' },
   ewalletReload: { en: 'E-Wallet Reload', zh: '電子錢包儲值', 'zh-CN': '电子钱包充值' },
   ewalletReloadDesc: { en: 'Credit card to e-wallet transfer', zh: '信用卡轉電子錢包', 'zh-CN': '信用卡转电子钱包' },
+  
+  // Tracking
+  trackRepaymentInDashboard: { en: 'Track repayment in dashboard (to collect money from friends)', zh: '在儀表板追蹤還款（記得向朋友拿錢）', 'zh-CN': '在仪表板追踪还款（记得向朋友拿钱）' },
+  trackedExpenses: { en: 'Tracked Expenses', zh: '追蹤中的支出', 'zh-CN': '追踪中的支出' },
+  markAsCompleted: { en: 'Mark as Completed', zh: '標記為已完成', 'zh-CN': '标记为已完成' },
+  repaymentTracking: { en: 'Repayment Tracking', zh: '還款追蹤', 'zh-CN': '还款追踪' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

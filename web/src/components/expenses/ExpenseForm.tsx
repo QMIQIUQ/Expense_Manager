@@ -33,6 +33,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     cardId: initialData?.cardId || '',
     paymentMethod: initialData?.paymentMethod || 'cash',
     paymentMethodName: initialData?.paymentMethodName || '',
+    needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -82,6 +83,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         cardId: '',
         paymentMethod: 'cash',
         paymentMethodName: '',
+        needsRepaymentTracking: false,
       });
     }
   };
@@ -286,6 +288,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           rows={3}
           className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
         />
+      </div>
+
+      <div className="flex items-center gap-2 border-t pt-4">
+        <input
+          type="checkbox"
+          id="needsRepaymentTracking"
+          checked={formData.needsRepaymentTracking}
+          onChange={(e) => setFormData(prev => ({ ...prev, needsRepaymentTracking: e.target.checked }))}
+          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+        />
+        <label htmlFor="needsRepaymentTracking" className="text-sm font-medium text-gray-700 cursor-pointer">
+          {t('trackRepaymentInDashboard')}
+        </label>
       </div>
 
       <div className="flex gap-3 mt-2">
