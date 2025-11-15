@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Category } from '../../types';
+import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
 
