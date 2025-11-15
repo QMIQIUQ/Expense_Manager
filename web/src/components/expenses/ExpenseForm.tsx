@@ -30,16 +30,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     date: initialData?.date || new Date().toISOString().split('T')[0],
     time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
     notes: initialData?.notes || '',
-    originalReceiptAmount: initialData?.originalReceiptAmount || undefined,
-    payerName: initialData?.payerName || '',
     cardId: initialData?.cardId || '',
     paymentMethod: initialData?.paymentMethod || 'cash',
     paymentMethodName: initialData?.paymentMethodName || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isReimbursable, setIsReimbursable] = useState(
-    !!(initialData?.originalReceiptAmount || initialData?.payerName)
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,14 +70,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       delete submitData.cardId;
     }
     
-    // Remove undefined fields to prevent Firestore errors
-    if (submitData.originalReceiptAmount === undefined) {
-      delete submitData.originalReceiptAmount;
-    }
-    if (!submitData.payerName) {
-      delete submitData.payerName;
-    }
-    
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     if (!initialData) {
       setFormData({
@@ -92,13 +79,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 5), // Reset to current time
         notes: '',
-        originalReceiptAmount: undefined,
-        payerName: '',
         cardId: '',
         paymentMethod: 'cash',
         paymentMethodName: '',
       });
-      setIsReimbursable(false);
     }
   };
 
@@ -108,10 +92,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        name === 'amount' || name === 'originalReceiptAmount'
-          ? parseFloat(value) || (name === 'originalReceiptAmount' ? undefined : 0)
-          : value,
+      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
     }));
     // Clear error for this field
     if (errors[name]) {
@@ -304,71 +285,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           rows={3}
           className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
         />
-      </div>
-
-      <div className="border-t pt-4">
-        <div className="flex items-center gap-2 mb-3">
-          <input
-            type="checkbox"
-            id="isReimbursable"
-            checked={isReimbursable}
-            onChange={(e) => {
-              setIsReimbursable(e.target.checked);
-              if (!e.target.checked) {
-                setFormData((prev) => ({
-                  ...prev,
-                  originalReceiptAmount: undefined,
-                  payerName: '',
-                }));
-              }
-            }}
-            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-          />
-          <label htmlFor="isReimbursable" className="text-sm font-medium text-gray-700">
-            {t('reimbursableExpense')}
-          </label>
-        </div>
-
-        {isReimbursable && (
-          <div className="flex flex-col gap-3 bg-gray-50 p-3 rounded">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                {t('receiptAmountOptional')}
-              </label>
-              <input
-                type="number"
-                name="originalReceiptAmount"
-                value={formData.originalReceiptAmount || ''}
-                onChange={handleChange}
-                onFocus={(e) => e.target.select()}
-                placeholder={t('originalReceiptAmount')}
-                step="0.01"
-                min="0"
-                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <span className="text-xs text-gray-500">
-                {t('receiptAmountHelp')}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                {t('paidByOptional')}
-              </label>
-              <input
-                type="text"
-                name="payerName"
-                value={formData.payerName}
-                onChange={handleChange}
-                placeholder={t('paidByPlaceholder')}
-                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <span className="text-xs text-gray-500">
-                {t('paidByHelp')}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="flex gap-3 mt-2">
