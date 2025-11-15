@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Expense, Category, Card, EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
-import Modal from '../Modal';
 import RepaymentManager from '../repayment/RepaymentManager';
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon } from '../icons';
 
@@ -59,8 +58,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [repaymentModalOpen, setRepaymentModalOpen] = useState(false);
-  const [selectedExpenseForRepayment, setSelectedExpenseForRepayment] = useState<Expense | null>(null);
+  const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -640,10 +638,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     <div style={styles.actions}>
                       <button 
                         onClick={() => {
-                          setSelectedExpenseForRepayment(expense);
-                          setRepaymentModalOpen(true);
+                          if (expandedRepaymentId === expense.id) {
+                            setExpandedRepaymentId(null);
+                          } else {
+                            setExpandedRepaymentId(expense.id!);
+                          }
                         }} 
-                        style={{ ...styles.iconButton, ...styles.successChip }} 
+                        style={{ 
+                          ...styles.iconButton, 
+                          ...styles.successChip,
+                          ...(expandedRepaymentId === expense.id ? { backgroundColor: '#4CAF50', color: 'white' } : {})
+                        }} 
                         aria-label={t('repayments')}
                         title={t('repayments')}
                       >
@@ -661,6 +666,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+              
+              {/* Inline Repayment Manager */}
+              {expandedRepaymentId === expense.id && (
+                <div style={styles.inlineRepaymentSection}>
+                  <RepaymentManager
+                    expense={expense}
+                    onClose={() => setExpandedRepaymentId(null)}
+                    inline={true}
+                  />
                 </div>
               )}
             </div>
@@ -684,25 +700,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
       />
-
-      <Modal
-        isOpen={repaymentModalOpen}
-        onClose={() => {
-          setRepaymentModalOpen(false);
-          setSelectedExpenseForRepayment(null);
-        }}
-        maxWidth="700px"
-      >
-        {selectedExpenseForRepayment && (
-          <RepaymentManager
-            expense={selectedExpenseForRepayment}
-            onClose={() => {
-              setRepaymentModalOpen(false);
-              setSelectedExpenseForRepayment(null);
-            }}
-          />
-        )}
-      </Modal>
     </div>
   );
 };
@@ -1030,6 +1027,13 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     color: '#1976d2',
+  },
+  inlineRepaymentSection: {
+    marginTop: '12px',
+    padding: '16px',
+    backgroundColor: '#f9f9f9',
+    borderRadius: '6px',
+    border: '1px solid #e0e0e0',
   },
 };
 

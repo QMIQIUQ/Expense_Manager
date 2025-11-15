@@ -11,9 +11,10 @@ import { useNotification } from '../../contexts/NotificationContext';
 interface RepaymentManagerProps {
   expense: Expense;
   onClose?: () => void;
+  inline?: boolean;
 }
 
-const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose }) => {
+const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
   const { showNotification } = useNotification();
@@ -147,21 +148,30 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose })
   const hasExcess = remainingAmount < 0;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>{t('repayments')}</h3>
-        {onClose && (
-          <button onClick={onClose} style={styles.closeButton} aria-label="Close">
-            ✕
-          </button>
-        )}
-      </div>
-
-      <div style={styles.expenseInfo}>
-        <div style={styles.expenseDetail}>
-          <span style={styles.label}>{t('expense')}:</span>
-          <span style={styles.value}>{expense.description}</span>
+    <div style={inline ? styles.inlineContainer : styles.container}>
+      {!inline && (
+        <div style={styles.header}>
+          <h3 style={styles.title}>{t('repayments')}</h3>
+          {onClose && (
+            <button onClick={onClose} style={styles.closeButton} aria-label="Close">
+              ✕
+            </button>
+          )}
         </div>
+      )}
+
+      {inline && (
+        <div style={styles.inlineHeader}>
+          <h4 style={styles.inlineTitle}>{t('repaymentHistory')}</h4>
+          {onClose && (
+            <button onClick={onClose} style={styles.inlineCloseButton} aria-label="Close">
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
+      <div style={inline ? styles.inlineExpenseInfo : styles.expenseInfo}>
         <div style={styles.expenseDetail}>
           <span style={styles.label}>{t('originalExpenseAmount')}:</span>
           <span style={styles.value}>${expense.amount.toFixed(2)}</span>
@@ -237,6 +247,9 @@ const styles = {
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   },
+  inlineContainer: {
+    backgroundColor: 'transparent',
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -245,9 +258,21 @@ const styles = {
     paddingBottom: '12px',
     borderBottom: '2px solid #e0e0e0',
   },
+  inlineHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+  },
   title: {
     margin: 0,
     fontSize: '20px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  inlineTitle: {
+    margin: 0,
+    fontSize: '16px',
     fontWeight: '600' as const,
     color: '#333',
   },
@@ -260,11 +285,27 @@ const styles = {
     color: '#666',
     transition: 'color 0.2s',
   } as React.CSSProperties,
+  inlineCloseButton: {
+    padding: '2px 6px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+    color: '#666',
+    transition: 'color 0.2s',
+  } as React.CSSProperties,
   expenseInfo: {
     padding: '16px',
     backgroundColor: '#f9f9f9',
     borderRadius: '6px',
     marginBottom: '16px',
+  },
+  inlineExpenseInfo: {
+    padding: '12px',
+    backgroundColor: '#fff',
+    borderRadius: '4px',
+    marginBottom: '12px',
+    border: '1px solid #e0e0e0',
   },
   expenseDetail: {
     display: 'flex',
