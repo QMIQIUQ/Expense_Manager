@@ -29,8 +29,13 @@ export const translations = {
   budgets: { en: 'Budgets', zh: '預算', 'zh-CN': '预算' },
   recurring: { en: 'Recurring', zh: '定期支出', 'zh-CN': '定期支出' },
   cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
+  paymentMethods: { en: 'Payment Methods', zh: '支付方式', 'zh-CN': '支付方式' },
   profile: { en: '👤 Profile', zh: '👤 個人資料', 'zh-CN': '👤 个人资料' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
+  tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
+  hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
+  position: { en: 'Position', zh: '位置', 'zh-CN': '位置' },
+  enterPosition: { en: 'Enter position (1-{max})', zh: '輸入位置 (1-{max})', 'zh-CN': '输入位置 (1-{max})' },
 
   // Login
   login: { en: 'Login', zh: '登入', 'zh-CN': '登录' },
@@ -51,7 +56,7 @@ export const translations = {
   creditCard: { en: 'Credit Card', zh: '信用卡', 'zh-CN': '信用卡' },
   eWallet: { en: 'E-Wallet', zh: '電子錢包', 'zh-CN': '电子钱包' },
   eWalletName: { en: 'E-Wallet Name', zh: '電子錢包名稱', 'zh-CN': '电子钱包名称' },
-  eWalletPlaceholder: { en: 'e.g., PayPal, Apple Pay, Alipay', zh: '例如：PayPal、Apple Pay、支付寶', 'zh-CN': '例如：PayPal、Apple Pay、支付宝' },
+  eWalletPlaceholder: { en: 'e.g., Touch \'n Go, Setel, GrabPay', zh: '例如：Touch \'n Go、Setel、GrabPay', 'zh-CN': '例如：Touch \'n Go、Setel、GrabPay' },
   descriptionPlaceholder: { en: 'e.g., Grocery shopping', zh: '例如：購物', 'zh-CN': '例如：购物' },
   notesPlaceholder: { en: 'Additional notes (optional)', zh: '額外備註（選填）', 'zh-CN': '额外备注（选填）' },
   selectCategory: { en: 'Select a category', zh: '選擇類別', 'zh-CN': '选择分类' },
@@ -397,6 +402,54 @@ export const translations = {
   update: { en: 'Update', zh: '更新', 'zh-CN': '更新' },
   expense: { en: 'Expense', zh: '支出', 'zh-CN': '支出' },
   receipt: { en: 'Receipt', zh: '收據', 'zh-CN': '收据' },
+  
+  // E-Wallet Management
+  eWallets: { en: 'E-Wallets', zh: '電子錢包', 'zh-CN': '电子钱包' },
+  addEWallet: { en: 'Add E-Wallet', zh: '新增電子錢包', 'zh-CN': '添加电子钱包' },
+  editEWallet: { en: 'Edit E-Wallet', zh: '編輯電子錢包', 'zh-CN': '编辑电子钱包' },
+  eWalletNameLabel: { en: 'E-Wallet Name', zh: '電子錢包名稱', 'zh-CN': '电子钱包名称' },
+  eWalletNamePlaceholder2: { en: 'e.g., Touch \'n Go, Setel', zh: '例如：Touch \'n Go、Setel', 'zh-CN': '例如：Touch \'n Go、Setel' },
+  provider: { en: 'Provider', zh: '服務提供商', 'zh-CN': '服务提供商' },
+  providerPlaceholder: { en: 'e.g., Touch \'n Go, Setel', zh: '例如：Touch \'n Go、Setel', 'zh-CN': '例如：Touch \'n Go、Setel' },
+  accountNumber: { en: 'Account Number', zh: '帳號後四碼', 'zh-CN': '账号后四码' },
+  accountNumberPlaceholder: { en: 'Last 4 digits', zh: '後四碼', 'zh-CN': '后四码' },
+  accountNumberHelp: { en: 'Optional: Last 4 digits or identifier', zh: '選填：後四碼或識別碼', 'zh-CN': '选填：后四码或识别码' },
+  manageEWallets: { en: 'Manage your electronic payment methods', zh: '管理您的電子支付方式', 'zh-CN': '管理您的电子支付方式' },
+  searchEWallets: { en: 'Search e-wallets...', zh: '搜尋電子錢包...', 'zh-CN': '搜索电子钱包...' },
+  noEWalletsYet: { en: 'No e-wallets yet', zh: '尚未新增電子錢包', 'zh-CN': '尚未添加电子钱包' },
+  addYourFirstEWallet: { en: 'Add your first e-wallet to get started', zh: '新增您的第一個電子錢包', 'zh-CN': '添加您的第一个电子钱包' },
+  confirmDeleteEWallet: { en: 'Are you sure you want to delete this e-wallet? This action cannot be undone.', zh: '您確定要刪除此電子錢包嗎？此操作無法復原。', 'zh-CN': '您确定要删除此电子钱包吗？此操作无法撤销。' },
+  default: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
+  saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
+  
+  // Feature Manager
+  features: { en: 'Features', zh: '功能', 'zh-CN': '功能' },
+  featureManager: { en: 'Feature Manager', zh: '功能管理', 'zh-CN': '功能管理' },
+  manageFeatures: { en: 'Manage Features', zh: '管理功能', 'zh-CN': '管理功能' },
+  featureSettings: { en: 'Feature Settings', zh: '功能設定', 'zh-CN': '功能设置' },
+  manageFeaturesDesc: { en: 'Choose which features to display and customize the tab order', zh: '選擇要顯示的功能並自訂頁籤順序', 'zh-CN': '选择要显示的功能并自定义标签顺序' },
+  enabledFeatures: { en: 'Enabled Features', zh: '已啟用功能', 'zh-CN': '已启用功能' },
+  availableFeatures: { en: 'Available Features', zh: '可用功能', 'zh-CN': '可用功能' },
+  dragToReorder: { en: 'Drag to reorder', zh: '拖曳以重新排序', 'zh-CN': '拖动以重新排序' },
+  resetToDefaults: { en: 'Reset to Defaults', zh: '重設為預設', 'zh-CN': '重置为默认' },
+  saveSettings: { en: 'Save Settings', zh: '儲存設定', 'zh-CN': '保存设置' },
+  featureVisibility: { en: 'Feature Visibility', zh: '功能顯示', 'zh-CN': '功能显示' },
+  confirmResetFeatures: { en: 'Reset all features to default settings?', zh: '將所有功能重設為預設值？', 'zh-CN': '将所有功能重置为默认值？' },
+  featuresUpdated: { en: 'Features updated successfully', zh: '功能已成功更新', 'zh-CN': '功能已成功更新' },
+  featuresReset: { en: 'Features reset to defaults', zh: '功能已重設為預設', 'zh-CN': '功能已重置为默认' },
+  cannotDeleteDefault: { en: 'Cannot delete default item', zh: '無法刪除預設項目', 'zh-CN': '无法删除默认项目' },
+  
+  // Autocomplete
+  searchOrSelect: { en: 'Search or select...', zh: '搜尋或選擇...', 'zh-CN': '搜索或选择...' },
+  noResultsFound: { en: 'No results found', zh: '找不到結果', 'zh-CN': '找不到结果' },
+  createNew: { en: 'Create new', zh: '新增', 'zh-CN': '创建新' },
+  typeToSearch: { en: 'Type to search', zh: '輸入以搜尋', 'zh-CN': '输入以搜索' },
+  unsavedChanges: { en: 'You have unsaved changes', zh: '您有未儲存的變更', 'zh-CN': '您有未保存的更改' },
+  
+  // E-Wallet notifications
+  eWalletAdded: { en: 'E-wallet added successfully', zh: '電子錢包已成功新增', 'zh-CN': '电子钱包已成功添加' },
+  eWalletUpdated: { en: 'E-wallet updated successfully', zh: '電子錢包已成功更新', 'zh-CN': '电子钱包已成功更新' },
+  eWalletDeleted: { en: 'E-wallet deleted successfully', zh: '電子錢包已成功刪除', 'zh-CN': '电子钱包已成功删除' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

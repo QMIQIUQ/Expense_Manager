@@ -80,5 +80,20 @@ service cloud.firestore {
                        request.resource.data.amount > 0;
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // E-Wallets collection (electronic payment methods)
+    match /ewallets/{ewalletId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+    
+    // Feature Settings collection (tab visibility and ordering)
+    match /featureSettings/{settingsId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
   }
 }

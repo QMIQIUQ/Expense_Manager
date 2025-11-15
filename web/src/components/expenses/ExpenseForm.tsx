@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card } from '../../types';
+import { Expense, Category, Card, EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -8,6 +9,8 @@ interface ExpenseFormProps {
   initialData?: Expense;
   categories: Category[];
   cards?: Card[];
+  ewallets?: EWallet[];
+  onCreateEWallet?: () => void;
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -16,6 +19,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   initialData,
   categories,
   cards = [],
+  ewallets = [],
+  onCreateEWallet,
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -151,24 +156,26 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex flex-col gap-1 flex-1">
-          <label className="text-sm font-medium text-gray-700">{t('category')} *</label>
-          <select
-            name="category"
+        <div className="flex-1">
+          <AutocompleteDropdown
+            options={categories.map((cat): AutocompleteOption => ({
+              id: cat.name,
+              label: cat.name,
+              icon: cat.icon,
+              color: cat.color,
+            }))}
             value={formData.category}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.category ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">{t('selectCategory')}</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.icon} {cat.name}
-              </option>
-            ))}
-          </select>
-          {errors.category && <span className="text-xs text-red-600">{errors.category}</span>}
+            onChange={(value) => {
+              setFormData((prev) => ({ ...prev, category: value }));
+              if (errors.category) {
+                setErrors((prev) => ({ ...prev, category: '' }));
+              }
+            }}
+            label={t('category') + ' *'}
+            placeholder={t('selectCategory')}
+            error={errors.category}
+            allowClear={false}
+          />
         </div>
       </div>
 
@@ -234,8 +241,33 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
       )}
 
-      {/* E-Wallet Name - Only shown when e-wallet is selected */}
-      {formData.paymentMethod === 'e_wallet' && (
+      {/* E-Wallet Selection - Only shown when e-wallet is selected */}
+      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+        <AutocompleteDropdown
+          options={ewallets.map((wallet): AutocompleteOption => ({
+            id: wallet.name,
+            label: wallet.name,
+            icon: wallet.icon,
+            subtitle: wallet.provider,
+            color: wallet.color,
+          }))}
+          value={formData.paymentMethodName}
+          onChange={(value) => {
+            setFormData((prev) => ({ ...prev, paymentMethodName: value }));
+            if (errors.paymentMethodName) {
+              setErrors((prev) => ({ ...prev, paymentMethodName: '' }));
+            }
+          }}
+          label={t('eWallet')}
+          placeholder={t('searchOrSelect')}
+          error={errors.paymentMethodName}
+          createNewLabel={onCreateEWallet ? t('createNew') + ' ' + t('eWallet') : undefined}
+          onCreateNew={onCreateEWallet}
+        />
+      )}
+      
+      {/* E-Wallet Name Input - Fallback when no e-wallets available */}
+      {formData.paymentMethod === 'e_wallet' && ewallets.length === 0 && (
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">{t('eWalletName')}</label>
           <input
@@ -250,6 +282,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             }`}
           />
           {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
+          {onCreateEWallet && (
+            <button
+              type="button"
+              onClick={onCreateEWallet}
+              className="text-sm text-blue-600 hover:underline mt-1 text-left"
+            >
+              + {t('addEWallet')}
+            </button>
+          )}
         </div>
       )}
 

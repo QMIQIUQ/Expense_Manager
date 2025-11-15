@@ -31,7 +31,22 @@ export interface Category {
   icon: string;
   color: string;
   isDefault: boolean;
+  type?: 'expense' | 'e-wallet'; // Type of category (expense categories vs e-wallet categories)
   createdAt: Date;
+}
+
+// E-Wallet type - A specialized category for electronic payment methods
+export interface EWallet {
+  id?: string;
+  userId: string;
+  name: string; // E.g., "PayPal", "Apple Pay", "LINE Pay"
+  icon: string;
+  color: string;
+  provider?: string; // Optional: provider/company name
+  accountNumber?: string; // Optional: last 4 digits or identifier
+  isDefault?: boolean; // Whether this is a default/system e-wallet
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Budget {
@@ -155,6 +170,53 @@ export interface CardStats {
   }[];
 }
 
+// Feature tab type - merged cards and ewallets into paymentMethods
+export type FeatureTab = 'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'paymentMethods' | 'settings' | 'profile' | 'admin';
+
+// Feature location type - different UI locations can have different orderings
+export type FeatureLocation = 'tabs' | 'hamburger';
+
+// Feature settings for tab visibility and ordering (enhanced with location-specific ordering)
+export interface FeatureSettings {
+  id?: string;
+  userId: string;
+  enabledFeatures: FeatureTab[]; // Deprecated: kept for backward compatibility
+  // Location-specific feature ordering
+  tabFeatures?: FeatureTab[]; // Features shown in main tabs
+  hamburgerFeatures?: FeatureTab[]; // Features shown in hamburger menu
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Default feature configuration
+export const DEFAULT_FEATURES: FeatureTab[] = [
+  'dashboard',
+  'expenses',
+  'incomes',
+  'categories',
+  'budgets',
+  'recurring',
+  'paymentMethods',
+  'settings',
+];
+
+// Default features for different locations
+export const DEFAULT_TAB_FEATURES: FeatureTab[] = [
+  'dashboard',
+  'expenses',
+  'incomes',
+  'categories',
+  'budgets',
+  'recurring',
+  'paymentMethods',
+  'settings',
+];
+
+export const DEFAULT_HAMBURGER_FEATURES: FeatureTab[] = [
+  'profile',
+  'admin',
+];
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B' },
@@ -165,4 +227,10 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Healthcare', icon: '🏥', color: '#F7DC6F' },
   { name: 'Education', icon: '📚', color: '#BB8FCE' },
   { name: 'Other', icon: '📦', color: '#95A5A6' },
+];
+
+// Default e-wallets
+export const DEFAULT_EWALLETS = [
+  { name: 'Touch \'n Go', icon: '🔵', color: '#0066CC', provider: 'Touch \'n Go' },
+  { name: 'Setel', icon: '⚡', color: '#FF6B00', provider: 'Setel' },
 ];

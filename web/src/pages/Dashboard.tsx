@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -12,17 +12,20 @@ import { recurringExpenseService } from '../services/recurringExpenseService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
+import { ewalletService } from '../services/ewalletService';
+import { featureSettingsService } from '../services/featureSettingsService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
 import BudgetManager from '../components/budgets/BudgetManager';
 import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
-import CardManager from '../components/cards/CardManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import CardsSummary from '../components/dashboard/CardsSummary';
 import IncomesTab from './tabs/IncomesTab';
 import AdminTab from './tabs/AdminTab';
 import UserProfile from './UserProfile';
+import FeatureManager from '../components/settings/FeatureManager';
+import PaymentMethodsTab from '../components/payment/PaymentMethodsTab';
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
@@ -47,13 +50,15 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const optimisticCRUD = useOptimisticCRUD();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'incomes' | 'categories' | 'budgets' | 'recurring' | 'cards' | 'profile' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [ewallets, setEWallets] = useState<EWallet[]>([]);
+  const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -64,6 +69,7 @@ const Dashboard: React.FC = () => {
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
+  const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [importProgress, setImportProgress] = useState<{
@@ -150,6 +156,27 @@ const Dashboard: React.FC = () => {
       } catch (cardError) {
         console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
         setCards([]);
+      }
+      
+      // Load e-wallets with error handling
+      try {
+        await ewalletService.initializeDefaults(currentUser.uid);
+        const ewalletsData = await ewalletService.getAll(currentUser.uid);
+        console.log('E-wallets loaded successfully:', ewalletsData.length, 'e-wallets');
+        setEWallets(ewalletsData);
+      } catch (ewalletError) {
+        console.warn('Could not load e-wallets:', ewalletError);
+        setEWallets([]);
+      }
+      
+      // Load feature settings with error handling
+      try {
+        const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
+        console.log('Feature settings loaded successfully');
+        setFeatureSettings(settingsData);
+      } catch (settingsError) {
+        console.warn('Could not load feature settings:', settingsError);
+        setFeatureSettings(null);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -851,6 +878,150 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // E-Wallet handlers
+  const handleAddEWallet = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!currentUser) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticWallet: EWallet = {
+      ...walletData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setEWallets((prev) => [...prev, optimisticWallet]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: walletData },
+      () => ewalletService.create({ ...walletData, userId: currentUser.uid }),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletAdded'));
+        },
+        onError: () => {
+          setEWallets((prev) => prev.filter((w) => w.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleUpdateEWallet = async (id: string, updates: Partial<EWallet>) => {
+    const originalWallet = ewallets.find((w) => w.id === id);
+
+    // Optimistic update
+    setEWallets((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...updates, updatedAt: new Date() } : w))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { id, updates }, originalData: originalWallet },
+      () => ewalletService.update(id, updates),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletUpdated'));
+        },
+        onError: () => {
+          if (originalWallet) {
+            setEWallets((prev) => prev.map((w) => (w.id === id ? originalWallet : w)));
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteEWallet = async (id: string) => {
+    const walletToDelete = ewallets.find((w) => w.id === id);
+
+    // Optimistic update
+    setEWallets((prev) => prev.filter((w) => w.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: walletToDelete },
+      () => ewalletService.delete(id),
+      {
+        entityType: 'category', // Using category type as ewallet is similar
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('eWalletDeleted'));
+        },
+        onError: () => {
+          if (walletToDelete) {
+            setEWallets((prev) => [...prev, walletToDelete]);
+          }
+        },
+      }
+    );
+  };
+
+  // Feature Settings handlers
+  const handleUpdateFeatureSettings = async (
+    enabledFeatures: FeatureTab[],
+    tabFeatures?: FeatureTab[],
+    hamburgerFeatures?: FeatureTab[]
+  ) => {
+    if (!currentUser) return;
+
+    const originalSettings = featureSettings;
+
+    // Optimistic update
+    setFeatureSettings(
+      originalSettings
+        ? { ...originalSettings, enabledFeatures, tabFeatures, hamburgerFeatures, updatedAt: new Date() }
+        : {
+            userId: currentUser.uid,
+            enabledFeatures,
+            tabFeatures,
+            hamburgerFeatures,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { enabledFeatures, tabFeatures, hamburgerFeatures }, originalData: originalSettings },
+      () => featureSettingsService.update(currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures),
+      {
+        entityType: 'budget', // Using budget type as settings is configuration-like
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('featuresUpdated'));
+        },
+        onError: () => {
+          if (originalSettings) {
+            setFeatureSettings(originalSettings);
+          }
+        },
+      }
+    );
+  };
+
+  const handleResetFeatureSettings = async () => {
+    if (!currentUser) return;
+
+    await optimisticCRUD.run(
+      { type: 'update', data: {} },
+      () => featureSettingsService.resetToDefaults(currentUser.uid),
+      {
+        entityType: 'budget', // Using budget type as settings is configuration-like
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', t('featuresReset'));
+        },
+        onError: () => {},
+      }
+    );
+  };
+
   // Export handlers
   const handleExportExcel = () => {
     exportToExcel(expenses, categories);
@@ -1062,6 +1233,71 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
 
+                {/* Features Section - Collapsible */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenFeaturesSection(o => !o)}
+                    aria-expanded={openFeaturesSection}
+                    aria-controls="hamburger-features-section"
+                  >
+                    <span>{t('features') || 'Features'}</span>
+                    <svg
+                      className={`transition-transform ${openFeaturesSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openFeaturesSection && (
+                    <div id="hamburger-features-section" className="mt-2 space-y-1">
+                      {(featureSettings?.hamburgerFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+                        .map((feature) => {
+                          const featureStr = feature as string;
+                          if (featureStr === 'cards' || featureStr === 'ewallets') {
+                            return 'paymentMethods' as FeatureTab;
+                          }
+                          return feature;
+                        })
+                        .filter((feature, index, array) => array.indexOf(feature) === index)
+                        .filter((feature) => feature !== 'profile' && feature !== 'admin')
+                        .map((feature) => {
+                          const labelMap: Record<FeatureTab, string> = {
+                            dashboard: t('dashboard'),
+                            expenses: t('expenses'),
+                            incomes: t('incomes'),
+                            categories: t('categories'),
+                            budgets: t('budgets'),
+                            recurring: t('recurring'),
+                            paymentMethods: t('paymentMethods'),
+                            settings: t('featureSettings'),
+                            profile: t('profile'),
+                            admin: t('admin'),
+                          };
+
+                          return (
+                            <button
+                              key={feature}
+                              onClick={() => {
+                                setActiveTab(feature);
+                                setShowHamburgerMenu(false);
+                                setOpenFeaturesSection(false);
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                                activeTab === feature
+                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {labelMap[feature]}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
                 {/* Import/Export Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -1206,62 +1442,50 @@ const Dashboard: React.FC = () => {
       />
 
       <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('dashboard')}
-        </button>
-        <button
-          onClick={() => setActiveTab('expenses')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'expenses' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('expenses')}
-        </button>
-        <button
-          onClick={() => setActiveTab('incomes')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'incomes' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('incomes')}
-        </button>
-        <button
-          onClick={() => setActiveTab('recurring')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'recurring' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('recurring')}
-        </button>
-        <button
-          onClick={() => setActiveTab('budgets')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'budgets' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('budgets')}
-        </button>
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'categories' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('categories')}
-        </button>
-        <button
-          onClick={() => setActiveTab('cards')}
-          className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-            activeTab === 'cards' ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          {t('cards')}
-        </button>
+        {/* Dynamically render tabs based on enabled features (use tabFeatures if available, fallback to enabledFeatures) */}
+        {(featureSettings?.tabFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+          .map((feature) => {
+            // Migrate old feature names to new ones
+            const featureStr = feature as string;
+            if (featureStr === 'cards' || featureStr === 'ewallets') {
+              return 'paymentMethods' as FeatureTab;
+            }
+            return feature;
+          })
+          .filter((feature, index, array) => {
+            // Remove duplicates (e.g., both 'cards' and 'ewallets' -> 'paymentMethods')
+            return array.indexOf(feature) === index;
+          })
+          .map((feature) => {
+            // Skip profile and admin from main tabs (they're in hamburger menu)
+            if (feature === 'profile' || feature === 'admin') return null;
+            
+            // Map feature to display label
+            const labelMap: Record<FeatureTab, string> = {
+              dashboard: t('dashboard'),
+              expenses: t('expenses'),
+              incomes: t('incomes'),
+              categories: t('categories'),
+              budgets: t('budgets'),
+              recurring: t('recurring'),
+              paymentMethods: t('paymentMethods'),
+              settings: t('featureSettings'),
+              profile: t('profile'),
+              admin: t('admin'),
+            };
+            
+            return (
+              <button
+                key={feature}
+                onClick={() => setActiveTab(feature)}
+                className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
+                  activeTab === feature ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {labelMap[feature]}
+              </button>
+            );
+          })}
       </div>
 
       <div className="dashboard-card content-pad">
@@ -1338,15 +1562,29 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'cards' && (
+        {activeTab === 'paymentMethods' && (
+          <PaymentMethodsTab
+            cards={cards}
+            ewallets={ewallets}
+            categories={categories}
+            expenses={expenses}
+            onAddCard={handleAddCard}
+            onUpdateCard={handleUpdateCard}
+            onDeleteCard={handleDeleteCard}
+            onAddEWallet={handleAddEWallet}
+            onUpdateEWallet={handleUpdateEWallet}
+            onDeleteEWallet={handleDeleteEWallet}
+          />
+        )}
+
+        {activeTab === 'settings' && featureSettings && (
           <div className="flex flex-col gap-4">
-            <CardManager
-              cards={cards}
-              categories={categories}
-              expenses={expenses}
-              onAdd={handleAddCard}
-              onUpdate={handleUpdateCard}
-              onDelete={handleDeleteCard}
+            <FeatureManager
+              enabledFeatures={featureSettings.enabledFeatures}
+              tabFeatures={featureSettings.tabFeatures}
+              hamburgerFeatures={featureSettings.hamburgerFeatures}
+              onUpdate={handleUpdateFeatureSettings}
+              onReset={handleResetFeatureSettings}
             />
           </div>
         )}
@@ -1432,6 +1670,11 @@ const Dashboard: React.FC = () => {
                   onCancel={() => setShowAddExpenseForm(false)}
                   categories={categories}
                   cards={cards}
+                  ewallets={ewallets}
+                  onCreateEWallet={() => {
+                    setShowAddExpenseForm(false);
+                    setActiveTab('paymentMethods');
+                  }}
                 />
               </div>
             </div>
@@ -1521,6 +1764,11 @@ const Dashboard: React.FC = () => {
                   onCancel={() => setShowAddSheet(false)}
                   categories={categories}
                   cards={cards}
+                  ewallets={ewallets}
+                  onCreateEWallet={() => {
+                    setShowAddSheet(false);
+                    setActiveTab('paymentMethods');
+                  }}
                 />
               </div>
             </div>
