@@ -1,4 +1,6 @@
-import { Workbook } from 'exceljs';
+// Lazy-load exceljs only when needed to avoid large initial bundles
+// and to sidestep Vite dev optimize cache issues.
+// We'll import within functions: const ExcelJS = await import('exceljs')
 import Papa from 'papaparse';
 import { Expense, Category } from '../types';
 import { categoryService } from '../services/categoryService';
@@ -42,7 +44,8 @@ interface CategoryRow {
 
 // Generate and download expense template
 export const downloadExpenseTemplate = async () => {
-  const wb = new Workbook();
+  const ExcelJS = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
 
   // Expenses sheet
   const expensesWs = wb.addWorksheet('expenses');
@@ -81,7 +84,8 @@ export const downloadExpenseTemplate = async () => {
 
 // Export expenses and categories to Excel
 export const exportToExcel = async (expenses: Expense[], categories: Category[]) => {
-  const wb = new Workbook();
+  const ExcelJS = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
 
   // Expenses sheet
   const expensesWs = wb.addWorksheet('expenses');
@@ -166,7 +170,8 @@ export const parseUploadedFile = async (
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
-          const wb = new Workbook();
+          const ExcelJS = await import('exceljs');
+          const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(arrayBuffer);
 
           // Helper to read a worksheet by headers
