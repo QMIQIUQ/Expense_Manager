@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { Expense, Category, Card, EWallet, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
@@ -10,6 +10,7 @@ interface ExpenseListProps {
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
+  repayments?: Repayment[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
@@ -21,6 +22,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   categories,
   cards = [],
   ewallets = [],
+  repayments = [],
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -59,6 +61,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
+
+  // Calculate repayment totals per expense
+  const repaymentTotals = useMemo(() => {
+    const totals: { [expenseId: string]: number } = {};
+    repayments.forEach((repayment) => {
+      if (repayment.expenseId) {
+        totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + repayment.amount;
+      }
+    });
+    return totals;
+  }, [repayments]);
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -634,7 +647,30 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     )}
                   </div>
                   <div style={styles.rightCol}>
-                    <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                    <div style={styles.amountSection}>
+                      {(() => {
+                        const repaid = repaymentTotals[expense.id!] || 0;
+                        const netAmount = expense.amount - repaid;
+                        const hasExcess = netAmount < 0;
+                        
+                        if (repaid > 0) {
+                          return (
+                            <div style={styles.amountBreakdown}>
+                              <div style={styles.originalAmount}>${expense.amount.toFixed(2)}</div>
+                              <div style={styles.repaidAmount}>- ${repaid.toFixed(2)}</div>
+                              <div style={{
+                                ...styles.netAmount,
+                                color: hasExcess ? '#2196F3' : '#ff9800'
+                              }}>
+                                = ${Math.abs(netAmount).toFixed(2)}
+                                {hasExcess && <span style={styles.excessBadge}>({t('excessAmount')})</span>}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return <div style={styles.amount}>${expense.amount.toFixed(2)}</div>;
+                      })()}
+                    </div>
                     <div style={styles.actions}>
                       <button 
                         onClick={() => {
@@ -929,6 +965,37 @@ const styles = {
     marginBottom: '4px',
     wordBreak: 'break-all' as const,
     lineHeight: '1.2',
+  },
+  amountSection: {
+    marginBottom: '4px',
+  },
+  amountBreakdown: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-end',
+    gap: '2px',
+  },
+  originalAmount: {
+    fontSize: '14px',
+    color: '#999',
+    textDecoration: 'line-through',
+  },
+  repaidAmount: {
+    fontSize: '14px',
+    color: '#4CAF50',
+    fontWeight: '500' as const,
+  },
+  netAmount: {
+    fontSize: '18px',
+    fontWeight: '700' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  excessBadge: {
+    fontSize: '11px',
+    fontWeight: '500' as const,
+    color: '#2196F3',
   },
   actions: { display: 'flex', gap: '8px' },
   iconButton: {
