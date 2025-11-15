@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 import Modal from '../Modal';
 import RepaymentManager from '../repayment/RepaymentManager';
-import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon } from '../icons';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -647,7 +647,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         aria-label={t('repayments')}
                         title={t('repayments')}
                       >
-                        💰
+                        <RepaymentIcon size={18} />
                       </button>
                       <button onClick={() => startInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.primaryChip }} aria-label={t('edit')}>
                         <EditIcon size={18} />
