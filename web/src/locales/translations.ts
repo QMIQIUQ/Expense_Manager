@@ -484,6 +484,9 @@ export const translations = {
   trackedExpenses: { en: 'Tracked Expenses', zh: '追蹤中的支出', 'zh-CN': '追踪中的支出' },
   markAsCompleted: { en: 'Mark as Completed', zh: '標記為已完成', 'zh-CN': '标记为已完成' },
   repaymentTracking: { en: 'Repayment Tracking', zh: '還款追蹤', 'zh-CN': '还款追踪' },
+  collected: { en: 'Collected', zh: '已收回', 'zh-CN': '已收回' },
+  totalAmount: { en: 'Total Amount', zh: '總金額', 'zh-CN': '总金额' },
+  repaid: { en: 'Repaid', zh: '已還', 'zh-CN': '已还' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

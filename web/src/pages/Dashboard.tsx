@@ -347,6 +347,11 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Mark tracking as completed
+  const handleMarkTrackingCompleted = async (id: string) => {
+    await handleInlineUpdateExpense(id, { repaymentTrackingCompleted: true });
+  };
+
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -1495,7 +1500,12 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div className="flex flex-col gap-6">
-            <DashboardSummary expenses={expenses} incomes={incomes} repayments={repayments} />
+            <DashboardSummary 
+              expenses={expenses} 
+              incomes={incomes} 
+              repayments={repayments}
+              onMarkTrackingCompleted={handleMarkTrackingCompleted}
+            />
             {cards.length > 0 && (
               <CardsSummary cards={cards} categories={categories} expenses={expenses} />
             )}
