@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Income, Expense, IncomeType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
 
 interface IncomeListProps {
   incomes: Income[];
@@ -120,8 +121,8 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
         <div key={income.id} style={styles.incomeCard}>
           {editingId === income.id ? (
             // Inline Edit Mode
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={styles.inlineEditor}>
+              <div style={styles.inlineRow}>
                 <input
                   type="text"
                   value={draft.title || ''}
@@ -148,7 +149,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   <option value="other">{t('other')}</option>
                 </select>
               </div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={styles.inlineRow}>
                 <input
                   type="date"
                   value={draft.date || ''}
@@ -177,7 +178,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   </select>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={styles.inlineRow}>
                 <input
                   type="text"
                   value={draft.note || ''}
@@ -186,16 +187,16 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   style={{ ...styles.input, flex: 1 }}
                 />
               </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button onClick={() => saveInlineEdit(income)} style={{ ...styles.iconButton, backgroundColor: 'rgba(33,150,83,0.08)' }} aria-label={t('save')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
-                  </svg>
+              <div style={styles.inlineActions}>
+                <button
+                  onClick={() => saveInlineEdit(income)}
+                  style={styles.saveButton}
+                  aria-label={t('save')}
+                >
+                  <CheckIcon size={18} />
                 </button>
-                <button onClick={cancelInlineEdit} style={{ ...styles.iconButton, backgroundColor: 'rgba(158,158,158,0.12)' }} aria-label={t('cancel')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
-                  </svg>
+                <button onClick={cancelInlineEdit} style={styles.cancelButton} aria-label={t('cancel')}>
+                  <CloseIcon size={18} />
                 </button>
               </div>
             </div>
@@ -234,20 +235,14 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   style={styles.iconButton}
                   aria-label={t('edit')}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
-                    <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
-                  </svg>
+                  <EditIcon size={18} />
                 </button>
                 <button
                   onClick={() => income.id && onDelete(income.id)}
-                  style={{ ...styles.iconButton, backgroundColor: 'rgba(244,67,54,0.08)' }}
-                  className="hover:bg-red-100 transition"
+                  style={{ ...styles.iconButton, backgroundColor: 'rgba(244,63,94,0.12)', color: '#b91c1c' }}
                   aria-label={t('delete')}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#f44336"/>
-                  </svg>
+                  <DeleteIcon size={18} />
                 </button>
               </div>
             </>
@@ -265,11 +260,11 @@ const styles = {
     gap: '16px',
   },
   incomeCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
     borderRadius: '12px',
     padding: '16px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    boxShadow: '0 2px 4px rgba(15,23,42,0.05)',
   },
   incomeHeader: {
     display: 'flex',
@@ -278,14 +273,15 @@ const styles = {
     marginBottom: '12px',
   },
   incomeIcon: {
-    fontSize: '32px',
+    fontSize: '30px',
     width: '48px',
     height: '48px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#e8f5e9',
-    borderRadius: '8px',
+    backgroundColor: '#eef2ff',
+    color: '#4f46e5',
+    borderRadius: '10px',
   },
   incomeInfo: {
     flex: 1,
@@ -294,20 +290,20 @@ const styles = {
   incomeTitle: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: '#111827',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
   incomeType: {
     fontSize: '13px',
-    color: '#666',
+    color: '#6b7280',
     marginTop: '2px',
   },
   incomeAmount: {
     fontSize: '20px',
     fontWeight: '700' as const,
-    color: '#4caf50',
+    color: '#059669',
   },
   incomeDetails: {
     display: 'flex',
@@ -318,19 +314,19 @@ const styles = {
   },
   incomeDate: {
     fontSize: '13px',
-    color: '#666',
+    color: '#6b7280',
   },
   linkedExpense: {
     fontSize: '13px',
-    color: '#1976d2',
-    backgroundColor: '#e3f2fd',
+    color: '#1d4ed8',
+    backgroundColor: '#e0f2fe',
     padding: '4px 8px',
-    borderRadius: '4px',
+    borderRadius: '6px',
     width: 'fit-content',
   },
   incomeNote: {
     fontSize: '13px',
-    color: '#666',
+    color: '#6b7280',
     fontStyle: 'italic' as const,
   },
   incomeActions: {
@@ -340,47 +336,29 @@ const styles = {
   },
   iconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(25,118,210,0.08)',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'background-color 0.2s',
   },
-  editButton: {
-    padding: '6px 16px',
-    backgroundColor: '#2196f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  deleteButton: {
-    padding: '6px 16px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
   input: {
-    padding: '8px 12px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
+    padding: '10px 12px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
     fontSize: '14px',
+    outline: 'none',
   },
   select: {
-    padding: '8px 12px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
+    padding: '10px 12px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
   },
   emptyState: {
     display: 'flex',
@@ -388,8 +366,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '60px 20px',
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
     borderRadius: '12px',
   },
   emptyIcon: {
@@ -400,12 +378,47 @@ const styles = {
   emptyText: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#666',
+    color: '#4b5563',
     marginBottom: '8px',
   },
   emptySubtext: {
     fontSize: '14px',
-    color: '#999',
+    color: '#9ca3af',
+  },
+  inlineEditor: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  inlineRow: {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap' as const,
+  },
+  inlineActions: {
+    display: 'flex',
+    gap: '8px',
+    justifyContent: 'flex-end',
+  },
+  saveButton: {
+    padding: '8px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  cancelButton: {
+    padding: '8px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
   },
 };
 

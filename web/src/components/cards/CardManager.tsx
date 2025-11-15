@@ -3,6 +3,7 @@ import { Card, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../icons';
 
 interface CardManagerProps {
   cards: Card[];
@@ -49,21 +50,25 @@ const CardManager: React.FC<CardManagerProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800">{t('creditCards')}</h2>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors text-sm font-medium"
-        >
-          + {t('addCard')}
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <div>
+          <h2 style={styles.title}>{t('creditCards')}</h2>
+        </div>
+        <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+          <PlusIcon size={18} />
+          <span>{t('addCard')}</span>
         </button>
       </div>
 
-      {/* Add Card Form */}
       {isAdding && (
-        <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">{t('addCard')}</h3>
+        <div style={styles.formCard}>
+          <div style={styles.formHeader}>
+            <h3 style={styles.formTitle}>{t('addCard')}</h3>
+            <button onClick={() => setIsAdding(false)} style={styles.cancelIconButton} aria-label={t('cancel')}>
+              <CloseIcon size={18} />
+            </button>
+          </div>
           <CardForm
             onSubmit={handleAdd}
             onCancel={() => setIsAdding(false)}
@@ -72,141 +77,319 @@ const CardManager: React.FC<CardManagerProps> = ({
         </div>
       )}
 
-      {/* Cards List */}
-      {cards.length === 0 && !isAdding && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 text-lg">{t('noCardsYet')}</p>
+      {cards.length === 0 && !isAdding ? (
+        <div style={styles.emptyState}>
+          <p style={styles.emptyText}>{t('noCardsYet')}</p>
         </div>
-      )}
+      ) : (
+        <div style={styles.cardList}>
+          {cards.map((card) => {
+            const isEditing = editingId === card.id;
+            const isExpanded = expandedCardId === card.id;
+            const stats: CardStats = calculateCardStats(card, expenses, categories);
 
-      {cards.map((card) => {
-        const isEditing = editingId === card.id;
-        const isExpanded = expandedCardId === card.id;
-        const stats: CardStats = calculateCardStats(card, expenses, categories);
+            if (isEditing) {
+              return (
+                <div key={card.id} style={styles.card}>
+                  <div style={styles.editingHeader}>
+                    <h3 style={styles.formTitle}>{t('editCard')}</h3>
+                    <button onClick={() => setEditingId(null)} style={styles.cancelIconButton} aria-label={t('cancel')}>
+                      <CloseIcon size={18} />
+                    </button>
+                  </div>
+                  <CardForm
+                    onSubmit={handleUpdate}
+                    onCancel={() => setEditingId(null)}
+                    initialData={card}
+                    categories={categories}
+                  />
+                </div>
+              );
+            }
 
-        return (
-          <div
-            key={card.id}
-            className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
-          >
-            {isEditing ? (
-              <>
-                <h3 className="text-lg font-medium text-gray-800 mb-4">{t('editCard')}</h3>
-                <CardForm
-                  onSubmit={handleUpdate}
-                  onCancel={() => setEditingId(null)}
-                  initialData={card}
-                  categories={categories}
-                />
-              </>
-            ) : (
-              <>
-                {/* Card Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800">{card.name}</h3>
-                    <p className="text-sm text-gray-500">
+            return (
+              <div key={card.id} style={styles.card}>
+                <div style={styles.cardHeader}>
+                  <div style={styles.cardInfo}>
+                    <h3 style={styles.cardName}>{card.name}</h3>
+                    <p style={styles.cardLimit}>
                       {t('cardLimit')}: ${card.cardLimit.toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingId(card.id!)}
-                      className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    >
-                      {t('edit')}
+                  <div style={styles.cardActions}>
+                    <button onClick={() => setEditingId(card.id!)} style={styles.iconButton} aria-label={t('edit')}>
+                      <EditIcon size={18} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(card.id!)}
-                      className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
-                    >
-                      {t('delete')}
+                    <button onClick={() => handleDelete(card.id!)} style={styles.deleteButton} aria-label={t('delete')}>
+                      <DeleteIcon size={18} />
                     </button>
                   </div>
                 </div>
 
-                {/* Card Stats Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                  <div className="p-3 bg-blue-50 rounded">
-                    <p className="text-xs text-gray-600 mb-1">{t('currentCycleSpending')}</p>
-                    <p className="text-lg font-semibold text-blue-700">
-                      ${stats.currentCycleSpending.toFixed(2)}
-                    </p>
+                <div style={styles.statsGrid}>
+                  <div style={{ ...styles.statCard, backgroundColor: '#e0f2fe' }}>
+                    <p style={styles.statLabel}>{t('currentCycleSpending')}</p>
+                    <p style={{ ...styles.statValue, color: '#0f62fe' }}>${stats.currentCycleSpending.toFixed(2)}</p>
                   </div>
-                  <div className="p-3 bg-green-50 rounded">
-                    <p className="text-xs text-gray-600 mb-1">{t('availableCredit')}</p>
-                    <p className="text-lg font-semibold text-green-700">
-                      ${stats.availableCredit.toFixed(2)}
-                    </p>
+                  <div style={{ ...styles.statCard, backgroundColor: '#dcfce7' }}>
+                    <p style={styles.statLabel}>{t('availableCredit')}</p>
+                    <p style={{ ...styles.statValue, color: '#15803d' }}>${stats.availableCredit.toFixed(2)}</p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded">
-                    <p className="text-xs text-gray-600 mb-1">{t('estimatedCashback')}</p>
-                    <p className="text-lg font-semibold text-purple-700">
-                      ${stats.estimatedTotalCashback.toFixed(2)}
-                    </p>
+                  <div style={{ ...styles.statCard, backgroundColor: '#ede9fe' }}>
+                    <p style={styles.statLabel}>{t('estimatedCashback')}</p>
+                    <p style={{ ...styles.statValue, color: '#6d28d9' }}>${stats.estimatedTotalCashback.toFixed(2)}</p>
                   </div>
-                  <div className="p-3 bg-orange-50 rounded">
-                    <p className="text-xs text-gray-600 mb-1">{t('nextBillingDate')}</p>
-                    <p className="text-lg font-semibold text-orange-700">
-                      {stats.nextBillingDate}
-                    </p>
+                  <div style={{ ...styles.statCard, backgroundColor: '#fff7ed' }}>
+                    <p style={styles.statLabel}>{t('nextBillingDate')}</p>
+                    <p style={{ ...styles.statValue, color: '#c2410c' }}>{stats.nextBillingDate}</p>
                   </div>
                 </div>
 
-                {/* Toggle Details Button */}
                 {card.cashbackRules && card.cashbackRules.length > 0 && (
-                  <button
-                    onClick={() => toggleExpand(card.id!)}
-                    className="w-full py-2 text-sm text-gray-600 hover:text-gray-800 border-t border-gray-200 flex items-center justify-center gap-2"
-                  >
-                    {isExpanded ? '▲' : '▼'} {t('cashbackBreakdown')}
+                  <button onClick={() => toggleExpand(card.id!)} style={styles.toggleButton}>
+                    {isExpanded ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
+                    <span>{t('cashbackBreakdown')}</span>
                   </button>
                 )}
 
-                {/* Cashback Breakdown (Expanded) */}
                 {isExpanded && card.cashbackRules && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="space-y-3">
-                      {stats.cashbackByRule.map((ruleStats, index) => (
-                        <div
-                          key={ruleStats.ruleId || index}
-                          className="p-3 bg-gray-50 rounded"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-700">
-                              {ruleStats.categoryName}
-                            </span>
-                            <span className="text-sm font-semibold text-purple-600">
-                              +${ruleStats.estimatedCashback.toFixed(2)}
-                            </span>
+                  <div style={styles.breakdown}>
+                    {stats.cashbackByRule.map((ruleStats, index) => (
+                      <div key={ruleStats.ruleId || index} style={styles.breakdownRow}>
+                        <div>
+                          <div style={styles.breakdownTitle}>{ruleStats.categoryName}</div>
+                          <div style={styles.breakdownMeta}>
+                            {t('categorySpend')}: ${ruleStats.categorySpend.toFixed(2)}
                           </div>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <p>
-                              {t('categorySpend')}: ${ruleStats.categorySpend.toFixed(2)}
-                            </p>
-                            {ruleStats.requiredToReachMinSpend > 0 && (
-                              <p className="text-orange-600">
-                                ${ruleStats.requiredToReachMinSpend.toFixed(2)} {t('toReachMinSpend')}
-                              </p>
-                            )}
-                            {ruleStats.requiredToReachCap > 0 && (
-                              <p className="text-blue-600">
-                                ${ruleStats.requiredToReachCap.toFixed(2)} {t('toReachCap')}
-                              </p>
-                            )}
-                          </div>
+                          {ruleStats.requiredToReachMinSpend > 0 && (
+                            <div style={{ ...styles.breakdownMeta, color: '#c2410c' }}>
+                              ${ruleStats.requiredToReachMinSpend.toFixed(2)} {t('toReachMinSpend')}
+                            </div>
+                          )}
+                          {ruleStats.requiredToReachCap > 0 && (
+                            <div style={{ ...styles.breakdownMeta, color: '#2563eb' }}>
+                              ${ruleStats.requiredToReachCap.toFixed(2)} {t('toReachCap')}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                        <div style={styles.breakdownValue}>+${ruleStats.estimatedCashback.toFixed(2)}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </>
-            )}
-          </div>
-        );
-      })}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
 
 export default CardManager;
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap' as const,
+  },
+  title: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  addButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+  formCard: {
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '16px',
+    padding: '20px',
+    boxShadow: '0 4px 12px rgba(15,23,42,0.06)',
+  },
+  formHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+  },
+  formTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  cancelIconButton: {
+    border: 'none',
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    borderRadius: '999px',
+    padding: '6px',
+    cursor: 'pointer',
+    color: '#4b5563',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '40px 20px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '16px',
+  },
+  emptyText: {
+    margin: 0,
+    color: '#6b7280',
+    fontSize: '16px',
+    fontWeight: 500 as const,
+  },
+  cardList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  card: {
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '16px',
+    padding: '20px',
+    boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
+  },
+  editingHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '12px',
+    alignItems: 'flex-start',
+    marginBottom: '16px',
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  cardName: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  cardLimit: {
+    marginTop: '4px',
+    color: '#6b7280',
+    fontSize: '14px',
+  },
+  cardActions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  iconButton: {
+    padding: '8px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    padding: '8px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: 'rgba(244,63,94,0.12)',
+    color: '#b91c1c',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '12px',
+  },
+  statCard: {
+    borderRadius: '12px',
+    padding: '12px',
+  },
+  statLabel: {
+    margin: 0,
+    color: '#6b7280',
+    fontSize: '12px',
+    marginBottom: '6px',
+  },
+  statValue: {
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: 600 as const,
+  },
+  toggleButton: {
+    width: '100%',
+    border: 'none',
+    backgroundColor: '#f3f4f6',
+    color: '#4b5563',
+    borderRadius: '10px',
+    padding: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    cursor: 'pointer',
+    fontWeight: 500 as const,
+  },
+  breakdown: {
+    marginTop: '16px',
+    borderTop: '1px solid #e5e7eb',
+    paddingTop: '16px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  breakdownRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '12px',
+    padding: '12px',
+    borderRadius: '12px',
+    backgroundColor: '#f9fafb',
+  },
+  breakdownTitle: {
+    fontSize: '15px',
+    fontWeight: 600 as const,
+    color: '#111827',
+  },
+  breakdownMeta: {
+    fontSize: '12px',
+    color: '#6b7280',
+  },
+  breakdownValue: {
+    fontWeight: 600 as const,
+    color: '#6d28d9',
+    whiteSpace: 'nowrap' as const,
+  },
+};

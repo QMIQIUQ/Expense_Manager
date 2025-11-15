@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Budget, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
 
 interface BudgetManagerProps {
   budgets: Budget[];
@@ -120,10 +121,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.title}>{t('budgetManagement')}</h3>
+        <h2 style={styles.title}>{t('budgetManagement')}</h2>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            {t('setBudget')}
+            <PlusIcon size={18} />
+            <span>{t('setBudget')}</span>
           </button>
         )}
       </div>
@@ -300,15 +302,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => saveInlineEdit(budget)} style={styles.saveButton}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.4-1.4L9 16.2z" fill="#219653"/>
-                        </svg>
+                      <button onClick={() => saveInlineEdit(budget)} style={styles.saveButton} aria-label={t('save')}>
+                        <CheckIcon size={18} />
                       </button>
-                      <button onClick={cancelInlineEdit} style={styles.cancelIconButton}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#555"/>
-                        </svg>
+                      <button onClick={cancelInlineEdit} style={styles.cancelIconButton} aria-label={t('cancel')}>
+                        <CloseIcon size={18} />
                       </button>
                     </div>
                   </div>
@@ -339,20 +337,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     <div style={styles.budgetFooter}>
                       <span style={styles.percentage}>{percentage.toFixed(1)}% {t('used')}</span>
                       <div style={styles.actions}>
-                        <button onClick={() => startInlineEdit(budget)} style={styles.editBtn}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#1976d2"/>
-                            <path d="M20.71 7.04a1.004 1.004 0 0 0 0-1.41l-2.34-2.34a1.004 1.004 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1976d2"/>
-                          </svg>
+                        <button onClick={() => startInlineEdit(budget)} style={styles.editBtn} aria-label={t('edit')}>
+                          <EditIcon size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
                           style={styles.deleteBtn}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 7h12l-1 14H7L6 7z" fill="#f44336"/>
-                            <path d="M8 7V5h8v2h3v2H5V7h3z" fill="#f44336"/>
-                          </svg>
+                          <DeleteIcon size={18} />
                         </button>
                       </div>
                     </div>
@@ -395,17 +387,21 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: '20px',
-    fontWeight: '600' as const,
+    fontSize: '24px',
+    fontWeight: 600 as const,
+    color: '#111827',
   },
   addButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6366f1',
-    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     cursor: 'pointer',
   },
   searchContainer: {
@@ -570,10 +566,10 @@ const styles = {
   },
   editBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(33, 150, 243, 0.08)',
-    color: 'white',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     fontSize: '12px',
     cursor: 'pointer',
     display: 'flex',
@@ -582,10 +578,10 @@ const styles = {
   },
   deleteBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(244, 67, 54, 0.08)',
-    color: 'white',
+    backgroundColor: 'rgba(244,63,94,0.12)',
+    color: '#b91c1c',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     fontSize: '12px',
     cursor: 'pointer',
     display: 'flex',
@@ -607,9 +603,10 @@ const styles = {
   },
   saveButton: {
     padding: '8px',
-    backgroundColor: 'rgba(33,150,83,0.08)',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    color: '#16a34a',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -617,9 +614,10 @@ const styles = {
   },
   cancelIconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(158,158,158,0.12)',
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    color: '#374151',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',

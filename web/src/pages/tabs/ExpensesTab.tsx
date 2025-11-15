@@ -63,9 +63,9 @@ const styles = {
   },
   sectionTitle: {
     margin: 0,
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#333',
+    color: '#111827',
   },
 };
 
