@@ -651,6 +651,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             <span style={styles.annotationItem}>
                               {t('repaid')}: ${repaid.toFixed(2)}
                             </span>
+                            {expense.repaymentTrackingCompleted && (
+                              <span style={styles.completedBadge}>
+                                ✓ {t('completed')}
+                              </span>
+                            )}
                           </div>
                         );
                       }
@@ -706,6 +711,26 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       >
                         <RepaymentIcon size={18} />
                       </button>
+                      
+                      {/* Show repayment completion toggle when expense has repayments */}
+                      {repaymentTotals[expense.id!] > 0 && (
+                        <button
+                          onClick={() => {
+                            onInlineUpdate(expense.id!, {
+                              repaymentTrackingCompleted: !expense.repaymentTrackingCompleted
+                            });
+                          }}
+                          style={{
+                            ...styles.iconButton,
+                            ...(expense.repaymentTrackingCompleted ? styles.completedChip : styles.warningChip),
+                          }}
+                          aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                          title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                        >
+                          {expense.repaymentTrackingCompleted ? '✓' : '○'}
+                        </button>
+                      )}
+                      
                       <button onClick={() => startInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.primaryChip }} aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -1034,6 +1059,15 @@ const styles = {
   annotationDivider: {
     color: '#ddd',
   },
+  completedBadge: {
+    fontSize: '10px',
+    fontWeight: '600' as const,
+    color: '#16a34a',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    marginLeft: '4px',
+  },
   actions: { display: 'flex', gap: '8px' },
   iconButton: {
     padding: '8px',
@@ -1059,6 +1093,16 @@ const styles = {
   neutralChip: {
     backgroundColor: 'rgba(148,163,184,0.2)',
     color: '#374151',
+  },
+  completedChip: {
+    backgroundColor: 'rgba(34,197,94,0.2)',
+    color: '#16a34a',
+    fontWeight: '700' as const,
+  },
+  warningChip: {
+    backgroundColor: 'rgba(251,191,36,0.15)',
+    color: '#d97706',
+    fontWeight: '600' as const,
   },
   selectToggleButton: {
     borderRadius: '8px',

@@ -489,6 +489,9 @@ export const translations = {
   repaid: { en: 'Repaid', zh: '已還', 'zh-CN': '已还' },
   original: { en: 'Original', zh: '原本', 'zh-CN': '原本' },
   excess: { en: 'Excess', zh: '超額', 'zh-CN': '超额' },
+  markRepaymentComplete: { en: 'Mark repayment as complete', zh: '標記還款完成', 'zh-CN': '标记还款完成' },
+  markAsIncomplete: { en: 'Mark as incomplete', zh: '標記為未完成', 'zh-CN': '标记为未完成' },
+  completed: { en: 'Completed', zh: '已完成', 'zh-CN': '已完成' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
