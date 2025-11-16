@@ -487,6 +487,8 @@ export const translations = {
   collected: { en: 'Collected', zh: '已收回', 'zh-CN': '已收回' },
   totalAmount: { en: 'Total Amount', zh: '總金額', 'zh-CN': '总金额' },
   repaid: { en: 'Repaid', zh: '已還', 'zh-CN': '已还' },
+  original: { en: 'Original', zh: '原本', 'zh-CN': '原本' },
+  excess: { en: 'Excess', zh: '超額', 'zh-CN': '超额' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

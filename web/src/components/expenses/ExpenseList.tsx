@@ -637,6 +637,26 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   <div style={styles.leftCol}>
                     <h3 style={styles.description}>{expense.description}</h3>
                     {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
+                    
+                    {/* Repayment Info Annotation */}
+                    {(() => {
+                      const repaid = repaymentTotals[expense.id!] || 0;
+                      if (repaid > 0) {
+                        return (
+                          <div style={styles.repaymentAnnotation}>
+                            <span style={styles.annotationItem}>
+                              {t('original')}: ${expense.amount.toFixed(2)}
+                            </span>
+                            <span style={styles.annotationDivider}>|</span>
+                            <span style={styles.annotationItem}>
+                              {t('repaid')}: ${repaid.toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
                       <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
@@ -655,16 +675,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         
                         if (repaid > 0) {
                           return (
-                            <div style={styles.amountBreakdown}>
-                              <div style={styles.originalAmount}>${expense.amount.toFixed(2)}</div>
-                              <div style={styles.repaidAmount}>- ${repaid.toFixed(2)}</div>
-                              <div style={{
-                                ...styles.netAmount,
-                                color: hasExcess ? '#2196F3' : '#ff9800'
-                              }}>
-                                = ${Math.abs(netAmount).toFixed(2)}
-                                {hasExcess && <span style={styles.excessBadge}>({t('excessAmount')})</span>}
-                              </div>
+                            <div style={{
+                              ...styles.amount,
+                              color: hasExcess ? '#2196F3' : '#ff9800'
+                            }}>
+                              ${Math.abs(netAmount).toFixed(2)}
+                              {hasExcess && <span style={styles.excessBadgeSmall}>({t('excess')})</span>}
                             </div>
                           );
                         }
@@ -996,6 +1012,27 @@ const styles = {
     fontSize: '11px',
     fontWeight: '500' as const,
     color: '#2196F3',
+  },
+  excessBadgeSmall: {
+    fontSize: '10px',
+    fontWeight: '500' as const,
+    color: '#2196F3',
+    marginLeft: '4px',
+  },
+  repaymentAnnotation: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '6px',
+    fontSize: '11px',
+    color: '#666',
+  },
+  annotationItem: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  annotationDivider: {
+    color: '#ddd',
   },
   actions: { display: 'flex', gap: '8px' },
   iconButton: {
