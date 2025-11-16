@@ -207,6 +207,83 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser, loadData]);
 
+  // Smart tab refresh: Reload data when switching tabs
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const refreshTabData = async () => {
+      try {
+        switch (activeTab) {
+          case 'expenses':
+            // Reload expenses and repayments
+            const [expensesData, repaymentsData] = await Promise.all([
+              expenseService.getAll(currentUser.uid),
+              repaymentService.getAll(currentUser.uid),
+            ]);
+            setExpenses(expensesData);
+            setRepayments(repaymentsData);
+            break;
+          case 'incomes':
+            // Reload incomes
+            const incomesData = await incomeService.getAll(currentUser.uid);
+            setIncomes(incomesData);
+            break;
+          case 'dashboard':
+            // Reload all for dashboard
+            const [dashExpenses, dashIncomes, dashRepayments] = await Promise.all([
+              expenseService.getAll(currentUser.uid),
+              incomeService.getAll(currentUser.uid),
+              repaymentService.getAll(currentUser.uid),
+            ]);
+            setExpenses(dashExpenses);
+            setIncomes(dashIncomes);
+            setRepayments(dashRepayments);
+            break;
+          case 'categories':
+            // Reload categories and budgets
+            const [categoriesData, budgetsData] = await Promise.all([
+              categoryService.getAll(currentUser.uid),
+              budgetService.getAll(currentUser.uid),
+            ]);
+            setCategories(categoriesData);
+            setBudgets(budgetsData);
+            break;
+          case 'recurring':
+            // Reload recurring expenses
+            const recurringData = await recurringExpenseService.getAll(currentUser.uid);
+            setRecurringExpenses(recurringData);
+            break;
+          case 'payment-methods':
+            // Reload cards and ewallets
+            try {
+              const cardsData = await cardService.getAll(currentUser.uid);
+              setCards(cardsData);
+            } catch (error) {
+              console.warn('Could not reload cards:', error);
+            }
+            try {
+              const ewalletsData = await ewalletService.getAll(currentUser.uid);
+              setEWallets(ewalletsData);
+            } catch (error) {
+              console.warn('Could not reload e-wallets:', error);
+            }
+            break;
+          // Admin and settings tabs don't need auto-refresh
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error('Error refreshing tab data:', error);
+        // Silent fail - don't show notification to avoid annoying users
+      }
+    };
+    
+    // Don't refresh on initial mount, only on tab change
+    if (!initialLoading) {
+      refreshTabData();
+    }
+  }, [activeTab, currentUser, initialLoading]);
+
   // Click outside to close actions menu
   useEffect(() => {
     function onDocClick(e: MouseEvent) {

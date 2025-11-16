@@ -52,7 +52,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       byCategory[exp.category] += exp.amount;
     });
 
-    // Calculate unrecovered amounts using new Repayment collection
+    // Total unrecovered is now calculated from tracked expenses only
     const repaymentsByExpense: { [expenseId: string]: number } = {};
     repayments.forEach((rep) => {
       if (rep.expenseId) {
@@ -61,21 +61,13 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       }
     });
 
-    const unrecoveredExpenses = expenses
-      .filter((exp) => repaymentsByExpense[exp.id || ''])
-      .map((exp) => {
-        const targetAmount = exp.amount;
-        const recovered = repaymentsByExpense[exp.id || ''] || 0;
-        const unrecovered = Math.max(0, targetAmount - recovered);
-        return { expense: exp, recovered, unrecovered, targetAmount };
-      })
-      .filter((item) => item.unrecovered > 0)
-      .sort((a, b) => b.unrecovered - a.unrecovered);
-
-    const totalUnrecovered = unrecoveredExpenses.reduce(
-      (sum, item) => sum + item.unrecovered,
-      0
-    );
+    const totalUnrecovered = expenses
+      .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .reduce((sum, exp) => {
+        const repaid = repaymentsByExpense[exp.id || ''] || 0;
+        const remaining = Math.max(0, exp.amount - repaid);
+        return sum + remaining;
+      }, 0);
 
     const netCashflow = monthlyIncome - monthly;
 
@@ -86,7 +78,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       monthlyIncome,
       daily,
       byCategory,
-      unrecoveredExpenses,
       totalUnrecovered,
       netCashflow,
     };
@@ -272,39 +263,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           </div>
         );
       })()}
-
-      {stats.unrecoveredExpenses.length > 0 && (
-        <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>{t('topUnrecoveredExpenses')}</h3>
-          <div style={styles.categoryList}>
-            {stats.unrecoveredExpenses.slice(0, 5).map((item) => {
-              const percentage = (item.recovered / item.targetAmount) * 100;
-              return (
-                <div key={item.expense.id} style={styles.categoryItem}>
-                  <div style={styles.categoryInfo}>
-                    <span style={styles.categoryName}>{item.expense.description}</span>
-                    <span style={{ ...styles.categoryAmount, color: '#ff9800' }}>
-                      ${item.unrecovered.toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={styles.progressBar}>
-                    <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${percentage}%`,
-                        backgroundColor: '#4caf50',
-                      }}
-                    />
-                  </div>
-                  <span style={styles.categoryPercentage}>
-                    {percentage.toFixed(1)}% {t('recovered')}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {categories.length > 0 && (
         <div style={styles.categoryBreakdown}>
