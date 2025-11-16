@@ -714,8 +714,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <RepaymentIcon size={18} />
                       </button>
                       
-                      {/* Show repayment completion toggle when expense has repayments */}
-                      {repaymentTotals[expense.id!] > 0 && (
+                      {/* Show repayment completion toggle when expense has repayments AND is being tracked */}
+                      {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
                         <button
                           onClick={() => {
                             onInlineUpdate(expense.id!, {
