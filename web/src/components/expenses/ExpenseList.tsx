@@ -15,6 +15,7 @@ interface ExpenseListProps {
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
   onBulkDelete?: (ids: string[]) => void;
+  onReloadRepayments?: () => void; // Callback to reload repayments
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -26,6 +27,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onDelete,
   onInlineUpdate,
   onBulkDelete,
+  onReloadRepayments,
 }) => {
   const { t } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
@@ -753,6 +755,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     expense={expense}
                     onClose={() => setExpandedRepaymentId(null)}
                     inline={true}
+                    onRepaymentChange={onReloadRepayments}
                   />
                 </div>
               )}

@@ -12,9 +12,10 @@ interface RepaymentManagerProps {
   expense: Expense;
   onClose?: () => void;
   inline?: boolean;
+  onRepaymentChange?: () => void; // Callback to notify parent of changes
 }
 
-const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false }) => {
+const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false, onRepaymentChange }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
   const { showNotification } = useNotification();
@@ -75,6 +76,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       await loadRepayments();
       setShowForm(false);
       showNotification('success', t('repaymentAdded'));
+      // Notify parent to refresh data
+      if (onRepaymentChange) {
+        onRepaymentChange();
+      }
     } catch (error) {
       console.error('Failed to add repayment:', error);
       showNotification('error', t('errorSavingData'));
@@ -113,6 +118,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       setShowForm(false);
       setEditingRepayment(null);
       showNotification('success', t('repaymentUpdated'));
+      // Notify parent to refresh data
+      if (onRepaymentChange) {
+        onRepaymentChange();
+      }
     } catch (error) {
       console.error('Failed to update repayment:', error);
       showNotification('error', t('errorSavingData'));
@@ -126,6 +135,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       await repaymentService.delete(id);
       await loadRepayments();
       showNotification('success', t('repaymentDeleted'));
+      // Notify parent to refresh data
+      if (onRepaymentChange) {
+        onRepaymentChange();
+      }
     } catch (error) {
       console.error('Failed to delete repayment:', error);
       showNotification('error', t('errorDeletingData'));

@@ -190,6 +190,17 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser, showNotification, t]);
 
+  // Function to reload only repayments (for performance)
+  const reloadRepayments = React.useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const repaymentsData = await repaymentService.getAll(currentUser.uid);
+      setRepayments(repaymentsData);
+    } catch (error) {
+      console.error('Failed to reload repayments:', error);
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser) {
       loadData();
@@ -1524,6 +1535,7 @@ const Dashboard: React.FC = () => {
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
+              onReloadRepayments={reloadRepayments}
             />
           </div>
         )}
