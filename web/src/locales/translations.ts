@@ -75,6 +75,7 @@ export const translations = {
   // Expense List
   expenseHistory: { en: 'Expense History', zh: '支出記錄', 'zh-CN': '支出记录' },
   searchExpenses: { en: 'Search expenses...', zh: '搜尋支出...', 'zh-CN': '搜索支出...' },
+  filters: { en: 'Filters', zh: '篩選', 'zh-CN': '筛选' },
   allCategories: { en: 'All Categories', zh: '所有類別', 'zh-CN': '所有分类' },
   sortByDateDesc: { en: 'Date (Newest)', zh: '日期（最新）', 'zh-CN': '日期（最新）' },
   sortByDateAsc: { en: 'Date (Oldest)', zh: '日期（最舊）', 'zh-CN': '日期（最旧）' },

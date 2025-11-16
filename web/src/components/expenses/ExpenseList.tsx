@@ -43,6 +43,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
   const [showSummary, setShowSummary] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
     isOpen: false,
     expenseId: null,
@@ -323,6 +324,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
           )}
         </div>
+        {/* Simplified filter - always visible */}
         <div style={styles.filterRow}>
           <input
             type="text"
@@ -330,83 +332,97 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={(e) => e.target.select()}
-            style={styles.filterInput}
+            style={{ ...styles.filterInput, flex: 1 }}
           />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            style={styles.filterSelect}
-            aria-label="Filter by category"
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            style={styles.toggleFiltersButton}
+            aria-label="Toggle advanced filters"
           >
-            <option value="">{t('allCategories')}</option>
-            {categoryNames.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-          <select
-            value={monthFilter}
-            onChange={(e) => {
-              setMonthFilter(e.target.value);
-              if (e.target.value) {
-                setAllDates(false);
-              }
-            }}
-            style={styles.filterSelect}
-            aria-label="Filter by month"
-          >
-            <option value="">{t('allMonths')}</option>
-            {availableMonths.map((monthKey) => (
-              <option key={monthKey} value={monthKey}>
-                {formatMonthDisplay(monthKey)}
-              </option>
-            ))}
-          </select>
+            {showAdvancedFilters ? '▼ ' : '▶ '}{t('filters')}
+          </button>
         </div>
-        <div style={styles.filterRow}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              id="allDatesToggle"
-              type="checkbox"
-              checked={allDates}
-              onChange={(e) => {
-                setAllDates(e.target.checked);
-                if (e.target.checked) {
-                  setMonthFilter('');
-                }
-              }}
-              aria-label={t('allDates')}
-            />
-            <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
-          </div>
-          <div style={styles.dateFilterGroup}>
-            <label style={styles.dateLabel}>{t('from')}</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              style={styles.dateInput}
-              disabled={allDates || !!monthFilter}
-            />
-          </div>
-          <div style={styles.dateFilterGroup}>
-            <label style={styles.dateLabel}>{t('to')}</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              style={styles.dateInput}
-              disabled={allDates || !!monthFilter}
-            />
-          </div>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
-            <option value="date-desc">{t('sortByDateDesc')}</option>
-            <option value="date-asc">{t('sortByDateAsc')}</option>
-            <option value="amount-desc">{t('sortByAmountDesc')}</option>
-            <option value="amount-asc">{t('sortByAmountAsc')}</option>
-          </select>
-        </div>
+        {/* Advanced filters - collapsible */}
+        {showAdvancedFilters && (
+          <>
+            <div style={styles.filterRow}>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={styles.filterSelect}
+                aria-label="Filter by category"
+              >
+                <option value="">{t('allCategories')}</option>
+                {categoryNames.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={monthFilter}
+                onChange={(e) => {
+                  setMonthFilter(e.target.value);
+                  if (e.target.value) {
+                    setAllDates(false);
+                  }
+                }}
+                style={styles.filterSelect}
+                aria-label="Filter by month"
+              >
+                <option value="">{t('allMonths')}</option>
+                {availableMonths.map((monthKey) => (
+                  <option key={monthKey} value={monthKey}>
+                    {formatMonthDisplay(monthKey)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.filterRow}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="allDatesToggle"
+                  type="checkbox"
+                  checked={allDates}
+                  onChange={(e) => {
+                    setAllDates(e.target.checked);
+                    if (e.target.checked) {
+                      setMonthFilter('');
+                    }
+                  }}
+                  aria-label={t('allDates')}
+                />
+                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
+              </div>
+              <div style={styles.dateFilterGroup}>
+                <label style={styles.dateLabel}>{t('from')}</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  style={styles.dateInput}
+                  disabled={allDates || !!monthFilter}
+                />
+              </div>
+              <div style={styles.dateFilterGroup}>
+                <label style={styles.dateLabel}>{t('to')}</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  style={styles.dateInput}
+                  disabled={allDates || !!monthFilter}
+                />
+              </div>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
+                <option value="date-desc">{t('sortByDateDesc')}</option>
+                <option value="date-asc">{t('sortByDateAsc')}</option>
+                <option value="amount-desc">{t('sortByAmountDesc')}</option>
+                <option value="amount-asc">{t('sortByAmountAsc')}</option>
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
@@ -895,6 +911,23 @@ const styles = {
     fontSize: '14px',
     backgroundColor: 'white',
   },
+  toggleFiltersButton: {
+    padding: '10px 16px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    minWidth: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      backgroundColor: '#f5f5f5',
+    }
+  } as React.CSSProperties,
   dateFilterGroup: {
     display: 'flex',
     alignItems: 'center',
