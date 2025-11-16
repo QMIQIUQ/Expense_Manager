@@ -58,19 +58,33 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
       const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
       
+      // Get any existing excess income for this expense
+      const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+      const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+      
       if (totalRepaid > expense.amount) {
-        // Create income for the excess amount
+        // There is excess - create or update income
         const excessAmount = totalRepaid - expense.amount;
-        await incomeService.create({
-          userId: currentUser.uid,
-          amount: excessAmount,
-          date: repaymentData.date,
-          type: 'repayment',
-          linkedExpenseId: expense.id,
-          title: `Excess repayment for ${expense.description}`,
-          note: `Automatically created from excess repayment`,
-        });
-        showNotification('info', t('excessConvertedToIncome'));
+        
+        if (existingExcessIncome) {
+          // Update existing excess income
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+        } else {
+          // Create new income for the excess amount
+          await incomeService.create({
+            userId: currentUser.uid,
+            amount: excessAmount,
+            date: repaymentData.date,
+            type: 'repayment',
+            linkedExpenseId: expense.id,
+            title: `Excess repayment for ${expense.description}`,
+            note: `Automatically created from excess repayment`,
+          });
+          showNotification('info', t('excessConvertedToIncome'));
+        }
+      } else if (existingExcessIncome) {
+        // No longer excess, delete the income
+        await incomeService.delete(existingExcessIncome.id!);
       }
 
       await loadRepayments();
@@ -99,19 +113,33 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
       const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
       
+      // Get any existing excess income for this expense
+      const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+      const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+      
       if (totalRepaid > expense.amount) {
-        // Create income for the excess amount
+        // There is excess - create or update income
         const excessAmount = totalRepaid - expense.amount;
-        await incomeService.create({
-          userId: currentUser.uid,
-          amount: excessAmount,
-          date: repaymentData.date,
-          type: 'repayment',
-          linkedExpenseId: expense.id,
-          title: `Excess repayment for ${expense.description}`,
-          note: `Automatically created from excess repayment`,
-        });
-        showNotification('info', t('excessConvertedToIncome'));
+        
+        if (existingExcessIncome) {
+          // Update existing excess income
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+        } else {
+          // Create new income for the excess amount
+          await incomeService.create({
+            userId: currentUser.uid,
+            amount: excessAmount,
+            date: repaymentData.date,
+            type: 'repayment',
+            linkedExpenseId: expense.id,
+            title: `Excess repayment for ${expense.description}`,
+            note: `Automatically created from excess repayment`,
+          });
+          showNotification('info', t('excessConvertedToIncome'));
+        }
+      } else if (existingExcessIncome) {
+        // No longer excess, delete the income
+        await incomeService.delete(existingExcessIncome.id!);
       }
 
       await loadRepayments();
@@ -131,8 +159,33 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   };
 
   const handleDeleteRepayment = async (id: string) => {
+    if (!currentUser || !expense.id) return;
+    
     try {
+      // Delete the repayment
       await repaymentService.delete(id);
+      
+      // Get updated repayments after deletion
+      const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
+      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
+      
+      // Delete any excess income records linked to this expense
+      // This handles the case where deleting a repayment means there's no longer excess
+      const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+      for (const income of linkedIncomes) {
+        if (income.type === 'repayment') {
+          // Check if there's still excess after this deletion
+          if (totalRepaid <= expense.amount) {
+            // No more excess, delete the income
+            await incomeService.delete(income.id!);
+          } else {
+            // There's still excess, update the income amount
+            const newExcessAmount = totalRepaid - expense.amount;
+            await incomeService.update(income.id!, { amount: newExcessAmount });
+          }
+        }
+      }
+      
       await loadRepayments();
       showNotification('success', t('repaymentDeleted'));
       // Notify parent to refresh data
