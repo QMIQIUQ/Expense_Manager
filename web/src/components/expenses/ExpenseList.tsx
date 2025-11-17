@@ -5,6 +5,25 @@ import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon } from '../icons';
 
+// Add responsive styles for action buttons
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
+
 interface ExpenseListProps {
   expenses: Expense[];
   categories: Category[];
@@ -59,11 +78,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     paymentMethod?: Expense['paymentMethod'];
     cardId?: string;
     paymentMethodName?: string;
+    needsRepaymentTracking?: boolean;
   }>({});
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Calculate repayment totals per expense
   const repaymentTotals = useMemo(() => {
@@ -243,6 +264,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       paymentMethod: expense.paymentMethod || 'cash',
       cardId: expense.cardId || '',
       paymentMethodName: expense.paymentMethodName || '',
+      needsRepaymentTracking: !!expense.needsRepaymentTracking,
     });
   };
 
@@ -286,6 +308,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     }
 
+    // Repayment tracking toggle
+    const currentTrack = !!expense.needsRepaymentTracking;
+    const newTrack = !!draft.needsRepaymentTracking;
+    if (currentTrack !== newTrack) {
+      updates.needsRepaymentTracking = newTrack;
+    }
+
     if (Object.keys(updates).length > 0) {
       onInlineUpdate(expense.id!, updates);
     }
@@ -297,7 +326,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const groupedExpenses = groupExpensesByDate();
 
   return (
-    <div style={styles.container}>
+    <>
+      <style>{responsiveStyles}</style>
+      <div style={styles.container}>
       {/* Filter Section with integrated summary */}
       <div style={styles.filterSection}>
         {/* Summary row at the top of filter section */}
@@ -533,6 +564,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
                     )}
                     <span style={styles.category}>{expense.category}</span>
+                    {expense.repaymentTrackingCompleted && (
+                      <span style={styles.completedCheck} title={t('completed')}>✓</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -585,6 +619,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
                       style={{ ...styles.input, flex: 1, minWidth: '200px' }}
                     />
+                  </div>
+                  {/* Repayment tracking toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+                    <input
+                      type="checkbox"
+                      id={`needsRepaymentTracking-${expense.id}`}
+                      checked={!!draft.needsRepaymentTracking}
+                      onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
+                    />
+                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>
+                      {t('trackRepaymentInDashboard')}
+                    </label>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
@@ -651,34 +697,47 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                 </div>
               ) : (
+                <>
+                {/* Amount badge shown at top-right for better mobile visibility */}
+                {(() => {
+                  const repaid = repaymentTotals[expense.id!] || 0;
+                  const netAmount = expense.amount - repaid;
+                  const hasExcess = netAmount < 0;
+                  const isRepaid = repaid > 0;
+                  const color = isRepaid ? (hasExcess ? '#2196F3' : '#ff9800') : '#f44336';
+                  return (
+                    <div style={{
+                      ...styles.amountBadge,
+                      color,
+                    }}>
+                      ${Math.abs(isRepaid ? netAmount : expense.amount).toFixed(2)}
+                      {isRepaid && hasExcess && (
+                        <span style={styles.excessBadgeSmall}>({t('excess')})</span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Amount meta (original/repaid) under amount badge */}
+                {(() => {
+                  const repaid = repaymentTotals[expense.id!] || 0;
+                  if (repaid > 0) {
+                    return (
+                      <div style={styles.amountMeta}>
+                        <div>{t('original')}: ${expense.amount.toFixed(2)}</div>
+                        <div>{t('repaid')}: ${repaid.toFixed(2)}</div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 <div style={styles.mainRow}>
                   <div style={styles.leftCol}>
                     <h3 style={styles.description}>{expense.description}</h3>
                     {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
                     
-                    {/* Repayment Info Annotation */}
-                    {(() => {
-                      const repaid = repaymentTotals[expense.id!] || 0;
-                      if (repaid > 0) {
-                        return (
-                          <div style={styles.repaymentAnnotation}>
-                            <span style={styles.annotationItem}>
-                              {t('original')}: ${expense.amount.toFixed(2)}
-                            </span>
-                            <span style={styles.annotationDivider}>|</span>
-                            <span style={styles.annotationItem}>
-                              {t('repaid')}: ${repaid.toFixed(2)}
-                            </span>
-                            {expense.repaymentTrackingCompleted && (
-                              <span style={styles.completedBadge}>
-                                ✓ {t('completed')}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {/* Completed check moved to header category row */}
                     
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
@@ -689,28 +748,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </p>
                     )}
                   </div>
-                  <div style={styles.rightCol}>
-                    <div style={styles.amountSection}>
-                      {(() => {
-                        const repaid = repaymentTotals[expense.id!] || 0;
-                        const netAmount = expense.amount - repaid;
-                        const hasExcess = netAmount < 0;
-                        
-                        if (repaid > 0) {
-                          return (
-                            <div style={{
-                              ...styles.amount,
-                              color: hasExcess ? '#2196F3' : '#ff9800'
-                            }}>
-                              ${Math.abs(netAmount).toFixed(2)}
-                              {hasExcess && <span style={styles.excessBadgeSmall}>({t('excess')})</span>}
-                            </div>
-                          );
-                        }
-                        return <div style={styles.amount}>${expense.amount.toFixed(2)}</div>;
-                      })()}
-                    </div>
-                    <div style={styles.actions}>
+                  <div style={{
+                    ...styles.rightCol,
+                    marginTop: (repaymentTotals[expense.id!] || 0) > 0 ? 34 : 0,
+                  }}>
+                    {/* Desktop: Show all buttons */}
+                    <div className="desktop-actions" style={styles.actions}>
                       <button 
                         onClick={() => {
                           if (expandedRepaymentId === expense.id) {
@@ -730,7 +773,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <RepaymentIcon size={18} />
                       </button>
                       
-                      {/* Show repayment completion toggle when expense has repayments AND is being tracked */}
                       {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
                         <button
                           onClick={() => {
@@ -760,8 +802,75 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <DeleteIcon size={18} />
                       </button>
                     </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
+                          style={{ ...styles.iconButton, ...styles.neutralChip }}
+                          aria-label="More"
+                          title="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === expense.id && (
+                          <div style={styles.menu}>
+                            <button
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                if (expandedRepaymentId === expense.id) {
+                                  setExpandedRepaymentId(null);
+                                } else {
+                                  setExpandedRepaymentId(expense.id!);
+                                }
+                              }}
+                            >
+                              <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
+                              {t('repayments')}
+                            </button>
+                            {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                              <button
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onInlineUpdate(expense.id!, {
+                                    repaymentTrackingCompleted: !expense.repaymentTrackingCompleted,
+                                  });
+                                }}
+                              >
+                                <span style={styles.menuIcon}>{expense.repaymentTrackingCompleted ? '✓' : '○'}</span>
+                                {expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                              </button>
+                            )}
+                            <button
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(expense);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
+                </>
               )}
               
               {/* Inline Repayment Manager */}
@@ -797,6 +906,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
       />
     </div>
+    </>
   );
 };
 
@@ -872,11 +982,18 @@ const styles = {
   summaryDetailCategory: {
     fontSize: '14px',
     color: '#555',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    flex: 1,
+    minWidth: 0,
   },
   summaryDetailAmount: {
     fontSize: '14px',
     fontWeight: '600' as const,
     color: '#f44336',
+    flexShrink: 0,
+    marginLeft: '12px',
   },
   filterSection: {
     display: 'flex',
@@ -996,7 +1113,8 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '10px',
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
+    position: 'relative' as const,
   },
   dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
   categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
@@ -1069,6 +1187,30 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
   },
+  amountBadge: {
+    position: 'absolute' as const,
+    top: '12px',
+    right: '12px',
+    backgroundColor: 'transparent',
+    padding: 0,
+    fontSize: '16px',
+    fontWeight: '700' as const,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    lineHeight: 1,
+    pointerEvents: 'none' as const,
+  },
+  amountMeta: {
+    position: 'absolute' as const,
+    top: '34px',
+    right: '12px',
+    textAlign: 'right' as const,
+    fontSize: '11px',
+    color: '#666',
+    lineHeight: 1.2,
+    pointerEvents: 'none' as const,
+  },
   excessBadge: {
     fontSize: '11px',
     fontWeight: '500' as const,
@@ -1104,7 +1246,49 @@ const styles = {
     borderRadius: '4px',
     marginLeft: '4px',
   },
-  actions: { display: 'flex', gap: '8px' },
+  completedCheck: {
+    marginLeft: '6px',
+    color: '#16a34a',
+    fontWeight: '700' as const,
+    fontSize: '14px',
+    lineHeight: 1,
+  },
+  actions: { gap: '8px' },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menu: {
+    position: 'absolute' as const,
+    top: '40px',
+    right: 0,
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+    padding: '6px',
+    minWidth: '180px',
+    zIndex: 1000,
+  },
+  menuItem: {
+    width: '100%',
+    textAlign: 'left' as const,
+    background: 'none',
+    border: 'none',
+    padding: '8px 10px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: '#374151',
+  },
+  menuIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '18px',
+  },
   iconButton: {
     padding: '8px',
     display: 'inline-flex',

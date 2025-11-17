@@ -432,6 +432,9 @@ const styles = {
     fontSize: '18px',
     fontWeight: '600' as const,
     color: '#333',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   categoryList: {
     display: 'flex',
@@ -488,6 +491,8 @@ const styles = {
     border: '1px solid #e0e0e0',
     borderRadius: '12px',
     padding: '20px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   trendChartContainer: {
     backgroundColor: 'white',
@@ -537,7 +542,10 @@ const styles = {
     padding: '2px 8px',
     backgroundColor: '#e3f2fd',
     borderRadius: '4px',
-    width: 'fit-content',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   recentExpenseRight: {
     display: 'flex',
