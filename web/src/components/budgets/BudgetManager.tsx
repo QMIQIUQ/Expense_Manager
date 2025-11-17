@@ -373,7 +373,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <>
                     {/* First row: Period and Amount */}
                     <div style={styles.budgetRow1}>
-                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
+                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}</span>
                       <div style={styles.budgetAmount}>
                         <span style={styles.spent}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>

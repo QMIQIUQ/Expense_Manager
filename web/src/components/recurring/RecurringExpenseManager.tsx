@@ -579,7 +579,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       )}
                     </div>
                     <div style={{ fontSize: '12px', color: '#666' }}>
-                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as any)}
+                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}
                     </div>
 
                     {/* Desktop: Show individual buttons */}

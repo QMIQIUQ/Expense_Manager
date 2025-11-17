@@ -14,6 +14,7 @@ const UserProfile: React.FC = () => {
 
   useEffect(() => {
     loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadSettings = async () => {
