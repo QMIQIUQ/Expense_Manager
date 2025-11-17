@@ -156,7 +156,6 @@ const Dashboard: React.FC = () => {
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
         const cardsData = await cardService.getAll(currentUser.uid);
-        console.log('Cards loaded successfully:', cardsData.length, 'cards');
         setCards(cardsData);
         
         // Save unique bank names to localStorage for autocomplete
@@ -173,7 +172,6 @@ const Dashboard: React.FC = () => {
       try {
         await ewalletService.initializeDefaults(currentUser.uid);
         const ewalletsData = await ewalletService.getAll(currentUser.uid);
-        console.log('E-wallets loaded successfully:', ewalletsData.length, 'e-wallets');
         setEWallets(ewalletsData);
       } catch (ewalletError) {
         console.warn('Could not load e-wallets:', ewalletError);
@@ -183,7 +181,6 @@ const Dashboard: React.FC = () => {
       // Load feature settings with error handling
       try {
         const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
-        console.log('Feature settings loaded successfully');
         setFeatureSettings(settingsData);
       } catch (settingsError) {
         console.warn('Could not load feature settings:', settingsError);
@@ -456,7 +453,6 @@ const Dashboard: React.FC = () => {
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (ids.length === 0) return;
-    console.log(`[Dashboard] Starting bulk delete of ${ids.length} items`);
     
     const originals = expenses.filter((e) => ids.includes(e.id!));
 
@@ -519,20 +515,16 @@ const Dashboard: React.FC = () => {
         current,
         message: `${t('deleteSelected')} (${current}/${ids.length})`,
       } : null);
-      
-      console.log(`[Dashboard] Deleted ${current}/${ids.length}`);
     }
 
     // 完成後更新狀態
     if (failCount > 0) {
-      console.log(`[Dashboard] Bulk delete completed with errors: ${successCount} success, ${failCount} failed`);
       setDeleteProgress(prev => prev ? {
         ...prev,
         status: 'error',
         message: `${t('errorDeletingData')}: ${successCount}/${ids.length} ${t('success')}`,
       } : null);
     } else {
-      console.log(`[Dashboard] Bulk delete completed successfully: ${successCount}/${ids.length}`);
       setDeleteProgress(prev => prev ? {
         ...prev,
         status: 'complete',
@@ -542,7 +534,6 @@ const Dashboard: React.FC = () => {
     
     // 3秒後自動關閉
     setTimeout(() => {
-      console.log('[Dashboard] Auto-dismissing delete notification');
       setDeleteProgress(null);
     }, 3000);
 
@@ -1147,14 +1138,11 @@ const Dashboard: React.FC = () => {
   };
 
   const handleImportComplete = () => {
-    console.log('[Dashboard] Import completed, updating progress to complete');
-    
     // Reload data after import
     loadData();
     
     // Update import progress to complete using functional update
     setImportProgress(prev => {
-      console.log('[Dashboard] Previous progress state:', prev);
       if (!prev) return null;
       
       const completedProgress = {
@@ -1164,11 +1152,8 @@ const Dashboard: React.FC = () => {
         current: prev.total, // 確保顯示完成
       };
       
-      console.log('[Dashboard] Setting completed progress:', completedProgress);
-      
       // 3秒後自動關閉完成通知
       setTimeout(() => {
-        console.log('[Dashboard] Auto-dismissing completed import notification');
         setImportProgress(null);
       }, 3000);
       
@@ -1192,7 +1177,6 @@ const Dashboard: React.FC = () => {
 
   // 更新匯入進度
   const handleUpdateImportProgress = (current: number, total: number, message: string) => {
-    console.log(`[Dashboard] Progress update: ${current}/${total} - ${message}`);
     setImportProgress(prev => prev ? {
       ...prev,
       current,

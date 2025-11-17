@@ -63,7 +63,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [dateTo, setDateTo] = useState(today);
   const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
-  const [showSummary, setShowSummary] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
     isOpen: false,
@@ -232,20 +231,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return 'indeterminate';
   };
 
-  const calculateSummary = () => {
-    const filtered = filteredAndSortedExpenses();
-    const total = filtered.reduce((sum, exp) => sum + exp.amount, 0);
-    const byCategory: { [key: string]: number } = {};
-    filtered.forEach((exp) => {
-      if (!byCategory[exp.category]) byCategory[exp.category] = 0;
-      byCategory[exp.category] += exp.amount;
-    });
-    const categoryBreakdown = Object.entries(byCategory)
-      .sort(([, a], [, b]) => b - a)
-      .map(([category, amount]) => ({ category, amount }));
-    return { total, count: filtered.length, categoryBreakdown };
-  };
-
   // Group expenses by date for display
   const groupExpensesByDate = () => {
     const sorted = filteredAndSortedExpenses();
@@ -364,40 +349,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     cancelInlineEdit();
   };
 
-  const summary = calculateSummary();
-
   const groupedExpenses = groupExpensesByDate();
 
   return (
     <>
       <style>{responsiveStyles}</style>
       <div style={styles.container}>
-      {/* Filter Section with integrated summary */}
+      {/* Filter Section */}
       <div style={styles.filterSection}>
-        {/* Summary row at the top of filter section */}
-        <div style={styles.summaryRow}>
-          <div style={styles.summaryHeader} onClick={() => setShowSummary(!showSummary)}>
-            <div style={styles.summaryMain}>
-              <span style={styles.summaryLabel}>{t('total')} </span>
-              <span style={styles.summaryTotal}>${summary.total.toFixed(2)}</span>
-              <span style={styles.summaryCount}>({summary.count} {t('items')})</span>
-            </div>
-            <button style={styles.expandButton} aria-label="Toggle summary">
-              {showSummary ? '▼' : '▶'}
-            </button>
-          </div>
-          {showSummary && (
-            <div style={styles.summaryDetails}>
-              <h4 style={styles.summaryDetailsTitle}>{t('categoryBreakdown')}</h4>
-              {summary.categoryBreakdown.map(({ category, amount }) => (
-                <div key={category} style={styles.summaryDetailRow}>
-                  <span style={styles.summaryDetailCategory}>{category}</span>
-                  <span style={styles.summaryDetailAmount}>${amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
         {/* Simplified filter - always visible */}
         <div style={styles.filterRow}>
           <input
@@ -999,85 +958,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '20px',
-  },
-  summaryRow: {
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '16px',
-    marginBottom: '12px',
-  },
-  summaryHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    cursor: 'pointer',
-    userSelect: 'none' as const,
-  },
-  summaryMain: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    flexWrap: 'wrap' as const,
-  },
-  summaryLabel: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: '#666',
-  },
-  summaryTotal: {
-    fontSize: '24px',
-    fontWeight: '700' as const,
-    color: '#f44336',
-  },
-  summaryCount: {
-    fontSize: '14px',
-    color: '#888',
-  },
-  expandButton: {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontSize: '16px',
-    color: '#666',
-  },
-  summaryDetails: {
-    marginTop: '16px',
-    paddingTop: '16px',
-    borderTop: '1px solid #ddd',
-  },
-  summaryDetailsTitle: {
-    margin: '0 0 12px 0',
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  summaryDetailRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '8px 0',
-    borderBottom: '1px solid #f0f0f0',
-  },
-  summaryDetailCategory: {
-    fontSize: '14px',
-    color: '#555',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-    flex: 1,
-    minWidth: 0,
-  },
-  summaryDetailAmount: {
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    color: '#f44336',
-    flexShrink: 0,
-    marginLeft: '12px',
   },
   filterSection: {
     display: 'flex',
