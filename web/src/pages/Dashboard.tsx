@@ -253,7 +253,7 @@ const Dashboard: React.FC = () => {
             const recurringData = await recurringExpenseService.getAll(currentUser.uid);
             setRecurringExpenses(recurringData);
             break;
-          case 'payment-methods':
+          case 'paymentMethods':
             // Reload cards and ewallets
             try {
               const cardsData = await cardService.getAll(currentUser.uid);
