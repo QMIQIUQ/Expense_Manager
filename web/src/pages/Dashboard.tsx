@@ -32,6 +32,7 @@ import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUti
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
+import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
 
 // Helper function to get display name
@@ -193,6 +194,34 @@ const Dashboard: React.FC = () => {
       setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
+
+  // Budget notifications check
+  useEffect(() => {
+    if (!budgets.length || !expenses.length) return;
+
+    // Check budgets once when data is loaded
+    const checkBudgets = async () => {
+      const { checkBudgetAlerts } = await import('../utils/budgetNotifications');
+      const lastChecked = localStorage.getItem('lastBudgetCheck');
+      const lastCheckedDate = lastChecked ? new Date(lastChecked) : null;
+      
+      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate);
+      
+      if (alerts.length > 0) {
+        // Show notifications for each alert
+        alerts.forEach(alert => {
+          showNotification(alert.type, alert.message, { duration: 8000 });
+        });
+        
+        // Update last check time
+        localStorage.setItem('lastBudgetCheck', new Date().toISOString());
+      }
+    };
+
+    // Check after a short delay to avoid overwhelming the user at startup
+    const timer = setTimeout(checkBudgets, 2000);
+    return () => clearTimeout(timer);
+  }, [budgets, expenses, showNotification]);
 
   // Function to reload only repayments (for performance)
   const reloadRepayments = React.useCallback(async () => {
@@ -1531,6 +1560,11 @@ const Dashboard: React.FC = () => {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Theme Toggle */}
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <ThemeToggle />
                 </div>
 
                 {/* Logout */}

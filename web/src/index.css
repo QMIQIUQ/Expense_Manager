@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for theming */
+:root {
+  /* Light theme colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border-color: #e0e0e0;
+  --border-hover: #d0d0d0;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-md: rgba(0, 0, 0, 0.15);
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --button-hover: rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+  /* Dark theme colors */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  --border-color: #404040;
+  --border-hover: #505050;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.5);
+  --card-bg: #2d2d2d;
+  --input-bg: #1a1a1a;
+  --button-hover: rgba(255, 255, 255, 0.08);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,7 +49,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
@@ -47,14 +84,17 @@ a:hover {
 
 /* Menu item hover effect */
 .menu-item-hover:hover {
-  background-color: rgba(0, 0, 0, 0.04) !important;
+  background-color: var(--button-hover) !important;
 }
 
 input {
   font-family: inherit;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, background-color 0.3s ease;
 }
 
 input:focus {
@@ -100,9 +140,11 @@ input:focus {
 }
 
 .dashboard-card {
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px var(--shadow);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dashboard-header {
@@ -169,9 +211,10 @@ input:focus {
   position: absolute;
   right: 12px;
   top: 56px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px var(--shadow-md);
+  border: 1px solid var(--border-color);
   padding: 8px;
   z-index: 50;
   min-width: 180px;
