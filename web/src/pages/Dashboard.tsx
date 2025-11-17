@@ -214,7 +214,7 @@ const Dashboard: React.FC = () => {
     const refreshTabData = async () => {
       try {
         switch (activeTab) {
-          case 'expenses':
+          case 'expenses': {
             // Reload expenses and repayments
             const [expensesData, repaymentsData] = await Promise.all([
               expenseService.getAll(currentUser.uid),
@@ -223,12 +223,14 @@ const Dashboard: React.FC = () => {
             setExpenses(expensesData);
             setRepayments(repaymentsData);
             break;
-          case 'incomes':
+          }
+          case 'incomes': {
             // Reload incomes
             const incomesData = await incomeService.getAll(currentUser.uid);
             setIncomes(incomesData);
             break;
-          case 'dashboard':
+          }
+          case 'dashboard': {
             // Reload all for dashboard
             const [dashExpenses, dashIncomes, dashRepayments] = await Promise.all([
               expenseService.getAll(currentUser.uid),
@@ -239,7 +241,8 @@ const Dashboard: React.FC = () => {
             setIncomes(dashIncomes);
             setRepayments(dashRepayments);
             break;
-          case 'categories':
+          }
+          case 'categories': {
             // Reload categories and budgets
             const [categoriesData, budgetsData] = await Promise.all([
               categoryService.getAll(currentUser.uid),
@@ -248,12 +251,14 @@ const Dashboard: React.FC = () => {
             setCategories(categoriesData);
             setBudgets(budgetsData);
             break;
-          case 'recurring':
+          }
+          case 'recurring': {
             // Reload recurring expenses
             const recurringData = await recurringExpenseService.getAll(currentUser.uid);
             setRecurringExpenses(recurringData);
             break;
-          case 'paymentMethods':
+          }
+          case 'paymentMethods': {
             // Reload cards and ewallets
             try {
               const cardsData = await cardService.getAll(currentUser.uid);
@@ -268,6 +273,7 @@ const Dashboard: React.FC = () => {
               console.warn('Could not reload e-wallets:', error);
             }
             break;
+          }
           // Admin and settings tabs don't need auto-refresh
           default:
             break;
