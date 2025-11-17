@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Income, IncomeType, Expense } from '../../types';
+import { Income, IncomeType, IncomeCategory, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface IncomeFormProps {
@@ -23,6 +23,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     amount: initialData?.amount || 0,
     date: initialData?.date || new Date().toISOString().split('T')[0],
     type: initialData?.type || ('other' as IncomeType),
+    category: initialData?.category || ('default' as IncomeCategory),
     payerName: initialData?.payerName || '',
     linkedExpenseId: initialData?.linkedExpenseId || preselectedExpenseId || '',
     note: initialData?.note || '',
@@ -71,6 +72,9 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     if (!submitData.note || submitData.note.trim() === '') {
       delete submitData.note;
     }
+    if (submitData.category === 'default') {
+      delete submitData.category;
+    }
     
     onSubmit(submitData as Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     
@@ -80,6 +84,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         amount: 0,
         date: new Date().toISOString().split('T')[0],
         type: 'other' as IncomeType,
+        category: 'default' as IncomeCategory,
         payerName: '',
         linkedExpenseId: '',
         note: '',
@@ -168,6 +173,26 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           <option value="other">{t('other')}</option>
         </select>
         {errors.type && <span style={styles.errorText}>{errors.type}</span>}
+      </div>
+
+      <div style={styles.fieldGroup}>
+        <label style={styles.label}>{t('incomeCategory')}</label>
+        <select
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          style={{
+            ...styles.input,
+            backgroundColor: '#fff',
+          }}
+        >
+          <option value="default">{t('defaultIncome')}</option>
+          <option value="ewallet_reload">{t('ewalletReload')}</option>
+          <option value="other">{t('other')}</option>
+        </select>
+        <small style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          {formData.category === 'ewallet_reload' && t('ewalletReloadDesc')}
+        </small>
       </div>
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (

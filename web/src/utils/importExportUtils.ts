@@ -1,4 +1,6 @@
-import * as XLSX from 'xlsx';
+// Lazy-load exceljs only when needed to avoid large initial bundles
+// and to sidestep Vite dev optimize cache issues.
+// We'll import within functions: const ExcelJS = await import('exceljs')
 import Papa from 'papaparse';
 import { Expense, Category } from '../types';
 import { categoryService } from '../services/categoryService';
@@ -41,21 +43,20 @@ interface CategoryRow {
 }
 
 // Generate and download expense template
-export const downloadExpenseTemplate = () => {
-  const wb = XLSX.utils.book_new();
-  
+export const downloadExpenseTemplate = async () => {
+  const ExcelJS = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+
   // Expenses sheet
-  const expensesData = [
-    ['id', 'date', 'description', 'category', 'amount', 'notes'],
-    ['', '2024-01-15', 'Sample expense', 'Food & Dining', '25.50', 'Lunch with team'],
-    ['', '2024-01-16', 'Grocery shopping', 'Food & Dining', '120.00', ''],
-  ];
-  const expensesWs = XLSX.utils.aoa_to_sheet(expensesData);
-  XLSX.utils.book_append_sheet(wb, expensesWs, 'expenses');
-  
+  const expensesWs = wb.addWorksheet('expenses');
+  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'notes']);
+  expensesWs.addRow(['', '2024-01-15', 'Sample expense', 'Food & Dining', '25.50', 'Lunch with team']);
+  expensesWs.addRow(['', '2024-01-16', 'Grocery shopping', 'Food & Dining', '120.00', '']);
+
   // Categories sheet
-  const categoriesData = [
-    ['id', 'name', 'color'],
+  const categoriesWs = wb.addWorksheet('categories');
+  categoriesWs.addRow(['id', 'name', 'color']);
+  const catRows = [
     ['', 'Food & Dining', '#FF6B6B'],
     ['', 'Transportation', '#4ECDC4'],
     ['', 'Shopping', '#45B7D1'],
@@ -65,44 +66,64 @@ export const downloadExpenseTemplate = () => {
     ['', 'Education', '#BB8FCE'],
     ['', 'Other', '#95A5A6'],
   ];
-  const categoriesWs = XLSX.utils.aoa_to_sheet(categoriesData);
-  XLSX.utils.book_append_sheet(wb, categoriesWs, 'categories');
-  
+  catRows.forEach(r => categoriesWs.addRow(r));
+
   // Download
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  XLSX.writeFile(wb, `expenses-template-${date}.xlsx`);
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expenses-template-${date}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 
 // Export expenses and categories to Excel
-export const exportToExcel = (expenses: Expense[], categories: Category[]) => {
-  const wb = XLSX.utils.book_new();
-  
-  // Prepare expenses data
-  const expensesData = expenses.map(exp => ({
-    id: exp.id || '',
-    date: exp.date,
-    description: exp.description,
-    category: exp.category,
-    amount: exp.amount,
-    notes: exp.notes || '',
-  }));
-  
-  const expensesWs = XLSX.utils.json_to_sheet(expensesData);
-  XLSX.utils.book_append_sheet(wb, expensesWs, 'expenses');
-  
-  // Prepare categories data
-  const categoriesData = categories.map(cat => ({
-    id: cat.id || '',
-    name: cat.name,
-    color: cat.color,
-  }));
-  
-  const categoriesWs = XLSX.utils.json_to_sheet(categoriesData);
-  XLSX.utils.book_append_sheet(wb, categoriesWs, 'categories');
-  
+export const exportToExcel = async (expenses: Expense[], categories: Category[]) => {
+  const ExcelJS = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+
+  // Expenses sheet
+  const expensesWs = wb.addWorksheet('expenses');
+  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'notes']);
+  expenses.forEach(exp => {
+    expensesWs.addRow([
+      exp.id || '',
+      exp.date,
+      exp.description,
+      exp.category,
+      exp.amount,
+      exp.notes || '',
+    ]);
+  });
+
+  // Categories sheet
+  const categoriesWs = wb.addWorksheet('categories');
+  categoriesWs.addRow(['id', 'name', 'color']);
+  categories.forEach(cat => {
+    categoriesWs.addRow([
+      cat.id || '',
+      cat.name,
+      cat.color || '',
+    ]);
+  });
+
   // Download
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  XLSX.writeFile(wb, `expense-manager-backup-${date}.xlsx`);
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `expense-manager-backup-${date}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 
 // Parse uploaded file (xlsx or csv)
@@ -143,62 +164,90 @@ export const parseUploadedFile = async (
       });
     });
   } else {
-    // Parse Excel file
+    // Parse Excel file using exceljs
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const ExcelJS = await import('exceljs');
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.load(arrayBuffer);
+
+          // Helper to read a worksheet by headers
+          const readSheetByHeaders = (sheetName: string): { headers: string[]; rows: unknown[][] } | null => {
+            const ws = wb.getWorksheet(sheetName);
+            if (!ws) return null;
+            const headerRow = ws.getRow(1);
+            const headers = (headerRow.values as unknown[]).slice(1).map(v => String(v));
+            const rows: unknown[][] = [];
+            for (let r = 2; r <= ws.rowCount; r++) {
+              const row = ws.getRow(r);
+              if (!row || row.cellCount === 0) continue;
+              const values = (row.values as unknown[]).slice(1);
+              // Skip fully empty rows
+              if (values.every(v => v === null || v === undefined || v === '')) continue;
+              rows.push(values);
+            }
+            return { headers, rows };
+          };
+
           // Parse expenses sheet
-          if (workbook.SheetNames.includes('expenses')) {
-            const expensesSheet = workbook.Sheets['expenses'];
-            const expensesJson = XLSX.utils.sheet_to_json<Record<string, unknown>>(expensesSheet);
-            
-            expenses = expensesJson.map((row, index: number) => {
-              // Handle Excel date serial numbers with error handling
-              let date = row.date;
-              if (typeof date === 'number') {
-                try {
-                  // Excel date serial to JS Date, then to ISO string
-                  const excelEpoch = new Date(1899, 11, 30);
-                  const jsDate = new Date(excelEpoch.getTime() + date * 86400000);
-                  date = jsDate.toISOString().split('T')[0];
-                } catch {
-                  // Fallback to XLSX formatter
-                  date = XLSX.SSF.format('yyyy-mm-dd', date);
-                }
+          const expensesSheet = readSheetByHeaders('expenses');
+          if (expensesSheet) {
+            const { headers, rows } = expensesSheet;
+            const colIndex = (name: string) => headers.findIndex(h => h.toLowerCase() === name) ;
+            const idIdx = colIndex('id');
+            const dateIdx = colIndex('date');
+            const descIdx = colIndex('description');
+            const catIdx = colIndex('category');
+            const amtIdx = colIndex('amount');
+            const notesIdx = colIndex('notes');
+
+            expenses = rows.map((vals, i) => {
+              const rawDate = vals[dateIdx];
+              let dateStr = '';
+              if (rawDate instanceof Date) {
+                dateStr = rawDate.toISOString().split('T')[0];
+              } else if (typeof rawDate === 'number') {
+                // Excel serial date to JS date
+                const excelEpoch = new Date(1899, 11, 30);
+                const jsDate = new Date(excelEpoch.getTime() + rawDate * 86400000);
+                dateStr = jsDate.toISOString().split('T')[0];
+              } else if (typeof rawDate === 'string') {
+                dateStr = rawDate;
               }
-              
-              // Validate required fields
-              if (!date || !row.description || !row.category || row.amount === undefined) {
-                errors.push(`Expenses row ${index + 2}: Missing required fields`);
+
+              if (!dateStr || !vals[descIdx] || !vals[catIdx] || vals[amtIdx] === undefined) {
+                errors.push(`Expenses row ${i + 2}: Missing required fields`);
               }
-              
+
               return {
-                id: (row.id as string) || undefined,
-                date: String(date),
-                description: String(row.description),
-                category: String(row.category),
-                amount: parseFloat(String(row.amount)) || 0,
-                notes: row.notes ? String(row.notes) : undefined,
-              };
+                id: vals[idIdx] ? String(vals[idIdx]) : undefined,
+                date: String(dateStr),
+                description: String(vals[descIdx] ?? ''),
+                category: String(vals[catIdx] ?? ''),
+                amount: parseFloat(String(vals[amtIdx] ?? '0')) || 0,
+                notes: vals[notesIdx] ? String(vals[notesIdx]) : undefined,
+              } as ExpenseRow;
             });
           }
-          
+
           // Parse categories sheet
-          if (workbook.SheetNames.includes('categories')) {
-            const categoriesSheet = workbook.Sheets['categories'];
-            const categoriesJson = XLSX.utils.sheet_to_json<Record<string, unknown>>(categoriesSheet);
-            
-            categories = categoriesJson.map((row) => ({
-              id: (row.id as string) || undefined,
-              name: String(row.name),
-              color: row.color ? String(row.color) : undefined,
+          const categoriesSheet = readSheetByHeaders('categories');
+          if (categoriesSheet) {
+            const { headers, rows } = categoriesSheet;
+            const idIdx = headers.findIndex(h => h.toLowerCase() === 'id');
+            const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
+            const colorIdx = headers.findIndex(h => h.toLowerCase() === 'color');
+
+            categories = rows.map(vals => ({
+              id: vals[idIdx] ? String(vals[idIdx]) : undefined,
+              name: String(vals[nameIdx] ?? ''),
+              color: vals[colorIdx] ? String(vals[colorIdx]) : undefined,
             }));
           }
-          
+
           resolve({ expenses, categories, errors });
         } catch (error) {
           errors.push(`Excel parsing error: ${(error as Error).message}`);

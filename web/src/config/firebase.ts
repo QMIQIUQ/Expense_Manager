@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 
 const firebaseEnv = {
@@ -43,8 +43,15 @@ export const auth = getAuth(app);
 // Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Reduce Firestore log noise from non-fatal internals (e.g., BloomFilter fallback)
+setLogLevel('error');
+
+// Initialize Firestore with a robust persistent cache across tabs
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 
 // Initialize Cloud Functions client
 export const functionsClient = getFunctions(app);

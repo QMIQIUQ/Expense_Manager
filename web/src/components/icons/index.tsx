@@ -189,6 +189,14 @@ export const CheckIcon: React.FC<IconProps> = (props) => (
   </SvgIcon>
 );
 
+export const RepaymentIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M16.5 7.5 12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </SvgIcon>
+);
+
 export const MenuIcon: React.FC<IconProps> = (props) => (
   <SvgIcon {...props}>
     <path

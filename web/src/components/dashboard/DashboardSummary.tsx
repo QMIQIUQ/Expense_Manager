@@ -1,14 +1,16 @@
 import React from 'react';
-import { Expense, Income } from '../../types';
+import { Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
   incomes?: Income[];
+  repayments?: Repayment[];
+  onMarkTrackingCompleted?: (expenseId: string) => void;
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [] }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted }) => {
   const { t } = useLanguage();
   
   // Color palette for pie chart
@@ -50,30 +52,22 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       byCategory[exp.category] += exp.amount;
     });
 
-    // Calculate unrecovered amounts
-    const incomesByExpense: { [expenseId: string]: number } = {};
-    incomes.forEach((inc) => {
-      if (inc.linkedExpenseId) {
-        incomesByExpense[inc.linkedExpenseId] =
-          (incomesByExpense[inc.linkedExpenseId] || 0) + inc.amount;
+    // Total unrecovered is now calculated from tracked expenses only
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    repayments.forEach((rep) => {
+      if (rep.expenseId) {
+        repaymentsByExpense[rep.expenseId] =
+          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
       }
     });
 
-    const unrecoveredExpenses = expenses
-      .filter((exp) => exp.originalReceiptAmount || incomesByExpense[exp.id || ''])
-      .map((exp) => {
-        const targetAmount = exp.originalReceiptAmount || exp.amount;
-        const recovered = incomesByExpense[exp.id || ''] || 0;
-        const unrecovered = Math.max(0, targetAmount - recovered);
-        return { expense: exp, recovered, unrecovered, targetAmount };
-      })
-      .filter((item) => item.unrecovered > 0)
-      .sort((a, b) => b.unrecovered - a.unrecovered);
-
-    const totalUnrecovered = unrecoveredExpenses.reduce(
-      (sum, item) => sum + item.unrecovered,
-      0
-    );
+    const totalUnrecovered = expenses
+      .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .reduce((sum, exp) => {
+        const repaid = repaymentsByExpense[exp.id || ''] || 0;
+        const remaining = Math.max(0, exp.amount - repaid);
+        return sum + remaining;
+      }, 0);
 
     const netCashflow = monthlyIncome - monthly;
 
@@ -84,7 +78,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       monthlyIncome,
       daily,
       byCategory,
-      unrecoveredExpenses,
       totalUnrecovered,
       netCashflow,
     };
@@ -195,38 +188,81 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         </div>
       </div>
 
-      {stats.unrecoveredExpenses.length > 0 && (
-        <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>{t('topUnrecoveredExpenses')}</h3>
-          <div style={styles.categoryList}>
-            {stats.unrecoveredExpenses.slice(0, 5).map((item) => {
-              const percentage = (item.recovered / item.targetAmount) * 100;
-              return (
-                <div key={item.expense.id} style={styles.categoryItem}>
-                  <div style={styles.categoryInfo}>
-                    <span style={styles.categoryName}>{item.expense.description}</span>
-                    <span style={{ ...styles.categoryAmount, color: '#ff9800' }}>
-                      ${item.unrecovered.toFixed(2)}
+      {/* Tracked Expenses Section - NEW */}
+      {(() => {
+        const trackedExpenses = expenses.filter(exp => 
+          exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
+        );
+        const repaymentTotals: { [expenseId: string]: number } = {};
+        repayments.forEach(rep => {
+          if (rep.expenseId) {
+            repaymentTotals[rep.expenseId] = (repaymentTotals[rep.expenseId] || 0) + rep.amount;
+          }
+        });
+        
+        if (trackedExpenses.length === 0) return null;
+        
+        return (
+          <div style={styles.trackedExpensesSection}>
+            <h3 style={styles.sectionTitle}>
+              💰 {t('trackedExpenses')} ({trackedExpenses.length})
+            </h3>
+            <div style={styles.trackedExpensesList}>
+              {trackedExpenses.map(expense => {
+                const repaid = repaymentTotals[expense.id!] || 0;
+                const remaining = expense.amount - repaid;
+                const percentage = (repaid / expense.amount) * 100;
+                
+                return (
+                  <div key={expense.id} style={styles.trackedExpenseCard}>
+                    <div style={styles.trackedExpenseHeader}>
+                      <div style={styles.trackedExpenseInfo}>
+                        <span style={styles.trackedExpenseTitle}>{expense.description}</span>
+                        <span style={styles.trackedExpenseDate}>{expense.date}</span>
+                      </div>
+                      {onMarkTrackingCompleted && (
+                        <button
+                          onClick={() => onMarkTrackingCompleted(expense.id!)}
+                          style={styles.completeButton}
+                          title={t('markAsCompleted')}
+                        >
+                          ✓
+                        </button>
+                      )}
+                    </div>
+                    <div style={styles.trackedExpenseAmounts}>
+                      <div style={styles.trackedAmountItem}>
+                        <span style={styles.trackedAmountLabel}>{t('totalAmount')}:</span>
+                        <span style={styles.trackedAmountValue}>${expense.amount.toFixed(2)}</span>
+                      </div>
+                      <div style={styles.trackedAmountItem}>
+                        <span style={styles.trackedAmountLabel}>{t('repaid')}:</span>
+                        <span style={{ ...styles.trackedAmountValue, color: '#4CAF50' }}>${repaid.toFixed(2)}</span>
+                      </div>
+                      <div style={styles.trackedAmountItem}>
+                        <span style={styles.trackedAmountLabel}>{t('remaining')}:</span>
+                        <span style={{ ...styles.trackedAmountValue, color: '#ff9800' }}>${remaining.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div style={styles.progressBar}>
+                      <div
+                        style={{
+                          ...styles.progressFill,
+                          width: `${percentage}%`,
+                          backgroundColor: '#4CAF50',
+                        }}
+                      />
+                    </div>
+                    <span style={styles.categoryPercentage}>
+                      {percentage.toFixed(1)}% {t('collected')}
                     </span>
                   </div>
-                  <div style={styles.progressBar}>
-                    <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${percentage}%`,
-                        backgroundColor: '#4caf50',
-                      }}
-                    />
-                  </div>
-                  <span style={styles.categoryPercentage}>
-                    {percentage.toFixed(1)}% {t('recovered')}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {categories.length > 0 && (
         <div style={styles.categoryBreakdown}>
@@ -396,6 +432,9 @@ const styles = {
     fontSize: '18px',
     fontWeight: '600' as const,
     color: '#333',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   categoryList: {
     display: 'flex',
@@ -452,6 +491,8 @@ const styles = {
     border: '1px solid #e0e0e0',
     borderRadius: '12px',
     padding: '20px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   trendChartContainer: {
     backgroundColor: 'white',
@@ -501,7 +542,10 @@ const styles = {
     padding: '2px 8px',
     backgroundColor: '#e3f2fd',
     borderRadius: '4px',
-    width: 'fit-content',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   recentExpenseRight: {
     display: 'flex',
@@ -517,6 +561,77 @@ const styles = {
   recentExpenseDate: {
     fontSize: '12px',
     color: '#999',
+  },
+  // Tracked Expenses Styles
+  trackedExpensesSection: {
+    backgroundColor: '#fff9e6',
+    border: '2px solid #ffc107',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '24px',
+  },
+  trackedExpensesList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  trackedExpenseCard: {
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
+    padding: '16px',
+  },
+  trackedExpenseHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '12px',
+  },
+  trackedExpenseInfo: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    flex: 1,
+  },
+  trackedExpenseTitle: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  trackedExpenseDate: {
+    fontSize: '12px',
+    color: '#999',
+  },
+  completeButton: {
+    padding: '6px 12px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    transition: 'background-color 0.2s',
+  } as React.CSSProperties,
+  trackedExpenseAmounts: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '12px',
+    marginBottom: '12px',
+  },
+  trackedAmountItem: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  trackedAmountLabel: {
+    fontSize: '12px',
+    color: '#666',
+  },
+  trackedAmountValue: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: '#333',
   },
 };
 

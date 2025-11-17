@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -14,6 +14,7 @@ import { cardService } from '../services/cardService';
 import { adminService } from '../services/adminService';
 import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
+import { repaymentService } from '../services/repaymentService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
@@ -53,6 +54,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
@@ -128,12 +130,13 @@ const Dashboard: React.FC = () => {
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
       
-      const [expensesData, incomesData, categoriesData, budgetsData, recurringData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
         incomeService.getAll(currentUser.uid),
         categoryService.getAll(currentUser.uid),
         budgetService.getAll(currentUser.uid),
         recurringExpenseService.getAll(currentUser.uid),
+        repaymentService.getAll(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
@@ -141,6 +144,7 @@ const Dashboard: React.FC = () => {
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
+      setRepayments(repaymentsData);
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
@@ -186,11 +190,99 @@ const Dashboard: React.FC = () => {
     }
   }, [currentUser, showNotification, t]);
 
+  // Function to reload only repayments (for performance)
+  const reloadRepayments = React.useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const repaymentsData = await repaymentService.getAll(currentUser.uid);
+      setRepayments(repaymentsData);
+    } catch (error) {
+      console.error('Failed to reload repayments:', error);
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser) {
       loadData();
     }
   }, [currentUser, loadData]);
+
+  // Smart tab refresh: Reload data when switching tabs
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const refreshTabData = async () => {
+      try {
+        switch (activeTab) {
+          case 'expenses':
+            // Reload expenses and repayments
+            const [expensesData, repaymentsData] = await Promise.all([
+              expenseService.getAll(currentUser.uid),
+              repaymentService.getAll(currentUser.uid),
+            ]);
+            setExpenses(expensesData);
+            setRepayments(repaymentsData);
+            break;
+          case 'incomes':
+            // Reload incomes
+            const incomesData = await incomeService.getAll(currentUser.uid);
+            setIncomes(incomesData);
+            break;
+          case 'dashboard':
+            // Reload all for dashboard
+            const [dashExpenses, dashIncomes, dashRepayments] = await Promise.all([
+              expenseService.getAll(currentUser.uid),
+              incomeService.getAll(currentUser.uid),
+              repaymentService.getAll(currentUser.uid),
+            ]);
+            setExpenses(dashExpenses);
+            setIncomes(dashIncomes);
+            setRepayments(dashRepayments);
+            break;
+          case 'categories':
+            // Reload categories and budgets
+            const [categoriesData, budgetsData] = await Promise.all([
+              categoryService.getAll(currentUser.uid),
+              budgetService.getAll(currentUser.uid),
+            ]);
+            setCategories(categoriesData);
+            setBudgets(budgetsData);
+            break;
+          case 'recurring':
+            // Reload recurring expenses
+            const recurringData = await recurringExpenseService.getAll(currentUser.uid);
+            setRecurringExpenses(recurringData);
+            break;
+          case 'payment-methods':
+            // Reload cards and ewallets
+            try {
+              const cardsData = await cardService.getAll(currentUser.uid);
+              setCards(cardsData);
+            } catch (error) {
+              console.warn('Could not reload cards:', error);
+            }
+            try {
+              const ewalletsData = await ewalletService.getAll(currentUser.uid);
+              setEWallets(ewalletsData);
+            } catch (error) {
+              console.warn('Could not reload e-wallets:', error);
+            }
+            break;
+          // Admin and settings tabs don't need auto-refresh
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error('Error refreshing tab data:', error);
+        // Silent fail - don't show notification to avoid annoying users
+      }
+    };
+    
+    // Don't refresh on initial mount, only on tab change
+    if (!initialLoading) {
+      refreshTabData();
+    }
+  }, [activeTab, currentUser, initialLoading]);
 
   // Click outside to close actions menu
   useEffect(() => {
@@ -341,6 +433,11 @@ const Dashboard: React.FC = () => {
         },
       }
     );
+  };
+
+  // Mark tracking as completed
+  const handleMarkTrackingCompleted = async (id: string) => {
+    await handleInlineUpdateExpense(id, { repaymentTrackingCompleted: true });
   };
 
   // Bulk delete expenses (from ExpenseList multi-select)
@@ -1491,7 +1588,12 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <div className="flex flex-col gap-6">
-            <DashboardSummary expenses={expenses} incomes={incomes} />
+            <DashboardSummary 
+              expenses={expenses} 
+              incomes={incomes} 
+              repayments={repayments}
+              onMarkTrackingCompleted={handleMarkTrackingCompleted}
+            />
             {cards.length > 0 && (
               <CardsSummary cards={cards} categories={categories} expenses={expenses} />
             )}
@@ -1506,9 +1608,11 @@ const Dashboard: React.FC = () => {
               categories={categories}
               cards={cards}
               ewallets={ewallets}
+              repayments={repayments}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
+              onReloadRepayments={reloadRepayments}
             />
           </div>
         )}

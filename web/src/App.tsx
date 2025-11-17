@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -8,28 +8,34 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
 const App: React.FC = () => {
+  const router = createBrowserRouter(
+    [
+      { path: '/', element: <Login /> },
+      // Redirect legacy /login URL to root (login) to avoid unmatched-route warnings
+      { path: '/login', element: <Navigate to="/" replace /> },
+      {
+        path: '/dashboard',
+        element: (
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        ),
+      },
+    ],
+    {
+      basename: import.meta.env.BASE_URL,
+      future: { v7_relativeSplatPath: true },
+    }
+  );
+
   return (
-    <Router basename={import.meta.env.BASE_URL}>
-      <LanguageProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <Routes>
-              <Route path="/" element={<Login />} />
-              {/* Redirect legacy /login URL to root (login) to avoid unmatched-route warnings */}
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                }
-              />
-            </Routes>
-          </NotificationProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </Router>
+    <LanguageProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        </NotificationProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

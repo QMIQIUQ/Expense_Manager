@@ -1,18 +1,40 @@
-import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { Expense, Category, Card, EWallet, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
-import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import RepaymentManager from '../repayment/RepaymentManager';
+import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon } from '../icons';
+
+// Add responsive styles for action buttons
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface ExpenseListProps {
   expenses: Expense[];
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
+  repayments?: Repayment[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
   onBulkDelete?: (ids: string[]) => void;
+  onReloadRepayments?: () => void; // Callback to reload repayments
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -20,9 +42,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   categories,
   cards = [],
   ewallets = [],
+  repayments = [],
   onDelete,
   onInlineUpdate,
   onBulkDelete,
+  onReloadRepayments,
 }) => {
   const { t } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
@@ -38,6 +62,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [allDates, setAllDates] = useState(false);
   const [sortBy, setSortBy] = useState('date-desc');
   const [showSummary, setShowSummary] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
     isOpen: false,
     expenseId: null,
@@ -53,10 +78,24 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     paymentMethod?: Expense['paymentMethod'];
     cardId?: string;
     paymentMethodName?: string;
+    needsRepaymentTracking?: boolean;
   }>({});
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Calculate repayment totals per expense
+  const repaymentTotals = useMemo(() => {
+    const totals: { [expenseId: string]: number } = {};
+    repayments.forEach((repayment) => {
+      if (repayment.expenseId) {
+        totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + repayment.amount;
+      }
+    });
+    return totals;
+  }, [repayments]);
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -225,6 +264,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       paymentMethod: expense.paymentMethod || 'cash',
       cardId: expense.cardId || '',
       paymentMethodName: expense.paymentMethodName || '',
+      needsRepaymentTracking: !!expense.needsRepaymentTracking,
     });
   };
 
@@ -268,6 +308,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     }
 
+    // Repayment tracking toggle
+    const currentTrack = !!expense.needsRepaymentTracking;
+    const newTrack = !!draft.needsRepaymentTracking;
+    if (currentTrack !== newTrack) {
+      updates.needsRepaymentTracking = newTrack;
+    }
+
     if (Object.keys(updates).length > 0) {
       onInlineUpdate(expense.id!, updates);
     }
@@ -279,7 +326,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const groupedExpenses = groupExpensesByDate();
 
   return (
-    <div style={styles.container}>
+    <>
+      <style>{responsiveStyles}</style>
+      <div style={styles.container}>
       {/* Filter Section with integrated summary */}
       <div style={styles.filterSection}>
         {/* Summary row at the top of filter section */}
@@ -306,6 +355,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
           )}
         </div>
+        {/* Simplified filter - always visible */}
         <div style={styles.filterRow}>
           <input
             type="text"
@@ -313,83 +363,97 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={(e) => e.target.select()}
-            style={styles.filterInput}
+            style={{ ...styles.filterInput, flex: 1 }}
           />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            style={styles.filterSelect}
-            aria-label="Filter by category"
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            style={styles.toggleFiltersButton}
+            aria-label="Toggle advanced filters"
           >
-            <option value="">{t('allCategories')}</option>
-            {categoryNames.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-          <select
-            value={monthFilter}
-            onChange={(e) => {
-              setMonthFilter(e.target.value);
-              if (e.target.value) {
-                setAllDates(false);
-              }
-            }}
-            style={styles.filterSelect}
-            aria-label="Filter by month"
-          >
-            <option value="">{t('allMonths')}</option>
-            {availableMonths.map((monthKey) => (
-              <option key={monthKey} value={monthKey}>
-                {formatMonthDisplay(monthKey)}
-              </option>
-            ))}
-          </select>
+            {showAdvancedFilters ? '▼ ' : '▶ '}{t('filters')}
+          </button>
         </div>
-        <div style={styles.filterRow}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              id="allDatesToggle"
-              type="checkbox"
-              checked={allDates}
-              onChange={(e) => {
-                setAllDates(e.target.checked);
-                if (e.target.checked) {
-                  setMonthFilter('');
-                }
-              }}
-              aria-label={t('allDates')}
-            />
-            <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
-          </div>
-          <div style={styles.dateFilterGroup}>
-            <label style={styles.dateLabel}>{t('from')}</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              style={styles.dateInput}
-              disabled={allDates || !!monthFilter}
-            />
-          </div>
-          <div style={styles.dateFilterGroup}>
-            <label style={styles.dateLabel}>{t('to')}</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              style={styles.dateInput}
-              disabled={allDates || !!monthFilter}
-            />
-          </div>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
-            <option value="date-desc">{t('sortByDateDesc')}</option>
-            <option value="date-asc">{t('sortByDateAsc')}</option>
-            <option value="amount-desc">{t('sortByAmountDesc')}</option>
-            <option value="amount-asc">{t('sortByAmountAsc')}</option>
-          </select>
-        </div>
+        {/* Advanced filters - collapsible */}
+        {showAdvancedFilters && (
+          <>
+            <div style={styles.filterRow}>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={styles.filterSelect}
+                aria-label="Filter by category"
+              >
+                <option value="">{t('allCategories')}</option>
+                {categoryNames.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={monthFilter}
+                onChange={(e) => {
+                  setMonthFilter(e.target.value);
+                  if (e.target.value) {
+                    setAllDates(false);
+                  }
+                }}
+                style={styles.filterSelect}
+                aria-label="Filter by month"
+              >
+                <option value="">{t('allMonths')}</option>
+                {availableMonths.map((monthKey) => (
+                  <option key={monthKey} value={monthKey}>
+                    {formatMonthDisplay(monthKey)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.filterRow}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="allDatesToggle"
+                  type="checkbox"
+                  checked={allDates}
+                  onChange={(e) => {
+                    setAllDates(e.target.checked);
+                    if (e.target.checked) {
+                      setMonthFilter('');
+                    }
+                  }}
+                  aria-label={t('allDates')}
+                />
+                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
+              </div>
+              <div style={styles.dateFilterGroup}>
+                <label style={styles.dateLabel}>{t('from')}</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  style={styles.dateInput}
+                  disabled={allDates || !!monthFilter}
+                />
+              </div>
+              <div style={styles.dateFilterGroup}>
+                <label style={styles.dateLabel}>{t('to')}</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  style={styles.dateInput}
+                  disabled={allDates || !!monthFilter}
+                />
+              </div>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
+                <option value="date-desc">{t('sortByDateDesc')}</option>
+                <option value="date-asc">{t('sortByDateAsc')}</option>
+                <option value="amount-desc">{t('sortByAmountDesc')}</option>
+                <option value="amount-asc">{t('sortByAmountAsc')}</option>
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
@@ -500,6 +564,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
                     )}
                     <span style={styles.category}>{expense.category}</span>
+                    {expense.repaymentTrackingCompleted && (
+                      <span style={styles.completedCheck} title={t('completed')}>✓</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -552,6 +619,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
                       style={{ ...styles.input, flex: 1, minWidth: '200px' }}
                     />
+                  </div>
+                  {/* Repayment tracking toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+                    <input
+                      type="checkbox"
+                      id={`needsRepaymentTracking-${expense.id}`}
+                      checked={!!draft.needsRepaymentTracking}
+                      onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
+                    />
+                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>
+                      {t('trackRepaymentInDashboard')}
+                    </label>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
@@ -618,10 +697,48 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                 </div>
               ) : (
+                <>
+                {/* Amount badge shown at top-right for better mobile visibility */}
+                {(() => {
+                  const repaid = repaymentTotals[expense.id!] || 0;
+                  const netAmount = expense.amount - repaid;
+                  const hasExcess = netAmount < 0;
+                  const isRepaid = repaid > 0;
+                  const color = isRepaid ? (hasExcess ? '#2196F3' : '#ff9800') : '#f44336';
+                  return (
+                    <div style={{
+                      ...styles.amountBadge,
+                      color,
+                    }}>
+                      ${Math.abs(isRepaid ? netAmount : expense.amount).toFixed(2)}
+                      {isRepaid && hasExcess && (
+                        <span style={styles.excessBadgeSmall}>({t('excess')})</span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Amount meta (original/repaid) under amount badge */}
+                {(() => {
+                  const repaid = repaymentTotals[expense.id!] || 0;
+                  if (repaid > 0) {
+                    return (
+                      <div style={styles.amountMeta}>
+                        <div>{t('original')}: ${expense.amount.toFixed(2)}</div>
+                        <div>{t('repaid')}: ${repaid.toFixed(2)}</div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 <div style={styles.mainRow}>
                   <div style={styles.leftCol}>
                     <h3 style={styles.description}>{expense.description}</h3>
                     {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
+                    
+                    {/* Completed check moved to header category row */}
+                    
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
                       <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
@@ -631,9 +748,49 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </p>
                     )}
                   </div>
-                  <div style={styles.rightCol}>
-                    <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
-                    <div style={styles.actions}>
+                  <div style={{
+                    ...styles.rightCol,
+                    marginTop: (repaymentTotals[expense.id!] || 0) > 0 ? 34 : 0,
+                  }}>
+                    {/* Desktop: Show all buttons */}
+                    <div className="desktop-actions" style={styles.actions}>
+                      <button 
+                        onClick={() => {
+                          if (expandedRepaymentId === expense.id) {
+                            setExpandedRepaymentId(null);
+                          } else {
+                            setExpandedRepaymentId(expense.id!);
+                          }
+                        }} 
+                        style={{ 
+                          ...styles.iconButton, 
+                          ...styles.successChip,
+                          ...(expandedRepaymentId === expense.id ? { backgroundColor: '#4CAF50', color: 'white' } : {})
+                        }} 
+                        aria-label={t('repayments')}
+                        title={t('repayments')}
+                      >
+                        <RepaymentIcon size={18} />
+                      </button>
+                      
+                      {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                        <button
+                          onClick={() => {
+                            onInlineUpdate(expense.id!, {
+                              repaymentTrackingCompleted: !expense.repaymentTrackingCompleted
+                            });
+                          }}
+                          style={{
+                            ...styles.iconButton,
+                            ...(expense.repaymentTrackingCompleted ? styles.completedChip : styles.warningChip),
+                          }}
+                          aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                          title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                        >
+                          {expense.repaymentTrackingCompleted ? '✓' : '○'}
+                        </button>
+                      )}
+                      
                       <button onClick={() => startInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.primaryChip }} aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -645,7 +802,86 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <DeleteIcon size={18} />
                       </button>
                     </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
+                          style={{ ...styles.iconButton, ...styles.neutralChip }}
+                          aria-label="More"
+                          title="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === expense.id && (
+                          <div style={styles.menu}>
+                            <button
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                if (expandedRepaymentId === expense.id) {
+                                  setExpandedRepaymentId(null);
+                                } else {
+                                  setExpandedRepaymentId(expense.id!);
+                                }
+                              }}
+                            >
+                              <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
+                              {t('repayments')}
+                            </button>
+                            {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                              <button
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onInlineUpdate(expense.id!, {
+                                    repaymentTrackingCompleted: !expense.repaymentTrackingCompleted,
+                                  });
+                                }}
+                              >
+                                <span style={styles.menuIcon}>{expense.repaymentTrackingCompleted ? '✓' : '○'}</span>
+                                {expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                              </button>
+                            )}
+                            <button
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(expense);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                </div>
+                </>
+              )}
+              
+              {/* Inline Repayment Manager */}
+              {expandedRepaymentId === expense.id && (
+                <div style={styles.inlineRepaymentSection}>
+                  <RepaymentManager
+                    expense={expense}
+                    onClose={() => setExpandedRepaymentId(null)}
+                    inline={true}
+                    onRepaymentChange={onReloadRepayments}
+                  />
                 </div>
               )}
             </div>
@@ -670,6 +906,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
       />
     </div>
+    </>
   );
 };
 
@@ -745,11 +982,18 @@ const styles = {
   summaryDetailCategory: {
     fontSize: '14px',
     color: '#555',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    flex: 1,
+    minWidth: 0,
   },
   summaryDetailAmount: {
     fontSize: '14px',
     fontWeight: '600' as const,
     color: '#f44336',
+    flexShrink: 0,
+    marginLeft: '12px',
   },
   filterSection: {
     display: 'flex',
@@ -784,6 +1028,23 @@ const styles = {
     fontSize: '14px',
     backgroundColor: 'white',
   },
+  toggleFiltersButton: {
+    padding: '10px 16px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    minWidth: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      backgroundColor: '#f5f5f5',
+    }
+  } as React.CSSProperties,
   dateFilterGroup: {
     display: 'flex',
     alignItems: 'center',
@@ -852,7 +1113,8 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '10px',
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
+    position: 'relative' as const,
   },
   dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
   categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
@@ -899,7 +1161,134 @@ const styles = {
     wordBreak: 'break-all' as const,
     lineHeight: '1.2',
   },
-  actions: { display: 'flex', gap: '8px' },
+  amountSection: {
+    marginBottom: '4px',
+  },
+  amountBreakdown: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-end',
+    gap: '2px',
+  },
+  originalAmount: {
+    fontSize: '14px',
+    color: '#999',
+    textDecoration: 'line-through',
+  },
+  repaidAmount: {
+    fontSize: '14px',
+    color: '#4CAF50',
+    fontWeight: '500' as const,
+  },
+  netAmount: {
+    fontSize: '18px',
+    fontWeight: '700' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  amountBadge: {
+    position: 'absolute' as const,
+    top: '12px',
+    right: '12px',
+    backgroundColor: 'transparent',
+    padding: 0,
+    fontSize: '16px',
+    fontWeight: '700' as const,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    lineHeight: 1,
+    pointerEvents: 'none' as const,
+  },
+  amountMeta: {
+    position: 'absolute' as const,
+    top: '34px',
+    right: '12px',
+    textAlign: 'right' as const,
+    fontSize: '11px',
+    color: '#666',
+    lineHeight: 1.2,
+    pointerEvents: 'none' as const,
+  },
+  excessBadge: {
+    fontSize: '11px',
+    fontWeight: '500' as const,
+    color: '#2196F3',
+  },
+  excessBadgeSmall: {
+    fontSize: '10px',
+    fontWeight: '500' as const,
+    color: '#2196F3',
+    marginLeft: '4px',
+  },
+  repaymentAnnotation: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '6px',
+    fontSize: '11px',
+    color: '#666',
+  },
+  annotationItem: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  annotationDivider: {
+    color: '#ddd',
+  },
+  completedBadge: {
+    fontSize: '10px',
+    fontWeight: '600' as const,
+    color: '#16a34a',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    marginLeft: '4px',
+  },
+  completedCheck: {
+    marginLeft: '6px',
+    color: '#16a34a',
+    fontWeight: '700' as const,
+    fontSize: '14px',
+    lineHeight: 1,
+  },
+  actions: { gap: '8px' },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menu: {
+    position: 'absolute' as const,
+    top: '40px',
+    right: 0,
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+    padding: '6px',
+    minWidth: '180px',
+    zIndex: 1000,
+  },
+  menuItem: {
+    width: '100%',
+    textAlign: 'left' as const,
+    background: 'none',
+    border: 'none',
+    padding: '8px 10px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: '#374151',
+  },
+  menuIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '18px',
+  },
   iconButton: {
     padding: '8px',
     display: 'inline-flex',
@@ -924,6 +1313,16 @@ const styles = {
   neutralChip: {
     backgroundColor: 'rgba(148,163,184,0.2)',
     color: '#374151',
+  },
+  completedChip: {
+    backgroundColor: 'rgba(34,197,94,0.2)',
+    color: '#16a34a',
+    fontWeight: '700' as const,
+  },
+  warningChip: {
+    backgroundColor: 'rgba(251,191,36,0.15)',
+    color: '#d97706',
+    fontWeight: '600' as const,
   },
   selectToggleButton: {
     borderRadius: '8px',
@@ -996,6 +1395,13 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     color: '#1976d2',
+  },
+  inlineRepaymentSection: {
+    marginTop: '12px',
+    padding: '16px',
+    backgroundColor: '#f9f9f9',
+    borderRadius: '6px',
+    border: '1px solid #e0e0e0',
   },
 };
 
