@@ -8,6 +8,7 @@
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
   --bg-tertiary: #e0e0e0;
+  --bg-quaternary: #f0f0f0;
   --text-primary: #333333;
   --text-secondary: #666666;
   --text-tertiary: #999999;
@@ -15,9 +16,21 @@
   --border-hover: #d0d0d0;
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-md: rgba(0, 0, 0, 0.15);
+  --shadow-lg: rgba(0, 0, 0, 0.2);
   --card-bg: #ffffff;
   --input-bg: #ffffff;
   --button-hover: rgba(0, 0, 0, 0.04);
+  --modal-bg: #ffffff;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --icon-bg: #f0f0f0;
+  --success-bg: #e8f5e9;
+  --warning-bg: #fff3e0;
+  --error-bg: #ffebee;
+  --info-bg: #e3f2fd;
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --select-bg: #ffffff;
+  --disabled-bg: #f5f5f5;
+  --divider-color: #e0e0e0;
 }
 
 .dark {
@@ -25,16 +38,29 @@
   --bg-primary: #1a1a1a;
   --bg-secondary: #2d2d2d;
   --bg-tertiary: #404040;
-  --text-primary: #e0e0e0;
-  --text-secondary: #b0b0b0;
-  --text-tertiary: #808080;
+  --bg-quaternary: #363636;
+  --text-primary: #e8e8e8;
+  --text-secondary: #b8b8b8;
+  --text-tertiary: #888888;
   --border-color: #404040;
   --border-hover: #505050;
-  --shadow: rgba(0, 0, 0, 0.3);
-  --shadow-md: rgba(0, 0, 0, 0.5);
+  --shadow: rgba(0, 0, 0, 0.4);
+  --shadow-md: rgba(0, 0, 0, 0.6);
+  --shadow-lg: rgba(0, 0, 0, 0.8);
   --card-bg: #2d2d2d;
   --input-bg: #1a1a1a;
   --button-hover: rgba(255, 255, 255, 0.08);
+  --modal-bg: #2d2d2d;
+  --modal-overlay: rgba(0, 0, 0, 0.75);
+  --icon-bg: #363636;
+  --success-bg: #1b4d2c;
+  --warning-bg: #4d3a1a;
+  --error-bg: #4d1a1a;
+  --info-bg: #1a2d4d;
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --select-bg: #1a1a1a;
+  --disabled-bg: #2d2d2d;
+  --divider-color: #404040;
 }
 
 * {
@@ -100,6 +126,46 @@ input {
 input:focus {
   outline: none;
   border-color: #4CAF50;
+}
+
+select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--select-bg);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, background-color 0.3s ease;
+}
+
+select:focus, textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+/* Helper classes for dark mode */
+.theme-bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.theme-bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.theme-card-bg {
+  background-color: var(--card-bg);
+}
+
+.theme-text-primary {
+  color: var(--text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-border {
+  border-color: var(--border-color);
 }
 
 /* Optimistic UI styles */

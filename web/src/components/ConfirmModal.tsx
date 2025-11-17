@@ -74,7 +74,7 @@ const styles = {
     zIndex: 9998,
   },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     padding: '24px',
     maxWidth: '500px',
@@ -87,12 +87,12 @@ const styles = {
     margin: '0 0 12px 0',
     fontSize: '20px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   message: {
     margin: '0 0 20px 0',
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: '1.5',
     whiteSpace: 'pre-wrap' as const,
     maxHeight: '400px',

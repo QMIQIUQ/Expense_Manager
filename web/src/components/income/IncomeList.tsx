@@ -221,7 +221,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             <div style={styles.inlineEditor}>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 2, minWidth: '180px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('title')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('title')}</label>
                   <input
                     type="text"
                     value={draft.title || ''}
@@ -231,7 +231,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ width: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -242,7 +242,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('type')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('type')}</label>
                   <select
                     value={draft.type || 'other'}
                     onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as IncomeType }))}
@@ -257,7 +257,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ width: '160px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
                   <input
                     type="date"
                     value={draft.date || ''}
@@ -266,7 +266,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('payerName')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('payerName')}</label>
                   <input
                     type="text"
                     value={draft.payerName || ''}
@@ -277,7 +277,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                 </div>
                   {expenses.length > 0 && (
                   <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('linkToExpense')}</label>
+                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('linkToExpense')}</label>
                     <select
                       value={draft.linkedExpenseId || ''}
                       onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
@@ -295,7 +295,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
                   <input
                     type="text"
                     value={draft.note || ''}
@@ -452,7 +452,7 @@ const styles = {
     gap: '16px',
   },
   incomeCard: {
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '12px',
     padding: '16px',
@@ -601,7 +601,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -637,7 +637,7 @@ const styles = {
     border: '1px solid #d1d5db',
     borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
   },
   emptyState: {
     display: 'flex',
@@ -645,7 +645,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '60px 20px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '12px',
   },
@@ -685,12 +685,12 @@ const styles = {
   dateGroupDate: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   incomeCount: {
     fontSize: '12px',
     fontWeight: '400' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   collapseIcon: {
     fontSize: '10px',

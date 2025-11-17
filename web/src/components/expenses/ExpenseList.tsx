@@ -585,7 +585,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '180px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
                       <input
                         type="text"
                         value={draft.description || ''}
@@ -595,7 +595,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -606,7 +606,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                       <select
                         value={draft.category || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
@@ -620,7 +620,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ width: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
                       <input
                         type="date"
                         value={draft.date || ''}
@@ -629,7 +629,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
                       <input
                         type="time"
                         value={draft.time || ''}
@@ -638,7 +638,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
                       <input
                         type="text"
                         value={draft.notes || ''}
@@ -662,7 +662,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
                       <select
                         value={draft.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -684,7 +684,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
                         <select
                           value={draft.cardId || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
@@ -703,7 +703,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={draft.paymentMethodName || ''}
@@ -776,7 +776,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
-                      <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                         {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
                         {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                         {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
@@ -963,8 +963,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '16px',
   },
@@ -990,14 +990,14 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   toggleFiltersButton: {
     padding: '10px 16px',
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     minWidth: '120px',
     display: 'flex',
@@ -1048,19 +1048,19 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   input: {
     padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   list: {
     display: 'flex',
@@ -1069,8 +1069,8 @@ const styles = {
     paddingBottom: '100px',
   },
   expenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '12px 12px 14px',
     display: 'flex',
@@ -1094,7 +1094,7 @@ const styles = {
     margin: '0 0 5px 0',
     fontSize: '16px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -1115,7 +1115,7 @@ const styles = {
   notes: {
     margin: '8px 0 0 0',
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   amount: {
     fontSize: '18px',
@@ -1136,7 +1136,7 @@ const styles = {
   },
   originalAmount: {
     fontSize: '14px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
     textDecoration: 'line-through',
   },
   repaidAmount: {
@@ -1171,7 +1171,7 @@ const styles = {
     right: '12px',
     textAlign: 'right' as const,
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: 1.2,
     pointerEvents: 'none' as const,
   },
@@ -1192,7 +1192,7 @@ const styles = {
     gap: '8px',
     marginTop: '6px',
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   annotationItem: {
     display: 'flex',
@@ -1239,7 +1239,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -1302,7 +1302,7 @@ const styles = {
   selectToggleButton: {
     borderRadius: '8px',
     border: '1px solid rgba(0,0,0,0.08)',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     fontWeight: 600 as const,
   },
@@ -1352,12 +1352,12 @@ const styles = {
   dateGroupDate: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   expenseCount: {
     fontSize: '12px',
     fontWeight: '400' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   collapseIcon: {
     fontSize: '10px',
@@ -1376,7 +1376,7 @@ const styles = {
     padding: '16px',
     backgroundColor: '#f9f9f9',
     borderRadius: '6px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
 };
 

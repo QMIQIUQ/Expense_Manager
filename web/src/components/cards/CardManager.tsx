@@ -303,7 +303,7 @@ const styles = {
     cursor: 'pointer',
   },
   formCard: {
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '16px',
     padding: '20px',
@@ -335,7 +335,7 @@ const styles = {
   emptyState: {
     textAlign: 'center' as const,
     padding: '40px 20px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '16px',
   },
@@ -351,7 +351,7 @@ const styles = {
     gap: '16px',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '16px',
     padding: '20px',
@@ -494,7 +494,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',

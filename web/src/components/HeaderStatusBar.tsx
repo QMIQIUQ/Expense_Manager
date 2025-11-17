@@ -238,7 +238,7 @@ const styles = {
     borderRadius: '8px',
     padding: '8px 16px',
     border: '1px solid #e5e7eb',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--card-bg)',
   },
   statusItemImporting: {
     backgroundColor: '#dbeafe', // 藍色背景 - 匯入中
@@ -308,7 +308,7 @@ const styles = {
   },
   actionBtn: {
     padding: '4px 12px',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--card-bg)',
     color: '#374151',
     border: '1px solid #d1d5db',
     borderRadius: '4px',

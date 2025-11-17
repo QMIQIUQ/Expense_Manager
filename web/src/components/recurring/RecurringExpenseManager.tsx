@@ -375,7 +375,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '150px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
                       <input
                         type="text"
                         value={formData.description}
@@ -386,7 +386,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       />
                     </div>
                     <div style={{ width: '120px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -400,7 +400,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '120px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -415,7 +415,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       </select>
                     </div>
                     <div style={{ minWidth: '100px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
                       <select
                         value={formData.frequency}
                         onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
@@ -431,7 +431,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   {/* Payment Method Selection in inline edit */}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
                       <select
                         value={formData.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -452,7 +452,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     </div>
                     {formData.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
                         <select
                           value={formData.cardId || ''}
                           onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
@@ -469,7 +469,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     )}
                     {formData.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={formData.paymentMethodName || ''}
@@ -483,7 +483,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
                       <input
                         type="date"
                         value={formData.startDate}
@@ -567,7 +567,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
                   {/* Third row: Payment Details, Frequency, and Hamburger */}
                   <div style={styles.expenseRow3}>
-                    <div style={{ fontSize: '12px', color: '#666', flex: 1 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
                       {expense.paymentMethod === 'credit_card' && (
                         <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
                       )}
@@ -578,7 +578,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         <span>💵 {t('cash')}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}
                     </div>
 
@@ -740,7 +740,7 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',
@@ -753,7 +753,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   formActions: {
     display: 'flex',
@@ -783,7 +783,7 @@ const styles = {
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   expenseList: {
     display: 'flex',
@@ -791,8 +791,8 @@ const styles = {
     gap: '10px',
   },
   expenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '15px',
     display: 'flex',
@@ -818,7 +818,7 @@ const styles = {
     margin: 0,
     fontSize: '15px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   category: {
     padding: '2px 8px',
@@ -912,7 +912,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -947,7 +947,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   saveButton: {
     padding: '8px',

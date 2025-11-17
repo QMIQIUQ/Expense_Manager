@@ -117,7 +117,7 @@ const styles = {
     transition: 'background-color 0.2s',
   },
   formContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '12px',
     padding: '20px',

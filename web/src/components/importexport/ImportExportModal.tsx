@@ -438,7 +438,7 @@ const styles = {
     padding: '20px',
   },
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     maxWidth: '800px',
     width: '100%',
@@ -459,7 +459,7 @@ const styles = {
     gap: '10px',
     padding: '20px 30px',
     borderTop: '1px solid #e0e0e0',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     flexShrink: 0,
   },
   stepContent: {
@@ -471,11 +471,11 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   description: {
     margin: 0,
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
   },
   fileInput: {
@@ -495,10 +495,10 @@ const styles = {
   fileName: {
     margin: 0,
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   errorBox: {
-    backgroundColor: '#FFF3CD',
+    backgroundColor: 'var(--warning-bg)',
     border: '1px solid #FFC107',
     borderRadius: '6px',
     padding: '15px',
@@ -521,12 +521,12 @@ const styles = {
   },
   statLabel: {
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   statValue: {
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   mappingSection: {
     display: 'flex',
@@ -537,7 +537,7 @@ const styles = {
     margin: 0,
     fontSize: '16px',
     fontWeight: 600 as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   mappingList: {
     display: 'flex',
@@ -559,7 +559,7 @@ const styles = {
   },
   mappingName: {
     fontWeight: 500 as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   mappingMatched: {
     color: '#28a745',
@@ -589,7 +589,7 @@ const styles = {
   warning: {
     margin: 0,
     padding: '10px',
-    backgroundColor: '#FFF3CD',
+    backgroundColor: 'var(--warning-bg)',
     border: '1px solid #FFC107',
     borderRadius: '4px',
     fontSize: '14px',
@@ -624,7 +624,7 @@ const styles = {
     padding: '10px 12px',
   },
   blankCategoryCell: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: 'var(--error-bg)',
     border: '1px solid #f5c6cb',
     color: '#721c24',
   },
@@ -635,13 +635,13 @@ const styles = {
   moreRows: {
     margin: 0,
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     textAlign: 'center' as const,
   },
   blankWarning: {
     marginTop: '10px',
     padding: '12px',
-    backgroundColor: '#FFF3CD',
+    backgroundColor: 'var(--warning-bg)',
     border: '1px solid #FFC107',
     borderRadius: '6px',
     color: '#856404',
@@ -694,7 +694,7 @@ const styles = {
     margin: 0,
     textAlign: 'center' as const,
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   resultSection: {
     display: 'flex',

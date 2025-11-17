@@ -26,7 +26,7 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'var(--modal-overlay)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -34,12 +34,14 @@ const styles = {
     padding: '20px',
   },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--modal-bg)',
+    color: 'var(--text-primary)',
     borderRadius: '8px',
     width: '100%',
     maxHeight: '90vh',
     overflow: 'auto',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+    boxShadow: '0 4px 20px var(--shadow-md)',
+    border: '1px solid var(--border-color)',
   },
 };
 

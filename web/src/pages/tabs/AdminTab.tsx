@@ -350,7 +350,7 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   createButton: {
     padding: '10px 20px',
@@ -367,13 +367,13 @@ const styles = {
     padding: '20px',
     borderRadius: '8px',
     marginBottom: '20px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
   formTitle: {
     margin: '0 0 15px 0',
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   notice: {
     backgroundColor: '#fff3cd',
@@ -443,10 +443,10 @@ const styles = {
     fontWeight: '500' as const,
   },
   userList: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     overflow: 'hidden',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
   userHeader: {
     display: 'flex',
@@ -471,7 +471,7 @@ const styles = {
   },
   youBadge: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontStyle: 'italic' as const,
   },
   activeBadge: {
@@ -534,18 +534,18 @@ const styles = {
   },
   loadingText: {
     marginLeft: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   emptyState: {
     padding: '40px',
     textAlign: 'center' as const,
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
   helpText: {
     display: 'block',
     marginTop: '4px',
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   modalOverlay: {
     position: 'fixed' as const,
@@ -560,7 +560,7 @@ const styles = {
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     padding: '24px',
     maxWidth: '500px',
@@ -572,7 +572,7 @@ const styles = {
     margin: '0 0 16px 0',
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   modalNotice: {
     backgroundColor: '#fff3cd',
