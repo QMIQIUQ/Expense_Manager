@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Expense, Category, Card, EWallet, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
-import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon } from '../icons';
+import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon, CircleIcon } from '../icons';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -35,6 +35,7 @@ interface ExpenseListProps {
   onEdit?: (exp: Expense | null) => void;
   onBulkDelete?: (ids: string[]) => void;
   onReloadRepayments?: () => void; // Callback to reload repayments
+  focusExpenseId?: string; // when set, scroll and highlight
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -47,6 +48,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onInlineUpdate,
   onBulkDelete,
   onReloadRepayments,
+  focusExpenseId,
 }) => {
   const { t } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
@@ -85,6 +87,47 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
+
+  // Helper function to get category with icon
+  const getCategoryDisplay = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category) {
+      return `${category.icon} ${category.name}`;
+    }
+    return categoryName;
+  };
+
+  // Scroll to and highlight an expense when focusExpenseId changes
+  React.useEffect(() => {
+    if (!focusExpenseId) return;
+    const el = document.getElementById(`expense-${focusExpenseId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const original = (el as HTMLElement).style.boxShadow;
+      (el as HTMLElement).style.boxShadow = '0 0 0 3px rgba(99,102,241,0.35)';
+      setTimeout(() => {
+        (el as HTMLElement).style.boxShadow = original;
+      }, 2000);
+    }
+  }, [focusExpenseId]);
 
   // Calculate repayment totals per expense
   const repaymentTotals = useMemo(() => {
@@ -543,7 +586,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
                 return (
-                <div key={expense.id} className="expense-card" style={styles.expenseCard}>
+                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={styles.expenseCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {multiSelectEnabled && (
@@ -563,9 +606,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     {(expense as Expense & { time?: string }).time && (
                       <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
                     )}
-                    <span style={styles.category}>{expense.category}</span>
-                    {expense.repaymentTrackingCompleted && (
-                      <span style={styles.completedCheck} title={t('completed')}>✓</span>
+                    <span style={styles.category}>{getCategoryDisplay(expense.category)}</span>
+                    {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                      <span 
+                        style={{
+                          ...styles.completedCheck,
+                          color: expense.repaymentTrackingCompleted ? '#16a34a' : '#f59e0b'
+                        }} 
+                        title={expense.repaymentTrackingCompleted ? t('completed') : t('markRepaymentComplete')}
+                      >
+                        {expense.repaymentTrackingCompleted ? <CheckIcon size={16} /> : <CircleIcon size={16} />}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -574,51 +625,69 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {editingId === expense.id ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <input
-                      type="text"
-                      value={draft.description || ''}
-                      placeholder="Description"
-                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                      style={{ ...styles.input, flex: 2, minWidth: '180px' }}
-                    />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={draft.amount || ''}
-                      placeholder="Amount"
-                      onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
-                      style={{ ...styles.input, width: '140px' }}
-                    />
-                    <select
-                      value={draft.category || ''}
-                      onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-                      style={{ ...styles.select, minWidth: '160px' }}
-                    >
-                      {categoryNames.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
+                    <div style={{ flex: 2, minWidth: '180px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <input
+                        type="text"
+                        value={draft.description || ''}
+                        placeholder={t('description')}
+                        onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                        style={{ ...styles.input, width: '100%' }}
+                      />
+                    </div>
+                    <div style={{ width: '140px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={draft.amount || ''}
+                        placeholder={t('amount')}
+                        onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
+                        style={{ ...styles.input, width: '100%' }}
+                      />
+                    </div>
+                    <div style={{ minWidth: '160px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <select
+                        value={draft.category || ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+                        style={{ ...styles.select, width: '100%' }}
+                      >
+                        {categoryNames.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <input
-                      type="date"
-                      value={draft.date || ''}
-                      onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                      style={{ ...styles.input, width: '160px' }}
-                    />
-                    <input
-                      type="time"
-                      value={draft.time || ''}
-                      onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                      style={{ ...styles.input, width: '140px' }}
-                    />
-                    <input
-                      type="text"
-                      value={draft.notes || ''}
-                      placeholder="Notes (optional)"
-                      onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                      style={{ ...styles.input, flex: 1, minWidth: '200px' }}
-                    />
+                    <div style={{ width: '160px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                      <input
+                        type="date"
+                        value={draft.date || ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
+                        style={{ ...styles.input, width: '100%' }}
+                      />
+                    </div>
+                    <div style={{ width: '140px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
+                      <input
+                        type="time"
+                        value={draft.time || ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
+                        style={{ ...styles.input, width: '100%' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                      <input
+                        type="text"
+                        value={draft.notes || ''}
+                        placeholder={t('notesOptional')}
+                        onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                        style={{ ...styles.input, width: '100%' }}
+                      />
+                    </div>
                   </div>
                   {/* Repayment tracking toggle */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
@@ -634,6 +703,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
                       <select
                         value={draft.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -654,30 +724,36 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
 
                     {draft.paymentMethod === 'credit_card' && (
-                      <select
-                        value={draft.cardId || ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
-                        style={{ ...styles.select, minWidth: '200px', flex: 1 }}
-                      >
-                        <option value="">{t('selectCard')}</option>
-                        {cards.length === 0 && <option value="" disabled>No cards available</option>}
-                        {cards.map((card) => (
-                          <option key={card.id} value={card.id}>
-                            💳 {card.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div style={{ minWidth: '200px', flex: 1 }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <select
+                          value={draft.cardId || ''}
+                          onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
+                          style={{ ...styles.select, width: '100%' }}
+                        >
+                          <option value="">{t('selectCard')}</option>
+                          {cards.length === 0 && <option value="" disabled>No cards available</option>}
+                          {cards.map((card) => (
+                            <option key={card.id} value={card.id}>
+                              💳 {card.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
 
                     {draft.paymentMethod === 'e_wallet' && (
-                      <input
-                        type="text"
-                        value={draft.paymentMethodName || ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, paymentMethodName: e.target.value }))}
-                        placeholder={t('eWalletNameLabel') || 'E-wallet name'}
-                        style={{ ...styles.input, minWidth: '220px', flex: 1 }}
-                        list={walletDatalistId}
-                      />
+                      <div style={{ minWidth: '200px', flex: 1 }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <input
+                          type="text"
+                          value={draft.paymentMethodName || ''}
+                          onChange={(e) => setDraft((d) => ({ ...d, paymentMethodName: e.target.value }))}
+                          placeholder={t('eWalletNameLabel') || 'E-wallet name'}
+                          style={{ ...styles.input, width: '100%' }}
+                          list={walletDatalistId}
+                        />
+                      </div>
                     )}
                   </div>
                   {draft.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
@@ -787,7 +863,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
                           title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
                         >
-                          {expense.repaymentTrackingCompleted ? '✓' : '○'}
+                          {expense.repaymentTrackingCompleted ? <CheckIcon size={18} /> : <CircleIcon size={18} />}
                         </button>
                       )}
                       
@@ -807,16 +883,28 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
+                          className="menu-item-hover"
                           onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
-                          style={{ ...styles.iconButton, ...styles.neutralChip }}
+                          style={styles.menuButton}
                           aria-label="More"
-                          title="More"
                         >
                           ⋮
                         </button>
                         {openMenuId === expense.id && (
                           <div style={styles.menu}>
                             <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(expense);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
                               style={styles.menuItem}
                               onClick={() => {
                                 setOpenMenuId(null);
@@ -832,6 +920,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             </button>
                             {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
                               <button
+                                className="menu-item-hover"
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
@@ -840,21 +929,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                   });
                                 }}
                               >
-                                <span style={styles.menuIcon}>{expense.repaymentTrackingCompleted ? '✓' : '○'}</span>
+                                <span style={styles.menuIcon}>
+                                  {expense.repaymentTrackingCompleted ? <CheckIcon size={16} /> : <CircleIcon size={16} />}
+                                </span>
                                 {expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
                               </button>
                             )}
                             <button
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                startInlineEdit(expense);
-                              }}
-                            >
-                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
-                              {t('edit')}
-                            </button>
-                            <button
+                              className="menu-item-hover"
                               style={{ ...styles.menuItem, color: '#b91c1c' }}
                               onClick={() => {
                                 setOpenMenuId(null);
@@ -1252,42 +1334,53 @@ const styles = {
     fontWeight: '700' as const,
     fontSize: '14px',
     lineHeight: 1,
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   actions: { gap: '8px' },
   menuContainer: {
     position: 'relative' as const,
   },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
   menu: {
     position: 'absolute' as const,
-    top: '40px',
     right: 0,
-    backgroundColor: '#ffffff',
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
-    padding: '6px',
-    minWidth: '180px',
-    zIndex: 1000,
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 10,
+    minWidth: '160px',
   },
   menuItem: {
-    width: '100%',
-    textAlign: 'left' as const,
-    background: 'none',
-    border: 'none',
-    padding: '8px 10px',
-    borderRadius: '6px',
-    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    fontSize: '14px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
     color: '#374151',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
   },
   menuIcon: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '18px',
+    color: 'inherit',
   },
   iconButton: {
     padding: '8px',

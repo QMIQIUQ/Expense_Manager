@@ -76,8 +76,8 @@ const ALL_FEATURES: FeatureTab[] = [
   'recurring',
   'paymentMethods',
   'settings',
-  'profile',
-  'admin',
+  // Note: 'profile' and 'admin' are excluded because they have dedicated buttons in the UI
+  // and should not be managed as toggleable features
 ];
 
 const FeatureManager: React.FC<FeatureManagerProps> = ({
@@ -106,6 +106,10 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
       .filter((feature) => {
         // Filter out any features that don't have metadata
         return FEATURE_METADATA[feature] !== undefined;
+      })
+      .filter((feature) => {
+        // Filter out profile and admin - these have dedicated buttons and shouldn't be in feature lists
+        return feature !== 'profile' && feature !== 'admin';
       });
   };
 

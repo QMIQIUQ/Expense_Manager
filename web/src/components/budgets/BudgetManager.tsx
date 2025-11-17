@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Budget, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+
+// Add responsive styles for action buttons
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface BudgetManagerProps {
   budgets: Budget[];
@@ -24,6 +43,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     categoryId: '',
@@ -33,6 +53,25 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     startDate: new Date().toISOString().split('T')[0],
     alertThreshold: 80,
   });
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; budgetId: string | null }>({
     isOpen: false,
     budgetId: null,
@@ -113,13 +152,17 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   };
 
   const getProgressColor = (percentage: number, threshold: number) => {
-    if (percentage >= 100) return '#f44336';
-    if (percentage >= threshold) return '#ff9800';
-    return '#4caf50';
+    if (percentage >= 100) return '#dc2626'; // Red - over budget
+    if (percentage >= 90) return '#ea580c'; // Orange-red
+    if (percentage >= threshold) return '#f59e0b'; // Orange - warning
+    if (percentage >= 60) return '#fbbf24'; // Yellow
+    if (percentage >= 40) return '#a3e635'; // Light green
+    return '#22c55e'; // Green - safe
   };
 
   return (
     <div style={styles.container}>
+      <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
         {!isAdding && (
@@ -249,57 +292,72 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                      <select
-                        value={formData.categoryId}
-                        onChange={(e) => {
-                          const cat = categories.find((c) => c.id === e.target.value);
-                          setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
-                        }}
-                        style={{ ...styles.inlineSelect, flex: 2, minWidth: '150px' }}
-                      >
-                        <option value="">{t('selectCategory')}</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.amount}
-                        placeholder={t('amount')}
-                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                        onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '140px' }}
-                      />
+                      <div style={{ flex: 2, minWidth: '150px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                        <select
+                          value={formData.categoryId}
+                          onChange={(e) => {
+                            const cat = categories.find((c) => c.id === e.target.value);
+                            setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
+                          }}
+                          style={{ ...styles.inlineSelect, width: '100%' }}
+                        >
+                          <option value="">{t('selectCategory')}</option>
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ width: '140px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.amount}
+                          placeholder={t('amount')}
+                          onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                          onFocus={(e) => e.target.select()}
+                          style={{ ...styles.inlineInput, width: '100%' }}
+                        />
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                      <select
-                        value={formData.period}
-                        onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
-                        style={{ ...styles.inlineSelect, minWidth: '120px' }}
-                      >
-                        <option value="weekly">{t('periodWeekly')}</option>
-                        <option value="monthly">{t('periodMonthly')}</option>
-                        <option value="yearly">{t('periodYearly')}</option>
-                      </select>
-                      <input
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        style={{ ...styles.inlineInput, minWidth: '140px' }}
-                      />
-                      <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={formData.alertThreshold}
-                        placeholder={t('alertAt')}
-                        onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })}
-                        onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '100px' }}
-                      />
+                      <div style={{ minWidth: '120px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('budgetPeriod')}</label>
+                        <select
+                          value={formData.period}
+                          onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
+                          style={{ ...styles.inlineSelect, width: '100%' }}
+                        >
+                          <option value="weekly">{t('periodWeekly')}</option>
+                          <option value="monthly">{t('periodMonthly')}</option>
+                          <option value="yearly">{t('periodYearly')}</option>
+                        </select>
+                      </div>
+                      <div style={{ minWidth: '140px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                        <input
+                          type="date"
+                          value={formData.startDate}
+                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          style={{ ...styles.inlineInput, width: '100%' }}
+                        />
+                      </div>
+                      <div style={{ minWidth: '100px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('alertAt')}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={formData.alertThreshold}
+                          placeholder={t('alertAt')}
+                          onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })}
+                          onFocus={(e) => e.target.select()}
+                          style={{ ...styles.inlineInput, width: '100%' }}
+                        />
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                       <button onClick={() => saveInlineEdit(budget)} style={styles.saveButton} aria-label={t('save')}>
@@ -313,30 +371,36 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 ) : (
                   // View Mode
                   <>
-                    <div style={styles.budgetHeader}>
+                    {/* First row: Period and Amount */}
+                    <div style={styles.budgetRow1}>
+                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
+                      <div style={styles.budgetAmount}>
+                        <span style={styles.spent}>${spent.toFixed(2)}</span>
+                        <span style={styles.separator}> / </span>
+                        <span style={styles.total}>${budget.amount.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Second row: Category name */}
+                    <div style={styles.budgetRow2}>
                       <h4 style={styles.budgetCategory}>{budget.categoryName}</h4>
-                      <span style={styles.budgetPeriod}>{budget.period}</span>
                     </div>
 
-                    <div style={styles.budgetAmount}>
-                      <span style={styles.spent}>${spent.toFixed(2)}</span>
-                      <span style={styles.separator}>/</span>
-                      <span style={styles.total}>${budget.amount.toFixed(2)}</span>
-                    </div>
-
-                    <div style={styles.progressBar}>
-                      <div
-                        style={{
-                          ...styles.progressFill,
-                          width: `${percentage}%`,
-                          backgroundColor: progressColor,
-                        }}
-                      />
-                    </div>
-
-                    <div style={styles.budgetFooter}>
-                      <span style={styles.percentage}>{percentage.toFixed(1)}% {t('used')}</span>
-                      <div style={styles.actions}>
+                    {/* Third row: Progress bar, percentage, and Hamburger */}
+                    <div style={styles.budgetRow3}>
+                      <div style={styles.progressBar}>
+                        <div
+                          style={{
+                            ...styles.progressFill,
+                            width: `${percentage}%`,
+                            backgroundColor: progressColor,
+                          }}
+                        />
+                      </div>
+                      <span style={styles.percentage}>{percentage.toFixed(1)}%</span>
+                      
+                      {/* Desktop: Show individual buttons */}
+                      <div className="desktop-actions" style={{ gap: '8px' }}>
                         <button onClick={() => startInlineEdit(budget)} style={styles.editBtn} aria-label={t('edit')}>
                           <EditIcon size={18} />
                         </button>
@@ -346,6 +410,46 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         >
                           <DeleteIcon size={18} />
                         </button>
+                      </div>
+
+                      {/* Mobile: Show hamburger menu */}
+                      <div className="mobile-actions">
+                        <div style={styles.menuContainer}>
+                          <button
+                            className="menu-item-hover"
+                            onClick={() => setOpenMenuId(openMenuId === budget.id ? null : budget.id!)}
+                            style={styles.menuButton}
+                            aria-label="More"
+                          >
+                            ⋮
+                          </button>
+                          {openMenuId === budget.id && (
+                            <div style={styles.menu}>
+                              <button
+                                className="menu-item-hover"
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  startInlineEdit(budget);
+                                }}
+                              >
+                                <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                                {t('edit')}
+                              </button>
+                              <button
+                                className="menu-item-hover"
+                                style={{ ...styles.menuItem, color: '#b91c1c' }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteConfirm({ isOpen: true, budgetId: budget.id! });
+                                }}
+                              >
+                                <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                                {t('delete')}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </>
@@ -422,6 +526,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '15px',
+    marginBottom: '20px',
+    border: '1px solid #e0e0e0',
   },
   formGroup: {
     display: 'flex',
@@ -484,81 +590,86 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
     gap: '15px',
+    marginTop: '20px',
   },
   budgetCard: {
     backgroundColor: 'white',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
-    padding: '20px',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: '8px',
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
+    position: 'relative' as const,
   },
-  budgetHeader: {
+  budgetRow1: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    minWidth: 0,
-    gap: '10px',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  budgetRow2: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  budgetRow3: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
   },
   budgetCategory: {
     margin: 0,
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-    flex: 1,
-    minWidth: 0,
+    fontSize: '15px',
+    fontWeight: '500' as const,
+    color: '#333',
   },
   budgetPeriod: {
-    padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
-    borderRadius: '4px',
-    fontSize: '12px',
+    padding: '2px 8px',
+    backgroundColor: '#f3e5f5',
+    color: '#7b1fa2',
+    borderRadius: '12px',
+    fontSize: '11px',
     fontWeight: '500' as const,
     textTransform: 'capitalize' as const,
   },
   budgetAmount: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: '5px',
+    gap: '4px',
+    whiteSpace: 'nowrap' as const,
   },
   spent: {
-    fontSize: '24px',
+    fontSize: '18px',
     fontWeight: '600' as const,
     color: '#333',
   },
   separator: {
-    fontSize: '20px',
+    fontSize: '14px',
     color: '#999',
   },
   total: {
-    fontSize: '18px',
+    fontSize: '14px',
     color: '#666',
   },
   progressBar: {
-    height: '8px',
+    flex: 1,
+    height: '6px',
     backgroundColor: '#e0e0e0',
-    borderRadius: '4px',
+    borderRadius: '3px',
     overflow: 'hidden' as const,
   },
   progressFill: {
     height: '100%',
     transition: 'width 0.3s ease, background-color 0.3s ease',
   },
-  budgetFooter: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   percentage: {
-    fontSize: '14px',
+    fontSize: '12px',
     color: '#666',
     fontWeight: '500' as const,
+    minWidth: '45px',
+    textAlign: 'right' as const,
   },
   actions: {
     display: 'flex',
@@ -587,6 +698,49 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#374151',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
   },
   inlineInput: {
     padding: '10px',

@@ -74,6 +74,7 @@ const Dashboard: React.FC = () => {
   const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
+  const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{
     id: string;
     current: number;
@@ -1276,7 +1277,7 @@ const Dashboard: React.FC = () => {
               )}
             </button>
             {showHamburgerMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1050]">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1050]" style={{ minWidth: '240px', maxWidth: '90vw' }}>
                 {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -1284,6 +1285,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => setOpenLanguageSection(o => !o)}
                     aria-expanded={openLanguageSection}
                     aria-controls="hamburger-language-section"
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     <span> 🌐 Language / 語言</span>
                     <svg
@@ -1302,9 +1304,10 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenLanguageSection(false);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                          language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'en' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                         }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         English
                       </button>
@@ -1314,9 +1317,10 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenLanguageSection(false);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                          language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'zh' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                         }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         繁體中文
                       </button>
@@ -1326,9 +1330,10 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenLanguageSection(false);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                          language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          language === 'zh-CN' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                         }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         简体中文
                       </button>
@@ -1343,6 +1348,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => setOpenFeaturesSection(o => !o)}
                     aria-expanded={openFeaturesSection}
                     aria-controls="hamburger-features-section"
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     <span>{t('features') || 'Features'}</span>
                     <svg
@@ -1355,6 +1361,21 @@ const Dashboard: React.FC = () => {
                   </button>
                   {openFeaturesSection && (
                     <div id="hamburger-features-section" className="mt-2 space-y-1">
+                      <button
+                        onClick={() => {
+                          setActiveTab('settings');
+                          setShowHamburgerMenu(false);
+                          setOpenFeaturesSection(false);
+                        }}
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          activeTab === 'settings'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-700'
+                        }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        {t('featureSettings')}
+                      </button>
                       {(featureSettings?.hamburgerFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
                         .map((feature) => {
                           const featureStr = feature as string;
@@ -1364,7 +1385,7 @@ const Dashboard: React.FC = () => {
                           return feature;
                         })
                         .filter((feature, index, array) => array.indexOf(feature) === index)
-                        .filter((feature) => feature !== 'profile' && feature !== 'admin')
+                        .filter((feature) => feature !== 'profile' && feature !== 'admin' && feature !== 'settings')
                         .map((feature) => {
                           const labelMap: Record<FeatureTab, string> = {
                             dashboard: t('dashboard'),
@@ -1387,11 +1408,12 @@ const Dashboard: React.FC = () => {
                                 setShowHamburgerMenu(false);
                                 setOpenFeaturesSection(false);
                               }}
-                              className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                              className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
                                 activeTab === feature
                                   ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-700 hover:bg-gray-50'
+                                  : 'text-gray-700'
                               }`}
+                              style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                             >
                               {labelMap[feature]}
                             </button>
@@ -1407,6 +1429,7 @@ const Dashboard: React.FC = () => {
                     className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
                     onClick={() => setOpenImportExportSection(o => !o)}
                     aria-expanded={openImportExportSection}
+                    style={{ whiteSpace: 'nowrap' }}
                     aria-controls="hamburger-importexport-section"
                   >
                     <span>Import / Export</span>
@@ -1426,7 +1449,8 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenImportExportSection(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition-colors flex items-center gap-2"
+                        className="menu-item-hover w-full px-3 py-2 text-left text-sm text-gray-700 rounded transition-colors flex items-center gap-2"
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
 
                         {t('template') || 'Download Template'}
@@ -1437,7 +1461,8 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenImportExportSection(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded transition-colors flex items-center gap-2"
+                        className="menu-item-hover w-full px-3 py-2 text-left text-sm text-gray-700 rounded transition-colors flex items-center gap-2"
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
 
                         {t('exportExcel') || 'Export to Excel'}
@@ -1448,7 +1473,8 @@ const Dashboard: React.FC = () => {
                           setShowHamburgerMenu(false);
                           setOpenImportExportSection(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded transition-colors flex items-center gap-2"
+                        className="menu-item-hover w-full px-3 py-2 text-left text-sm text-gray-700 rounded transition-colors flex items-center gap-2"
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
 
                         {t('import') || 'Import Data'}
@@ -1491,9 +1517,10 @@ const Dashboard: React.FC = () => {
                         setActiveTab('profile');
                         setShowHamburgerMenu(false);
                       }}
-                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
-                        activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                      className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
+                        activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
                       }`}
+                      style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                     >
 
                       {t('profile') || 'Profile'}
@@ -1504,9 +1531,10 @@ const Dashboard: React.FC = () => {
                           setActiveTab('admin');
                           setShowHamburgerMenu(false);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
-                          activeTab === 'admin' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
+                          activeTab === 'admin' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
                         }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
 
                         {t('admin') || 'Admin'}
@@ -1522,7 +1550,8 @@ const Dashboard: React.FC = () => {
                       handleLogout();
                       setShowHamburgerMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-2 font-medium"
+                    className="menu-item-hover w-full px-3 py-2 text-left text-sm text-red-600 rounded transition-colors flex items-center gap-2 font-medium"
+                    style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1619,6 +1648,7 @@ const Dashboard: React.FC = () => {
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
               onReloadRepayments={reloadRepayments}
+              focusExpenseId={focusExpenseId || undefined}
             />
           </div>
         )}
@@ -1630,6 +1660,7 @@ const Dashboard: React.FC = () => {
             onAddIncome={handleAddIncome}
             onInlineUpdate={handleInlineUpdateIncome}
             onDeleteIncome={handleDeleteIncome}
+            onOpenExpenseById={(id) => { setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
           />
         )}
 

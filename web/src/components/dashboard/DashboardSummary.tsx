@@ -12,6 +12,13 @@ interface DashboardSummaryProps {
 
 const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted }) => {
   const { t } = useLanguage();
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
+  
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Color palette for pie chart
   const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
@@ -295,15 +302,15 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       {pieData.length > 0 && (
         <div style={styles.pieChartContainer}>
           <h3 style={styles.sectionTitle}>{t('categoryDistribution')}</h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <PieChart>
               <Pie
                 data={pieData}
                 cx="50%"
-                cy="50%"
+                cy={isMobile ? "40%" : "45%"}
                 labelLine={false}
-                label={({ name, percentage }) => `${name}: ${percentage}%`}
-                outerRadius={100}
+                label={false}
+                outerRadius={isMobile ? 70 : 110}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -314,7 +321,22 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
               <Tooltip 
                 formatter={(value: number) => `$${value.toFixed(2)}`}
               />
-              <Legend />
+              <Legend 
+                layout="horizontal"
+                verticalAlign="bottom"
+                align="center"
+                wrapperStyle={{ 
+                  fontSize: isMobile ? '11px' : '12px',
+                  paddingTop: '10px',
+                  maxWidth: '100%',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word'
+                }}
+                formatter={(value: string) => {
+                  const item = pieData.find(d => d.name === value);
+                  return item ? `${value} (${item.percentage}%)` : value;
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -326,8 +348,14 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 11 }}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
               <Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={2} />
             </LineChart>
@@ -499,6 +527,8 @@ const styles = {
     border: '1px solid #e0e0e0',
     borderRadius: '12px',
     padding: '20px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   recentExpensesContainer: {
     backgroundColor: 'white',

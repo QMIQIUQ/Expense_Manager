@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { Income, Expense } from '../../types';
@@ -11,6 +11,7 @@ interface Props {
   onAddIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onInlineUpdate: (id: string, updates: Partial<Income>) => void;
   onDeleteIncome: (id: string) => void;
+  onOpenExpenseById?: (id: string) => void;
 }
 
 const IncomesTab: React.FC<Props> = ({
@@ -19,15 +20,27 @@ const IncomesTab: React.FC<Props> = ({
   onAddIncome,
   onInlineUpdate,
   onDeleteIncome,
+  onOpenExpenseById,
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleSubmit = (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddIncome(data);
     setIsAdding(false);
   };
   
+  const filteredIncomes = useMemo(() => {
+    if (!searchTerm.trim()) return incomes;
+    const q = searchTerm.toLowerCase();
+    return incomes.filter((inc) => {
+      const title = (inc.title || '').toLowerCase();
+      const payer = (inc.payerName || '').toLowerCase();
+      return title.includes(q) || payer.includes(q);
+    });
+  }, [incomes, searchTerm]);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -40,6 +53,15 @@ const IncomesTab: React.FC<Props> = ({
         )}
       </div>
 
+      {/* Search by name */}
+      <input
+        type="text"
+        placeholder={t('searchByName')}
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={styles.searchInput}
+      />
+
       {isAdding && (
         <div style={styles.formContainer}>
           <IncomeForm
@@ -51,10 +73,11 @@ const IncomesTab: React.FC<Props> = ({
       )}
 
       <IncomeList
-        incomes={incomes}
+        incomes={filteredIncomes}
         expenses={expenses}
         onDelete={onDeleteIncome}
         onInlineUpdate={onInlineUpdate}
+        onOpenExpenseById={onOpenExpenseById}
       />
     </div>
   );
@@ -100,6 +123,14 @@ const styles = {
     padding: '20px',
     marginBottom: '10px',
     boxShadow: '0 2px 4px rgba(15,23,42,0.05)',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '10px 12px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
   },
 };
 

@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RecurringExpense, Category, Card } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+
+// Add responsive styles for action buttons
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
@@ -26,6 +45,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     description: '',
@@ -41,6 +61,25 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     cardId: '',
     paymentMethodName: '',
   });
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; recurringId: string | null }>({
     isOpen: false,
     recurringId: null,
@@ -148,6 +187,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
   return (
     <div style={styles.container}>
+      <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('recurringExpenses')}</h2>
         {!isAdding && (
@@ -334,99 +374,123 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 // Inline Edit Mode
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <input
-                      type="text"
-                      value={formData.description}
-                      placeholder={t('description')}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      onFocus={(e) => e.target.select()}
-                      style={{ ...styles.inlineInput, flex: 2, minWidth: '150px' }}
-                    />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.amount}
-                      placeholder={t('amount')}
-                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                      onFocus={(e) => e.target.select()}
-                      style={{ ...styles.inlineInput, width: '120px' }}
-                    />
+                    <div style={{ flex: 2, minWidth: '150px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <input
+                        type="text"
+                        value={formData.description}
+                        placeholder={t('description')}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, width: '100%' }}
+                      />
+                    </div>
+                    <div style={{ width: '120px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        placeholder={t('amount')}
+                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.inlineInput, width: '100%' }}
+                      />
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      style={{ ...styles.inlineSelect, minWidth: '120px' }}
-                    >
-                      <option value="">{t('selectCategory')}</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={formData.frequency}
-                      onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
-                      style={{ ...styles.inlineSelect, minWidth: '100px' }}
-                    >
-                      <option value="daily">{t('freqDaily')}</option>
-                      <option value="weekly">{t('freqWeekly')}</option>
-                      <option value="monthly">{t('freqMonthly')}</option>
-                      <option value="yearly">{t('freqYearly')}</option>
-                    </select>
-                  </div>
-                  {/* Payment Method Selection in inline edit */}
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <select
-                      value={formData.paymentMethod || 'cash'}
-                      onChange={(e) => {
-                        const newPaymentMethod = e.target.value as 'cash' | 'credit_card' | 'e_wallet';
-                        setFormData({ 
-                          ...formData, 
-                          paymentMethod: newPaymentMethod,
-                          cardId: newPaymentMethod === 'credit_card' ? formData.cardId : '',
-                          paymentMethodName: newPaymentMethod === 'e_wallet' ? formData.paymentMethodName : ''
-                        });
-                      }}
-                      style={{ ...styles.inlineSelect, minWidth: '130px' }}
-                    >
-                      <option value="cash">💵 {t('cash')}</option>
-                      <option value="credit_card">💳 {t('creditCard')}</option>
-                      <option value="e_wallet">📱 {t('eWallet')}</option>
-                    </select>
-                    {formData.paymentMethod === 'credit_card' && (
+                    <div style={{ minWidth: '120px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                       <select
-                        value={formData.cardId || ''}
-                        onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-                        style={{ ...styles.inlineSelect, minWidth: '130px' }}
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        style={{ ...styles.inlineSelect, width: '100%' }}
                       >
-                        <option value="">{t('selectCard')}</option>
-                        {cards.map((card) => (
-                          <option key={card.id} value={card.id}>
-                            {card.name}
+                        <option value="">{t('selectCategory')}</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
                           </option>
                         ))}
                       </select>
+                    </div>
+                    <div style={{ minWidth: '100px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
+                      <select
+                        value={formData.frequency}
+                        onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
+                        style={{ ...styles.inlineSelect, width: '100%' }}
+                      >
+                        <option value="daily">{t('freqDaily')}</option>
+                        <option value="weekly">{t('freqWeekly')}</option>
+                        <option value="monthly">{t('freqMonthly')}</option>
+                        <option value="yearly">{t('freqYearly')}</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Payment Method Selection in inline edit */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
+                    <div style={{ minWidth: '130px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <select
+                        value={formData.paymentMethod || 'cash'}
+                        onChange={(e) => {
+                          const newPaymentMethod = e.target.value as 'cash' | 'credit_card' | 'e_wallet';
+                          setFormData({ 
+                            ...formData, 
+                            paymentMethod: newPaymentMethod,
+                            cardId: newPaymentMethod === 'credit_card' ? formData.cardId : '',
+                            paymentMethodName: newPaymentMethod === 'e_wallet' ? formData.paymentMethodName : ''
+                          });
+                        }}
+                        style={{ ...styles.inlineSelect, width: '100%' }}
+                      >
+                        <option value="cash">💵 {t('cash')}</option>
+                        <option value="credit_card">💳 {t('creditCard')}</option>
+                        <option value="e_wallet">📱 {t('eWallet')}</option>
+                      </select>
+                    </div>
+                    {formData.paymentMethod === 'credit_card' && (
+                      <div style={{ minWidth: '130px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <select
+                          value={formData.cardId || ''}
+                          onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
+                          style={{ ...styles.inlineSelect, width: '100%' }}
+                        >
+                          <option value="">{t('selectCard')}</option>
+                          {cards.map((card) => (
+                            <option key={card.id} value={card.id}>
+                              {card.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
                     {formData.paymentMethod === 'e_wallet' && (
-                      <input
-                        type="text"
-                        value={formData.paymentMethodName || ''}
-                        onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-                        placeholder={t('eWalletPlaceholder')}
-                        onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, minWidth: '130px' }}
-                      />
+                      <div style={{ minWidth: '130px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <input
+                          type="text"
+                          value={formData.paymentMethodName || ''}
+                          onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
+                          placeholder={t('eWalletPlaceholder')}
+                          onFocus={(e) => e.target.select()}
+                          style={{ ...styles.inlineInput, width: '100%' }}
+                        />
+                      </div>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      style={{ ...styles.inlineInput, minWidth: '130px' }}
-                    />
+                    <div style={{ minWidth: '130px' }}>
+                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        style={{ ...styles.inlineInput, width: '100%' }}
+                      />
+                    </div>
                     <input
                       type="date"
                       value={formData.endDate}
@@ -471,53 +535,125 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               ) : (
                 // View Mode
                 <>
-                  <div style={styles.expenseMain}>
-                    <div style={styles.expenseInfo}>
-                      <h4 style={styles.description}>{expense.description}</h4>
+                  {/* First row: Payment Icon, Category, Status, Amount */}
+                  <div style={styles.expenseRow1}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {/* Payment Method Icon */}
+                      {expense.paymentMethod === 'credit_card' && (
+                        <span style={{ fontSize: '16px' }}>💳</span>
+                      )}
+                      {expense.paymentMethod === 'e_wallet' && (
+                        <span style={{ fontSize: '16px' }}>📱</span>
+                      )}
+                      {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
+                        <span style={{ fontSize: '16px' }}>💵</span>
+                      )}
+                      {/* Category */}
                       <span style={styles.category}>{expense.category}</span>
-                      <span style={styles.frequency}>{expense.frequency}</span>
-                      {/* Display Payment Method */}
-                      {expense.paymentMethod && expense.paymentMethod !== 'cash' && (
-                        <span style={{ ...styles.category, fontSize: '12px', marginTop: '4px' }}>
-                          {expense.paymentMethod === 'credit_card' && (
-                            <>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</>
-                          )}
-                          {expense.paymentMethod === 'e_wallet' && (
-                            <>📱 {expense.paymentMethodName || t('eWallet')}</>
-                          )}
-                        </span>
+                      {/* Active/Inactive Status */}
+                      {expense.isActive ? (
+                        <span style={styles.activeStatus}>● {t('active')}</span>
+                      ) : (
+                        <span style={styles.inactiveStatus}>● {t('inactive')}</span>
                       )}
                     </div>
-                    <div style={styles.expenseDetails}>
-                      <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
-                      <div style={styles.status}>
-                        {expense.isActive ? (
-                          <span style={styles.activeStatus}>● {t('active')}</span>
-                        ) : (
-                          <span style={styles.inactiveStatus}>● {t('inactive')}</span>
+                    <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                  </div>
+
+                  {/* Second row: Description */}
+                  <div style={styles.expenseRow2}>
+                    <h4 style={styles.description}>{expense.description}</h4>
+                  </div>
+
+                  {/* Third row: Payment Details, Frequency, and Hamburger */}
+                  <div style={styles.expenseRow3}>
+                    <div style={{ fontSize: '12px', color: '#666', flex: 1 }}>
+                      {expense.paymentMethod === 'credit_card' && (
+                        <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
+                      )}
+                      {expense.paymentMethod === 'e_wallet' && (
+                        <span>📱 {expense.paymentMethodName || t('eWallet')}</span>
+                      )}
+                      {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
+                        <span>💵 {t('cash')}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as any)}
+                    </div>
+
+                    {/* Desktop: Show individual buttons */}
+                    <div className="desktop-actions" style={{ gap: '8px' }}>
+                      <button
+                        onClick={() => onToggleActive(expense.id!, !expense.isActive)}
+                        style={expense.isActive ? styles.pauseBtn : styles.resumeBtn}
+                      >
+                        {expense.isActive ? t('pause') : t('resume')}
+                      </button>
+                      <button onClick={() => startInlineEdit(expense)} style={styles.editBtn}>
+                        <EditIcon size={18} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
+                        style={styles.deleteBtn}
+                      >
+                        <DeleteIcon size={18} />
+                      </button>
+                    </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          className="menu-item-hover"
+                          onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
+                          style={styles.menuButton}
+                          aria-label="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === expense.id && (
+                          <div style={styles.menu}>
+                            <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onToggleActive(expense.id!, !expense.isActive);
+                              }}
+                            >
+                              <span style={styles.menuIcon}>{expense.isActive ? '⏸' : '▶'}</span>
+                              {expense.isActive ? t('pause') : t('resume')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(expense);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setDeleteConfirm({ isOpen: true, recurringId: expense.id! });
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div style={styles.actions}>
-                    <button
-                      onClick={() => onToggleActive(expense.id!, !expense.isActive)}
-                      style={expense.isActive ? styles.pauseBtn : styles.resumeBtn}
-                    >
-                      {expense.isActive ? t('pause') : t('resume')}
-                    </button>
-                    <button onClick={() => startInlineEdit(expense)} style={styles.editBtn}>
-                      <EditIcon size={18} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
-                      style={styles.deleteBtn}
-                    >
-                      <DeleteIcon size={18} />
-                    </button>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
             </div>
           ))
         )}
@@ -658,68 +794,55 @@ const styles = {
     borderRadius: '8px',
     padding: '15px',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  expenseMain: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  expenseInfo: {
-    flex: 1,
-    display: 'flex',
     flexDirection: 'column' as const,
-    gap: '5px',
+    gap: '8px',
+  },
+  expenseRow1: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  expenseRow2: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  expenseRow3: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
   },
   description: {
     margin: 0,
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '500' as const,
     color: '#333',
   },
   category: {
-    display: 'inline-block',
-    padding: '4px 8px',
+    padding: '2px 8px',
     backgroundColor: '#e3f2fd',
     color: '#1976d2',
-    borderRadius: '4px',
+    borderRadius: '12px',
     fontSize: '12px',
     fontWeight: '500' as const,
-    width: 'fit-content',
-  },
-  frequency: {
-    display: 'inline-block',
-    padding: '4px 8px',
-    backgroundColor: '#f3e5f5',
-    color: '#7b1fa2',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: '500' as const,
-    width: 'fit-content',
-    textTransform: 'capitalize' as const,
-  },
-  expenseDetails: {
-    textAlign: 'right' as const,
   },
   amount: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600' as const,
     color: '#f44336',
-    marginBottom: '4px',
+    whiteSpace: 'nowrap' as const,
   },
   status: {
     fontSize: '12px',
   },
   activeStatus: {
-    color: '#4caf50',
+    color: '#16a34a',
+    fontSize: '11px',
     fontWeight: '500' as const,
   },
   inactiveStatus: {
-    color: '#999',
+    color: '#dc2626',
+    fontSize: '11px',
     fontWeight: '500' as const,
   },
   actions: {
@@ -767,6 +890,49 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 10,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#374151',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
   },
   inlineInput: {
     padding: '10px',

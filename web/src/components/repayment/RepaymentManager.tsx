@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Expense, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { repaymentService } from '../../services/repaymentService';
@@ -18,17 +18,39 @@ interface RepaymentManagerProps {
 const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false, onRepaymentChange }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
-  const { showNotification } = useNotification();
+  const { showNotification, updateNotification } = useNotification();
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingRepayment, setEditingRepayment] = useState<Repayment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const notifyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced notification to parent
+  const notifyParentDebounced = useCallback(() => {
+    if (notifyTimeoutRef.current) {
+      clearTimeout(notifyTimeoutRef.current);
+    }
+    notifyTimeoutRef.current = setTimeout(() => {
+      if (onRepaymentChange) {
+        onRepaymentChange();
+      }
+    }, 500); // Wait 500ms after last change before notifying parent
+  }, [onRepaymentChange]);
 
   useEffect(() => {
     loadRepayments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expense.id]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notifyTimeoutRef.current) {
+        clearTimeout(notifyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadRepayments = async () => {
     if (!currentUser || !expense.id) return;
@@ -46,31 +68,50 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   const handleAddRepayment = async (repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
     if (!currentUser || !expense.id) return;
     
+    // Optimistic update: immediately add to local state
+    const tempId = `temp-${Date.now()}`;
+    const optimisticRepayment: Repayment = {
+      ...repaymentData,
+      id: tempId,
+      userId: currentUser.uid,
+      expenseId: expense.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setRepayments(prev => [...prev, optimisticRepayment]);
+    setShowForm(false);
+    
+    // Show pending notification
+    const notificationId = showNotification('pending', t('saving'), { duration: 0, id: `add-${tempId}` });
+    
     try {
       setSaving(true);
-      await repaymentService.create({
+      // Perform actual database operation in background
+      const newRepaymentId = await repaymentService.create({
         ...repaymentData,
         userId: currentUser.uid,
         expenseId: expense.id,
       });
 
-      // Check if total repayments exceed expense amount
-      const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
-      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
-      
-      // Get any existing excess income for this expense
-      const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
-      const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+      // Replace temp repayment with real one
+      setRepayments(prev => prev.map(r => 
+        r.id === tempId ? { ...optimisticRepayment, id: newRepaymentId } : r
+      ));
+
+      // Update notification to success
+      updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
+
+      // Handle excess income logic asynchronously
+      const totalRepaid = [...repayments, optimisticRepayment].reduce((sum, r) => sum + r.amount, 0);
       
       if (totalRepaid > expense.amount) {
-        // There is excess - create or update income
+        const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+        const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
         const excessAmount = totalRepaid - expense.amount;
         
         if (existingExcessIncome) {
-          // Update existing excess income
           await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
         } else {
-          // Create new income for the excess amount
           await incomeService.create({
             userId: currentUser.uid,
             amount: excessAmount,
@@ -82,21 +123,16 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           });
           showNotification('info', t('excessConvertedToIncome'));
         }
-      } else if (existingExcessIncome) {
-        // No longer excess, delete the income
-        await incomeService.delete(existingExcessIncome.id!);
       }
 
-      await loadRepayments();
-      setShowForm(false);
-      showNotification('success', t('repaymentAdded'));
-      // Notify parent to refresh data
-      if (onRepaymentChange) {
-        onRepaymentChange();
-      }
+      // Notify parent to refresh data (debounced)
+      notifyParentDebounced();
     } catch (error) {
       console.error('Failed to add repayment:', error);
-      showNotification('error', t('errorSavingData'));
+      // Rollback optimistic update on error
+      setRepayments(prev => prev.filter(r => r.id !== tempId));
+      // Update notification to error
+      updateNotification(notificationId, { type: 'error', message: t('errorSavingData'), duration: 5000 });
     } finally {
       setSaving(false);
     }
@@ -105,27 +141,43 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   const handleUpdateRepayment = async (repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
     if (!currentUser || !editingRepayment?.id || !expense.id) return;
     
+    // Store original for rollback
+    const originalRepayment = editingRepayment;
+    const repaymentId = editingRepayment.id;
+    
+    // Optimistic update: immediately update in local state
+    setRepayments(prev => prev.map(r => 
+      r.id === editingRepayment.id 
+        ? { ...r, ...repaymentData, updatedAt: new Date() }
+        : r
+    ));
+    setShowForm(false);
+    setEditingRepayment(null);
+    
+    // Show pending notification
+    const notificationId = showNotification('pending', t('saving'), { duration: 0, id: `update-${repaymentId}` });
+    
     try {
       setSaving(true);
-      await repaymentService.update(editingRepayment.id, repaymentData);
+      // Perform actual database operation in background
+      await repaymentService.update(repaymentId, repaymentData);
 
-      // Check if total repayments exceed expense amount
-      const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
-      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
-      
-      // Get any existing excess income for this expense
-      const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
-      const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+      // Update notification to success
+      updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
+
+      // Handle excess income logic asynchronously
+      const totalRepaid = repayments
+        .map(r => r.id === editingRepayment.id ? { ...r, ...repaymentData } : r)
+        .reduce((sum, r) => sum + r.amount, 0);
       
       if (totalRepaid > expense.amount) {
-        // There is excess - create or update income
+        const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+        const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
         const excessAmount = totalRepaid - expense.amount;
         
         if (existingExcessIncome) {
-          // Update existing excess income
           await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
         } else {
-          // Create new income for the excess amount
           await incomeService.create({
             userId: currentUser.uid,
             amount: excessAmount,
@@ -137,22 +189,24 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           });
           showNotification('info', t('excessConvertedToIncome'));
         }
-      } else if (existingExcessIncome) {
-        // No longer excess, delete the income
-        await incomeService.delete(existingExcessIncome.id!);
+      } else {
+        const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+        const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+        if (existingExcessIncome) {
+          await incomeService.delete(existingExcessIncome.id!);
+        }
       }
 
-      await loadRepayments();
-      setShowForm(false);
-      setEditingRepayment(null);
-      showNotification('success', t('repaymentUpdated'));
       // Notify parent to refresh data
-      if (onRepaymentChange) {
-        onRepaymentChange();
-      }
+      notifyParentDebounced();
     } catch (error) {
       console.error('Failed to update repayment:', error);
-      showNotification('error', t('errorSavingData'));
+      // Rollback optimistic update on error
+      setRepayments(prev => prev.map(r => 
+        r.id === originalRepayment.id ? originalRepayment : r
+      ));
+      // Update notification to error
+      updateNotification(notificationId, { type: 'error', message: t('errorSavingData'), duration: 5000 });
     } finally {
       setSaving(false);
     }
@@ -161,40 +215,48 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   const handleDeleteRepayment = async (id: string) => {
     if (!currentUser || !expense.id) return;
     
+    // Store original for rollback
+    const deletedRepayment = repayments.find(r => r.id === id);
+    if (!deletedRepayment) return;
+    
+    // Optimistic update: immediately remove from local state
+    setRepayments(prev => prev.filter(r => r.id !== id));
+    
+    // Show pending notification
+    const notificationId = showNotification('pending', t('deleting'), { duration: 0, id: `delete-${id}` });
+    
     try {
-      // Delete the repayment
+      // Perform actual database operation in background
       await repaymentService.delete(id);
       
-      // Get updated repayments after deletion
-      const updatedRepayments = await repaymentService.getByExpenseId(currentUser.uid, expense.id);
-      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
+      // Update notification to success
+      updateNotification(notificationId, { type: 'success', message: t('repaymentDeleted'), duration: 3000 });
       
-      // Delete any excess income records linked to this expense
-      // This handles the case where deleting a repayment means there's no longer excess
+      // Handle excess income logic asynchronously
+      const totalRepaid = repayments
+        .filter(r => r.id !== id)
+        .reduce((sum, r) => sum + r.amount, 0);
+      
       const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
       for (const income of linkedIncomes) {
         if (income.type === 'repayment') {
-          // Check if there's still excess after this deletion
           if (totalRepaid <= expense.amount) {
-            // No more excess, delete the income
             await incomeService.delete(income.id!);
           } else {
-            // There's still excess, update the income amount
             const newExcessAmount = totalRepaid - expense.amount;
             await incomeService.update(income.id!, { amount: newExcessAmount });
           }
         }
       }
       
-      await loadRepayments();
-      showNotification('success', t('repaymentDeleted'));
       // Notify parent to refresh data
-      if (onRepaymentChange) {
-        onRepaymentChange();
-      }
+      notifyParentDebounced();
     } catch (error) {
       console.error('Failed to delete repayment:', error);
-      showNotification('error', t('errorDeletingData'));
+      // Rollback optimistic update on error
+      setRepayments(prev => [...prev, deletedRepayment]);
+      // Update notification to error
+      updateNotification(notificationId, { type: 'error', message: t('errorDeletingData'), duration: 5000 });
     }
   };
 

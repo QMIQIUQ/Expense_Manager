@@ -1,9 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../icons';
+
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface CardManagerProps {
   cards: Card[];
@@ -26,6 +44,25 @@ const CardManager: React.FC<CardManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   const handleAdd = (cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     onAdd(cardData);
@@ -50,8 +87,10 @@ const CardManager: React.FC<CardManagerProps> = ({
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <>
+      <style>{responsiveStyles}</style>
+      <div style={styles.container}>
+        <div style={styles.header}>
         <div>
           <h2 style={styles.title}>{t('creditCards')}</h2>
         </div>
@@ -117,12 +156,55 @@ const CardManager: React.FC<CardManagerProps> = ({
                     </p>
                   </div>
                   <div style={styles.cardActions}>
-                    <button onClick={() => setEditingId(card.id!)} style={styles.iconButton} aria-label={t('edit')}>
-                      <EditIcon size={18} />
-                    </button>
-                    <button onClick={() => handleDelete(card.id!)} style={styles.deleteButton} aria-label={t('delete')}>
-                      <DeleteIcon size={18} />
-                    </button>
+                    {/* Desktop: Show both buttons */}
+                    <div className="desktop-actions">
+                      <button onClick={() => setEditingId(card.id!)} style={styles.iconButton} aria-label={t('edit')}>
+                        <EditIcon size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(card.id!)} style={styles.deleteButton} aria-label={t('delete')}>
+                        <DeleteIcon size={18} />
+                      </button>
+                    </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          className="menu-item-hover"
+                          onClick={() => setOpenMenuId(openMenuId === card.id ? null : card.id!)}
+                          style={styles.menuButton}
+                          aria-label="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === card.id && (
+                          <div style={styles.menu}>
+                            <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setEditingId(card.id!);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleDelete(card.id!);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -183,6 +265,7 @@ const CardManager: React.FC<CardManagerProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 };
 
@@ -391,5 +474,49 @@ const styles = {
     fontWeight: 600 as const,
     color: '#6d28d9',
     whiteSpace: 'nowrap' as const,
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: '14px',
+    textAlign: 'left' as const,
+    color: '#374151',
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };

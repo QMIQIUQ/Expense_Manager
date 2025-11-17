@@ -1,7 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+
+// Add responsive styles for action buttons
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -25,12 +44,32 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     icon: '📦',
     color: '#95A5A6',
   });
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ 
     isOpen: boolean; 
     categoryId: string | null;
@@ -125,6 +164,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   return (
     <div style={styles.container}>
+      <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('categories')}</h2>
         {!isAdding && (
@@ -142,22 +182,28 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       {isAdding && (
         <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>{t('categoryName')} *</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              onFocus={(e) => e.target.select()}
-              placeholder={t('categoryNamePlaceholder')}
-              required
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.formRow}>
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('categoryIcon')}</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
+              <input
+                type="text"
+                value={formData.name}
+                placeholder={t('categoryNamePlaceholder')}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onFocus={(e) => e.target.select()}
+                required
+                style={{ ...styles.inlineInput, flex: 2, minWidth: '150px' }}
+              />
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                style={{ ...styles.colorInput, width: '60px', height: '38px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#666', marginBottom: '5px', display: 'block' }}>
+                {t('categoryIcon')}
+              </label>
               <div style={styles.iconGrid}>
                 {commonIcons.map((icon) => (
                   <button
@@ -174,25 +220,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 ))}
               </div>
             </div>
-
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('categoryColor')}</label>
-              <input
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                style={styles.colorInput}
-              />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button type="submit" style={{ ...styles.saveButton }}>
+                <CheckIcon size={18} />
+              </button>
+              <button type="button" onClick={handleCancel} style={{ ...styles.cancelIconButton }}>
+                <CloseIcon size={18} />
+              </button>
             </div>
-          </div>
-
-          <div style={styles.formActions}>
-            <button type="submit" style={styles.submitButton}>
-              {t('addCategory')}
-            </button>
-            <button type="button" onClick={handleCancel} style={styles.cancelButton}>
-              {t('cancel')}
-            </button>
           </div>
         </form>
       )}
@@ -225,21 +260,27 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 {editingId === category.id ? (
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        placeholder={t('categoryName')}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, flex: 2, minWidth: '150px' }}
-                      />
-                      <input
-                        type="color"
-                        value={formData.color}
-                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                        style={{ ...styles.colorInput, width: '60px', height: '38px' }}
-                      />
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 2, minWidth: '150px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('categoryName')}</label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          placeholder={t('categoryName')}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onFocus={(e) => e.target.select()}
+                          style={{ ...styles.inlineInput, width: '100%' }}
+                        />
+                      </div>
+                      <div style={{ width: '60px' }}>
+                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('categoryColor')}</label>
+                        <input
+                          type="color"
+                          value={formData.color}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          style={{ ...styles.colorInput, width: '60px', height: '38px' }}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label style={{ fontSize: '12px', color: '#666', marginBottom: '5px', display: 'block' }}>
@@ -291,7 +332,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </span>
                       {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
                     </div>
-                    <div style={styles.categoryActions}>
+                    
+                    {/* Desktop: Show individual buttons */}
+                    <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
                       <button onClick={() => startInlineEdit(category)} style={styles.editBtn} aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -302,6 +345,46 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       >
                         <DeleteIcon size={18} />
                       </button>
+                    </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          className="menu-item-hover"
+                          onClick={() => setOpenMenuId(openMenuId === category.id ? null : category.id!)}
+                          style={styles.menuButton}
+                          aria-label="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === category.id && (
+                          <div style={styles.menu}>
+                            <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(category);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleDeleteClick(category);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
@@ -527,15 +610,19 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '15px',
+    marginBottom: '20px',
+    border: '1px solid #e0e0e0',
   },
   formGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '8px',
+    minWidth: 0,
   },
   formRow: {
     display: 'flex',
     gap: '15px',
+    alignItems: 'flex-start',
   },
   label: {
     fontSize: '14px',
@@ -552,6 +639,9 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(6, 1fr)',
     gap: '8px',
+    maxHeight: '200px',
+    overflow: 'auto',
+    padding: '4px',
   },
   iconButton: {
     padding: '10px',
@@ -614,6 +704,8 @@ const styles = {
     borderRadius: '8px',
     minWidth: 0,
     gap: '10px',
+    overflow: 'visible',
+    position: 'relative' as const,
   },
   categoryInfo: {
     display: 'flex',
@@ -674,6 +766,49 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 10,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#374151',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
   },
   inlineInput: {
     padding: '10px',

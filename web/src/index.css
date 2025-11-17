@@ -45,6 +45,11 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Menu item hover effect */
+.menu-item-hover:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
 input {
   font-family: inherit;
   font-size: 1rem;

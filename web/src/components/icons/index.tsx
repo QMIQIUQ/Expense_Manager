@@ -189,6 +189,12 @@ export const CheckIcon: React.FC<IconProps> = (props) => (
   </SvgIcon>
 );
 
+export const CircleIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none" />
+  </SvgIcon>
+);
+
 export const RepaymentIcon: React.FC<IconProps> = (props) => (
   <SvgIcon {...props}>
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -322,6 +328,7 @@ export const Icons = {
   ChevronRight: ChevronRightIcon,
   Close: CloseIcon,
   Check: CheckIcon,
+  Circle: CircleIcon,
   Menu: MenuIcon,
   Download: DownloadIcon,
   Upload: UploadIcon,

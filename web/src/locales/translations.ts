@@ -98,6 +98,8 @@ export const translations = {
   categoryName: { en: 'Category Name', zh: '類別名稱', 'zh-CN': '分类名称' },
   categoryIcon: { en: 'Icon', zh: '圖示', 'zh-CN': '图标' },
   categoryColor: { en: 'Color', zh: '顏色', 'zh-CN': '颜色' },
+  icon: { en: 'Icon', zh: '圖示', 'zh-CN': '图标' },
+  color: { en: 'Color', zh: '顏色', 'zh-CN': '颜色' },
   addCategory: { en: 'Add Category', zh: '新增類別', 'zh-CN': '添加分类' },
   editCategory: { en: 'Edit Category', zh: '編輯類別', 'zh-CN': '编辑分类' },
   categoryNamePlaceholder: { en: 'e.g., Food, Transport', zh: '例如：食物、交通', 'zh-CN': '例如：食物、交通' },
@@ -422,6 +424,7 @@ export const translations = {
   confirmDeleteEWallet: { en: 'Are you sure you want to delete this e-wallet? This action cannot be undone.', zh: '您確定要刪除此電子錢包嗎？此操作無法復原。', 'zh-CN': '您确定要删除此电子钱包吗？此操作无法撤销。' },
   default: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
   saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
+  deleting: { en: 'Deleting...', zh: '刪除中...', 'zh-CN': '删除中...' },
   
   // Feature Manager
   features: { en: 'Features', zh: '功能', 'zh-CN': '功能' },

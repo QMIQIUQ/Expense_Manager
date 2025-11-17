@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, SearchIcon } from '../icons';
-import EWalletForm from './EWalletForm';
+import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
+
+// Common e-wallet icons
+const EWALLET_ICONS = ['💳', '📱', '💰', '🏦', '💵', '💴', '💶', '💷', '🅰️', '🍎', '🔵', '🟢'];
+
+// Preset colors
+const PRESET_COLORS = [
+  '#4285F4', '#1677FF', '#07C160', '#FF9500', '#5856D6',
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+  '#F7DC6F', '#BB8FCE',
+];
+
+const responsiveStyles = `
+  .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .desktop-actions {
+      display: flex;
+    }
+    .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface EWalletManagerProps {
   ewallets: EWallet[];
@@ -19,10 +46,39 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
-  const [showForm, setShowForm] = useState(false);
-  const [editingWallet, setEditingWallet] = useState<EWallet | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<EWallet | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    icon: '💳',
+    color: '#4285F4',
+    provider: '',
+    accountNumber: '',
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; walletId: string | null }>({
+    isOpen: false,
+    walletId: null,
+  });
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest('.mobile-actions')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   // Filter e-wallets based on search
   const filteredWallets = ewallets.filter((wallet) =>
@@ -30,140 +86,318 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     wallet.provider?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAdd = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    await onAdd(walletData);
-    setShowForm(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+
+    await onAdd(formData);
+    setIsAdding(false);
+    resetForm();
   };
 
-  const handleUpdate = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (editingWallet?.id) {
-      await onUpdate(editingWallet.id, walletData);
-      setEditingWallet(null);
-      setShowForm(false);
-    }
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      icon: '💳',
+      color: '#4285F4',
+      provider: '',
+      accountNumber: '',
+    });
   };
 
-  const handleDelete = async () => {
-    if (deleteConfirm?.id) {
-      await onDelete(deleteConfirm.id);
-      setDeleteConfirm(null);
-    }
+  const startInlineEdit = (wallet: EWallet) => {
+    setEditingId(wallet.id!);
+    setFormData({
+      name: wallet.name,
+      icon: wallet.icon,
+      color: wallet.color,
+      provider: wallet.provider || '',
+      accountNumber: wallet.accountNumber || '',
+    });
   };
 
-  const handleEdit = (wallet: EWallet) => {
-    setEditingWallet(wallet);
-    setShowForm(true);
+  const cancelInlineEdit = () => {
+    setEditingId(null);
+    resetForm();
   };
 
-  const handleCancelForm = () => {
-    setShowForm(false);
-    setEditingWallet(null);
+  const saveInlineEdit = async () => {
+    if (!editingId || !formData.name.trim()) return;
+
+    await onUpdate(editingId, formData);
+    setEditingId(null);
+    resetForm();
   };
 
   return (
     <div style={styles.container}>
+      <style>{responsiveStyles}</style>
+      
       <div style={styles.header}>
-        <div>
-          <h2 style={styles.title}>{t('eWallets')}</h2>
-          <p style={styles.subtitle}>{t('manageEWallets')}</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingWallet(null);
-            setShowForm(true);
-          }}
-          style={styles.addButton}
-        >
-          <PlusIcon size={18} />
-          <span>{t('addEWallet')}</span>
-        </button>
+        <h2 style={styles.title}>{t('eWallets')}</h2>
+        {!isAdding && (
+          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+            <PlusIcon size={18} />
+            <span>{t('addEWallet')}</span>
+          </button>
+        )}
       </div>
 
-      <div style={styles.searchRow}>
-        <div style={styles.searchWrapper}>
-          <SearchIcon size={18} className="text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('searchEWallets')}
-            style={styles.searchInput}
-          />
-        </div>
+      <div style={styles.searchContainer}>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={t('searchEWallets')}
+          style={styles.searchInput}
+        />
       </div>
 
-      {showForm && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>{editingWallet ? t('editEWallet') : t('addEWallet')}</h3>
-              <button style={styles.closeButton} onClick={handleCancelForm} aria-label={t('cancel')}>
-                ×
+      {isAdding && (
+        <div style={styles.walletCard}>
+          <form onSubmit={handleSubmit}>
+            <div style={styles.formGrid}>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder={t('eWalletName')}
+                style={styles.input}
+                autoFocus
+              />
+              <input
+                type="text"
+                value={formData.provider}
+                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+                placeholder={t('provider') + ' (' + t('optional') + ')'}
+                style={styles.input}
+              />
+              <input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
+                style={styles.input}
+              />
+              <div>
+                <label style={styles.label}>{t('icon')}</label>
+                <div style={styles.iconGrid}>
+                  {EWALLET_ICONS.map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, icon })}
+                      style={{
+                        ...styles.iconButton,
+                        ...(formData.icon === icon ? styles.iconButtonSelected : {}),
+                      }}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={styles.label}>{t('color')}</label>
+                <div style={styles.colorGrid}>
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, color })}
+                      style={{
+                        ...styles.colorButton,
+                        backgroundColor: color,
+                        ...(formData.color === color ? styles.colorButtonSelected : {}),
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={styles.formActions}>
+              <button type="submit" style={styles.saveButton}>
+                <CheckIcon size={18} />
+              </button>
+              <button type="button" onClick={() => { setIsAdding(false); resetForm(); }} style={styles.cancelButton}>
+                <CloseIcon size={18} />
               </button>
             </div>
-            <div style={styles.modalBody}>
-              <EWalletForm
-                onSubmit={editingWallet ? handleUpdate : handleAdd}
-                onCancel={handleCancelForm}
-                initialData={editingWallet || undefined}
-              />
-            </div>
-          </div>
+          </form>
         </div>
       )}
 
-      {filteredWallets.length === 0 ? (
-        <div style={styles.emptyState}>
-          <p style={styles.emptyText}>{t('noEWalletsYet')}</p>
-          <p style={styles.emptySubtext}>{t('addYourFirstEWallet')}</p>
-        </div>
-      ) : (
-        <div style={styles.walletGrid}>
-          {filteredWallets.map((wallet) => (
+      <div style={styles.walletList}>
+        {filteredWallets.length === 0 ? (
+          <div style={styles.noData}>{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
+        ) : (
+          filteredWallets.map((wallet) => (
             <div key={wallet.id} style={styles.walletCard}>
-              <div style={styles.walletHeader}>
-                <div style={styles.walletInfo}>
-                  <span style={styles.walletIcon}>{wallet.icon}</span>
-                  <div style={styles.walletText}>
-                    <h3 style={styles.walletName}>{wallet.name}</h3>
-                    {wallet.provider && <p style={styles.walletProvider}>{wallet.provider}</p>}
+              {editingId === wallet.id ? (
+                // Edit Mode
+                <div style={styles.formGrid}>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder={t('eWalletName')}
+                    style={styles.input}
+                  />
+                  <input
+                    type="text"
+                    value={formData.provider}
+                    onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+                    placeholder={t('provider') + ' (' + t('optional') + ')'}
+                    style={styles.input}
+                  />
+                  <input
+                    type="text"
+                    value={formData.accountNumber}
+                    onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                    placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
+                    style={styles.input}
+                  />
+                  <div>
+                    <label style={styles.label}>{t('icon')}</label>
+                    <div style={styles.iconGrid}>
+                      {EWALLET_ICONS.map((icon) => (
+                        <button
+                          key={icon}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, icon })}
+                          style={{
+                            ...styles.iconButton,
+                            ...(formData.icon === icon ? styles.iconButtonSelected : {}),
+                          }}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={styles.label}>{t('color')}</label>
+                    <div style={styles.colorGrid}>
+                      {PRESET_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, color })}
+                          style={{
+                            ...styles.colorButton,
+                            backgroundColor: color,
+                            ...(formData.color === color ? styles.colorButtonSelected : {}),
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div style={styles.formActions}>
+                    <button onClick={saveInlineEdit} style={styles.saveButton}>
+                      <CheckIcon size={18} />
+                    </button>
+                    <button onClick={cancelInlineEdit} style={styles.cancelButton}>
+                      <CloseIcon size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // View Mode
+                <>
+                  {/* First row: Icon, Name, Color Badge */}
+                  <div style={styles.walletRow1}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                      <span style={styles.walletIcon}>{wallet.icon}</span>
+                      <h3 style={styles.walletName}>{wallet.name}</h3>
+                      <div style={{ ...styles.colorBadge, backgroundColor: wallet.color }} />
+                    </div>
+                  </div>
+
+                  {/* Second row: Provider and Account Number */}
+                  <div style={styles.walletRow2}>
+                    {wallet.provider && (
+                      <p style={styles.walletProvider}>{wallet.provider}</p>
+                    )}
                     {wallet.accountNumber && (
                       <p style={styles.walletAccount}>···· {wallet.accountNumber}</p>
                     )}
                   </div>
-                </div>
-                <div style={styles.walletActions}>
-                  <button
-                    onClick={() => handleEdit(wallet)}
-                    style={styles.iconButton}
-                    aria-label={t('edit')}
-                  >
-                    <EditIcon size={18} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(wallet)}
-                    style={styles.deleteButton}
-                    aria-label={t('delete')}
-                    title={t('delete')}
-                  >
-                    <DeleteIcon size={18} />
-                  </button>
-                </div>
-              </div>
+
+                  {/* Third row: Actions */}
+                  <div style={styles.walletRow3}>
+                    {/* Desktop: Show individual buttons */}
+                    <div className="desktop-actions" style={{ gap: '8px' }}>
+                      <button onClick={() => startInlineEdit(wallet)} style={styles.editBtn}>
+                        <EditIcon size={18} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
+                        style={styles.deleteBtn}
+                      >
+                        <DeleteIcon size={18} />
+                      </button>
+                    </div>
+
+                    {/* Mobile: Show hamburger menu */}
+                    <div className="mobile-actions">
+                      <div style={styles.menuContainer}>
+                        <button
+                          className="menu-item-hover"
+                          onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
+                          style={styles.menuButton}
+                          aria-label="More"
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === wallet.id && (
+                          <div style={styles.menu}>
+                            <button
+                              className="menu-item-hover"
+                              style={styles.menuItem}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                startInlineEdit(wallet);
+                              }}
+                            >
+                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                              {t('edit')}
+                            </button>
+                            <button
+                              className="menu-item-hover"
+                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
+                              }}
+                            >
+                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                              {t('delete')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       <ConfirmModal
-        isOpen={!!deleteConfirm}
+        isOpen={deleteConfirm.isOpen}
         title={t('confirmDelete')}
         message={t('confirmDeleteEWallet')}
         confirmText={t('delete')}
         cancelText={t('cancel')}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm(null)}
-        variant="danger"
+        danger={true}
+        onConfirm={() => {
+          if (deleteConfirm.walletId) {
+            onDelete(deleteConfirm.walletId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, walletId: null })}
       />
     </div>
   );
@@ -181,19 +415,12 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '16px',
-    flexWrap: 'wrap' as const,
   },
   title: {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
     color: '#111827',
-  },
-  subtitle: {
-    margin: '4px 0 0 0',
-    color: '#6b7280',
-    fontSize: '14px',
   },
   addButton: {
     display: 'flex',
@@ -204,165 +431,233 @@ const styles = {
     color: '#4f46e5',
     border: 'none',
     borderRadius: '8px',
-    fontWeight: 600 as const,
+    fontSize: '14px',
+    fontWeight: '600' as const,
     cursor: 'pointer',
   },
-  searchRow: {
+  searchContainer: {
     display: 'flex',
-  },
-  searchWrapper: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    backgroundColor: '#fff',
+    gap: '10px',
   },
   searchInput: {
     flex: 1,
-    border: 'none',
-    outline: 'none',
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
     fontSize: '14px',
   },
-  modalOverlay: {
-    position: 'fixed' as const,
-    inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px',
-    zIndex: 50,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: '16px',
-    width: '100%',
-    maxWidth: '520px',
-    maxHeight: '90vh',
+  walletList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 24px 0 24px',
-  },
-  modalTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: 600 as const,
-  },
-  closeButton: {
-    background: 'transparent',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#6b7280',
-  },
-  modalBody: {
-    padding: '20px 24px 24px 24px',
-    overflowY: 'auto' as const,
-  },
-  emptyState: {
-    textAlign: 'center' as const,
-    padding: '40px 20px',
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    border: '1px solid #e5e7eb',
-  },
-  emptyText: {
-    margin: 0,
-    color: '#4b5563',
-    fontSize: '16px',
-    fontWeight: 500 as const,
-  },
-  emptySubtext: {
-    marginTop: '4px',
-    color: '#9ca3af',
-    fontSize: '14px',
-  },
-  walletGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: '16px',
+    gap: '10px',
   },
   walletCard: {
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
+    backgroundColor: 'white',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
     padding: '16px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-  },
-  walletHeader: {
     display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    maxHeight: '80vh',
+    overflow: 'auto',
+  },
+  walletRow1: {
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
   },
-  walletInfo: {
+  walletRow2: {
     display: 'flex',
-    gap: '12px',
-    alignItems: 'flex-start',
-    flex: 1,
-    minWidth: 0,
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  walletRow3: {
+    display: 'flex',
+    justifyContent: 'flex-end',
   },
   walletIcon: {
-    fontSize: '32px',
-  },
-  walletText: {
-    flex: 1,
-    minWidth: 0,
+    fontSize: '28px',
   },
   walletName: {
     margin: 0,
     fontSize: '16px',
-    fontWeight: 600 as const,
-    color: '#111827',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  colorBadge: {
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    border: '2px solid white',
+    boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
   },
   walletProvider: {
-    margin: '4px 0 0 0',
-    color: '#6b7280',
+    margin: 0,
+    color: '#666',
     fontSize: '14px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
   },
   walletAccount: {
-    margin: '6px 0 0 0',
-    color: '#9ca3af',
+    margin: 0,
+    color: '#999',
     fontSize: '12px',
+    fontFamily: 'monospace',
   },
-  walletActions: {
+  formGrid: {
     display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    maxHeight: '70vh',
+    overflow: 'auto',
+    paddingRight: '4px',
+  },
+  input: {
+    padding: '10px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    fontSize: '14px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '8px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#374151',
+  },
+  iconGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '8px',
+    maxWidth: '100%',
   },
   iconButton: {
     padding: '8px',
-    border: 'none',
+    border: '2px solid #e5e7eb',
     borderRadius: '6px',
-    backgroundColor: 'rgba(59,130,246,0.12)',
-    color: '#1d4ed8',
+    backgroundColor: 'white',
+    fontSize: '24px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  iconButtonSelected: {
+    borderColor: '#4f46e5',
+    backgroundColor: 'rgba(99,102,241,0.1)',
+  },
+  colorGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '8px',
+    maxWidth: '100%',
+  },
+  colorButton: {
+    width: '40px',
+    height: '40px',
+    border: '2px solid white',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
+  },
+  colorButtonSelected: {
+    boxShadow: '0 0 0 3px rgba(79,70,229,0.5)',
+  },
+  formActions: {
+    display: 'flex',
+    gap: '8px',
+    justifyContent: 'flex-end',
+  },
+  saveButton: {
+    padding: '8px',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    color: '#16a34a',
+    border: 'none',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteButton: {
+  cancelButton: {
     padding: '8px',
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    color: '#374151',
     border: 'none',
-    borderRadius: '6px',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  editBtn: {
+    padding: '8px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtn: {
+    padding: '8px',
+    backgroundColor: 'rgba(244,63,94,0.12)',
+    color: '#b91c1c',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '12px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menuButton: {
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+    lineHeight: '1',
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: '14px',
+    textAlign: 'left' as const,
+    color: '#374151',
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noData: {
+    textAlign: 'center' as const,
+    padding: '40px',
+    color: '#666',
   },
 };
