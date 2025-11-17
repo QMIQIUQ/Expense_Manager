@@ -110,5 +110,21 @@ service cloud.firestore {
                        request.resource.data.amount > 0;
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // User Settings collection (billing cycle day and other preferences)
+    match /userSettings/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(userId) &&
+                      request.resource.data.billingCycleDay is number &&
+                      request.resource.data.billingCycleDay >= 1 &&
+                      request.resource.data.billingCycleDay <= 31;
+      allow update: if isAuthenticated() && 
+                       (isOwner(userId) || isAdmin()) &&
+                       request.resource.data.billingCycleDay is number &&
+                       request.resource.data.billingCycleDay >= 1 &&
+                       request.resource.data.billingCycleDay <= 31;
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
   }
 }

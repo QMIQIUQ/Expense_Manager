@@ -1,6 +1,7 @@
 // Firestore collection names
 export const COLLECTIONS = {
   USERS: 'users',
+  USER_SETTINGS: 'userSettings',
   EXPENSES: 'expenses',
   CATEGORIES: 'categories',
   BUDGETS: 'budgets',
@@ -9,6 +10,7 @@ export const COLLECTIONS = {
 
 // User-related collections that should be deleted when a user is deleted
 export const USER_DATA_COLLECTIONS = [
+  COLLECTIONS.USER_SETTINGS,
   COLLECTIONS.EXPENSES,
   COLLECTIONS.CATEGORIES,
   COLLECTIONS.BUDGETS,

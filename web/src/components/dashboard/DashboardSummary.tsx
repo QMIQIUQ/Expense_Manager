@@ -8,9 +8,10 @@ interface DashboardSummaryProps {
   incomes?: Income[];
   repayments?: Repayment[];
   onMarkTrackingCompleted?: (expenseId: string) => void;
+  billingCycleDay?: number; // Day of month (1-31) when billing cycle starts
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted, billingCycleDay = 1 }) => {
   const { t } = useLanguage();
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   
@@ -23,26 +24,46 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
   // Color palette for pie chart
   const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
   
+  // Calculate billing cycle date range
+  const getBillingCycleDates = () => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    
+    let cycleStart: Date;
+    let cycleEnd: Date;
+    
+    if (currentDay >= billingCycleDay) {
+      // Current cycle: billingCycleDay of this month to (billingCycleDay - 1) of next month
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
+    } else {
+      // Previous cycle: billingCycleDay of last month to (billingCycleDay - 1) of this month
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
+    }
+    
+    return { cycleStart, cycleEnd };
+  };
+  
   const calculateStats = () => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
 
-    const now = new Date();
+    const { cycleStart, cycleEnd } = getBillingCycleDates();
+    
+    // Calculate monthly expenses based on billing cycle
     const monthly = expenses
       .filter((exp) => {
         const expDate = new Date(exp.date);
-        return (
-          expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
-        );
+        return expDate >= cycleStart && expDate <= cycleEnd;
       })
       .reduce((sum, exp) => sum + exp.amount, 0);
 
+    // Calculate monthly income based on billing cycle
     const monthlyIncome = incomes
       .filter((inc) => {
         const incDate = new Date(inc.date);
-        return (
-          incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
-        );
+        return incDate >= cycleStart && incDate <= cycleEnd;
       })
       .reduce((sum, inc) => sum + inc.amount, 0);
 

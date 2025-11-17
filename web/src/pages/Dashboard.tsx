@@ -15,6 +15,7 @@ import { adminService } from '../services/adminService';
 import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
 import { repaymentService } from '../services/repaymentService';
+import { userSettingsService } from '../services/userSettingsService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CategoryManager from '../components/categories/CategoryManager';
@@ -61,6 +62,7 @@ const Dashboard: React.FC = () => {
   const [cards, setCards] = useState<Card[]>([]);
   const [ewallets, setEWallets] = useState<EWallet[]>([]);
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
+  const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -130,6 +132,10 @@ const Dashboard: React.FC = () => {
       // Check if user is admin
       const adminStatus = await adminService.isAdmin(currentUser.uid);
       setIsAdmin(adminStatus);
+      
+      // Load user settings
+      const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
+      setBillingCycleDay(userSettings.billingCycleDay);
       
       const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
         expenseService.getAll(currentUser.uid),
@@ -1627,6 +1633,7 @@ const Dashboard: React.FC = () => {
               expenses={expenses} 
               incomes={incomes} 
               repayments={repayments}
+              billingCycleDay={billingCycleDay}
               onMarkTrackingCompleted={handleMarkTrackingCompleted}
             />
             {cards.length > 0 && (

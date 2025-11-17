@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { EWallet } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 // Common e-wallet icons
@@ -34,6 +34,8 @@ const responsiveStyles = `
 
 interface EWalletManagerProps {
   ewallets: EWallet[];
+  expenses: Expense[];
+  categories: Category[];
   onAdd: (ewallet: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onUpdate: (id: string, ewallet: Partial<EWallet>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -41,6 +43,8 @@ interface EWalletManagerProps {
 
 const EWalletManager: React.FC<EWalletManagerProps> = ({
   ewallets,
+  expenses,
+  categories,
   onAdd,
   onUpdate,
   onDelete,
@@ -49,6 +53,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [expandedWalletId, setExpandedWalletId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -80,11 +85,52 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     };
   }, [openMenuId]);
 
+  // Calculate wallet stats
+  const getWalletStats = useMemo(() => {
+    const stats: { [walletName: string]: { totalSpending: number; expenses: Expense[] } } = {};
+    
+    ewallets.forEach((wallet) => {
+      const walletExpenses = expenses.filter(
+        (exp) => exp.paymentMethod === 'e_wallet' && exp.paymentMethodName === wallet.name
+      );
+      const totalSpending = walletExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      
+      stats[wallet.name] = {
+        totalSpending,
+        expenses: walletExpenses.sort((a, b) => {
+          const dateA = new Date(`${a.date} ${a.time || '00:00'}`).getTime();
+          const dateB = new Date(`${b.date} ${b.time || '00:00'}`).getTime();
+          return dateB - dateA;
+        }),
+      };
+    });
+    
+    return stats;
+  }, [ewallets, expenses]);
+
   // Filter e-wallets based on search
   const filteredWallets = ewallets.filter((wallet) =>
     wallet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     wallet.provider?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const toggleExpand = (walletId: string) => {
+    setExpandedWalletId(expandedWalletId === walletId ? null : walletId);
+  };
+
+  const formatDate = (dateString: string, time?: string) => {
+    const date = new Date(dateString);
+    const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return time ? `${base} ${time}` : base;
+  };
+
+  const getCategoryDisplay = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category) {
+      return `${category.icon} ${category.name}`;
+    }
+    return categoryName;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,6 +369,49 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     )}
                   </div>
 
+                  {/* Expense stats and breakdown */}
+                  {getWalletStats[wallet.name]?.expenses.length > 0 && (
+                    <div style={styles.statsSection}>
+                      <div style={styles.statRow}>
+                        <span style={styles.statLabel}>{t('totalSpending')}:</span>
+                        <span style={styles.statValue}>
+                          ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() => toggleExpand(wallet.id!)}
+                          style={styles.expandButton}
+                        >
+                          {expandedWalletId === wallet.id ? (
+                            <ChevronUpIcon size={18} />
+                          ) : (
+                            <ChevronDownIcon size={18} />
+                          )}
+                        </button>
+                      </div>
+
+                      {expandedWalletId === wallet.id && (
+                        <div style={styles.expenseList}>
+                          {getWalletStats[wallet.name].expenses.map((exp) => (
+                            <div key={exp.id} style={styles.expenseItem}>
+                              <div style={styles.expenseInfo}>
+                                <span style={styles.expenseCategory}>
+                                  {getCategoryDisplay(exp.category)}
+                                </span>
+                                <span style={styles.expenseDate}>
+                                  {formatDate(exp.date, exp.time)}
+                                </span>
+                                {exp.description && (
+                                  <span style={styles.expenseDesc}>{exp.description}</span>
+                                )}
+                              </div>
+                              <span style={styles.expenseAmount}>${exp.amount.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Third row: Actions */}
                   <div style={styles.walletRow3}>
                     {/* Desktop: Show individual buttons */}
@@ -459,8 +548,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
-    maxHeight: '80vh',
-    overflow: 'auto',
   },
   walletRow1: {
     display: 'flex',
@@ -507,7 +594,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
-    maxHeight: '70vh',
+    maxHeight: '60vh',
     overflow: 'auto',
     paddingRight: '4px',
   },
@@ -624,6 +711,81 @@ const styles = {
     fontSize: '20px',
     fontWeight: 'bold' as const,
     lineHeight: '1',
+  },
+  statsSection: {
+    marginTop: '12px',
+    paddingTop: '12px',
+    borderTop: '1px solid #e0e0e0',
+  },
+  statRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  statLabel: {
+    fontSize: '14px',
+    color: '#666',
+    fontWeight: '500' as const,
+  },
+  statValue: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: '#4f46e5',
+    flex: 1,
+    textAlign: 'right' as const,
+  },
+  expandButton: {
+    padding: '4px',
+    backgroundColor: 'transparent',
+    color: '#4f46e5',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expenseList: {
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+  },
+  expenseItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '8px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px',
+    gap: '12px',
+  },
+  expenseInfo: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    flex: 1,
+  },
+  expenseCategory: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#333',
+  },
+  expenseDate: {
+    fontSize: '12px',
+    color: '#999',
+  },
+  expenseDesc: {
+    fontSize: '12px',
+    color: '#666',
+    fontStyle: 'italic' as const,
+  },
+  expenseAmount: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#16a34a',
+    whiteSpace: 'nowrap' as const,
   },
   menu: {
     position: 'absolute' as const,

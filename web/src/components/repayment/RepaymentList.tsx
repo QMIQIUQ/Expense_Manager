@@ -53,55 +53,58 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     );
   }
 
-  const totalRepaid = repayments.reduce((sum, r) => sum + r.amount, 0);
-
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <div style={styles.summary}>
-          <span style={styles.summaryLabel}>{t('totalRepaid')}:</span>
-          <span style={styles.summaryAmount}>${totalRepaid.toFixed(2)}</span>
-        </div>
-      </div>
-      
       <div style={styles.list}>
         {repayments.map((repayment) => (
           <div key={repayment.id} style={styles.repaymentCard}>
-            <div style={styles.repaymentHeader}>
-              <div style={styles.repaymentInfo}>
-                <span style={styles.amount}>${repayment.amount.toFixed(2)}</span>
+            {/* First row: Date, Payment Method Chip, Amount */}
+            <div style={styles.repaymentRow1}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={styles.date}>{formatDate(repayment.date)}</span>
+                {/* Payment Method Chip */}
+                <span style={styles.paymentChip}>
+                  {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                  {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
+                  {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
+                </span>
+              </div>
+              <div style={styles.amount}>${repayment.amount.toFixed(2)}</div>
+            </div>
+
+            {/* Second row: Payer Name */}
+            {repayment.payerName && (
+              <div style={styles.repaymentRow2}>
+                <span style={styles.payerName}>{repayment.payerName}</span>
+              </div>
+            )}
+
+            {/* Third row: Note, Edit, Delete */}
+            <div style={styles.repaymentRow3}>
+              <div style={{ flex: 1 }}>
+                {repayment.note && (
+                  <span style={styles.noteText}>{repayment.note}</span>
+                )}
               </div>
               <div style={styles.actions}>
                 <button
                   onClick={() => onEdit(repayment)}
-                  style={styles.editButton}
+                  style={{ ...styles.iconButton, ...styles.primaryChip }}
                   aria-label="Edit repayment"
                   title={t('edit')}
                 >
-                  <EditIcon />
+                  <EditIcon size={18} />
                 </button>
                 <button
                   onClick={() => handleDeleteClick(repayment.id!)}
-                  style={styles.deleteButton}
+                  style={{ ...styles.iconButton, ...styles.dangerChip }}
                   aria-label="Delete repayment"
                   title={t('delete')}
                 >
-                  <DeleteIcon />
+                  <DeleteIcon size={18} />
                 </button>
               </div>
             </div>
-            
-            {repayment.payerName && (
-              <div style={styles.detail}>
-                <span style={styles.detailLabel}>{t('paidBy')}:</span>
-                <span style={styles.detailValue}>{repayment.payerName}</span>
-              </div>
-            )}
-            
-            {repayment.note && (
-              <div style={styles.note}>{repayment.note}</div>
-            )}
           </div>
         ))}
       </div>
@@ -123,102 +126,87 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '12px',
   },
-  header: {
-    padding: '12px',
-    backgroundColor: '#f5f5f5',
-    borderRadius: '6px',
-  },
-  summary: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: '#666',
-  },
-  summaryAmount: {
-    fontSize: '18px',
-    fontWeight: '600' as const,
-    color: '#4CAF50',
-  },
   list: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
   },
   repaymentCard: {
-    padding: '12px',
     backgroundColor: 'white',
     border: '1px solid #e0e0e0',
-    borderRadius: '6px',
-    transition: 'box-shadow 0.2s',
-  } as React.CSSProperties,
-  repaymentHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  },
-  repaymentInfo: {
+    borderRadius: '8px',
+    padding: '15px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '4px',
+    gap: '8px',
+  } as React.CSSProperties,
+  repaymentRow1: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  repaymentRow2: {
+    display: 'flex',
+    alignItems: 'center',
+    marginLeft: '2px',
+  },
+  repaymentRow3: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  paymentChip: {
+    padding: '2px 8px',
+    backgroundColor: '#dcfce7',
+    color: '#16a34a',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
   },
   amount: {
-    fontSize: '16px',
+    fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: '#16a34a',
+    whiteSpace: 'nowrap' as const,
   },
   date: {
     fontSize: '13px',
+    fontWeight: '500' as const,
+    color: '#333',
+  },
+  payerName: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: '#333',
+  },
+  noteText: {
+    fontSize: '13px',
     color: '#666',
+    fontStyle: 'italic' as const,
   },
   actions: {
     display: 'flex',
     gap: '8px',
   },
-  editButton: {
-    padding: '6px 10px',
-    backgroundColor: 'transparent',
+  iconButton: {
+    padding: '6px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    color: '#2196F3',
-    fontSize: '16px',
-    transition: 'color 0.2s',
-  } as React.CSSProperties,
-  deleteButton: {
-    padding: '6px 10px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    color: '#f44336',
-    fontSize: '16px',
-    transition: 'color 0.2s',
-  } as React.CSSProperties,
-  detail: {
-    display: 'flex',
-    gap: '6px',
-    fontSize: '13px',
-    marginBottom: '4px',
   },
-  detailLabel: {
-    color: '#666',
-    fontWeight: '500' as const,
+  primaryChip: {
+    backgroundColor: 'rgba(99,102,241,0.12)',
+    color: '#4f46e5',
   },
-  detailValue: {
-    color: '#333',
+  dangerChip: {
+    backgroundColor: 'rgba(244,63,94,0.12)',
+    color: '#b91c1c',
   },
-  note: {
-    fontSize: '13px',
-    color: '#666',
-    fontStyle: 'italic' as const,
-    marginTop: '8px',
-    padding: '8px',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '4px',
-  },
+
   noData: {
     textAlign: 'center' as const,
     padding: '20px',

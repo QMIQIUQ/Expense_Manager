@@ -800,8 +800,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   if (repaid > 0) {
                     return (
                       <div style={styles.amountMeta}>
-                        <div>{t('original')}: ${expense.amount.toFixed(2)}</div>
-                        <div>{t('repaid')}: ${repaid.toFixed(2)}</div>
+                        <div>{t('original')}: <span style={{ color: '#f44336' }}>${expense.amount.toFixed(2)}</span></div>
+                        <div>{t('repaid')}: <span style={{ color: '#4CAF50' }}>${repaid.toFixed(2)}</span></div>
                       </div>
                     );
                   }
@@ -963,6 +963,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     onClose={() => setExpandedRepaymentId(null)}
                     inline={true}
                     onRepaymentChange={onReloadRepayments}
+                    cards={cards}
+                    ewallets={ewallets}
                   />
                 </div>
               )}
@@ -1453,7 +1455,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
-    marginBottom: '20px',
+    marginBottom: '12px',
   },
   dateGroupHeader: {
     display: 'flex',

@@ -288,6 +288,7 @@ export const translations = {
   rateIfNotMet: { en: 'Rate if Not Met (%)', zh: '未達標回饋率 (%)', 'zh-CN': '未达标回馈率 (%)' },
   capIfNotMet: { en: 'Cap if Not Met', zh: '未達標上限', 'zh-CN': '未达标上限' },
   currentCycleSpending: { en: 'Current Cycle Spending', zh: '本期消費', 'zh-CN': '本期消费' },
+  totalSpending: { en: 'Total Spending', zh: '總消費金額', 'zh-CN': '总消费金额' },
   availableCredit: { en: 'Available Credit', zh: '可用額度', 'zh-CN': '可用额度' },
   estimatedCashback: { en: 'Estimated Cashback', zh: '預估回饋', 'zh-CN': '预估回馈' },
   nextBillingDate: { en: 'Next Billing Date', zh: '下次結帳日', 'zh-CN': '下次结账日' },
@@ -295,6 +296,7 @@ export const translations = {
   spendToReachMinSpend: { en: 'Spend to Reach Min', zh: '還需消費達門檻', 'zh-CN': '还需消费达门槛' },
   noCardsYet: { en: 'No cards yet. Add your first card!', zh: '尚未新增卡片。新增您的第一張卡片！', 'zh-CN': '尚未添加卡片。添加您的第一张卡片！' },
   selectCard: { en: 'Select Card', zh: '選擇卡片', 'zh-CN': '选择卡片' },
+  selectEWallet: { en: 'Select E-Wallet', zh: '選擇電子錢包', 'zh-CN': '选择电子钱包' },
   noneOrCash: { en: 'None / Cash', zh: '無 / 現金', 'zh-CN': '无 / 现金' },
   cardAdded: { en: 'Card added successfully', zh: '卡片已成功新增', 'zh-CN': '卡片已成功添加' },
   cardUpdated: { en: 'Card updated successfully', zh: '卡片已成功更新', 'zh-CN': '卡片已成功更新' },
@@ -313,6 +315,20 @@ export const translations = {
   userDataDeleted: { en: 'User data deleted', zh: '已刪除使用者資料', 'zh-CN': '已删除用户数据' },
   deleteDataFailed: { en: 'Failed to delete user data', zh: '刪除使用者資料失敗', 'zh-CN': '删除用户数据失败' },
   loadingUsers: { en: 'Loading users...', zh: '載入使用者中...', 'zh-CN': '载入用户中...' },
+  
+  // User Settings
+  billingCycleSettings: { en: 'Billing Cycle Settings', zh: '月結日設定', 'zh-CN': '月结日设定' },
+  monthlyResetDay: { en: 'Monthly Reset Day', zh: '每月重置日', 'zh-CN': '每月重置日' },
+  billingCycleDescription: { en: 'Set the day of each month when your billing cycle resets. Monthly statistics will be calculated from this day.', zh: '設定每個月的重置日期。月度統計將從此日期開始計算。', 'zh-CN': '设定每个月的重置日期。月度统计将从此日期开始计算。' },
+  selectDay: { en: 'Select Day', zh: '選擇日期', 'zh-CN': '选择日期' },
+  billingCycleHint: { en: 'Example: If you set day 15, monthly data will be calculated from 15th to 14th of next month.', zh: '例如：若設定為 15 日，月度數據將從每月 15 日到次月 14 日計算。', 'zh-CN': '例如：若设定为 15 日，月度数据将从每月 15 日到次月 14 日计算。' },
+  saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
+  settingsSaved: { en: 'Settings saved successfully', zh: '設定已成功儲存', 'zh-CN': '设定已成功保存' },
+  errorLoadingSettings: { en: 'Error loading settings', zh: '載入設定時發生錯誤', 'zh-CN': '载入设定时发生错误' },
+  errorSavingSettings: { en: 'Error saving settings', zh: '儲存設定時發生錯誤', 'zh-CN': '保存设定时发生错误' },
+  invalidBillingCycleDay: { en: 'Please enter a valid day between 1 and 31', zh: '請輸入 1 到 31 之間的有效日期', 'zh-CN': '请输入 1 到 31 之间的有效日期' },
+  accountSettings: { en: 'Account Settings', zh: '帳號設定', 'zh-CN': '账号设定' },
+  contactAdminForChanges: { en: 'To change password or email, please contact the system administrator.', zh: '如需更改密碼或 Email，請聯繫系統管理員協助處理。', 'zh-CN': '如需更改密码或 Email，请联系系统管理员协助处理。' },
   
   // Category deletion with expense management
   warning: { en: 'Warning', zh: '警告', 'zh-CN': '警告' },
@@ -423,7 +439,6 @@ export const translations = {
   addYourFirstEWallet: { en: 'Add your first e-wallet to get started', zh: '新增您的第一個電子錢包', 'zh-CN': '添加您的第一个电子钱包' },
   confirmDeleteEWallet: { en: 'Are you sure you want to delete this e-wallet? This action cannot be undone.', zh: '您確定要刪除此電子錢包嗎？此操作無法復原。', 'zh-CN': '您确定要删除此电子钱包吗？此操作无法撤销。' },
   default: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
-  saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
   deleting: { en: 'Deleting...', zh: '刪除中...', 'zh-CN': '删除中...' },
   
   // Feature Manager

@@ -1,5 +1,14 @@
 // Type definitions for Expense Manager
 
+// User settings
+export interface UserSettings {
+  id?: string;
+  userId: string;
+  billingCycleDay: number; // Day of month (1-31) when billing cycle resets
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Payment method types
 export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet';
 
@@ -95,6 +104,10 @@ export interface Repayment {
   date: string;
   payerName?: string; // Who made the repayment
   note?: string;
+  // Payment method fields
+  paymentMethod?: PaymentMethodType; // Type of payment method used for repayment
+  cardId?: string; // Optional: credit card used for this repayment
+  paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
   createdAt: Date;
   updatedAt: Date;
 }

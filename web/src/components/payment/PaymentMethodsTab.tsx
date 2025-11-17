@@ -76,6 +76,8 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
         {activeView === 'ewallets' && (
           <EWalletManager
             ewallets={ewallets}
+            categories={categories}
+            expenses={expenses}
             onAdd={onAddEWallet}
             onUpdate={onUpdateEWallet}
             onDelete={onDeleteEWallet}

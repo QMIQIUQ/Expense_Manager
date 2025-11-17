@@ -1,8 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { userSettingsService } from '../services/userSettingsService';
+import { useNotification } from '../contexts/NotificationContext';
 
 const UserProfile: React.FC = () => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
+  const { showNotification } = useNotification();
+  const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, [currentUser]);
+
+  const loadSettings = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const settings = await userSettingsService.getOrCreate(currentUser.uid);
+      setBillingCycleDay(settings.billingCycleDay);
+    } catch (error) {
+      console.error('Error loading user settings:', error);
+      showNotification('error', t('errorLoadingSettings'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveBillingCycle = async () => {
+    if (!currentUser) return;
+    
+    if (billingCycleDay < 1 || billingCycleDay > 31) {
+      showNotification('error', t('invalidBillingCycleDay'));
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      await userSettingsService.update(currentUser.uid, { billingCycleDay });
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving billing cycle day:', error);
+      showNotification('error', t('errorSavingSettings'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -20,11 +66,55 @@ const UserProfile: React.FC = () => {
       </div>
 
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Account Settings</h3>
+        <h3 style={styles.sectionTitle}>{t('billingCycleSettings')}</h3>
+        <div style={styles.settingCard}>
+          <div style={styles.settingHeader}>
+            <div>
+              <h4 style={styles.settingTitle}>{t('monthlyResetDay')}</h4>
+              <p style={styles.settingDescription}>
+                {t('billingCycleDescription')}
+              </p>
+            </div>
+          </div>
+          {!loading && (
+            <div style={styles.form}>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>{t('selectDay')} (1-31)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={billingCycleDay}
+                  onChange={(e) => setBillingCycleDay(parseInt(e.target.value) || 1)}
+                  style={styles.input}
+                  disabled={saving}
+                />
+                <span style={styles.helpText}>
+                  {t('billingCycleHint')}
+                </span>
+              </div>
+              <button
+                onClick={handleSaveBillingCycle}
+                style={{
+                  ...styles.submitButton,
+                  opacity: saving ? 0.6 : 1,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                }}
+                disabled={saving}
+              >
+                {saving ? t('saving') : t('save')}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <h3 style={styles.sectionTitle}>{t('accountSettings')}</h3>
         <div style={styles.settingCard}>
           <div>
             <p style={styles.settingDescription}>
-              如需更改密碼或 Email，請聯繫系統管理員協助處理。
+              {t('contactAdminForChanges')}
             </p>
           </div>
         </div>

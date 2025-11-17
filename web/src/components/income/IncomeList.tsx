@@ -34,6 +34,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
   const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<{
     title?: string;
     amount?: string;
@@ -142,6 +143,47 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
     cancelInlineEdit();
   };
 
+  const toggleGroupCollapse = (date: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Group incomes by date for display
+  const groupIncomesByDate = () => {
+    const grouped: { [date: string]: Income[] } = {};
+    
+    // Sort incomes by date (newest first)
+    const sortedIncomes = [...incomes].sort((a, b) => b.date.localeCompare(a.date));
+    
+    sortedIncomes.forEach((income) => {
+      const dateKey = income.date;
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(income);
+    });
+
+    // Convert to array with daily totals
+    return Object.entries(grouped).map(([date, incs]) => {
+      const dailyTotal = incs.reduce((sum, inc) => sum + inc.amount, 0);
+      return { date, incomes: incs, dailyTotal };
+    }).sort((a, b) => b.date.localeCompare(a.date)); // Sort descending (newest first)
+  };
+
+  const groupedIncomes = groupIncomesByDate();
+
   if (incomes.length === 0) {
     return (
       <div style={styles.emptyState}>
@@ -157,7 +199,22 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
-      {incomes.map((income) => (
+      {groupedIncomes.map(({ date, incomes: dayIncomes, dailyTotal }) => {
+        const isCollapsed = collapsedGroups.has(date);
+        return (
+          <div key={date} style={styles.dateGroup}>
+            {/* Date group header with daily subtotal - clickable to expand/collapse */}
+            <div style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
+                <span style={styles.dateGroupDate}>{formatDate(date)}</span>
+                <span style={styles.incomeCount}>({dayIncomes.length})</span>
+              </div>
+              <span style={styles.dateGroupTotal}>+${dailyTotal.toFixed(2)}</span>
+            </div>
+            
+            {/* Incomes for this date - hidden when collapsed */}
+            {!isCollapsed && dayIncomes.map((income) => (
         <div key={income.id} style={styles.incomeCard}>
           {editingId === income.id ? (
             // Inline Edit Mode
@@ -381,6 +438,9 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
           )}
         </div>
       ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -603,6 +663,46 @@ const styles = {
   emptySubtext: {
     fontSize: '14px',
     color: '#9ca3af',
+  },
+  dateGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
+    marginBottom: '12px',
+  },
+  dateGroupHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 12px',
+    backgroundColor: '#dcfce7',
+    borderRadius: '8px',
+    borderLeft: '4px solid #16a34a',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    userSelect: 'none' as const,
+  },
+  dateGroupDate: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  incomeCount: {
+    fontSize: '12px',
+    fontWeight: '400' as const,
+    color: '#666',
+  },
+  collapseIcon: {
+    fontSize: '10px',
+    color: '#16a34a',
+    display: 'inline-block',
+    width: '12px',
+    transition: 'transform 0.2s',
+  },
+  dateGroupTotal: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: '#16a34a',
   },
   inlineEditor: {
     display: 'flex',

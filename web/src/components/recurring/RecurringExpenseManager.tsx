@@ -725,6 +725,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '15px',
+    maxHeight: '70vh',
+    overflowY: 'auto' as const,
   },
   formGroup: {
     display: 'flex',
