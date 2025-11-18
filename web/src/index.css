@@ -320,7 +320,7 @@ button:not(:disabled):hover {
   background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15)) !important;
   box-shadow: var(--purple-glow);
   border-left: 3px solid var(--accent-primary);
-  padding-left: calc(0.75rem - 3px);
+  padding-left: calc(0.75rem - 3px) !important;
 }
 
 /* Hamburger menu dividers */
@@ -1059,18 +1059,6 @@ button:not(:disabled):hover {
   .dark .dashboard-tab {
     font-size: 13px;
     padding: 10px 16px;
-  }
-  
-  /* Make sure hamburger menu is well spaced */
-  .dark .menu-item-hover {
-    padding: 12px 16px;
-    margin-bottom: 4px;
-  }
-  
-  /* Improved touch targets */
-  .dark button {
-    min-height: 44px;
-    min-width: 44px;
   }
 }
 

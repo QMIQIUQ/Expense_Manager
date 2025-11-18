@@ -209,21 +209,21 @@ const CardManager: React.FC<CardManagerProps> = ({
                 </div>
 
                 <div style={styles.statsGrid}>
-                  <div style={{ ...styles.statCard, backgroundColor: '#e0f2fe' }}>
+                  <div style={{ ...styles.statCard, backgroundColor: 'var(--info-bg)' }}>
                     <p style={styles.statLabel}>{t('currentCycleSpending')}</p>
-                    <p style={{ ...styles.statValue, color: '#0f62fe' }}>${stats.currentCycleSpending.toFixed(2)}</p>
+                    <p style={{ ...styles.statValue, color: 'var(--info-text)' }}>${stats.currentCycleSpending.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: '#dcfce7' }}>
+                  <div style={{ ...styles.statCard, backgroundColor: 'var(--success-bg)' }}>
                     <p style={styles.statLabel}>{t('availableCredit')}</p>
-                    <p style={{ ...styles.statValue, color: '#15803d' }}>${stats.availableCredit.toFixed(2)}</p>
+                    <p style={{ ...styles.statValue, color: 'var(--success-text)' }}>${stats.availableCredit.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: '#ede9fe' }}>
+                  <div style={{ ...styles.statCard, backgroundColor: 'var(--accent-light)' }}>
                     <p style={styles.statLabel}>{t('estimatedCashback')}</p>
-                    <p style={{ ...styles.statValue, color: '#6d28d9' }}>${stats.estimatedTotalCashback.toFixed(2)}</p>
+                    <p style={{ ...styles.statValue, color: 'var(--accent-primary)' }}>${stats.estimatedTotalCashback.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: '#fff7ed' }}>
+                  <div style={{ ...styles.statCard, backgroundColor: 'var(--warning-bg)' }}>
                     <p style={styles.statLabel}>{t('nextBillingDate')}</p>
-                    <p style={{ ...styles.statValue, color: '#c2410c' }}>{stats.nextBillingDate}</p>
+                    <p style={{ ...styles.statValue, color: 'var(--warning-text)' }}>{stats.nextBillingDate}</p>
                   </div>
                 </div>
 
@@ -244,12 +244,12 @@ const CardManager: React.FC<CardManagerProps> = ({
                             {t('categorySpend')}: ${ruleStats.categorySpend.toFixed(2)}
                           </div>
                           {ruleStats.requiredToReachMinSpend > 0 && (
-                            <div style={{ ...styles.breakdownMeta, color: '#c2410c' }}>
+                            <div style={{ ...styles.breakdownMeta, color: 'var(--warning-text)' }}>
                               ${ruleStats.requiredToReachMinSpend.toFixed(2)} {t('toReachMinSpend')}
                             </div>
                           )}
                           {ruleStats.requiredToReachCap > 0 && (
-                            <div style={{ ...styles.breakdownMeta, color: '#2563eb' }}>
+                            <div style={{ ...styles.breakdownMeta, color: 'var(--info-text)' }}>
                               ${ruleStats.requiredToReachCap.toFixed(2)} {t('toReachCap')}
                             </div>
                           )}
@@ -295,11 +295,12 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
-    fontWeight: 600 as const,
+    fontSize: '14px',
+    fontWeight: '600' as const,
     cursor: 'pointer',
   },
   formCard: {
@@ -381,7 +382,7 @@ const styles = {
   },
   cardLimit: {
     marginTop: '4px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
   },
   cardActions: {
@@ -422,7 +423,7 @@ const styles = {
   },
   statLabel: {
     margin: 0,
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     fontSize: '12px',
     marginBottom: '6px',
   },
@@ -434,8 +435,8 @@ const styles = {
   toggleButton: {
     width: '100%',
     border: 'none',
-    backgroundColor: '#f3f4f6',
-    color: '#4b5563',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     borderRadius: '10px',
     padding: '10px',
     display: 'flex',
@@ -447,7 +448,7 @@ const styles = {
   },
   breakdown: {
     marginTop: '16px',
-    borderTop: '1px solid #e5e7eb',
+    borderTop: '1px solid var(--border-color)',
     paddingTop: '16px',
     display: 'flex',
     flexDirection: 'column' as const,
@@ -459,7 +460,7 @@ const styles = {
     gap: '12px',
     padding: '12px',
     borderRadius: '12px',
-    backgroundColor: '#f9fafb',
+    backgroundColor: 'var(--bg-secondary)',
   },
   breakdownTitle: {
     fontSize: '15px',
@@ -468,11 +469,11 @@ const styles = {
   },
   breakdownMeta: {
     fontSize: '12px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
   },
   breakdownValue: {
     fontWeight: 600 as const,
-    color: '#6d28d9',
+    color: 'var(--accent-primary)',
     whiteSpace: 'nowrap' as const,
   },
   menuContainer: {
@@ -480,8 +481,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

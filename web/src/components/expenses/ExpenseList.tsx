@@ -1276,10 +1276,10 @@ const styles = {
     top: '100%',
     marginTop: '4px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 10,
+    zIndex: 1000,
     minWidth: '160px',
   },
   menuItem: {
