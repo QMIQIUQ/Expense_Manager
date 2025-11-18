@@ -1325,7 +1325,7 @@ const Dashboard: React.FC = () => {
               )}
             </button>
             {showHamburgerMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1050]" style={{ minWidth: '240px', maxWidth: '90vw' }}>
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]" style={{ minWidth: '240px', maxWidth: '90vw' }}>
                 {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
