@@ -13,15 +13,32 @@ const HeaderNotification: React.FC = () => {
       ...styles.notification,
     };
 
+    // Use theme-aware backgrounds with proper contrast
     switch (type) {
       case 'success':
-        return { ...baseStyle, backgroundColor: '#4caf50' };
+        return { 
+          ...baseStyle, 
+          backgroundColor: '#22c55e',
+          color: '#ffffff',
+        };
       case 'error':
-        return { ...baseStyle, backgroundColor: '#f44336' };
+        return { 
+          ...baseStyle, 
+          backgroundColor: '#ef4444',
+          color: '#ffffff',
+        };
       case 'info':
-        return { ...baseStyle, backgroundColor: '#2196f3' };
+        return { 
+          ...baseStyle, 
+          backgroundColor: '#3b82f6',
+          color: '#ffffff',
+        };
       case 'pending':
-        return { ...baseStyle, backgroundColor: '#ff9800' };
+        return { 
+          ...baseStyle, 
+          backgroundColor: '#f97316',
+          color: '#ffffff',
+        };
       default:
         return baseStyle;
     }

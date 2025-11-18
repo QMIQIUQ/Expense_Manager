@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { DeleteIcon, EditIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
@@ -16,6 +17,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
   onEdit,
 }) => {
   const { t } = useLanguage();
+  const { effectiveTheme } = useTheme();
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; repaymentId: string | null }>({
     isOpen: false,
     repaymentId: null,
@@ -45,6 +47,31 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     });
   };
 
+  // Get theme-aware payment chip style
+  const getPaymentChipStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.paymentChip,
+        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+        color: '#86efac',
+        boxShadow: '0 1px 3px rgba(34, 197, 94, 0.2)',
+      };
+    }
+    return styles.paymentChip;
+  };
+
+  // Get theme-aware amount style
+  const getAmountStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.amount,
+        color: '#86efac',
+        textShadow: '0 1px 2px rgba(134, 239, 172, 0.2)',
+      };
+    }
+    return styles.amount;
+  };
+
   if (repayments.length === 0) {
     return (
       <div style={styles.noData}>
@@ -63,13 +90,13 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={styles.date}>{formatDate(repayment.date)}</span>
                 {/* Payment Method Chip */}
-                <span style={styles.paymentChip}>
+                <span style={getPaymentChipStyle()}>
                   {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                   {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
                   {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
                 </span>
               </div>
-              <div style={styles.amount}>${repayment.amount.toFixed(2)}</div>
+              <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
             </div>
 
             {/* Second row: Payer Name */}
