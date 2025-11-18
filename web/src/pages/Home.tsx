@@ -5,7 +5,7 @@ const Home: React.FC = () => {
   return (
     <div style={{ maxWidth: '800px', margin: '100px auto', padding: '20px', textAlign: 'center' }}>
       <h1 style={{ fontSize: '3rem', marginBottom: '20px' }}>💰 Expense Manager</h1>
-      <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#666' }}>
+      <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: 'var(--text-secondary)' }}>
         Track and manage your expenses with ease
       </p>
       <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>

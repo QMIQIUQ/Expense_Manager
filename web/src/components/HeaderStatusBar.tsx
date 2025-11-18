@@ -271,11 +271,11 @@ const styles = {
   statusText: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#374151',
+    color: 'var(--text-primary)',
   },
   statusMessage: {
     fontSize: '13px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -290,7 +290,7 @@ const styles = {
     display: 'inline-block',
     animation: 'spin 1s linear infinite',
     fontSize: '16px',
-    color: '#3b82f6',
+    color: 'var(--accent-primary)',
   },
   progressBar: {
     width: '100%',
@@ -309,8 +309,8 @@ const styles = {
   actionBtn: {
     padding: '4px 12px',
     backgroundColor: 'var(--card-bg)',
-    color: '#374151',
-    border: '1px solid #d1d5db',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
     borderRadius: '4px',
     fontSize: '12px',
     fontWeight: '500' as const,
@@ -321,7 +321,7 @@ const styles = {
   closeBtn: {
     padding: '4px 8px',
     backgroundColor: 'transparent',
-    color: '#9ca3af',
+    color: 'var(--text-tertiary)',
     border: 'none',
     fontSize: '18px',
     cursor: 'pointer',

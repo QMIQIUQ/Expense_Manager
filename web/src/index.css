@@ -27,6 +27,10 @@
   --warning-bg: #fef3c7;
   --error-bg: #fef2f2;
   --info-bg: #eff6ff;
+  --success-text: #22c55e;
+  --warning-text: #f97316;
+  --error-text: #ef4444;
+  --info-text: #3b82f6;
   --hover-bg: rgba(0, 0, 0, 0.04);
   --select-bg: #ffffff;
   --disabled-bg: #f9fafb;
@@ -89,6 +93,12 @@
   --error-bg: #4d1a1a;
   --info-bg: #1a2d4d;
   --disabled-bg: #252338;
+  
+  /* Status text colors (bright for visibility in dark mode) */
+  --success-text: #86efac;
+  --warning-text: #fdba74;
+  --error-text: #fca5a5;
+  --info-text: #93c5fd;
   
   /* Purple accent system for dark mode */
   --accent-primary: #a78bfa;

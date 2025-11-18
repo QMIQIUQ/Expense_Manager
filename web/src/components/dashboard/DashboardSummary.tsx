@@ -177,7 +177,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div style={{ ...styles.cardIcon, backgroundColor: '#e8f5e9' }}>💵</div>
           <div style={styles.cardContent}>
             <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
-            <div style={{ ...styles.cardValue, color: '#4caf50' }}>
+            <div style={{ ...styles.cardValue, color: 'var(--success-text)' }}>
               ${stats.monthlyIncome.toFixed(2)}
             </div>
           </div>
@@ -209,7 +209,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div style={{ ...styles.cardIcon, backgroundColor: '#fff3e0' }}>💸</div>
           <div style={styles.cardContent}>
             <div style={styles.cardLabel}>{t('unrecovered')}</div>
-            <div style={{ ...styles.cardValue, color: '#ff9800' }}>
+            <div style={{ ...styles.cardValue, color: 'var(--warning-text)' }}>
               ${stats.totalUnrecovered.toFixed(2)}
             </div>
           </div>
@@ -265,11 +265,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                       </div>
                       <div style={styles.trackedAmountItem}>
                         <span style={styles.trackedAmountLabel}>{t('repaid')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: '#4CAF50' }}>${repaid.toFixed(2)}</span>
+                        <span style={{ ...styles.trackedAmountValue, color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span>
                       </div>
                       <div style={styles.trackedAmountItem}>
                         <span style={styles.trackedAmountLabel}>{t('remaining')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: '#ff9800' }}>${remaining.toFixed(2)}</span>
+                        <span style={{ ...styles.trackedAmountValue, color: 'var(--warning-text)' }}>${remaining.toFixed(2)}</span>
                       </div>
                     </div>
                     <div style={styles.progressBar}>
@@ -515,7 +515,7 @@ const styles = {
   categoryAmount: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
     whiteSpace: 'nowrap' as const,
     flexShrink: 0,
   },
@@ -607,7 +607,7 @@ const styles = {
   recentExpenseAmount: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
   },
   recentExpenseDate: {
     fontSize: '12px',

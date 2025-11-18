@@ -200,7 +200,7 @@ const styles = {
     marginBottom: '6px',
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
   },
   input: {
     width: '100%',
