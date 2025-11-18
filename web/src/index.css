@@ -2,18 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for theming */
+/* CSS Variables for theming - Enhanced with Purple Accent System */
 :root {
   /* Light theme colors */
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
   --bg-tertiary: #e0e0e0;
   --bg-quaternary: #f0f0f0;
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --text-tertiary: #999999;
-  --border-color: #e0e0e0;
-  --border-hover: #d0d0d0;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border-color: #e5e7eb;
+  --border-hover: #d1d5db;
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-md: rgba(0, 0, 0, 0.15);
   --shadow-lg: rgba(0, 0, 0, 0.2);
@@ -22,45 +22,90 @@
   --button-hover: rgba(0, 0, 0, 0.04);
   --modal-bg: #ffffff;
   --modal-overlay: rgba(0, 0, 0, 0.5);
-  --icon-bg: #f0f0f0;
-  --success-bg: #e8f5e9;
-  --warning-bg: #fff3e0;
-  --error-bg: #ffebee;
-  --info-bg: #e3f2fd;
+  --icon-bg: #f3f4f6;
+  --success-bg: #ecfdf5;
+  --warning-bg: #fef3c7;
+  --error-bg: #fef2f2;
+  --info-bg: #eff6ff;
   --hover-bg: rgba(0, 0, 0, 0.04);
   --select-bg: #ffffff;
-  --disabled-bg: #f5f5f5;
-  --divider-color: #e0e0e0;
+  --disabled-bg: #f9fafb;
+  --divider-color: #e5e7eb;
+  
+  /* Purple accent system for light mode */
+  --accent-primary: #7c3aed;
+  --accent-secondary: #8b5cf6;
+  --accent-hover: #6d28d9;
+  --accent-light: #ede9fe;
+  --tab-active-bg: linear-gradient(135deg, #7c3aed, #a78bfa);
+  --tab-inactive-bg: #f3f4f6;
+  --tab-inactive-text: #6b7280;
+  --tab-active-text: #ffffff;
+  --tab-hover-bg: #ede9fe;
 }
 
 .dark {
-  /* Dark theme colors */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --bg-tertiary: #404040;
-  --bg-quaternary: #363636;
-  --text-primary: #e8e8e8;
-  --text-secondary: #b8b8b8;
-  --text-tertiary: #888888;
-  --border-color: #404040;
-  --border-hover: #505050;
-  --shadow: rgba(0, 0, 0, 0.4);
-  --shadow-md: rgba(0, 0, 0, 0.6);
-  --shadow-lg: rgba(0, 0, 0, 0.8);
-  --card-bg: #2d2d2d;
-  --input-bg: #1a1a1a;
-  --button-hover: rgba(255, 255, 255, 0.08);
-  --modal-bg: #2d2d2d;
-  --modal-overlay: rgba(0, 0, 0, 0.75);
-  --icon-bg: #363636;
-  --success-bg: #1b4d2c;
+  /* Dark theme colors - Enhanced UI Hierarchy System */
+  /* Level 0 - Background (Deepest layer with subtle purple tint) */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-quaternary: #3f3f46;
+  
+  /* Text colors - WCAG AA compliant with enhanced readability */
+  --text-primary: #f2f2f7;      /* Bright but not harsh - 14.5:1 contrast */
+  --text-secondary: #98989d;     /* Medium gray for secondary info */
+  --text-tertiary: #8e8e93;      /* Subtle for less important text */
+  
+  /* Borders and dividers */
+  --border-color: #48484a;
+  --border-hover: #636366;
+  --divider-color: #48484a;
+  
+  /* Shadows - Deeper for dark mode */
+  --shadow: rgba(0, 0, 0, 0.5);
+  --shadow-md: rgba(0, 0, 0, 0.7);
+  --shadow-lg: rgba(0, 0, 0, 0.9);
+  
+  /* Level 1 - Cards/Containers (with subtle purple tint) */
+  --card-bg: #1a1625;
+  
+  /* Level 2 - Nested containers */
+  --input-bg: #0a0a0f;
+  --select-bg: #0a0a0f;
+  --modal-bg: #1a1625;
+  --icon-bg: #252338;
+  
+  /* Level 3 - Interactive elements */
+  --button-hover: rgba(124, 58, 237, 0.15);
+  --hover-bg: rgba(124, 58, 237, 0.12);
+  
+  /* Modal overlay */
+  --modal-overlay: rgba(0, 0, 0, 0.85);
+  
+  /* Status backgrounds (with proper contrast) */
+  --success-bg: #1a3d2c;
   --warning-bg: #4d3a1a;
   --error-bg: #4d1a1a;
   --info-bg: #1a2d4d;
-  --hover-bg: rgba(255, 255, 255, 0.08);
-  --select-bg: #1a1a1a;
-  --disabled-bg: #2d2d2d;
-  --divider-color: #404040;
+  --disabled-bg: #252338;
+  
+  /* Purple accent system for dark mode */
+  --accent-primary: #a78bfa;
+  --accent-secondary: #c4b5fd;
+  --accent-hover: #8b5cf6;
+  --accent-light: #3a3654;
+  
+  /* Tab system with purple gradient */
+  --tab-active-bg: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  --tab-inactive-bg: #252338;
+  --tab-inactive-text: #98989d;
+  --tab-active-text: #ffffff;
+  --tab-hover-bg: #3a3654;
+  
+  /* Purple glow effect for highlights */
+  --purple-glow: 0 0 12px rgba(167, 139, 250, 0.3);
+  --purple-glow-strong: 0 0 20px rgba(167, 139, 250, 0.5);
 }
 
 * {
@@ -78,6 +123,33 @@ body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Enhanced typography for dark mode readability */
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* Dark mode typography enhancements */
+.dark body {
+  font-weight: 400;
+  letter-spacing: 0.015em;
+}
+
+/* Enhanced readability for all text */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+p, span, div {
+  line-height: 1.6;
 }
 
 #root {
@@ -115,32 +187,66 @@ a:hover {
 
 input {
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 14px;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: var(--input-bg);
   color: var(--text-primary);
-  transition: border-color 0.2s ease, background-color 0.3s ease;
+  padding: 10px 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.5;
 }
 
 input:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.dark input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: var(--purple-glow);
+  background-color: var(--bg-secondary);
 }
 
 select, textarea {
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 14px;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: var(--select-bg);
   color: var(--text-primary);
-  transition: border-color 0.2s ease, background-color 0.3s ease;
+  padding: 10px 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.5;
 }
 
 select:focus, textarea:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.dark select:focus, .dark textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: var(--purple-glow);
+  background-color: var(--bg-secondary);
+}
+
+/* Enhanced button styles */
+button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px var(--shadow);
+}
+
+.dark button:not(:disabled):hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 /* Helper classes for dark mode */
@@ -166,6 +272,59 @@ select:focus, textarea:focus {
 
 .theme-border {
   border-color: var(--border-color);
+}
+
+/* Enhanced Hamburger Menu Styles */
+.dark [class*="hamburger"],
+.dark [class*="menu"] {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Hamburger menu items */
+.dark .menu-item-hover {
+  color: var(--text-primary) !important;
+}
+
+.dark .menu-item-hover:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15)) !important;
+  box-shadow: var(--purple-glow);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: calc(0.75rem - 3px);
+}
+
+/* Hamburger menu dividers */
+.dark .border-gray-200 {
+  border-color: var(--divider-color) !important;
+}
+
+/* Hamburger menu active items */
+.dark .bg-indigo-50 {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.2), rgba(167, 139, 250, 0.25)) !important;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.dark .text-indigo-700 {
+  color: var(--accent-secondary) !important;
+  font-weight: 600;
+}
+
+/* Menu text colors */
+.dark .text-gray-700 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-600 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-500 {
+  color: var(--text-tertiary) !important;
+}
+
+/* Menu icons should match text */
+.dark svg {
+  color: inherit;
 }
 
 /* Optimistic UI styles */
@@ -207,10 +366,17 @@ select:focus, textarea:focus {
 
 .dashboard-card {
   background-color: var(--card-bg);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px var(--shadow);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
   border: 1px solid var(--border-color);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced card styling for dark mode */
+.dark .dashboard-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .dashboard-header {
@@ -278,35 +444,52 @@ select:focus, textarea:focus {
   right: 12px;
   top: 56px;
   background: var(--card-bg);
-  border-radius: 8px;
-  box-shadow: 0 6px 18px var(--shadow-md);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow-lg);
   border: 1px solid var(--border-color);
   padding: 8px;
   z-index: 50;
-  min-width: 180px;
+  min-width: 200px;
   display: grid;
-  gap: 8px;
+  gap: 4px;
   max-width: calc(100vw - 24px);
+}
+
+.dark .action-dropdown {
+  background: var(--card-bg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), var(--purple-glow);
 }
 
 .action-dropdown button {
   width: 100%;
   text-align: left;
   padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: transparent;
 }
 
 .action-dropdown button:hover:not(:disabled) {
   opacity: 1;
-  background-color: #e9ecef !important;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15)) !important;
+  transform: translateX(4px);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: calc(14px - 3px);
+}
+
+.dark .action-dropdown button:hover:not(:disabled) {
+  box-shadow: var(--purple-glow);
 }
 
 .dashboard-tabs {
   display: flex;
-  gap: 5px;
-  padding: 10px;
+  gap: 8px;
+  padding: 12px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: var(--bg-primary);
 }
 
 .dashboard-tabs::-webkit-scrollbar {
@@ -316,6 +499,52 @@ select:focus, textarea:focus {
 .dashboard-tab {
   flex: 0 0 auto;
   min-width: 110px;
+  position: relative;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+/* Active tab with purple gradient */
+.dashboard-tab.bg-primary {
+  background: var(--tab-active-bg) !important;
+  color: var(--tab-active-text) !important;
+  font-weight: 600;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+/* Inactive tab */
+.dashboard-tab.bg-transparent {
+  background-color: var(--tab-inactive-bg) !important;
+  color: var(--tab-inactive-text) !important;
+  font-weight: 400;
+  border-color: var(--border-color);
+}
+
+/* Hover effect for inactive tabs */
+.dashboard-tab.bg-transparent:hover {
+  background-color: var(--tab-hover-bg) !important;
+  border-color: var(--accent-primary);
+  box-shadow: var(--purple-glow);
+  transform: translateY(-1px);
+}
+
+/* Dark mode specific tab enhancements */
+.dark .dashboard-tab.bg-primary {
+  box-shadow: var(--purple-glow-strong), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark .dashboard-tab.bg-transparent {
+  background-color: var(--tab-inactive-bg) !important;
+  border-color: var(--border-color);
+}
+
+.dark .dashboard-tab.bg-transparent:hover {
+  background-color: var(--tab-hover-bg) !important;
+  box-shadow: var(--purple-glow);
+  border-color: var(--accent-primary);
 }
 
 @media (min-width: 640px) {
@@ -432,4 +661,424 @@ select:focus, textarea:focus {
     min-width: 0;
     overflow-wrap: break-word;
   }
+}
+
+/* ============================================ */
+/* Enhanced Dark Mode Specific Overrides */
+/* ============================================ */
+
+/* Tailwind utility class overrides for dark mode */
+.dark .bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: var(--text-primary) !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--text-tertiary) !important;
+}
+
+.dark .border-gray-300,
+.dark .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+
+/* Success/Error/Warning/Info backgrounds in dark mode */
+.dark .bg-green-50,
+.dark .bg-emerald-50 {
+  background-color: var(--success-bg) !important;
+  border-color: rgba(167, 243, 208, 0.2) !important;
+}
+
+.dark .bg-yellow-50,
+.dark .bg-amber-50 {
+  background-color: var(--warning-bg) !important;
+  border-color: rgba(252, 211, 77, 0.2) !important;
+}
+
+.dark .bg-red-50 {
+  background-color: var(--error-bg) !important;
+  border-color: rgba(252, 165, 165, 0.2) !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-indigo-50 {
+  background-color: var(--info-bg) !important;
+  border-color: rgba(147, 197, 253, 0.2) !important;
+}
+
+/* Enhanced text colors for status indicators */
+.dark .text-green-600,
+.dark .text-green-700,
+.dark .text-green-800 {
+  color: #86efac !important;
+}
+
+.dark .text-yellow-600,
+.dark .text-yellow-700,
+.dark .text-yellow-800,
+.dark .text-amber-600,
+.dark .text-orange-600 {
+  color: #fcd34d !important;
+}
+
+.dark .text-red-600,
+.dark .text-red-700,
+.dark .text-red-800 {
+  color: #fca5a5 !important;
+}
+
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark .text-indigo-600,
+.dark .text-indigo-700 {
+  color: #93c5fd !important;
+}
+
+/* Link colors */
+.dark a {
+  color: var(--accent-secondary);
+}
+
+.dark a:hover {
+  color: var(--accent-primary);
+}
+
+/* Focus rings */
+.dark *:focus-visible {
+  outline-color: var(--accent-primary);
+  outline-offset: 2px;
+  outline-width: 2px;
+}
+
+/* Enhanced scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 5px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Selection color */
+.dark ::selection {
+  background-color: rgba(167, 139, 250, 0.3);
+  color: var(--text-primary);
+}
+
+/* Enhanced card hover effects */
+.dark .expense-card:hover,
+.dark .category-card:hover,
+.dark .budget-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--purple-glow);
+  transform: translateY(-2px);
+}
+
+/* Placeholder text */
+.dark input::placeholder,
+.dark textarea::placeholder,
+.dark select::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+/* Disabled elements */
+.dark button:disabled,
+.dark input:disabled,
+.dark select:disabled,
+.dark textarea:disabled {
+  opacity: 0.5;
+  background-color: var(--disabled-bg) !important;
+  color: var(--text-tertiary) !important;
+  cursor: not-allowed;
+}
+
+/* Loading indicators */
+.dark .spinner,
+.dark [class*="loading"] {
+  border-color: var(--bg-tertiary);
+  border-top-color: var(--accent-primary);
+}
+
+/* Badges and tags */
+.dark [class*="badge"],
+.dark [class*="tag"],
+.dark [class*="chip"] {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Tooltips */
+.dark [class*="tooltip"] {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Code blocks (if any) */
+.dark code,
+.dark pre {
+  background-color: var(--bg-primary);
+  color: var(--accent-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* Table styling for dark mode */
+.dark table {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.dark thead {
+  background-color: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.dark tbody tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dark tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+.dark th,
+.dark td {
+  color: var(--text-primary);
+}
+
+/* Improve form labels */
+.dark label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Checkboxes and radio buttons enhancement */
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+  accent-color: var(--accent-primary);
+  border-color: var(--border-color);
+}
+
+/* Progress bars */
+.dark progress {
+  background-color: var(--bg-tertiary);
+}
+
+.dark progress::-webkit-progress-bar {
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.dark progress::-webkit-progress-value {
+  background: var(--tab-active-bg);
+  border-radius: 4px;
+}
+
+.dark progress::-moz-progress-bar {
+  background: var(--tab-active-bg);
+  border-radius: 4px;
+}
+
+/* Floating action button enhancement */
+.dark [class*="floating"],
+.dark [class*="fab"] {
+  background: var(--tab-active-bg);
+  box-shadow: var(--purple-glow-strong), 0 8px 16px var(--shadow-lg);
+}
+
+.dark [class*="floating"]:hover,
+.dark [class*="fab"]:hover {
+  box-shadow: var(--purple-glow-strong), 0 12px 24px var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Notification/Alert enhancements */
+.dark [class*="alert"],
+.dark [class*="notification"],
+.dark [class*="toast"] {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg), var(--purple-glow);
+}
+
+/* Dropdown menus */
+.dark [class*="dropdown"],
+.dark [class*="menu"] {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark [class*="dropdown"] > *:hover,
+.dark [class*="menu"] > *:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15));
+}
+
+/* Accordion/Collapsible sections */
+.dark [class*="accordion"],
+.dark [class*="collapsible"] {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.dark [class*="accordion-header"],
+.dark [class*="collapsible-header"] {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dark [class*="accordion-header"]:hover,
+.dark [class*="collapsible-header"]:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Charts and data visualization */
+.dark [class*="chart"],
+.dark svg {
+  color: var(--text-primary);
+}
+
+/* Empty states */
+.dark [class*="empty"],
+.dark [class*="no-data"] {
+  color: var(--text-tertiary);
+}
+
+/* Pagination */
+.dark [class*="pagination"] button {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark [class*="pagination"] button:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.dark [class*="pagination"] button[class*="active"] {
+  background: var(--tab-active-bg);
+  color: white;
+  border-color: transparent;
+}
+
+/* Search inputs */
+.dark input[type="search"] {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.dark input[type="search"]:focus {
+  border-color: var(--accent-primary);
+  box-shadow: var(--purple-glow);
+}
+
+/* File upload areas */
+.dark [class*="upload"],
+.dark [class*="dropzone"] {
+  background-color: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark [class*="upload"]:hover,
+.dark [class*="dropzone"]:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+/* ============================================ */
+/* Mobile Responsive Enhancements */
+/* ============================================ */
+
+@media (max-width: 640px) {
+  /* Ensure tabs are still readable on mobile dark mode */
+  .dark .dashboard-tab {
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+  
+  /* Make sure hamburger menu is well spaced */
+  .dark .menu-item-hover {
+    padding: 12px 16px;
+    margin-bottom: 4px;
+  }
+  
+  /* Improved touch targets */
+  .dark button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ============================================ */
+/* Animation Enhancements */
+/* ============================================ */
+
+/* Smooth color transitions for all elements */
+.dark * {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse-purple {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.dark [class*="loading"] {
+  animation: pulse-purple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glow animation for focus */
+@keyframes glow-purple {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.6);
+  }
+}
+
+.dark *:focus {
+  animation: glow-purple 2s ease-in-out infinite;
 }
