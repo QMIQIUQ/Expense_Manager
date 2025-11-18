@@ -328,7 +328,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </span>
                       <span style={styles.categoryName}>
                         {category.name}
-                        {isDuplicate && <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
+                        {isDuplicate && <span style={{ color: 'var(--warning-text)', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
                       </span>
                       {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
                     </div>
@@ -373,7 +373,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 handleDeleteClick(category);
@@ -459,7 +459,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       onChange={(e) => setDeleteAction(e.target.value as 'deleteExpenses')}
                       style={styles.radio}
                     />
-                    <span style={{ color: '#f44336' }}>
+                    <span style={{ color: 'var(--error-text)' }}>
                       {t('deleteExpensesToo') || 'Delete all expenses in this category'}
                     </span>
                   </label>
@@ -572,15 +572,15 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -734,8 +734,8 @@ const styles = {
   },
   defaultBadge: {
     padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
+    backgroundColor: 'var(--info-bg)',
+    color: 'var(--info-text)',
     borderRadius: '4px',
     fontSize: '12px',
     fontWeight: '500' as const,
@@ -747,8 +747,8 @@ const styles = {
   },
   editBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -758,8 +758,8 @@ const styles = {
   },
   deleteBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -772,8 +772,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -818,8 +818,8 @@ const styles = {
   },
   saveButton: {
     padding: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -829,8 +829,8 @@ const styles = {
   },
   cancelIconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
+    backgroundColor: 'var(--icon-bg)',
+    color: 'var(--text-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -868,10 +868,10 @@ const styles = {
   modalWarning: {
     padding: '12px',
     backgroundColor: 'var(--warning-bg)',
-    border: '1px solid #ff9800',
+    border: '1px solid var(--warning-text)',
     borderRadius: '4px',
     marginBottom: '16px',
-    color: '#e65100',
+    color: 'var(--warning-text)',
     fontSize: '14px',
   },
   expenseList: {
