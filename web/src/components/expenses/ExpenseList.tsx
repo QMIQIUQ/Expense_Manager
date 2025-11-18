@@ -425,7 +425,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   }}
                   aria-label={t('allDates')}
                 />
-                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
+                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
               </div>
               <div style={styles.dateFilterGroup}>
                 <label style={styles.dateLabel}>{t('from')}</label>
@@ -656,7 +656,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       checked={!!draft.needsRepaymentTracking}
                       onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
                     />
-                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>
+                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                       {t('trackRepaymentInDashboard')}
                     </label>
                   </div>

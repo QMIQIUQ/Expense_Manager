@@ -1817,16 +1817,33 @@ const Dashboard: React.FC = () => {
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0">
             <div className="mx-auto w-full max-w-7xl">
-              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+              <div style={{ 
+                backgroundColor: 'var(--card-bg)', 
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                borderTop: '1px solid var(--border-color)',
+                padding: '12px 16px',
+                maxHeight: '85vh',
+                overflowY: 'auto'
+              }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddExpenseForm(false)}
-                    className="p-2 rounded-md hover:bg-gray-100"
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
                     </svg>
                   </button>
                 </div>
@@ -1914,16 +1931,33 @@ const Dashboard: React.FC = () => {
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0">
             <div className="mx-auto w-full max-w-7xl">
-              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+              <div style={{ 
+                backgroundColor: 'var(--card-bg)', 
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                borderTop: '1px solid var(--border-color)',
+                padding: '12px 16px',
+                maxHeight: '85vh',
+                overflowY: 'auto'
+              }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddSheet(false)}
-                    className="p-2 rounded-md hover:bg-gray-100"
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
                     </svg>
                   </button>
                 </div>
