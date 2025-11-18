@@ -725,7 +725,7 @@ const styles = {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 1000,
+    zIndex: 9999,
     minWidth: '160px',
   },
   menuItem: {
