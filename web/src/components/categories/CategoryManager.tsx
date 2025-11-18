@@ -255,7 +255,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             return (
               <div key={category.id} style={{
                 ...styles.categoryCard,
-                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: 'var(--warning-bg)' } : {})
+                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: 'var(--warning-bg)' } : {}),
+                ...(openMenuId === category.id ? { zIndex: 9999 } : {})
               }}>
                 {editingId === category.id ? (
                   // Inline Edit Mode
@@ -792,7 +793,7 @@ const styles = {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 10,
+    zIndex: 9999,
     minWidth: '160px',
   },
   menuItem: {

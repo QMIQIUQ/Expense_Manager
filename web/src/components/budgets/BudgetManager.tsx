@@ -287,7 +287,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
             return (
-              <div key={budget.id} style={styles.budgetCard}>
+              <div key={budget.id} style={{ ...styles.budgetCard, ...(openMenuId === budget.id ? { zIndex: 9999 } : {}) }}>
                 {editingId === budget.id ? (
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
@@ -725,7 +725,7 @@ const styles = {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 1000,
+    zIndex: 9999,
     minWidth: '160px',
   },
   menuItem: {

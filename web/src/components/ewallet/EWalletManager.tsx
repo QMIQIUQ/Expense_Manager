@@ -278,7 +278,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           <div style={styles.noData}>{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => (
-            <div key={wallet.id} style={styles.walletCard}>
+            <div key={wallet.id} style={{ ...styles.walletCard, ...(openMenuId === wallet.id ? { zIndex: 9999 } : {}) }}>
               {editingId === wallet.id ? (
                 // Edit Mode
                 <div style={styles.formGrid}>
@@ -800,7 +800,7 @@ const styles = {
     border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 1000,
+    zIndex: 9999,
     minWidth: '160px',
   },
   menuItem: {

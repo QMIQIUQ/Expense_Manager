@@ -129,7 +129,7 @@ const CardManager: React.FC<CardManagerProps> = ({
 
             if (isEditing) {
               return (
-                <div key={card.id} style={styles.card}>
+                <div key={card.id} style={{ ...styles.card, ...(openMenuId === card.id ? { zIndex: 9999 } : {}) }}>
                   <div style={styles.editingHeader}>
                     <h3 style={styles.formTitle}>{t('editCard')}</h3>
                     <button onClick={() => setEditingId(null)} style={styles.cancelIconButton} aria-label={t('cancel')}>
@@ -147,7 +147,7 @@ const CardManager: React.FC<CardManagerProps> = ({
             }
 
             return (
-              <div key={card.id} style={styles.card}>
+              <div key={card.id} style={{ ...styles.card, ...(openMenuId === card.id ? { zIndex: 9999 } : {}) }}>
                 <div style={styles.cardHeader}>
                   <div style={styles.cardInfo}>
                     <h3 style={styles.cardName}>{card.name}</h3>
@@ -499,7 +499,7 @@ const styles = {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 1000,
+    zIndex: 9999,
     minWidth: '160px',
   },
   menuItem: {
