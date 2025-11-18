@@ -394,7 +394,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           </div>
         ) : (
           filteredRecurringExpenses.map((expense) => (
-            <div key={expense.id} style={styles.expenseCard}>
+            <div key={expense.id} style={{ ...styles.expenseCard, ...(openMenuId === expense.id ? { zIndex: 9999 } : {}) }}>
               {editingId === expense.id ? (
                 // Inline Edit Mode
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>

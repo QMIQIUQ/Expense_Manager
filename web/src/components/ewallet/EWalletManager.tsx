@@ -278,7 +278,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           <div style={styles.noData}>{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => (
-            <div key={wallet.id} style={styles.walletCard}>
+            <div key={wallet.id} style={{ ...styles.walletCard, ...(openMenuId === wallet.id ? { zIndex: 9999 } : {}) }}>
               {editingId === wallet.id ? (
                 // Edit Mode
                 <div style={styles.formGrid}>

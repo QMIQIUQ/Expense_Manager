@@ -215,7 +215,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             
             {/* Incomes for this date - hidden when collapsed */}
             {!isCollapsed && dayIncomes.map((income) => (
-        <div key={income.id} style={styles.incomeCard}>
+        <div key={income.id} style={{ ...styles.incomeCard, ...(openMenuId === income.id ? { zIndex: 9999 } : {}) }}>
           {editingId === income.id ? (
             // Inline Edit Mode
             <div style={styles.inlineEditor}>

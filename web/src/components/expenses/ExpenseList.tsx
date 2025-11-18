@@ -570,7 +570,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
                 return (
-                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={styles.expenseCard}>
+                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={{ ...styles.expenseCard, ...(openMenuId === expense.id ? { zIndex: 9999 } : {}) }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {multiSelectEnabled && (
