@@ -114,6 +114,31 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return categoryName;
   };
 
+  // Get category color from user's category settings
+  const getCategoryColor = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category && category.color) {
+      // Convert hex color to lighter background and keep text as original color
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 99, g: 102, b: 241 };
+      };
+      
+      const rgb = hexToRgb(category.color);
+      // Create a lighter background (add 80% white)
+      const bg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+      const text = category.color;
+      
+      return { background: bg, color: text };
+    }
+    // Fallback color
+    return { background: '#e0e7ff', color: '#4338ca' };
+  };
+
   // Scroll to and highlight an expense when focusExpenseId changes
   React.useEffect(() => {
     if (!focusExpenseId) return;
@@ -425,7 +450,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   }}
                   aria-label={t('allDates')}
                 />
-                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: '#444' }}>{t('allDates')}</label>
+                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
               </div>
               <div style={styles.dateFilterGroup}>
                 <label style={styles.dateLabel}>{t('from')}</label>
@@ -510,7 +535,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             return (
             <div key={date} style={styles.dateGroup}>
               {/* Date group header with daily subtotal - clickable to expand/collapse */}
-              <div style={styles.dateGroupHeader}>
+              <div className="date-group-header" style={styles.dateGroupHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {multiSelectEnabled && (
                     <input
@@ -565,7 +590,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     {(expense as Expense & { time?: string }).time && (
                       <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
                     )}
-                    <span style={styles.category}>{getCategoryDisplay(expense.category)}</span>
+                    <span 
+                      className="category-chip"
+                      style={{
+                        ...styles.category,
+                        ...getCategoryColor(expense.category)
+                      }}
+                    >
+                      {getCategoryDisplay(expense.category)}
+                    </span>
                     {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
                       <span 
                         style={{
@@ -585,7 +618,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '180px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
                       <input
                         type="text"
                         value={draft.description || ''}
@@ -595,7 +628,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -606,7 +639,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                       <select
                         value={draft.category || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
@@ -620,7 +653,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ width: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
                       <input
                         type="date"
                         value={draft.date || ''}
@@ -629,7 +662,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
                       <input
                         type="time"
                         value={draft.time || ''}
@@ -638,7 +671,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
                       <input
                         type="text"
                         value={draft.notes || ''}
@@ -656,13 +689,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       checked={!!draft.needsRepaymentTracking}
                       onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
                     />
-                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>
+                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                       {t('trackRepaymentInDashboard')}
                     </label>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
                       <select
                         value={draft.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -684,7 +717,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
                         <select
                           value={draft.cardId || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
@@ -703,7 +736,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={draft.paymentMethodName || ''}
@@ -759,8 +792,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   if (repaid > 0) {
                     return (
                       <div style={styles.amountMeta}>
-                        <div>{t('original')}: <span style={{ color: '#f44336' }}>${expense.amount.toFixed(2)}</span></div>
-                        <div>{t('repaid')}: <span style={{ color: '#4CAF50' }}>${repaid.toFixed(2)}</span></div>
+                        <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>${expense.amount.toFixed(2)}</span></div>
+                        <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span></div>
                       </div>
                     );
                   }
@@ -776,7 +809,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
-                      <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                         {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
                         {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                         {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
@@ -800,7 +833,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         style={{ 
                           ...styles.iconButton, 
                           ...styles.successChip,
-                          ...(expandedRepaymentId === expense.id ? { backgroundColor: '#4CAF50', color: 'white' } : {})
+                          ...(expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {})
                         }} 
                         aria-label={t('repayments')}
                         title={t('repayments')}
@@ -896,7 +929,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             )}
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
@@ -963,8 +996,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '16px',
   },
@@ -990,14 +1023,14 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   toggleFiltersButton: {
     padding: '10px 16px',
     border: '1px solid #ddd',
     borderRadius: '6px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     minWidth: '120px',
     display: 'flex',
@@ -1019,7 +1052,7 @@ const styles = {
   dateLabel: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
     whiteSpace: 'nowrap' as const,
   },
   dateInput: {
@@ -1048,19 +1081,19 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   input: {
     padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   list: {
     display: 'flex',
@@ -1069,20 +1102,22 @@ const styles = {
     paddingBottom: '100px',
   },
   expenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '12px 12px 14px',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
     minWidth: 0,
     overflow: 'visible',
     position: 'relative' as const,
+    boxShadow: '0 3px 10px var(--shadow)',
+    transition: 'all 0.2s ease',
   },
-  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-tertiary)', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
   categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
-  timeDisplay: { fontSize: '12px', color: '#888', fontWeight: '500' as const },
+  timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
   leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
   rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
@@ -1094,33 +1129,34 @@ const styles = {
     margin: '0 0 5px 0',
     fontSize: '16px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
   category: {
     display: 'inline-block',
-    padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
-    borderRadius: '4px',
+    padding: '5px 10px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    borderRadius: '8px',
     fontSize: '12px',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     maxWidth: '150px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   notes: {
     margin: '8px 0 0 0',
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   amount: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
     marginBottom: '4px',
     wordBreak: 'break-all' as const,
     lineHeight: '1.2',
@@ -1136,12 +1172,12 @@ const styles = {
   },
   originalAmount: {
     fontSize: '14px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
     textDecoration: 'line-through',
   },
   repaidAmount: {
     fontSize: '14px',
-    color: '#4CAF50',
+    color: 'var(--success-text)',
     fontWeight: '500' as const,
   },
   netAmount: {
@@ -1171,19 +1207,19 @@ const styles = {
     right: '12px',
     textAlign: 'right' as const,
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: 1.2,
     pointerEvents: 'none' as const,
   },
   excessBadge: {
     fontSize: '11px',
     fontWeight: '500' as const,
-    color: '#2196F3',
+    color: 'var(--info-text)',
   },
   excessBadgeSmall: {
     fontSize: '10px',
     fontWeight: '500' as const,
-    color: '#2196F3',
+    color: 'var(--info-text)',
     marginLeft: '4px',
   },
   repaymentAnnotation: {
@@ -1192,27 +1228,27 @@ const styles = {
     gap: '8px',
     marginTop: '6px',
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   annotationItem: {
     display: 'flex',
     alignItems: 'center',
   },
   annotationDivider: {
-    color: '#ddd',
+    color: 'var(--border-color)',
   },
   completedBadge: {
     fontSize: '10px',
     fontWeight: '600' as const,
-    color: '#16a34a',
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    color: 'var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
     padding: '2px 6px',
     borderRadius: '4px',
     marginLeft: '4px',
   },
   completedCheck: {
     marginLeft: '6px',
-    color: '#16a34a',
+    color: 'var(--success-text)',
     fontWeight: '700' as const,
     fontSize: '14px',
     lineHeight: 1,
@@ -1225,8 +1261,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -1239,7 +1275,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -1254,7 +1290,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -1274,43 +1310,43 @@ const styles = {
     cursor: 'pointer',
   },
   primaryChip: {
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
   },
   dangerChip: {
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
   },
   successChip: {
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
   },
   neutralChip: {
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
   },
   completedChip: {
-    backgroundColor: 'rgba(34,197,94,0.2)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     fontWeight: '700' as const,
   },
   warningChip: {
-    backgroundColor: 'rgba(251,191,36,0.15)',
-    color: '#d97706',
+    backgroundColor: 'var(--warning-bg)',
+    color: 'var(--warning-text)',
     fontWeight: '600' as const,
   },
   selectToggleButton: {
     borderRadius: '8px',
     border: '1px solid rgba(0,0,0,0.08)',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     fontWeight: 600 as const,
   },
   selectAllButton: {
     borderRadius: '8px',
-    border: '1px solid rgba(33,150,83,0.2)',
-    backgroundColor: 'rgba(33,150,83,0.08)',
-    color: '#219653',
+    border: '1px solid var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     padding: '8px 12px',
     cursor: 'pointer',
     fontWeight: 600 as const,
@@ -1318,8 +1354,8 @@ const styles = {
   deleteSelectedButton: {
     borderRadius: '8px',
     border: 'none',
-    backgroundColor: 'rgba(244,67,54,0.08)',
-    color: '#b71c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     padding: '8px 12px',
     cursor: 'pointer',
     fontWeight: 600 as const,
@@ -1342,7 +1378,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 12px',
-    backgroundColor: '#e8f4f8',
+    backgroundColor: '#e3f2fd',
     borderRadius: '8px',
     borderLeft: '4px solid #1976d2',
     cursor: 'pointer',
@@ -1352,16 +1388,16 @@ const styles = {
   dateGroupDate: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   expenseCount: {
     fontSize: '12px',
     fontWeight: '400' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   collapseIcon: {
     fontSize: '10px',
-    color: '#1976d2',
+    color: 'var(--accent-primary)',
     display: 'inline-block',
     width: '12px',
     transition: 'transform 0.2s',
@@ -1374,9 +1410,9 @@ const styles = {
   inlineRepaymentSection: {
     marginTop: '12px',
     padding: '16px',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'var(--bg-secondary)',
     borderRadius: '6px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
 };
 

@@ -308,7 +308,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         </div>
         <div style={styles.expenseDetail}>
           <span style={styles.label}>{t('totalRepaid')}:</span>
-          <span style={{ ...styles.value, color: '#4CAF50', fontWeight: '600' }}>
+          <span style={{ ...styles.value, color: 'var(--success-text)', fontWeight: '600' }}>
             ${totalRepaid.toFixed(2)}
           </span>
         </div>
@@ -319,7 +319,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           <span 
             style={{ 
               ...styles.value, 
-              color: hasExcess ? '#2196F3' : (isFullyRepaid ? '#4CAF50' : '#ff9800'),
+              color: hasExcess ? 'var(--info-text)' : (isFullyRepaid ? 'var(--success-text)' : 'var(--warning-text)'),
               fontWeight: '600' 
             }}
           >
@@ -375,7 +375,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
 const styles = {
   container: {
     padding: '20px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   },
@@ -388,7 +388,7 @@ const styles = {
     alignItems: 'center',
     marginBottom: '16px',
     paddingBottom: '12px',
-    borderBottom: '2px solid #e0e0e0',
+    borderBottom: '2px solid var(--border-color)',
   },
   inlineHeader: {
     display: 'flex',
@@ -400,13 +400,13 @@ const styles = {
     margin: 0,
     fontSize: '20px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   inlineTitle: {
     margin: 0,
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   closeButton: {
     padding: '4px 8px',
@@ -414,7 +414,7 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '20px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     transition: 'color 0.2s',
   } as React.CSSProperties,
   inlineCloseButton: {
@@ -423,21 +423,21 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '16px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     transition: 'color 0.2s',
   } as React.CSSProperties,
   expenseInfo: {
     padding: '16px',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'var(--icon-bg)',
     borderRadius: '6px',
     marginBottom: '16px',
   },
   inlineExpenseInfo: {
     padding: '12px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '4px',
     marginBottom: '12px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
   expenseDetail: {
     display: 'flex',
@@ -446,18 +446,18 @@ const styles = {
   },
   label: {
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontWeight: '500' as const,
   },
   value: {
     fontSize: '14px',
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   statusBadge: {
     marginTop: '8px',
     padding: '8px 12px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     borderRadius: '4px',
     textAlign: 'center' as const,
     fontWeight: '600' as const,
@@ -486,12 +486,12 @@ const styles = {
     margin: '0 0 16px 0',
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   loading: {
     textAlign: 'center' as const,
     padding: '20px',
-    color: '#999',
+    color: 'var(--text-secondary)',
   },
 };
 

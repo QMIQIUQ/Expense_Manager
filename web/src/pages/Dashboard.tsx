@@ -32,8 +32,10 @@ import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUti
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
+import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
 
+//#region Helper Functions
 // Helper function to get display name
 const getDisplayName = (user: { displayName?: string | null; email?: string | null } | null): string => {
   if (!user) return '';
@@ -44,8 +46,10 @@ const getDisplayName = (user: { displayName?: string | null; email?: string | nu
   }
   return '';
 };
+//#endregion
 
 const Dashboard: React.FC = () => {
+  //#region State and Hooks
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
@@ -98,7 +102,9 @@ const Dashboard: React.FC = () => {
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  //#endregion
   
+  //#region Effects
   // Track offline queue count
   useEffect(() => {
     const updateQueueCount = () => {
@@ -122,7 +128,9 @@ const Dashboard: React.FC = () => {
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  //#endregion
 
+  //#region Data Loading
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
 
@@ -193,7 +201,39 @@ const Dashboard: React.FC = () => {
       setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
+  //#endregion
 
+  //#region Budget Notifications
+  // Budget notifications check
+  useEffect(() => {
+    if (!budgets.length || !expenses.length) return;
+
+    // Check budgets once when data is loaded
+    const checkBudgets = async () => {
+      const { checkBudgetAlerts } = await import('../utils/budgetNotifications');
+      const lastChecked = localStorage.getItem('lastBudgetCheck');
+      const lastCheckedDate = lastChecked ? new Date(lastChecked) : null;
+      
+      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate);
+      
+      if (alerts.length > 0) {
+        // Show notifications for each alert
+        alerts.forEach(alert => {
+          showNotification(alert.type, alert.message, { duration: 8000 });
+        });
+        
+        // Update last check time
+        localStorage.setItem('lastBudgetCheck', new Date().toISOString());
+      }
+    };
+
+    // Check after a short delay to avoid overwhelming the user at startup
+    const timer = setTimeout(checkBudgets, 2000);
+    return () => clearTimeout(timer);
+  }, [budgets, expenses, showNotification]);
+  //#endregion
+
+  //#region Data Refresh Functions
   // Function to reload only repayments (for performance)
   const reloadRepayments = React.useCallback(async () => {
     if (!currentUser) return;
@@ -293,7 +333,9 @@ const Dashboard: React.FC = () => {
       refreshTabData();
     }
   }, [activeTab, currentUser, initialLoading]);
+  //#endregion
 
+  //#region Click Outside Handlers
   // Click outside to close actions menu
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -341,7 +383,9 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showImportExportDropdown]);
+  //#endregion
 
+  //#region UI State Flags
   // Centralized flag to hide Floating Action Button when any popout/modal/menu is open
   const shouldHideFab =
     showHamburgerMenu ||
@@ -350,7 +394,9 @@ const Dashboard: React.FC = () => {
     showImportModal ||
     showAddSheet ||
     showAddExpenseForm;
+  //#endregion
 
+  //#region Event Handlers - Auth
   const handleLogout = async () => {
     try {
       await logout();
@@ -359,8 +405,9 @@ const Dashboard: React.FC = () => {
       console.error('Failed to log out', error);
     }
   };
+  //#endregion
 
-  // Expense handlers
+  //#region Event Handlers - Expenses
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -540,8 +587,9 @@ const Dashboard: React.FC = () => {
     // Refresh to ensure server state is in sync
     loadData();
   };
+  //#endregion
 
-  // Category handlers
+  //#region Event Handlers - Categories
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
     
@@ -622,8 +670,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Budget handlers
+  //#region Event Handlers - Budgets
   const handleAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
     
@@ -705,8 +754,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Recurring expense handlers
+  //#region Event Handlers - Recurring Expenses
   const handleAddRecurring = async (recurringData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
     
@@ -816,8 +866,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Income handlers
+  //#region Event Handlers - Incomes
   const handleAddIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -895,8 +946,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Card handlers
+  //#region Event Handlers - Cards
   const handleAddCard = async (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -978,8 +1030,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // E-Wallet handlers
+  //#region Event Handlers - E-Wallets
   const handleAddEWallet = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
 
@@ -1061,8 +1114,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Feature Settings handlers
+  //#region Event Handlers - Feature Settings
   const handleUpdateFeatureSettings = async (
     enabledFeatures: FeatureTab[],
     tabFeatures?: FeatureTab[],
@@ -1136,7 +1190,9 @@ const Dashboard: React.FC = () => {
     offlineQueue.clear();
     showNotification('success', 'Offline queue cleared');
   };
+  //#endregion
 
+  //#region Import/Export Handlers
   const handleImportComplete = () => {
     // Reload data after import
     loadData();
@@ -1219,7 +1275,9 @@ const Dashboard: React.FC = () => {
     });
     return spent;
   };
+  //#endregion
 
+  //#region Render
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -1533,6 +1591,11 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Theme Toggle */}
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <ThemeToggle />
+                </div>
+
                 {/* Logout */}
                 <div className="px-4 py-2">
                   <button
@@ -1628,7 +1691,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="flex flex-col gap-4">
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: '#111827' }}>{t('expenseHistory')}</h2>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('expenseHistory')}</h2>
             <ExpenseList
               expenses={expenses}
               categories={categories}
@@ -1783,16 +1846,33 @@ const Dashboard: React.FC = () => {
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0">
             <div className="mx-auto w-full max-w-7xl">
-              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+              <div style={{ 
+                backgroundColor: 'var(--card-bg)', 
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                borderTop: '1px solid var(--border-color)',
+                padding: '12px 16px',
+                maxHeight: '85vh',
+                overflowY: 'auto'
+              }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddExpenseForm(false)}
-                    className="p-2 rounded-md hover:bg-gray-100"
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
                     </svg>
                   </button>
                 </div>
@@ -1880,16 +1960,33 @@ const Dashboard: React.FC = () => {
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0">
             <div className="mx-auto w-full max-w-7xl">
-              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 px-4 sm:px-6 pt-3 pb-4 max-h-[85vh] overflow-auto">
+              <div style={{ 
+                backgroundColor: 'var(--card-bg)', 
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                borderTop: '1px solid var(--border-color)',
+                padding: '12px 16px',
+                maxHeight: '85vh',
+                overflowY: 'auto'
+              }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">{t('addExpense')}</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
                   <button
                     aria-label="Close"
                     onClick={() => setShowAddSheet(false)}
-                    className="p-2 rounded-md hover:bg-gray-100"
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="#444"/>
+                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
                     </svg>
                   </button>
                 </div>
@@ -1931,5 +2028,6 @@ const styles = {
     transition: 'all 0.3s ease',
   },
 };
+//#endregion
 
 export default Dashboard;

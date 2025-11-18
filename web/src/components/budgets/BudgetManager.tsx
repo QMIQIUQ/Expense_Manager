@@ -293,7 +293,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                       <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                         <select
                           value={formData.categoryId}
                           onChange={(e) => {
@@ -311,7 +311,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         </select>
                       </div>
                       <div style={{ width: '140px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                         <input
                           type="number"
                           step="0.01"
@@ -325,7 +325,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                       <div style={{ minWidth: '120px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('budgetPeriod')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('budgetPeriod')}</label>
                         <select
                           value={formData.period}
                           onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
@@ -337,7 +337,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         </select>
                       </div>
                       <div style={{ minWidth: '140px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
                         <input
                           type="date"
                           value={formData.startDate}
@@ -346,7 +346,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         />
                       </div>
                       <div style={{ minWidth: '100px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('alertAt')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('alertAt')}</label>
                         <input
                           type="number"
                           min="1"
@@ -373,7 +373,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <>
                     {/* First row: Period and Amount */}
                     <div style={styles.budgetRow1}>
-                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
+                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}</span>
                       <div style={styles.budgetAmount}>
                         <span style={styles.spent}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>
@@ -493,7 +493,7 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
@@ -527,7 +527,7 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '15px',
     marginBottom: '20px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
   formGroup: {
     display: 'flex',
@@ -541,7 +541,7 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',
@@ -554,7 +554,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   formActions: {
     display: 'flex',
@@ -584,7 +584,7 @@ const styles = {
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   budgetList: {
     display: 'grid',
@@ -593,16 +593,18 @@ const styles = {
     marginTop: '20px',
   },
   budgetCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '16px',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
+    padding: '18px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: '10px',
     minWidth: 0,
     overflow: 'visible',
     position: 'relative' as const,
+    boxShadow: '0 3px 10px var(--shadow)',
+    transition: 'all 0.2s ease',
   },
   budgetRow1: {
     display: 'flex',
@@ -623,16 +625,17 @@ const styles = {
     margin: 0,
     fontSize: '15px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   budgetPeriod: {
-    padding: '2px 8px',
-    backgroundColor: '#f3e5f5',
-    color: '#7b1fa2',
-    borderRadius: '12px',
+    padding: '5px 10px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    borderRadius: '16px',
     fontSize: '11px',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     textTransform: 'capitalize' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   budgetAmount: {
     display: 'flex',
@@ -643,15 +646,15 @@ const styles = {
   spent: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   separator: {
     fontSize: '14px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
   total: {
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   progressBar: {
     flex: 1,
@@ -666,7 +669,7 @@ const styles = {
   },
   percentage: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontWeight: '500' as const,
     minWidth: '45px',
     textAlign: 'right' as const,
@@ -718,7 +721,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -753,7 +756,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   saveButton: {
     padding: '8px',

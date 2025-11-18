@@ -14,6 +14,7 @@ const UserProfile: React.FC = () => {
 
   useEffect(() => {
     loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadSettings = async () => {
@@ -132,11 +133,11 @@ const styles = {
   title: {
     fontSize: '28px',
     fontWeight: '700' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     marginBottom: '24px',
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     padding: '20px',
     marginBottom: '20px',
@@ -150,21 +151,21 @@ const styles = {
   label: {
     flex: '0 0 120px',
     fontWeight: '500' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   value: {
     flex: 1,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   sectionTitle: {
     fontSize: '20px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     marginBottom: '16px',
     marginTop: 0,
   },
   settingCard: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '16px',
     marginBottom: '16px',
@@ -177,12 +178,12 @@ const styles = {
   settingTitle: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     margin: '0 0 4px 0',
   },
   settingDescription: {
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     margin: 0,
   },
   // toggleButton removed with change password/email UI
@@ -199,7 +200,7 @@ const styles = {
     marginBottom: '6px',
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
   },
   input: {
     width: '100%',
@@ -213,7 +214,7 @@ const styles = {
     display: 'block',
     marginTop: '4px',
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   submitButton: {
     padding: '10px 20px',

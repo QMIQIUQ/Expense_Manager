@@ -177,7 +177,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div style={{ ...styles.cardIcon, backgroundColor: '#e8f5e9' }}>💵</div>
           <div style={styles.cardContent}>
             <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
-            <div style={{ ...styles.cardValue, color: '#4caf50' }}>
+            <div style={{ ...styles.cardValue, color: 'var(--success-text)' }}>
               ${stats.monthlyIncome.toFixed(2)}
             </div>
           </div>
@@ -209,7 +209,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div style={{ ...styles.cardIcon, backgroundColor: '#fff3e0' }}>💸</div>
           <div style={styles.cardContent}>
             <div style={styles.cardLabel}>{t('unrecovered')}</div>
-            <div style={{ ...styles.cardValue, color: '#ff9800' }}>
+            <div style={{ ...styles.cardValue, color: 'var(--warning-text)' }}>
               ${stats.totalUnrecovered.toFixed(2)}
             </div>
           </div>
@@ -265,11 +265,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                       </div>
                       <div style={styles.trackedAmountItem}>
                         <span style={styles.trackedAmountLabel}>{t('repaid')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: '#4CAF50' }}>${repaid.toFixed(2)}</span>
+                        <span style={{ ...styles.trackedAmountValue, color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span>
                       </div>
                       <div style={styles.trackedAmountItem}>
                         <span style={styles.trackedAmountLabel}>{t('remaining')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: '#ff9800' }}>${remaining.toFixed(2)}</span>
+                        <span style={{ ...styles.trackedAmountValue, color: 'var(--warning-text)' }}>${remaining.toFixed(2)}</span>
                       </div>
                     </div>
                     <div style={styles.progressBar}>
@@ -421,8 +421,8 @@ const styles = {
     gap: '12px',
   },
   card: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '16px',
     display: 'flex',
@@ -440,7 +440,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'var(--icon-bg)',
     borderRadius: '8px',
     alignSelf: 'center',
   },
@@ -455,7 +455,7 @@ const styles = {
   },
   cardLabel: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     marginBottom: '4px',
     fontWeight: '500' as const,
     whiteSpace: 'nowrap' as const,
@@ -465,14 +465,14 @@ const styles = {
   cardValue: {
     fontSize: '20px',
     fontWeight: '700' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     wordBreak: 'break-word' as const,
     lineHeight: '1.2',
     width: '100%',
   },
   categoryBreakdown: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '20px',
   },
@@ -480,7 +480,7 @@ const styles = {
     margin: '0 0 20px 0',
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -505,7 +505,7 @@ const styles = {
   categoryName: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -515,13 +515,13 @@ const styles = {
   categoryAmount: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
     whiteSpace: 'nowrap' as const,
     flexShrink: 0,
   },
   progressBar: {
     height: '8px',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'var(--bg-tertiary)',
     borderRadius: '4px',
     overflow: 'hidden' as const,
   },
@@ -532,28 +532,28 @@ const styles = {
   },
   categoryPercentage: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     alignSelf: 'flex-end',
   },
   pieChartContainer: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '20px',
     minWidth: 0,
     overflow: 'hidden',
   },
   trendChartContainer: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '20px',
     minWidth: 0,
     overflow: 'hidden',
   },
   recentExpensesContainer: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '20px',
   },
@@ -567,7 +567,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     gap: '10px',
   },
@@ -581,17 +581,17 @@ const styles = {
   recentExpenseDesc: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
   recentExpenseCategory: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     display: 'inline-block',
     padding: '2px 8px',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: 'var(--info-bg)',
     borderRadius: '4px',
     maxWidth: '100%',
     overflow: 'hidden',
@@ -607,15 +607,15 @@ const styles = {
   recentExpenseAmount: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
   },
   recentExpenseDate: {
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
   // Tracked Expenses Styles
   trackedExpensesSection: {
-    backgroundColor: '#fff9e6',
+    backgroundColor: 'var(--warning-bg)',
     border: '2px solid #ffc107',
     borderRadius: '12px',
     padding: '20px',
@@ -627,8 +627,8 @@ const styles = {
     gap: '12px',
   },
   trackedExpenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '16px',
   },
@@ -647,11 +647,11 @@ const styles = {
   trackedExpenseTitle: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   trackedExpenseDate: {
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
   completeButton: {
     padding: '6px 12px',
@@ -677,12 +677,12 @@ const styles = {
   },
   trackedAmountLabel: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   trackedAmountValue: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
 };
 

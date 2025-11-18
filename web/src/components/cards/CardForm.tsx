@@ -17,7 +17,11 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
     <div className="relative inline-block ml-1">
       <button
         type="button"
-        className="inline-flex items-center justify-center w-4 h-4 text-xs text-gray-500 hover:text-gray-700 border border-gray-400 rounded-full"
+        className="inline-flex items-center justify-center w-4 h-4 text-xs border rounded-full transition-colors"
+        style={{
+          color: 'var(--text-secondary)',
+          borderColor: 'var(--border-color)',
+        }}
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         onClick={(e) => {
@@ -28,9 +32,18 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => {
         ?
       </button>
       {isVisible && (
-        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-800 rounded shadow-lg -top-2 left-6">
+        <div 
+          className="absolute z-10 w-64 p-2 text-xs rounded shadow-lg -top-2 left-6"
+          style={{
+            backgroundColor: 'var(--modal-bg)',
+            color: 'var(--text-primary)',
+          }}
+        >
           {text}
-          <div className="absolute w-2 h-2 bg-gray-800 transform rotate-45 -left-1 top-3"></div>
+          <div 
+            className="absolute w-2 h-2 transform rotate-45 -left-1 top-3"
+            style={{ backgroundColor: 'var(--modal-bg)' }}
+          ></div>
         </div>
       )}
     </div>
@@ -193,7 +206,7 @@ const CardForm: React.FC<CardFormProps> = ({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Card Name */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('cardName')} *</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardName')} *</label>
         <input
           type="text"
           name="name"
@@ -201,16 +214,21 @@ const CardForm: React.FC<CardFormProps> = ({
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder="e.g., Chase Freedom, Amex Gold"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.name ? 'border-red-500' : 'border-gray-300'
+          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+            errors.name ? 'border-red-500' : ''
           }`}
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: errors.name ? '#ef4444' : 'var(--border-color)',
+          }}
         />
         {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
       </div>
 
       {/* Bank Name with Autocomplete */}
       <div className="flex flex-col gap-1 relative">
-        <label className="text-sm font-medium text-gray-700">{t('bankName')}</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')}</label>
         <input
           type="text"
           name="bankName"
@@ -219,30 +237,48 @@ const CardForm: React.FC<CardFormProps> = ({
           onFocus={(e) => e.target.select()}
           onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
           placeholder="e.g., Chase, Citibank, HSBC"
-          className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: 'var(--border-color)',
+          }}
         />
         {showBankSuggestions && bankSuggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg top-full max-h-40 overflow-y-auto">
+          <div 
+            className="absolute z-10 w-full mt-1 border rounded shadow-lg top-full max-h-40 overflow-y-auto"
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--border-color)',
+            }}
+          >
             {bankSuggestions.map((bank, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => handleSelectBankSuggestion(bank)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                className="w-full px-3 py-2 text-left text-sm focus:outline-none transition-colors"
+                style={{ color: 'var(--text-primary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 {bank}
               </button>
             ))}
           </div>
         )}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
           Optional: Bank name for easier organization
         </span>
       </div>
 
       {/* Card Limit */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('cardLimit')} ($) *</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ($) *</label>
         <input
           type="number"
           name="cardLimit"
@@ -252,9 +288,14 @@ const CardForm: React.FC<CardFormProps> = ({
           placeholder="10000"
           step="1"
           min="0"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.cardLimit ? 'border-red-500' : 'border-gray-300'
+          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+            errors.cardLimit ? 'border-red-500' : ''
           }`}
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: errors.cardLimit ? '#ef4444' : 'var(--border-color)',
+          }}
         />
         {errors.cardLimit && (
           <span className="text-xs text-red-600">{errors.cardLimit}</span>
@@ -263,7 +304,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
       {/* Billing Day */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('billingDay')} (1-28) *</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('billingDay')} (1-28) *</label>
         <input
           type="number"
           name="billingDay"
@@ -273,21 +314,26 @@ const CardForm: React.FC<CardFormProps> = ({
           placeholder="25"
           min="1"
           max="28"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.billingDay ? 'border-red-500' : 'border-gray-300'
+          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+            errors.billingDay ? 'border-red-500' : ''
           }`}
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: errors.billingDay ? '#ef4444' : 'var(--border-color)',
+          }}
         />
         {errors.billingDay && (
           <span className="text-xs text-red-600">{errors.billingDay}</span>
         )}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
           Regular billing day each month (1-28 for consistency)
         </span>
       </div>
 
       {/* Benefit Min Spend (Optional) */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('benefitMinSpend')}</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')}</label>
         <input
           type="number"
           name="benefitMinSpend"
@@ -297,21 +343,31 @@ const CardForm: React.FC<CardFormProps> = ({
           placeholder="0"
           step="1"
           min="0"
-          className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: 'var(--border-color)',
+          }}
         />
-        <span className="text-xs text-gray-500">
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
           Overall minimum spend threshold for card benefits (optional)
         </span>
       </div>
 
       {/* Card Type */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('cardType')} *</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardType')} *</label>
         <select
           name="cardType"
           value={formData.cardType}
           onChange={handleChange}
-          className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            borderColor: 'var(--border-color)',
+          }}
         >
           <option value="cashback">{t('cashback')}</option>
           <option value="points">{t('points')}</option>
@@ -320,9 +376,9 @@ const CardForm: React.FC<CardFormProps> = ({
 
       {/* Cashback Rules (only for cashback type) */}
       {formData.cardType === 'cashback' && (
-        <div className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-col gap-3 p-4 rounded-lg" style={{ backgroundColor: 'var(--icon-bg)' }}>
           <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-gray-700">
+            <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
               {t('cashbackRules')}
             </label>
             <button
@@ -335,13 +391,20 @@ const CardForm: React.FC<CardFormProps> = ({
           </div>
 
           {cashbackRules.length === 0 && (
-            <p className="text-sm text-gray-500 italic">No cashback rules yet. Add one to get started!</p>
+            <p className="text-sm italic" style={{ color: 'var(--text-tertiary)' }}>No cashback rules yet. Add one to get started!</p>
           )}
 
           {cashbackRules.map((rule, index) => (
-            <div key={rule.id || index} className="p-3 bg-white border border-gray-200 rounded-lg">
+            <div 
+              key={rule.id || index} 
+              className="p-3 border rounded-lg"
+              style={{
+                backgroundColor: 'var(--card-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+            >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">Rule {index + 1}</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Rule {index + 1}</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveCashbackRule(index)}
@@ -354,7 +417,7 @@ const CardForm: React.FC<CardFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Linked Category */}
                 <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('linkedCategory')} *
                     <Tooltip text={t('tooltipLinkedCategory')} />
                   </label>
@@ -363,7 +426,12 @@ const CardForm: React.FC<CardFormProps> = ({
                     onChange={(e) =>
                       handleCashbackRuleChange(index, 'linkedCategoryId', e.target.value)
                     }
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   >
                     <option value="">{t('selectCategory')}</option>
                     {categories.map((cat) => (
@@ -376,7 +444,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Min Spend for Higher Rate */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('minSpendForRate')} ($)
                     <Tooltip text={t('tooltipMinSpendForRate')} />
                   </label>
@@ -394,13 +462,18 @@ const CardForm: React.FC<CardFormProps> = ({
                     placeholder="0"
                     step="1"
                     min="0"
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   />
                 </div>
 
                 {/* Rate if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('rateIfMet')}
                     <Tooltip text={t('tooltipRateIfMet')} />
                   </label>
@@ -419,13 +492,18 @@ const CardForm: React.FC<CardFormProps> = ({
                     step="0.1"
                     min="0"
                     max="100"
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   />
                 </div>
 
                 {/* Cap if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('capIfMet')} ($)
                     <Tooltip text={t('tooltipCapIfMet')} />
                   </label>
@@ -443,24 +521,35 @@ const CardForm: React.FC<CardFormProps> = ({
                     placeholder="15"
                     step="1"
                     min="0"
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   />
                 </div>
 
                 {/* Display: Spend to reach cap */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-500 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-tertiary)' }}>
                     {t('spendToReachCap')}
                     <Tooltip text={t('tooltipSpendToReachCap')} />
                   </label>
-                  <div className="px-2 py-1.5 text-sm bg-gray-100 rounded text-gray-700">
+                  <div 
+                    className="px-2 py-1.5 text-sm rounded" 
+                    style={{
+                      backgroundColor: 'var(--icon-bg)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
                     ${calculateSpendToReachCap(rule.rateIfMet, rule.capIfMet)}
                   </div>
                 </div>
 
                 {/* Rate if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('rateIfNotMet')}
                     <Tooltip text={t('tooltipRateIfNotMet')} />
                   </label>
@@ -479,13 +568,18 @@ const CardForm: React.FC<CardFormProps> = ({
                     step="0.1"
                     min="0"
                     max="100"
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   />
                 </div>
 
                 {/* Cap if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-600 flex items-center">
+                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
                     {t('capIfNotMet')} ($)
                     <Tooltip text={t('tooltipCapIfNotMet')} />
                   </label>
@@ -503,7 +597,12 @@ const CardForm: React.FC<CardFormProps> = ({
                     placeholder="5"
                     step="1"
                     min="0"
-                    className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                   />
                 </div>
               </div>
@@ -517,7 +616,17 @@ const CardForm: React.FC<CardFormProps> = ({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+          className="px-4 py-2 text-sm font-medium rounded transition-colors"
+          style={{
+            color: 'var(--text-primary)',
+            backgroundColor: 'var(--icon-bg)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--icon-bg)';
+          }}
         >
           {t('cancel')}
         </button>

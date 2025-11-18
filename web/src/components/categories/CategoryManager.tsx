@@ -201,7 +201,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               />
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: '#666', marginBottom: '5px', display: 'block' }}>
+              <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
                 {t('categoryIcon')}
               </label>
               <div style={styles.iconGrid}>
@@ -255,14 +255,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             return (
               <div key={category.id} style={{
                 ...styles.categoryCard,
-                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: '#fff3e0' } : {})
+                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: 'var(--warning-bg)' } : {})
               }}>
                 {editingId === category.id ? (
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
                       <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('categoryName')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('categoryName')}</label>
                         <input
                           type="text"
                           value={formData.name}
@@ -273,7 +273,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                         />
                       </div>
                       <div style={{ width: '60px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('categoryColor')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('categoryColor')}</label>
                         <input
                           type="color"
                           value={formData.color}
@@ -283,7 +283,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '5px', display: 'block' }}>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
                         {t('categoryIcon')}
                       </label>
                       <div style={styles.iconGrid}>
@@ -328,7 +328,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </span>
                       <span style={styles.categoryName}>
                         {category.name}
-                        {isDuplicate && <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
+                        {isDuplicate && <span style={{ color: 'var(--warning-text)', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
                       </span>
                       {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
                     </div>
@@ -373,7 +373,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 handleDeleteClick(category);
@@ -459,7 +459,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       onChange={(e) => setDeleteAction(e.target.value as 'deleteExpenses')}
                       style={styles.radio}
                     />
-                    <span style={{ color: '#f44336' }}>
+                    <span style={{ color: 'var(--error-text)' }}>
                       {t('deleteExpensesToo') || 'Delete all expenses in this category'}
                     </span>
                   </label>
@@ -572,15 +572,15 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -601,7 +601,7 @@ const styles = {
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   form: {
     backgroundColor: '#f8f9fa',
@@ -611,7 +611,7 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '15px',
     marginBottom: '20px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border-color)',
   },
   formGroup: {
     display: 'flex',
@@ -627,7 +627,7 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',
@@ -650,7 +650,7 @@ const styles = {
     borderStyle: 'solid',
     borderColor: '#ddd',
     borderRadius: '4px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
   },
   iconButtonActive: {
@@ -698,14 +698,16 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '15px',
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
+    padding: '18px',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
     minWidth: 0,
-    gap: '10px',
+    gap: '12px',
     overflow: 'visible',
     position: 'relative' as const,
+    boxShadow: '0 3px 10px var(--shadow)',
+    transition: 'all 0.2s ease',
   },
   categoryInfo: {
     display: 'flex',
@@ -734,8 +736,8 @@ const styles = {
   },
   defaultBadge: {
     padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
+    backgroundColor: 'var(--info-bg)',
+    color: 'var(--info-text)',
     borderRadius: '4px',
     fontSize: '12px',
     fontWeight: '500' as const,
@@ -747,8 +749,8 @@ const styles = {
   },
   editBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -758,8 +760,8 @@ const styles = {
   },
   deleteBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -772,8 +774,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -786,7 +788,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -818,8 +820,8 @@ const styles = {
   },
   saveButton: {
     padding: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -829,8 +831,8 @@ const styles = {
   },
   cancelIconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
+    backgroundColor: 'var(--icon-bg)',
+    color: 'var(--text-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -851,7 +853,7 @@ const styles = {
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     padding: '24px',
     maxWidth: '600px',
@@ -863,15 +865,15 @@ const styles = {
     margin: '0 0 16px 0',
     fontSize: '20px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   modalWarning: {
     padding: '12px',
-    backgroundColor: '#fff3e0',
-    border: '1px solid #ff9800',
+    backgroundColor: 'var(--warning-bg)',
+    border: '1px solid var(--warning-text)',
     borderRadius: '4px',
     marginBottom: '16px',
-    color: '#e65100',
+    color: 'var(--warning-text)',
     fontSize: '14px',
   },
   expenseList: {
@@ -885,13 +887,13 @@ const styles = {
   expenseItem: {
     padding: '4px 0',
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   modalQuestion: {
     marginBottom: '16px',
     fontSize: '16px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   radioGroup: {
     display: 'flex',
@@ -904,7 +906,7 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
     fontSize: '14px',
-    color: '#333',
+    color: 'var(--text-primary)',
     cursor: 'pointer',
   },
   radio: {
@@ -921,7 +923,7 @@ const styles = {
   modalMessage: {
     marginBottom: '24px',
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   modalActions: {
     display: 'flex',

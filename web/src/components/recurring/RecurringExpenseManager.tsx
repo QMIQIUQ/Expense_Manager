@@ -84,6 +84,31 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     isOpen: false,
     recurringId: null,
   });
+
+  // Get category color from user's category settings
+  const getCategoryColor = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category && category.color) {
+      // Convert hex color to lighter background and keep text as original color
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 99, g: 102, b: 241 };
+      };
+      
+      const rgb = hexToRgb(category.color);
+      // Create a lighter background (add 80% white)
+      const bg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+      const text = category.color;
+      
+      return { background: bg, color: text };
+    }
+    // Fallback color
+    return { background: '#e0e7ff', color: '#4338ca' };
+  };
   
   // Filter recurring expenses by search term
   const filteredRecurringExpenses = recurringExpenses.filter((expense) =>
@@ -375,7 +400,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '150px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
                       <input
                         type="text"
                         value={formData.description}
@@ -386,7 +411,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       />
                     </div>
                     <div style={{ width: '120px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -400,7 +425,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '120px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -415,7 +440,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       </select>
                     </div>
                     <div style={{ minWidth: '100px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
                       <select
                         value={formData.frequency}
                         onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
@@ -431,7 +456,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   {/* Payment Method Selection in inline edit */}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
                       <select
                         value={formData.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -452,7 +477,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     </div>
                     {formData.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
                         <select
                           value={formData.cardId || ''}
                           onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
@@ -469,7 +494,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     )}
                     {formData.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={formData.paymentMethodName || ''}
@@ -483,7 +508,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
                       <input
                         type="date"
                         value={formData.startDate}
@@ -549,7 +574,15 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         <span style={{ fontSize: '16px' }}>💵</span>
                       )}
                       {/* Category */}
-                      <span style={styles.category}>{expense.category}</span>
+                      <span 
+                        className="category-chip"
+                        style={{
+                          ...styles.category,
+                          ...getCategoryColor(expense.category)
+                        }}
+                      >
+                        {expense.category}
+                      </span>
                       {/* Active/Inactive Status */}
                       {expense.isActive ? (
                         <span style={styles.activeStatus}>● {t('active')}</span>
@@ -567,7 +600,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
                   {/* Third row: Payment Details, Frequency, and Hamburger */}
                   <div style={styles.expenseRow3}>
-                    <div style={{ fontSize: '12px', color: '#666', flex: 1 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
                       {expense.paymentMethod === 'credit_card' && (
                         <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
                       )}
@@ -578,8 +611,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         <span>💵 {t('cash')}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as any)}
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}
                     </div>
 
                     {/* Desktop: Show individual buttons */}
@@ -638,7 +671,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 setDeleteConfirm({ isOpen: true, recurringId: expense.id! });
@@ -692,15 +725,15 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -719,7 +752,7 @@ const styles = {
     fontSize: '14px',
   },
   form: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--bg-secondary)',
     padding: '20px',
     borderRadius: '8px',
     display: 'flex',
@@ -740,7 +773,7 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',
@@ -753,7 +786,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   formActions: {
     display: 'flex',
@@ -762,8 +795,8 @@ const styles = {
   submitButton: {
     flex: 1,
     padding: '10px',
-    backgroundColor: '#6366f1',
-    color: 'white',
+    backgroundColor: 'var(--accent-primary)',
+    color: 'var(--bg-primary)',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
@@ -772,8 +805,8 @@ const styles = {
   },
   cancelButton: {
     padding: '10px 20px',
-    backgroundColor: '#6c757d',
-    color: 'white',
+    backgroundColor: 'var(--bg-tertiary)',
+    color: 'var(--text-primary)',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
@@ -783,7 +816,7 @@ const styles = {
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   expenseList: {
     display: 'flex',
@@ -791,13 +824,15 @@ const styles = {
     gap: '10px',
   },
   expenseCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '15px',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
+    padding: '18px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: '10px',
+    boxShadow: '0 3px 10px var(--shadow)',
+    transition: 'all 0.2s ease',
   },
   expenseRow1: {
     display: 'flex',
@@ -818,32 +853,33 @@ const styles = {
     margin: 0,
     fontSize: '15px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   category: {
-    padding: '2px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
-    borderRadius: '12px',
+    padding: '5px 10px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    borderRadius: '16px',
     fontSize: '12px',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   amount: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
     whiteSpace: 'nowrap' as const,
   },
   status: {
     fontSize: '12px',
   },
   activeStatus: {
-    color: '#16a34a',
+    color: 'var(--success-text)',
     fontSize: '11px',
     fontWeight: '500' as const,
   },
   inactiveStatus: {
-    color: '#dc2626',
+    color: 'var(--error-text)',
     fontSize: '11px',
     fontWeight: '500' as const,
   },
@@ -853,8 +889,8 @@ const styles = {
   },
   pauseBtn: {
     padding: '8px 16px',
-    backgroundColor: '#ff9800',
-    color: 'white',
+    backgroundColor: 'var(--warning-bg)',
+    color: 'var(--warning-text)',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
@@ -862,8 +898,8 @@ const styles = {
   },
   resumeBtn: {
     padding: '8px 16px',
-    backgroundColor: '#4caf50',
-    color: 'white',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     border: 'none',
     borderRadius: '4px',
     fontSize: '14px',
@@ -871,8 +907,8 @@ const styles = {
   },
   editBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -883,8 +919,8 @@ const styles = {
   },
   deleteBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -898,8 +934,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -912,7 +948,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -927,7 +963,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -947,12 +983,12 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontSize: '14px',
-    backgroundColor: 'white',
+    backgroundColor: 'var(--card-bg)',
   },
   saveButton: {
     padding: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -962,8 +998,8 @@ const styles = {
   },
   cancelIconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

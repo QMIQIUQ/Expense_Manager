@@ -204,7 +204,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
         return (
           <div key={date} style={styles.dateGroup}>
             {/* Date group header with daily subtotal - clickable to expand/collapse */}
-            <div style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
+            <div className="date-group-header" style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
                 <span style={styles.dateGroupDate}>{formatDate(date)}</span>
@@ -221,7 +221,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             <div style={styles.inlineEditor}>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 2, minWidth: '180px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('title')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('title')}</label>
                   <input
                     type="text"
                     value={draft.title || ''}
@@ -231,7 +231,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ width: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -242,7 +242,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('type')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('type')}</label>
                   <select
                     value={draft.type || 'other'}
                     onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as IncomeType }))}
@@ -257,7 +257,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ width: '160px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
                   <input
                     type="date"
                     value={draft.date || ''}
@@ -266,7 +266,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   />
                 </div>
                 <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('payerName')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('payerName')}</label>
                   <input
                     type="text"
                     value={draft.payerName || ''}
@@ -277,7 +277,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                 </div>
                   {expenses.length > 0 && (
                   <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('linkToExpense')}</label>
+                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('linkToExpense')}</label>
                     <select
                       value={draft.linkedExpenseId || ''}
                       onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
@@ -295,7 +295,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
                   <input
                     type="text"
                     value={draft.note || ''}
@@ -452,22 +452,24 @@ const styles = {
     gap: '16px',
   },
   incomeCard: {
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '16px',
-    boxShadow: '0 2px 4px rgba(15,23,42,0.05)',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
+    padding: '18px',
+    boxShadow: '0 3px 10px var(--shadow)',
     position: 'relative' as const,
     overflow: 'visible' as const,
+    transition: 'all 0.2s ease',
   },
   amountBadge: {
     position: 'absolute' as const,
-    top: '12px',
-    right: '12px',
-    fontSize: '18px',
-    fontWeight: '700' as const,
+    top: '14px',
+    right: '14px',
+    fontSize: '20px',
+    fontWeight: '800' as const,
     color: '#059669',
     pointerEvents: 'none' as const,
+    textShadow: '0 1px 3px rgba(5, 150, 105, 0.15)',
   },
   headerRow: {
     display: 'flex',
@@ -485,10 +487,10 @@ const styles = {
   },
   linkedExpenseChip: {
     fontSize: '12px',
-    color: '#1d4ed8',
-    backgroundColor: '#e0f2fe',
-    padding: '4px 8px',
-    borderRadius: '6px',
+    color: 'var(--accent-primary)',
+    background: 'var(--accent-light)',
+    padding: '5px 10px',
+    borderRadius: '8px',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
@@ -498,6 +500,8 @@ const styles = {
     whiteSpace: 'nowrap' as const,
     cursor: 'pointer',
     border: 'none',
+    fontWeight: '600' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   mainRow: {
     display: 'flex',
@@ -539,7 +543,7 @@ const styles = {
   incomeTitle: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -601,7 +605,7 @@ const styles = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -637,7 +641,7 @@ const styles = {
     border: '1px solid #d1d5db',
     borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
   },
   emptyState: {
     display: 'flex',
@@ -645,7 +649,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '60px 20px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--card-bg)',
     border: '1px solid #e5e7eb',
     borderRadius: '12px',
   },
@@ -674,23 +678,24 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '8px 12px',
-    backgroundColor: '#dcfce7',
-    borderRadius: '8px',
-    borderLeft: '4px solid #16a34a',
+    padding: '10px 14px',
+    background: '#e8f5e9',
+    borderRadius: '10px',
+    borderLeft: '5px solid #4caf50',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s ease',
     userSelect: 'none' as const,
+    boxShadow: '0 2px 6px var(--shadow)',
   },
   dateGroupDate: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   incomeCount: {
     fontSize: '12px',
     fontWeight: '400' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   collapseIcon: {
     fontSize: '10px',
