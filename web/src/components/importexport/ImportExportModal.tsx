@@ -483,7 +483,7 @@ const styles = {
   },
   uploadButton: {
     padding: '12px 24px',
-    backgroundColor: '#4ECDC4',
+    backgroundColor: 'var(--accent-primary)',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -499,11 +499,11 @@ const styles = {
   },
   errorBox: {
     backgroundColor: 'var(--warning-bg)',
-    border: '1px solid #FFC107',
+    border: '1px solid var(--warning-text)',
     borderRadius: '6px',
     padding: '15px',
     fontSize: '14px',
-    color: '#856404',
+    color: 'var(--warning-text)',
   },
   errorList: {
     margin: '10px 0 0 0',
@@ -554,7 +554,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--icon-bg)',
     borderRadius: '4px',
   },
   mappingName: {
@@ -562,11 +562,11 @@ const styles = {
     color: 'var(--text-primary)',
   },
   mappingMatched: {
-    color: '#28a745',
+    color: 'var(--success-text)',
     fontSize: '14px',
   },
   mappingUnmatched: {
-    color: '#dc3545',
+    color: 'var(--error-text)',
     fontSize: '14px',
   },
   optionsSection: {
@@ -590,10 +590,10 @@ const styles = {
     margin: 0,
     padding: '10px',
     backgroundColor: 'var(--warning-bg)',
-    border: '1px solid #FFC107',
+    border: '1px solid var(--warning-text)',
     borderRadius: '4px',
     fontSize: '14px',
-    color: '#856404',
+    color: 'var(--warning-text)',
   },
   previewSection: {
     display: 'flex',
@@ -613,24 +613,26 @@ const styles = {
   th: {
     padding: '12px',
     textAlign: 'left' as const,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--icon-bg)',
     fontWeight: 600 as const,
-    borderBottom: '2px solid #ddd',
+    borderBottom: '2px solid var(--border-color)',
+    color: 'var(--text-primary)',
   },
   tr: {
-    borderBottom: '1px solid #ddd',
+    borderBottom: '1px solid var(--border-color)',
   },
   td: {
     padding: '10px 12px',
+    color: 'var(--text-primary)',
   },
   blankCategoryCell: {
     backgroundColor: 'var(--error-bg)',
-    border: '1px solid #f5c6cb',
-    color: '#721c24',
+    border: '1px solid var(--error-text)',
+    color: 'var(--error-text)',
   },
   blankText: {
     fontStyle: 'italic' as const,
-    color: '#721c24',
+    color: 'var(--error-text)',
   },
   moreRows: {
     margin: 0,
@@ -642,9 +644,9 @@ const styles = {
     marginTop: '10px',
     padding: '12px',
     backgroundColor: 'var(--warning-bg)',
-    border: '1px solid #FFC107',
+    border: '1px solid var(--warning-text)',
     borderRadius: '6px',
-    color: '#856404',
+    color: 'var(--warning-text)',
     fontSize: '14px',
   },
   actions: {
@@ -655,8 +657,8 @@ const styles = {
   },
   cancelButton: {
     padding: '10px 20px',
-    backgroundColor: '#6c757d',
-    color: '#fff',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-secondary)',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
@@ -665,7 +667,7 @@ const styles = {
   },
   importButton: {
     padding: '10px 20px',
-    backgroundColor: '#4ECDC4',
+    backgroundColor: 'var(--accent-primary)',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -681,13 +683,13 @@ const styles = {
   progressBar: {
     width: '100%',
     height: '30px',
-    backgroundColor: '#e9ecef',
+    backgroundColor: 'var(--bg-secondary)',
     borderRadius: '15px',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4ECDC4',
+    backgroundColor: 'var(--accent-primary)',
     transition: 'width 0.3s ease',
   },
   progressText: {
@@ -706,16 +708,18 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '15px',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--icon-bg)',
     borderRadius: '6px',
   },
   resultLabel: {
     fontSize: '16px',
     fontWeight: 500 as const,
+    color: 'var(--text-primary)',
   },
   resultValue: {
     fontSize: '24px',
     fontWeight: 600 as const,
+    color: 'var(--text-primary)',
   },
   errorSection: {
     display: 'flex',
@@ -724,15 +728,15 @@ const styles = {
   },
   errorItem: {
     padding: '8px',
-    backgroundColor: '#f8d7da',
-    border: '1px solid #f5c6cb',
+    backgroundColor: 'var(--error-bg)',
+    border: '1px solid var(--error-text)',
     borderRadius: '4px',
     fontSize: '14px',
-    color: '#721c24',
+    color: 'var(--error-text)',
   },
   downloadErrorsButton: {
     padding: '10px 20px',
-    backgroundColor: '#dc3545',
+    backgroundColor: 'var(--error-text)',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -742,7 +746,7 @@ const styles = {
   },
   closeButton: {
     padding: '10px 20px',
-    backgroundColor: '#4ECDC4',
+    backgroundColor: 'var(--accent-primary)',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
