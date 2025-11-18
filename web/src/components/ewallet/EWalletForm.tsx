@@ -354,10 +354,10 @@ const styles = {
   },
   previewName: {
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   previewProvider: {
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
   },
   previewAccount: {

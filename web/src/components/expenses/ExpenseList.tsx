@@ -114,6 +114,31 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return categoryName;
   };
 
+  // Get category color from user's category settings
+  const getCategoryColor = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category && category.color) {
+      // Convert hex color to lighter background and keep text as original color
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 99, g: 102, b: 241 };
+      };
+      
+      const rgb = hexToRgb(category.color);
+      // Create a lighter background (add 80% white)
+      const bg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+      const text = category.color;
+      
+      return { background: bg, color: text };
+    }
+    // Fallback color
+    return { background: '#e0e7ff', color: '#4338ca' };
+  };
+
   // Scroll to and highlight an expense when focusExpenseId changes
   React.useEffect(() => {
     if (!focusExpenseId) return;
@@ -510,7 +535,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             return (
             <div key={date} style={styles.dateGroup}>
               {/* Date group header with daily subtotal - clickable to expand/collapse */}
-              <div style={styles.dateGroupHeader}>
+              <div className="date-group-header" style={styles.dateGroupHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {multiSelectEnabled && (
                     <input
@@ -565,7 +590,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     {(expense as Expense & { time?: string }).time && (
                       <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
                     )}
-                    <span style={styles.category}>{getCategoryDisplay(expense.category)}</span>
+                    <span 
+                      className="category-chip"
+                      style={{
+                        ...styles.category,
+                        ...getCategoryColor(expense.category)
+                      }}
+                    >
+                      {getCategoryDisplay(expense.category)}
+                    </span>
                     {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
                       <span 
                         style={{
@@ -759,8 +792,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   if (repaid > 0) {
                     return (
                       <div style={styles.amountMeta}>
-                        <div>{t('original')}: <span style={{ color: '#f44336' }}>${expense.amount.toFixed(2)}</span></div>
-                        <div>{t('repaid')}: <span style={{ color: '#4CAF50' }}>${repaid.toFixed(2)}</span></div>
+                        <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>${expense.amount.toFixed(2)}</span></div>
+                        <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span></div>
                       </div>
                     );
                   }
@@ -800,7 +833,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         style={{ 
                           ...styles.iconButton, 
                           ...styles.successChip,
-                          ...(expandedRepaymentId === expense.id ? { backgroundColor: '#4CAF50', color: 'white' } : {})
+                          ...(expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {})
                         }} 
                         aria-label={t('repayments')}
                         title={t('repayments')}
@@ -896,7 +929,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             )}
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
@@ -1019,7 +1052,7 @@ const styles = {
   dateLabel: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
     whiteSpace: 'nowrap' as const,
   },
   dateInput: {
@@ -1069,20 +1102,22 @@ const styles = {
     paddingBottom: '100px',
   },
   expenseCard: {
-    backgroundColor: 'var(--card-bg)',
+    background: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    padding: '12px 12px 14px',
+    borderRadius: '14px',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
     minWidth: 0,
     overflow: 'visible',
     position: 'relative' as const,
+    boxShadow: '0 3px 10px var(--shadow)',
+    transition: 'all 0.2s ease',
   },
-  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#888', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
+  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-tertiary)', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
   categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
-  timeDisplay: { fontSize: '12px', color: '#888', fontWeight: '500' as const },
+  timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
   leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
   rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
@@ -1101,16 +1136,17 @@ const styles = {
   },
   category: {
     display: 'inline-block',
-    padding: '4px 8px',
-    backgroundColor: '#e3f2fd',
-    color: '#1976d2',
-    borderRadius: '4px',
+    padding: '5px 10px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    borderRadius: '8px',
     fontSize: '12px',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     maxWidth: '150px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   notes: {
     margin: '8px 0 0 0',
@@ -1120,7 +1156,7 @@ const styles = {
   amount: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#f44336',
+    color: 'var(--error-text)',
     marginBottom: '4px',
     wordBreak: 'break-all' as const,
     lineHeight: '1.2',
@@ -1141,7 +1177,7 @@ const styles = {
   },
   repaidAmount: {
     fontSize: '14px',
-    color: '#4CAF50',
+    color: 'var(--success-text)',
     fontWeight: '500' as const,
   },
   netAmount: {
@@ -1178,12 +1214,12 @@ const styles = {
   excessBadge: {
     fontSize: '11px',
     fontWeight: '500' as const,
-    color: '#2196F3',
+    color: 'var(--info-text)',
   },
   excessBadgeSmall: {
     fontSize: '10px',
     fontWeight: '500' as const,
-    color: '#2196F3',
+    color: 'var(--info-text)',
     marginLeft: '4px',
   },
   repaymentAnnotation: {
@@ -1199,20 +1235,20 @@ const styles = {
     alignItems: 'center',
   },
   annotationDivider: {
-    color: '#ddd',
+    color: 'var(--border-color)',
   },
   completedBadge: {
     fontSize: '10px',
     fontWeight: '600' as const,
-    color: '#16a34a',
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    color: 'var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
     padding: '2px 6px',
     borderRadius: '4px',
     marginLeft: '4px',
   },
   completedCheck: {
     marginLeft: '6px',
-    color: '#16a34a',
+    color: 'var(--success-text)',
     fontWeight: '700' as const,
     fontSize: '14px',
     lineHeight: 1,
@@ -1225,8 +1261,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -1254,7 +1290,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -1274,29 +1310,29 @@ const styles = {
     cursor: 'pointer',
   },
   primaryChip: {
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
   },
   dangerChip: {
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
   },
   successChip: {
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
   },
   neutralChip: {
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
   },
   completedChip: {
-    backgroundColor: 'rgba(34,197,94,0.2)',
-    color: '#16a34a',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     fontWeight: '700' as const,
   },
   warningChip: {
-    backgroundColor: 'rgba(251,191,36,0.15)',
-    color: '#d97706',
+    backgroundColor: 'var(--warning-bg)',
+    color: 'var(--warning-text)',
     fontWeight: '600' as const,
   },
   selectToggleButton: {
@@ -1308,9 +1344,9 @@ const styles = {
   },
   selectAllButton: {
     borderRadius: '8px',
-    border: '1px solid rgba(33,150,83,0.2)',
-    backgroundColor: 'rgba(33,150,83,0.08)',
-    color: '#219653',
+    border: '1px solid var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success-text)',
     padding: '8px 12px',
     cursor: 'pointer',
     fontWeight: 600 as const,
@@ -1318,8 +1354,8 @@ const styles = {
   deleteSelectedButton: {
     borderRadius: '8px',
     border: 'none',
-    backgroundColor: 'rgba(244,67,54,0.08)',
-    color: '#b71c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     padding: '8px 12px',
     cursor: 'pointer',
     fontWeight: 600 as const,
@@ -1342,7 +1378,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 12px',
-    backgroundColor: '#e8f4f8',
+    backgroundColor: '#e3f2fd',
     borderRadius: '8px',
     borderLeft: '4px solid #1976d2',
     cursor: 'pointer',
@@ -1361,7 +1397,7 @@ const styles = {
   },
   collapseIcon: {
     fontSize: '10px',
-    color: '#1976d2',
+    color: 'var(--accent-primary)',
     display: 'inline-block',
     width: '12px',
     transition: 'transform 0.2s',
@@ -1374,7 +1410,7 @@ const styles = {
   inlineRepaymentSection: {
     marginTop: '12px',
     padding: '16px',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'var(--bg-secondary)',
     borderRadius: '6px',
     border: '1px solid var(--border-color)',
   },

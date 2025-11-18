@@ -288,7 +288,7 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
@@ -319,7 +319,7 @@ const styles = {
     margin: 0,
     fontSize: '18px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   cancelIconButton: {
     border: 'none',
@@ -377,7 +377,7 @@ const styles = {
     margin: 0,
     fontSize: '18px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   cardLimit: {
     marginTop: '4px',
@@ -464,7 +464,7 @@ const styles = {
   breakdownTitle: {
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   breakdownMeta: {
     fontSize: '12px',

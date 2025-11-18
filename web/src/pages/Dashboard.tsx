@@ -35,6 +35,7 @@ import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
 
+//#region Helper Functions
 // Helper function to get display name
 const getDisplayName = (user: { displayName?: string | null; email?: string | null } | null): string => {
   if (!user) return '';
@@ -45,8 +46,10 @@ const getDisplayName = (user: { displayName?: string | null; email?: string | nu
   }
   return '';
 };
+//#endregion
 
 const Dashboard: React.FC = () => {
+  //#region State and Hooks
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
@@ -99,7 +102,9 @@ const Dashboard: React.FC = () => {
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  //#endregion
   
+  //#region Effects
   // Track offline queue count
   useEffect(() => {
     const updateQueueCount = () => {
@@ -123,7 +128,9 @@ const Dashboard: React.FC = () => {
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  //#endregion
 
+  //#region Data Loading
   const loadData = React.useCallback(async () => {
     if (!currentUser) return;
 
@@ -194,7 +201,9 @@ const Dashboard: React.FC = () => {
       setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
+  //#endregion
 
+  //#region Budget Notifications
   // Budget notifications check
   useEffect(() => {
     if (!budgets.length || !expenses.length) return;
@@ -222,7 +231,9 @@ const Dashboard: React.FC = () => {
     const timer = setTimeout(checkBudgets, 2000);
     return () => clearTimeout(timer);
   }, [budgets, expenses, showNotification]);
+  //#endregion
 
+  //#region Data Refresh Functions
   // Function to reload only repayments (for performance)
   const reloadRepayments = React.useCallback(async () => {
     if (!currentUser) return;
@@ -322,7 +333,9 @@ const Dashboard: React.FC = () => {
       refreshTabData();
     }
   }, [activeTab, currentUser, initialLoading]);
+  //#endregion
 
+  //#region Click Outside Handlers
   // Click outside to close actions menu
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -370,7 +383,9 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showImportExportDropdown]);
+  //#endregion
 
+  //#region UI State Flags
   // Centralized flag to hide Floating Action Button when any popout/modal/menu is open
   const shouldHideFab =
     showHamburgerMenu ||
@@ -379,7 +394,9 @@ const Dashboard: React.FC = () => {
     showImportModal ||
     showAddSheet ||
     showAddExpenseForm;
+  //#endregion
 
+  //#region Event Handlers - Auth
   const handleLogout = async () => {
     try {
       await logout();
@@ -388,8 +405,9 @@ const Dashboard: React.FC = () => {
       console.error('Failed to log out', error);
     }
   };
+  //#endregion
 
-  // Expense handlers
+  //#region Event Handlers - Expenses
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -569,8 +587,9 @@ const Dashboard: React.FC = () => {
     // Refresh to ensure server state is in sync
     loadData();
   };
+  //#endregion
 
-  // Category handlers
+  //#region Event Handlers - Categories
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
     
@@ -651,8 +670,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Budget handlers
+  //#region Event Handlers - Budgets
   const handleAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
     
@@ -734,8 +754,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Recurring expense handlers
+  //#region Event Handlers - Recurring Expenses
   const handleAddRecurring = async (recurringData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
     
@@ -845,8 +866,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Income handlers
+  //#region Event Handlers - Incomes
   const handleAddIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -924,8 +946,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Card handlers
+  //#region Event Handlers - Cards
   const handleAddCard = async (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
     
@@ -1007,8 +1030,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // E-Wallet handlers
+  //#region Event Handlers - E-Wallets
   const handleAddEWallet = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
 
@@ -1090,8 +1114,9 @@ const Dashboard: React.FC = () => {
       }
     );
   };
+  //#endregion
 
-  // Feature Settings handlers
+  //#region Event Handlers - Feature Settings
   const handleUpdateFeatureSettings = async (
     enabledFeatures: FeatureTab[],
     tabFeatures?: FeatureTab[],
@@ -1165,7 +1190,9 @@ const Dashboard: React.FC = () => {
     offlineQueue.clear();
     showNotification('success', 'Offline queue cleared');
   };
+  //#endregion
 
+  //#region Import/Export Handlers
   const handleImportComplete = () => {
     // Reload data after import
     loadData();
@@ -1248,7 +1275,9 @@ const Dashboard: React.FC = () => {
     });
     return spent;
   };
+  //#endregion
 
+  //#region Render
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -1999,5 +2028,6 @@ const styles = {
     transition: 'all 0.3s ease',
   },
 };
+//#endregion
 
 export default Dashboard;

@@ -46,6 +46,10 @@
   --tab-inactive-text: #6b7280;
   --tab-active-text: #ffffff;
   --tab-hover-bg: #ede9fe;
+  
+  /* Chip colors - keep original colors in light mode */
+  --chip-bg: #e0e7ff;
+  --chip-text: #4338ca;
 }
 
 .dark {
@@ -116,6 +120,10 @@
   /* Purple glow effect for highlights */
   --purple-glow: 0 0 12px rgba(167, 139, 250, 0.3);
   --purple-glow-strong: 0 0 20px rgba(167, 139, 250, 0.5);
+  
+  /* Chip colors - use purple in dark mode */
+  --chip-bg: #3a3654;
+  --chip-text: #a78bfa;
 }
 
 * {
@@ -188,6 +196,18 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+/* Category chip styles - use purple in dark mode */
+.dark .category-chip {
+  background: var(--chip-bg) !important;
+  color: var(--chip-text) !important;
+}
+
+/* Date group header - use purple in dark mode, blue in light mode */
+.dark .date-group-header {
+  background-color: var(--accent-light) !important;
+  border-left-color: var(--accent-primary) !important;
 }
 
 /* Menu item hover effect */

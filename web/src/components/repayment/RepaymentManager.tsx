@@ -486,12 +486,12 @@ const styles = {
     margin: '0 0 16px 0',
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   loading: {
     textAlign: 'center' as const,
     padding: '20px',
-    color: '#999',
+    color: 'var(--text-secondary)',
   },
 };
 

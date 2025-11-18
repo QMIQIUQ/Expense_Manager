@@ -273,7 +273,7 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',

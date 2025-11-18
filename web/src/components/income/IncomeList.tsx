@@ -204,7 +204,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
         return (
           <div key={date} style={styles.dateGroup}>
             {/* Date group header with daily subtotal - clickable to expand/collapse */}
-            <div style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
+            <div className="date-group-header" style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
                 <span style={styles.dateGroupDate}>{formatDate(date)}</span>
@@ -452,22 +452,24 @@ const styles = {
     gap: '16px',
   },
   incomeCard: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '16px',
-    boxShadow: '0 2px 4px rgba(15,23,42,0.05)',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '14px',
+    padding: '18px',
+    boxShadow: '0 3px 10px var(--shadow)',
     position: 'relative' as const,
     overflow: 'visible' as const,
+    transition: 'all 0.2s ease',
   },
   amountBadge: {
     position: 'absolute' as const,
-    top: '12px',
-    right: '12px',
-    fontSize: '18px',
-    fontWeight: '700' as const,
+    top: '14px',
+    right: '14px',
+    fontSize: '20px',
+    fontWeight: '800' as const,
     color: '#059669',
     pointerEvents: 'none' as const,
+    textShadow: '0 1px 3px rgba(5, 150, 105, 0.15)',
   },
   headerRow: {
     display: 'flex',
@@ -485,10 +487,10 @@ const styles = {
   },
   linkedExpenseChip: {
     fontSize: '12px',
-    color: '#1d4ed8',
-    backgroundColor: '#e0f2fe',
-    padding: '4px 8px',
-    borderRadius: '6px',
+    color: 'var(--accent-primary)',
+    background: 'var(--accent-light)',
+    padding: '5px 10px',
+    borderRadius: '8px',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
@@ -498,6 +500,8 @@ const styles = {
     whiteSpace: 'nowrap' as const,
     cursor: 'pointer',
     border: 'none',
+    fontWeight: '600' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   mainRow: {
     display: 'flex',
@@ -539,7 +543,7 @@ const styles = {
   incomeTitle: {
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -674,13 +678,14 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '8px 12px',
-    backgroundColor: '#dcfce7',
-    borderRadius: '8px',
-    borderLeft: '4px solid #16a34a',
+    padding: '10px 14px',
+    background: '#e8f5e9',
+    borderRadius: '10px',
+    borderLeft: '5px solid #4caf50',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s ease',
     userSelect: 'none' as const,
+    boxShadow: '0 2px 6px var(--shadow)',
   },
   dateGroupDate: {
     fontSize: '14px',

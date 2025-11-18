@@ -567,7 +567,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px',
-    backgroundColor: 'var(--bg-secondary)',
+    backgroundColor: 'var(--card-bg)',
     borderRadius: '8px',
     gap: '10px',
   },

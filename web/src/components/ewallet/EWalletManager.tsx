@@ -509,7 +509,7 @@ const styles = {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   addButton: {
     display: 'flex',
@@ -570,7 +570,7 @@ const styles = {
     margin: 0,
     fontSize: '16px',
     fontWeight: '600' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   colorBadge: {
     width: '16px',
@@ -770,15 +770,15 @@ const styles = {
   expenseCategory: {
     fontSize: '14px',
     fontWeight: '500' as const,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   expenseDate: {
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
   expenseDesc: {
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontStyle: 'italic' as const,
   },
   expenseAmount: {
