@@ -278,62 +278,148 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   const isFullyRepaid = remainingAmount <= 0;
   const hasExcess = remainingAmount < 0;
 
+  // Inline layout styles (for embedded history panel inside an expense card)
+  const styles = {
+    inlineContainer: {
+      border: '1px solid var(--border-color)',
+      borderRadius: '12px',
+      padding: '16px',
+      background: 'var(--card-bg)',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '14px',
+      boxShadow: '0 2px 6px var(--shadow)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: '4px',
+      borderBottom: '1px solid var(--border-color)',
+    },
+    headerTitle: {
+      margin: 0,
+      fontSize: '1rem',
+      fontWeight: 600,
+      letterSpacing: '0.5px',
+      color: 'var(--text-primary)',
+    },
+    summaryCard: {
+      border: '1px solid var(--border-color)',
+      borderRadius: '8px',
+      padding: '12px 14px',
+      background: 'var(--bg-tertiary)',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '6px',
+    },
+    summaryRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      fontSize: '0.85rem',
+      color: 'var(--text-secondary)',
+    },
+    summaryValue: {
+      fontWeight: 600,
+      fontSize: '0.9rem',
+      color: 'var(--text-primary)',
+    },
+    successValue: {
+      fontWeight: 600,
+      fontSize: '0.9rem',
+      color: 'var(--success-text)',
+    },
+    warningValue: {
+      fontWeight: 600,
+      fontSize: '0.9rem',
+      color: 'var(--warning-text)',
+    },
+    infoValue: {
+      fontWeight: 600,
+      fontSize: '0.9rem',
+      color: 'var(--info-text)',
+    },
+    statusBadge: {
+      marginTop: '4px',
+      alignSelf: 'flex-start',
+      padding: '4px 10px',
+      background: 'var(--success-bg)',
+      color: 'var(--success-text)',
+      fontSize: '12px',
+      fontWeight: 600,
+      borderRadius: '14px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    },
+    addButton: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
+      backgroundColor: 'var(--accent-light)',
+      color: 'var(--accent-primary)',
+      border: 'none',
+      borderRadius: '8px',
+      padding: '12px 16px',
+      fontSize: '1rem',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+    } as React.CSSProperties,
+    addButtonDisabled: {
+      opacity: 0.6,
+      cursor: 'not-allowed',
+    },
+  };
+
   return (
-    <div className={inline ? 'repayment-manager-inline' : 'card repayment-manager'}>
+    <div className={inline ? undefined : 'card repayment-manager'} style={inline ? styles.inlineContainer : undefined}>
       {!inline && (
         <div className="card-header">
           <h3 className="card-title">{t('repayments')}</h3>
           {onClose && (
-            <button onClick={onClose} className="btn-close" aria-label="Close">
-              ✕
-            </button>
+            <button onClick={onClose} className="btn-close" aria-label="Close">✕</button>
           )}
         </div>
       )}
 
       {inline && (
-        <div className="inline-header">
-          <h4 className="inline-title">{t('repaymentHistory')}</h4>
+        <div style={styles.header}>
+          <h4 style={styles.headerTitle}>{t('repaymentHistory')}</h4>
           {onClose && (
-            <button onClick={onClose} className="btn-close-small" aria-label="Close">
-              ✕
-            </button>
+            <button onClick={onClose} className="btn-close-small" aria-label="Close">✕</button>
           )}
         </div>
       )}
 
-      <div className={inline ? 'expense-info-inline' : 'expense-info'}>
-        <div className="info-row">
-          <span className="info-label">{t('originalExpenseAmount')}:</span>
-          <span className="info-value">${expense.amount.toFixed(2)}</span>
+      <div style={inline ? styles.summaryCard : undefined} className={inline ? undefined : 'expense-info'}>
+        <div style={styles.summaryRow}>
+          <span>{t('originalExpenseAmount')}</span>
+          <span style={styles.summaryValue}>${expense.amount.toFixed(2)}</span>
         </div>
-        <div className="info-row">
-          <span className="info-label">{t('totalRepaid')}:</span>
-          <span className="info-value success-text">
-            ${totalRepaid.toFixed(2)}
-          </span>
+        <div style={styles.summaryRow}>
+          <span>{t('totalRepaid')}</span>
+          <span style={styles.successValue}>${totalRepaid.toFixed(2)}</span>
         </div>
-        <div className="info-row">
-          <span className="info-label">
-            {hasExcess ? t('excessAmount') : t('remainingAmount')}:
-          </span>
-          <span 
-            className={`info-value ${hasExcess ? 'info-text' : (isFullyRepaid ? 'success-text' : 'warning-text')}`}
-          >
+        <div style={styles.summaryRow}>
+          <span>{hasExcess ? t('excessAmount') : t('remainingAmount')}</span>
+          <span style={hasExcess ? styles.infoValue : (isFullyRepaid ? styles.successValue : styles.warningValue)}>
             ${Math.abs(remainingAmount).toFixed(2)}
           </span>
         </div>
         {isFullyRepaid && !hasExcess && (
-          <div className="status-badge success">
-            ✓ {t('fullyRepaid')}
-          </div>
+          <div style={styles.statusBadge}>✓ {t('fullyRepaid')}</div>
         )}
       </div>
 
       {!showForm && (
-        <button 
-          onClick={() => setShowForm(true)} 
-          className="btn btn-primary btn-full-width"
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-4 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{ ...styles.addButton, ...(saving ? styles.addButtonDisabled : {}) }}
           disabled={saving}
         >
           <PlusIcon size={18} />

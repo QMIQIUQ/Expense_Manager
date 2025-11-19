@@ -72,6 +72,39 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     return styles.amount;
   };
 
+  // Get theme-aware payer name style
+  const getPayerNameStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.payerName,
+        color: 'var(--text-primary)',
+      } as React.CSSProperties;
+    }
+    return styles.payerName as React.CSSProperties;
+  };
+
+  // Get theme-aware date style
+  const getDateStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.date,
+        color: 'var(--text-secondary)',
+      } as React.CSSProperties;
+    }
+    return styles.date as React.CSSProperties;
+  };
+
+  // Get theme-aware note text style
+  const getNoteStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.noteText,
+        color: 'var(--text-secondary)',
+      } as React.CSSProperties;
+    }
+    return styles.noteText as React.CSSProperties;
+  };
+
   if (repayments.length === 0) {
     return (
       <div style={styles.noData}>
@@ -84,11 +117,11 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     <div style={styles.container}>
       <div style={styles.list}>
         {repayments.map((repayment) => (
-          <div key={repayment.id} className="repayment-card">
+          <div key={repayment.id} className="repayment-card" style={styles.repaymentCard}>
             {/* First row: Date, Payment Method Chip, Amount */}
             <div style={styles.repaymentRow1}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={styles.date}>{formatDate(repayment.date)}</span>
+                <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
                 {/* Payment Method Chip */}
                 <span style={getPaymentChipStyle()}>
                   {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
@@ -102,7 +135,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
             {/* Second row: Payer Name */}
             {repayment.payerName && (
               <div style={styles.repaymentRow2}>
-                <span style={styles.payerName}>{repayment.payerName}</span>
+                <span style={getPayerNameStyle()}>{repayment.payerName}</span>
               </div>
             )}
 
@@ -110,7 +143,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
             <div style={styles.repaymentRow3}>
               <div style={{ flex: 1 }}>
                 {repayment.note && (
-                  <span style={styles.noteText}>{repayment.note}</span>
+                  <span style={getNoteStyle()}>{repayment.note}</span>
                 )}
               </div>
               <div style={styles.actions}>

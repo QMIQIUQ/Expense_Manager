@@ -12,18 +12,9 @@ interface RepaymentFormProps {
   ewallets?: EWallet[];
 }
 
-const responsiveStyles = `
-  .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  @media (min-width: 640px) {
-    .form-row {
-      flex-direction: row;
-    }
-  }
-`;
+// No component-scoped CSS needed; reuse the same utility classes
+// and CSS variables styling pattern used by ExpenseForm to keep
+// visual consistency across light/dark themes.
 
 const RepaymentForm: React.FC<RepaymentFormProps> = ({
   onSubmit,
@@ -123,11 +114,10 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="repayment-form">
-      <style>{responsiveStyles}</style>
-      <div className="form-row">
-        <div className="form-group" style={{ flex: 1 }}>
-          <label htmlFor="amount" className="form-label">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('repaymentAmount')} *
           </label>
           <input
@@ -138,14 +128,19 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             min="0.01"
             value={formData.amount || ''}
             onChange={handleChange}
-            className={`form-input ${errors.amount ? 'error' : ''}`}
             placeholder="0.00"
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-red-500' : ''}`}
+            style={{
+              borderColor: errors.amount ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
-          {errors.amount && <span className="error-message">{errors.amount}</span>}
+          {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="form-group" style={{ flex: 1 }}>
-          <label htmlFor="date" className="form-label">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="date" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('repaymentDate')} *
           </label>
           <input
@@ -154,15 +149,20 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className={`form-input ${errors.date ? 'error' : ''}`}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.date ? 'border-red-500' : ''}`}
+            style={{
+              borderColor: errors.date ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
-          {errors.date && <span className="error-message">{errors.date}</span>}
+          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
         </div>
       </div>
 
-      <div className="form-row">
-        <div className="form-group" style={{ flex: 1 }}>
-          <label htmlFor="paymentMethod" className="form-label">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="paymentMethod" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('paymentMethod')}
           </label>
           <select
@@ -177,7 +177,12 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
                 paymentMethodName: e.target.value !== 'e_wallet' ? '' : prev.paymentMethodName,
               }));
             }}
-            className="form-select"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="cash">💵 {t('cash')}</option>
             <option value="credit_card">💳 {t('creditCard')}</option>
@@ -185,8 +190,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           </select>
         </div>
 
-        <div className="form-group" style={{ flex: 1 }}>
-          <label htmlFor="payerName" className="form-label">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="payerName" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('payerNameOptional')}
           </label>
           <input
@@ -195,16 +200,20 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="payerName"
             value={formData.payerName}
             onChange={handleChange}
-            className="form-input"
             placeholder={t('payerNamePlaceholder')}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
         </div>
       </div>
 
-      {/* Card Selection (only when credit card is selected) */}
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-        <div className="form-group">
-          <label htmlFor="cardId" className="form-label">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cardId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('selectCard')}
           </label>
           <select
@@ -212,7 +221,12 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="cardId"
             value={formData.cardId}
             onChange={handleChange}
-            className="form-select"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="">{t('selectCard')}</option>
             {cards.map((card) => (
@@ -224,10 +238,9 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         </div>
       )}
 
-      {/* E-Wallet Selection (only when e-wallet is selected) */}
       {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <div className="form-group">
-          <label htmlFor="paymentMethodName" className="form-label">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="paymentMethodName" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('selectEWallet')}
           </label>
           <select
@@ -235,7 +248,12 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="paymentMethodName"
             value={formData.paymentMethodName}
             onChange={handleChange}
-            className="form-select"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="">{t('selectEWallet')}</option>
             {ewallets.map((wallet) => (
@@ -247,8 +265,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         </div>
       )}
 
-      <div className="form-group">
-        <label htmlFor="note" className="form-label">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="note" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           {t('repaymentNote')}
         </label>
         <textarea
@@ -256,18 +274,44 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           name="note"
           value={formData.note}
           onChange={handleChange}
-          className="form-textarea"
           placeholder={t('addAnyNotes')}
           rows={3}
+          className="px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         />
       </div>
 
-      <div className="button-group">
-        <button type="submit" className="btn btn-primary">
+      <div className="flex gap-3 mt-2">
+        <button
+          type="submit"
+          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{
+            backgroundColor: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
           {initialData ? t('update') : t('add')}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="btn btn-secondary">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              borderRadius: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
             {t('cancel')}
           </button>
         )}
