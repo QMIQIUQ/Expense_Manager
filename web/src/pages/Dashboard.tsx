@@ -1339,11 +1339,13 @@ const Dashboard: React.FC = () => {
             </button>
             {showHamburgerMenu && (
               <div
-                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]"
+                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto rounded-lg shadow-xl border py-2 z-[9999]"
                 style={{
                   minWidth: '240px',
                   maxWidth: '90vw',
-                  transform: isMobile ? undefined : 'translateX(calc(-100% + 32px))',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderColor: 'var(--border-color)',
+                  top: '100%',
                 }}
               >
                   {/* Language Section */}
