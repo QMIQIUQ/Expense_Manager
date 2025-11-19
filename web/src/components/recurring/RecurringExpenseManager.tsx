@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RecurringExpense, Category, Card } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -13,12 +13,20 @@ const responsiveStyles = `
   .mobile-actions {
     display: block;
   }
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
   @media (min-width: 640px) {
     .desktop-actions {
       display: flex;
     }
     .mobile-actions {
       display: none;
+    }
+    .form-row {
+      flex-direction: row;
     }
   }
 `;
@@ -226,7 +234,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       {isAdding && (
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>{t('description')} *</label>
+            <label className="form-label">{t('description')} *</label>
             <input
               type="text"
               value={formData.description}
@@ -234,13 +242,13 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               onFocus={(e) => e.target.select()}
               placeholder="e.g., Netflix Subscription, Rent"
               required
-              style={styles.input}
+              className="form-input"
             />
           </div>
 
-          <div style={styles.formRow}>
+          <div className="form-row">
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('amount')} ($) *</label>
+              <label className="form-label">{t('amount')} ($) *</label>
               <input
                 type="number"
                 value={formData.amount}
@@ -249,17 +257,17 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 step="0.01"
                 min="0.01"
                 required
-                style={styles.input}
+                className="form-input"
               />
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('category')} *</label>
+              <label className="form-label">{t('category')} *</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
-                style={styles.select}
+                className="form-select"
               >
                 <option value="">{t('selectCategory')}</option>
                 {categories.map((cat) => (
@@ -271,9 +279,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             </div>
           </div>
 
-          <div style={styles.formRow}>
+          <div className="form-row">
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('frequency')} *</label>
+              <label className="form-label">{t('frequency')} *</label>
               <select
                 value={formData.frequency}
                 onChange={(e) =>
@@ -282,7 +290,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly',
                   })
                 }
-                style={styles.select}
+                className="form-select"
               >
                 <option value="daily">{t('freqDaily')}</option>
                 <option value="weekly">{t('freqWeekly')}</option>
@@ -292,20 +300,20 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('startDate')} *</label>
+              <label className="form-label">{t('startDate')} *</label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
-                style={styles.input}
+                className="form-input"
               />
             </div>
           </div>
 
           {/* Payment Method Selection */}
           <div style={styles.formGroup}>
-            <label style={styles.label}>{t('paymentMethod')}</label>
+            <label className="form-label">{t('paymentMethod')}</label>
             <select
               value={formData.paymentMethod}
               onChange={(e) => setFormData({ 
@@ -314,7 +322,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 cardId: e.target.value !== 'credit_card' ? '' : formData.cardId,
                 paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
               })}
-              style={styles.select}
+              className="form-select"
             >
               <option value="cash">💵 {t('cash')}</option>
               <option value="credit_card">💳 {t('creditCard')}</option>
@@ -325,11 +333,11 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           {/* Card Selection (only when credit card is selected) */}
           {formData.paymentMethod === 'credit_card' && (
             <div style={styles.formGroup}>
-              <label style={styles.label}>{t('selectCard')}</label>
+              <label className="form-label">{t('selectCard')}</label>
               <select
                 value={formData.cardId}
                 onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-                style={styles.select}
+                className="form-select"
               >
                 <option value="">{t('selectCard')}</option>
                 {cards.map((card) => (
@@ -344,20 +352,20 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           {/* E-Wallet Name Input (only when e-wallet is selected) */}
           {formData.paymentMethod === 'e_wallet' && (
             <div style={styles.formGroup}>
-              <label style={styles.label}>{t('eWalletName')}</label>
+              <label className="form-label">{t('eWalletName')}</label>
               <input
                 type="text"
                 value={formData.paymentMethodName}
                 onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
                 onFocus={(e) => e.target.select()}
                 placeholder={t('eWalletPlaceholder')}
-                style={styles.input}
+                className="form-input"
               />
             </div>
           )}
 
           <div style={styles.formActions}>
-            <button type="submit" style={styles.submitButton}>
+            <button type="submit" className="btn btn-primary">
               {editingId ? t('edit') : t('add')} {t('recurringExpense')}
             </button>
             <button
@@ -367,7 +375,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 setEditingId(null);
                 resetForm();
               }}
-              style={styles.cancelButton}
+              className="btn btn-secondary"
             >
               {t('cancel')}
             </button>
@@ -394,24 +402,24 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           </div>
         ) : (
           filteredRecurringExpenses.map((expense) => (
-            <div key={expense.id} style={{ ...styles.expenseCard, ...(openMenuId === expense.id ? { zIndex: 9999 } : {}) }}>
+            <div key={expense.id} className="recurring-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
               {editingId === expense.id ? (
                 // Inline Edit Mode
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '150px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label className="form-label">{t('description')}</label>
                       <input
                         type="text"
                         value={formData.description}
                         placeholder={t('description')}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <div style={{ width: '120px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label className="form-label">{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -419,17 +427,17 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         placeholder={t('amount')}
                         onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                         onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '120px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label className="form-label">{t('category')}</label>
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        style={{ ...styles.inlineSelect, width: '100%' }}
+                        className="form-select"
                       >
                         <option value="">{t('selectCategory')}</option>
                         {categories.map((cat) => (
@@ -440,11 +448,11 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       </select>
                     </div>
                     <div style={{ minWidth: '100px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('frequency')}</label>
+                      <label className="form-label">{t('frequency')}</label>
                       <select
                         value={formData.frequency}
                         onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
-                        style={{ ...styles.inlineSelect, width: '100%' }}
+                        className="form-select"
                       >
                         <option value="daily">{t('freqDaily')}</option>
                         <option value="weekly">{t('freqWeekly')}</option>
@@ -456,7 +464,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   {/* Payment Method Selection in inline edit */}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label className="form-label">{t('paymentMethod')}</label>
                       <select
                         value={formData.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -468,7 +476,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                             paymentMethodName: newPaymentMethod === 'e_wallet' ? formData.paymentMethodName : ''
                           });
                         }}
-                        style={{ ...styles.inlineSelect, width: '100%' }}
+                        className="form-select"
                       >
                         <option value="cash">💵 {t('cash')}</option>
                         <option value="credit_card">💳 {t('creditCard')}</option>
@@ -477,11 +485,11 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     </div>
                     {formData.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label className="form-label">{t('selectCard')}</label>
                         <select
                           value={formData.cardId || ''}
                           onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-                          style={{ ...styles.inlineSelect, width: '100%' }}
+                          className="form-select"
                         >
                           <option value="">{t('selectCard')}</option>
                           {cards.map((card) => (
@@ -494,26 +502,26 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     )}
                     {formData.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '130px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label className="form-label">{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={formData.paymentMethodName || ''}
                           onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
                           placeholder={t('eWalletPlaceholder')}
                           onFocus={(e) => e.target.select()}
-                          style={{ ...styles.inlineInput, width: '100%' }}
+                          className="form-input"
                         />
                       </div>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ minWidth: '130px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                      <label className="form-label">{t('startDate')}</label>
                       <input
                         type="date"
                         value={formData.startDate}
                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        style={{ ...styles.inlineInput, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <input
@@ -521,7 +529,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       value={formData.endDate}
                       placeholder={t('endDate')}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      style={{ ...styles.inlineInput, minWidth: '130px' }}
+                      className="form-input"
+                      style={{ minWidth: '130px' }}
                     />
                     {formData.frequency === 'weekly' && (
                       <input
@@ -532,7 +541,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) })}
                         placeholder="Day of Week (1-7)"
                         onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '80px' }}
+                        className="form-input"
+                        style={{ width: '80px' }}
                       />
                     )}
                     {formData.frequency === 'monthly' && (
@@ -544,16 +554,17 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                         onChange={(e) => setFormData({ ...formData, dayOfMonth: parseInt(e.target.value) })}
                         placeholder="Day of Month (1-31)"
                         onFocus={(e) => e.target.select()}
-                        style={{ ...styles.inlineInput, width: '80px' }}
+                        className="form-input"
+                        style={{ width: '80px' }}
                       />
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => saveInlineEdit(expense)} style={styles.saveButton}>
-                      <CheckIcon size={18} />
+                    <button onClick={() => saveInlineEdit(expense)} className="btn btn-primary">
+                      {t('save')}
                     </button>
-                    <button onClick={cancelInlineEdit} style={styles.cancelIconButton}>
-                      <CloseIcon size={18} />
+                    <button onClick={cancelInlineEdit} className="btn btn-secondary">
+                      {t('cancel')}
                     </button>
                   </div>
                 </div>
@@ -612,23 +623,25 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       )}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}
+                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as any)}
                     </div>
 
                     {/* Desktop: Show individual buttons */}
                     <div className="desktop-actions" style={{ gap: '8px' }}>
                       <button
                         onClick={() => onToggleActive(expense.id!, !expense.isActive)}
-                        style={expense.isActive ? styles.pauseBtn : styles.resumeBtn}
+                        className={`btn-icon ${expense.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
+                        title={expense.isActive ? t('pause') : t('resume')}
                       >
-                        {expense.isActive ? t('pause') : t('resume')}
+                        {expense.isActive ? '⏸' : '▶'}
                       </button>
-                      <button onClick={() => startInlineEdit(expense)} style={styles.editBtn}>
+                      <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" title={t('edit')}>
                         <EditIcon size={18} />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
-                        style={styles.deleteBtn}
+                        className="btn-icon btn-icon-danger"
+                        title={t('delete')}
                       >
                         <DeleteIcon size={18} />
                       </button>
@@ -638,9 +651,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -739,6 +751,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   searchContainer: {
     display: 'flex',
@@ -770,48 +783,9 @@ const styles = {
     display: 'flex',
     gap: '15px',
   },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
   formActions: {
     display: 'flex',
     gap: '10px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: 'var(--accent-primary)',
-    color: 'var(--bg-primary)',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    padding: '10px 20px',
-    backgroundColor: 'var(--bg-tertiary)',
-    color: 'var(--text-primary)',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
   },
   noData: {
     textAlign: 'center' as const,
@@ -822,17 +796,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
-  },
-  expenseCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    padding: '18px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-    boxShadow: '0 3px 10px var(--shadow)',
-    transition: 'all 0.2s ease',
   },
   expenseRow1: {
     display: 'flex',
@@ -887,61 +850,8 @@ const styles = {
     display: 'flex',
     gap: '8px',
   },
-  pauseBtn: {
-    padding: '8px 16px',
-    backgroundColor: 'var(--warning-bg)',
-    color: 'var(--warning-text)',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  resumeBtn: {
-    padding: '8px 16px',
-    backgroundColor: 'var(--success-bg)',
-    color: 'var(--success-text)',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  editBtn: {
-    padding: '8px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteBtn: {
-    padding: '8px',
-    backgroundColor: 'var(--error-bg)',
-    color: 'var(--error-text)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   menuContainer: {
     position: 'relative' as const,
-  },
-  menuButton: {
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '20px',
-    fontWeight: 'bold' as const,
-    lineHeight: '1',
   },
   menu: {
     position: 'absolute' as const,
@@ -949,7 +859,7 @@ const styles = {
     top: '100%',
     marginTop: '4px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
@@ -971,41 +881,6 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
-  },
-  inlineInput: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  inlineSelect: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
-  saveButton: {
-    padding: '8px',
-    backgroundColor: 'var(--success-bg)',
-    color: 'var(--success-text)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelIconButton: {
-    padding: '8px',
-    backgroundColor: 'var(--bg-secondary)',
-    color: 'var(--text-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 };
 

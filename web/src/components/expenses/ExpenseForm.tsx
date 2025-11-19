@@ -105,7 +105,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('description')} *</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
         <input
           type="text"
           name="description"
@@ -114,15 +114,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onFocus={(e) => e.target.select()}
           placeholder={t('descriptionPlaceholder')}
           className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-            errors.description ? 'border-red-500' : 'border-gray-300'
+            errors.description ? 'border-red-500' : ''
           }`}
+          style={{
+            borderColor: errors.description ? undefined : 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         />
         {errors.description && <span className="text-xs text-red-600">{errors.description}</span>}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">{t('amount')} ($) *</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
           <input
             type="number"
             name="amount"
@@ -133,8 +138,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             step="0.01"
             min="0.01"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.amount ? 'border-red-500' : 'border-gray-300'
+              errors.amount ? 'border-red-500' : ''
             }`}
+            style={{
+              borderColor: errors.amount ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
@@ -165,7 +175,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">{t('date')} *</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
           <input
             type="date"
             name="date"
@@ -173,31 +183,46 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             onChange={handleChange}
             max={new Date().toISOString().split('T')[0]}
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.date ? 'border-red-500' : 'border-gray-300'
+              errors.date ? 'border-red-500' : ''
             }`}
+            style={{
+              borderColor: errors.date ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
           {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">{t('time')}</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('time')}</label>
           <input
             type="time"
             name="time"
             value={formData.time}
             onChange={handleChange}
-            className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
         </div>
       </div>
 
       {/* Payment Method Selection */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('paymentMethod')}</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
         <select
           name="paymentMethod"
           value={formData.paymentMethod}
           onChange={handleChange}
-          className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         >
           <option value="cash">💵 {t('cash')}</option>
           <option value="credit_card">💳 {t('creditCard')}</option>
@@ -208,12 +233,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       {/* Card Selection - Only shown when credit card is selected */}
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">{t('selectCard')}</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
           <select
             name="cardId"
             value={formData.cardId}
             onChange={handleChange}
-            className="px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="">{t('selectPaymentMethod')}</option>
             {cards.map((card) => (
@@ -253,7 +283,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       {/* E-Wallet Name Input - Fallback when no e-wallets available */}
       {formData.paymentMethod === 'e_wallet' && ewallets.length === 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">{t('eWalletName')}</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletName')}</label>
           <input
             type="text"
             name="paymentMethodName"
@@ -262,8 +292,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             onFocus={(e) => e.target.select()}
             placeholder={t('eWalletPlaceholder')}
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.paymentMethodName ? 'border-red-500' : 'border-gray-300'
+              errors.paymentMethodName ? 'border-red-500' : ''
             }`}
+            style={{
+              borderColor: errors.paymentMethodName ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
           {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
           {onCreateEWallet && (
@@ -279,14 +314,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       )}
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">{t('notes')} ({t('optional')})</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')} ({t('optional')})</label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
           placeholder={t('notesPlaceholder')}
           rows={3}
-          className="px-3 py-2 border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         />
       </div>
 
@@ -298,17 +338,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onChange={(e) => setFormData(prev => ({ ...prev, needsRepaymentTracking: e.target.checked }))}
           className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
         />
-        <label htmlFor="needsRepaymentTracking" className="text-sm font-medium text-gray-700 cursor-pointer">
+        <label htmlFor="needsRepaymentTracking" className="text-sm font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>
           {t('trackRepaymentInDashboard')}
         </label>
       </div>
 
       <div className="flex gap-3 mt-2">
-        <button type="submit" className="flex-1 px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-lg text-base font-medium transition-colors">
+        <button 
+          type="submit" 
+          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{
+            backgroundColor: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
           {initialData ? t('editExpense') : t('addExpense')}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-base font-medium transition-colors">
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              borderRadius: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
             {t('cancel')}
           </button>
         )}

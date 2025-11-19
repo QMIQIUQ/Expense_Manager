@@ -10,6 +10,19 @@ interface IncomeFormProps {
   preselectedExpenseId?: string; // Pre-select an expense when creating from expense detail
 }
 
+const responsiveStyles = `
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  @media (min-width: 640px) {
+    .form-row {
+      flex-direction: row;
+    }
+  }
+`;
+
 const IncomeForm: React.FC<IncomeFormProps> = ({
   onSubmit,
   onCancel,
@@ -108,6 +121,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
+      <style>{responsiveStyles}</style>
       <div style={styles.fieldGroup}>
         <label style={styles.label}>{t('titleOptional')}</label>
         <input
@@ -121,78 +135,78 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         />
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('amount')} *</label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount || ''}
-          onChange={handleChange}
-          onFocus={(e) => e.target.select()}
-          placeholder="0.00"
-          step="0.01"
-          min="0"
-          style={{
-            ...styles.input,
-            borderColor: errors.amount ? '#ef4444' : '#d1d5db',
-          }}
-        />
-        {errors.amount && <span style={styles.errorText}>{errors.amount}</span>}
+      <div className="form-row">
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>{t('amount')} *</label>
+          <input
+            type="number"
+            name="amount"
+            value={formData.amount || ''}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            style={{
+              ...styles.input,
+              borderColor: errors.amount ? '#ef4444' : 'var(--border-color)',
+            }}
+          />
+          {errors.amount && <span style={styles.errorText}>{errors.amount}</span>}
+        </div>
+
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>{t('date')} *</label>
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            style={{
+              ...styles.input,
+              borderColor: errors.date ? '#ef4444' : 'var(--border-color)',
+            }}
+          />
+          {errors.date && <span style={styles.errorText}>{errors.date}</span>}
+        </div>
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('date')} *</label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          style={{
-            ...styles.input,
-            borderColor: errors.date ? '#ef4444' : '#d1d5db',
-          }}
-        />
-        {errors.date && <span style={styles.errorText}>{errors.date}</span>}
-      </div>
+      <div className="form-row">
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>{t('type')} *</label>
+          <select
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+            style={{
+              ...styles.input,
+              borderColor: errors.type ? '#ef4444' : 'var(--border-color)',
+            }}
+          >
+            <option value="salary">{t('salary')}</option>
+            <option value="reimbursement">{t('reimbursement')}</option>
+            <option value="repayment">{t('repayment')}</option>
+            <option value="other">{t('other')}</option>
+          </select>
+          {errors.type && <span style={styles.errorText}>{errors.type}</span>}
+        </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('type')} *</label>
-        <select
-          name="type"
-          value={formData.type}
-          onChange={handleChange}
-          style={{
-            ...styles.input,
-            borderColor: errors.type ? '#ef4444' : '#d1d5db',
-            backgroundColor: '#fff',
-          }}
-        >
-          <option value="salary">{t('salary')}</option>
-          <option value="reimbursement">{t('reimbursement')}</option>
-          <option value="repayment">{t('repayment')}</option>
-          <option value="other">{t('other')}</option>
-        </select>
-        {errors.type && <span style={styles.errorText}>{errors.type}</span>}
-      </div>
-
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('incomeCategory')}</label>
-        <select
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          style={{
-            ...styles.input,
-            backgroundColor: '#fff',
-          }}
-        >
-          <option value="default">{t('defaultIncome')}</option>
-          <option value="ewallet_reload">{t('ewalletReload')}</option>
-          <option value="other">{t('other')}</option>
-        </select>
-        <small style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          {formData.category === 'ewallet_reload' && t('ewalletReloadDesc')}
-        </small>
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>{t('incomeCategory')}</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            style={styles.input}
+          >
+            <option value="default">{t('defaultIncome')}</option>
+            <option value="ewallet_reload">{t('ewalletReload')}</option>
+            <option value="other">{t('other')}</option>
+          </select>
+          <small style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            {formData.category === 'ewallet_reload' && t('ewalletReloadDesc')}
+          </small>
+        </div>
       </div>
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (
@@ -216,7 +230,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             name="linkedExpenseId"
             value={formData.linkedExpenseId}
             onChange={handleChange}
-            style={{ ...styles.input, backgroundColor: '#fff' }}
+            style={styles.input}
           >
             <option value="">-- {t('noLink')} --</option>
             {expenses.map((expense) => (
@@ -282,14 +296,16 @@ const styles = {
   label: {
     fontSize: '14px',
     fontWeight: 600 as const,
-    color: '#374151',
+    color: 'var(--text-primary)',
   },
   input: {
     padding: '10px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     fontSize: '14px',
     outline: 'none',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
   },
   errorText: {
     fontSize: '12px',
@@ -297,8 +313,8 @@ const styles = {
   },
   linkedInfo: {
     fontSize: '12px',
-    color: '#1d4ed8',
-    backgroundColor: '#e0f2fe',
+    color: 'var(--accent-primary)',
+    backgroundColor: 'var(--accent-light)',
     padding: '8px',
     borderRadius: '8px',
   },
@@ -312,18 +328,20 @@ const styles = {
     padding: '12px',
     borderRadius: '8px',
     border: 'none',
-    backgroundColor: '#6366f1',
-    color: '#fff',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     fontWeight: 600 as const,
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   cancelButton: {
     padding: '12px 24px',
     borderRadius: '8px',
     border: 'none',
-    backgroundColor: '#6b7280',
-    color: '#fff',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
     fontWeight: 600 as const,
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
 };

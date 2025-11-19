@@ -5,24 +5,6 @@ import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../icons';
 
-const responsiveStyles = `
-  .desktop-actions {
-    display: none;
-    gap: 8px;
-  }
-  .mobile-actions {
-    display: block;
-  }
-  @media (min-width: 640px) {
-    .desktop-actions {
-      display: flex;
-    }
-    .mobile-actions {
-      display: none;
-    }
-  }
-`;
-
 interface CardManagerProps {
   cards: Card[];
   categories: Category[];
@@ -86,25 +68,76 @@ const CardManager: React.FC<CardManagerProps> = ({
     setExpandedCardId(expandedCardId === cardId ? null : cardId);
   };
 
+  const styles = {
+    menuContainer: {
+      position: 'relative' as const,
+    },
+    menu: {
+      position: 'absolute' as const,
+      right: 0,
+      top: '100%',
+      marginTop: '4px',
+      backgroundColor: 'var(--card-bg)',
+      border: '1px solid var(--border-color)',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      zIndex: 9999,
+      minWidth: '160px',
+    },
+    menuItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      width: '100%',
+      padding: '12px 16px',
+      border: 'none',
+      backgroundColor: 'transparent',
+      color: 'var(--text-primary)',
+      fontSize: '14px',
+      cursor: 'pointer',
+      textAlign: 'left' as const,
+    },
+    menuIcon: {
+      display: 'flex',
+      alignItems: 'center',
+    },
+  };
+
   return (
     <>
-      <style>{responsiveStyles}</style>
-      <div style={styles.container}>
-        <div style={styles.header}>
+      <style>{`
+        .desktop-actions {
+          display: none;
+          gap: 8px;
+        }
+        .mobile-actions {
+          display: block;
+        }
+        @media (min-width: 640px) {
+          .desktop-actions {
+            display: flex;
+          }
+          .mobile-actions {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="card-manager">
+        <div className="header-actions">
         <div>
-          <h2 style={styles.title}>{t('creditCards')}</h2>
+          <h2 className="section-title">{t('creditCards')}</h2>
         </div>
-        <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+        <button onClick={() => setIsAdding(true)} className="btn btn-primary">
           <PlusIcon size={18} />
           <span>{t('addCard')}</span>
         </button>
       </div>
 
       {isAdding && (
-        <div style={styles.formCard}>
-          <div style={styles.formHeader}>
-            <h3 style={styles.formTitle}>{t('addCard')}</h3>
-            <button onClick={() => setIsAdding(false)} style={styles.cancelIconButton} aria-label={t('cancel')}>
+        <div className="form-card">
+          <div className="form-header">
+            <h3 className="form-title">{t('addCard')}</h3>
+            <button onClick={() => setIsAdding(false)} className="btn-close" aria-label={t('cancel')}>
               <CloseIcon size={18} />
             </button>
           </div>
@@ -117,11 +150,11 @@ const CardManager: React.FC<CardManagerProps> = ({
       )}
 
       {cards.length === 0 && !isAdding ? (
-        <div style={styles.emptyState}>
-          <p style={styles.emptyText}>{t('noCardsYet')}</p>
+        <div className="empty-state">
+          <p className="empty-text">{t('noCardsYet')}</p>
         </div>
       ) : (
-        <div style={styles.cardList}>
+        <div className="card-list">
           {cards.map((card) => {
             const isEditing = editingId === card.id;
             const isExpanded = expandedCardId === card.id;
@@ -129,10 +162,10 @@ const CardManager: React.FC<CardManagerProps> = ({
 
             if (isEditing) {
               return (
-                <div key={card.id} style={{ ...styles.card, ...(openMenuId === card.id ? { zIndex: 9999 } : {}) }}>
-                  <div style={styles.editingHeader}>
-                    <h3 style={styles.formTitle}>{t('editCard')}</h3>
-                    <button onClick={() => setEditingId(null)} style={styles.cancelIconButton} aria-label={t('cancel')}>
+                <div key={card.id} className="credit-card" style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
+                  <div className="form-header">
+                    <h3 className="form-title">{t('editCard')}</h3>
+                    <button onClick={() => setEditingId(null)} className="btn-close" aria-label={t('cancel')}>
                       <CloseIcon size={18} />
                     </button>
                   </div>
@@ -147,21 +180,21 @@ const CardManager: React.FC<CardManagerProps> = ({
             }
 
             return (
-              <div key={card.id} style={{ ...styles.card, ...(openMenuId === card.id ? { zIndex: 9999 } : {}) }}>
-                <div style={styles.cardHeader}>
-                  <div style={styles.cardInfo}>
-                    <h3 style={styles.cardName}>{card.name}</h3>
-                    <p style={styles.cardLimit}>
+              <div key={card.id} className="credit-card" style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
+                <div className="card-header">
+                  <div className="card-info">
+                    <h3 className="card-name">{card.name}</h3>
+                    <p className="card-limit">
                       {t('cardLimit')}: ${card.cardLimit.toLocaleString()}
                     </p>
                   </div>
-                  <div style={styles.cardActions}>
+                  <div className="card-actions">
                     {/* Desktop: Show both buttons */}
                     <div className="desktop-actions">
-                      <button onClick={() => setEditingId(card.id!)} style={styles.iconButton} aria-label={t('edit')}>
+                      <button onClick={() => setEditingId(card.id!)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
-                      <button onClick={() => handleDelete(card.id!)} style={styles.deleteButton} aria-label={t('delete')}>
+                      <button onClick={() => handleDelete(card.id!)} className="btn-icon btn-icon-danger" aria-label={t('delete')}>
                         <DeleteIcon size={18} />
                       </button>
                     </div>
@@ -170,9 +203,8 @@ const CardManager: React.FC<CardManagerProps> = ({
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === card.id ? null : card.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -192,7 +224,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 handleDelete(card.id!);
@@ -208,53 +240,53 @@ const CardManager: React.FC<CardManagerProps> = ({
                   </div>
                 </div>
 
-                <div style={styles.statsGrid}>
-                  <div style={{ ...styles.statCard, backgroundColor: 'var(--info-bg)' }}>
-                    <p style={styles.statLabel}>{t('currentCycleSpending')}</p>
-                    <p style={{ ...styles.statValue, color: 'var(--info-text)' }}>${stats.currentCycleSpending.toFixed(2)}</p>
+                <div className="stats-grid">
+                  <div className="stat-card info">
+                    <p className="stat-label">{t('currentCycleSpending')}</p>
+                    <p className="stat-value info-text">${stats.currentCycleSpending.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: 'var(--success-bg)' }}>
-                    <p style={styles.statLabel}>{t('availableCredit')}</p>
-                    <p style={{ ...styles.statValue, color: 'var(--success-text)' }}>${stats.availableCredit.toFixed(2)}</p>
+                  <div className="stat-card success">
+                    <p className="stat-label">{t('availableCredit')}</p>
+                    <p className="stat-value success-text">${stats.availableCredit.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: 'var(--accent-light)' }}>
-                    <p style={styles.statLabel}>{t('estimatedCashback')}</p>
-                    <p style={{ ...styles.statValue, color: 'var(--accent-primary)' }}>${stats.estimatedTotalCashback.toFixed(2)}</p>
+                  <div className="stat-card accent">
+                    <p className="stat-label">{t('estimatedCashback')}</p>
+                    <p className="stat-value accent-text">${stats.estimatedTotalCashback.toFixed(2)}</p>
                   </div>
-                  <div style={{ ...styles.statCard, backgroundColor: 'var(--warning-bg)' }}>
-                    <p style={styles.statLabel}>{t('nextBillingDate')}</p>
-                    <p style={{ ...styles.statValue, color: 'var(--warning-text)' }}>{stats.nextBillingDate}</p>
+                  <div className="stat-card warning">
+                    <p className="stat-label">{t('nextBillingDate')}</p>
+                    <p className="stat-value warning-text">{stats.nextBillingDate}</p>
                   </div>
                 </div>
 
                 {card.cashbackRules && card.cashbackRules.length > 0 && (
-                  <button onClick={() => toggleExpand(card.id!)} style={styles.toggleButton}>
+                  <button onClick={() => toggleExpand(card.id!)} className="btn-toggle">
                     {isExpanded ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
                     <span>{t('cashbackBreakdown')}</span>
                   </button>
                 )}
 
                 {isExpanded && card.cashbackRules && (
-                  <div style={styles.breakdown}>
+                  <div className="breakdown-section">
                     {stats.cashbackByRule.map((ruleStats, index) => (
-                      <div key={ruleStats.ruleId || index} style={styles.breakdownRow}>
+                      <div key={ruleStats.ruleId || index} className="breakdown-row">
                         <div>
-                          <div style={styles.breakdownTitle}>{ruleStats.categoryName}</div>
-                          <div style={styles.breakdownMeta}>
+                          <div className="breakdown-title">{ruleStats.categoryName}</div>
+                          <div className="breakdown-meta">
                             {t('categorySpend')}: ${ruleStats.categorySpend.toFixed(2)}
                           </div>
                           {ruleStats.requiredToReachMinSpend > 0 && (
-                            <div style={{ ...styles.breakdownMeta, color: 'var(--warning-text)' }}>
+                            <div className="breakdown-meta warning-text">
                               ${ruleStats.requiredToReachMinSpend.toFixed(2)} {t('toReachMinSpend')}
                             </div>
                           )}
                           {ruleStats.requiredToReachCap > 0 && (
-                            <div style={{ ...styles.breakdownMeta, color: 'var(--info-text)' }}>
+                            <div className="breakdown-meta info-text">
                               ${ruleStats.requiredToReachCap.toFixed(2)} {t('toReachCap')}
                             </div>
                           )}
                         </div>
-                        <div style={styles.breakdownValue}>+${ruleStats.estimatedCashback.toFixed(2)}</div>
+                        <div className="breakdown-value">+${ruleStats.estimatedCashback.toFixed(2)}</div>
                       </div>
                     ))}
                   </div>
@@ -270,254 +302,3 @@ const CardManager: React.FC<CardManagerProps> = ({
 };
 
 export default CardManager;
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '20px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '16px',
-    flexWrap: 'wrap' as const,
-  },
-  title: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  addButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    cursor: 'pointer',
-  },
-  formCard: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    padding: '20px',
-    boxShadow: '0 4px 12px rgba(15,23,42,0.06)',
-  },
-  formHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  formTitle: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  cancelIconButton: {
-    border: 'none',
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    borderRadius: '999px',
-    padding: '6px',
-    cursor: 'pointer',
-    color: '#4b5563',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyState: {
-    textAlign: 'center' as const,
-    padding: '40px 20px',
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-  },
-  emptyText: {
-    margin: 0,
-    color: '#6b7280',
-    fontSize: '16px',
-    fontWeight: 500 as const,
-  },
-  cardList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '16px',
-  },
-  card: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    padding: '20px',
-    boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
-  },
-  editingHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '12px',
-    alignItems: 'flex-start',
-    marginBottom: '16px',
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardName: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  cardLimit: {
-    marginTop: '4px',
-    color: 'var(--text-secondary)',
-    fontSize: '14px',
-  },
-  cardActions: {
-    display: 'flex',
-    gap: '8px',
-  },
-  iconButton: {
-    padding: '8px',
-    borderRadius: '10px',
-    border: 'none',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteButton: {
-    padding: '8px',
-    borderRadius: '10px',
-    border: 'none',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: '12px',
-    marginBottom: '12px',
-  },
-  statCard: {
-    borderRadius: '12px',
-    padding: '12px',
-  },
-  statLabel: {
-    margin: 0,
-    color: 'var(--text-secondary)',
-    fontSize: '12px',
-    marginBottom: '6px',
-  },
-  statValue: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: 600 as const,
-  },
-  toggleButton: {
-    width: '100%',
-    border: 'none',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    borderRadius: '10px',
-    padding: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    cursor: 'pointer',
-    fontWeight: 500 as const,
-  },
-  breakdown: {
-    marginTop: '16px',
-    borderTop: '1px solid var(--border-color)',
-    paddingTop: '16px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-  },
-  breakdownRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '12px',
-    padding: '12px',
-    borderRadius: '12px',
-    backgroundColor: 'var(--bg-secondary)',
-  },
-  breakdownTitle: {
-    fontSize: '15px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  breakdownMeta: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-  },
-  breakdownValue: {
-    fontWeight: 600 as const,
-    color: 'var(--accent-primary)',
-    whiteSpace: 'nowrap' as const,
-  },
-  menuContainer: {
-    position: 'relative' as const,
-  },
-  menuButton: {
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '20px',
-    fontWeight: 'bold' as const,
-    lineHeight: '1',
-  },
-  menu: {
-    position: 'absolute' as const,
-    right: 0,
-    top: '100%',
-    marginTop: '4px',
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 9999,
-    minWidth: '160px',
-  },
-  menuItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    width: '100%',
-    padding: '12px 16px',
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontSize: '14px',
-    textAlign: 'left' as const,
-    color: '#374151',
-  },
-  menuIcon: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-};

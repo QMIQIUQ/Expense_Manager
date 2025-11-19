@@ -12,6 +12,19 @@ interface RepaymentFormProps {
   ewallets?: EWallet[];
 }
 
+const responsiveStyles = `
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  @media (min-width: 640px) {
+    .form-row {
+      flex-direction: row;
+    }
+  }
+`;
+
 const RepaymentForm: React.FC<RepaymentFormProps> = ({
   onSubmit,
   onCancel,
@@ -110,99 +123,88 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <div style={styles.formGroup}>
-        <label htmlFor="amount" style={styles.label}>
-          {t('repaymentAmount')} *
-        </label>
-        <input
-          type="number"
-          id="amount"
-          name="amount"
-          step="0.01"
-          min="0.01"
-          value={formData.amount || ''}
-          onChange={handleChange}
-          style={{ ...styles.input, ...(errors.amount ? styles.inputError : {}) }}
-          placeholder="0.00"
-        />
-        {errors.amount && <span style={styles.error}>{errors.amount}</span>}
+    <form onSubmit={handleSubmit} className="repayment-form">
+      <style>{responsiveStyles}</style>
+      <div className="form-row">
+        <div className="form-group" style={{ flex: 1 }}>
+          <label htmlFor="amount" className="form-label">
+            {t('repaymentAmount')} *
+          </label>
+          <input
+            type="number"
+            id="amount"
+            name="amount"
+            step="0.01"
+            min="0.01"
+            value={formData.amount || ''}
+            onChange={handleChange}
+            className={`form-input ${errors.amount ? 'error' : ''}`}
+            placeholder="0.00"
+          />
+          {errors.amount && <span className="error-message">{errors.amount}</span>}
+        </div>
+
+        <div className="form-group" style={{ flex: 1 }}>
+          <label htmlFor="date" className="form-label">
+            {t('repaymentDate')} *
+          </label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            className={`form-input ${errors.date ? 'error' : ''}`}
+          />
+          {errors.date && <span className="error-message">{errors.date}</span>}
+        </div>
       </div>
 
-      <div style={styles.formGroup}>
-        <label htmlFor="date" style={styles.label}>
-          {t('repaymentDate')} *
-        </label>
-        <input
-          type="date"
-          id="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          style={{ ...styles.input, ...(errors.date ? styles.inputError : {}) }}
-        />
-        {errors.date && <span style={styles.error}>{errors.date}</span>}
-      </div>
+      <div className="form-row">
+        <div className="form-group" style={{ flex: 1 }}>
+          <label htmlFor="paymentMethod" className="form-label">
+            {t('paymentMethod')}
+          </label>
+          <select
+            id="paymentMethod"
+            name="paymentMethod"
+            value={formData.paymentMethod}
+            onChange={(e) => {
+              setFormData(prev => ({
+                ...prev,
+                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
+                cardId: e.target.value !== 'credit_card' ? '' : prev.cardId,
+                paymentMethodName: e.target.value !== 'e_wallet' ? '' : prev.paymentMethodName,
+              }));
+            }}
+            className="form-select"
+          >
+            <option value="cash">💵 {t('cash')}</option>
+            <option value="credit_card">💳 {t('creditCard')}</option>
+            <option value="e_wallet">📱 {t('eWallet')}</option>
+          </select>
+        </div>
 
-      <div style={styles.formGroup}>
-        <label htmlFor="payerName" style={styles.label}>
-          {t('payerNameOptional')}
-        </label>
-        <input
-          type="text"
-          id="payerName"
-          name="payerName"
-          value={formData.payerName}
-          onChange={handleChange}
-          style={styles.input}
-          placeholder={t('payerNamePlaceholder')}
-        />
-      </div>
-
-      <div style={styles.formGroup}>
-        <label htmlFor="note" style={styles.label}>
-          {t('repaymentNote')}
-        </label>
-        <textarea
-          id="note"
-          name="note"
-          value={formData.note}
-          onChange={handleChange}
-          style={styles.textarea}
-          placeholder={t('addAnyNotes')}
-          rows={3}
-        />
-      </div>
-
-      {/* Payment Method Selection */}
-      <div style={styles.formGroup}>
-        <label htmlFor="paymentMethod" style={styles.label}>
-          {t('paymentMethod')}
-        </label>
-        <select
-          id="paymentMethod"
-          name="paymentMethod"
-          value={formData.paymentMethod}
-          onChange={(e) => {
-            setFormData(prev => ({
-              ...prev,
-              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
-              cardId: e.target.value !== 'credit_card' ? '' : prev.cardId,
-              paymentMethodName: e.target.value !== 'e_wallet' ? '' : prev.paymentMethodName,
-            }));
-          }}
-          style={styles.select}
-        >
-          <option value="cash">💵 {t('cash')}</option>
-          <option value="credit_card">💳 {t('creditCard')}</option>
-          <option value="e_wallet">📱 {t('eWallet')}</option>
-        </select>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label htmlFor="payerName" className="form-label">
+            {t('payerNameOptional')}
+          </label>
+          <input
+            type="text"
+            id="payerName"
+            name="payerName"
+            value={formData.payerName}
+            onChange={handleChange}
+            className="form-input"
+            placeholder={t('payerNamePlaceholder')}
+          />
+        </div>
       </div>
 
       {/* Card Selection (only when credit card is selected) */}
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-        <div style={styles.formGroup}>
-          <label htmlFor="cardId" style={styles.label}>
+        <div className="form-group">
+          <label htmlFor="cardId" className="form-label">
             {t('selectCard')}
           </label>
           <select
@@ -210,7 +212,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="cardId"
             value={formData.cardId}
             onChange={handleChange}
-            style={styles.select}
+            className="form-select"
           >
             <option value="">{t('selectCard')}</option>
             {cards.map((card) => (
@@ -224,8 +226,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
 
       {/* E-Wallet Selection (only when e-wallet is selected) */}
       {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <div style={styles.formGroup}>
-          <label htmlFor="paymentMethodName" style={styles.label}>
+        <div className="form-group">
+          <label htmlFor="paymentMethodName" className="form-label">
             {t('selectEWallet')}
           </label>
           <select
@@ -233,7 +235,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             name="paymentMethodName"
             value={formData.paymentMethodName}
             onChange={handleChange}
-            style={styles.select}
+            className="form-select"
           >
             <option value="">{t('selectEWallet')}</option>
             {ewallets.map((wallet) => (
@@ -245,104 +247,33 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         </div>
       )}
 
-      <div style={styles.buttonGroup}>
-        <button type="submit" style={styles.submitButton}>
+      <div className="form-group">
+        <label htmlFor="note" className="form-label">
+          {t('repaymentNote')}
+        </label>
+        <textarea
+          id="note"
+          name="note"
+          value={formData.note}
+          onChange={handleChange}
+          className="form-textarea"
+          placeholder={t('addAnyNotes')}
+          rows={3}
+        />
+      </div>
+
+      <div className="button-group">
+        <button type="submit" className="btn btn-primary">
           {initialData ? t('update') : t('add')}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+          <button type="button" onClick={onCancel} className="btn btn-secondary">
             {t('cancel')}
           </button>
         )}
       </div>
     </form>
   );
-};
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '16px',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  input: {
-    padding: '10px',
-    fontSize: '14px',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-  } as React.CSSProperties,
-  select: {
-    padding: '10px',
-    fontSize: '14px',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    outline: 'none',
-    backgroundColor: 'var(--select-bg)',
-    color: 'var(--text-primary)',
-    cursor: 'pointer',
-  } as React.CSSProperties,
-  textarea: {
-    padding: '10px',
-    fontSize: '14px',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    fontFamily: 'inherit',
-    resize: 'vertical' as const,
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-  } as React.CSSProperties,
-  inputError: {
-    borderColor: '#ff4444',
-  },
-  error: {
-    color: '#ff4444',
-    fontSize: '12px',
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '8px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  } as React.CSSProperties,
-  cancelButton: {
-    flex: 1,
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  } as React.CSSProperties,
 };
 
 export default RepaymentForm;

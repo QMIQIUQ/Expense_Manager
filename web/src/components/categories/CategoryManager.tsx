@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -191,7 +191,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 onFocus={(e) => e.target.select()}
                 required
-                style={{ ...styles.inlineInput, flex: 2, minWidth: '150px' }}
+                className="form-input"
+                style={{ flex: 2, minWidth: '150px' }}
               />
               <input
                 type="color"
@@ -201,7 +202,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               />
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+              <label className="form-label">
                 {t('categoryIcon')}
               </label>
               <div style={styles.iconGrid}>
@@ -220,12 +221,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 ))}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button type="submit" style={{ ...styles.saveButton }}>
-                <CheckIcon size={18} />
+            <div style={styles.formActions}>
+              <button type="submit" className="btn btn-primary">
+                {t('addCategory')}
               </button>
-              <button type="button" onClick={handleCancel} style={{ ...styles.cancelIconButton }}>
-                <CloseIcon size={18} />
+              <button type="button" onClick={handleCancel} className="btn btn-secondary">
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -253,28 +254,24 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           filteredCategories.map((category) => {
             const isDuplicate = duplicateNames.has(category.name);
             return (
-              <div key={category.id} style={{
-                ...styles.categoryCard,
-                ...(isDuplicate ? { border: '2px solid #ff9800', backgroundColor: 'var(--warning-bg)' } : {}),
-                ...(openMenuId === category.id ? { zIndex: 9999 } : {})
-              }}>
+              <div key={category.id} className={`category-card ${isDuplicate ? 'warning-border' : ''}`} style={openMenuId === category.id ? { zIndex: 9999 } : undefined}>
                 {editingId === category.id ? (
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
                       <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('categoryName')}</label>
+                        <label className="form-label">{t('categoryName')}</label>
                         <input
                           type="text"
                           value={formData.name}
                           placeholder={t('categoryName')}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           onFocus={(e) => e.target.select()}
-                          style={{ ...styles.inlineInput, width: '100%' }}
+                          className="form-input"
                         />
                       </div>
                       <div style={{ width: '60px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('categoryColor')}</label>
+                        <label className="form-label">{t('categoryColor')}</label>
                         <input
                           type="color"
                           value={formData.color}
@@ -284,7 +281,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                      <label className="form-label">
                         {t('categoryIcon')}
                       </label>
                       <div style={styles.iconGrid}>
@@ -303,20 +300,20 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                         ))}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={styles.formActions}>
                       <button 
                         onClick={() => saveInlineEdit(category)} 
-                        style={{ ...styles.saveButton }}
+                        className="btn btn-primary"
                         aria-label={t('save')}
                       >
-                        <CheckIcon size={18} />
+                        {t('save')}
                       </button>
                       <button 
                         onClick={cancelInlineEdit} 
-                        style={{ ...styles.cancelIconButton }}
+                        className="btn btn-secondary"
                         aria-label={t('cancel')}
                       >
-                        <CloseIcon size={18} />
+                        {t('cancel')}
                       </button>
                     </div>
                   </div>
@@ -336,12 +333,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     
                     {/* Desktop: Show individual buttons */}
                     <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
-                      <button onClick={() => startInlineEdit(category)} style={styles.editBtn} aria-label={t('edit')}>
+                      <button onClick={() => startInlineEdit(category)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(category)}
-                        style={{ ...styles.deleteBtn }}
+                        className="btn-icon btn-icon-danger"
                         aria-label={t('delete')}
                       >
                         <DeleteIcon size={18} />
@@ -352,9 +349,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === category.id ? null : category.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -587,6 +583,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   searchContainer: {
     display: 'flex',
@@ -605,7 +602,7 @@ const styles = {
     color: 'var(--text-secondary)',
   },
   form: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--bg-secondary)',
     padding: '20px',
     borderRadius: '8px',
     display: 'flex',
@@ -625,24 +622,12 @@ const styles = {
     gap: '15px',
     alignItems: 'flex-start',
   },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
   iconGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '8px',
-    maxHeight: '200px',
-    overflow: 'auto',
     padding: '4px',
+    maxWidth: '100%',
   },
   iconButton: {
     padding: '10px',
@@ -655,7 +640,7 @@ const styles = {
     cursor: 'pointer',
   },
   iconButtonActive: {
-    borderColor: '#6366f1',
+    border: '2px solid #6366f1',
     backgroundColor: '#e0e7ff',
   },
   colorInput: {
@@ -667,7 +652,8 @@ const styles = {
   },
   formActions: {
     display: 'flex',
-    gap: '10px',
+    gap: '12px',
+    marginTop: '8px',
   },
   submitButton: {
     flex: 1,
@@ -694,21 +680,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
-  },
-  categoryCard: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '18px',
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    minWidth: 0,
-    gap: '12px',
-    overflow: 'visible',
-    position: 'relative' as const,
-    boxShadow: '0 3px 10px var(--shadow)',
-    transition: 'all 0.2s ease',
   },
   categoryInfo: {
     display: 'flex',
@@ -790,7 +761,7 @@ const styles = {
     top: '100%',
     marginTop: '4px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
@@ -804,7 +775,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -812,34 +783,6 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
-  },
-  inlineInput: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  saveButton: {
-    padding: '8px',
-    backgroundColor: 'var(--success-bg)',
-    color: 'var(--success-text)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelIconButton: {
-    padding: '8px',
-    backgroundColor: 'var(--icon-bg)',
-    color: 'var(--text-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   modalOverlay: {
     position: 'fixed' as const,
@@ -880,7 +823,7 @@ const styles = {
   expenseList: {
     marginBottom: '16px',
     padding: '12px',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'var(--bg-secondary)',
     borderRadius: '4px',
     maxHeight: '200px',
     overflow: 'auto',
@@ -916,10 +859,12 @@ const styles = {
   reassignSelect: {
     marginLeft: '28px',
     padding: '8px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '4px',
     fontSize: '14px',
     width: 'calc(100% - 28px)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
   },
   modalMessage: {
     marginBottom: '24px',

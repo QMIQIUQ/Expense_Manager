@@ -84,7 +84,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     <div style={styles.container}>
       <div style={styles.list}>
         {repayments.map((repayment) => (
-          <div key={repayment.id} style={styles.repaymentCard}>
+          <div key={repayment.id} className="repayment-card">
             {/* First row: Date, Payment Method Chip, Amount */}
             <div style={styles.repaymentRow1}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -116,7 +116,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
               <div style={styles.actions}>
                 <button
                   onClick={() => onEdit(repayment)}
-                  style={{ ...styles.iconButton, ...styles.primaryChip }}
+                  className="btn-icon btn-icon-primary"
                   aria-label="Edit repayment"
                   title={t('edit')}
                 >
@@ -124,7 +124,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                 </button>
                 <button
                   onClick={() => handleDeleteClick(repayment.id!)}
-                  style={{ ...styles.iconButton, ...styles.dangerChip }}
+                  className="btn-icon btn-icon-danger"
                   aria-label="Delete repayment"
                   title={t('delete')}
                 >
@@ -182,8 +182,9 @@ const styles = {
   },
   repaymentRow3: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '12px',
+    marginTop: '8px',
   },
   paymentChip: {
     padding: '4px 10px',
@@ -202,42 +203,23 @@ const styles = {
     textShadow: '0 1px 2px rgba(22, 163, 74, 0.1)',
   },
   date: {
-    fontSize: '13px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
+    fontSize: '0.9rem',
+    color: '#666',
   },
   payerName: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
+    fontSize: '1rem',
+    fontWeight: '500',
+    color: '#333',
   },
   noteText: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    fontStyle: 'italic' as const,
+    fontSize: '0.9rem',
+    color: '#666',
+    fontStyle: 'italic',
   },
   actions: {
     display: 'flex',
     gap: '8px',
   },
-  iconButton: {
-    padding: '6px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '6px',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  primaryChip: {
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
-  },
-  dangerChip: {
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
-  },
-
   noData: {
     textAlign: 'center' as const,
     padding: '20px',

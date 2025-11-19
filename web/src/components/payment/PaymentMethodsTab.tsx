@@ -34,34 +34,55 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
 
+  const styles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '16px',
+    },
+    tabs: {
+      display: 'flex',
+      gap: '8px',
+      borderBottom: '1px solid var(--border-color)',
+      marginBottom: '16px',
+    },
+    tab: (isActive: boolean) => ({
+      padding: '8px 16px',
+      fontWeight: 500,
+      fontSize: '0.875rem',
+      transition: 'all 0.2s',
+      borderBottom: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
+      color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+      cursor: 'pointer',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderBottom: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
+    }),
+    content: {
+      marginTop: '8px',
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
+    <div style={styles.container}>
       {/* Sub-tab navigation */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div style={styles.tabs}>
         <button
           onClick={() => setActiveView('cards')}
-          className={`px-4 py-2 font-medium text-sm transition-all border-b-2 ${
-            activeView === 'cards'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-          }`}
+          style={styles.tab(activeView === 'cards')}
         >
           💳 {t('cards')}
         </button>
         <button
           onClick={() => setActiveView('ewallets')}
-          className={`px-4 py-2 font-medium text-sm transition-all border-b-2 ${
-            activeView === 'ewallets'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-          }`}
+          style={styles.tab(activeView === 'ewallets')}
         >
           📱 {t('eWallets')}
         </button>
       </div>
 
       {/* Content based on active view */}
-      <div className="mt-2">
+      <div style={styles.content}>
         {activeView === 'cards' && (
           <CardManager
             cards={cards}

@@ -7,6 +7,7 @@ import RepaymentForm from './RepaymentForm';
 import RepaymentList from './RepaymentList';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { PlusIcon } from '../icons';
 
 interface RepaymentManagerProps {
   expense: Expense;
@@ -278,12 +279,12 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   const hasExcess = remainingAmount < 0;
 
   return (
-    <div style={inline ? styles.inlineContainer : styles.container}>
+    <div className={inline ? 'repayment-manager-inline' : 'card repayment-manager'}>
       {!inline && (
-        <div style={styles.header}>
-          <h3 style={styles.title}>{t('repayments')}</h3>
+        <div className="card-header">
+          <h3 className="card-title">{t('repayments')}</h3>
           {onClose && (
-            <button onClick={onClose} style={styles.closeButton} aria-label="Close">
+            <button onClick={onClose} className="btn-close" aria-label="Close">
               ✕
             </button>
           )}
@@ -291,43 +292,39 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       )}
 
       {inline && (
-        <div style={styles.inlineHeader}>
-          <h4 style={styles.inlineTitle}>{t('repaymentHistory')}</h4>
+        <div className="inline-header">
+          <h4 className="inline-title">{t('repaymentHistory')}</h4>
           {onClose && (
-            <button onClick={onClose} style={styles.inlineCloseButton} aria-label="Close">
+            <button onClick={onClose} className="btn-close-small" aria-label="Close">
               ✕
             </button>
           )}
         </div>
       )}
 
-      <div style={inline ? styles.inlineExpenseInfo : styles.expenseInfo}>
-        <div style={styles.expenseDetail}>
-          <span style={styles.label}>{t('originalExpenseAmount')}:</span>
-          <span style={styles.value}>${expense.amount.toFixed(2)}</span>
+      <div className={inline ? 'expense-info-inline' : 'expense-info'}>
+        <div className="info-row">
+          <span className="info-label">{t('originalExpenseAmount')}:</span>
+          <span className="info-value">${expense.amount.toFixed(2)}</span>
         </div>
-        <div style={styles.expenseDetail}>
-          <span style={styles.label}>{t('totalRepaid')}:</span>
-          <span style={{ ...styles.value, color: 'var(--success-text)', fontWeight: '600' }}>
+        <div className="info-row">
+          <span className="info-label">{t('totalRepaid')}:</span>
+          <span className="info-value success-text">
             ${totalRepaid.toFixed(2)}
           </span>
         </div>
-        <div style={styles.expenseDetail}>
-          <span style={styles.label}>
+        <div className="info-row">
+          <span className="info-label">
             {hasExcess ? t('excessAmount') : t('remainingAmount')}:
           </span>
           <span 
-            style={{ 
-              ...styles.value, 
-              color: hasExcess ? 'var(--info-text)' : (isFullyRepaid ? 'var(--success-text)' : 'var(--warning-text)'),
-              fontWeight: '600' 
-            }}
+            className={`info-value ${hasExcess ? 'info-text' : (isFullyRepaid ? 'success-text' : 'warning-text')}`}
           >
             ${Math.abs(remainingAmount).toFixed(2)}
           </span>
         </div>
         {isFullyRepaid && !hasExcess && (
-          <div style={styles.statusBadge}>
+          <div className="status-badge success">
             ✓ {t('fullyRepaid')}
           </div>
         )}
@@ -336,16 +333,17 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       {!showForm && (
         <button 
           onClick={() => setShowForm(true)} 
-          style={styles.addButton}
+          className="btn btn-primary btn-full-width"
           disabled={saving}
         >
-          + {t('addRepayment')}
+          <PlusIcon size={18} />
+          <span>{t('addRepayment')}</span>
         </button>
       )}
 
       {showForm && (
-        <div style={styles.formContainer}>
-          <h4 style={styles.formTitle}>
+        <div className="form-container">
+          <h4 className="form-title">
             {editingRepayment ? t('editRepayment') : t('addRepayment')}
           </h4>
           <RepaymentForm
@@ -360,7 +358,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       )}
 
       {loading ? (
-        <div style={styles.loading}>{t('loading')}</div>
+        <div className="loading-state">{t('loading')}</div>
       ) : (
         <RepaymentList
           repayments={repayments}
@@ -370,129 +368,6 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: '20px',
-    backgroundColor: 'var(--card-bg)',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-  },
-  inlineContainer: {
-    backgroundColor: 'transparent',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-    paddingBottom: '12px',
-    borderBottom: '2px solid var(--border-color)',
-  },
-  inlineHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  title: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
-  inlineTitle: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
-  closeButton: {
-    padding: '4px 8px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '20px',
-    color: 'var(--text-secondary)',
-    transition: 'color 0.2s',
-  } as React.CSSProperties,
-  inlineCloseButton: {
-    padding: '2px 6px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '16px',
-    color: 'var(--text-secondary)',
-    transition: 'color 0.2s',
-  } as React.CSSProperties,
-  expenseInfo: {
-    padding: '16px',
-    backgroundColor: 'var(--icon-bg)',
-    borderRadius: '6px',
-    marginBottom: '16px',
-  },
-  inlineExpenseInfo: {
-    padding: '12px',
-    backgroundColor: 'var(--card-bg)',
-    borderRadius: '4px',
-    marginBottom: '12px',
-    border: '1px solid var(--border-color)',
-  },
-  expenseDetail: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '8px',
-  },
-  label: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    fontWeight: '500' as const,
-  },
-  value: {
-    fontSize: '14px',
-    color: 'var(--text-primary)',
-  },
-  statusBadge: {
-    marginTop: '8px',
-    padding: '8px 12px',
-    backgroundColor: 'var(--success-bg)',
-    color: 'var(--success-text)',
-    borderRadius: '4px',
-    textAlign: 'center' as const,
-    fontWeight: '600' as const,
-    fontSize: '14px',
-  },
-  addButton: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-    marginBottom: '16px',
-    transition: 'background-color 0.2s',
-  } as React.CSSProperties,
-  formContainer: {
-    padding: '16px',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '6px',
-    marginBottom: '16px',
-  },
-  formTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
-  loading: {
-    textAlign: 'center' as const,
-    padding: '20px',
-    color: 'var(--text-secondary)',
-  },
 };
 
 export default RepaymentManager;

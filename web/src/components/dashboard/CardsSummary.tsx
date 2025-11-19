@@ -14,34 +14,22 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
 
   if (cards.length === 0) {
     return (
-      <div 
-        className="rounded-lg shadow-sm p-6 border" 
-        style={{ 
-          backgroundColor: 'var(--card-bg)', 
-          borderColor: 'var(--border-color)' 
-        }}
-      >
-        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+      <div className="card cards-summary-empty">
+        <h3 className="section-title">
           💳 {t('creditCards')}
         </h3>
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('noCardsYet')}</p>
+        <p className="empty-text">{t('noCardsYet')}</p>
       </div>
     );
   }
 
   return (
-    <div 
-      className="rounded-lg shadow-sm p-6 border" 
-      style={{ 
-        backgroundColor: 'var(--card-bg)', 
-        borderColor: 'var(--border-color)' 
-      }}
-    >
-      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+    <div className="card cards-summary">
+      <h3 className="section-title">
         💳 {t('creditCards')}
       </h3>
       
-      <div className="space-y-4">
+      <div className="cards-list">
         {cards.slice(0, 3).map((card) => {
           const stats = calculateCardStats(card, expenses, categories);
           const utilizationPercent = (stats.currentCycleSpending / card.cardLimit) * 100;
@@ -49,23 +37,19 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
           return (
             <div 
               key={card.id} 
-              className="p-4 rounded-lg border"
-              style={{
-                background: 'linear-gradient(135deg, var(--accent-light) 0%, var(--icon-bg) 100%)',
-                borderColor: 'var(--border-color)',
-              }}
+              className="credit-card-summary-item"
             >
-              <div className="flex items-start justify-between mb-3">
+              <div className="card-summary-header">
                 <div>
-                  <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{card.name}</h4>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  <h4 className="card-name">{card.name}</h4>
+                  <p className="card-meta">
                     {t('billingCycle')}: {stats.nextBillingDate}
                   </p>
                 </div>
                 {card.cardType === 'cashback' && stats.estimatedTotalCashback > 0 && (
-                  <div className="text-right">
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('estimatedCashback')}</p>
-                    <p className="text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
+                  <div className="card-cashback">
+                    <p className="cashback-label">{t('estimatedCashback')}</p>
+                    <p className="cashback-value">
                       ${stats.estimatedTotalCashback.toFixed(2)}
                     </p>
                   </div>
@@ -73,50 +57,44 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
               </div>
 
               {/* Utilization Bar */}
-              <div className="mb-2">
-                <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <div className="utilization-section">
+                <div className="utilization-info">
                   <span>{t('currentCycleSpending')}: ${stats.currentCycleSpending.toFixed(2)}</span>
                   <span>{utilizationPercent.toFixed(0)}%</span>
                 </div>
-                <div 
-                  className="w-full rounded-full h-2" 
-                  style={{ backgroundColor: 'var(--bg-secondary)' }}
-                >
+                <div className="progress-bar">
                   <div
-                    className={`h-2 rounded-full transition-all ${
-                      utilizationPercent > 80 ? 'bg-red-500' : 
-                      utilizationPercent > 50 ? 'bg-orange-500' : 'bg-green-500'
+                    className={`progress-fill ${
+                      utilizationPercent > 80 ? 'error-bg' : 
+                      utilizationPercent > 50 ? 'warning-bg' : 'success-bg'
                     }`}
                     style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                   />
                 </div>
               </div>
 
-              <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <div className="card-limits">
                 <span>{t('availableCredit')}: ${stats.availableCredit.toFixed(2)}</span>
                 <span>{t('cardLimit')}: ${card.cardLimit.toLocaleString()}</span>
               </div>
 
               {/* High Priority Cashback Suggestions */}
               {card.cashbackRules && stats.cashbackByRule.length > 0 && (
-                <div 
-                  className="mt-3 pt-3 border-t"
-                  style={{ borderColor: 'var(--border-color)' }}
-                >
+                <div className="cashback-suggestions">
                   {stats.cashbackByRule
                     .filter(rule => rule.requiredToReachMinSpend > 0 || rule.requiredToReachCap > 0)
                     .slice(0, 2)
                     .map((rule, idx) => (
-                      <div key={idx} className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      <div key={idx} className="suggestion-item">
                         {rule.requiredToReachMinSpend > 0 ? (
                           <span>
                             💡 Spend ${rule.requiredToReachMinSpend.toFixed(0)} more on{' '}
-                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{rule.categoryName}</span> to unlock higher rate
+                            <span className="highlight-text">{rule.categoryName}</span> to unlock higher rate
                           </span>
                         ) : rule.requiredToReachCap > 0 ? (
                           <span>
                             ⭐ Spend ${rule.requiredToReachCap.toFixed(0)} more on{' '}
-                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{rule.categoryName}</span> to max out rewards
+                            <span className="highlight-text">{rule.categoryName}</span> to max out rewards
                           </span>
                         ) : null}
                       </div>
@@ -128,7 +106,7 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
         })}
 
         {cards.length > 3 && (
-          <p className="text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="more-cards-text">
             +{cards.length - 3} {t('more')} cards
           </p>
         )}

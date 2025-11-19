@@ -570,80 +570,37 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
                 return (
-                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={{ ...styles.expenseCard, ...(openMenuId === expense.id ? { zIndex: 9999 } : {}) }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {multiSelectEnabled && (
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(expense.id!)}
-                      onChange={() => setSelectedIds((prev) => {
-                        const copy = new Set(prev);
-                        if (copy.has(expense.id!)) copy.delete(expense.id!);
-                        else copy.add(expense.id!);
-                        return copy;
-                      })}
-                      aria-label={`Select expense ${expense.description}`}
-                    />
-                  )}
-                  <div style={styles.categoryRow}>
-                    {(expense as Expense & { time?: string }).time && (
-                      <span style={styles.timeDisplay}>{(expense as Expense & { time?: string }).time}</span>
-                    )}
-                    <span 
-                      className="category-chip"
-                      style={{
-                        ...styles.category,
-                        ...getCategoryColor(expense.category)
-                      }}
-                    >
-                      {getCategoryDisplay(expense.category)}
-                    </span>
-                    {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
-                      <span 
-                        style={{
-                          ...styles.completedCheck,
-                          color: expense.repaymentTrackingCompleted ? '#16a34a' : '#f59e0b'
-                        }} 
-                        title={expense.repaymentTrackingCompleted ? t('completed') : t('markRepaymentComplete')}
-                      >
-                        {expense.repaymentTrackingCompleted ? <CheckIcon size={16} /> : <CircleIcon size={16} />}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
+                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
               {editingId === expense.id ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 2, minWidth: '180px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('description')}</label>
+                      <label className="form-label">{t('description')}</label>
                       <input
                         type="text"
                         value={draft.description || ''}
                         placeholder={t('description')}
                         onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                        style={{ ...styles.input, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                      <label className="form-label">{t('amount')}</label>
                       <input
                         type="number"
                         step="0.01"
                         value={draft.amount || ''}
                         placeholder={t('amount')}
                         onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
-                        style={{ ...styles.input, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <div style={{ minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                      <label className="form-label">{t('category')}</label>
                       <select
                         value={draft.category || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-                        style={{ ...styles.select, width: '100%' }}
+                        className="form-select"
                       >
                         {categoryNames.map((name) => (
                           <option key={name} value={name}>{name}</option>
@@ -653,31 +610,31 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ width: '160px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                      <label className="form-label">{t('date')}</label>
                       <input
                         type="date"
                         value={draft.date || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                        style={{ ...styles.input, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <div style={{ width: '140px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('time')}</label>
+                      <label className="form-label">{t('time')}</label>
                       <input
                         type="time"
                         value={draft.time || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                        style={{ ...styles.input, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                      <label className="form-label">{t('notes')}</label>
                       <input
                         type="text"
                         value={draft.notes || ''}
                         placeholder={t('notesOptional')}
                         onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                        style={{ ...styles.input, width: '100%' }}
+                        className="form-input"
                       />
                     </div>
                   </div>
@@ -695,7 +652,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                     <div style={{ flex: 1, minWidth: '160px' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('paymentMethod')}</label>
+                      <label className="form-label">{t('paymentMethod')}</label>
                       <select
                         value={draft.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -707,7 +664,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             paymentMethodName: method === 'e_wallet' ? d.paymentMethodName : '',
                           }));
                         }}
-                        style={{ ...styles.select, width: '100%' }}
+                        className="form-select"
                       >
                         <option value="cash">💵 {t('cash')}</option>
                         <option value="credit_card">💳 {t('creditCard')}</option>
@@ -717,11 +674,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'credit_card' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('selectCard')}</label>
+                        <label className="form-label">{t('selectCard')}</label>
                         <select
                           value={draft.cardId || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
-                          style={{ ...styles.select, width: '100%' }}
+                          className="form-select"
                         >
                           <option value="">{t('selectCard')}</option>
                           {cards.length === 0 && <option value="" disabled>No cards available</option>}
@@ -736,18 +693,19 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {draft.paymentMethod === 'e_wallet' && (
                       <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('eWalletNameLabel')}</label>
+                        <label className="form-label">{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={draft.paymentMethodName || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, paymentMethodName: e.target.value }))}
                           placeholder={t('eWalletNameLabel') || 'E-wallet name'}
-                          style={{ ...styles.input, width: '100%' }}
+                          className="form-input"
                           list={walletDatalistId}
                         />
                       </div>
                     )}
                   </div>
+
                   {draft.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
                     <datalist id={walletDatalistId}>
                       {ewallets.map((wallet) => (
@@ -765,61 +723,82 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                 </div>
               ) : (
-                <>
-                {/* Amount badge shown at top-right for better mobile visibility */}
-                {(() => {
-                  const repaid = repaymentTotals[expense.id!] || 0;
-                  const netAmount = expense.amount - repaid;
-                  const hasExcess = netAmount < 0;
-                  const isRepaid = repaid > 0;
-                  const color = isRepaid ? (hasExcess ? '#2196F3' : '#ff9800') : '#f44336';
-                  return (
-                    <div style={{
-                      ...styles.amountBadge,
-                      color,
-                    }}>
-                      ${Math.abs(isRepaid ? netAmount : expense.amount).toFixed(2)}
-                      {isRepaid && hasExcess && (
-                        <span style={styles.excessBadgeSmall}>({t('excess')})</span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Amount meta (original/repaid) under amount badge */}
-                {(() => {
-                  const repaid = repaymentTotals[expense.id!] || 0;
-                  if (repaid > 0) {
-                    return (
-                      <div style={styles.amountMeta}>
-                        <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>${expense.amount.toFixed(2)}</span></div>
-                        <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span></div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
                 <div style={styles.mainRow}>
                   <div style={styles.leftCol}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={styles.timeDisplay}>{expense.time}</span>
+                      <span style={{
+                        ...styles.category,
+                        backgroundColor: getCategoryColor(expense.category).background,
+                        color: getCategoryColor(expense.category).color
+                      }}>
+                        {getCategoryDisplay(expense.category)}
+                      </span>
+                      {expense.repaymentTrackingCompleted && (
+                        <span style={styles.completedBadge}>
+                          ✓ {t('completed')}
+                        </span>
+                      )}
+                    </div>
+
                     <h3 style={styles.description}>{expense.description}</h3>
                     {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
                     
-                    {/* Completed check moved to header category row */}
-                    
                     {/* Payment Method Display */}
                     {expense.paymentMethod && (
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                         {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
                         {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                         {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
-                      </p>
+                        {expense.paymentMethod === 'credit_card' && expense.cardId && (
+                          <span>
+                            {cards.find(c => c.id === expense.cardId)?.name && `(${cards.find(c => c.id === expense.cardId)?.name})`}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <div style={{
-                    ...styles.rightCol,
-                    marginTop: (repaymentTotals[expense.id!] || 0) > 0 ? 34 : 0,
-                  }}>
+
+                  <div style={styles.rightCol}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                      {/* Amount Display */}
+                      {(() => {
+                        const repaid = repaymentTotals[expense.id!] || 0;
+                        const netAmount = expense.amount - repaid;
+                        const hasExcess = netAmount < 0;
+                        const isRepaid = repaid > 0;
+                        const color = isRepaid ? (hasExcess ? '#2196F3' : '#ff9800') : '#f44336';
+                        return (
+                          <div style={{
+                            fontWeight: '700',
+                            color,
+                            fontSize: '16px',
+                            textAlign: 'right',
+                            lineHeight: 1,
+                          }}>
+                            ${Math.abs(isRepaid ? netAmount : expense.amount).toFixed(2)}
+                            {isRepaid && hasExcess && (
+                              <span style={styles.excessBadgeSmall}>({t('excess')})</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Amount meta (original/repaid) */}
+                      {(() => {
+                        const repaid = repaymentTotals[expense.id!] || 0;
+                        if (repaid > 0) {
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '11px', color: 'var(--text-secondary)', gap: '1px' }}>
+                              <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>${expense.amount.toFixed(2)}</span></div>
+                              <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span></div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+
                     {/* Desktop: Show all buttons */}
                     <div className="desktop-actions" style={styles.actions}>
                       <button 
@@ -830,28 +809,22 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             setExpandedRepaymentId(expense.id!);
                           }
                         }} 
-                        style={{ 
-                          ...styles.iconButton, 
-                          ...styles.successChip,
-                          ...(expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {})
-                        }} 
+                        className="btn-icon btn-icon-success"
+                        style={expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}}
                         aria-label={t('repayments')}
                         title={t('repayments')}
                       >
                         <RepaymentIcon size={18} />
                       </button>
                       
-                      {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                      {expense.needsRepaymentTracking && (
                         <button
                           onClick={() => {
                             onInlineUpdate(expense.id!, {
                               repaymentTrackingCompleted: !expense.repaymentTrackingCompleted
                             });
                           }}
-                          style={{
-                            ...styles.iconButton,
-                            ...(expense.repaymentTrackingCompleted ? styles.completedChip : styles.warningChip),
-                          }}
+                          className={`btn-icon ${expense.repaymentTrackingCompleted ? 'btn-icon-success' : 'btn-icon-warning'}`}
                           aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
                           title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
                         >
@@ -859,12 +832,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         </button>
                       )}
                       
-                      <button onClick={() => startInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.primaryChip }} aria-label={t('edit')}>
+                      <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
-                        style={{ ...styles.iconButton, ...styles.dangerChip }}
+                        className="btn-icon btn-icon-danger"
                         aria-label={t('delete')}
                       >
                         <DeleteIcon size={18} />
@@ -872,12 +845,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
 
                     {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions">
+                    <div className="mobile-actions" style={styles.mobileActions}>
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -910,7 +882,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                               <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
                               {t('repayments')}
                             </button>
-                            {repaymentTotals[expense.id!] > 0 && expense.needsRepaymentTracking && (
+                            {expense.needsRepaymentTracking && (
                               <button
                                 className="menu-item-hover"
                                 style={styles.menuItem}
@@ -944,7 +916,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
                   </div>
                 </div>
-                </>
               )}
               
               {/* Inline Repayment Manager */}
@@ -961,9 +932,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 </div>
               )}
             </div>
-              )})}
+              );
+              })}
             </div>
-          )})}
+          );
+          })}
         </div>
       )}
       
@@ -1076,20 +1049,6 @@ const styles = {
     borderRadius: '4px',
     fontSize: '14px',
   },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
   noData: {
     textAlign: 'center' as const,
     padding: '40px',
@@ -1101,32 +1060,16 @@ const styles = {
     gap: '10px',
     paddingBottom: '100px',
   },
-  expenseCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-    minWidth: 0,
-    overflow: 'visible',
-    position: 'relative' as const,
-    boxShadow: '0 3px 10px var(--shadow)',
-    transition: 'all 0.2s ease',
-  },
-  dateRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-tertiary)', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
-  categoryRow: { display: 'flex', alignItems: 'center', fontSize: '12px', gap: '8px', minWidth: 0, flexWrap: 'wrap' as const },
   timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
-  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', minWidth: 0 },
-  leftCol: { flex: 1, minWidth: 0, overflow: 'hidden' },
-  rightCol: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
+  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', minWidth: 0 },
+  leftCol: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, gap: '4px' },
+  rightCol: { display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: '8px', flexShrink: 0 },
   expenseInfo: {
     flex: 1,
     minWidth: 0,
   },
   description: {
-    margin: '0 0 5px 0',
+    margin: '0',
     fontSize: '16px',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
@@ -1148,8 +1091,27 @@ const styles = {
     whiteSpace: 'nowrap' as const,
     boxShadow: '0 1px 3px var(--shadow)',
   },
+  categoryIcon: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    flexShrink: 0,
+  },
+  categoryName: {
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    color: 'var(--text-primary)',
+  },
+  date: {
+    fontSize: '12px',
+    color: 'var(--text-tertiary)',
+  },
   notes: {
-    margin: '8px 0 0 0',
+    margin: '0',
     fontSize: '14px',
     color: 'var(--text-secondary)',
   },
@@ -1244,7 +1206,6 @@ const styles = {
     backgroundColor: 'var(--success-bg)',
     padding: '2px 6px',
     borderRadius: '4px',
-    marginLeft: '4px',
   },
   completedCheck: {
     marginLeft: '6px',
@@ -1256,6 +1217,11 @@ const styles = {
     alignItems: 'center',
   },
   actions: { gap: '8px' },
+  mobileActions: {
+    position: 'absolute' as const,
+    right: '16px',
+    bottom: '12px',
+  },
   menuContainer: {
     position: 'relative' as const,
   },

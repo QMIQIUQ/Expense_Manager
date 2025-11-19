@@ -163,53 +163,43 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     .slice(0, 5);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.summaryCards}>
-        <div style={styles.card}>
-          <div style={styles.cardIcon}>💰</div>
-          <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>Monthly Expense</div>
-            <div style={styles.cardValue}>${stats.monthly.toFixed(2)}</div>
+    <div className="dashboard-summary">
+      <div className="summary-cards-grid">
+        <div className="summary-card">
+          <div className="card-icon">💰</div>
+          <div className="card-content">
+            <div className="card-label">Monthly Expense</div>
+            <div className="card-value">${stats.monthly.toFixed(2)}</div>
           </div>
         </div>
 
-        <div style={styles.card}>
-          <div style={{ ...styles.cardIcon, backgroundColor: '#e8f5e9' }}>💵</div>
-          <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('monthlyIncome')}</div>
-            <div style={{ ...styles.cardValue, color: 'var(--success-text)' }}>
+        <div className="summary-card">
+          <div className="card-icon success-bg">💵</div>
+          <div className="card-content">
+            <div className="card-label">{t('monthlyIncome')}</div>
+            <div className="card-value success-text">
               ${stats.monthlyIncome.toFixed(2)}
             </div>
           </div>
         </div>
 
-        <div style={styles.card}>
-          <div
-            style={{
-              ...styles.cardIcon,
-              backgroundColor: stats.netCashflow >= 0 ? '#e8f5e9' : '#ffebee',
-            }}
-          >
+        <div className="summary-card">
+          <div className={`card-icon ${stats.netCashflow >= 0 ? 'success-bg' : 'error-bg'}`}>
             {stats.netCashflow >= 0 ? '📈' : '📉'}
           </div>
-          <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('netCashflow')}</div>
-            <div
-              style={{
-                ...styles.cardValue,
-                color: stats.netCashflow >= 0 ? '#4caf50' : '#f44336',
-              }}
-            >
+          <div className="card-content">
+            <div className="card-label">{t('netCashflow')}</div>
+            <div className={`card-value ${stats.netCashflow >= 0 ? 'success-text' : 'error-text'}`}>
               ${stats.netCashflow.toFixed(2)}
             </div>
           </div>
         </div>
 
-        <div style={styles.card}>
-          <div style={{ ...styles.cardIcon, backgroundColor: '#fff3e0' }}>💸</div>
-          <div style={styles.cardContent}>
-            <div style={styles.cardLabel}>{t('unrecovered')}</div>
-            <div style={{ ...styles.cardValue, color: 'var(--warning-text)' }}>
+        <div className="summary-card">
+          <div className="card-icon warning-bg">💸</div>
+          <div className="card-content">
+            <div className="card-label">{t('unrecovered')}</div>
+            <div className="card-value warning-text">
               ${stats.totalUnrecovered.toFixed(2)}
             </div>
           </div>
@@ -231,57 +221,54 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         if (trackedExpenses.length === 0) return null;
         
         return (
-          <div style={styles.trackedExpensesSection}>
-            <h3 style={styles.sectionTitle}>
+          <div className="tracked-expenses-section">
+            <h3 className="section-title">
               💰 {t('trackedExpenses')} ({trackedExpenses.length})
             </h3>
-            <div style={styles.trackedExpensesList}>
+            <div className="tracked-expenses-list">
               {trackedExpenses.map(expense => {
                 const repaid = repaymentTotals[expense.id!] || 0;
                 const remaining = expense.amount - repaid;
                 const percentage = (repaid / expense.amount) * 100;
                 
                 return (
-                  <div key={expense.id} style={styles.trackedExpenseCard}>
-                    <div style={styles.trackedExpenseHeader}>
-                      <div style={styles.trackedExpenseInfo}>
-                        <span style={styles.trackedExpenseTitle}>{expense.description}</span>
-                        <span style={styles.trackedExpenseDate}>{expense.date}</span>
+                  <div key={expense.id} className="tracked-expense-card">
+                    <div className="tracked-expense-header">
+                      <div className="tracked-expense-info">
+                        <span className="tracked-expense-title">{expense.description}</span>
+                        <span className="tracked-expense-date">{expense.date}</span>
                       </div>
                       {onMarkTrackingCompleted && (
                         <button
                           onClick={() => onMarkTrackingCompleted(expense.id!)}
-                          style={styles.completeButton}
+                          className="btn-complete"
                           title={t('markAsCompleted')}
                         >
                           ✓
                         </button>
                       )}
                     </div>
-                    <div style={styles.trackedExpenseAmounts}>
-                      <div style={styles.trackedAmountItem}>
-                        <span style={styles.trackedAmountLabel}>{t('totalAmount')}:</span>
-                        <span style={styles.trackedAmountValue}>${expense.amount.toFixed(2)}</span>
+                    <div className="tracked-expense-amounts">
+                      <div className="tracked-amount-item">
+                        <span className="tracked-amount-label">{t('totalAmount')}:</span>
+                        <span className="tracked-amount-value">${expense.amount.toFixed(2)}</span>
                       </div>
-                      <div style={styles.trackedAmountItem}>
-                        <span style={styles.trackedAmountLabel}>{t('repaid')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: 'var(--success-text)' }}>${repaid.toFixed(2)}</span>
+                      <div className="tracked-amount-item">
+                        <span className="tracked-amount-label">{t('repaid')}:</span>
+                        <span className="tracked-amount-value success-text">${repaid.toFixed(2)}</span>
                       </div>
-                      <div style={styles.trackedAmountItem}>
-                        <span style={styles.trackedAmountLabel}>{t('remaining')}:</span>
-                        <span style={{ ...styles.trackedAmountValue, color: 'var(--warning-text)' }}>${remaining.toFixed(2)}</span>
+                      <div className="tracked-amount-item">
+                        <span className="tracked-amount-label">{t('remaining')}:</span>
+                        <span className="tracked-amount-value warning-text">${remaining.toFixed(2)}</span>
                       </div>
                     </div>
-                    <div style={styles.progressBar}>
+                    <div className="progress-bar">
                       <div
-                        style={{
-                          ...styles.progressFill,
-                          width: `${percentage}%`,
-                          backgroundColor: '#4CAF50',
-                        }}
+                        className="progress-fill success-bg"
+                        style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <span style={styles.categoryPercentage}>
+                    <span className="category-percentage">
                       {percentage.toFixed(1)}% {t('collected')}
                     </span>
                   </div>
@@ -293,26 +280,24 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       })()}
 
       {categories.length > 0 && (
-        <div style={styles.categoryBreakdown}>
-          <h3 style={styles.sectionTitle}>{t('topCategories')}</h3>
-          <div style={styles.categoryList}>
+        <div className="category-breakdown card">
+          <h3 className="section-title">{t('topCategories')}</h3>
+          <div className="category-list">
             {categories.map(([category, amount]) => {
               const percentage = (amount / stats.total) * 100;
               return (
-                <div key={category} style={styles.categoryItem}>
-                  <div style={styles.categoryInfo}>
-                    <span style={styles.categoryName}>{category}</span>
-                    <span style={styles.categoryAmount}>${amount.toFixed(2)}</span>
+                <div key={category} className="category-item">
+                  <div className="category-info">
+                    <span className="category-name">{category}</span>
+                    <span className="category-amount error-text">${amount.toFixed(2)}</span>
                   </div>
-                  <div style={styles.progressBar}>
+                  <div className="progress-bar">
                     <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${percentage}%`,
-                      }}
+                      className="progress-fill"
+                      style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span style={styles.categoryPercentage}>{percentage.toFixed(1)}%</span>
+                  <span className="category-percentage">{percentage.toFixed(1)}%</span>
                 </div>
               );
             })}
@@ -321,8 +306,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       )}
 
       {pieData.length > 0 && (
-        <div style={styles.pieChartContainer}>
-          <h3 style={styles.sectionTitle}>{t('categoryDistribution')}</h3>
+        <div className="chart-container card">
+          <h3 className="section-title">{t('categoryDistribution')}</h3>
           <ResponsiveContainer width="100%" height={400}>
             <PieChart>
               <Pie
@@ -364,8 +349,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       )}
 
       {trendData.length > 0 && (
-        <div style={styles.trendChartContainer}>
-          <h3 style={styles.sectionTitle}>{t('spendingTrend')} (7 Days)</h3>
+        <div className="chart-container card">
+          <h3 className="section-title">{t('spendingTrend')} (7 Days)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -385,18 +370,18 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       )}
 
       {recentExpenses.length > 0 && (
-        <div style={styles.recentExpensesContainer}>
-          <h3 style={styles.sectionTitle}>{t('recentExpenses')}</h3>
-          <div style={styles.recentExpensesList}>
+        <div className="recent-expenses-container card">
+          <h3 className="section-title">{t('recentExpenses')}</h3>
+          <div className="recent-expenses-list">
             {recentExpenses.map((expense) => (
-              <div key={expense.id} style={styles.recentExpenseItem}>
-                <div style={styles.recentExpenseInfo}>
-                  <span style={styles.recentExpenseDesc}>{expense.description}</span>
-                  <span style={styles.recentExpenseCategory}>{expense.category}</span>
+              <div key={expense.id} className="recent-expense-item">
+                <div className="recent-expense-info">
+                  <span className="recent-expense-desc">{expense.description}</span>
+                  <span className="recent-expense-category">{expense.category}</span>
                 </div>
-                <div style={styles.recentExpenseRight}>
-                  <span style={styles.recentExpenseAmount}>${expense.amount.toFixed(2)}</span>
-                  <span style={styles.recentExpenseDate}>
+                <div className="recent-expense-right">
+                  <span className="recent-expense-amount error-text">${expense.amount.toFixed(2)}</span>
+                  <span className="recent-expense-date">
                     {new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
@@ -407,283 +392,6 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '30px',
-  },
-  summaryCards: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: '12px',
-  },
-  card: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'flex-start',
-    gap: '10px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  cardIcon: {
-    fontSize: '28px',
-    width: '40px',
-    height: '40px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'var(--icon-bg)',
-    borderRadius: '8px',
-    alignSelf: 'center',
-  },
-  cardContent: {
-    width: '100%',
-    minWidth: 0,
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    textAlign: 'center' as const,
-  },
-  cardLabel: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-    marginBottom: '4px',
-    fontWeight: '500' as const,
-    whiteSpace: 'nowrap' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  cardValue: {
-    fontSize: '20px',
-    fontWeight: '700' as const,
-    color: 'var(--text-primary)',
-    wordBreak: 'break-word' as const,
-    lineHeight: '1.2',
-    width: '100%',
-  },
-  categoryBreakdown: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '20px',
-  },
-  sectionTitle: {
-    margin: '0 0 20px 0',
-    fontSize: '18px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-  },
-  categoryList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  categoryItem: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '6px',
-  },
-  categoryInfo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '8px',
-    minWidth: 0,
-  },
-  categoryName: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-    flex: 1,
-    minWidth: 0,
-  },
-  categoryAmount: {
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    color: 'var(--error-text)',
-    whiteSpace: 'nowrap' as const,
-    flexShrink: 0,
-  },
-  progressBar: {
-    height: '8px',
-    backgroundColor: 'var(--bg-tertiary)',
-    borderRadius: '4px',
-    overflow: 'hidden' as const,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#6366f1',
-    transition: 'width 0.3s ease',
-  },
-  categoryPercentage: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-    alignSelf: 'flex-end',
-  },
-  pieChartContainer: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '20px',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  trendChartContainer: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '20px',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  recentExpensesContainer: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '20px',
-  },
-  recentExpensesList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-  },
-  recentExpenseItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px',
-    backgroundColor: 'var(--card-bg)',
-    borderRadius: '8px',
-    gap: '10px',
-  },
-  recentExpenseInfo: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '4px',
-    flex: 1,
-    minWidth: 0,
-  },
-  recentExpenseDesc: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-  },
-  recentExpenseCategory: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-    display: 'inline-block',
-    padding: '2px 8px',
-    backgroundColor: 'var(--info-bg)',
-    borderRadius: '4px',
-    maxWidth: '100%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-  },
-  recentExpenseRight: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'flex-end',
-    gap: '4px',
-  },
-  recentExpenseAmount: {
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--error-text)',
-  },
-  recentExpenseDate: {
-    fontSize: '12px',
-    color: 'var(--text-tertiary)',
-  },
-  // Tracked Expenses Styles
-  trackedExpensesSection: {
-    backgroundColor: 'var(--warning-bg)',
-    border: '2px solid #ffc107',
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '24px',
-  },
-  trackedExpensesList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-  },
-  trackedExpenseCard: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    padding: '16px',
-  },
-  trackedExpenseHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '12px',
-  },
-  trackedExpenseInfo: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '4px',
-    flex: 1,
-  },
-  trackedExpenseTitle: {
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
-  trackedExpenseDate: {
-    fontSize: '12px',
-    color: 'var(--text-tertiary)',
-  },
-  completeButton: {
-    padding: '6px 12px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    transition: 'background-color 0.2s',
-  } as React.CSSProperties,
-  trackedExpenseAmounts: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '12px',
-    marginBottom: '12px',
-  },
-  trackedAmountItem: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '4px',
-  },
-  trackedAmountLabel: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-  },
-  trackedAmountValue: {
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
 };
 
 export default DashboardSummary;
