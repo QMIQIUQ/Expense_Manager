@@ -723,9 +723,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                 </div>
               ) : (
-                <div style={styles.mainRow}>
-                  <div style={styles.leftCol}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* First row: time, category, status on left; amount info on right */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                       <span style={styles.timeDisplay}>{expense.time}</span>
                       <span style={{
                         ...styles.category,
@@ -734,33 +735,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       }}>
                         {getCategoryDisplay(expense.category)}
                       </span>
-                      {expense.repaymentTrackingCompleted && (
-                        <span style={styles.completedBadge}>
-                          ✓ {t('completed')}
-                        </span>
+                      {expense.needsRepaymentTracking && (
+                        expense.repaymentTrackingCompleted ? (
+                          <span style={styles.completedBadge}>
+                            ✓ {t('completed')}
+                          </span>
+                        ) : (
+                          <span style={styles.pendingBadge}>
+                            ⏳ {t('pending')}
+                          </span>
+                        )
                       )}
                     </div>
 
-                    <h3 style={styles.description}>{expense.description}</h3>
-                    {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
-                    
-                    {/* Payment Method Display */}
-                    {expense.paymentMethod && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
-                        {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
-                        {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
-                        {expense.paymentMethod === 'credit_card' && expense.cardId && (
-                          <span>
-                            {cards.find(c => c.id === expense.cardId)?.name && `(${cards.find(c => c.id === expense.cardId)?.name})`}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={styles.rightCol}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
                       {/* Amount Display */}
                       {(() => {
                         const repaid = repaymentTotals[expense.id!] || 0;
@@ -798,120 +786,146 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         return null;
                       })()}
                     </div>
+                  </div>
 
-                    {/* Desktop: Show all buttons */}
-                    <div className="desktop-actions" style={styles.actions}>
-                      <button 
-                        onClick={() => {
-                          if (expandedRepaymentId === expense.id) {
-                            setExpandedRepaymentId(null);
-                          } else {
-                            setExpandedRepaymentId(expense.id!);
-                          }
-                        }} 
-                        className="btn-icon btn-icon-success"
-                        style={expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}}
-                        aria-label={t('repayments')}
-                        title={t('repayments')}
-                      >
-                        <RepaymentIcon size={18} />
-                      </button>
+                  {/* Second row: description */}
+                  <h3 style={styles.description}>{expense.description}</h3>
+
+                  {/* Third row: notes + payment method on left; buttons on right */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                      {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
                       
-                      {expense.needsRepaymentTracking && (
-                        <button
-                          onClick={() => {
-                            onInlineUpdate(expense.id!, {
-                              repaymentTrackingCompleted: !expense.repaymentTrackingCompleted
-                            });
-                          }}
-                          className={`btn-icon ${expense.repaymentTrackingCompleted ? 'btn-icon-success' : 'btn-icon-warning'}`}
-                          aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
-                          title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
-                        >
-                          {expense.repaymentTrackingCompleted ? <CheckIcon size={18} /> : <CircleIcon size={18} />}
-                        </button>
+                      {/* Payment Method Display */}
+                      {expense.paymentMethod && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
+                          {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                          {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
+                          {expense.paymentMethod === 'credit_card' && expense.cardId && (
+                            <span>
+                              {cards.find(c => c.id === expense.cardId)?.name && `(${cards.find(c => c.id === expense.cardId)?.name})`}
+                            </span>
+                          )}
+                        </div>
                       )}
-                      
-                      <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
-                        <EditIcon size={18} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
-                        className="btn-icon btn-icon-danger"
-                        aria-label={t('delete')}
-                      >
-                        <DeleteIcon size={18} />
-                      </button>
                     </div>
 
-                    {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions" style={styles.mobileActions}>
-                      <div style={styles.menuContainer}>
-                        <button
-                          className="menu-trigger-button"
-                          onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
-                          aria-label="More"
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
+                      {/* Desktop: Show all buttons */}
+                      <div className="desktop-actions" style={styles.actions}>
+                        <button 
+                          onClick={() => {
+                            if (expandedRepaymentId === expense.id) {
+                              setExpandedRepaymentId(null);
+                            } else {
+                              setExpandedRepaymentId(expense.id!);
+                            }
+                          }} 
+                          className="btn-icon btn-icon-success"
+                          style={expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}}
+                          aria-label={t('repayments')}
+                          title={t('repayments')}
                         >
-                          ⋮
+                          <RepaymentIcon size={18} />
                         </button>
-                        {openMenuId === expense.id && (
-                          <div style={styles.menu}>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                startInlineEdit(expense);
-                              }}
-                            >
-                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
-                              {t('edit')}
-                            </button>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                if (expandedRepaymentId === expense.id) {
-                                  setExpandedRepaymentId(null);
-                                } else {
-                                  setExpandedRepaymentId(expense.id!);
-                                }
-                              }}
-                            >
-                              <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
-                              {t('repayments')}
-                            </button>
-                            {expense.needsRepaymentTracking && (
+                        
+                        {expense.needsRepaymentTracking && (
+                          <button
+                            onClick={() => {
+                              onInlineUpdate(expense.id!, {
+                                repaymentTrackingCompleted: !expense.repaymentTrackingCompleted
+                              });
+                            }}
+                            className={`btn-icon ${expense.repaymentTrackingCompleted ? 'btn-icon-success' : 'btn-icon-warning'}`}
+                            aria-label={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                            title={expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                          >
+                            {expense.repaymentTrackingCompleted ? <CheckIcon size={18} /> : <CircleIcon size={18} />}
+                          </button>
+                        )}
+                        
+                        <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                          <EditIcon size={18} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ isOpen: true, expenseId: expense.id! })}
+                          className="btn-icon btn-icon-danger"
+                          aria-label={t('delete')}
+                        >
+                          <DeleteIcon size={18} />
+                        </button>
+                      </div>
+
+                      {/* Mobile: Show hamburger menu */}
+                      <div className="mobile-actions" style={styles.mobileActions}>
+                        <div style={styles.menuContainer}>
+                          <button
+                            className="menu-trigger-button"
+                            onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
+                            aria-label="More"
+                          >
+                            ⋮
+                          </button>
+                          {openMenuId === expense.id && (
+                            <div style={styles.menu}>
                               <button
                                 className="menu-item-hover"
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  onInlineUpdate(expense.id!, {
-                                    repaymentTrackingCompleted: !expense.repaymentTrackingCompleted,
-                                  });
+                                  startInlineEdit(expense);
                                 }}
                               >
-                                <span style={styles.menuIcon}>
-                                  {expense.repaymentTrackingCompleted ? <CheckIcon size={16} /> : <CircleIcon size={16} />}
-                                </span>
-                                {expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                                <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                                {t('edit')}
                               </button>
-                            )}
-                            <button
-                              className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
-                              }}
-                            >
-                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
-                              {t('delete')}
-                            </button>
-                          </div>
-                        )}
+                              <button
+                                className="menu-item-hover"
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  if (expandedRepaymentId === expense.id) {
+                                    setExpandedRepaymentId(null);
+                                  } else {
+                                    setExpandedRepaymentId(expense.id!);
+                                  }
+                                }}
+                              >
+                                <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
+                                {t('repayments')}
+                              </button>
+                              {expense.needsRepaymentTracking && (
+                                <button
+                                  className="menu-item-hover"
+                                  style={styles.menuItem}
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    onInlineUpdate(expense.id!, {
+                                      repaymentTrackingCompleted: !expense.repaymentTrackingCompleted,
+                                    });
+                                  }}
+                                >
+                                  <span style={styles.menuIcon}>
+                                    {expense.repaymentTrackingCompleted ? <CheckIcon size={16} /> : <CircleIcon size={16} />}
+                                  </span>
+                                  {expense.repaymentTrackingCompleted ? t('markAsIncomplete') : t('markRepaymentComplete')}
+                                </button>
+                              )}
+                              <button
+                                className="menu-item-hover"
+                                style={{ ...styles.menuItem, color: 'var(--error-text)' }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteConfirm({ isOpen: true, expenseId: expense.id! });
+                                }}
+                              >
+                                <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                                {t('delete')}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1207,6 +1221,14 @@ const styles = {
     padding: '2px 6px',
     borderRadius: '4px',
   },
+  pendingBadge: {
+    fontSize: '10px',
+    fontWeight: '600' as const,
+    color: 'var(--warning-text)',
+    backgroundColor: 'var(--warning-bg)',
+    padding: '2px 6px',
+    borderRadius: '4px',
+  },
   completedCheck: {
     marginLeft: '6px',
     color: 'var(--success-text)',
@@ -1218,9 +1240,7 @@ const styles = {
   },
   actions: { gap: '8px' },
   mobileActions: {
-    position: 'absolute' as const,
-    right: '16px',
-    bottom: '12px',
+    marginTop: '4px',
   },
   menuContainer: {
     position: 'relative' as const,
@@ -1374,11 +1394,8 @@ const styles = {
     color: '#1976d2',
   },
   inlineRepaymentSection: {
+    // Spacer wrapper only; visual card is handled inside RepaymentManager (inline mode)
     marginTop: '12px',
-    padding: '16px',
-    backgroundColor: 'var(--bg-secondary)',
-    borderRadius: '6px',
-    border: '1px solid var(--border-color)',
   },
 };
 

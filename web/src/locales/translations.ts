@@ -522,6 +522,7 @@ export const translations = {
   markRepaymentComplete: { en: 'Mark repayment as complete', zh: '標記還款完成', 'zh-CN': '标记还款完成' },
   markAsIncomplete: { en: 'Mark as incomplete', zh: '標記為未完成', 'zh-CN': '标记为未完成' },
   completed: { en: 'Completed', zh: '已完成', 'zh-CN': '已完成' },
+  pending: { en: 'Pending', zh: '待收款', 'zh-CN': '待收款' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
