@@ -51,7 +51,6 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
       fontWeight: 500,
       fontSize: '0.875rem',
       transition: 'all 0.2s',
-      borderBottom: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
       color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
       cursor: 'pointer',
       backgroundColor: 'transparent',

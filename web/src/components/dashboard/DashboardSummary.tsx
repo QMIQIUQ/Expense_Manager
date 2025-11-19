@@ -195,7 +195,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           </div>
         </div>
 
-        <div className="summary-card">
+        <div className="summary-card" style={{ position: 'relative' }}>
           <div className="card-icon warning-bg">💸</div>
           <div className="card-content">
             <div className="card-label">{t('unrecovered')}</div>
@@ -203,6 +203,34 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
               ${stats.totalUnrecovered.toFixed(2)}
             </div>
           </div>
+          {(() => {
+            const trackedCount = expenses.filter(exp => 
+              exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
+            ).length;
+            if (trackedCount > 0) {
+              return (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  backgroundColor: 'var(--warning-text)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }}>
+                  {trackedCount}
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       </div>
 
