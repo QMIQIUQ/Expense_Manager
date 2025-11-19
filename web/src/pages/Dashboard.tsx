@@ -1345,7 +1345,6 @@ const Dashboard: React.FC = () => {
                   maxWidth: '90vw',
                   backgroundColor: 'var(--bg-primary)',
                   borderColor: 'var(--border-color)',
-                  top: '100%',
                   transform: isMobile ? undefined : 'translateX(calc(-100% + 32px))',
                 }}
               >
