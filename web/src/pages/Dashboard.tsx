@@ -1346,6 +1346,7 @@ const Dashboard: React.FC = () => {
                   backgroundColor: 'var(--bg-primary)',
                   borderColor: 'var(--border-color)',
                   top: '100%',
+                  transform: isMobile ? undefined : 'translateX(calc(-100% + 32px))',
                 }}
               >
                   {/* Language Section */}
