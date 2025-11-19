@@ -10,19 +10,6 @@ interface IncomeFormProps {
   preselectedExpenseId?: string; // Pre-select an expense when creating from expense detail
 }
 
-const responsiveStyles = `
-  .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  @media (min-width: 640px) {
-    .form-row {
-      flex-direction: row;
-    }
-  }
-`;
-
 const IncomeForm: React.FC<IncomeFormProps> = ({
   onSubmit,
   onCancel,
@@ -33,7 +20,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    amount: initialData?.amount || 0,
+    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     date: initialData?.date || new Date().toISOString().split('T')[0],
     type: initialData?.type || ('other' as IncomeType),
     category: initialData?.category || ('default' as IncomeCategory),
@@ -70,7 +57,11 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     setErrors({});
     
     // Prepare data and remove undefined/empty fields to prevent Firestore errors
-    const submitData: Partial<typeof formData> = { ...formData };
+    // Convert amount from cents to dollars
+    const submitData: Partial<typeof formData> = { 
+      ...formData,
+      amount: formData.amount / 100
+    };
     
     // Remove empty optional fields
     if (!submitData.title || submitData.title.trim() === '') {
@@ -111,7 +102,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      [name]: name === 'amount' ? parseInt(value) || 0 : value,
     }));
     // Clear error for this field
     if (errors[name]) {
@@ -120,10 +111,9 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <style>{responsiveStyles}</style>
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('titleOptional')}</label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('titleOptional')}</label>
         <input
           type="text"
           name="title"
@@ -131,56 +121,78 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder={t('enterTitleOrSource')}
-          style={styles.input}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         />
       </div>
 
-      <div className="form-row">
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>{t('amount')} *</label>
-          <input
-            type="number"
-            name="amount"
-            value={formData.amount || ''}
-            onChange={handleChange}
-            onFocus={(e) => e.target.select()}
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            style={{
-              ...styles.input,
-              borderColor: errors.amount ? '#ef4444' : 'var(--border-color)',
-            }}
-          />
-          {errors.amount && <span style={styles.errorText}>{errors.amount}</span>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} *</label>
+          <div className="relative">
+            <input
+              type="number"
+              name="amount"
+              value={formData.amount || ''}
+              onChange={handleChange}
+              onFocus={(e) => e.target.select()}
+              placeholder="2000"
+              step="1"
+              min="0"
+              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+                errors.amount ? 'border-red-500' : ''
+              }`}
+              style={{
+                borderColor: errors.amount ? undefined : 'var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)'
+              }}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              {formData.amount > 0 ? `= $${(formData.amount / 100).toFixed(2)}` : 'Enter amount in cents (e.g., 2000 = $20.00)'}
+            </div>
+          </div>
+          {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>{t('date')} *</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
           <input
             type="date"
             name="date"
             value={formData.date}
             onChange={handleChange}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.date ? 'border-red-500' : ''
+            }`}
             style={{
-              ...styles.input,
-              borderColor: errors.date ? '#ef4444' : 'var(--border-color)',
+              borderColor: errors.date ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
             }}
           />
-          {errors.date && <span style={styles.errorText}>{errors.date}</span>}
+          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
         </div>
       </div>
 
-      <div className="form-row">
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>{t('type')} *</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('type')} *</label>
           <select
             name="type"
             value={formData.type}
             onChange={handleChange}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.type ? 'border-red-500' : ''
+            }`}
             style={{
-              ...styles.input,
-              borderColor: errors.type ? '#ef4444' : 'var(--border-color)',
+              borderColor: errors.type ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
             }}
           >
             <option value="salary">{t('salary')}</option>
@@ -188,49 +200,67 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <option value="repayment">{t('repayment')}</option>
             <option value="other">{t('other')}</option>
           </select>
-          {errors.type && <span style={styles.errorText}>{errors.type}</span>}
+          {errors.type && <span className="text-xs text-red-600">{errors.type}</span>}
         </div>
 
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>{t('incomeCategory')}</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('incomeCategory')}</label>
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
-            style={styles.input}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="default">{t('defaultIncome')}</option>
             <option value="ewallet_reload">{t('ewalletReload')}</option>
             <option value="other">{t('other')}</option>
           </select>
-          <small style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            {formData.category === 'ewallet_reload' && t('ewalletReloadDesc')}
-          </small>
+          {formData.category === 'ewallet_reload' && (
+            <small className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {t('ewalletReloadDesc')}
+            </small>
+          )}
         </div>
       </div>
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (
-        <div style={styles.fieldGroup}>
-          <label style={styles.label}>{t('payerNameOptional')}</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('payerNameOptional')}</label>
           <input
             type="text"
             name="payerName"
             value={formData.payerName}
             onChange={handleChange}
+            onFocus={(e) => e.target.select()}
             placeholder={t('payerNamePlaceholder')}
-            style={styles.input}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           />
         </div>
       )}
 
       {expenses.length > 0 && (
-        <div style={styles.fieldGroup}>
-          <label style={styles.label}>{t('linkToExpenseOptional')}</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('linkToExpenseOptional')}</label>
           <select
             name="linkedExpenseId"
             value={formData.linkedExpenseId}
             onChange={handleChange}
-            style={styles.input}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
           >
             <option value="">-- {t('noLink')} --</option>
             {expenses.map((expense) => (
@@ -240,7 +270,13 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             ))}
           </select>
           {selectedExpense && (
-            <div style={styles.linkedInfo}>
+            <div 
+              className="text-xs p-2 rounded mt-1"
+              style={{
+                color: 'var(--accent-primary)',
+                backgroundColor: 'var(--accent-light)',
+              }}
+            >
               <div>
                 <strong>{t('expense')}:</strong> ${selectedExpense.amount.toFixed(2)}
               </div>
@@ -254,24 +290,50 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         </div>
       )}
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('notesOptional')}</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notesOptional')}</label>
         <textarea
           name="note"
           value={formData.note}
           onChange={handleChange}
           placeholder={t('addAnyNotes')}
           rows={3}
-          style={{ ...styles.input, resize: 'vertical' as const }}
+          className="px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
         />
       </div>
 
-      <div style={styles.actions}>
-        <button type="submit" style={styles.submitButton}>
+      <div className="flex gap-3 mt-2">
+        <button 
+          type="submit" 
+          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{
+            backgroundColor: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
           {initialData ? t('update') : t('addIncome')}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              borderRadius: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
             {t('cancel')}
           </button>
         )}
@@ -281,67 +343,3 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 };
 
 export default IncomeForm;
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '16px',
-  },
-  fieldGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-  },
-  errorText: {
-    fontSize: '12px',
-    color: '#ef4444',
-  },
-  linkedInfo: {
-    fontSize: '12px',
-    color: 'var(--accent-primary)',
-    backgroundColor: 'var(--accent-light)',
-    padding: '8px',
-    borderRadius: '8px',
-  },
-  actions: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '8px',
-    border: 'none',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    fontWeight: 600 as const,
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-  cancelButton: {
-    padding: '12px 24px',
-    borderRadius: '8px',
-    border: 'none',
-    backgroundColor: 'var(--bg-secondary)',
-    color: 'var(--text-primary)',
-    fontWeight: 600 as const,
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-};

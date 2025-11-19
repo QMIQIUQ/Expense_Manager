@@ -26,7 +26,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
-    amount: initialData?.amount || 0,
+    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     date: initialData?.date || new Date().toISOString().split('T')[0],
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
@@ -44,7 +44,9 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!formData.amount || formData.amount <= 0) {
       newErrors.amount = t('pleaseFillField') || 'Please enter a valid amount';
     }
-    if (maxAmount && formData.amount > maxAmount) {
+    // Convert amount from cents to dollars for validation
+    const amountInDollars = formData.amount / 100;
+    if (maxAmount && amountInDollars > maxAmount) {
       newErrors.amount = `Amount cannot exceed ${maxAmount.toFixed(2)}`;
     }
     if (!formData.date) {
@@ -59,7 +61,11 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     setErrors({});
     
     // Prepare data and remove undefined/empty fields to prevent Firestore errors
-    const submitData: Partial<typeof formData> = { ...formData };
+    // Convert amount from cents to dollars
+    const submitData: Partial<typeof formData> = { 
+      ...formData,
+      amount: amountInDollars
+    };
     
     // Remove empty optional fields
     if (!submitData.payerName || submitData.payerName.trim() === '') {
@@ -105,7 +111,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      [name]: name === 'amount' ? parseInt(value) || 0 : value,
     }));
     // Clear error for this field
     if (errors[name]) {
@@ -120,22 +126,28 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('repaymentAmount')} *
           </label>
-          <input
-            type="number"
-            id="amount"
-            name="amount"
-            step="0.01"
-            min="0.01"
-            value={formData.amount || ''}
-            onChange={handleChange}
-            placeholder="0.00"
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-red-500' : ''}`}
-            style={{
-              borderColor: errors.amount ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
+          <div className="relative">
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              step="1"
+              min="0"
+              value={formData.amount || ''}
+              onChange={handleChange}
+              onFocus={(e) => e.target.select()}
+              placeholder="2000"
+              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-red-500' : ''}`}
+              style={{
+                borderColor: errors.amount ? undefined : 'var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)'
+              }}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              {formData.amount > 0 ? `= $${(formData.amount / 100).toFixed(2)}` : 'Enter amount in cents (e.g., 2000 = $20.00)'}
+            </div>
+          </div>
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 

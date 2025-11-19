@@ -13,20 +13,12 @@ const responsiveStyles = `
   .mobile-actions {
     display: block;
   }
-  .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
   @media (min-width: 640px) {
     .desktop-actions {
       display: flex;
     }
     .mobile-actions {
       display: none;
-    }
-    .form-row {
-      flex-direction: row;
     }
   }
 `;
@@ -56,7 +48,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [formData, setFormData] = useState({
     categoryId: '',
     categoryName: '',
-    amount: 0,
+    amount: 0, // stored in cents
     period: 'monthly' as 'monthly' | 'weekly' | 'yearly',
     startDate: new Date().toISOString().split('T')[0],
     alertThreshold: 80,
@@ -97,6 +89,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
     const budgetData = {
       ...formData,
+      amount: formData.amount / 100, // Convert from cents to dollars
       categoryName: selectedCategory.name,
     };
 
@@ -122,7 +115,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     setFormData({
       categoryId: category?.id || '',
       categoryName: budget.categoryName,
-      amount: budget.amount,
+      amount: Math.round(budget.amount * 100), // Convert from dollars to cents
       period: budget.period,
       startDate: budget.startDate,
       alertThreshold: budget.alertThreshold,
@@ -143,7 +136,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       updates.categoryId = formData.categoryId;
       updates.categoryName = selectedCategory.name;
     }
-    if (budget.amount !== formData.amount) updates.amount = formData.amount;
+    const amountInDollars = formData.amount / 100;
+    if (budget.amount !== amountInDollars) updates.amount = amountInDollars;
     if (budget.period !== formData.period) updates.period = formData.period;
     if (budget.startDate !== formData.startDate) updates.startDate = formData.startDate;
     if (budget.alertThreshold !== formData.alertThreshold) updates.alertThreshold = formData.alertThreshold;
@@ -182,15 +176,20 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </div>
 
       {isAdding && (
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div className="form-row">
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('category')} *</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
               <select
                 value={formData.categoryId}
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 required
-                className="form-select"
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)'
+                }}
               >
                 <option value="">{t('selectCategory')}</option>
                 {categories.map((cat) => (
@@ -201,24 +200,35 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               </select>
             </div>
 
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('amount')} ($) *</label>
-              <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                onFocus={(e) => e.target.select()}
-                step="0.01"
-                min="0.01"
-                required
-                className="form-input"
-              />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} *</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="2000"
+                  step="1"
+                  min="0"
+                  required
+                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+                <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  {formData.amount > 0 ? `= $${(formData.amount / 100).toFixed(2)}` : 'Enter amount in cents (e.g., 2000 = $20.00)'}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="form-row">
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('budgetPeriod')} *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('budgetPeriod')} *</label>
               <select
                 value={formData.period}
                 onChange={(e) =>
@@ -227,7 +237,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     period: e.target.value as 'monthly' | 'weekly' | 'yearly',
                   })
                 }
-                className="form-select"
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)'
+                }}
               >
                 <option value="weekly">{t('periodWeekly')}</option>
                 <option value="monthly">{t('periodMonthly')}</option>
@@ -235,25 +250,40 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               </select>
             </div>
 
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('alertAt')} *</label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%) *</label>
               <input
                 type="number"
                 value={formData.alertThreshold}
                 onChange={(e) =>
-                  setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })
+                  setFormData({ ...formData, alertThreshold: parseInt(e.target.value) || 0 })
                 }
                 onFocus={(e) => e.target.select()}
                 min="1"
                 max="100"
                 required
-                className="form-input"
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)'
+                }}
               />
             </div>
           </div>
 
-          <div style={styles.formActions}>
-            <button type="submit" className="btn btn-primary">
+          <div className="flex gap-3 mt-2">
+            <button 
+              type="submit" 
+              className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent-primary)',
+                fontWeight: 600,
+                borderRadius: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
               {editingId ? t('updateBudget') : t('setBudgetButton')}
             </button>
             <button
@@ -263,7 +293,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 setEditingId(null);
                 resetForm();
               }}
-              className="btn btn-secondary"
+              className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                fontWeight: 600,
+                borderRadius: '8px',
+                transition: 'all 0.2s'
+              }}
             >
               {t('cancel')}
             </button>

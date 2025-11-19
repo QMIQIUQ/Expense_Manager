@@ -22,19 +22,6 @@ const PRESET_COLORS = [
   '#4285F4', '#1677FF', '#07C160', '#FF9500', '#5856D6',
 ];
 
-const responsiveStyles = `
-  .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  @media (min-width: 640px) {
-    .form-row {
-      flex-direction: row;
-    }
-  }
-`;
-
 const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialData }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -105,28 +92,32 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <style>{responsiveStyles}</style>
-      <div className="form-row">
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>{t('eWalletNameLabel')} *</label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')} *</label>
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
+            onFocus={(e) => e.target.select()}
             placeholder={t('eWalletNamePlaceholder2')}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.name ? 'border-red-500' : ''
+            }`}
             style={{
-              ...styles.input,
-              borderColor: errors.name ? '#f87171' : '#d1d5db',
+              borderColor: errors.name ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
             }}
             disabled={isSubmitting}
           />
-          {errors.name && <span style={styles.errorText}>{errors.name}</span>}
+          {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
         </div>
 
-        <div style={{ ...styles.fieldGroup, flex: 1 }}>
-          <label style={styles.label}>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('provider')} ({t('optional')})
           </label>
           <input
@@ -134,15 +125,21 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             name="provider"
             value={formData.provider}
             onChange={handleChange}
+            onFocus={(e) => e.target.select()}
             placeholder={t('providerPlaceholder')}
-            style={styles.input}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
             disabled={isSubmitting}
           />
         </div>
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           {t('accountNumber')} ({t('optional')})
         </label>
         <input
@@ -150,17 +147,26 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           name="accountNumber"
           value={formData.accountNumber}
           onChange={handleChange}
+          onFocus={(e) => e.target.select()}
           placeholder={t('accountNumberPlaceholder')}
-          style={styles.input}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
           disabled={isSubmitting}
           maxLength={20}
         />
-        <p style={styles.helpText}>{t('accountNumberHelp')}</p>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('accountNumberHelp')}</p>
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('categoryIcon')} *</label>
-        <div style={styles.iconGrid}>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('categoryIcon')} *</label>
+        <div 
+          className="flex flex-wrap gap-2 border rounded-lg p-3 max-h-48 overflow-y-auto"
+          style={{ borderColor: 'var(--border-color)' }}
+        >
           {EWALLET_ICONS.map((icon) => (
             <button
               key={icon}
@@ -169,9 +175,11 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
                 setFormData((prev) => ({ ...prev, icon }));
                 if (errors.icon) setErrors((prev) => ({ ...prev, icon: '' }));
               }}
+              className={`text-2xl p-2 border rounded transition-colors ${
+                formData.icon === icon ? 'border-primary' : 'border-transparent'
+              }`}
               style={{
-                ...styles.iconChoice,
-                ...(formData.icon === icon ? styles.iconChoiceActive : {}),
+                backgroundColor: formData.icon === icon ? 'var(--accent-light)' : 'transparent',
               }}
               disabled={isSubmitting}
             >
@@ -179,12 +187,15 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             </button>
           ))}
         </div>
-        {errors.icon && <span style={styles.errorText}>{errors.icon}</span>}
+        {errors.icon && <span className="text-xs text-red-600">{errors.icon}</span>}
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('categoryColor')} *</label>
-        <div style={styles.colorGrid}>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('categoryColor')} *</label>
+        <div 
+          className="flex flex-wrap gap-2 border rounded-lg p-3"
+          style={{ borderColor: 'var(--border-color)' }}
+        >
           {PRESET_COLORS.map((color) => (
             <button
               key={color}
@@ -193,16 +204,17 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
                 setFormData((prev) => ({ ...prev, color }));
                 if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
               }}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${
+                formData.color === color ? 'border-primary shadow-md' : 'border-transparent'
+              }`}
               style={{
-                ...styles.colorSwatch,
                 backgroundColor: color,
-                ...(formData.color === color ? styles.colorSwatchActive : {}),
               }}
               disabled={isSubmitting}
             />
           ))}
         </div>
-        <div style={styles.colorInputs}>
+        <div className="flex gap-3 items-center mt-2">
           <input
             type="color"
             value={formData.color}
@@ -210,7 +222,8 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
               setFormData((prev) => ({ ...prev, color: e.target.value }));
               if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
             }}
-            style={styles.colorPicker}
+            className="w-12 h-10 border rounded cursor-pointer"
+            style={{ borderColor: 'var(--border-color)' }}
             disabled={isSubmitting}
           />
           <input
@@ -221,43 +234,56 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
               if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
             }}
             placeholder="#000000"
-            style={styles.input}
+            className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
             disabled={isSubmitting}
           />
         </div>
-        {errors.color && <span style={styles.errorText}>{errors.color}</span>}
+        {errors.color && <span className="text-xs text-red-600">{errors.color}</span>}
       </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('preview')}</label>
-        <div style={{
-          ...styles.previewCard,
-          borderColor: formData.color,
-        }}>
-          <span style={styles.previewIcon}>{formData.icon}</span>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('preview')}</label>
+        <div 
+          className="flex gap-3 border rounded-lg p-3 items-center"
+          style={{
+            borderColor: formData.color,
+            backgroundColor: 'var(--card-bg)',
+          }}
+        >
+          <span className="text-3xl">{formData.icon}</span>
           <div>
-            <div style={styles.previewName}>{formData.name || t('eWalletNameLabel')}</div>
-            {formData.provider && <div style={styles.previewProvider}>{formData.provider}</div>}
+            <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {formData.name || t('eWalletNameLabel')}
+            </div>
+            {formData.provider && (
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {formData.provider}
+              </div>
+            )}
             {formData.accountNumber && (
-              <div style={styles.previewAccount}>···· {formData.accountNumber}</div>
+              <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                ···· {formData.accountNumber}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      <div style={styles.actions}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={styles.cancelButton}
-          disabled={isSubmitting}
-        >
-          {t('cancel')}
-        </button>
+      <div className="flex gap-3 mt-2">
         <button
           type="submit"
+          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
           style={{
-            ...styles.submitButton,
+            backgroundColor: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            transition: 'all 0.2s',
             opacity: isSubmitting ? 0.7 : 1,
             cursor: isSubmitting ? 'not-allowed' : 'pointer',
           }}
@@ -265,143 +291,24 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
         >
           {isSubmitting ? t('saving') : initialData ? t('update') : t('add')}
         </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+          disabled={isSubmitting}
+        >
+          {t('cancel')}
+        </button>
       </div>
     </form>
   );
 };
 
 export default EWalletForm;
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '16px',
-  },
-  fieldGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: 600 as const,
-    color: '#374151',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  helpText: {
-    fontSize: '12px',
-    color: '#6b7280',
-    margin: 0,
-  },
-  errorText: {
-    fontSize: '12px',
-    color: '#ef4444',
-  },
-  iconGrid: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '8px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '12px',
-    maxHeight: '180px',
-    overflowY: 'auto' as const,
-  },
-  iconChoice: {
-    fontSize: '24px',
-    padding: '8px',
-    border: '1px solid transparent',
-    borderRadius: '8px',
-    backgroundColor: '#fff',
-    cursor: 'pointer',
-  },
-  iconChoiceActive: {
-    borderColor: '#6366f1',
-    backgroundColor: '#eef2ff',
-  },
-  colorGrid: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '10px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '12px',
-  },
-  colorSwatch: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    border: '2px solid transparent',
-    cursor: 'pointer',
-  },
-  colorSwatchActive: {
-    borderColor: '#6366f1',
-    boxShadow: '0 0 0 3px rgba(99,102,241,0.2)',
-  },
-  colorInputs: {
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'center',
-  },
-  colorPicker: {
-    width: '48px',
-    height: '40px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    padding: 0,
-  },
-  previewCard: {
-    display: 'flex',
-    gap: '12px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '12px',
-    alignItems: 'center',
-  },
-  previewIcon: {
-    fontSize: '32px',
-  },
-  previewName: {
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  previewProvider: {
-    color: 'var(--text-secondary)',
-    fontSize: '14px',
-  },
-  previewAccount: {
-    color: '#9ca3af',
-    fontSize: '12px',
-  },
-  actions: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #d1d5db',
-    backgroundColor: '#fff',
-    color: '#374151',
-    fontWeight: 600 as const,
-    cursor: 'pointer',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '8px',
-    border: 'none',
-    backgroundColor: '#6366f1',
-    color: '#fff',
-    fontWeight: 600 as const,
-  },
-};

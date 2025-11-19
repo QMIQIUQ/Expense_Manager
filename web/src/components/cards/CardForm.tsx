@@ -609,12 +609,12 @@ const CardForm: React.FC<CardFormProps> = ({
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="flex-1 px-6 py-3 rounded-lg text-base font-medium transition-colors"
+          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
           style={{
             backgroundColor: 'var(--accent-light)',
             color: 'var(--accent-primary)',
             fontWeight: 600,
-            borderRadius: '12px',
+            borderRadius: '8px',
             transition: 'all 0.2s'
           }}
         >
@@ -623,12 +623,12 @@ const CardForm: React.FC<CardFormProps> = ({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-6 py-3 rounded-lg text-base font-medium transition-colors"
+          className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
           style={{
             backgroundColor: 'var(--bg-secondary)',
             color: 'var(--text-primary)',
             fontWeight: 600,
-            borderRadius: '12px',
+            borderRadius: '8px',
             transition: 'all 0.2s'
           }}
         >
