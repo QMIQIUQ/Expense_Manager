@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { DeleteIcon, EditIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
@@ -16,6 +17,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
   onEdit,
 }) => {
   const { t } = useLanguage();
+  const { effectiveTheme } = useTheme();
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; repaymentId: string | null }>({
     isOpen: false,
     repaymentId: null,
@@ -45,6 +47,31 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     });
   };
 
+  // Get theme-aware payment chip style
+  const getPaymentChipStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.paymentChip,
+        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+        color: '#86efac',
+        boxShadow: '0 1px 3px rgba(34, 197, 94, 0.2)',
+      };
+    }
+    return styles.paymentChip;
+  };
+
+  // Get theme-aware amount style
+  const getAmountStyle = () => {
+    if (effectiveTheme === 'dark') {
+      return {
+        ...styles.amount,
+        color: '#86efac',
+        textShadow: '0 1px 2px rgba(134, 239, 172, 0.2)',
+      };
+    }
+    return styles.amount;
+  };
+
   if (repayments.length === 0) {
     return (
       <div style={styles.noData}>
@@ -57,19 +84,19 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     <div style={styles.container}>
       <div style={styles.list}>
         {repayments.map((repayment) => (
-          <div key={repayment.id} style={styles.repaymentCard}>
+          <div key={repayment.id} className="repayment-card">
             {/* First row: Date, Payment Method Chip, Amount */}
             <div style={styles.repaymentRow1}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={styles.date}>{formatDate(repayment.date)}</span>
                 {/* Payment Method Chip */}
-                <span style={styles.paymentChip}>
+                <span style={getPaymentChipStyle()}>
                   {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                   {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
                   {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
                 </span>
               </div>
-              <div style={styles.amount}>${repayment.amount.toFixed(2)}</div>
+              <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
             </div>
 
             {/* Second row: Payer Name */}
@@ -89,7 +116,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
               <div style={styles.actions}>
                 <button
                   onClick={() => onEdit(repayment)}
-                  style={{ ...styles.iconButton, ...styles.primaryChip }}
+                  className="btn-icon btn-icon-primary"
                   aria-label="Edit repayment"
                   title={t('edit')}
                 >
@@ -97,7 +124,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                 </button>
                 <button
                   onClick={() => handleDeleteClick(repayment.id!)}
-                  style={{ ...styles.iconButton, ...styles.dangerChip }}
+                  className="btn-icon btn-icon-danger"
                   aria-label="Delete repayment"
                   title={t('delete')}
                 >
@@ -155,8 +182,9 @@ const styles = {
   },
   repaymentRow3: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '12px',
+    marginTop: '8px',
   },
   paymentChip: {
     padding: '4px 10px',
@@ -175,42 +203,23 @@ const styles = {
     textShadow: '0 1px 2px rgba(22, 163, 74, 0.1)',
   },
   date: {
-    fontSize: '13px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
+    fontSize: '0.9rem',
+    color: '#666',
   },
   payerName: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
+    fontSize: '1rem',
+    fontWeight: '500',
+    color: '#333',
   },
   noteText: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    fontStyle: 'italic' as const,
+    fontSize: '0.9rem',
+    color: '#666',
+    fontStyle: 'italic',
   },
   actions: {
     display: 'flex',
     gap: '8px',
   },
-  iconButton: {
-    padding: '6px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '6px',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  primaryChip: {
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
-  },
-  dangerChip: {
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
-  },
-
   noData: {
     textAlign: 'center' as const,
     padding: '20px',

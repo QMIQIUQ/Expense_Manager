@@ -22,6 +22,19 @@ const PRESET_COLORS = [
   '#4285F4', '#1677FF', '#07C160', '#FF9500', '#5856D6',
 ];
 
+const responsiveStyles = `
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  @media (min-width: 640px) {
+    .form-row {
+      flex-direction: row;
+    }
+  }
+`;
+
 const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialData }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -93,36 +106,39 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>{t('eWalletNameLabel')} *</label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder={t('eWalletNamePlaceholder2')}
-          style={{
-            ...styles.input,
-            borderColor: errors.name ? '#f87171' : '#d1d5db',
-          }}
-          disabled={isSubmitting}
-        />
-        {errors.name && <span style={styles.errorText}>{errors.name}</span>}
-      </div>
+      <style>{responsiveStyles}</style>
+      <div className="form-row">
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>{t('eWalletNameLabel')} *</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder={t('eWalletNamePlaceholder2')}
+            style={{
+              ...styles.input,
+              borderColor: errors.name ? '#f87171' : '#d1d5db',
+            }}
+            disabled={isSubmitting}
+          />
+          {errors.name && <span style={styles.errorText}>{errors.name}</span>}
+        </div>
 
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>
-          {t('provider')} ({t('optional')})
-        </label>
-        <input
-          type="text"
-          name="provider"
-          value={formData.provider}
-          onChange={handleChange}
-          placeholder={t('providerPlaceholder')}
-          style={styles.input}
-          disabled={isSubmitting}
-        />
+        <div style={{ ...styles.fieldGroup, flex: 1 }}>
+          <label style={styles.label}>
+            {t('provider')} ({t('optional')})
+          </label>
+          <input
+            type="text"
+            name="provider"
+            value={formData.provider}
+            onChange={handleChange}
+            placeholder={t('providerPlaceholder')}
+            style={styles.input}
+            disabled={isSubmitting}
+          />
+        </div>
       </div>
 
       <div style={styles.fieldGroup}>

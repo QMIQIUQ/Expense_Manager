@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 // Common e-wallet icons
@@ -13,24 +13,6 @@ const PRESET_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
   '#F7DC6F', '#BB8FCE',
 ];
-
-const responsiveStyles = `
-  .desktop-actions {
-    display: none;
-    gap: 8px;
-  }
-  .mobile-actions {
-    display: block;
-  }
-  @media (min-width: 640px) {
-    .desktop-actions {
-      display: flex;
-    }
-    .mobile-actions {
-      display: none;
-    }
-  }
-`;
 
 interface EWalletManagerProps {
   ewallets: EWallet[];
@@ -175,40 +157,90 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     resetForm();
   };
 
+  const styles = {
+    menuContainer: {
+      position: 'relative' as const,
+    },
+    menu: {
+      position: 'absolute' as const,
+      right: 0,
+      top: '100%',
+      marginTop: '4px',
+      backgroundColor: 'var(--card-bg)',
+      border: '1px solid var(--border-color)',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      zIndex: 9999,
+      minWidth: '160px',
+    },
+    menuItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      width: '100%',
+      padding: '12px 16px',
+      border: 'none',
+      backgroundColor: 'transparent',
+      color: 'var(--text-primary)',
+      fontSize: '14px',
+      cursor: 'pointer',
+      textAlign: 'left' as const,
+    },
+    menuIcon: {
+      display: 'flex',
+      alignItems: 'center',
+    },
+  };
+
   return (
-    <div style={styles.container}>
-      <style>{responsiveStyles}</style>
-      
-      <div style={styles.header}>
-        <h2 style={styles.title}>{t('eWallets')}</h2>
+    <div className="ewallet-manager">
+      <style>{`
+        .desktop-actions {
+          display: none;
+          gap: 8px;
+        }
+        .mobile-actions {
+          display: block;
+        }
+        @media (min-width: 640px) {
+          .desktop-actions {
+            display: flex;
+          }
+          .mobile-actions {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="header-actions">
+        <h2 className="section-title">{t('eWallets')}</h2>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+          <button onClick={() => setIsAdding(true)} className="btn btn-primary">
             <PlusIcon size={18} />
             <span>{t('addEWallet')}</span>
           </button>
         )}
       </div>
 
-      <div style={styles.searchContainer}>
+      <div className="search-container">
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder={t('searchEWallets')}
-          style={styles.searchInput}
+          className="form-input"
         />
       </div>
 
       {isAdding && (
-        <div style={styles.walletCard}>
+        <div className="ewallet-card">
           <form onSubmit={handleSubmit}>
-            <div style={styles.formGrid}>
+            <div className="form-grid">
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('eWalletName')}
-                style={styles.input}
+                className="form-input"
                 autoFocus
               />
               <input
@@ -216,27 +248,24 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                 value={formData.provider}
                 onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
                 placeholder={t('provider') + ' (' + t('optional') + ')'}
-                style={styles.input}
+                className="form-input"
               />
               <input
                 type="text"
                 value={formData.accountNumber}
                 onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                 placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
-                style={styles.input}
+                className="form-input"
               />
               <div>
-                <label style={styles.label}>{t('icon')}</label>
-                <div style={styles.iconGrid}>
+                <label className="form-label">{t('icon')}</label>
+                <div className="icon-grid">
                   {EWALLET_ICONS.map((icon) => (
                     <button
                       key={icon}
                       type="button"
                       onClick={() => setFormData({ ...formData, icon })}
-                      style={{
-                        ...styles.iconButton,
-                        ...(formData.icon === icon ? styles.iconButtonSelected : {}),
-                      }}
+                      className={`icon-button ${formData.icon === icon ? 'selected' : ''}`}
                     >
                       {icon}
                     </button>
@@ -244,77 +273,71 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                 </div>
               </div>
               <div>
-                <label style={styles.label}>{t('color')}</label>
-                <div style={styles.colorGrid}>
+                <label className="form-label">{t('color')}</label>
+                <div className="color-grid">
                   {PRESET_COLORS.map((color) => (
                     <button
                       key={color}
                       type="button"
                       onClick={() => setFormData({ ...formData, color })}
-                      style={{
-                        ...styles.colorButton,
-                        backgroundColor: color,
-                        ...(formData.color === color ? styles.colorButtonSelected : {}),
-                      }}
+                      className={`color-button ${formData.color === color ? 'selected' : ''}`}
+                      style={{ backgroundColor: color }}
                     />
                   ))}
                 </div>
               </div>
             </div>
-            <div style={styles.formActions}>
-              <button type="submit" style={styles.saveButton}>
-                <CheckIcon size={18} />
+            <div className="button-group">
+              <button type="submit" className="btn btn-primary">
+                {t('addEWallet')}
               </button>
-              <button type="button" onClick={() => { setIsAdding(false); resetForm(); }} style={styles.cancelButton}>
-                <CloseIcon size={18} />
+              <button type="button" onClick={() => { setIsAdding(false); resetForm(); }} className="btn btn-secondary">
+                {t('cancel')}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      <div style={styles.walletList}>
+      <div className="ewallet-list">
         {filteredWallets.length === 0 ? (
-          <div style={styles.noData}>{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
+          <div className="no-data">{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => (
-            <div key={wallet.id} style={{ ...styles.walletCard, ...(openMenuId === wallet.id ? { zIndex: 9999 } : {}) }}>
+            <div key={wallet.id} className="ewallet-card" style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
               {editingId === wallet.id ? (
                 // Edit Mode
-                <div style={styles.formGrid}>
+                <div className="form-grid">
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder={t('eWalletName')}
-                    style={styles.input}
+                    className="form-input"
                   />
                   <input
                     type="text"
                     value={formData.provider}
                     onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
                     placeholder={t('provider') + ' (' + t('optional') + ')'}
-                    style={styles.input}
+                    className="form-input"
                   />
                   <input
                     type="text"
                     value={formData.accountNumber}
                     onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                     placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
-                    style={styles.input}
+                    className="form-input"
                   />
                   <div>
-                    <label style={styles.label}>{t('icon')}</label>
-                    <div style={styles.iconGrid}>
+                    <label className="form-label">{t('icon')}</label>
+                    <div className="icon-grid">
                       {EWALLET_ICONS.map((icon) => (
                         <button
                           key={icon}
                           type="button"
                           onClick={() => setFormData({ ...formData, icon })}
-                          style={{
-                            ...styles.iconButton,
-                            ...(formData.icon === icon ? styles.iconButtonSelected : {}),
-                          }}
+                          className={`icon-button ${formData.icon === icon ? 'selected' : ''}`}
                         >
                           {icon}
                         </button>
@@ -322,28 +345,25 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label style={styles.label}>{t('color')}</label>
-                    <div style={styles.colorGrid}>
+                    <label className="form-label">{t('color')}</label>
+                    <div className="color-grid">
                       {PRESET_COLORS.map((color) => (
                         <button
                           key={color}
                           type="button"
                           onClick={() => setFormData({ ...formData, color })}
-                          style={{
-                            ...styles.colorButton,
-                            backgroundColor: color,
-                            ...(formData.color === color ? styles.colorButtonSelected : {}),
-                          }}
+                          className={`color-button ${formData.color === color ? 'selected' : ''}`}
+                          style={{ backgroundColor: color }}
                         />
                       ))}
                     </div>
                   </div>
-                  <div style={styles.formActions}>
-                    <button onClick={saveInlineEdit} style={styles.saveButton}>
-                      <CheckIcon size={18} />
+                  <div className="button-group">
+                    <button onClick={saveInlineEdit} className="btn btn-primary">
+                      {t('save')}
                     </button>
-                    <button onClick={cancelInlineEdit} style={styles.cancelButton}>
-                      <CloseIcon size={18} />
+                    <button onClick={cancelInlineEdit} className="btn btn-secondary">
+                      {t('cancel')}
                     </button>
                   </div>
                 </div>
@@ -351,35 +371,35 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                 // View Mode
                 <>
                   {/* First row: Icon, Name, Color Badge */}
-                  <div style={styles.walletRow1}>
+                  <div className="ewallet-row-1">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                      <span style={styles.walletIcon}>{wallet.icon}</span>
-                      <h3 style={styles.walletName}>{wallet.name}</h3>
-                      <div style={{ ...styles.colorBadge, backgroundColor: wallet.color }} />
+                      <span className="ewallet-icon">{wallet.icon}</span>
+                      <h3 className="ewallet-name">{wallet.name}</h3>
+                      <div className="color-badge" style={{ backgroundColor: wallet.color }} />
                     </div>
                   </div>
 
                   {/* Second row: Provider and Account Number */}
-                  <div style={styles.walletRow2}>
+                  <div className="ewallet-row-2">
                     {wallet.provider && (
-                      <p style={styles.walletProvider}>{wallet.provider}</p>
+                      <p className="ewallet-provider">{wallet.provider}</p>
                     )}
                     {wallet.accountNumber && (
-                      <p style={styles.walletAccount}>···· {wallet.accountNumber}</p>
+                      <p className="ewallet-account">···· {wallet.accountNumber}</p>
                     )}
                   </div>
 
                   {/* Expense stats and breakdown */}
                   {getWalletStats[wallet.name]?.expenses.length > 0 && (
-                    <div style={styles.statsSection}>
-                      <div style={styles.statRow}>
-                        <span style={styles.statLabel}>{t('totalSpending')}:</span>
-                        <span style={styles.statValue}>
+                    <div className="stats-section">
+                      <div className="stat-row">
+                        <span className="stat-label">{t('totalSpending')}:</span>
+                        <span className="stat-value">
                           ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
                         </span>
                         <button
                           onClick={() => toggleExpand(wallet.id!)}
-                          style={styles.expandButton}
+                          className="btn-icon"
                         >
                           {expandedWalletId === wallet.id ? (
                             <ChevronUpIcon size={18} />
@@ -390,21 +410,21 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                       </div>
 
                       {expandedWalletId === wallet.id && (
-                        <div style={styles.expenseList}>
+                        <div className="expense-list">
                           {getWalletStats[wallet.name].expenses.map((exp) => (
-                            <div key={exp.id} style={styles.expenseItem}>
-                              <div style={styles.expenseInfo}>
-                                <span style={styles.expenseCategory}>
+                            <div key={exp.id} className="expense-item">
+                              <div className="expense-info">
+                                <span className="expense-category">
                                   {getCategoryDisplay(exp.category)}
                                 </span>
-                                <span style={styles.expenseDate}>
+                                <span className="expense-date">
                                   {formatDate(exp.date, exp.time)}
                                 </span>
                                 {exp.description && (
-                                  <span style={styles.expenseDesc}>{exp.description}</span>
+                                  <span className="expense-desc">{exp.description}</span>
                                 )}
                               </div>
-                              <span style={styles.expenseAmount}>${exp.amount.toFixed(2)}</span>
+                              <span className="expense-amount">${exp.amount.toFixed(2)}</span>
                             </div>
                           ))}
                         </div>
@@ -413,15 +433,15 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                   )}
 
                   {/* Third row: Actions */}
-                  <div style={styles.walletRow3}>
+                  <div className="ewallet-row-3">
                     {/* Desktop: Show individual buttons */}
                     <div className="desktop-actions" style={{ gap: '8px' }}>
-                      <button onClick={() => startInlineEdit(wallet)} style={styles.editBtn}>
+                      <button onClick={() => startInlineEdit(wallet)} className="btn-icon btn-icon-primary">
                         <EditIcon size={18} />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
-                        style={styles.deleteBtn}
+                        className="btn-icon btn-icon-danger"
                       >
                         <DeleteIcon size={18} />
                       </button>
@@ -431,9 +451,8 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -453,7 +472,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
@@ -493,337 +512,3 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 };
 
 export default EWalletManager;
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '20px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  addButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    cursor: 'pointer',
-  },
-  searchContainer: {
-    display: 'flex',
-    gap: '10px',
-  },
-  searchInput: {
-    flex: 1,
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    fontSize: '14px',
-  },
-  walletList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-  },
-  walletCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    padding: '18px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-    boxShadow: '0 3px 10px var(--shadow)',
-    transition: 'all 0.2s ease',
-  },
-  walletRow1: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  walletRow2: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '4px',
-  },
-  walletRow3: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
-  walletIcon: {
-    fontSize: '28px',
-  },
-  walletName: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--text-primary)',
-  },
-  colorBadge: {
-    width: '16px',
-    height: '16px',
-    borderRadius: '50%',
-    border: '2px solid white',
-    boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
-  },
-  walletProvider: {
-    margin: 0,
-    color: 'var(--text-secondary)',
-    fontSize: '14px',
-  },
-  walletAccount: {
-    margin: 0,
-    color: 'var(--text-tertiary)',
-    fontSize: '12px',
-    fontFamily: 'monospace',
-  },
-  formGrid: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-    maxHeight: '60vh',
-    overflow: 'auto',
-    paddingRight: '4px',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontSize: '14px',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '8px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  iconGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '8px',
-    maxWidth: '100%',
-  },
-  iconButton: {
-    padding: '8px',
-    border: '2px solid var(--border-color)',
-    borderRadius: '6px',
-    backgroundColor: 'var(--card-bg)',
-    fontSize: '24px',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-  iconButtonSelected: {
-    borderColor: '#4f46e5',
-    backgroundColor: 'rgba(99,102,241,0.1)',
-  },
-  colorGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '8px',
-    maxWidth: '100%',
-  },
-  colorButton: {
-    width: '40px',
-    height: '40px',
-    border: '2px solid var(--border-color)',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    boxShadow: '0 0 0 1px var(--border-color)',
-  },
-  colorButtonSelected: {
-    boxShadow: '0 0 0 3px rgba(79,70,229,0.5)',
-  },
-  formActions: {
-    display: 'flex',
-    gap: '8px',
-    justifyContent: 'flex-end',
-  },
-  saveButton: {
-    padding: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    padding: '8px',
-    backgroundColor: 'var(--bg-secondary)',
-    color: 'var(--text-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editBtn: {
-    padding: '8px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteBtn: {
-    padding: '8px',
-    backgroundColor: 'var(--error-bg)',
-    color: 'var(--error-text)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuContainer: {
-    position: 'relative' as const,
-  },
-  menuButton: {
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '20px',
-    fontWeight: 'bold' as const,
-    lineHeight: '1',
-  },
-  statsSection: {
-    marginTop: '12px',
-    paddingTop: '12px',
-    borderTop: '1px solid var(--border-color)',
-  },
-  statRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
-  },
-  statLabel: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    fontWeight: '500' as const,
-  },
-  statValue: {
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    color: 'var(--accent-primary)',
-    flex: 1,
-    textAlign: 'right' as const,
-  },
-  expandButton: {
-    padding: '4px',
-    backgroundColor: 'transparent',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  expenseList: {
-    marginTop: '12px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '8px',
-  },
-  expenseItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: '8px',
-    backgroundColor: 'var(--bg-secondary)',
-    borderRadius: '6px',
-    gap: '12px',
-  },
-  expenseInfo: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '4px',
-    flex: 1,
-  },
-  expenseCategory: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  expenseDate: {
-    fontSize: '12px',
-    color: 'var(--text-tertiary)',
-  },
-  expenseDesc: {
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-    fontStyle: 'italic' as const,
-  },
-  expenseAmount: {
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    color: 'var(--success-text)',
-    whiteSpace: 'nowrap' as const,
-  },
-  menu: {
-    position: 'absolute' as const,
-    right: 0,
-    top: '100%',
-    marginTop: '4px',
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 9999,
-    minWidth: '160px',
-  },
-  menuItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    width: '100%',
-    padding: '12px 16px',
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontSize: '14px',
-    textAlign: 'left' as const,
-    color: 'var(--text-primary)',
-  },
-  menuIcon: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noData: {
-    textAlign: 'center' as const,
-    padding: '40px',
-    color: '#666',
-  },
-};

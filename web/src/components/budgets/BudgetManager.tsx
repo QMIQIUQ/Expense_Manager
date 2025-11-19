@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Budget, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -13,12 +13,20 @@ const responsiveStyles = `
   .mobile-actions {
     display: block;
   }
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
   @media (min-width: 640px) {
     .desktop-actions {
       display: flex;
     }
     .mobile-actions {
       display: none;
+    }
+    .form-row {
+      flex-direction: row;
     }
   }
 `;
@@ -175,14 +183,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
       {isAdding && (
         <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.formRow}>
+          <div className="form-row">
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('category')} *</label>
+              <label className="form-label">{t('category')} *</label>
               <select
                 value={formData.categoryId}
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 required
-                style={styles.select}
+                className="form-select"
               >
                 <option value="">{t('selectCategory')}</option>
                 {categories.map((cat) => (
@@ -194,7 +202,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('amount')} ($) *</label>
+              <label className="form-label">{t('amount')} ($) *</label>
               <input
                 type="number"
                 value={formData.amount}
@@ -203,14 +211,14 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 step="0.01"
                 min="0.01"
                 required
-                style={styles.input}
+                className="form-input"
               />
             </div>
           </div>
 
-          <div style={styles.formRow}>
+          <div className="form-row">
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('budgetPeriod')} *</label>
+              <label className="form-label">{t('budgetPeriod')} *</label>
               <select
                 value={formData.period}
                 onChange={(e) =>
@@ -219,7 +227,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     period: e.target.value as 'monthly' | 'weekly' | 'yearly',
                   })
                 }
-                style={styles.select}
+                className="form-select"
               >
                 <option value="weekly">{t('periodWeekly')}</option>
                 <option value="monthly">{t('periodMonthly')}</option>
@@ -228,7 +236,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             </div>
 
             <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>{t('alertAt')} *</label>
+              <label className="form-label">{t('alertAt')} *</label>
               <input
                 type="number"
                 value={formData.alertThreshold}
@@ -239,13 +247,13 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 min="1"
                 max="100"
                 required
-                style={styles.input}
+                className="form-input"
               />
             </div>
           </div>
 
           <div style={styles.formActions}>
-            <button type="submit" style={styles.submitButton}>
+            <button type="submit" className="btn btn-primary">
               {editingId ? t('updateBudget') : t('setBudgetButton')}
             </button>
             <button
@@ -255,7 +263,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 setEditingId(null);
                 resetForm();
               }}
-              style={styles.cancelButton}
+              className="btn btn-secondary"
             >
               {t('cancel')}
             </button>
@@ -287,20 +295,20 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
             return (
-              <div key={budget.id} style={{ ...styles.budgetCard, ...(openMenuId === budget.id ? { zIndex: 9999 } : {}) }}>
+              <div key={budget.id} className="budget-card" style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
                 {editingId === budget.id ? (
                   // Inline Edit Mode
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                       <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('category')}</label>
+                        <label className="form-label">{t('category')}</label>
                         <select
                           value={formData.categoryId}
                           onChange={(e) => {
                             const cat = categories.find((c) => c.id === e.target.value);
                             setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
                           }}
-                          style={{ ...styles.inlineSelect, width: '100%' }}
+                          className="form-select"
                         >
                           <option value="">{t('selectCategory')}</option>
                           {categories.map((cat) => (
@@ -311,7 +319,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         </select>
                       </div>
                       <div style={{ width: '140px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                        <label className="form-label">{t('amount')}</label>
                         <input
                           type="number"
                           step="0.01"
@@ -319,17 +327,17 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                           placeholder={t('amount')}
                           onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                           onFocus={(e) => e.target.select()}
-                          style={{ ...styles.inlineInput, width: '100%' }}
+                          className="form-input"
                         />
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
                       <div style={{ minWidth: '120px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('budgetPeriod')}</label>
+                        <label className="form-label">{t('budgetPeriod')}</label>
                         <select
                           value={formData.period}
                           onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
-                          style={{ ...styles.inlineSelect, width: '100%' }}
+                          className="form-select"
                         >
                           <option value="weekly">{t('periodWeekly')}</option>
                           <option value="monthly">{t('periodMonthly')}</option>
@@ -337,16 +345,16 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         </select>
                       </div>
                       <div style={{ minWidth: '140px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('startDate')}</label>
+                        <label className="form-label">{t('startDate')}</label>
                         <input
                           type="date"
                           value={formData.startDate}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                          style={{ ...styles.inlineInput, width: '100%' }}
+                          className="form-input"
                         />
                       </div>
                       <div style={{ minWidth: '100px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('alertAt')}</label>
+                        <label className="form-label">{t('alertAt')}</label>
                         <input
                           type="number"
                           min="1"
@@ -355,16 +363,16 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                           placeholder={t('alertAt')}
                           onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })}
                           onFocus={(e) => e.target.select()}
-                          style={{ ...styles.inlineInput, width: '100%' }}
+                          className="form-input"
                         />
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => saveInlineEdit(budget)} style={styles.saveButton} aria-label={t('save')}>
-                        <CheckIcon size={18} />
+                      <button onClick={() => saveInlineEdit(budget)} className="btn btn-primary" aria-label={t('save')}>
+                        {t('save')}
                       </button>
-                      <button onClick={cancelInlineEdit} style={styles.cancelIconButton} aria-label={t('cancel')}>
-                        <CloseIcon size={18} />
+                      <button onClick={cancelInlineEdit} className="btn btn-secondary" aria-label={t('cancel')}>
+                        {t('cancel')}
                       </button>
                     </div>
                   </div>
@@ -373,7 +381,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <>
                     {/* First row: Period and Amount */}
                     <div style={styles.budgetRow1}>
-                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as keyof typeof import('../../locales/translations').enTranslations)}</span>
+                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
                       <div style={styles.budgetAmount}>
                         <span style={styles.spent}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>
@@ -401,12 +409,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       
                       {/* Desktop: Show individual buttons */}
                       <div className="desktop-actions" style={{ gap: '8px' }}>
-                        <button onClick={() => startInlineEdit(budget)} style={styles.editBtn} aria-label={t('edit')}>
+                        <button onClick={() => startInlineEdit(budget)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                           <EditIcon size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm({ isOpen: true, budgetId: budget.id! })}
-                          style={styles.deleteBtn}
+                          className="btn-icon btn-icon-danger"
                         >
                           <DeleteIcon size={18} />
                         </button>
@@ -416,9 +424,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       <div className="mobile-actions">
                         <div style={styles.menuContainer}>
                           <button
-                            className="menu-item-hover"
+                            className="menu-trigger-button"
                             onClick={() => setOpenMenuId(openMenuId === budget.id ? null : budget.id!)}
-                            style={styles.menuButton}
                             aria-label="More"
                           >
                             ⋮
@@ -507,6 +514,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   searchContainer: {
     display: 'flex',
@@ -520,7 +528,7 @@ const styles = {
     fontSize: '14px',
   },
   form: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'var(--bg-secondary)',
     padding: '20px',
     borderRadius: '8px',
     display: 'flex',
@@ -538,48 +546,9 @@ const styles = {
     display: 'flex',
     gap: '15px',
   },
-  label: {
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    color: 'var(--text-primary)',
-  },
-  input: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
   formActions: {
     display: 'flex',
     gap: '10px',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
-    cursor: 'pointer',
   },
   noData: {
     textAlign: 'center' as const,
@@ -591,20 +560,6 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
     gap: '15px',
     marginTop: '20px',
-  },
-  budgetCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    padding: '18px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-    minWidth: 0,
-    overflow: 'visible',
-    position: 'relative' as const,
-    boxShadow: '0 3px 10px var(--shadow)',
-    transition: 'all 0.2s ease',
   },
   budgetRow1: {
     display: 'flex',
@@ -659,7 +614,7 @@ const styles = {
   progressBar: {
     flex: 1,
     height: '6px',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'var(--border-color)',
     borderRadius: '3px',
     overflow: 'hidden' as const,
   },
@@ -722,7 +677,7 @@ const styles = {
     top: '100%',
     marginTop: '4px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
@@ -736,7 +691,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -744,41 +699,6 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
-  },
-  inlineInput: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  inlineSelect: {
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
-  },
-  saveButton: {
-    padding: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    color: '#16a34a',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelIconButton: {
-    padding: '8px',
-    backgroundColor: 'rgba(148,163,184,0.2)',
-    color: '#374151',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 };
 

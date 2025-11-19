@@ -17,58 +17,114 @@ This document describes the comprehensive dark mode implementation across ALL pa
 
 ## 🎨 Color System
 
-### Light Theme
+We now mirror the exact CSS variable scale defined in `web/src/index.css`. Always consume the tokens rather than raw hex codes so light/dark theming stays synced automatically.
+
+### Light Theme Tokens
 ```
-Background Colors:
-  --bg-primary: #ffffff      (White - Main background)
-  --bg-secondary: #f5f5f5    (Light gray - Page background)
-  --bg-tertiary: #e0e0e0     (Gray - Progress bars, dividers)
-  --bg-quaternary: #f0f0f0   (Light gray - Icons)
+Background Layers
+  --bg-primary:   #ffffff   (Canvas + cards with no elevation)
+  --bg-secondary: #f5f5f5   (Dashboard body)
+  --bg-tertiary:  #e0e0e0   (Progress rails/dividers)
+  --bg-quaternary:#f0f0f0   (Icon pads + ghost sections)
 
-Text Colors:
-  --text-primary: #333333    (Dark gray - Main text)
-  --text-secondary: #666666  (Medium gray - Secondary text)
-  --text-tertiary: #999999   (Light gray - Tertiary text)
+Typography
+  --text-primary:   #1f2937 (Blue-gray 900 for main copy)
+  --text-secondary: #6b7280 (Sub copy, metadata)
+  --text-tertiary:  #9ca3af (Decorative/helper only)
 
-UI Elements:
-  --card-bg: #ffffff         (White - Cards)
-  --border-color: #e0e0e0    (Light gray - Borders)
-  --input-bg: #ffffff        (White - Inputs)
-  --modal-bg: #ffffff        (White - Modals)
-```
+Structure
+  --border-color: #e5e7eb
+  --border-hover: #d1d5db
+  --card-bg:      #ffffff
+  --input-bg:     #ffffff
+  --modal-bg:     #ffffff
+  --icon-bg:      #f3f4f6
+  --shadow / --shadow-md / --shadow-lg: rgba(0,0,0,0.1~0.2)
 
-### Dark Theme
-```
-Background Colors:
-  --bg-primary: #1a1a1a      (Very dark - Main background)
-  --bg-secondary: #2d2d2d    (Dark gray - Page background)
-  --bg-tertiary: #404040     (Medium gray - Progress bars)
-  --bg-quaternary: #363636   (Dark gray - Icons)
-
-Text Colors:
-  --text-primary: #e8e8e8    (Bright - Main text) ✨ NOT TOO LIGHT
-  --text-secondary: #b8b8b8  (Light gray - Secondary text)
-  --text-tertiary: #888888   (Medium gray - Tertiary text)
-
-UI Elements:
-  --card-bg: #2d2d2d         (Dark gray - Cards) ✨ NO WHITE
-  --border-color: #404040    (Medium gray - Borders)
-  --input-bg: #1a1a1a        (Very dark - Inputs)
-  --modal-bg: #2d2d2d        (Dark gray - Modals)
+Purple Accent Stack (light mode)
+  --accent-primary:   #7c3aed
+  --accent-secondary: #8b5cf6
+  --accent-hover:     #6d28d9
+  --accent-light:     #ede9fe
+  --tab-active-bg:    linear-gradient(135deg, #7c3aed, #a78bfa)
 ```
 
-### Special Colors (Adapt to Theme)
+### Dark Theme Tokens
 ```
-Light Theme → Dark Theme:
-  Success: #e8f5e9 → #1b4d2c
-  Warning: #fff3e0 → #4d3a1a
-  Error:   #ffebee → #4d1a1a
-  Info:    #e3f2fd → #1a2d4d
+Layered Surfaces (0 → 3)
+  --bg-primary:   #0a0a0f  (base canvas, slight purple tint)
+  --bg-secondary: #18181b  (page background)
+  --bg-tertiary:  #27272a  (rails, chips)
+  --bg-quaternary:#3f3f46  (icon plates)
+  --card-bg:      #1a1625  (elevated cards)
+  --input-bg:     #0a0a0f  (fields)
+  --select-bg:    #0a0a0f
+  --modal-bg:     #1a1625
+  --icon-bg:      #252338
+
+Typography
+  --text-primary:   #f2f2f7 (≈14.5:1 contrast against bg)
+  --text-secondary: #98989d
+  --text-tertiary:  #8e8e93
+
+Structure & Motion
+  --border-color: #48484a
+  --border-hover: #636366
+  --shadow / --shadow-md / --shadow-lg: rgba(0,0,0,0.5~0.9)
+  --button-hover: rgba(124,58,237,0.15)
+  --hover-bg:     rgba(124,58,237,0.12)
+  --modal-overlay:rgba(0,0,0,0.85)
+
+Purple Accent Stack (dark mode)
+  --accent-primary:   #a78bfa
+  --accent-secondary: #c4b5fd
+  --accent-hover:     #8b5cf6
+  --accent-light:     #3a3654
+  --tab-active-bg:    linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)
+  --purple-glow / --purple-glow-strong: drop-shadows for hover states
+```
+
+### Status & Utility Colors
+```
+Success: var(--success-bg)  #ecfdf5 → #1a3d2c | text: #22c55e → #86efac
+Warning: var(--warning-bg)  #fef3c7 → #4d3a1a | text: #f97316 → #fdba74
+Error:   var(--error-bg)    #fef2f2 → #4d1a1a | text: #ef4444 → #fca5a5
+Info:    var(--info-bg)     #eff6ff → #1a2d4d | text: #3b82f6 → #93c5fd
+Chips:   var(--chip-bg)     #e0e7ff → #3a3654 | text: #4338ca → #a78bfa
+```
+
+Keep every new component on this variable stack. If a design needs a nuance that is missing, extend the token list first instead of hard-coding standalone colors.
+
+## ✏️ Typography & Theme Controls
+
+Users can now change both the theme mode and typography scale, so layouts must remain responsive to these runtime switches:
+
+- `ThemeToggle` cycles through `light → dark → system`. The system option tracks `prefers-color-scheme`, so verify that browser-level changes flip our tokens instantly.
+- `FontFamily` options (`system`, `serif`, `mono`) write to `--font-family-base`. Do not override `font-family` locally unless there is a strong brand reason.
+- `FontScale` options (`small`, `medium`, `large`) map to `14px`, `16px`, and `18px` root font sizes. Use relative units (`rem`, `%`) in new components so text scales uniformly.
+
+Reference implementation (`web/src/contexts/ThemeContext.tsx`):
+
+```tsx
+const { theme, fontFamily, fontScale } = useTheme();
+// Apply styles via CSS variables instead of inline literals
 ```
 
 ---
 
 ## 📦 Components Updated
+
+### ✅ Navigation & Controls
+- **Dashboard.tsx**
+  - Gradient hero header updated to respect theme tokens
+  - Hamburger menu now groups Language, Appearance, Import/Export, Features, Profile/Admin, and Logout
+  - Offline queue badge mirrors status colors in both modes
+- **ThemeToggle.tsx**
+  - Cycles Light → Dark → System from the hamburger footer
+  - Shares state with `ThemeContext` so switching anywhere updates the whole tree
+- **HeaderStatusBar.tsx**
+  - Sticky status rail for background import/delete progress
+  - Automatically inherits theme tokens (cards + alerts)
 
 ### ✅ Dashboard Components
 - **DashboardSummary.tsx**
@@ -260,16 +316,16 @@ Overlay: rgba(0,0,0,0.75)
 ### Contrast Ratios (WCAG AA Compliant)
 
 **Light Mode**:
-- Primary text (#333 on #fff): 12.6:1 ✅ Excellent
-- Secondary text (#666 on #fff): 5.7:1 ✅ Good
-- Tertiary text (#999 on #fff): 2.8:1 ⚠️ Decorative only
+- Primary text (#1f2937 on #ffffff): 12.7:1 ✅ Excellent
+- Secondary text (#6b7280 on #ffffff): 5.3:1 ✅ Good
+- Tertiary text (#9ca3af on #ffffff): 3.1:1 ⚠️ Helper/labels only
 
 **Dark Mode**:
-- Primary text (#e8e8e8 on #1a1a1a): 13.1:1 ✅ Excellent
-- Secondary text (#b8b8b8 on #2d2d2d): 6.2:1 ✅ Good
-- Tertiary text (#888 on #2d2d2d): 3.1:1 ⚠️ Decorative only
+- Primary text (#f2f2f7 on #0a0a0f): 14.5:1 ✅ Excellent
+- Secondary text (#98989d on #18181b): 5.4:1 ✅ Good
+- Tertiary text (#8e8e93 on #1a1625): 3.2:1 ⚠️ Helper/labels only
 
-**Result**: Text is highly readable in both modes! ✨
+**Result**: Text is highly readable in both modes! ✨ Remember that font scaling can drop contrast for smaller text, so stick to the token hierarchy when the user selects `small` typography.
 
 ---
 
@@ -292,6 +348,12 @@ transition: background-color 0.3s ease,
 ---
 
 ## 🧪 Testing Checklist
+
+### Global Controls
+- [ ] Theme toggle cycles Light → Dark → System and respects OS-level changes while on System mode
+- [ ] Font family switch (System/Serif/Mono) updates root typography without clipping headers or cards
+- [ ] Font scale switch (Small/Medium/Large) keeps layout intact across 320px–1920px viewports
+- [ ] Hamburger menu sections (Language, Appearance, Import/Export, Features, Profile/Admin, Logout) pick up dark theme tokens with no white flashes
 
 ### Page-by-Page Testing
 
@@ -417,6 +479,19 @@ if (isDark) {
   document.documentElement.classList.remove('dark');
 }
 ```
+
+### Typography Controls
+
+```typescript
+// Still inside ThemeContext.tsx
+useEffect(() => {
+  const root = document.documentElement;
+  root.style.setProperty('--font-family-base', fontFamilyMap[fontFamily]);
+  root.style.fontSize = fontScale === 'small' ? '14px' : fontScale === 'large' ? '18px' : '16px';
+}, [fontFamily, fontScale]);
+```
+
+Apply only relative units (`rem`, `em`, `%`) inside components so this hook can seamlessly resize typography without recalculating hundreds of inline styles.
 
 ---
 

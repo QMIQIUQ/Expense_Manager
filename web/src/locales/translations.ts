@@ -330,6 +330,17 @@ export const translations = {
   accountSettings: { en: 'Account Settings', zh: '帳號設定', 'zh-CN': '账号设定' },
   contactAdminForChanges: { en: 'To change password or email, please contact the system administrator.', zh: '如需更改密碼或 Email，請聯繫系統管理員協助處理。', 'zh-CN': '如需更改密码或 Email，请联系系统管理员协助处理。' },
   
+  // Appearance
+  appearance: { en: 'Appearance', zh: '外觀', 'zh-CN': '外观' },
+  fontFamily: { en: 'Font Family', zh: '字體', 'zh-CN': '字体' },
+  fontSize: { en: 'Font Size', zh: '字體大小', 'zh-CN': '字体大小' },
+  system: { en: 'System', zh: '系統預設', 'zh-CN': '系统默认' },
+  serif: { en: 'Serif', zh: '襯線體', 'zh-CN': '衬线体' },
+  mono: { en: 'Mono', zh: '等寬字體', 'zh-CN': '等宽字体' },
+  small: { en: 'Small', zh: '小', 'zh-CN': '小' },
+  medium: { en: 'Medium', zh: '中', 'zh-CN': '中' },
+  large: { en: 'Large', zh: '大', 'zh-CN': '大' },
+
   // Category deletion with expense management
   warning: { en: 'Warning', zh: '警告', 'zh-CN': '警告' },
   categoryInUse: { en: 'This category is being used by', zh: '此類別正被使用於', 'zh-CN': '此分类正被使用于' },

@@ -1,87 +1,106 @@
 # UI Button & Icon-Chip Style Guide
 
-This guide defines the standard visual language for action buttons across the app. Follow these rules when adding or updating UI so new features remain visually consistent.
+The action system is now fully tokenized. Every new button must rely on the CSS variables defined in `web/src/index.css` so that light/dark mode, font scaling, and accent updates flow through automatically.
+
+## Token References
+
+- **Accent stack**: `var(--accent-primary)`, `--accent-secondary`, `--accent-hover`, `--accent-light`.
+- **Status stack**: `var(--success-bg/text)`, `var(--warning-bg/text)`, `var(--error-bg/text)`, `var(--info-bg/text)`.
+- **Structure**: `var(--card-bg)`, `var(--border-color)`, `var(--shadow)`.
+
+If a component needs a new nuance, add a variable before hard-coding a hex value.
+
+## Base Button System
+
+The global stylesheet exposes a `.btn` utility for standard CTAs.
+
+```
+.btn {
+  @apply inline-flex items-center justify-center gap-2;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px var(--shadow);
+}
+```
+
+### Supported Variants
+
+- `.btn-primary`: Filled CTA using `var(--accent-primary)` → `--accent-hover` for hover. Text is always white.
+- `.btn-secondary`: Neutral surface using `var(--bg-secondary)` + `var(--border-color)`. Ideal for cancel/close.
+- `.btn-danger`: Error surface that maps directly to `var(--error-bg/text)` and dark-mode overrides already defined in CSS.
+- `.btn-success`: Uses the success token pair for confirm/save states.
+
+Disable buttons with the `disabled` attribute only. The shared styles already dim opacity and block pointer events for both themes.
 
 ## Icon-Chip Buttons
 
-- Purpose: Soft, unobtrusive action affordances with clear intent via color.
-- Shape: Rounded chip, radius 8px.
-- Layout: Inline-flex, center both axes, 8px padding.
-- Icon: Use shared SVG icons from `web/src/components/icons/index.tsx`. Prefer `size={18}`.
-- Color model: Tint background with transparent color; set `color` to solid tone so icons/text inherit.
+Use icon chips for inline actions (Edit/Delete/Link). Layout rules:
 
-### Base style (pseudo-code)
+- `display: inline-flex; align-items: center; justify-content: center; gap: 6px;`
+- `padding: 8px` for icon-only, `8px 12px` when a short label is displayed.
+- `border-radius: 8px; border: none; background-color: transparent;`
 
+Variants should pull from the token stack:
+
+| Intent  | Background                         | Color                          |
+|---------|------------------------------------|--------------------------------|
+| Primary | `var(--accent-light)`              | `var(--accent-primary)`        |
+| Danger  | `var(--error-bg)`                  | `var(--error-text)`            |
+| Success | `var(--success-bg)`                | `var(--success-text)`          |
+| Neutral | `rgba(148,163,184,0.18)` (token tbd) | `var(--text-secondary)`      |
+
+Example:
+
+```tsx
+import { EditIcon } from '../icons';
+
+<button className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+  <EditIcon size={18} />
+</button>
 ```
-const chipBase = {
-  padding: '8px 12px' | '8px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  border: 'none',
-  borderRadius: '8px',
-  cursor: 'pointer',
-};
+
+The `.btn-icon-*` helpers defined in `index.css` already map to the correct token colors and add the brightness hover effect for dark mode.
+
+## Add / Floating CTA Buttons
+
+- Use `.btn-primary` + icon for inline “Add” CTAs (e.g., category lists).
+- The floating `+ Add New Expense` button uses the same accent tokens but scales to `56px` height with a pill radius (see `Dashboard.tsx`). Keep FAB shadows tied to `var(--purple-glow)` in dark mode.
+
+Example add button:
+
+```tsx
+import { PlusIcon } from '../icons';
+
+<button className="btn btn-primary" onClick={onAddCategory}>
+  <PlusIcon size={18} />
+  {t('addCategory')}
+</button>
 ```
 
-### Variants
+## Interaction & Dark Mode Notes
 
-- Primary (Edit):
-  - `backgroundColor: 'rgba(99,102,241,0.12)'`
-  - `color: '#4f46e5'`
-- Danger (Delete):
-  - `backgroundColor: 'rgba(244,63,94,0.12)'`
-  - `color: '#b91c1c'`
-- Success (Save):
-  - `backgroundColor: 'rgba(34,197,94,0.15)'`
-  - `color: '#16a34a'`
-- Neutral (Cancel/Close):
-  - `backgroundColor: 'rgba(148,163,184,0.2)'`
-  - `color: '#374151'`
-
-Examples:
-- Edit: `<button style={{ ...chipBase, ...primary }}> <EditIcon size={18} /> </button>`
-- Delete: `<button style={{ ...chipBase, ...danger }}> <DeleteIcon size={18} /> </button>`
-- Save: `<button style={{ ...chipBase, ...success }}> <CheckIcon size={18} /> </button>`
-- Cancel: `<button style={{ ...chipBase, ...neutral }}> <CloseIcon size={18} /> </button>`
-
-## Add (CTA) Buttons
-
-Use the same chip pattern for add CTAs with an icon + label.
-
-- Style:
-  - `padding: '8px 12px'`
-  - `backgroundColor: 'rgba(99,102,241,0.12)'`
-  - `color: '#4f46e5'`
-  - `borderRadius: '8px'`
-  - `display: 'flex'`, `gap: '8px'`
-- Content: `<PlusIcon size={18} /> <span>{t('addXxx')}</span>`
-- Applied to: Incomes, E‑Wallets, Cards, Categories, Budgets, Recurring.
+- Hover/focus transitions are already defined globally. Do not add bespoke `transition` rules unless necessary.
+- For destructive actions inside cards, prefer icon chips + confirmation instead of inline red text links.
+- The dark theme automatically injects purple glows and status text overrides. If you see white flashes, you likely used raw `#fff` instead of `var(--card-bg)`.
 
 ## Accessibility
 
-- Every actionable icon must have an `aria-label` describing the action: `aria-label={t('edit')}`.
-- Maintain at least 3:1 contrast between icon color and background.
-
-## Where to import icons
-
-- `import { PlusIcon, EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';`
-- Central icon library: `web/src/components/icons/index.tsx`.
-
-## Do/Don't
-
-- Do keep labels short on add CTAs; icon-only for inline row actions.
-- Do not use solid filled primary buttons for secondary actions inside cards.
-- Do keep spacing consistent: 8px gaps between actions.
+- Every icon-only button **must** have an `aria-label` or `title`.
+- Maintain at least 3:1 contrast between icon color and its chip background. Sticking to the tokens above enforces this automatically.
+- Keep focus states visible; the global stylesheet adds `outline` defaults, so avoid `outline: none`.
 
 ## Reference Implementations
 
 - Expenses: `web/src/components/expenses/ExpenseList.tsx`
-- Incomes: `web/src/components/income/IncomeList.tsx`, `web/src/pages/tabs/IncomesTab.tsx`
-- E‑Wallets: `web/src/components/ewallet/EWalletManager.tsx`
-- Cards: `web/src/components/cards/CardManager.tsx`
-- Categories: `web/src/components/categories/CategoryManager.tsx`
-- Budgets: `web/src/components/budgets/BudgetManager.tsx`
-- Recurring: `web/src/components/recurring/RecurringExpenseManager.tsx`
+- Incomes: `web/src/pages/tabs/IncomesTab.tsx`
+- Cards/E-Wallets: `web/src/components/payment/PaymentMethodsTab.tsx`
+- Recurring & Budgets: `web/src/components/recurring/RecurringExpenseManager.tsx`, `web/src/components/budgets/BudgetManager.tsx`
 
-Adopt this guide for any new feature pages to ensure consistent UX.
+Reuse these helpers for any new feature page to keep the UI consistent across light/dark themes.

@@ -42,15 +42,15 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   const getNotificationColor = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return '#10b981'; // green-500
+        return 'var(--success-text)';
       case 'error':
-        return '#ef4444'; // red-500
+        return 'var(--error-text)';
       case 'info':
-        return '#3b82f6'; // blue-500
+        return 'var(--info-text)';
       case 'pending':
-        return '#f59e0b'; // amber-500
+        return 'var(--warning-text)';
       default:
-        return '#6b7280'; // gray-500
+        return 'var(--text-secondary)';
     }
   };
 
@@ -87,10 +87,10 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
                 <span style={styles.spinnerIcon}>⟳</span>
               )}
               {importProgress.status === 'complete' && (
-                <span style={{ fontSize: '16px', color: '#10b981' }}>✓</span>
+                <span style={{ fontSize: '16px', color: 'var(--success-text)' }}>✓</span>
               )}
               {importProgress.status === 'error' && (
-                <span style={{ fontSize: '16px', color: '#ef4444' }}>✕</span>
+                <span style={{ fontSize: '16px', color: 'var(--error-text)' }}>✕</span>
               )}
               <span style={styles.statusText}>
                 {importProgress.status === 'importing' && t('importing')}
@@ -139,10 +139,10 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
                 <span style={styles.spinnerIcon}>⟳</span>
               )}
               {deleteProgress.status === 'complete' && (
-                <span style={{ fontSize: '16px', color: '#10b981' }}>✓</span>
+                <span style={{ fontSize: '16px', color: 'var(--success-text)' }}>✓</span>
               )}
               {deleteProgress.status === 'error' && (
-                <span style={{ fontSize: '16px', color: '#ef4444' }}>✕</span>
+                <span style={{ fontSize: '16px', color: 'var(--error-text)' }}>✕</span>
               )}
               <span style={styles.statusText}>
                 {deleteProgress.status === 'deleting' && t('deleteSelected')}
@@ -237,23 +237,29 @@ const styles = {
   statusItem: {
     borderRadius: '8px',
     padding: '8px 16px',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     backgroundColor: 'var(--card-bg)',
+    transition: 'background-color 0.3s, border-color 0.3s',
   },
   statusItemImporting: {
-    backgroundColor: '#dbeafe', // 藍色背景 - 匯入中
+    backgroundColor: 'var(--info-bg)',
+    borderColor: 'var(--info-text)',
   },
   statusItemDeleting: {
-    backgroundColor: '#fef3c7', // 黃色背景 - 刪除中
+    backgroundColor: 'var(--warning-bg)',
+    borderColor: 'var(--warning-text)',
   },
   statusItemComplete: {
-    backgroundColor: '#d1fae5', // 綠色背景 - 完成
+    backgroundColor: 'var(--success-bg)',
+    borderColor: 'var(--success-text)',
   },
   statusItemError: {
-    backgroundColor: '#fee2e2', // 紅色背景 - 錯誤
+    backgroundColor: 'var(--error-bg)',
+    borderColor: 'var(--error-text)',
   },
   statusItemDefault: {
-    backgroundColor: '#f9fafb', // 預設灰色背景
+    backgroundColor: 'var(--card-bg)',
+    borderColor: 'var(--border-color)',
   },
   statusRow: {
     display: 'flex',
@@ -295,14 +301,14 @@ const styles = {
   progressBar: {
     width: '100%',
     height: '4px',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: 'var(--bg-tertiary)',
     borderRadius: '2px',
     overflow: 'hidden',
     marginTop: '8px',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3b82f6',
+    backgroundColor: 'var(--accent-primary)',
     transition: 'width 0.3s ease',
     borderRadius: '2px',
   },

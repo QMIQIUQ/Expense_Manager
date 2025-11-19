@@ -204,174 +204,168 @@ const CardForm: React.FC<CardFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {/* Card Name */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardName')} *</label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          onFocus={(e) => e.target.select()}
-          placeholder="e.g., Chase Freedom, Amex Gold"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
-            errors.name ? 'border-red-500' : ''
-          }`}
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: errors.name ? '#ef4444' : 'var(--border-color)',
-          }}
-        />
-        {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+      {/* Card Name and Bank Name */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardName')} *</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="e.g., Chase Freedom, Amex Gold"
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+              errors.name ? 'border-red-500' : ''
+            }`}
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: errors.name ? '#ef4444' : 'var(--border-color)',
+            }}
+          />
+          {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+        </div>
+
+        <div className="flex flex-col gap-1 relative">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')}</label>
+          <input
+            type="text"
+            name="bankName"
+            value={formData.bankName}
+            onChange={handleBankNameChange}
+            onFocus={(e) => e.target.select()}
+            onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
+            placeholder="e.g., Chase, Citibank, HSBC"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)',
+            }}
+          />
+          {showBankSuggestions && bankSuggestions.length > 0 && (
+            <div 
+              className="absolute z-10 w-full mt-1 border rounded shadow-lg top-full max-h-40 overflow-y-auto"
+              style={{
+                backgroundColor: 'var(--card-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+            >
+              {bankSuggestions.map((bank, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSelectBankSuggestion(bank)}
+                  className="w-full px-3 py-2 text-left text-sm focus:outline-none transition-colors"
+                  style={{ color: 'var(--text-primary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  {bank}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Bank Name with Autocomplete */}
-      <div className="flex flex-col gap-1 relative">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')}</label>
-        <input
-          type="text"
-          name="bankName"
-          value={formData.bankName}
-          onChange={handleBankNameChange}
-          onFocus={(e) => e.target.select()}
-          onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
-          placeholder="e.g., Chase, Citibank, HSBC"
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: 'var(--border-color)',
-          }}
-        />
-        {showBankSuggestions && bankSuggestions.length > 0 && (
-          <div 
-            className="absolute z-10 w-full mt-1 border rounded shadow-lg top-full max-h-40 overflow-y-auto"
+      {/* Card Limit and Billing Day */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ($) *</label>
+          <input
+            type="number"
+            name="cardLimit"
+            value={formData.cardLimit}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="10000"
+            step="1"
+            min="0"
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+              errors.cardLimit ? 'border-red-500' : ''
+            }`}
             style={{
-              backgroundColor: 'var(--card-bg)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: errors.cardLimit ? '#ef4444' : 'var(--border-color)',
+            }}
+          />
+          {errors.cardLimit && (
+            <span className="text-xs text-red-600">{errors.cardLimit}</span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('billingDay')} (1-28) *</label>
+          <input
+            type="number"
+            name="billingDay"
+            value={formData.billingDay}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="25"
+            min="1"
+            max="28"
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
+              errors.billingDay ? 'border-red-500' : ''
+            }`}
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: errors.billingDay ? '#ef4444' : 'var(--border-color)',
+            }}
+          />
+          {errors.billingDay && (
+            <span className="text-xs text-red-600">{errors.billingDay}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Benefit Min Spend and Card Type */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')}</label>
+          <input
+            type="number"
+            name="benefitMinSpend"
+            value={formData.benefitMinSpend}
+            onChange={handleChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="0"
+            step="1"
+            min="0"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)',
+            }}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardType')} *</label>
+          <select
+            name="cardType"
+            value={formData.cardType}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
               borderColor: 'var(--border-color)',
             }}
           >
-            {bankSuggestions.map((bank, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleSelectBankSuggestion(bank)}
-                className="w-full px-3 py-2 text-left text-sm focus:outline-none transition-colors"
-                style={{ color: 'var(--text-primary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                {bank}
-              </button>
-            ))}
-          </div>
-        )}
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          Optional: Bank name for easier organization
-        </span>
-      </div>
-
-      {/* Card Limit */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ($) *</label>
-        <input
-          type="number"
-          name="cardLimit"
-          value={formData.cardLimit}
-          onChange={handleChange}
-          onFocus={(e) => e.target.select()}
-          placeholder="10000"
-          step="1"
-          min="0"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
-            errors.cardLimit ? 'border-red-500' : ''
-          }`}
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: errors.cardLimit ? '#ef4444' : 'var(--border-color)',
-          }}
-        />
-        {errors.cardLimit && (
-          <span className="text-xs text-red-600">{errors.cardLimit}</span>
-        )}
-      </div>
-
-      {/* Billing Day */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('billingDay')} (1-28) *</label>
-        <input
-          type="number"
-          name="billingDay"
-          value={formData.billingDay}
-          onChange={handleChange}
-          onFocus={(e) => e.target.select()}
-          placeholder="25"
-          min="1"
-          max="28"
-          className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
-            errors.billingDay ? 'border-red-500' : ''
-          }`}
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: errors.billingDay ? '#ef4444' : 'var(--border-color)',
-          }}
-        />
-        {errors.billingDay && (
-          <span className="text-xs text-red-600">{errors.billingDay}</span>
-        )}
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          Regular billing day each month (1-28 for consistency)
-        </span>
-      </div>
-
-      {/* Benefit Min Spend (Optional) */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')}</label>
-        <input
-          type="number"
-          name="benefitMinSpend"
-          value={formData.benefitMinSpend}
-          onChange={handleChange}
-          onFocus={(e) => e.target.select()}
-          placeholder="0"
-          step="1"
-          min="0"
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: 'var(--border-color)',
-          }}
-        />
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          Overall minimum spend threshold for card benefits (optional)
-        </span>
-      </div>
-
-      {/* Card Type */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardType')} *</label>
-        <select
-          name="cardType"
-          value={formData.cardType}
-          onChange={handleChange}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
-          style={{
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            borderColor: 'var(--border-color)',
-          }}
-        >
-          <option value="cashback">{t('cashback')}</option>
-          <option value="points">{t('points')}</option>
-        </select>
+            <option value="cashback">{t('cashback')}</option>
+            <option value="points">{t('points')}</option>
+          </select>
+        </div>
       </div>
 
       {/* Cashback Rules (only for cashback type) */}
@@ -612,29 +606,33 @@ const CardForm: React.FC<CardFormProps> = ({
       )}
 
       {/* Form Actions */}
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex gap-3 pt-2">
+        <button
+          type="submit"
+          className="flex-1 px-6 py-3 rounded-lg text-base font-medium transition-colors"
+          style={{
+            backgroundColor: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            fontWeight: 600,
+            borderRadius: '12px',
+            transition: 'all 0.2s'
+          }}
+        >
+          {initialData ? t('save') : t('addCard')}
+        </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium rounded transition-colors"
+          className="flex-1 px-6 py-3 rounded-lg text-base font-medium transition-colors"
           style={{
+            backgroundColor: 'var(--bg-secondary)',
             color: 'var(--text-primary)',
-            backgroundColor: 'var(--icon-bg)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--icon-bg)';
+            fontWeight: 600,
+            borderRadius: '12px',
+            transition: 'all 0.2s'
           }}
         >
           {t('cancel')}
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors"
-        >
-          {t('save')}
         </button>
       </div>
     </form>

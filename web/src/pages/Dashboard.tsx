@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment } from '../types';
 import { expenseService } from '../services/expenseService';
@@ -54,6 +55,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
+  const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -76,6 +78,7 @@ const Dashboard: React.FC = () => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
+  const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
@@ -383,6 +386,16 @@ const Dashboard: React.FC = () => {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, [showImportExportDropdown]);
+
+  // Close hamburger menu once the user scrolls the page so it does not cover content
+  useEffect(() => {
+    if (!showHamburgerMenu) return;
+
+    const handleScroll = () => setShowHamburgerMenu(false);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showHamburgerMenu]);
   //#endregion
 
   //#region UI State Flags
@@ -1325,8 +1338,15 @@ const Dashboard: React.FC = () => {
               )}
             </button>
             {showHamburgerMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]" style={{ minWidth: '240px', maxWidth: '90vw' }}>
-                {/* Language Section */}
+              <div
+                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]"
+                style={{
+                  minWidth: '240px',
+                  maxWidth: '90vw',
+                  transform: isMobile ? undefined : 'translateX(calc(-100% + 32px))',
+                }}
+              >
+                  {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
                     className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
@@ -1389,7 +1409,99 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* Features Section - Collapsible */}
+                {/* Appearance Section */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenAppearanceSection(o => !o)}
+                    aria-expanded={openAppearanceSection}
+                    aria-controls="hamburger-appearance-section"
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    <span> 🎨 {t('appearance')}</span>
+                    <svg
+                      className={`transition-transform ${openAppearanceSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openAppearanceSection && (
+                    <div id="hamburger-appearance-section" className="mt-2 space-y-3">
+                      {/* Font Family */}
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontFamily')}</div>
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setFontFamily('system')}
+                            className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                              fontFamily === 'system' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                            }`}
+                          >
+                            {t('system')}
+                          </button>
+                          <button
+                            onClick={() => setFontFamily('serif')}
+                            className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors font-serif ${
+                              fontFamily === 'serif' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                            }`}
+                          >
+                            {t('serif')}
+                          </button>
+                          <button
+                            onClick={() => setFontFamily('mono')}
+                            className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors font-mono ${
+                              fontFamily === 'mono' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                            }`}
+                          >
+                            {t('mono')}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Font Size */}
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontSize')}</div>
+                        <div className="grid grid-cols-3 gap-2 px-1">
+                          <button
+                            onClick={() => setFontScale('small')}
+                            className={`py-2 text-sm rounded border transition-colors flex items-center justify-center ${
+                              fontScale === 'small' 
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' 
+                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title={t('small')}
+                          >
+                            A-
+                          </button>
+                          <button
+                            onClick={() => setFontScale('medium')}
+                            className={`py-2 text-base rounded border transition-colors flex items-center justify-center ${
+                              fontScale === 'medium' 
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' 
+                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title={t('medium')}
+                          >
+                            A
+                          </button>
+                          <button
+                            onClick={() => setFontScale('large')}
+                            className={`py-2 text-lg rounded border transition-colors flex items-center justify-center ${
+                              fontScale === 'large' 
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' 
+                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title={t('large')}
+                          >
+                            A+
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>                {/* Features Section - Collapsible */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
                     className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"

@@ -87,15 +87,15 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
   const getIncomeTypeColor = (type: string) => {
     switch (type) {
       case 'salary':
-        return { bg: '#dcfce7', color: '#15803d' };
+        return { bg: 'var(--success-bg)', color: 'var(--success-text)' };
       case 'reimbursement':
-        return { bg: '#dbeafe', color: '#1e40af' };
+        return { bg: 'var(--info-bg)', color: 'var(--info-text)' };
       case 'repayment':
-        return { bg: '#fef3c7', color: '#b45309' };
+        return { bg: 'var(--warning-bg)', color: 'var(--warning-text)' };
       case 'other':
-        return { bg: '#f3e8ff', color: '#7c3aed' };
+        return { bg: 'var(--accent-light)', color: 'var(--accent-primary)' };
       default:
-        return { bg: '#e5e7eb', color: '#4b5563' };
+        return { bg: 'var(--bg-secondary)', color: 'var(--text-secondary)' };
     }
   };
 
@@ -215,38 +215,38 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             
             {/* Incomes for this date - hidden when collapsed */}
             {!isCollapsed && dayIncomes.map((income) => (
-        <div key={income.id} style={{ ...styles.incomeCard, ...(openMenuId === income.id ? { zIndex: 9999 } : {}) }}>
+        <div key={income.id} className="income-card" style={openMenuId === income.id ? { zIndex: 9999 } : undefined}>
           {editingId === income.id ? (
             // Inline Edit Mode
             <div style={styles.inlineEditor}>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 2, minWidth: '180px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('title')}</label>
+                  <label className="form-label">{t('title')}</label>
                   <input
                     type="text"
                     value={draft.title || ''}
                     placeholder={t('titleOptional')}
                     onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                    style={{ ...styles.input, width: '100%' }}
+                    className="form-input"
                   />
                 </div>
                 <div style={{ width: '140px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('amount')}</label>
+                  <label className="form-label">{t('amount')}</label>
                   <input
                     type="number"
                     step="0.01"
                     value={draft.amount || ''}
                     placeholder={t('amount')}
                     onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
-                    style={{ ...styles.input, width: '100%' }}
+                    className="form-input"
                   />
                 </div>
                 <div style={{ minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('type')}</label>
+                  <label className="form-label">{t('type')}</label>
                   <select
                     value={draft.type || 'other'}
                     onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as IncomeType }))}
-                    style={{ ...styles.select, width: '100%' }}
+                    className="form-select"
                   >
                     <option value="salary">{t('salary')}</option>
                     <option value="reimbursement">{t('reimbursement')}</option>
@@ -257,31 +257,31 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ width: '160px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('date')}</label>
+                  <label className="form-label">{t('date')}</label>
                   <input
                     type="date"
                     value={draft.date || ''}
                     onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                    style={{ ...styles.input, width: '100%' }}
+                    className="form-input"
                   />
                 </div>
                 <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('payerName')}</label>
+                  <label className="form-label">{t('payerName')}</label>
                   <input
                     type="text"
                     value={draft.payerName || ''}
                     placeholder={t('payerNameOptional')}
                     onChange={(e) => setDraft((d) => ({ ...d, payerName: e.target.value }))}
-                    style={{ ...styles.input, width: '100%' }}
+                    className="form-input"
                   />
                 </div>
                   {expenses.length > 0 && (
                   <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('linkToExpense')}</label>
+                    <label className="form-label">{t('linkToExpense')}</label>
                     <select
                       value={draft.linkedExpenseId || ''}
                       onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
-                      style={{ ...styles.select, width: '100%' }}
+                      className="form-select"
                     >
                       <option value="">-- {t('noLink')} --</option>
                       {expenses.map((expense) => (
@@ -295,13 +295,13 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
               <div style={styles.inlineRow}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>{t('notes')}</label>
+                  <label className="form-label">{t('notes')}</label>
                   <input
                     type="text"
                     value={draft.note || ''}
                     placeholder={t('notesOptional')}
                     onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-                    style={{ ...styles.input, width: '100%' }}
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -378,14 +378,14 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                     <div className="desktop-actions" style={{ gap: '8px' }}>
                       <button
                         onClick={() => startInlineEdit(income)}
-                        style={styles.iconButton}
+                        className="btn-icon btn-icon-primary"
                         aria-label={t('edit')}
                       >
                         <EditIcon size={18} />
                       </button>
                       <button
                         onClick={() => income.id && onDelete(income.id)}
-                        style={{ ...styles.iconButton, ...styles.deleteButton }}
+                        className="btn-icon btn-icon-danger"
                         aria-label={t('delete')}
                       >
                         <DeleteIcon size={18} />
@@ -396,9 +396,8 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                     <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
-                          className="menu-item-hover"
+                          className="menu-trigger-button"
                           onClick={() => setOpenMenuId(openMenuId === income.id ? null : income.id!)}
-                          style={styles.menuButton}
                           aria-label="More"
                         >
                           ⋮
@@ -451,25 +450,17 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '16px',
   },
-  incomeCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '14px',
-    padding: '18px',
-    boxShadow: '0 3px 10px var(--shadow)',
-    position: 'relative' as const,
-    overflow: 'visible' as const,
-    transition: 'all 0.2s ease',
-  },
   amountBadge: {
     position: 'absolute' as const,
-    top: '14px',
-    right: '14px',
-    fontSize: '20px',
-    fontWeight: '800' as const,
-    color: '#059669',
+    top: '12px',
+    right: '12px',
+    fontSize: '16px',
+    fontWeight: '700' as const,
+    color: 'var(--success-text)',
     pointerEvents: 'none' as const,
-    textShadow: '0 1px 3px rgba(5, 150, 105, 0.15)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    lineHeight: 1,
   },
   headerRow: {
     display: 'flex',
@@ -628,20 +619,6 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
-  },
-  input: {
-    padding: '10px 12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  select: {
-    padding: '10px 12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
   },
   emptyState: {
     display: 'flex',
