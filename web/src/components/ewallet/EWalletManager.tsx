@@ -493,6 +493,34 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
             </div>
           ))
         )}
+        
+        {/* In-container spending summary with dropdown */}
+        {filteredWallets.length > 0 && (() => {
+          const totalSpending = Object.values(getWalletStats).reduce(
+            (sum, stats) => sum + stats.totalSpending,
+            0
+          );
+          return totalSpending > 0 ? (
+            <div style={{
+              padding: '16px',
+              borderTop: '1px solid var(--border-color)',
+              marginTop: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                {t('totalSpending')}:
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                  ${totalSpending.toFixed(2)}
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>▼</span>
+              </div>
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Total spending summary */}
