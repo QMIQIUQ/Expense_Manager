@@ -101,9 +101,10 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
 
   const startInlineEdit = (income: Income) => {
     setEditingId(income.id!);
+    // Convert amount to cents for editing
     setDraft({
       title: income.title || '',
-      amount: income.amount.toString(),
+      amount: Math.round(income.amount * 100).toString(),
       date: income.date,
       type: income.type,
       payerName: income.payerName || '',
@@ -119,12 +120,14 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
 
   const saveInlineEdit = (income: Income) => {
     const updates: Partial<Income> = {};
-    const parsedAmount = parseFloat(draft.amount || '0');
+    // Convert amount from cents to dollars
+    const amountInCents = parseInt(draft.amount || '0');
+    const amountInDollars = amountInCents / 100;
     
     if ((income.title || '') !== (draft.title || '')) {
       updates.title = draft.title && draft.title.trim() !== '' ? draft.title : undefined;
     }
-    if (!isNaN(parsedAmount) && income.amount !== parsedAmount) updates.amount = parsedAmount;
+    if (income.amount !== amountInDollars) updates.amount = amountInDollars;
     if (income.date !== draft.date && draft.date) updates.date = draft.date;
     if (income.type !== draft.type && draft.type) updates.type = draft.type;
     if ((income.payerName || '') !== (draft.payerName || '')) {
@@ -141,6 +144,13 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
       onInlineUpdate(income.id!, updates);
     }
     cancelInlineEdit();
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digitsOnly = value.replace(/\D/g, '');
+    const amountInCents = parseInt(digitsOnly) || 0;
+    setDraft((d) => ({ ...d, amount: amountInCents.toString() }));
   };
 
   const toggleGroupCollapse = (date: string) => {
@@ -218,35 +228,55 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
         <div key={income.id} className="income-card" style={openMenuId === income.id ? { zIndex: 9999 } : undefined}>
           {editingId === income.id ? (
             // Inline Edit Mode
-            <div style={styles.inlineEditor}>
-              <div style={styles.inlineRow}>
-                <div style={{ flex: 2, minWidth: '180px' }}>
-                  <label className="form-label">{t('title')}</label>
+            <div className="flex flex-col gap-4">
+              {/* Title (full width) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('title')}</label>
+                <input
+                  type="text"
+                  value={draft.title || ''}
+                  placeholder={t('titleOptional')}
+                  onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                  onFocus={(e) => e.target.select()}
+                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+              </div>
+
+              {/* Amount and Type */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
                   <input
                     type="text"
-                    value={draft.title || ''}
-                    placeholder={t('titleOptional')}
-                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                    className="form-input"
+                    inputMode="numeric"
+                    value={((parseInt(draft.amount || '0')) / 100).toFixed(2)}
+                    onChange={handleAmountChange}
+                    onFocus={(e) => e.target.select()}
+                    placeholder="0.00"
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
                   />
                 </div>
-                <div style={{ width: '140px' }}>
-                  <label className="form-label">{t('amount')}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={draft.amount || ''}
-                    placeholder={t('amount')}
-                    onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
-                    className="form-input"
-                  />
-                </div>
-                <div style={{ minWidth: '140px' }}>
-                  <label className="form-label">{t('type')}</label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('type')}</label>
                   <select
                     value={draft.type || 'other'}
                     onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as IncomeType }))}
-                    className="form-select"
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
                   >
                     <option value="salary">{t('salary')}</option>
                     <option value="reimbursement">{t('reimbursement')}</option>
@@ -255,65 +285,109 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
                   </select>
                 </div>
               </div>
-              <div style={styles.inlineRow}>
-                <div style={{ width: '160px' }}>
-                  <label className="form-label">{t('date')}</label>
+
+              {/* Date and Payer Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
                   <input
                     type="date"
                     value={draft.date || ''}
                     onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                    className="form-input"
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
                   />
                 </div>
-                <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label className="form-label">{t('payerName')}</label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('payerName')}</label>
                   <input
                     type="text"
                     value={draft.payerName || ''}
                     placeholder={t('payerNameOptional')}
                     onChange={(e) => setDraft((d) => ({ ...d, payerName: e.target.value }))}
-                    className="form-input"
-                  />
-                </div>
-                  {expenses.length > 0 && (
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label className="form-label">{t('linkToExpense')}</label>
-                    <select
-                      value={draft.linkedExpenseId || ''}
-                      onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
-                      className="form-select"
-                    >
-                      <option value="">-- {t('noLink')} --</option>
-                      {expenses.map((expense) => (
-                        <option key={expense.id} value={expense.id}>
-                          {expense.description} - ${expense.amount.toFixed(2)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <div style={styles.inlineRow}>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">{t('notes')}</label>
-                  <input
-                    type="text"
-                    value={draft.note || ''}
-                    placeholder={t('notesOptional')}
-                    onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-                    className="form-input"
+                    onFocus={(e) => e.target.select()}
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
                   />
                 </div>
               </div>
-              <div style={styles.inlineActions}>
+
+              {/* Link to Expense (full width if present) */}
+              {expenses.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('linkToExpense')}</label>
+                  <select
+                    value={draft.linkedExpenseId || ''}
+                    onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
+                    <option value="">-- {t('noLink')} --</option>
+                    {expenses.map((expense) => (
+                      <option key={expense.id} value={expense.id}>
+                        {expense.description} - ${expense.amount.toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Notes (full width) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')}</label>
+                <input
+                  type="text"
+                  value={draft.note || ''}
+                  placeholder={t('notesOptional')}
+                  onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
+                  onFocus={(e) => e.target.select()}
+                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 mt-2 justify-end">
                 <button
                   onClick={() => saveInlineEdit(income)}
-                  style={styles.saveButton}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: 'var(--accent-light)',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                  }}
                   aria-label={t('save')}
                 >
                   <CheckIcon size={18} />
                 </button>
-                <button onClick={cancelInlineEdit} style={styles.cancelButton} aria-label={t('cancel')}>
+                <button
+                  onClick={cancelInlineEdit}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                  }}
+                  aria-label={t('cancel')}
+                >
                   <CloseIcon size={18} />
                 </button>
               </div>

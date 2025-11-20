@@ -484,10 +484,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={() => { setMultiSelectEnabled((s) => { if (s) setSelectedIds(new Set()); return !s; }); }}
-          style={{ ...styles.selectToggleButton, padding: '8px 12px' }}
+          className="btn btn-secondary"
           aria-pressed={multiSelectEnabled}
           aria-label="Toggle multi-select"
         >
@@ -501,7 +501,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 const allIds = new Set(filtered.map(exp => exp.id!));
                 setSelectedIds(allIds);
               }}
-              style={{ ...styles.selectAllButton }}
+              className="btn btn-success"
               aria-label="Select all"
             >
               ✓ {t('selectAll') || 'Select All'}
@@ -515,7 +515,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 setSelectedIds(new Set());
                 setMultiSelectEnabled(false);
               }}
-              style={{ ...styles.deleteSelectedButton }}
+              className="btn btn-danger"
               aria-label="Delete selected"
             >
               🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
@@ -570,37 +570,70 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
                 return (
-                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
+                <div
+                  key={expense.id}
+                  id={`expense-${expense.id}`}
+                  className="expense-card"
+                  style={{
+                    ...(openMenuId === expense.id ? { zIndex: 9999 } : {}),
+                    ...(multiSelectEnabled && selectedIds.has(expense.id!) ? styles.selectedCard : {}),
+                  }}
+                >
               {editingId === expense.id ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <div style={{ flex: 2, minWidth: '180px' }}>
-                      <label className="form-label">{t('description')}</label>
+                <div className="flex flex-col gap-4">
+                  {/* Description (full width) */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
+                    <input
+                      type="text"
+                      value={draft.description || ''}
+                      placeholder={t('description')}
+                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                      onFocus={(e) => e.target.select()}
+                      className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      style={{
+                        borderColor: 'var(--border-color)',
+                        backgroundColor: 'var(--input-bg)',
+                        color: 'var(--text-primary)'
+                      }}
+                    />
+                  </div>
+
+                  {/* Amount and Category */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
                       <input
                         type="text"
-                        value={draft.description || ''}
-                        placeholder={t('description')}
-                        onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                        className="form-input"
+                        inputMode="numeric"
+                        value={draft.amount ? (parseFloat(draft.amount) * 100 / 100).toFixed(2) : '0.00'}
+                        placeholder="0.00"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          const amountInCents = parseInt(digitsOnly) || 0;
+                          setDraft((d) => ({ ...d, amount: (amountInCents / 100).toString() }));
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)'
+                        }}
                       />
                     </div>
-                    <div style={{ width: '140px' }}>
-                      <label className="form-label">{t('amount')}</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={draft.amount || ''}
-                        placeholder={t('amount')}
-                        onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
-                        className="form-input"
-                      />
-                    </div>
-                    <div style={{ minWidth: '160px' }}>
-                      <label className="form-label">{t('category')}</label>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
                       <select
                         value={draft.category || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-                        className="form-select"
+                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)'
+                        }}
                       >
                         {categoryNames.map((name) => (
                           <option key={name} value={name}>{name}</option>
@@ -608,51 +641,75 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <div style={{ width: '160px' }}>
-                      <label className="form-label">{t('date')}</label>
+
+                  {/* Date and Time */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
                       <input
                         type="date"
                         value={draft.date || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                        className="form-input"
+                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)'
+                        }}
                       />
                     </div>
-                    <div style={{ width: '140px' }}>
-                      <label className="form-label">{t('time')}</label>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('time')}</label>
                       <input
                         type="time"
                         value={draft.time || ''}
                         onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                        className="form-input"
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label className="form-label">{t('notes')}</label>
-                      <input
-                        type="text"
-                        value={draft.notes || ''}
-                        placeholder={t('notesOptional')}
-                        onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                        className="form-input"
+                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)'
+                        }}
                       />
                     </div>
                   </div>
+
+                  {/* Notes (full width) */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')}</label>
+                    <input
+                      type="text"
+                      value={draft.notes || ''}
+                      placeholder={t('notesOptional')}
+                      onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                      onFocus={(e) => e.target.select()}
+                      className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      style={{
+                        borderColor: 'var(--border-color)',
+                        backgroundColor: 'var(--input-bg)',
+                        color: 'var(--text-primary)'
+                      }}
+                    />
+                  </div>
+
                   {/* Repayment tracking toggle */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+                  <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
                     <input
                       type="checkbox"
                       id={`needsRepaymentTracking-${expense.id}`}
                       checked={!!draft.needsRepaymentTracking}
                       onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
+                      className="w-4 h-4"
                     />
-                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} className="text-sm cursor-pointer" style={{ color: 'var(--text-primary)' }}>
                       {t('trackRepaymentInDashboard')}
                     </label>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                    <div style={{ flex: 1, minWidth: '160px' }}>
-                      <label className="form-label">{t('paymentMethod')}</label>
+
+                  {/* Payment Method */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
                       <select
                         value={draft.paymentMethod || 'cash'}
                         onChange={(e) => {
@@ -664,7 +721,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             paymentMethodName: method === 'e_wallet' ? d.paymentMethodName : '',
                           }));
                         }}
-                        className="form-select"
+                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                        style={{
+                          borderColor: 'var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-primary)'
+                        }}
                       >
                         <option value="cash">💵 {t('cash')}</option>
                         <option value="credit_card">💳 {t('creditCard')}</option>
@@ -673,12 +735,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
 
                     {draft.paymentMethod === 'credit_card' && (
-                      <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label className="form-label">{t('selectCard')}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
                         <select
                           value={draft.cardId || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
-                          className="form-select"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         >
                           <option value="">{t('selectCard')}</option>
                           {cards.length === 0 && <option value="" disabled>No cards available</option>}
@@ -692,14 +759,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     )}
 
                     {draft.paymentMethod === 'e_wallet' && (
-                      <div style={{ minWidth: '200px', flex: 1 }}>
-                        <label className="form-label">{t('eWalletNameLabel')}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')}</label>
                         <input
                           type="text"
                           value={draft.paymentMethodName || ''}
                           onChange={(e) => setDraft((d) => ({ ...d, paymentMethodName: e.target.value }))}
                           placeholder={t('eWalletNameLabel') || 'E-wallet name'}
-                          className="form-input"
+                          onFocus={(e) => e.target.select()}
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                           list={walletDatalistId}
                         />
                       </div>
@@ -713,11 +786,33 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       ))}
                     </datalist>
                   )}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => saveInlineEdit(expense)} style={{ ...styles.iconButton, ...styles.successChip }} aria-label={t('save')}>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-3 mt-2 justify-end">
+                    <button 
+                      onClick={() => saveInlineEdit(expense)} 
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: 'var(--accent-light)',
+                        color: 'var(--accent-primary)',
+                        fontWeight: 600,
+                        borderRadius: '8px',
+                      }}
+                      aria-label={t('save')}
+                    >
                       <CheckIcon size={18} />
                     </button>
-                    <button onClick={cancelInlineEdit} style={{ ...styles.iconButton, ...styles.neutralChip }} aria-label={t('cancel')}>
+                    <button 
+                      onClick={cancelInlineEdit} 
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        fontWeight: 600,
+                        borderRadius: '8px',
+                      }}
+                      aria-label={t('cancel')}
+                    >
                       <CloseIcon size={18} />
                     </button>
                   </div>
@@ -727,6 +822,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   {/* First row: time, category, status on left; amount info on right */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                      {multiSelectEnabled && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(expense.id!)}
+                          onChange={() => {
+                            setSelectedIds(prev => {
+                              const ns = new Set(prev);
+                              if (ns.has(expense.id!)) ns.delete(expense.id!); else ns.add(expense.id!);
+                              return ns;
+                            });
+                          }}
+                          aria-label={`Select expense ${expense.description}`}
+                        />
+                      )}
                       <span style={styles.timeDisplay}>{expense.time}</span>
                       <span style={{
                         ...styles.category,
@@ -1072,7 +1181,12 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
-    paddingBottom: '100px',
+    /* Global `body` already has bottom safe-padding to avoid the FAB.
+       Remove local padding to prevent double spacing on Expenses page. */
+    paddingBottom: 0,
+  },
+  selectedCard: {
+    boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.35)'
   },
   timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', minWidth: 0 },

@@ -268,6 +268,77 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     setShowForm(true);
   };
 
+  const handleInlineUpdate = async (id: string, updates: Partial<Repayment>) => {
+    if (!currentUser || !expense.id) return;
+    
+    // Store original for rollback
+    const originalRepayment = repayments.find(r => r.id === id);
+    if (!originalRepayment) return;
+    
+    // Optimistic update: immediately update in local state
+    setRepayments(prev => prev.map(r => 
+      r.id === id 
+        ? { ...r, ...updates, updatedAt: new Date() }
+        : r
+    ));
+    
+    // Show pending notification
+    const notificationId = showNotification('pending', t('saving'), { duration: 0, id: `update-${id}` });
+    
+    try {
+      setSaving(true);
+      // Perform actual database operation in background
+      await repaymentService.update(id, updates);
+
+      // Update notification to success
+      updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
+
+      // Handle excess income logic asynchronously
+      const updatedRepayments = repayments.map(r => r.id === id ? { ...r, ...updates } : r);
+      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
+      
+      if (totalRepaid > expense.amount) {
+        const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+        const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+        const excessAmount = totalRepaid - expense.amount;
+        
+        if (existingExcessIncome) {
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+        } else {
+          await incomeService.create({
+            userId: currentUser.uid,
+            amount: excessAmount,
+            date: updates.date || originalRepayment.date,
+            type: 'repayment',
+            linkedExpenseId: expense.id,
+            title: `Excess repayment for ${expense.description}`,
+            note: `Automatically created from excess repayment`,
+          });
+          showNotification('info', t('excessConvertedToIncome'));
+        }
+      } else {
+        const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
+        const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
+        if (existingExcessIncome) {
+          await incomeService.delete(existingExcessIncome.id!);
+        }
+      }
+      
+      // Notify parent to refresh data
+      notifyParentDebounced();
+    } catch (error) {
+      console.error('Failed to update repayment:', error);
+      // Rollback optimistic update on error
+      setRepayments(prev => prev.map(r => 
+        r.id === id ? originalRepayment : r
+      ));
+      // Update notification to error
+      updateNotification(notificationId, { type: 'error', message: t('errorSavingData'), duration: 5000 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingRepayment(null);
@@ -450,6 +521,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           repayments={repayments}
           onDelete={handleDeleteRepayment}
           onEdit={handleEditRepayment}
+          onUpdate={handleInlineUpdate}
+          cards={cards}
+          ewallets={ewallets}
+          maxAmount={expense.amount}
         />
       )}
     </div>

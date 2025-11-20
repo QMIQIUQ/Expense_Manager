@@ -145,6 +145,8 @@ body {
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.01em;
+  /* Global safe-padding so fixed action buttons don't cover content */
+  padding-bottom: 96px; /* equals Tailwind pb-24 */
 }
 
 /* Dark mode typography enhancements */

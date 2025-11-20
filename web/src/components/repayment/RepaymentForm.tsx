@@ -26,7 +26,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
-    amount: initialData?.amount || 0,
+    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     date: initialData?.date || new Date().toISOString().split('T')[0],
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
@@ -44,7 +44,9 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!formData.amount || formData.amount <= 0) {
       newErrors.amount = t('pleaseFillField') || 'Please enter a valid amount';
     }
-    if (maxAmount && formData.amount > maxAmount) {
+    // Convert amount from cents to dollars for validation
+    const amountInDollars = formData.amount / 100;
+    if (maxAmount && amountInDollars > maxAmount) {
       newErrors.amount = `Amount cannot exceed ${maxAmount.toFixed(2)}`;
     }
     if (!formData.date) {
@@ -59,7 +61,11 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     setErrors({});
     
     // Prepare data and remove undefined/empty fields to prevent Firestore errors
-    const submitData: Partial<typeof formData> = { ...formData };
+    // Convert amount from cents to dollars
+    const submitData: Partial<typeof formData> = { 
+      ...formData,
+      amount: amountInDollars
+    };
     
     // Remove empty optional fields
     if (!submitData.payerName || submitData.payerName.trim() === '') {
@@ -99,13 +105,29 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     }
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Convert to integer (cents)
+    const amountInCents = parseInt(digitsOnly) || 0;
+    setFormData((prev) => ({
+      ...prev,
+      amount: amountInCents,
+    }));
+    // Clear error for this field
+    if (errors.amount) {
+      setErrors((prev) => ({ ...prev, amount: '' }));
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      [name]: value,
     }));
     // Clear error for this field
     if (errors[name]) {
@@ -118,16 +140,16 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('repaymentAmount')} *
+            {t('repaymentAmount')} ($) *
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             id="amount"
             name="amount"
-            step="0.01"
-            min="0.01"
-            value={formData.amount || ''}
-            onChange={handleChange}
+            value={(formData.amount / 100).toFixed(2)}
+            onChange={handleAmountChange}
+            onFocus={(e) => e.target.select()}
             placeholder="0.00"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-red-500' : ''}`}
             style={{

@@ -25,7 +25,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
-    amount: initialData?.amount || 0,
+    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     category: initialData?.category || '',
     date: initialData?.date || new Date().toISOString().split('T')[0],
     time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
@@ -58,7 +58,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     setErrors({});
     
     // Prepare data based on payment method
-    const submitData: Partial<typeof formData> = { ...formData };
+    // Convert amount from cents to dollars
+    const submitData: Partial<typeof formData> = { 
+      ...formData,
+      amount: formData.amount / 100
+    };
     if (formData.paymentMethod === 'cash') {
       // Clear card and e-wallet info for cash
       delete submitData.cardId;
@@ -88,13 +92,29 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Convert to integer (cents)
+    const amountInCents = parseInt(digitsOnly) || 0;
+    setFormData((prev) => ({
+      ...prev,
+      amount: amountInCents,
+    }));
+    // Clear error for this field
+    if (errors.amount) {
+      setErrors((prev) => ({ ...prev, amount: '' }));
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      [name]: value,
     }));
     // Clear error for this field
     if (errors[name]) {
@@ -129,14 +149,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="amount"
-            value={formData.amount}
-            onChange={handleChange}
+            value={(formData.amount / 100).toFixed(2)}
+            onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
-            step="0.01"
-            min="0.01"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
               errors.amount ? 'border-red-500' : ''
             }`}
