@@ -368,130 +368,241 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                   </div>
                 </div>
               ) : (
-                // View Mode
+                // View Mode - Simplified design matching screenshot
                 <>
-                  {/* First row: Icon, Name, Color Badge */}
-                  <div className="ewallet-row-1">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                      <span className="ewallet-icon">{wallet.icon}</span>
-                      <h3 className="ewallet-name">{wallet.name}</h3>
-                      <div className="color-badge" style={{ backgroundColor: wallet.color }} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    {/* Left: Icon, Name, Status, and Provider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                      {/* Icon with colored circle background */}
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: wallet.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                        flexShrink: 0
+                      }}>
+                        {wallet.icon}
+                      </div>
+
+                      {/* Name, Status indicator, and Provider */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <h3 style={{
+                            margin: 0,
+                            fontSize: '16px',
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {wallet.name}
+                          </h3>
+                          {/* Active status indicator (blue dot) */}
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#4285F4',
+                            flexShrink: 0
+                          }} />
+                        </div>
+                        {wallet.provider && (
+                          <p style={{
+                            margin: 0,
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {wallet.provider}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: Action buttons */}
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      {/* Desktop: Show individual buttons */}
+                      <div className="desktop-actions" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => startInlineEdit(wallet)} 
+                          className="btn-icon btn-icon-primary"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <EditIcon size={16} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
+                          className="btn-icon btn-icon-danger"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <DeleteIcon size={16} />
+                        </button>
+                      </div>
+
+                      {/* Mobile: Show hamburger menu */}
+                      <div className="mobile-actions">
+                        <div style={styles.menuContainer}>
+                          <button
+                            className="menu-trigger-button"
+                            onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
+                            aria-label="More"
+                          >
+                            ⋮
+                          </button>
+                          {openMenuId === wallet.id && (
+                            <div style={styles.menu}>
+                              <button
+                                className="menu-item-hover"
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  startInlineEdit(wallet);
+                                }}
+                              >
+                                <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                                {t('edit')}
+                              </button>
+                              <button
+                                className="menu-item-hover"
+                                style={{ ...styles.menuItem, color: 'var(--error-text)' }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
+                                }}
+                              >
+                                <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                                {t('delete')}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Second row: Provider and Account Number */}
-                  <div className="ewallet-row-2">
-                    {wallet.provider && (
-                      <p className="ewallet-provider">{wallet.provider}</p>
-                    )}
-                    {wallet.accountNumber && (
-                      <p className="ewallet-account">···· {wallet.accountNumber}</p>
-                    )}
-                  </div>
-
-                  {/* Expense stats and breakdown */}
+                  {/* Expandable expense details section */}
                   {getWalletStats[wallet.name]?.expenses.length > 0 && (
-                    <div className="stats-section">
-                      <div className="stat-row">
-                        <span className="stat-label">{t('totalSpending')}:</span>
-                        <span className="stat-value">
-                          ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
-                        </span>
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                            {t('totalSpending')}:
+                          </span>
+                          <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                            ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
+                          </span>
+                        </div>
                         <button
                           onClick={() => toggleExpand(wallet.id!)}
                           className="btn-icon"
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
                         >
                           {expandedWalletId === wallet.id ? (
-                            <ChevronUpIcon size={18} />
+                            <ChevronUpIcon size={16} />
                           ) : (
-                            <ChevronDownIcon size={18} />
+                            <ChevronDownIcon size={16} />
                           )}
                         </button>
                       </div>
 
                       {expandedWalletId === wallet.id && (
-                        <div className="expense-list">
+                        <div style={{ marginTop: '12px' }}>
                           {getWalletStats[wallet.name].expenses.map((exp) => (
-                            <div key={exp.id} className="expense-item">
-                              <div className="expense-info">
-                                <span className="expense-category">
+                            <div 
+                              key={exp.id} 
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '8px 0',
+                                borderBottom: '1px solid var(--border-color)'
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '2px' }}>
                                   {getCategoryDisplay(exp.category)}
-                                </span>
-                                <span className="expense-date">
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                                   {formatDate(exp.date, exp.time)}
-                                </span>
+                                </div>
                                 {exp.description && (
-                                  <span className="expense-desc">{exp.description}</span>
+                                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                    {exp.description}
+                                  </div>
                                 )}
                               </div>
-                              <span className="expense-amount">${exp.amount.toFixed(2)}</span>
+                              <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginLeft: '12px' }}>
+                                ${exp.amount.toFixed(2)}
+                              </span>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
                   )}
-
-                  {/* Third row: Actions */}
-                  <div className="ewallet-row-3">
-                    {/* Desktop: Show individual buttons */}
-                    <div className="desktop-actions" style={{ gap: '8px' }}>
-                      <button onClick={() => startInlineEdit(wallet)} className="btn-icon btn-icon-primary">
-                        <EditIcon size={18} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
-                        className="btn-icon btn-icon-danger"
-                      >
-                        <DeleteIcon size={18} />
-                      </button>
-                    </div>
-
-                    {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions">
-                      <div style={styles.menuContainer}>
-                        <button
-                          className="menu-trigger-button"
-                          onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
-                          aria-label="More"
-                        >
-                          ⋮
-                        </button>
-                        {openMenuId === wallet.id && (
-                          <div style={styles.menu}>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                startInlineEdit(wallet);
-                              }}
-                            >
-                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
-                              {t('edit')}
-                            </button>
-                            <button
-                              className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
-                              }}
-                            >
-                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
-                              {t('delete')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </>
               )}
             </div>
           ))
         )}
       </div>
+
+      {/* Total spending summary */}
+      {filteredWallets.length > 0 && (() => {
+        const totalSpending = Object.values(getWalletStats).reduce(
+          (sum, stats) => sum + stats.totalSpending,
+          0
+        );
+        return totalSpending > 0 ? (
+          <div style={{
+            marginTop: '16px',
+            padding: '16px',
+            backgroundColor: 'var(--card-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {t('totalSpending')}:
+            </span>
+            <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+              ${totalSpending.toFixed(2)}
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
