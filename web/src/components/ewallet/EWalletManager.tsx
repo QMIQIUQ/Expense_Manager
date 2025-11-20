@@ -158,10 +158,25 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           }
         }
       `}</style>
-      <div className="header-actions">
-        <h2 className="section-title">{t('eWallets')}</h2>
+      <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('eWallets')}</h3>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} className="btn btn-primary">
+          <button
+            onClick={() => setIsAdding(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              backgroundColor: 'var(--accent-light)',
+              color: 'var(--accent-primary)',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
             <PlusIcon size={18} />
             <span>{t('addEWallet')}</span>
           </button>

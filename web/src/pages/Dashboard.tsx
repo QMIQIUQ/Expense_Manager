@@ -222,7 +222,7 @@ const Dashboard: React.FC = () => {
       if (alerts.length > 0) {
         // Show notifications for each alert
         alerts.forEach(alert => {
-          showNotification(alert.type, alert.message, { duration: 8000 });
+          showNotification(alert.type, alert.message, { duration: 0 });
         });
         
         // Update last check time
