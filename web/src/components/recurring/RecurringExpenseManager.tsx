@@ -235,7 +235,22 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       <div style={styles.header}>
         <h2 style={styles.title}>{t('recurringExpenses')}</h2>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} className="btn btn-soft-accent btn-pill">
+          <button 
+            onClick={() => setIsAdding(true)} 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              backgroundColor: 'var(--accent-light)',
+              color: 'var(--accent-primary)',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
             <PlusIcon size={18} />
             <span>{t('addRecurring')}</span>
           </button>
@@ -243,8 +258,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       </div>
 
       {isAdding && (
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.formGroup}>
+        <div className="form-card">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={styles.formGroup}>
             <label className="form-label">{t('description')} *</label>
             <input
               type="text"
@@ -375,8 +391,22 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             </div>
           )}
 
-          <div style={styles.formActions}>
-            <button type="submit" className="btn btn-primary">
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button 
+              type="submit" 
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent-primary)',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
               {editingId ? t('edit') : t('add')} {t('recurringExpense')}
             </button>
             <button
@@ -386,12 +416,23 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 setEditingId(null);
                 resetForm();
               }}
-              className="btn btn-secondary"
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
             >
               {t('cancel')}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       )}
 
       {/* Search Bar */}

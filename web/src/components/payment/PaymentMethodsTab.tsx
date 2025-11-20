@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Card, EWallet, Category, Expense } from '../../types';
+import { Card, EWallet, Category, Expense, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardManager from '../cards/CardManager';
 import EWalletManager from '../ewallet/EWalletManager';
+import BankManager from '../banks/BankManager';
 
 interface PaymentMethodsTabProps {
   cards: Card[];
   ewallets: EWallet[];
+  banks?: Bank[];
   categories: Category[];
   expenses: Expense[];
   onAddCard: (card: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -15,13 +17,17 @@ interface PaymentMethodsTabProps {
   onAddEWallet: (ewallet: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onUpdateEWallet: (id: string, ewallet: Partial<EWallet>) => Promise<void>;
   onDeleteEWallet: (id: string) => Promise<void>;
+  onAddBank?: (bank: Omit<Bank, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onUpdateBank?: (id: string, bank: Partial<Bank>) => Promise<void>;
+  onDeleteBank?: (id: string) => Promise<void>;
 }
 
-type PaymentMethodView = 'cards' | 'ewallets';
+type PaymentMethodView = 'cards' | 'ewallets' | 'banks';
 
 const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   cards,
   ewallets,
+  banks = [],
   categories,
   expenses,
   onAddCard,
@@ -30,6 +36,9 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   onAddEWallet,
   onUpdateEWallet,
   onDeleteEWallet,
+  onAddBank,
+  onUpdateBank,
+  onDeleteBank,
 }) => {
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
@@ -78,6 +87,12 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
         >
           📱 {t('eWallets')}
         </button>
+        <button
+          onClick={() => setActiveView('banks')}
+          style={styles.tab(activeView === 'banks')}
+        >
+          🏦 {t('banks')}
+        </button>
       </div>
 
       {/* Content based on active view */}
@@ -85,6 +100,7 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
         {activeView === 'cards' && (
           <CardManager
             cards={cards}
+            banks={banks}
             categories={categories}
             expenses={expenses}
             onAdd={onAddCard}
@@ -102,6 +118,20 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
             onUpdate={onUpdateEWallet}
             onDelete={onDeleteEWallet}
           />
+        )}
+        {activeView === 'banks' && (
+          <div>
+            {/* Lazy-load BankManager to avoid initial bundle weight if not enabled */}
+            <React.Suspense fallback={<div>{t('loading')}</div>}>
+              {/* @ts-ignore */}
+              <BankManager
+                banks={banks || []}
+                onAdd={onAddBank!}
+                onUpdate={onUpdateBank!}
+                onDelete={onDeleteBank!}
+              />
+            </React.Suspense>
+          </div>
         )}
       </div>
     </div>

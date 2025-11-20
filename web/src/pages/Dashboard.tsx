@@ -5,13 +5,14 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
 import { recurringExpenseService } from '../services/recurringExpenseService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
+import { bankService } from '../services/bankService';
 import { adminService } from '../services/adminService';
 import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
@@ -67,6 +68,7 @@ const Dashboard: React.FC = () => {
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [ewallets, setEWallets] = useState<EWallet[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -185,6 +187,18 @@ const Dashboard: React.FC = () => {
         const ewalletsData = await ewalletService.getAll(currentUser.uid);
         setEWallets(ewalletsData);
       } catch (ewalletError) {
+              try {
+                const banksData = await bankService.getAll(currentUser.uid);
+                setBanks(banksData);
+                // Save bank names for quick suggestions
+                const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[]])];
+                if (bankNamesSave.length > 0) {
+                  localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
+                }
+              } catch (bankError) {
+                console.warn('Could not load banks:', bankError);
+                setBanks([]);
+              }
         console.warn('Could not load e-wallets:', ewalletError);
         setEWallets([]);
       }
@@ -988,6 +1002,60 @@ const Dashboard: React.FC = () => {
         onError: () => {
           setCards((prev) => prev.filter((c) => c.id !== tempId));
         },
+      }
+    );
+  };
+
+  // Banks CRUD
+  const handleAddBank = async (bankData: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (!currentUser) return;
+    const tempId = `temp-${Date.now()}`;
+    const optimisticBank: Bank = { ...bankData, id: tempId, userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date() };
+    setBanks(prev => [...prev, optimisticBank]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: bankData },
+      () => bankService.create({ ...bankData, userId: currentUser.uid }),
+      {
+        entityType: 'bank',
+        retryToQueueOnFail: true,
+        onSuccess: () => loadData(),
+        onError: () => setBanks(prev => prev.filter(b => b.id !== tempId)),
+      }
+    );
+  };
+
+  const handleUpdateBank = async (id: string, updates: Partial<Bank>) => {
+    const original = banks.find(b => b.id === id);
+    if (!original) return;
+    // Optimistic
+    setBanks(prev => prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date() } : b));
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: original },
+      () => bankService.update(id, updates),
+      {
+        entityType: 'bank',
+        retryToQueueOnFail: true,
+        onSuccess: () => loadData(),
+        onError: () => setBanks(prev => prev.map(b => b.id === id ? original : b)),
+      }
+    );
+  };
+
+  const handleDeleteBank = async (id: string) => {
+    const original = banks.find(b => b.id === id);
+    if (!original) return;
+    setBanks(prev => prev.filter(b => b.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: original },
+      () => bankService.delete(id),
+      {
+        entityType: 'bank',
+        retryToQueueOnFail: true,
+        onSuccess: () => loadData(),
+        onError: () => setBanks(prev => [...prev, original]),
       }
     );
   };
@@ -1885,6 +1953,10 @@ const Dashboard: React.FC = () => {
             onAddEWallet={handleAddEWallet}
             onUpdateEWallet={handleUpdateEWallet}
             onDeleteEWallet={handleDeleteEWallet}
+            banks={banks}
+            onAddBank={handleAddBank}
+            onUpdateBank={handleUpdateBank}
+            onDeleteBank={handleDeleteBank}
           />
         )}
 

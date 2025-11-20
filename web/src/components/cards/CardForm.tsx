@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardType, CashbackRule, Category } from '../../types';
+import { Card, CardType, CashbackRule, Category, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface CardFormProps {
@@ -7,6 +7,7 @@ interface CardFormProps {
   onCancel: () => void;
   initialData?: Card;
   categories: Category[];
+  banks?: Bank[];
 }
 
 // Simple Tooltip Component
@@ -163,17 +164,21 @@ const CardForm: React.FC<CardFormProps> = ({
     
     // Get bank name suggestions from localStorage (previously saved cards)
     if (value.length > 0) {
-      const savedBanks = localStorage.getItem('cardBankNames');
-      if (savedBanks) {
-        try {
-          const banks: string[] = JSON.parse(savedBanks);
-          const filtered = banks.filter((bank) =>
-            bank.toLowerCase().includes(value.toLowerCase())
-          );
-          setBankSuggestions(filtered);
-          setShowBankSuggestions(filtered.length > 0);
-        } catch (error) {
-          console.error('Error parsing bank names:', error);
+      if (banks && banks.length > 0) {
+        const filtered = banks.map(b => b.name).filter((bName) => bName.toLowerCase().includes(value.toLowerCase()));
+        setBankSuggestions(filtered);
+        setShowBankSuggestions(filtered.length > 0);
+      } else {
+        const savedBanks = localStorage.getItem('cardBankNames');
+        if (savedBanks) {
+          try {
+            const banksList: string[] = JSON.parse(savedBanks);
+            const filtered = banksList.filter((bankName) => bankName.toLowerCase().includes(value.toLowerCase()));
+            setBankSuggestions(filtered);
+            setShowBankSuggestions(filtered.length > 0);
+          } catch (error) {
+            console.error('Error parsing bank names:', error);
+          }
         }
       }
     } else {

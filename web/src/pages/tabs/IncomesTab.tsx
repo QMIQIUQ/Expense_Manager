@@ -63,7 +63,7 @@ const IncomesTab: React.FC<Props> = ({
       />
 
       {isAdding && (
-        <div style={styles.formContainer}>
+        <div className="form-card">
           <IncomeForm
             onSubmit={handleSubmit}
             onCancel={() => setIsAdding(false)}
@@ -114,14 +114,6 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600' as const,
     cursor: 'pointer',
-  },
-  formContainer: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '10px',
-    boxShadow: '0 2px 4px var(--shadow)',
   },
   searchInput: {
     width: '100%',

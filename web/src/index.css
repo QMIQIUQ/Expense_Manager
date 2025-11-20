@@ -892,6 +892,64 @@ button:not(:disabled):hover {
 /* ============================================ */
 
 /* Credit Card Manager layout */
+.card-manager .form-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 10px var(--shadow);
+  margin-bottom: 20px;
+}
+
+.dark .card-manager .form-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.card-manager .form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-manager .form-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-manager .btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-manager .btn-close:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.card-manager .empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.card-manager .empty-text {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  margin: 0;
+}
+
 .card-manager .card-list {
   display: flex;
   flex-direction: column;
@@ -1013,6 +1071,124 @@ button:not(:disabled):hover {
 .ewallet-manager .ewallet-list { display: flex; flex-direction: column; gap: 12px; }
 .ewallet-manager .ewallet-card { padding: 16px; }
 .ewallet-manager .no-data { color: var(--text-secondary); padding: 16px; text-align: center; }
+
+/* E-Wallet Manager Form Styles */
+.ewallet-manager .form-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 10px var(--shadow);
+  margin-bottom: 20px;
+}
+
+.dark .ewallet-manager .form-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.ewallet-manager .form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ewallet-manager .form-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ewallet-manager .btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ewallet-manager .btn-close:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+/* Bank Manager Styles */
+.bank-manager .form-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 10px var(--shadow);
+  margin-bottom: 20px;
+}
+
+.dark .bank-manager .form-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.bank-manager .form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.bank-manager .form-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bank-manager .btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bank-manager .btn-close:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.bank-manager .bank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Recurring Expense Manager Form Styles */
+.form-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 10px var(--shadow);
+  margin-bottom: 20px;
+}
+
+.dark .form-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
 
 .card-icon {
   font-size: 28px;

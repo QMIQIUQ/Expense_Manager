@@ -61,6 +61,16 @@ export interface EWallet {
   updatedAt: Date;
 }
 
+export interface Bank {
+  id?: string;
+  userId: string;
+  name: string; // E.g., 'HSBC', 'Chase'
+  country?: string;
+  code?: string; // optional bank code
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Budget {
   id?: string;
   userId: string;

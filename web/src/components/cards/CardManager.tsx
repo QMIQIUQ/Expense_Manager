@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Category, Expense, CardStats } from '../../types';
+import { Card, Bank, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
@@ -7,6 +7,7 @@ import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIc
 
 interface CardManagerProps {
   cards: Card[];
+  banks?: Bank[];
   categories: Category[];
   expenses: Expense[];
   onAdd: (card: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
@@ -16,6 +17,7 @@ interface CardManagerProps {
 
 const CardManager: React.FC<CardManagerProps> = ({
   cards,
+  banks = [],
   categories,
   expenses,
   onAdd,
@@ -158,6 +160,8 @@ const CardManager: React.FC<CardManagerProps> = ({
             onSubmit={handleAdd}
             onCancel={() => setIsAdding(false)}
             categories={categories}
+            // Provide banks for autocomplete in CardForm
+            banks={banks}
           />
         </div>
       )}
@@ -187,6 +191,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                     onCancel={() => setEditingId(null)}
                     initialData={card}
                     categories={categories}
+                    banks={banks}
                   />
                 </div>
               );
