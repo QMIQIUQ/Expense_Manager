@@ -334,17 +334,23 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               <div key={budget.id} className="budget-card" style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
                 {editingId === budget.id ? (
                   // Inline Edit Mode
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                      <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label className="form-label">{t('category')}</label>
+                  <div className="flex flex-col gap-4">
+                    {/* Category and Amount */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
                         <select
                           value={formData.categoryId}
                           onChange={(e) => {
                             const cat = categories.find((c) => c.id === e.target.value);
                             setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
                           }}
-                          className="form-select"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         >
                           <option value="">{t('selectCategory')}</option>
                           {categories.map((cat) => (
@@ -354,60 +360,107 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                           ))}
                         </select>
                       </div>
-                      <div style={{ width: '140px' }}>
-                        <label className="form-label">{t('amount')}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
                         <input
-                          type="number"
-                          step="0.01"
-                          value={formData.amount}
-                          placeholder={t('amount')}
-                          onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                          type="text"
+                          inputMode="numeric"
+                          value={(formData.amount / 100).toFixed(2)}
+                          onChange={(e) => {
+                            const digitsOnly = e.target.value.replace(/\D/g, '');
+                            const amountInCents = parseInt(digitsOnly) || 0;
+                            setFormData({ ...formData, amount: amountInCents });
+                          }}
                           onFocus={(e) => e.target.select()}
-                          className="form-input"
+                          placeholder="0.00"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         />
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
-                      <div style={{ minWidth: '120px' }}>
-                        <label className="form-label">{t('budgetPeriod')}</label>
+
+                    {/* Period, Start Date, and Alert Threshold */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('budgetPeriod')} *</label>
                         <select
                           value={formData.period}
                           onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
-                          className="form-select"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         >
                           <option value="weekly">{t('periodWeekly')}</option>
                           <option value="monthly">{t('periodMonthly')}</option>
                           <option value="yearly">{t('periodYearly')}</option>
                         </select>
                       </div>
-                      <div style={{ minWidth: '140px' }}>
-                        <label className="form-label">{t('startDate')}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
                         <input
                           type="date"
                           value={formData.startDate}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                          className="form-input"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         />
                       </div>
-                      <div style={{ minWidth: '100px' }}>
-                        <label className="form-label">{t('alertAt')}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%)</label>
                         <input
                           type="number"
                           min="1"
                           max="100"
                           value={formData.alertThreshold}
-                          placeholder={t('alertAt')}
-                          onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) })}
+                          onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) || 80 })}
                           onFocus={(e) => e.target.select()}
-                          className="form-input"
+                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                          style={{
+                            borderColor: 'var(--border-color)',
+                            backgroundColor: 'var(--input-bg)',
+                            color: 'var(--text-primary)'
+                          }}
                         />
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => saveInlineEdit(budget)} className="btn btn-primary" aria-label={t('save')}>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3 mt-2 justify-end">
+                      <button
+                        onClick={() => saveInlineEdit(budget)}
+                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: 'var(--accent-light)',
+                          color: 'var(--accent-primary)',
+                          fontWeight: 600,
+                          borderRadius: '8px',
+                        }}
+                        aria-label={t('save')}
+                      >
                         {t('save')}
                       </button>
-                      <button onClick={cancelInlineEdit} className="btn btn-secondary" aria-label={t('cancel')}>
+                      <button
+                        onClick={cancelInlineEdit}
+                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          fontWeight: 600,
+                          borderRadius: '8px',
+                        }}
+                        aria-label={t('cancel')}
+                      >
                         {t('cancel')}
                       </button>
                     </div>
