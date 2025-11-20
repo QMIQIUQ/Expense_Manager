@@ -60,14 +60,19 @@ const CardForm: React.FC<CardFormProps> = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     bankName: initialData?.bankName || '',
-    cardLimit: initialData?.cardLimit || 0,
+    cardLimit: initialData?.cardLimit ? Math.round(initialData.cardLimit * 100) : 0, // Store in cents
     billingDay: initialData?.billingDay || 1,
-    benefitMinSpend: initialData?.benefitMinSpend || 0,
+    benefitMinSpend: initialData?.benefitMinSpend ? Math.round(initialData.benefitMinSpend * 100) : 0, // Store in cents
     cardType: initialData?.cardType || ('cashback' as CardType),
   });
 
   const [cashbackRules, setCashbackRules] = useState<CashbackRule[]>(
-    initialData?.cashbackRules || []
+    initialData?.cashbackRules?.map(rule => ({
+      ...rule,
+      minSpendForRate: Math.round(rule.minSpendForRate * 100),
+      capIfMet: Math.round(rule.capIfMet * 100),
+      capIfNotMet: Math.round(rule.capIfNotMet * 100),
+    })) || []
   );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -95,7 +100,7 @@ const CardForm: React.FC<CardFormProps> = ({
     // Build card data, omitting undefined fields to avoid Firebase errors
     const cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
       name: formData.name,
-      cardLimit: formData.cardLimit,
+      cardLimit: formData.cardLimit / 100, // Convert from cents to dollars
       billingDay: formData.billingDay,
       cardType: formData.cardType,
     };
@@ -105,10 +110,16 @@ const CardForm: React.FC<CardFormProps> = ({
       cardData.bankName = formData.bankName;
     }
     if (formData.benefitMinSpend && formData.benefitMinSpend > 0) {
-      cardData.benefitMinSpend = formData.benefitMinSpend;
+      cardData.benefitMinSpend = formData.benefitMinSpend / 100; // Convert from cents to dollars
     }
     if (formData.cardType === 'cashback' && cashbackRules.length > 0) {
-      cardData.cashbackRules = cashbackRules;
+      // Convert cashback rules from cents to dollars
+      cardData.cashbackRules = cashbackRules.map(rule => ({
+        ...rule,
+        minSpendForRate: rule.minSpendForRate / 100,
+        capIfMet: rule.capIfMet / 100,
+        capIfNotMet: rule.capIfNotMet / 100,
+      }));
     }
     if (initialData?.perMonthOverrides && initialData.perMonthOverrides.length > 0) {
       cardData.perMonthOverrides = initialData.perMonthOverrides;
@@ -117,15 +128,29 @@ const CardForm: React.FC<CardFormProps> = ({
     onSubmit(cardData);
   };
 
+  const handleAmountChange = (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Convert to integer (cents)
+    const amountInCents = parseInt(digitsOnly) || 0;
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: amountInCents,
+    }));
+    // Clear error for this field
+    if (errors[fieldName]) {
+      setErrors((prev) => ({ ...prev, [fieldName]: '' }));
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: ['cardLimit', 'billingDay', 'benefitMinSpend'].includes(name)
-        ? parseFloat(value) || 0
-        : value,
+      [name]: name === 'billingDay' ? parseInt(value) || 0 : value,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
@@ -196,10 +221,18 @@ const CardForm: React.FC<CardFormProps> = ({
     );
   };
 
+  const handleCashbackAmountChange = (index: number, field: 'minSpendForRate' | 'capIfMet' | 'capIfNotMet') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digitsOnly = value.replace(/\D/g, '');
+    const amountInCents = parseInt(digitsOnly) || 0;
+    handleCashbackRuleChange(index, field, amountInCents);
+  };
+
   // Calculate how much spending needed to reach cap for display
-  const calculateSpendToReachCap = (rate: number, cap: number): number => {
+  const calculateSpendToReachCap = (rate: number, capInCents: number): number => {
     if (rate === 0) return 0;
-    return Math.ceil(cap / rate);
+    const capInDollars = capInCents / 100;
+    return Math.ceil(capInDollars / rate);
   };
 
   return (
@@ -279,14 +312,13 @@ const CardForm: React.FC<CardFormProps> = ({
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ($) *</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="cardLimit"
-            value={formData.cardLimit}
-            onChange={handleChange}
+            value={(formData.cardLimit / 100).toFixed(2)}
+            onChange={handleAmountChange('cardLimit')}
             onFocus={(e) => e.target.select()}
-            placeholder="10000"
-            step="1"
-            min="0"
+            placeholder="0.00"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
               errors.cardLimit ? 'border-red-500' : ''
             }`}
@@ -330,16 +362,15 @@ const CardForm: React.FC<CardFormProps> = ({
       {/* Benefit Min Spend and Card Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')}</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')} ($)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="benefitMinSpend"
-            value={formData.benefitMinSpend}
-            onChange={handleChange}
+            value={(formData.benefitMinSpend / 100).toFixed(2)}
+            onChange={handleAmountChange('benefitMinSpend')}
             onFocus={(e) => e.target.select()}
-            placeholder="0"
-            step="1"
-            min="0"
+            placeholder="0.00"
             className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
             style={{
               backgroundColor: 'var(--input-bg)',
@@ -443,19 +474,12 @@ const CardForm: React.FC<CardFormProps> = ({
                     <Tooltip text={t('tooltipMinSpendForRate')} />
                   </label>
                   <input
-                    type="number"
-                    value={rule.minSpendForRate}
-                    onChange={(e) =>
-                      handleCashbackRuleChange(
-                        index,
-                        'minSpendForRate',
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={(rule.minSpendForRate / 100).toFixed(2)}
+                    onChange={handleCashbackAmountChange(index, 'minSpendForRate')}
                     onFocus={(e) => e.target.select()}
-                    placeholder="0"
-                    step="1"
-                    min="0"
+                    placeholder="0.00"
                     className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
                     style={{
                       backgroundColor: 'var(--input-bg)',
@@ -502,19 +526,12 @@ const CardForm: React.FC<CardFormProps> = ({
                     <Tooltip text={t('tooltipCapIfMet')} />
                   </label>
                   <input
-                    type="number"
-                    value={rule.capIfMet}
-                    onChange={(e) =>
-                      handleCashbackRuleChange(
-                        index,
-                        'capIfMet',
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={(rule.capIfMet / 100).toFixed(2)}
+                    onChange={handleCashbackAmountChange(index, 'capIfMet')}
                     onFocus={(e) => e.target.select()}
-                    placeholder="15"
-                    step="1"
-                    min="0"
+                    placeholder="0.00"
                     className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
                     style={{
                       backgroundColor: 'var(--input-bg)',
@@ -578,19 +595,12 @@ const CardForm: React.FC<CardFormProps> = ({
                     <Tooltip text={t('tooltipCapIfNotMet')} />
                   </label>
                   <input
-                    type="number"
-                    value={rule.capIfNotMet}
-                    onChange={(e) =>
-                      handleCashbackRuleChange(
-                        index,
-                        'capIfNotMet',
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={(rule.capIfNotMet / 100).toFixed(2)}
+                    onChange={handleCashbackAmountChange(index, 'capIfNotMet')}
                     onFocus={(e) => e.target.select()}
-                    placeholder="5"
-                    step="1"
-                    min="0"
+                    placeholder="0.00"
                     className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
                     style={{
                       backgroundColor: 'var(--input-bg)',
