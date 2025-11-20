@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 // Common e-wallet icons
@@ -35,7 +35,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [expandedWalletId, setExpandedWalletId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -96,23 +95,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     wallet.provider?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const toggleExpand = (walletId: string) => {
-    setExpandedWalletId(expandedWalletId === walletId ? null : walletId);
-  };
 
-  const formatDate = (dateString: string, time?: string) => {
-    const date = new Date(dateString);
-    const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return time ? `${base} ${time}` : base;
-  };
-
-  const getCategoryDisplay = (categoryName: string) => {
-    const category = categories.find(c => c.name === categoryName);
-    if (category) {
-      return `${category.icon} ${category.name}`;
-    }
-    return categoryName;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -504,72 +487,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     </div>
                   </div>
 
-                  {/* Expandable expense details section */}
-                  {getWalletStats[wallet.name]?.expenses.length > 0 && (
-                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                            {t('totalSpending')}:
-                          </span>
-                          <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                            ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => toggleExpand(wallet.id!)}
-                          className="btn-icon"
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {expandedWalletId === wallet.id ? (
-                            <ChevronUpIcon size={16} />
-                          ) : (
-                            <ChevronDownIcon size={16} />
-                          )}
-                        </button>
-                      </div>
 
-                      {expandedWalletId === wallet.id && (
-                        <div style={{ marginTop: '12px' }}>
-                          {getWalletStats[wallet.name].expenses.map((exp) => (
-                            <div 
-                              key={exp.id} 
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '8px 0',
-                                borderBottom: '1px solid var(--border-color)'
-                              }}
-                            >
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '2px' }}>
-                                  {getCategoryDisplay(exp.category)}
-                                </div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                  {formatDate(exp.date, exp.time)}
-                                </div>
-                                {exp.description && (
-                                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                                    {exp.description}
-                                  </div>
-                                )}
-                              </div>
-                              <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginLeft: '12px' }}>
-                                ${exp.amount.toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </>
               )}
             </div>
