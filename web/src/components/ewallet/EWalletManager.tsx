@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 // Common e-wallet icons
@@ -35,7 +35,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [expandedWalletId, setExpandedWalletId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -96,23 +95,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     wallet.provider?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const toggleExpand = (walletId: string) => {
-    setExpandedWalletId(expandedWalletId === walletId ? null : walletId);
-  };
 
-  const formatDate = (dateString: string, time?: string) => {
-    const date = new Date(dateString);
-    const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return time ? `${base} ${time}` : base;
-  };
-
-  const getCategoryDisplay = (categoryName: string) => {
-    const category = categories.find(c => c.name === categoryName);
-    if (category) {
-      return `${category.icon} ${category.name}`;
-    }
-    return categoryName;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,130 +351,204 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                   </div>
                 </div>
               ) : (
-                // View Mode
+                // View Mode - Simplified design matching screenshot
                 <>
-                  {/* First row: Icon, Name, Color Badge */}
-                  <div className="ewallet-row-1">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                      <span className="ewallet-icon">{wallet.icon}</span>
-                      <h3 className="ewallet-name">{wallet.name}</h3>
-                      <div className="color-badge" style={{ backgroundColor: wallet.color }} />
-                    </div>
-                  </div>
-
-                  {/* Second row: Provider and Account Number */}
-                  <div className="ewallet-row-2">
-                    {wallet.provider && (
-                      <p className="ewallet-provider">{wallet.provider}</p>
-                    )}
-                    {wallet.accountNumber && (
-                      <p className="ewallet-account">···· {wallet.accountNumber}</p>
-                    )}
-                  </div>
-
-                  {/* Expense stats and breakdown */}
-                  {getWalletStats[wallet.name]?.expenses.length > 0 && (
-                    <div className="stats-section">
-                      <div className="stat-row">
-                        <span className="stat-label">{t('totalSpending')}:</span>
-                        <span className="stat-value">
-                          ${getWalletStats[wallet.name].totalSpending.toFixed(2)}
-                        </span>
-                        <button
-                          onClick={() => toggleExpand(wallet.id!)}
-                          className="btn-icon"
-                        >
-                          {expandedWalletId === wallet.id ? (
-                            <ChevronUpIcon size={18} />
-                          ) : (
-                            <ChevronDownIcon size={18} />
-                          )}
-                        </button>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    {/* Left: Icon, Name, Status, and Provider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                      {/* Icon with colored circle background */}
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: wallet.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                        flexShrink: 0
+                      }}>
+                        {wallet.icon}
                       </div>
 
-                      {expandedWalletId === wallet.id && (
-                        <div className="expense-list">
-                          {getWalletStats[wallet.name].expenses.map((exp) => (
-                            <div key={exp.id} className="expense-item">
-                              <div className="expense-info">
-                                <span className="expense-category">
-                                  {getCategoryDisplay(exp.category)}
-                                </span>
-                                <span className="expense-date">
-                                  {formatDate(exp.date, exp.time)}
-                                </span>
-                                {exp.description && (
-                                  <span className="expense-desc">{exp.description}</span>
-                                )}
-                              </div>
-                              <span className="expense-amount">${exp.amount.toFixed(2)}</span>
-                            </div>
-                          ))}
+                      {/* Name, Status indicator, and Provider */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <h3 style={{
+                            margin: 0,
+                            fontSize: '16px',
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {wallet.name}
+                          </h3>
+                          {/* Active status indicator (blue dot) */}
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#4285F4',
+                            flexShrink: 0
+                          }} />
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Third row: Actions */}
-                  <div className="ewallet-row-3">
-                    {/* Desktop: Show individual buttons */}
-                    <div className="desktop-actions" style={{ gap: '8px' }}>
-                      <button onClick={() => startInlineEdit(wallet)} className="btn-icon btn-icon-primary">
-                        <EditIcon size={18} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
-                        className="btn-icon btn-icon-danger"
-                      >
-                        <DeleteIcon size={18} />
-                      </button>
-                    </div>
-
-                    {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions">
-                      <div style={styles.menuContainer}>
-                        <button
-                          className="menu-trigger-button"
-                          onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
-                          aria-label="More"
-                        >
-                          ⋮
-                        </button>
-                        {openMenuId === wallet.id && (
-                          <div style={styles.menu}>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                startInlineEdit(wallet);
-                              }}
-                            >
-                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
-                              {t('edit')}
-                            </button>
-                            <button
-                              className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
-                              }}
-                            >
-                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
-                              {t('delete')}
-                            </button>
-                          </div>
+                        {wallet.provider && (
+                          <p style={{
+                            margin: 0,
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {wallet.provider}
+                          </p>
                         )}
                       </div>
                     </div>
+
+                    {/* Right: Action buttons */}
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      {/* Desktop: Show individual buttons */}
+                      <div className="desktop-actions" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => startInlineEdit(wallet)} 
+                          className="btn-icon btn-icon-primary"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <EditIcon size={16} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
+                          className="btn-icon btn-icon-danger"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <DeleteIcon size={16} />
+                        </button>
+                      </div>
+
+                      {/* Mobile: Show hamburger menu */}
+                      <div className="mobile-actions">
+                        <div style={styles.menuContainer}>
+                          <button
+                            className="menu-trigger-button"
+                            onClick={() => setOpenMenuId(openMenuId === wallet.id ? null : wallet.id!)}
+                            aria-label="More"
+                          >
+                            ⋮
+                          </button>
+                          {openMenuId === wallet.id && (
+                            <div style={styles.menu}>
+                              <button
+                                className="menu-item-hover"
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  startInlineEdit(wallet);
+                                }}
+                              >
+                                <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                                {t('edit')}
+                              </button>
+                              <button
+                                className="menu-item-hover"
+                                style={{ ...styles.menuItem, color: 'var(--error-text)' }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteConfirm({ isOpen: true, walletId: wallet.id! });
+                                }}
+                              >
+                                <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                                {t('delete')}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+
                 </>
               )}
             </div>
           ))
         )}
+        
+        {/* In-container spending summary with dropdown */}
+        {filteredWallets.length > 0 && (() => {
+          const totalSpending = Object.values(getWalletStats).reduce(
+            (sum, stats) => sum + stats.totalSpending,
+            0
+          );
+          return totalSpending > 0 ? (
+            <div style={{
+              padding: '16px',
+              borderTop: '1px solid var(--border-color)',
+              marginTop: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                {t('totalSpending')}:
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                  ${totalSpending.toFixed(2)}
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>▼</span>
+              </div>
+            </div>
+          ) : null;
+        })()}
       </div>
+
+      {/* Total spending summary */}
+      {filteredWallets.length > 0 && (() => {
+        const totalSpending = Object.values(getWalletStats).reduce(
+          (sum, stats) => sum + stats.totalSpending,
+          0
+        );
+        return totalSpending > 0 ? (
+          <div style={{
+            marginTop: '16px',
+            padding: '16px',
+            backgroundColor: 'var(--card-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {t('totalSpending')}:
+            </span>
+            <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+              ${totalSpending.toFixed(2)}
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
