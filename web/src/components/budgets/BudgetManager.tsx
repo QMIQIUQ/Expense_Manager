@@ -201,28 +201,27 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} *</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
-                  onFocus={(e) => e.target.select()}
-                  placeholder="2000"
-                  step="1"
-                  min="0"
-                  required
-                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-                <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {formData.amount > 0 ? `= $${(formData.amount / 100).toFixed(2)}` : 'Enter amount in cents (e.g., 2000 = $20.00)'}
-                </div>
-              </div>
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={(formData.amount / 100).toFixed(2)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const digitsOnly = value.replace(/\D/g, '');
+                  const amountInCents = parseInt(digitsOnly) || 0;
+                  setFormData({ ...formData, amount: amountInCents });
+                }}
+                onFocus={(e) => e.target.select()}
+                placeholder="0.00"
+                required
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)'
+                }}
+              />
             </div>
           </div>
 
