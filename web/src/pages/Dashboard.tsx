@@ -2042,7 +2042,7 @@ const Dashboard: React.FC = () => {
             fontSize: isMobile ? '28px' : '16px',
             fontWeight: isMobile ? 500 : 600,
           }}
-          className="floating-btn-hover text-white"
+          className="floating-btn-hover"
           title={t('addNewExpense')}
         >
           <svg
@@ -2130,14 +2130,14 @@ const styles = {
     bottom: '24px',
     left: '24px',
     padding: '16px 24px',
-    backgroundColor: '#6366f1',
-    color: 'white',
-    border: 'none',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    border: '1px solid rgba(167, 139, 250, 0.35)',
     borderRadius: '50px',
     fontSize: '16px',
     fontWeight: '600' as const,
     cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+    boxShadow: 'var(--purple-glow)',
     zIndex: 9999,
     transition: 'all 0.3s ease',
   },

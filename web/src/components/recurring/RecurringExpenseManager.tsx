@@ -235,7 +235,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       <div style={styles.header}>
         <h2 style={styles.title}>{t('recurringExpenses')}</h2>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+          <button onClick={() => setIsAdding(true)} className="btn btn-soft-accent btn-pill">
             <PlusIcon size={18} />
             <span>{t('addRecurring')}</span>
           </button>
@@ -839,20 +839,6 @@ const styles = {
     fontSize: '24px',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
-  },
-  addButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600' as const,
-    cursor: 'pointer',
-    transition: 'all 0.2s',
   },
   searchContainer: {
     display: 'flex',

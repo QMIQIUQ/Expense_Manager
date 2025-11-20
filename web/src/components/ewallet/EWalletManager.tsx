@@ -1,18 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon, CloseIcon } from '../icons';
+import EWalletForm from './EWalletForm';
 import ConfirmModal from '../ConfirmModal';
 
-// Common e-wallet icons
-const EWALLET_ICONS = ['💳', '📱', '💰', '🏦', '💵', '💴', '💶', '💷', '🅰️', '🍎', '🔵', '🟢'];
-
-// Preset colors
-const PRESET_COLORS = [
-  '#4285F4', '#1677FF', '#07C160', '#FF9500', '#5856D6',
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-  '#F7DC6F', '#BB8FCE',
-];
+// (Inline icon/color pickers moved into EWalletForm for consistency)
 
 interface EWalletManagerProps {
   ewallets: EWallet[];
@@ -36,13 +29,8 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    icon: '💳',
-    color: '#4285F4',
-    provider: '',
-    accountNumber: '',
-  });
+  // Keep signature compatible; category data not used here directly
+  void categories;
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; walletId: string | null }>({
     isOpen: false,
     walletId: null,
@@ -97,47 +85,23 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
-    await onAdd(formData);
+  const handleAdd = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    await onAdd(payload);
     setIsAdding(false);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      icon: '💳',
-      color: '#4285F4',
-      provider: '',
-      accountNumber: '',
-    });
   };
 
   const startInlineEdit = (wallet: EWallet) => {
     setEditingId(wallet.id!);
-    setFormData({
-      name: wallet.name,
-      icon: wallet.icon,
-      color: wallet.color,
-      provider: wallet.provider || '',
-      accountNumber: wallet.accountNumber || '',
-    });
   };
 
   const cancelInlineEdit = () => {
     setEditingId(null);
-    resetForm();
   };
 
-  const saveInlineEdit = async () => {
-    if (!editingId || !formData.name.trim()) return;
-
-    await onUpdate(editingId, formData);
+  const saveInlineEdit = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingId) return;
+    await onUpdate(editingId, payload);
     setEditingId(null);
-    resetForm();
   };
 
   const styles = {
@@ -215,70 +179,14 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
       </div>
 
       {isAdding && (
-        <div className="ewallet-card">
-          <form onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t('eWalletName')}
-                className="form-input"
-                autoFocus
-              />
-              <input
-                type="text"
-                value={formData.provider}
-                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                placeholder={t('provider') + ' (' + t('optional') + ')'}
-                className="form-input"
-              />
-              <input
-                type="text"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
-                className="form-input"
-              />
-              <div>
-                <label className="form-label">{t('icon')}</label>
-                <div className="icon-grid">
-                  {EWALLET_ICONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, icon })}
-                      className={`icon-button ${formData.icon === icon ? 'selected' : ''}`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="form-label">{t('color')}</label>
-                <div className="color-grid">
-                  {PRESET_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color })}
-                      className={`color-button ${formData.color === color ? 'selected' : ''}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="button-group">
-              <button type="submit" className="btn btn-primary">
-                {t('addEWallet')}
-              </button>
-              <button type="button" onClick={() => { setIsAdding(false); resetForm(); }} className="btn btn-secondary">
-                {t('cancel')}
-              </button>
-            </div>
-          </form>
+        <div className="form-card">
+          <div className="form-header">
+            <h3 className="form-title">{t('addEWallet')}</h3>
+            <button onClick={() => setIsAdding(false)} className="btn-close" aria-label={t('cancel')}>
+              <CloseIcon size={18} />
+            </button>
+          </div>
+          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} />
         </div>
       )}
 
@@ -289,66 +197,18 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           filteredWallets.map((wallet) => (
             <div key={wallet.id} className="ewallet-card" style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
               {editingId === wallet.id ? (
-                // Edit Mode
-                <div className="form-grid">
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={t('eWalletName')}
-                    className="form-input"
-                  />
-                  <input
-                    type="text"
-                    value={formData.provider}
-                    onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                    placeholder={t('provider') + ' (' + t('optional') + ')'}
-                    className="form-input"
-                  />
-                  <input
-                    type="text"
-                    value={formData.accountNumber}
-                    onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                    placeholder={t('accountNumber') + ' (' + t('optional') + ')'}
-                    className="form-input"
-                  />
-                  <div>
-                    <label className="form-label">{t('icon')}</label>
-                    <div className="icon-grid">
-                      {EWALLET_ICONS.map((icon) => (
-                        <button
-                          key={icon}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, icon })}
-                          className={`icon-button ${formData.icon === icon ? 'selected' : ''}`}
-                        >
-                          {icon}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="form-label">{t('color')}</label>
-                    <div className="color-grid">
-                      {PRESET_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, color })}
-                          className={`color-button ${formData.color === color ? 'selected' : ''}`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="button-group">
-                    <button onClick={saveInlineEdit} className="btn btn-primary">
-                      {t('save')}
-                    </button>
-                    <button onClick={cancelInlineEdit} className="btn btn-secondary">
-                      {t('cancel')}
+                <div className="form-card" style={{ width: '100%' }}>
+                  <div className="form-header">
+                    <h3 className="form-title">{t('editEWallet')}</h3>
+                    <button onClick={cancelInlineEdit} className="btn-close" aria-label={t('cancel')}>
+                      <CloseIcon size={18} />
                     </button>
                   </div>
+                  <EWalletForm
+                    initialData={wallet}
+                    onSubmit={saveInlineEdit}
+                    onCancel={cancelInlineEdit}
+                  />
                 </div>
               ) : (
                 // View Mode - Simplified design matching screenshot
