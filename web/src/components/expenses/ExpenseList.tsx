@@ -484,10 +484,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={() => { setMultiSelectEnabled((s) => { if (s) setSelectedIds(new Set()); return !s; }); }}
-          style={{ ...styles.selectToggleButton, padding: '8px 12px' }}
+          className="btn btn-secondary"
           aria-pressed={multiSelectEnabled}
           aria-label="Toggle multi-select"
         >
@@ -501,7 +501,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 const allIds = new Set(filtered.map(exp => exp.id!));
                 setSelectedIds(allIds);
               }}
-              style={{ ...styles.selectAllButton }}
+              className="btn btn-success"
               aria-label="Select all"
             >
               ✓ {t('selectAll') || 'Select All'}
@@ -515,7 +515,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 setSelectedIds(new Set());
                 setMultiSelectEnabled(false);
               }}
-              style={{ ...styles.deleteSelectedButton }}
+              className="btn btn-danger"
               aria-label="Delete selected"
             >
               🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
@@ -570,7 +570,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
                 return (
-                <div key={expense.id} id={`expense-${expense.id}`} className="expense-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
+                <div
+                  key={expense.id}
+                  id={`expense-${expense.id}`}
+                  className="expense-card"
+                  style={{
+                    ...(openMenuId === expense.id ? { zIndex: 9999 } : {}),
+                    ...(multiSelectEnabled && selectedIds.has(expense.id!) ? styles.selectedCard : {}),
+                  }}
+                >
               {editingId === expense.id ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const }}>
@@ -727,6 +735,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   {/* First row: time, category, status on left; amount info on right */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                      {multiSelectEnabled && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(expense.id!)}
+                          onChange={() => {
+                            setSelectedIds(prev => {
+                              const ns = new Set(prev);
+                              if (ns.has(expense.id!)) ns.delete(expense.id!); else ns.add(expense.id!);
+                              return ns;
+                            });
+                          }}
+                          aria-label={`Select expense ${expense.description}`}
+                        />
+                      )}
                       <span style={styles.timeDisplay}>{expense.time}</span>
                       <span style={{
                         ...styles.category,
@@ -1072,7 +1094,12 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
-    paddingBottom: '100px',
+    /* Global `body` already has bottom safe-padding to avoid the FAB.
+       Remove local padding to prevent double spacing on Expenses page. */
+    paddingBottom: 0,
+  },
+  selectedCard: {
+    boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.35)'
   },
   timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', minWidth: 0 },
