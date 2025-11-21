@@ -401,7 +401,7 @@ class SyncService {
     }
 
     try {
-      let data: any;
+      let data: unknown;
 
       switch (entity) {
         case 'expenses':

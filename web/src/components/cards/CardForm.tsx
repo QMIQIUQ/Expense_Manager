@@ -56,6 +56,7 @@ const CardForm: React.FC<CardFormProps> = ({
   onCancel,
   initialData,
   categories,
+  banks,
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({

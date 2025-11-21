@@ -281,6 +281,7 @@ export const translations = {
   addNewBank: { en: 'Add New Bank', zh: '新增銀行', 'zh-CN': '添加新银行' },
   editBank: { en: 'Edit Bank', zh: '編輯銀行', 'zh-CN': '编辑银行' },
   bankCode: { en: 'Bank Code', zh: '銀行代碼', 'zh-CN': '银行代码' },
+  country: { en: 'Country', zh: '國家', 'zh-CN': '国家' },
   bankAdded: { en: 'Bank added successfully', zh: '銀行已成功新增', 'zh-CN': '银行已成功添加' },
   bankUpdated: { en: 'Bank updated successfully', zh: '銀行已成功更新', 'zh-CN': '银行已成功更新' },
   bankDeleted: { en: 'Bank deleted successfully', zh: '銀行已成功刪除', 'zh-CN': '银行已成功删除' },
