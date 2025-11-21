@@ -817,18 +817,36 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setBudgets((prev) => [...prev, optimisticBudget]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
 
     await optimisticCRUD.run(
       { type: 'create', data: budgetData },
-      () => budgetService.create({ ...budgetData, userId: currentUser.uid }),
+      async () => {
+        const newId = await budgetService.create({ ...budgetData, userId: currentUser.uid });
+        return newId;
+      },
       {
         entityType: 'budget',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp budget with real ID
+          const newId = result as string;
+          const realBudget: Budget = {
+            ...optimisticBudget,
+            id: newId,
+          };
+          setBudgets((prev) => prev.map((b) => (b.id === tempId ? realBudget : b)));
+          // Update cache with real ID
+          dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
+            data.map((b) => (b.id === tempId ? realBudget : b))
+          );
         },
         onError: () => {
           setBudgets((prev) => prev.filter((b) => b.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== tempId));
         },
       }
     );
@@ -841,6 +859,13 @@ const Dashboard: React.FC = () => {
     setBudgets((prev) =>
       prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
+        data.map((b) => (b.id === id ? { ...b, ...updates } : b))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalBudget },
@@ -849,13 +874,19 @@ const Dashboard: React.FC = () => {
         entityType: 'budget',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalBudget) {
             setBudgets((prev) =>
               prev.map((b) => (b.id === id ? originalBudget : b))
             );
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
+                data.map((b) => (b.id === id ? originalBudget : b))
+              );
+            }
           }
         },
       }
@@ -867,6 +898,11 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setBudgets((prev) => prev.filter((b) => b.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: budgetToDelete },
@@ -875,11 +911,15 @@ const Dashboard: React.FC = () => {
         entityType: 'budget',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (budgetToDelete) {
             setBudgets((prev) => [...prev, budgetToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, budgetToDelete]);
+            }
           }
         },
       }
