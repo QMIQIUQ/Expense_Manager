@@ -214,7 +214,7 @@ const styles = {
   },
   spinnerIcon: {
     display: 'inline-block',
-    animation: 'spin 1s linear infinite',
+    animation: 'spinAnimation 1s linear infinite',
   },
   overlay: {
     position: 'fixed' as const,
@@ -293,5 +293,20 @@ const styles = {
     textAlign: 'center' as const,
   },
 };
+
+// Add spin animation
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `
+    @keyframes spinAnimation {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  if (!document.head.querySelector('[data-animation="spinAnimation"]')) {
+    styleSheet.setAttribute('data-animation', 'spinAnimation');
+    document.head.appendChild(styleSheet);
+  }
+}
 
 export default NetworkStatusIndicator;

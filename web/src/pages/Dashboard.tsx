@@ -549,10 +549,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          // Replace temp expense with real data
-          loadData();
-          // Update cache for offline use
-          setTimeout(updateCacheAfterChange, 500);
+          // Replace temp expense with real data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           // Rollback optimistic update
@@ -577,9 +577,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
-          // Update cache for offline use
-          setTimeout(updateCacheAfterChange, 500);
+          // Reload data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           // Rollback optimistic update
@@ -605,9 +606,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
-          // Update cache for offline use
-          setTimeout(updateCacheAfterChange, 500);
+          // Reload data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           if (originalExpense) {

@@ -27,19 +27,35 @@ type SyncListener = (progress: SyncProgress) => void;
 class SyncService {
   private listeners: Set<SyncListener> = new Set();
   private isSyncing: boolean = false;
-  private autoSyncEnabled: boolean = true;
+  private autoSyncEnabled: boolean;
+  private networkUnsubscribe: (() => void) | null = null;
+
+  constructor() {
+    // Initialize autoSyncEnabled from localStorage
+    this.autoSyncEnabled = this.isAutoSyncEnabled();
+  }
 
   /**
    * Initialize the sync service
    */
   initialize(): void {
     // Subscribe to network status changes for auto-sync
-    networkStatusService.subscribe((isOnline) => {
+    this.networkUnsubscribe = networkStatusService.subscribe((isOnline) => {
       if (isOnline && this.autoSyncEnabled && offlineQueue.hasPendingOperations()) {
         console.log('🔄 Connection restored, starting auto-sync...');
         this.syncAll();
       }
     });
+  }
+
+  /**
+   * Cleanup the sync service
+   */
+  cleanup(): void {
+    if (this.networkUnsubscribe) {
+      this.networkUnsubscribe();
+      this.networkUnsubscribe = null;
+    }
   }
 
   /**
