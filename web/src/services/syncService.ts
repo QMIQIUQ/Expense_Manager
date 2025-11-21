@@ -194,6 +194,7 @@ class SyncService {
   }
 
   private async executeExpenseOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -215,6 +216,7 @@ class SyncService {
   }
 
   private async executeCategoryOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -236,6 +238,7 @@ class SyncService {
   }
 
   private async executeBudgetOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -257,6 +260,7 @@ class SyncService {
   }
 
   private async executeRecurringOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -278,6 +282,7 @@ class SyncService {
   }
 
   private async executeIncomeOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -299,6 +304,7 @@ class SyncService {
   }
 
   private async executeCardOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -320,6 +326,7 @@ class SyncService {
   }
 
   private async executeBankOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -341,6 +348,7 @@ class SyncService {
   }
 
   private async executeEWalletOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -362,6 +370,7 @@ class SyncService {
   }
 
   private async executeRepaymentOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
@@ -392,7 +401,6 @@ class SyncService {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any;
 
       switch (entity) {
@@ -423,6 +431,14 @@ class SyncService {
         case 'repayments':
           data = await repaymentService.getAll(userId);
           break;
+        case 'featureSettings':
+          // Feature settings handled separately as they need special initialization
+          console.log('Feature settings not cached via refreshCache');
+          return;
+        case 'userSettings':
+          // User settings handled separately
+          console.log('User settings not cached via refreshCache');
+          return;
         default:
           console.warn('Unknown entity type for cache refresh:', entity);
           return;
@@ -439,19 +455,9 @@ class SyncService {
    * Refresh all caches for a user
    */
   async refreshAllCaches(userId: string): Promise<void> {
-    const entities: CacheableEntity[] = [
-      'expenses',
-      'categories',
-      'budgets',
-      'recurring',
-      'incomes',
-      'cards',
-      'banks',
-      'ewallets',
-      'repayments',
-    ];
+    const { SYNCABLE_ENTITIES } = await import('../constants/cacheEntities');
 
-    const promises = entities.map((entity) => 
+    const promises = SYNCABLE_ENTITIES.map((entity) => 
       this.refreshCache(entity, userId).catch((error) => {
         console.error(`Failed to refresh cache for ${entity}:`, error);
       })

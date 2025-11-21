@@ -105,21 +105,10 @@ export const sessionCache = {
    * Clear all caches for a user
    */
   clearUser(userId: string): void {
-    const entities: CacheableEntity[] = [
-      'expenses',
-      'categories',
-      'budgets',
-      'recurring',
-      'incomes',
-      'cards',
-      'banks',
-      'ewallets',
-      'repayments',
-      'featureSettings',
-      'userSettings',
-    ];
+    // Import here to avoid circular dependency
+    const { CACHEABLE_ENTITIES } = require('../constants/cacheEntities');
     
-    entities.forEach((entity) => {
+    CACHEABLE_ENTITIES.forEach((entity: CacheableEntity) => {
       this.remove(entity, userId);
     });
   },

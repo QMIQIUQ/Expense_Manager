@@ -206,7 +206,8 @@ const Dashboard: React.FC = () => {
                 const banksData = await dataService.getBanks(currentUser.uid);
                 setBanks(banksData);
                 // Save bank names for quick suggestions
-                const bankNamesSave = [...new Set((banksData || []).map(b => b.name).filter(Boolean) as string[])];
+                const bankNames = (banksData || []).map(b => b.name).filter(Boolean);
+                const bankNamesSave = [...new Set(bankNames)];
                 if (bankNamesSave.length > 0) {
                   localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
                 }
