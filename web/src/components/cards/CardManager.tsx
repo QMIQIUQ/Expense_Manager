@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
 import { SearchBar } from '../common/SearchBar';
-import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
@@ -76,7 +76,7 @@ const CardManager: React.FC<CardManagerProps> = ({
 
   const filteredCards = cards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (card.last4Digits && card.last4Digits.includes(searchTerm))
+    (card.bankName && card.bankName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const {

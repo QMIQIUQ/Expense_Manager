@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import BankForm from './BankForm';
-import { PlusIcon, EditIcon, DeleteIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
@@ -54,8 +54,6 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, onAdd, onUpdate, onDel
     bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (bank.code && bank.code.includes(searchTerm))
   );
-
-  const handleSearch = (term: string) => setSearchTerm(term);
 
   return (
     <div className="bank-manager">

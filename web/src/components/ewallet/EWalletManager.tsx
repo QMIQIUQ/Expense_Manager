@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EWallet, Expense, Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, EditIcon, DeleteIcon, CloseIcon } from '../icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import EWalletForm from './EWalletForm';
 import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
