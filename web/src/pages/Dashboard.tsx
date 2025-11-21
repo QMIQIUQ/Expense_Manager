@@ -481,13 +481,25 @@ const Dashboard: React.FC = () => {
 
     await optimisticCRUD.run(
       { type: 'create', data: expenseData },
-      () => expenseService.create({ ...expenseData, userId: currentUser.uid }),
+      async () => {
+        const newId = await expenseService.create({ ...expenseData, userId: currentUser.uid });
+        return newId;
+      },
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Replace temp expense with real data
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp expense with real ID
+          const newId = result as string;
+          const realExpense: Expense = {
+            ...optimisticExpense,
+            id: newId,
+          };
+          setExpenses((prev) => prev.map((e) => (e.id === tempId ? realExpense : e)));
+          // Update cache with real ID
+          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
+            data.map((e) => (e.id === tempId ? realExpense : e))
+          );
         },
         onError: () => {
           // Rollback optimistic update
@@ -518,7 +530,7 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           // Rollback optimistic update
@@ -538,6 +550,13 @@ const Dashboard: React.FC = () => {
 
     // Optimistic update
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
+        data.map((e) => (e.id === id ? { ...e, ...updates } : e))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalExpense },
@@ -546,11 +565,18 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalExpense) {
+            // Rollback state
             setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
+                data.map((e) => (e.id === id ? originalExpense : e))
+              );
+            }
           }
         },
       }
@@ -667,18 +693,36 @@ const Dashboard: React.FC = () => {
       createdAt: new Date(),
     };
     setCategories((prev) => [...prev, optimisticCategory]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => [...data, optimisticCategory]);
 
     await optimisticCRUD.run(
       { type: 'create', data: categoryData },
-      () => categoryService.create({ ...categoryData, userId: currentUser.uid }),
+      async () => {
+        const newId = await categoryService.create({ ...categoryData, userId: currentUser.uid });
+        return newId;
+      },
       {
         entityType: 'category',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp category with real ID
+          const newId = result as string;
+          const realCategory: Category = {
+            ...optimisticCategory,
+            id: newId,
+          };
+          setCategories((prev) => prev.map((c) => (c.id === tempId ? realCategory : c)));
+          // Update cache with real ID
+          dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
+            data.map((c) => (c.id === tempId ? realCategory : c))
+          );
         },
         onError: () => {
           setCategories((prev) => prev.filter((c) => c.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== tempId));
         },
       }
     );
@@ -691,6 +735,13 @@ const Dashboard: React.FC = () => {
     setCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
+        data.map((c) => (c.id === id ? { ...c, ...updates } : c))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalCategory },
@@ -699,13 +750,19 @@ const Dashboard: React.FC = () => {
         entityType: 'category',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalCategory) {
             setCategories((prev) =>
               prev.map((c) => (c.id === id ? originalCategory : c))
             );
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
+                data.map((c) => (c.id === id ? originalCategory : c))
+              );
+            }
           }
         },
       }
@@ -717,6 +774,11 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setCategories((prev) => prev.filter((c) => c.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: categoryToDelete },
@@ -725,11 +787,15 @@ const Dashboard: React.FC = () => {
         entityType: 'category',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (categoryToDelete) {
             setCategories((prev) => [...prev, categoryToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => [...data, categoryToDelete]);
+            }
           }
         },
       }
