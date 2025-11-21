@@ -481,10 +481,7 @@ const Dashboard: React.FC = () => {
 
     await optimisticCRUD.run(
       { type: 'create', data: expenseData },
-      async () => {
-        const newId = await expenseService.create({ ...expenseData, userId: currentUser.uid });
-        return newId;
-      },
+      () => expenseService.create({ ...expenseData, userId: currentUser.uid }),
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
@@ -699,10 +696,7 @@ const Dashboard: React.FC = () => {
 
     await optimisticCRUD.run(
       { type: 'create', data: categoryData },
-      async () => {
-        const newId = await categoryService.create({ ...categoryData, userId: currentUser.uid });
-        return newId;
-      },
+      () => categoryService.create({ ...categoryData, userId: currentUser.uid }),
       {
         entityType: 'category',
         retryToQueueOnFail: true,
@@ -823,10 +817,7 @@ const Dashboard: React.FC = () => {
 
     await optimisticCRUD.run(
       { type: 'create', data: budgetData },
-      async () => {
-        const newId = await budgetService.create({ ...budgetData, userId: currentUser.uid });
-        return newId;
-      },
+      () => budgetService.create({ ...budgetData, userId: currentUser.uid }),
       {
         entityType: 'budget',
         retryToQueueOnFail: true,
