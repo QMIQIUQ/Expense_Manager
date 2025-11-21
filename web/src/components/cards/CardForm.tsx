@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardType, CashbackRule, Category, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BaseForm } from '../common/BaseForm';
 
 interface CardFormProps {
   onSubmit: (card: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
@@ -8,6 +9,7 @@ interface CardFormProps {
   initialData?: Card;
   categories: Category[];
   banks?: Bank[];
+  title?: string;
 }
 
 // Simple Tooltip Component
@@ -57,6 +59,7 @@ const CardForm: React.FC<CardFormProps> = ({
   initialData,
   categories,
   banks,
+  title,
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -242,7 +245,12 @@ const CardForm: React.FC<CardFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <BaseForm
+      title={title || (initialData ? t('editCard') : t('addCard'))}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitLabel={initialData ? t('save') : t('addCard')}
+    >
       {/* Card Name and Bank Name */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
@@ -621,39 +629,8 @@ const CardForm: React.FC<CardFormProps> = ({
         </div>
       )}
 
-      {/* Form Actions */}
-      <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-primary)',
-            fontWeight: 600,
-            borderRadius: '6px',
-            lineHeight: 1.2,
-            transition: 'all 0.2s'
-          }}
-        >
-          {initialData ? t('save') : t('addCard')}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-            fontWeight: 600,
-            borderRadius: '6px',
-            lineHeight: 1.2,
-            transition: 'all 0.2s'
-          }}
-        >
-          {t('cancel')}
-        </button>
-      </div>
-    </form>
+      {/* Form Actions removed - handled by BaseForm */}
+    </BaseForm>
   );
 };
 

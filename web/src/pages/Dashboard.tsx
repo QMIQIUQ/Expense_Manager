@@ -1169,9 +1169,9 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'category', // Using category type as ewallet is similar
         retryToQueueOnFail: true,
+        successMessage: t('eWalletAdded'),
         onSuccess: () => {
           loadData();
-          showNotification('success', t('eWalletAdded'));
         },
         onError: () => {
           setEWallets((prev) => prev.filter((w) => w.id !== tempId));
@@ -1194,9 +1194,9 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'category', // Using category type as ewallet is similar
         retryToQueueOnFail: true,
+        successMessage: t('eWalletUpdated'),
         onSuccess: () => {
           loadData();
-          showNotification('success', t('eWalletUpdated'));
         },
         onError: () => {
           if (originalWallet) {
@@ -1219,9 +1219,9 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'category', // Using category type as ewallet is similar
         retryToQueueOnFail: true,
+        successMessage: t('eWalletDeleted'),
         onSuccess: () => {
           loadData();
-          showNotification('success', t('eWalletDeleted'));
         },
         onError: () => {
           if (walletToDelete) {
@@ -1263,9 +1263,9 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'budget', // Using budget type as settings is configuration-like
         retryToQueueOnFail: true,
+        successMessage: t('featuresUpdated'),
         onSuccess: () => {
           loadData();
-          showNotification('success', t('featuresUpdated'));
         },
         onError: () => {
           if (originalSettings) {
@@ -1285,9 +1285,9 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'budget', // Using budget type as settings is configuration-like
         retryToQueueOnFail: true,
+        successMessage: t('featuresReset'),
         onSuccess: () => {
           loadData();
-          showNotification('success', t('featuresReset'));
         },
         onError: () => {},
       }
@@ -2132,27 +2132,7 @@ const Dashboard: React.FC = () => {
                 maxHeight: '85vh',
                 overflowY: 'auto'
               }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
-                  <button
-                    aria-label="Close"
-                    onClick={() => setShowAddExpenseForm(false)}
-                    style={{
-                      padding: '8px',
-                      borderRadius: '6px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
-                    </svg>
-                  </button>
-                </div>
+
                 <ExpenseForm
                   onSubmit={(data) => {
                     handleAddExpense(data);
@@ -2296,14 +2276,14 @@ const styles = {
     bottom: '24px',
     left: '24px',
     padding: '16px 24px',
-    backgroundColor: 'var(--accent-light)',
-    color: 'var(--accent-primary)',
-    border: '1px solid rgba(167, 139, 250, 0.35)',
+    background: 'var(--tab-active-bg)',
+    color: 'var(--tab-active-text)',
+    border: 'none',
     borderRadius: '50px',
     fontSize: '16px',
     fontWeight: '600' as const,
     cursor: 'pointer',
-    boxShadow: 'var(--purple-glow)',
+    boxShadow: 'var(--purple-glow-strong)',
     zIndex: 9999,
     transition: 'all 0.3s ease',
   },

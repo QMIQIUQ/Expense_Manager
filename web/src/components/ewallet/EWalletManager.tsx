@@ -195,13 +195,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 
       {isAdding && (
         <div className="form-card">
-          <div className="form-header">
-            <h3 className="form-title">{t('addEWallet')}</h3>
-            <button onClick={() => setIsAdding(false)} className="btn-close" aria-label={t('cancel')}>
-              <CloseIcon size={18} />
-            </button>
-          </div>
-          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} />
+          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
         </div>
       )}
 
@@ -213,16 +207,11 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
             <div key={wallet.id} className="ewallet-card" style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
               {editingId === wallet.id ? (
                 <div className="form-card" style={{ width: '100%' }}>
-                  <div className="form-header">
-                    <h3 className="form-title">{t('editEWallet')}</h3>
-                    <button onClick={cancelInlineEdit} className="btn-close" aria-label={t('cancel')}>
-                      <CloseIcon size={18} />
-                    </button>
-                  </div>
                   <EWalletForm
                     initialData={wallet}
                     onSubmit={saveInlineEdit}
                     onCancel={cancelInlineEdit}
+                    title={t('editEWallet')}
                   />
                 </div>
               ) : (

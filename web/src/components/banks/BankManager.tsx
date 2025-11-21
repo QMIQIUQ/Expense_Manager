@@ -51,13 +51,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, onAdd, onUpdate, onDel
 
       {isAdding && (
         <div className="form-card">
-          <div className="form-header">
-            <h3 className="form-title">{t('addBank')}</h3>
-            <button onClick={() => setIsAdding(false)} className="btn-close" aria-label={t('cancel')}>
-              <CloseIcon size={18} />
-            </button>
-          </div>
-          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} />
+          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
         </div>
       )}
 
@@ -80,13 +74,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, onAdd, onUpdate, onDel
             </div>
             {editingId === bank.id && (
               <div className="form-card" style={{ marginTop: 12 }}>
-                <div className="form-header">
-                  <h3 className="form-title">{t('editBank')}</h3>
-                  <button onClick={() => setEditingId(null)} className="btn-close" aria-label={t('cancel')}>
-                    <CloseIcon size={18} />
-                  </button>
-                </div>
-                <BankForm initialData={bank} onSubmit={handleUpdate} onCancel={() => setEditingId(null)} />
+                <BankForm initialData={bank} onSubmit={handleUpdate} onCancel={() => setEditingId(null)} title={t('editBank')} />
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Repayment, Card, EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BaseForm } from '../common/BaseForm';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -10,6 +11,7 @@ interface RepaymentFormProps {
   maxAmount?: number; // Maximum amount that can be repaid (for validation)
   cards?: Card[];
   ewallets?: EWallet[];
+  title?: string;
 }
 
 // No component-scoped CSS needed; reuse the same utility classes
@@ -23,6 +25,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   maxAmount,
   cards = [],
   ewallets = [],
+  title,
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -136,7 +139,12 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <BaseForm
+      title={title || t('addRepayment')}
+      onSubmit={handleSubmit}
+      onCancel={onCancel || (() => {})}
+      submitLabel={t('save')}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -307,38 +315,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         />
       </div>
 
-      <div className="flex gap-3 mt-2">
-        <button
-          type="submit"
-          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-primary)',
-            fontWeight: 600,
-            borderRadius: '8px',
-            transition: 'all 0.2s'
-          }}
-        >
-          {initialData ? t('update') : t('add')}
-        </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontWeight: 600,
-              borderRadius: '8px',
-              transition: 'all 0.2s'
-            }}
-          >
-            {t('cancel')}
-          </button>
-        )}
-      </div>
-    </form>
+      {/* Footer removed - handled by BaseForm */}
+    </BaseForm>
   );
 };
 

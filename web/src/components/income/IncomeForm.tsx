@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Income, IncomeType, IncomeCategory, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BaseForm } from '../common/BaseForm';
 
 interface IncomeFormProps {
   onSubmit: (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -8,6 +9,7 @@ interface IncomeFormProps {
   initialData?: Income;
   expenses?: Expense[]; // For linking to expenses
   preselectedExpenseId?: string; // Pre-select an expense when creating from expense detail
+  title?: string;
 }
 
 const IncomeForm: React.FC<IncomeFormProps> = ({
@@ -16,6 +18,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   initialData,
   expenses = [],
   preselectedExpenseId,
+  title,
 }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -127,7 +130,12 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <BaseForm
+      title={title || (initialData ? t('editIncome') || 'Edit Income' : t('addIncome') || 'Add Income')}
+      onSubmit={handleSubmit}
+      onCancel={onCancel || (() => {})}
+      submitLabel={initialData ? t('update') : t('addIncome')}
+    >
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('titleOptional')}</label>
         <input
@@ -317,38 +325,8 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         />
       </div>
 
-      <div className="flex gap-3 mt-2">
-        <button 
-          type="submit" 
-          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-primary)',
-            fontWeight: 600,
-            borderRadius: '8px',
-            transition: 'all 0.2s'
-          }}
-        >
-          {initialData ? t('update') : t('addIncome')}
-        </button>
-        {onCancel && (
-          <button 
-            type="button" 
-            onClick={onCancel} 
-            className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontWeight: 600,
-              borderRadius: '8px',
-              transition: 'all 0.2s'
-            }}
-          >
-            {t('cancel')}
-          </button>
-        )}
-      </div>
-    </form>
+      {/* Footer removed - handled by BaseForm */}
+    </BaseForm>
   );
 };
 

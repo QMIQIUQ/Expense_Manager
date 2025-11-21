@@ -150,12 +150,6 @@ const CardManager: React.FC<CardManagerProps> = ({
 
       {isAdding && (
         <div className="form-card">
-          <div className="form-header">
-            <h3 className="form-title">{t('addCard')}</h3>
-            <button onClick={() => setIsAdding(false)} className="btn-close" aria-label={t('cancel')}>
-              <CloseIcon size={18} />
-            </button>
-          </div>
           <CardForm
             onSubmit={handleAdd}
             onCancel={() => setIsAdding(false)}
@@ -180,12 +174,6 @@ const CardManager: React.FC<CardManagerProps> = ({
             if (isEditing) {
               return (
                 <div key={card.id} className="credit-card" style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
-                  <div className="form-header">
-                    <h3 className="form-title">{t('editCard')}</h3>
-                    <button onClick={() => setEditingId(null)} className="btn-close" aria-label={t('cancel')}>
-                      <CloseIcon size={18} />
-                    </button>
-                  </div>
                   <CardForm
                     onSubmit={handleUpdate}
                     onCancel={() => setEditingId(null)}

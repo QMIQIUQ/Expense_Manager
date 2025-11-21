@@ -15,6 +15,7 @@ interface UseOptimisticCRUDOptions {
   retryToQueueOnFail?: boolean;
   entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment';
   suppressNotification?: boolean;
+  successMessage?: string;
 }
 
 export const useOptimisticCRUD = <T,>() => {
@@ -62,7 +63,7 @@ export const useOptimisticCRUD = <T,>() => {
         if (notificationId) {
           updateNotification(notificationId, {
             type: 'success',
-            message: getSuccessMessage(operation.type),
+            message: options?.successMessage || getSuccessMessage(operation.type),
             duration: 3000,
           });
         }

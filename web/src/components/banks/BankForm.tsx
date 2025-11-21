@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BaseForm } from '../common/BaseForm';
 
 interface BankFormProps {
   onSubmit: (bank: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onCancel?: () => void;
   initialData?: Bank;
+  title?: string;
 }
 
-const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData }) => {
+const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, title }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -37,7 +39,12 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData }) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <BaseForm
+      title={title || (initialData ? t('editBank') || 'Edit Bank' : t('addBank') || 'Add Bank')}
+      onSubmit={handleSubmit}
+      onCancel={onCancel || (() => {})}
+      submitLabel={initialData ? t('update') : t('add')}
+    >
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')} *</label>
         <input
@@ -62,11 +69,8 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData }) 
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button type="submit" className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', fontWeight: 600, borderRadius: 8 }}>{initialData ? t('update') : t('add')}</button>
-        {onCancel && <button type="button" onClick={onCancel} className="px-6 py-3 rounded-lg text-base font-medium" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: 600 }}>{t('cancel')}</button>}
-      </div>
-    </form>
+      {/* Footer removed - handled by BaseForm */}
+    </BaseForm>
   );
 };
 

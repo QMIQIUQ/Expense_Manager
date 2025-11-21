@@ -38,6 +38,7 @@ This document summarizes the UI improvements made to the Expense Manager applica
 **After:**
 - Floating action button (FAB) visible on all tabs except Expenses
 - Button positioned at bottom right corner
+- **Improved Visibility**: Updated to use primary gradient background with white text for better contrast in dark mode
 - Responsive text display:
   - Desktop (≥768px width): "+ Add New Expense"
   - Mobile (<768px width): "+"
@@ -83,8 +84,19 @@ This document summarizes the UI improvements made to the Expense Manager applica
 - Title attribute on floating button for tooltip
 - Keyboard-friendly (all interactive elements are buttons)
 
+### 5. Category Manager Improvements
+**Changes:**
+- **Layout Update**: Enforced a left-right structure (Icon, Name, Buttons) for category cards by overriding default column layout.
+- Moved Edit/Delete buttons to the right side of the category card for better accessibility and visual balance.
+- Refactored inline editing to use the standardized `CategoryForm` component, ensuring consistency with the "Add Category" form.
+- Fixed a bug where the "Add Expense" modal had a duplicate header.
+
 ## File Changes
+- **Modified**: `web/src/components/categories/CategoryManager.tsx`
+  - Refactored inline editing logic
+  - Updated styles for button positioning
 - **Modified**: `web/src/pages/Dashboard.tsx`
+  - Removed duplicate header in Add Expense modal
   - Added 247 lines
   - Removed 52 lines
   - Net change: +195 lines

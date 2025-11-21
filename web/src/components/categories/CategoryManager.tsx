@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
+import CategoryForm from './CategoryForm';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -46,11 +47,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    icon: '📦',
-    color: '#95A5A6',
-  });
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -104,47 +100,19 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAdd({ ...formData, isDefault: false });
-    setIsAdding(false);
-    setFormData({ name: '', icon: '📦', color: '#95A5A6' });
-  };
+
 
   const startInlineEdit = (category: Category) => {
     // Close the add form if it's open
     setIsAdding(false);
     setEditingId(category.id!);
-    setFormData({
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-    });
   };
 
   const cancelInlineEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', icon: '📦', color: '#95A5A6' });
   };
 
-  const saveInlineEdit = (category: Category) => {
-    const updates: Partial<Category> = {};
-    if (category.name !== formData.name && formData.name) updates.name = formData.name;
-    if (category.icon !== formData.icon) updates.icon = formData.icon;
-    if (category.color !== formData.color) updates.color = formData.color;
 
-    if (Object.keys(updates).length > 0) {
-      onUpdate(category.id!, updates);
-    }
-    cancelInlineEdit();
-  };
-
-  const handleCancel = () => {
-    setIsAdding(false);
-    setFormData({ name: '', icon: '📦', color: '#95A5A6' });
-  };
-
-  const commonIcons = ['🍔', '🚗', '🛍️', '🎬', '📄', '🏥', '📚', '💰', '🏠', '✈️', '💳', '📦'];
 
   // Get expenses that use a specific category
   const getExpensesUsingCategory = (categoryName: string): Expense[] => {
@@ -172,7 +140,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             setIsAdding(true);
             // Cancel any inline editing when opening add form
             setEditingId(null);
-            setFormData({ name: '', icon: '📦', color: '#95A5A6' });
           }} style={styles.addButton}>
             <PlusIcon size={18} />
             <span>{t('addCategory')}</span>
@@ -181,56 +148,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       </div>
 
       {isAdding && (
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-              <input
-                type="text"
-                value={formData.name}
-                placeholder={t('categoryNamePlaceholder')}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                onFocus={(e) => e.target.select()}
-                required
-                className="form-input"
-                style={{ flex: 2, minWidth: '150px' }}
-              />
-              <input
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                style={{ ...styles.colorInput, width: '60px', height: '38px' }}
-              />
-            </div>
-            <div>
-              <label className="form-label">
-                {t('categoryIcon')}
-              </label>
-              <div style={styles.iconGrid}>
-                {commonIcons.map((icon) => (
-                  <button
-                    key={icon}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, icon })}
-                    style={{
-                      ...styles.iconButton,
-                      ...(formData.icon === icon ? styles.iconButtonActive : {}),
-                    }}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={styles.formActions}>
-              <button type="submit" className="btn btn-primary">
-                {t('addCategory')}
-              </button>
-              <button type="button" onClick={handleCancel} className="btn btn-secondary">
-                {t('cancel')}
-              </button>
-            </div>
-          </div>
-        </form>
+        <div className="mb-5">
+          <CategoryForm
+            onSubmit={(data) => {
+              onAdd({ ...data, isDefault: false });
+              setIsAdding(false);
+            }}
+            onCancel={() => setIsAdding(false)}
+          />
+        </div>
       )}
 
       {/* Search Bar */}
@@ -254,68 +180,37 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           filteredCategories.map((category) => {
             const isDuplicate = duplicateNames.has(category.name);
             return (
-              <div key={category.id} className={`category-card ${isDuplicate ? 'warning-border' : ''}`} style={openMenuId === category.id ? { zIndex: 9999 } : undefined}>
+              <div 
+                key={category.id} 
+                className={`category-card ${isDuplicate ? 'warning-border' : ''}`} 
+                style={{
+                  ...(openMenuId === category.id ? { zIndex: 9999 } : {}),
+                  display: 'flex',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px',
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                }}
+              >
                 {editingId === category.id ? (
                   // Inline Edit Mode
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
-                      <div style={{ flex: 2, minWidth: '150px' }}>
-                        <label className="form-label">{t('categoryName')}</label>
-                        <input
-                          type="text"
-                          value={formData.name}
-                          placeholder={t('categoryName')}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          onFocus={(e) => e.target.select()}
-                          className="form-input"
-                        />
-                      </div>
-                      <div style={{ width: '60px' }}>
-                        <label className="form-label">{t('categoryColor')}</label>
-                        <input
-                          type="color"
-                          value={formData.color}
-                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                          style={{ ...styles.colorInput, width: '60px', height: '38px' }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="form-label">
-                        {t('categoryIcon')}
-                      </label>
-                      <div style={styles.iconGrid}>
-                        {commonIcons.map((icon) => (
-                          <button
-                            key={icon}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, icon })}
-                            style={{
-                              ...styles.iconButton,
-                              ...(formData.icon === icon ? styles.iconButtonActive : {}),
-                            }}
-                          >
-                            {icon}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={styles.formActions}>
-                      <button 
-                        onClick={() => saveInlineEdit(category)} 
-                        className="btn btn-primary"
-                        aria-label={t('save')}
-                      >
-                        {t('save')}
-                      </button>
-                      <button 
-                        onClick={cancelInlineEdit} 
-                        className="btn btn-secondary"
-                        aria-label={t('cancel')}
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
+                  <div style={{ width: '100%' }}>
+                    <CategoryForm
+                      initialData={{
+                        name: category.name,
+                        icon: category.icon,
+                        color: category.color,
+                      }}
+                      isEditing={true}
+                      onSubmit={(data) => {
+                        onUpdate(category.id!, data);
+                        setEditingId(null);
+                      }}
+                      onCancel={cancelInlineEdit}
+                    />
                   </div>
                 ) : (
                   // View Mode

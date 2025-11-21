@@ -3,7 +3,8 @@ import { Expense, Category, Card, EWallet, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
-import { EditIcon, DeleteIcon, CheckIcon, CloseIcon, RepaymentIcon, CircleIcon } from '../icons';
+import ExpenseForm from './ExpenseForm';
+import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../icons';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -69,18 +70,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     expenseId: null,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{
-    description?: string;
-    amount?: string;
-    category?: string;
-    date?: string;
-    time?: string;
-    notes?: string;
-    paymentMethod?: Expense['paymentMethod'];
-    cardId?: string;
-    paymentMethodName?: string;
-    needsRepaymentTracking?: boolean;
-  }>({});
+
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -307,72 +297,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const startInlineEdit = (expense: Expense) => {
     setEditingId(expense.id!);
-    setDraft({
-      description: expense.description,
-      amount: expense.amount.toString(),
-      category: expense.category,
-      date: expense.date,
-      time: (expense as Expense & { time?: string }).time || '',
-      notes: expense.notes || '',
-      paymentMethod: expense.paymentMethod || 'cash',
-      cardId: expense.cardId || '',
-      paymentMethodName: expense.paymentMethodName || '',
-      needsRepaymentTracking: !!expense.needsRepaymentTracking,
-    });
   };
 
-  const cancelInlineEdit = () => {
-    setEditingId(null);
-    setDraft({});
-  };
 
-  const saveInlineEdit = (expense: Expense) => {
-    const updates: Partial<Expense> = {};
-    const parsedAmount = parseFloat(draft.amount || '0');
-    if (expense.description !== draft.description && draft.description) updates.description = draft.description;
-    if (!isNaN(parsedAmount) && expense.amount !== parsedAmount) updates.amount = parsedAmount;
-    if (expense.category !== draft.category && draft.category) updates.category = draft.category;
-    if (expense.date !== draft.date && draft.date) updates.date = draft.date;
-    const currentTime = (expense as Expense & { time?: string }).time || '';
-    if (currentTime !== (draft.time || '')) updates.time = draft.time || undefined;
-    if ((expense.notes || '') !== (draft.notes || '')) updates.notes = draft.notes || undefined;
 
-    const selectedPaymentMethod = (draft.paymentMethod || 'cash') as Expense['paymentMethod'];
-    if ((expense.paymentMethod || 'cash') !== selectedPaymentMethod) {
-      updates.paymentMethod = selectedPaymentMethod;
-    }
 
-    if (selectedPaymentMethod === 'cash') {
-      if (expense.cardId) updates.cardId = undefined;
-      if (expense.paymentMethodName) updates.paymentMethodName = undefined;
-    } else if (selectedPaymentMethod === 'credit_card') {
-      if ((expense.cardId || '') !== (draft.cardId || '')) {
-        updates.cardId = draft.cardId || undefined;
-      }
-      if (expense.paymentMethodName) {
-        updates.paymentMethodName = undefined;
-      }
-    } else if (selectedPaymentMethod === 'e_wallet') {
-      if ((expense.paymentMethodName || '') !== (draft.paymentMethodName || '')) {
-        updates.paymentMethodName = draft.paymentMethodName || undefined;
-      }
-      if (expense.cardId) {
-        updates.cardId = undefined;
-      }
-    }
-
-    // Repayment tracking toggle
-    const currentTrack = !!expense.needsRepaymentTracking;
-    const newTrack = !!draft.needsRepaymentTracking;
-    if (currentTrack !== newTrack) {
-      updates.needsRepaymentTracking = newTrack;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      onInlineUpdate(expense.id!, updates);
-    }
-    cancelInlineEdit();
-  };
 
   const groupedExpenses = groupExpensesByDate();
 
@@ -568,7 +497,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               
               {/* Expenses for this date - hidden when collapsed */}
               {!isCollapsed && dayExpenses.map((expense) => {
-                const walletDatalistId = `ewallet-inline-options-${expense.id || 'draft'}`;
+
                 return (
                 <div
                   key={expense.id}
@@ -580,244 +509,24 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   }}
                 >
               {editingId === expense.id ? (
-                <div className="flex flex-col gap-4">
-                  {/* Description (full width) */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
-                    <input
-                      type="text"
-                      value={draft.description || ''}
-                      placeholder={t('description')}
-                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                      onFocus={(e) => e.target.select()}
-                      className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      style={{
-                        borderColor: 'var(--border-color)',
-                        backgroundColor: 'var(--input-bg)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-
-                  {/* Amount and Category */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={draft.amount ? (parseFloat(draft.amount) * 100 / 100).toFixed(2) : '0.00'}
-                        placeholder="0.00"
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const digitsOnly = value.replace(/\D/g, '');
-                          const amountInCents = parseInt(digitsOnly) || 0;
-                          setDraft((d) => ({ ...d, amount: (amountInCents / 100).toString() }));
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-                      <select
-                        value={draft.category || ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        {categoryNames.map((name) => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Date and Time */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
-                      <input
-                        type="date"
-                        value={draft.date || ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('time')}</label>
-                      <input
-                        type="time"
-                        value={draft.time || ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Notes (full width) */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')}</label>
-                    <input
-                      type="text"
-                      value={draft.notes || ''}
-                      placeholder={t('notesOptional')}
-                      onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                      onFocus={(e) => e.target.select()}
-                      className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      style={{
-                        borderColor: 'var(--border-color)',
-                        backgroundColor: 'var(--input-bg)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-
-                  {/* Repayment tracking toggle */}
-                  <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                    <input
-                      type="checkbox"
-                      id={`needsRepaymentTracking-${expense.id}`}
-                      checked={!!draft.needsRepaymentTracking}
-                      onChange={(e) => setDraft((d) => ({ ...d, needsRepaymentTracking: e.target.checked }))}
-                      className="w-4 h-4"
-                    />
-                    <label htmlFor={`needsRepaymentTracking-${expense.id}`} className="text-sm cursor-pointer" style={{ color: 'var(--text-primary)' }}>
-                      {t('trackRepaymentInDashboard')}
-                    </label>
-                  </div>
-
-                  {/* Payment Method */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
-                      <select
-                        value={draft.paymentMethod || 'cash'}
-                        onChange={(e) => {
-                          const method = e.target.value as Expense['paymentMethod'];
-                          setDraft((d) => ({
-                            ...d,
-                            paymentMethod: method,
-                            cardId: method === 'credit_card' ? d.cardId : '',
-                            paymentMethodName: method === 'e_wallet' ? d.paymentMethodName : '',
-                          }));
-                        }}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        <option value="cash">💵 {t('cash')}</option>
-                        <option value="credit_card">💳 {t('creditCard')}</option>
-                        <option value="e_wallet">📱 {t('eWallet')}</option>
-                      </select>
-                    </div>
-
-                    {draft.paymentMethod === 'credit_card' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
-                        <select
-                          value={draft.cardId || ''}
-                          onChange={(e) => setDraft((d) => ({ ...d, cardId: e.target.value }))}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          <option value="">{t('selectCard')}</option>
-                          {cards.length === 0 && <option value="" disabled>No cards available</option>}
-                          {cards.map((card) => (
-                            <option key={card.id} value={card.id}>
-                              💳 {card.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {draft.paymentMethod === 'e_wallet' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')}</label>
-                        <input
-                          type="text"
-                          value={draft.paymentMethodName || ''}
-                          onChange={(e) => setDraft((d) => ({ ...d, paymentMethodName: e.target.value }))}
-                          placeholder={t('eWalletNameLabel') || 'E-wallet name'}
-                          onFocus={(e) => e.target.select()}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                          list={walletDatalistId}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {draft.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-                    <datalist id={walletDatalistId}>
-                      {ewallets.map((wallet) => (
-                        <option key={wallet.id || wallet.name} value={wallet.name} />
-                      ))}
-                    </datalist>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3 mt-2 justify-end">
-                    <button 
-                      onClick={() => saveInlineEdit(expense)} 
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: 'var(--accent-light)',
-                        color: 'var(--accent-primary)',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                      }}
-                      aria-label={t('save')}
-                    >
-                      <CheckIcon size={18} />
-                    </button>
-                    <button 
-                      onClick={cancelInlineEdit} 
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                      }}
-                      aria-label={t('cancel')}
-                    >
-                      <CloseIcon size={18} />
-                    </button>
-                  </div>
-                </div>
+                <ExpenseForm
+                  initialData={expense}
+                  categories={categories}
+                  cards={cards}
+                  ewallets={ewallets}
+                  onSubmit={(data) => {
+                    onInlineUpdate(expense.id!, data);
+                    setEditingId(null);
+                  }}
+                  onCancel={() => setEditingId(null)}
+                  title={t('editExpense')}
+                />
               ) : (
+
+
+
+
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {/* First row: time, category, status on left; amount info on right */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>

@@ -216,24 +216,27 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div style={styles.container}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div style={styles.header}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('featureManager')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('manageFeaturesDesc')}</p>
+          <h2 style={styles.title}>{t('featureManager')}</h2>
+          <p style={styles.subtitle}>{t('manageFeaturesDesc')}</p>
         </div>
-        <div className="flex gap-2">
+        <div style={styles.headerActions}>
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            style={styles.resetButton}
             disabled={isSaving}
           >
             {t('resetToDefaults')}
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              ...styles.saveButton,
+              ...((!hasChanges || isSaving) ? styles.saveButtonDisabled : {})
+            }}
             disabled={!hasChanges || isSaving}
           >
             {isSaving ? t('saving') : t('saveSettings')}
@@ -243,51 +246,52 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
 
       {/* Changes indicator */}
       {hasChanges && (
-        <div className="px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+        <div style={styles.warningBanner}>
           ⚠️ {t('unsavedChanges')}
         </div>
       )}
 
       {/* Location selector tabs */}
-      <div className="border-b border-gray-200">
-        <div className="flex gap-4">
+      <div style={styles.tabsContainer}>
+        <div style={styles.tabsList}>
           <button
             onClick={() => setActiveLocation('tab')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeLocation === 'tab'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
+            style={{
+              ...styles.tabButton,
+              ...(activeLocation === 'tab' ? styles.tabButtonActive : styles.tabButtonInactive)
+            }}
           >
             📑 {t('tabsLocation') || 'Tabs'}
           </button>
           <button
             onClick={() => setActiveLocation('hamburger')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeLocation === 'hamburger'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
+            style={{
+              ...styles.tabButton,
+              ...(activeLocation === 'hamburger' ? styles.tabButtonActive : styles.tabButtonInactive)
+            }}
           >
             ☰ {t('hamburgerLocation') || 'Hamburger Menu'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={styles.grid}>
         {/* Enabled Features */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <h3 style={styles.sectionTitle}>
             {t('enabledFeatures')} ({localEnabled.length})
           </h3>
-          <p className="text-sm text-gray-600 mb-4">{t('dragToReorder')}</p>
+          <p style={styles.sectionDesc}>{t('dragToReorder')}</p>
           
-          <div className="flex flex-col gap-2">
+          <div style={styles.list}>
             {localEnabled.map((feature, index) => {
               const metadata = FEATURE_METADATA[feature];
               // Skip if metadata is not found (safety check)
               if (!metadata) return null;
               
+              const isDragging = draggedItem === feature;
+              const isDragOver = dragOverIndex === index;
+
               return (
                 <div
                   key={feature}
@@ -296,24 +300,22 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`flex items-center gap-3 p-4 bg-white border rounded-lg cursor-move transition-all ${
-                    draggedItem === feature
-                      ? 'opacity-50'
-                      : dragOverIndex === index
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                  }`}
+                  style={{
+                    ...styles.card,
+                    ...(isDragging ? styles.cardDragging : {}),
+                    ...(isDragOver ? styles.cardDragOver : {}),
+                  }}
                 >
-                  <DragIcon size={20} className="text-gray-400 flex-shrink-0" />
-                  <span className="text-2xl flex-shrink-0">{metadata.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900">{t(metadata.labelKey)}</div>
-                    <div className="text-xs text-gray-500 truncate">
+                  <DragIcon size={20} style={styles.dragHandle} />
+                  <span style={styles.featureIcon}>{metadata.icon}</span>
+                  <div style={styles.featureInfo}>
+                    <div style={styles.featureName}>{t(metadata.labelKey)}</div>
+                    <div style={styles.featureDesc}>
                       {metadata.description}
                     </div>
                   </div>
                   {/* Position input field */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div style={styles.positionInputContainer}>
                     <input
                       type="number"
                       min="1"
@@ -328,13 +330,16 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                           setLocalEnabled(newOrder);
                         }
                       }}
-                      className="w-14 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={styles.positionInput}
                       title={t('position')}
                     />
                   </div>
                   <button
                     onClick={() => handleToggleFeature(feature)}
-                    className="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors flex-shrink-0"
+                    style={{
+                      ...styles.actionButton,
+                      ...(localEnabled.length === 1 ? styles.actionButtonDisabled : {})
+                    }}
                     aria-label="Disable feature"
                     disabled={localEnabled.length === 1}
                   >
@@ -348,16 +353,16 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
 
         {/* Available Features */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <h3 style={styles.sectionTitle}>
             {t('availableFeatures')} ({disabledFeatures.length})
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <p style={styles.sectionDesc}>
             Click to enable a feature
           </p>
           
-          <div className="flex flex-col gap-2">
+          <div style={styles.list}>
             {disabledFeatures.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 text-sm">
+              <div style={styles.emptyState}>
                 All features are enabled
               </div>
             ) : (
@@ -369,18 +374,18 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                 return (
                   <div
                     key={feature}
-                    className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    style={styles.cardDisabled}
                     onClick={() => handleToggleFeature(feature)}
                   >
-                    <span className="text-2xl flex-shrink-0 opacity-50">{metadata.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-700">{t(metadata.labelKey)}</div>
-                      <div className="text-xs text-gray-500 truncate">
+                    <span style={styles.featureIconDisabled}>{metadata.icon}</span>
+                    <div style={styles.featureInfo}>
+                      <div style={styles.featureNameDisabled}>{t(metadata.labelKey)}</div>
+                      <div style={styles.featureDesc}>
                         {metadata.description}
                       </div>
                     </div>
                     <button
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                      style={styles.addButton}
                       aria-label="Enable feature"
                     >
                       +
@@ -406,6 +411,235 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
       />
     </div>
   );
+};
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '24px',
+    padding: '24px',
+    backgroundColor: 'var(--card-bg)',
+    borderRadius: '16px',
+    border: '1px solid var(--border-color)',
+    boxShadow: '0 4px 6px var(--shadow)',
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap' as const,
+  },
+  title: {
+    fontSize: '24px',
+    fontWeight: '700' as const,
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  subtitle: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    marginTop: '4px',
+    margin: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '12px',
+  },
+  resetButton: {
+    padding: '8px 16px',
+    border: '1px solid var(--border-color)',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    transition: 'all 0.2s',
+  },
+  saveButton: {
+    padding: '8px 16px',
+    backgroundColor: 'var(--accent-primary)',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600' as const,
+    transition: 'all 0.2s',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  warningBanner: {
+    padding: '12px 16px',
+    backgroundColor: 'var(--warning-bg)',
+    border: '1px solid var(--warning-border)',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: 'var(--warning-text)',
+  },
+  tabsContainer: {
+    borderBottom: '1px solid var(--border-color)',
+  },
+  tabsList: {
+    display: 'flex',
+    gap: '16px',
+  },
+  tabButton: {
+    padding: '12px 16px',
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    borderBottom: '2px solid transparent',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottomWidth: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  tabButtonActive: {
+    borderBottomColor: 'var(--accent-primary)',
+    color: 'var(--accent-primary)',
+  },
+  tabButtonInactive: {
+    borderBottomColor: 'transparent',
+    color: 'var(--text-secondary)',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '24px',
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: '600' as const,
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
+  },
+  sectionDesc: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    marginBottom: '16px',
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  card: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '12px',
+    cursor: 'move',
+    transition: 'all 0.2s',
+  },
+  cardDragging: {
+    opacity: 0.5,
+  },
+  cardDragOver: {
+    borderColor: 'var(--accent-primary)',
+    backgroundColor: 'var(--accent-light)',
+  },
+  cardDisabled: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px',
+    backgroundColor: 'var(--bg-tertiary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  dragHandle: {
+    color: 'var(--text-tertiary)',
+    flexShrink: 0,
+  },
+  featureIcon: {
+    fontSize: '24px',
+    flexShrink: 0,
+  },
+  featureIconDisabled: {
+    fontSize: '24px',
+    flexShrink: 0,
+    opacity: 0.5,
+  },
+  featureInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  featureName: {
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    color: 'var(--text-primary)',
+  },
+  featureNameDisabled: {
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    color: 'var(--text-secondary)',
+  },
+  featureDesc: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  positionInputContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0,
+  },
+  positionInput: {
+    width: '50px',
+    padding: '4px 8px',
+    fontSize: '14px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '6px',
+    textAlign: 'center' as const,
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+  },
+  actionButton: {
+    padding: '8px',
+    color: 'var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  addButton: {
+    padding: '8px',
+    color: 'var(--text-secondary)',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    flexShrink: 0,
+    fontSize: '20px',
+    fontWeight: 'bold' as const,
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '32px',
+    color: 'var(--text-tertiary)',
+    fontSize: '14px',
+  },
 };
 
 export default FeatureManager;

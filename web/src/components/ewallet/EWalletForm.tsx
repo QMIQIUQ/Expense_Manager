@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { EWallet } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BaseForm } from '../common/BaseForm';
 
 interface EWalletFormProps {
   onSubmit: (ewallet: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCancel: () => void;
   initialData?: EWallet;
+  title?: string;
 }
 
 // Common e-wallet icons
@@ -22,7 +24,7 @@ const PRESET_COLORS = [
   '#4285F4', '#1677FF', '#07C160', '#FF9500', '#5856D6',
 ];
 
-const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialData }) => {
+const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialData, title }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -92,7 +94,12 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <BaseForm
+      title={title || (initialData ? t('editEWallet') : t('addEWallet') || 'Add E-Wallet')}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitLabel={isSubmitting ? t('saving') : initialData ? t('update') : t('add')}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')} *</label>
@@ -274,40 +281,8 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
         </div>
       </div>
 
-      <div className="flex gap-3 mt-2">
-        <button
-          type="submit"
-          className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-primary)',
-            fontWeight: 600,
-            borderRadius: '8px',
-            transition: 'all 0.2s',
-            opacity: isSubmitting ? 0.7 : 1,
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-          }}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? t('saving') : initialData ? t('update') : t('add')}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-            fontWeight: 600,
-            borderRadius: '8px',
-            transition: 'all 0.2s'
-          }}
-          disabled={isSubmitting}
-        >
-          {t('cancel')}
-        </button>
-      </div>
-    </form>
+      {/* Footer removed - handled by BaseForm */}
+    </BaseForm>
   );
 };
 

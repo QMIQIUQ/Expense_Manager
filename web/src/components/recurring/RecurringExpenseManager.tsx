@@ -3,6 +3,7 @@ import { RecurringExpense, Category, Card } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
+import RecurringForm from './RecurringForm';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -55,20 +56,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    description: '',
-    amount: 0,
-    category: '',
-    frequency: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    dayOfWeek: 1,
-    dayOfMonth: 1,
-    isActive: true,
-    paymentMethod: 'cash' as 'cash' | 'credit_card' | 'e_wallet',
-    cardId: '',
-    paymentMethodName: '',
-  });
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -123,111 +111,19 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     expense.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Create expense data without undefined values
-    const baseData = {
-      description: formData.description,
-      amount: formData.amount,
-      category: formData.category,
-      frequency: formData.frequency,
-      startDate: formData.startDate,
-      dayOfWeek: formData.dayOfWeek,
-      dayOfMonth: formData.dayOfMonth,
-      isActive: formData.isActive,
-    };
-    
-    // Only add optional fields if they have values
-    const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastGenerated'> & { endDate?: string } = {
-      ...baseData,
-      ...(formData.endDate ? { endDate: formData.endDate } : {}),
-      ...(formData.paymentMethod ? { paymentMethod: formData.paymentMethod } : {}),
-      ...(formData.paymentMethod === 'credit_card' && formData.cardId ? { cardId: formData.cardId } : {}),
-      ...(formData.paymentMethod === 'e_wallet' && formData.paymentMethodName ? { paymentMethodName: formData.paymentMethodName } : {}),
-    };
 
-    onAdd(expenseData);
-    setIsAdding(false);
-    resetForm();
-  };
 
-  const resetForm = () => {
-    setFormData({
-      description: '',
-      amount: 0,
-      category: '',
-      frequency: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-      dayOfWeek: 1,
-      dayOfMonth: 1,
-      isActive: true,
-      paymentMethod: 'cash',
-      cardId: '',
-      paymentMethodName: '',
-    });
-  };
+
 
   const startInlineEdit = (expense: RecurringExpense) => {
     setEditingId(expense.id!);
-    // Convert amount to cents for editing
-    setFormData({
-      description: expense.description,
-      amount: Math.round(expense.amount * 100),
-      category: expense.category,
-      frequency: expense.frequency,
-      startDate: expense.startDate,
-      endDate: expense.endDate || '',
-      dayOfWeek: expense.dayOfWeek || 1,
-      dayOfMonth: expense.dayOfMonth || 1,
-      isActive: expense.isActive,
-      paymentMethod: expense.paymentMethod || 'cash',
-      cardId: expense.cardId || '',
-      paymentMethodName: expense.paymentMethodName || '',
-    });
   };
 
-  const cancelInlineEdit = () => {
-    setEditingId(null);
-    resetForm();
-  };
 
-  const saveInlineEdit = (expense: RecurringExpense) => {
-    const updates: Partial<RecurringExpense> = {};
-    // Convert amount from cents to dollars
-    const amountInDollars = formData.amount / 100;
-    
-    if (expense.description !== formData.description && formData.description) updates.description = formData.description;
-    if (expense.amount !== amountInDollars) updates.amount = amountInDollars;
-    if (expense.category !== formData.category && formData.category) updates.category = formData.category;
-    if (expense.frequency !== formData.frequency) updates.frequency = formData.frequency;
-    if (expense.startDate !== formData.startDate) updates.startDate = formData.startDate;
-    if ((expense.endDate || '') !== formData.endDate) {
-      updates.endDate = formData.endDate || undefined;
-    }
-    if (expense.dayOfWeek !== formData.dayOfWeek) updates.dayOfWeek = formData.dayOfWeek;
-    if (expense.dayOfMonth !== formData.dayOfMonth) updates.dayOfMonth = formData.dayOfMonth;
-    if (expense.isActive !== formData.isActive) updates.isActive = formData.isActive;
-    if ((expense.paymentMethod || 'cash') !== formData.paymentMethod) updates.paymentMethod = formData.paymentMethod;
-    if ((expense.cardId || '') !== formData.cardId) {
-      updates.cardId = formData.cardId || undefined;
-    }
-    if ((expense.paymentMethodName || '') !== formData.paymentMethodName) {
-      updates.paymentMethodName = formData.paymentMethodName || undefined;
-    }
 
-    if (Object.keys(updates).length > 0) {
-      onUpdate(expense.id!, updates);
-    }
-    cancelInlineEdit();
-  };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const digitsOnly = value.replace(/\D/g, '');
-    const amountInCents = parseInt(digitsOnly) || 0;
-    setFormData({ ...formData, amount: amountInCents });
-  };
+
+
 
   return (
     <div style={styles.container}>
@@ -258,180 +154,40 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       </div>
 
       {isAdding && (
-        <div className="form-card">
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div style={styles.formGroup}>
-            <label className="form-label">{t('description')} *</label>
-            <input
-              type="text"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              onFocus={(e) => e.target.select()}
-              placeholder="e.g., Netflix Subscription, Rent"
-              required
-              className="form-input"
-            />
-          </div>
+        <div className="mb-5">
+          <RecurringForm
+            categories={categories}
+            cards={cards}
+            onSubmit={(data) => {
+              // Create expense data without undefined values
+              const baseData = {
+                description: data.description,
+                amount: data.amount,
+                category: data.category,
+                frequency: data.frequency,
+                startDate: data.startDate,
+                dayOfWeek: data.dayOfWeek,
+                dayOfMonth: data.dayOfMonth,
+                isActive: data.isActive,
+              };
+              
+              // Only add optional fields if they have values
+              const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastGenerated'> & { endDate?: string } = {
+                ...baseData,
+                ...(data.endDate ? { endDate: data.endDate } : {}),
+                ...(data.paymentMethod ? { paymentMethod: data.paymentMethod } : {}),
+                ...(data.paymentMethod === 'credit_card' && data.cardId ? { cardId: data.cardId } : {}),
+                ...(data.paymentMethod === 'e_wallet' && data.paymentMethodName ? { paymentMethodName: data.paymentMethodName } : {}),
+              };
 
-          <div className="form-row">
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('amount')} ($) *</label>
-              <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                onFocus={(e) => e.target.select()}
-                step="0.01"
-                min="0.01"
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('category')} *</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-                className="form-select"
-              >
-                <option value="">{t('selectCategory')}</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('frequency')} *</label>
-              <select
-                value={formData.frequency}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly',
-                  })
-                }
-                className="form-select"
-              >
-                <option value="daily">{t('freqDaily')}</option>
-                <option value="weekly">{t('freqWeekly')}</option>
-                <option value="monthly">{t('freqMonthly')}</option>
-                <option value="yearly">{t('freqYearly')}</option>
-              </select>
-            </div>
-
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label className="form-label">{t('startDate')} *</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-                className="form-input"
-              />
-            </div>
-          </div>
-
-          {/* Payment Method Selection */}
-          <div style={styles.formGroup}>
-            <label className="form-label">{t('paymentMethod')}</label>
-            <select
-              value={formData.paymentMethod}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
-                cardId: e.target.value !== 'credit_card' ? '' : formData.cardId,
-                paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
-              })}
-              className="form-select"
-            >
-              <option value="cash">💵 {t('cash')}</option>
-              <option value="credit_card">💳 {t('creditCard')}</option>
-              <option value="e_wallet">📱 {t('eWallet')}</option>
-            </select>
-          </div>
-
-          {/* Card Selection (only when credit card is selected) */}
-          {formData.paymentMethod === 'credit_card' && (
-            <div style={styles.formGroup}>
-              <label className="form-label">{t('selectCard')}</label>
-              <select
-                value={formData.cardId}
-                onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-                className="form-select"
-              >
-                <option value="">{t('selectCard')}</option>
-                {cards.map((card) => (
-                  <option key={card.id} value={card.id}>
-                    {card.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* E-Wallet Name Input (only when e-wallet is selected) */}
-          {formData.paymentMethod === 'e_wallet' && (
-            <div style={styles.formGroup}>
-              <label className="form-label">{t('eWalletName')}</label>
-              <input
-                type="text"
-                value={formData.paymentMethodName}
-                onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-                onFocus={(e) => e.target.select()}
-                placeholder={t('eWalletPlaceholder')}
-                className="form-input"
-              />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-            <button 
-              type="submit" 
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                backgroundColor: 'var(--accent-light)',
-                color: 'var(--accent-primary)',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {editingId ? t('edit') : t('add')} {t('recurringExpense')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAdding(false);
-                setEditingId(null);
-                resetForm();
-              }}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {t('cancel')}
-            </button>
-          </div>
-          </form>
+              onAdd(expenseData);
+              setIsAdding(false);
+            }}
+            onCancel={() => {
+              setIsAdding(false);
+              setEditingId(null);
+            }}
+          />
         </div>
       )}
 
@@ -456,260 +212,46 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           filteredRecurringExpenses.map((expense) => (
             <div key={expense.id} className="recurring-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
               {editingId === expense.id ? (
-                // Inline Edit Mode
-                <div className="flex flex-col gap-4">
-                  {/* Description (full width) */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
-                    <input
-                      type="text"
-                      value={formData.description}
-                      placeholder={t('description')}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      onFocus={(e) => e.target.select()}
-                      className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      style={{
-                        borderColor: 'var(--border-color)',
-                        backgroundColor: 'var(--input-bg)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
+                <RecurringForm
+                  initialData={{
+                    description: expense.description,
+                    amount: expense.amount,
+                    category: expense.category,
+                    frequency: expense.frequency,
+                    startDate: expense.startDate,
+                    endDate: expense.endDate || '',
+                    dayOfWeek: expense.dayOfWeek || 1,
+                    dayOfMonth: expense.dayOfMonth || 1,
+                    isActive: expense.isActive,
+                    paymentMethod: expense.paymentMethod || 'cash',
+                    cardId: expense.cardId || '',
+                    paymentMethodName: expense.paymentMethodName || '',
+                  }}
+                  categories={categories}
+                  cards={cards}
+                  onSubmit={(data) => {
+                    const updates: Partial<RecurringExpense> = {};
+                    if (expense.description !== data.description) updates.description = data.description;
+                    if (expense.amount !== data.amount) updates.amount = data.amount;
+                    if (expense.category !== data.category) updates.category = data.category;
+                    if (expense.frequency !== data.frequency) updates.frequency = data.frequency;
+                    if (expense.startDate !== data.startDate) updates.startDate = data.startDate;
+                    if ((expense.endDate || '') !== data.endDate) updates.endDate = data.endDate || undefined;
+                    if (expense.dayOfWeek !== data.dayOfWeek) updates.dayOfWeek = data.dayOfWeek;
+                    if (expense.dayOfMonth !== data.dayOfMonth) updates.dayOfMonth = data.dayOfMonth;
+                    if (expense.isActive !== data.isActive) updates.isActive = data.isActive;
+                    if ((expense.paymentMethod || 'cash') !== data.paymentMethod) updates.paymentMethod = data.paymentMethod;
+                    if ((expense.cardId || '') !== data.cardId) updates.cardId = data.cardId || undefined;
+                    if ((expense.paymentMethodName || '') !== data.paymentMethodName) updates.paymentMethodName = data.paymentMethodName || undefined;
 
-                  {/* Amount and Category */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={(formData.amount / 100).toFixed(2)}
-                        onChange={handleAmountChange}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="0.00"
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-                      <select
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        <option value="">{t('selectCategory')}</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.name}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Frequency and Day */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('frequency')} *</label>
-                      <select
-                        value={formData.frequency}
-                        onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' })}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        <option value="daily">{t('freqDaily')}</option>
-                        <option value="weekly">{t('freqWeekly')}</option>
-                        <option value="monthly">{t('freqMonthly')}</option>
-                        <option value="yearly">{t('freqYearly')}</option>
-                      </select>
-                    </div>
-                    {formData.frequency === 'weekly' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Day of Week (1-7)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="7"
-                          value={formData.dayOfWeek}
-                          onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) || 1 })}
-                          onFocus={(e) => e.target.select()}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                    )}
-                    {formData.frequency === 'monthly' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Day of Month (1-31)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="31"
-                          value={formData.dayOfMonth}
-                          onChange={(e) => setFormData({ ...formData, dayOfMonth: parseInt(e.target.value) || 1 })}
-                          onFocus={(e) => e.target.select()}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Start Date and End Date */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
-                      <input
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('endDate')}</label>
-                      <input
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Payment Method and Card/Wallet */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
-                      <select
-                        value={formData.paymentMethod || 'cash'}
-                        onChange={(e) => {
-                          const newPaymentMethod = e.target.value as 'cash' | 'credit_card' | 'e_wallet';
-                          setFormData({ 
-                            ...formData, 
-                            paymentMethod: newPaymentMethod,
-                            cardId: newPaymentMethod === 'credit_card' ? formData.cardId : '',
-                            paymentMethodName: newPaymentMethod === 'e_wallet' ? formData.paymentMethodName : ''
-                          });
-                        }}
-                        className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{
-                          borderColor: 'var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        <option value="cash">💵 {t('cash')}</option>
-                        <option value="credit_card">💳 {t('creditCard')}</option>
-                        <option value="e_wallet">📱 {t('eWallet')}</option>
-                      </select>
-                    </div>
-
-                    {formData.paymentMethod === 'credit_card' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
-                        <select
-                          value={formData.cardId || ''}
-                          onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          <option value="">{t('selectCard')}</option>
-                          {cards.map((card) => (
-                            <option key={card.id} value={card.id}>
-                              {card.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {formData.paymentMethod === 'e_wallet' && (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')}</label>
-                        <input
-                          type="text"
-                          value={formData.paymentMethodName || ''}
-                          onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-                          placeholder={t('eWalletPlaceholder')}
-                          onFocus={(e) => e.target.select()}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3 mt-2 justify-end">
-                    <button
-                      onClick={() => saveInlineEdit(expense)}
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: 'var(--accent-light)',
-                        color: 'var(--accent-primary)',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                      }}
-                      aria-label={t('save')}
-                    >
-                      {t('save')}
-                    </button>
-                    <button
-                      onClick={cancelInlineEdit}
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                      }}
-                      aria-label={t('cancel')}
-                    >
-                      {t('cancel')}
-                    </button>
-                  </div>
-                </div>
+                    if (Object.keys(updates).length > 0) {
+                      onUpdate(expense.id!, updates);
+                    }
+                    setEditingId(null);
+                  }}
+                  onCancel={() => setEditingId(null)}
+                  isEditing={true}
+                />
               ) : (
                 // View Mode
                 <>

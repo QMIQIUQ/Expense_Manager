@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Income, Expense, IncomeType } from '../../types';
+import { Income, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '../icons';
+import { EditIcon, DeleteIcon } from '../icons';
+import IncomeForm from './IncomeForm';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -35,15 +36,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [draft, setDraft] = useState<{
-    title?: string;
-    amount?: string;
-    date?: string;
-    type?: IncomeType;
-    payerName?: string;
-    linkedExpenseId?: string;
-    note?: string;
-  }>({});
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -101,56 +94,6 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
 
   const startInlineEdit = (income: Income) => {
     setEditingId(income.id!);
-    // Convert amount to cents for editing
-    setDraft({
-      title: income.title || '',
-      amount: Math.round(income.amount * 100).toString(),
-      date: income.date,
-      type: income.type,
-      payerName: income.payerName || '',
-      linkedExpenseId: income.linkedExpenseId || '',
-      note: income.note || '',
-    });
-  };
-
-  const cancelInlineEdit = () => {
-    setEditingId(null);
-    setDraft({});
-  };
-
-  const saveInlineEdit = (income: Income) => {
-    const updates: Partial<Income> = {};
-    // Convert amount from cents to dollars
-    const amountInCents = parseInt(draft.amount || '0');
-    const amountInDollars = amountInCents / 100;
-    
-    if ((income.title || '') !== (draft.title || '')) {
-      updates.title = draft.title && draft.title.trim() !== '' ? draft.title : undefined;
-    }
-    if (income.amount !== amountInDollars) updates.amount = amountInDollars;
-    if (income.date !== draft.date && draft.date) updates.date = draft.date;
-    if (income.type !== draft.type && draft.type) updates.type = draft.type;
-    if ((income.payerName || '') !== (draft.payerName || '')) {
-      updates.payerName = draft.payerName && draft.payerName.trim() !== '' ? draft.payerName : undefined;
-    }
-    if ((income.linkedExpenseId || '') !== (draft.linkedExpenseId || '')) {
-      updates.linkedExpenseId = draft.linkedExpenseId && draft.linkedExpenseId !== '' ? draft.linkedExpenseId : undefined;
-    }
-    if ((income.note || '') !== (draft.note || '')) {
-      updates.note = draft.note && draft.note.trim() !== '' ? draft.note : undefined;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      onInlineUpdate(income.id!, updates);
-    }
-    cancelInlineEdit();
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const digitsOnly = value.replace(/\D/g, '');
-    const amountInCents = parseInt(digitsOnly) || 0;
-    setDraft((d) => ({ ...d, amount: amountInCents.toString() }));
   };
 
   const toggleGroupCollapse = (date: string) => {
@@ -228,170 +171,16 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
         <div key={income.id} className="income-card" style={openMenuId === income.id ? { zIndex: 9999 } : undefined}>
           {editingId === income.id ? (
             // Inline Edit Mode
-            <div className="flex flex-col gap-4">
-              {/* Title (full width) */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('title')}</label>
-                <input
-                  type="text"
-                  value={draft.title || ''}
-                  placeholder={t('titleOptional')}
-                  onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                  onFocus={(e) => e.target.select()}
-                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-
-              {/* Amount and Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={((parseInt(draft.amount || '0')) / 100).toFixed(2)}
-                    onChange={handleAmountChange}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0.00"
-                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('type')}</label>
-                  <select
-                    value={draft.type || 'other'}
-                    onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as IncomeType }))}
-                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-primary)'
-                    }}
-                  >
-                    <option value="salary">{t('salary')}</option>
-                    <option value="reimbursement">{t('reimbursement')}</option>
-                    <option value="repayment">{t('repayment')}</option>
-                    <option value="other">{t('other')}</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Date and Payer Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
-                  <input
-                    type="date"
-                    value={draft.date || ''}
-                    onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('payerName')}</label>
-                  <input
-                    type="text"
-                    value={draft.payerName || ''}
-                    placeholder={t('payerNameOptional')}
-                    onChange={(e) => setDraft((d) => ({ ...d, payerName: e.target.value }))}
-                    onFocus={(e) => e.target.select()}
-                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Link to Expense (full width if present) */}
-              {expenses.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('linkToExpense')}</label>
-                  <select
-                    value={draft.linkedExpenseId || ''}
-                    onChange={(e) => setDraft((d) => ({ ...d, linkedExpenseId: e.target.value }))}
-                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-primary)'
-                    }}
-                  >
-                    <option value="">-- {t('noLink')} --</option>
-                    {expenses.map((expense) => (
-                      <option key={expense.id} value={expense.id}>
-                        {expense.description} - ${expense.amount.toFixed(2)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Notes (full width) */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')}</label>
-                <input
-                  type="text"
-                  value={draft.note || ''}
-                  placeholder={t('notesOptional')}
-                  onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-                  onFocus={(e) => e.target.select()}
-                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-3 mt-2 justify-end">
-                <button
-                  onClick={() => saveInlineEdit(income)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor: 'var(--accent-light)',
-                    color: 'var(--accent-primary)',
-                    fontWeight: 600,
-                    borderRadius: '8px',
-                  }}
-                  aria-label={t('save')}
-                >
-                  <CheckIcon size={18} />
-                </button>
-                <button
-                  onClick={cancelInlineEdit}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    fontWeight: 600,
-                    borderRadius: '8px',
-                  }}
-                  aria-label={t('cancel')}
-                >
-                  <CloseIcon size={18} />
-                </button>
-              </div>
-            </div>
+            <IncomeForm
+              initialData={income}
+              expenses={expenses}
+              onSubmit={(data) => {
+                onInlineUpdate(income.id!, data);
+                setEditingId(null);
+              }}
+              onCancel={() => setEditingId(null)}
+              title={t('editIncome')}
+            />
           ) : (
             // Display Mode
             <>

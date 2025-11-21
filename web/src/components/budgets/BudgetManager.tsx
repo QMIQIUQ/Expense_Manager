@@ -3,6 +3,7 @@ import { Budget, Category } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
+import BudgetForm from './BudgetForm';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -45,14 +46,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    categoryId: '',
-    categoryName: '',
-    amount: 0, // stored in cents
-    period: 'monthly' as 'monthly' | 'weekly' | 'yearly',
-    startDate: new Date().toISOString().split('T')[0],
-    alertThreshold: 80,
-  });
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -82,71 +76,17 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     budget.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const selectedCategory = categories.find((cat) => cat.id === formData.categoryId);
-    if (!selectedCategory) return;
 
-    const budgetData = {
-      ...formData,
-      amount: formData.amount / 100, // Convert from cents to dollars
-      categoryName: selectedCategory.name,
-    };
 
-    onAdd(budgetData);
-    setIsAdding(false);
-    resetForm();
-  };
 
-  const resetForm = () => {
-    setFormData({
-      categoryId: '',
-      categoryName: '',
-      amount: 0,
-      period: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
-      alertThreshold: 80,
-    });
-  };
 
   const startInlineEdit = (budget: Budget) => {
-    const category = categories.find((cat) => cat.name === budget.categoryName);
     setEditingId(budget.id!);
-    setFormData({
-      categoryId: category?.id || '',
-      categoryName: budget.categoryName,
-      amount: Math.round(budget.amount * 100), // Convert from dollars to cents
-      period: budget.period,
-      startDate: budget.startDate,
-      alertThreshold: budget.alertThreshold,
-    });
   };
 
-  const cancelInlineEdit = () => {
-    setEditingId(null);
-    resetForm();
-  };
 
-  const saveInlineEdit = (budget: Budget) => {
-    const selectedCategory = categories.find((cat) => cat.id === formData.categoryId);
-    if (!selectedCategory) return;
 
-    const updates: Partial<Budget> = {};
-    if (budget.categoryId !== formData.categoryId) {
-      updates.categoryId = formData.categoryId;
-      updates.categoryName = selectedCategory.name;
-    }
-    const amountInDollars = formData.amount / 100;
-    if (budget.amount !== amountInDollars) updates.amount = amountInDollars;
-    if (budget.period !== formData.period) updates.period = formData.period;
-    if (budget.startDate !== formData.startDate) updates.startDate = formData.startDate;
-    if (budget.alertThreshold !== formData.alertThreshold) updates.alertThreshold = formData.alertThreshold;
 
-    if (Object.keys(updates).length > 0) {
-      onUpdate(budget.id!, updates);
-    }
-    cancelInlineEdit();
-  };
 
   const getProgressPercentage = (categoryName: string, budgetAmount: number) => {
     const spent = spentByCategory[categoryName] || 0;
@@ -176,136 +116,18 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </div>
 
       {isAdding && (
-        <div className="form-card">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-              <select
-                value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                required
-                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <option value="">{t('selectCategory')}</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={(formData.amount / 100).toFixed(2)}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const digitsOnly = value.replace(/\D/g, '');
-                  const amountInCents = parseInt(digitsOnly) || 0;
-                  setFormData({ ...formData, amount: amountInCents });
-                }}
-                onFocus={(e) => e.target.select()}
-                placeholder="0.00"
-                required
-                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('budgetPeriod')} *</label>
-              <select
-                value={formData.period}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    period: e.target.value as 'monthly' | 'weekly' | 'yearly',
-                  })
-                }
-                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <option value="weekly">{t('periodWeekly')}</option>
-                <option value="monthly">{t('periodMonthly')}</option>
-                <option value="yearly">{t('periodYearly')}</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%) *</label>
-              <input
-                type="number"
-                value={formData.alertThreshold}
-                onChange={(e) =>
-                  setFormData({ ...formData, alertThreshold: parseInt(e.target.value) || 0 })
-                }
-                onFocus={(e) => e.target.select()}
-                min="1"
-                max="100"
-                required
-                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-2">
-            <button 
-              type="submit" 
-              className="flex-1 px-4 py-3 rounded-lg text-base font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--accent-light)',
-                color: 'var(--accent-primary)',
-                fontWeight: 600,
-                borderRadius: '8px',
-                transition: 'all 0.2s'
-              }}
-            >
-              {editingId ? t('updateBudget') : t('setBudgetButton')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAdding(false);
-                setEditingId(null);
-                resetForm();
-              }}
-              className="px-6 py-3 rounded-lg text-base font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                fontWeight: 600,
-                borderRadius: '8px',
-                transition: 'all 0.2s'
-              }}
-            >
-              {t('cancel')}
-            </button>
-          </div>
-          </form>
+        <div className="mb-5">
+          <BudgetForm
+            categories={categories}
+            onSubmit={(data) => {
+              onAdd(data);
+              setIsAdding(false);
+            }}
+            onCancel={() => {
+              setIsAdding(false);
+              setEditingId(null);
+            }}
+          />
         </div>
       )}
 
@@ -335,138 +157,36 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             return (
               <div key={budget.id} className="budget-card" style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
                 {editingId === budget.id ? (
-                  // Inline Edit Mode
-                  <div className="flex flex-col gap-4">
-                    {/* Category and Amount */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-                        <select
-                          value={formData.categoryId}
-                          onChange={(e) => {
-                            const cat = categories.find((c) => c.id === e.target.value);
-                            setFormData({ ...formData, categoryId: e.target.value, categoryName: cat?.name || '' });
-                          }}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          <option value="">{t('selectCategory')}</option>
-                          {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={(formData.amount / 100).toFixed(2)}
-                          onChange={(e) => {
-                            const digitsOnly = e.target.value.replace(/\D/g, '');
-                            const amountInCents = parseInt(digitsOnly) || 0;
-                            setFormData({ ...formData, amount: amountInCents });
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          placeholder="0.00"
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                    </div>
+                  <BudgetForm
+                    initialData={{
+                      categoryId: budget.categoryId,
+                      categoryName: budget.categoryName,
+                      amount: Math.round(budget.amount * 100),
+                      period: budget.period,
+                      startDate: budget.startDate,
+                      alertThreshold: budget.alertThreshold,
+                    }}
+                    categories={categories}
+                    onSubmit={(data) => {
+                      const updates: Partial<Budget> = {};
+                      if (budget.categoryId !== data.categoryId) {
+                        updates.categoryId = data.categoryId;
+                        updates.categoryName = data.categoryName;
+                      }
+                      const amountInDollars = data.amount / 100;
+                      if (budget.amount !== amountInDollars) updates.amount = amountInDollars;
+                      if (budget.period !== data.period) updates.period = data.period;
+                      if (budget.startDate !== data.startDate) updates.startDate = data.startDate;
+                      if (budget.alertThreshold !== data.alertThreshold) updates.alertThreshold = data.alertThreshold;
 
-                    {/* Period, Start Date, and Alert Threshold */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('budgetPeriod')} *</label>
-                        <select
-                          value={formData.period}
-                          onChange={(e) => setFormData({ ...formData, period: e.target.value as 'monthly' | 'weekly' | 'yearly' })}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          <option value="weekly">{t('periodWeekly')}</option>
-                          <option value="monthly">{t('periodMonthly')}</option>
-                          <option value="yearly">{t('periodYearly')}</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
-                        <input
-                          type="date"
-                          value={formData.startDate}
-                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={formData.alertThreshold}
-                          onChange={(e) => setFormData({ ...formData, alertThreshold: parseInt(e.target.value) || 80 })}
-                          onFocus={(e) => e.target.select()}
-                          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                          style={{
-                            borderColor: 'var(--border-color)',
-                            backgroundColor: 'var(--input-bg)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-3 mt-2 justify-end">
-                      <button
-                        onClick={() => saveInlineEdit(budget)}
-                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        style={{
-                          backgroundColor: 'var(--accent-light)',
-                          color: 'var(--accent-primary)',
-                          fontWeight: 600,
-                          borderRadius: '8px',
-                        }}
-                        aria-label={t('save')}
-                      >
-                        {t('save')}
-                      </button>
-                      <button
-                        onClick={cancelInlineEdit}
-                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg-secondary)',
-                          color: 'var(--text-primary)',
-                          fontWeight: 600,
-                          borderRadius: '8px',
-                        }}
-                        aria-label={t('cancel')}
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  </div>
+                      if (Object.keys(updates).length > 0) {
+                        onUpdate(budget.id!, updates);
+                      }
+                      setEditingId(null);
+                    }}
+                    onCancel={() => setEditingId(null)}
+                    isEditing={true}
+                  />
                 ) : (
                   // View Mode
                   <>
