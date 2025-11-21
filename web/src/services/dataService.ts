@@ -35,7 +35,8 @@ type EntityData =
   | Card[]
   | EWallet[]
   | Bank[]
-  | Repayment[];
+  | Repayment[]
+  | unknown[];
 
 export const dataService = {
   /**
@@ -119,7 +120,7 @@ export const dataService = {
       }
       // No cache available and offline - return empty array
       console.warn(`No cached ${entity} available in offline mode`);
-      return [] as T;
+      return [] as unknown as T;
     }
 
     // If force refresh or no cache, fetch from server
@@ -146,7 +147,7 @@ export const dataService = {
     // Use cached data
     console.log(`Using cached ${entity}`);
     const cached = sessionCache.get<T>(entity, userId);
-    return cached || ([] as T);
+    return cached || ([] as unknown as T);
   },
 
   /**

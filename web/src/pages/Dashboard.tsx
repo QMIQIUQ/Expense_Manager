@@ -206,7 +206,7 @@ const Dashboard: React.FC = () => {
                 const banksData = await dataService.getBanks(currentUser.uid);
                 setBanks(banksData);
                 // Save bank names for quick suggestions
-                const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[])];
+                const bankNamesSave = [...new Set((banksData || []).map(b => b.name).filter(Boolean) as string[])];
                 if (bankNamesSave.length > 0) {
                   localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
                 }
@@ -1771,7 +1771,6 @@ const Dashboard: React.FC = () => {
                               showNotification('info', t('processing') || '处理中...', { duration: 0 });
                               
                               // 模拟清除队列显示（乐观更新）
-                              const previousQueueCount = queueCount;
                               setQueueCount(0);
                               
                               // 实际重新加载数据，触发同步

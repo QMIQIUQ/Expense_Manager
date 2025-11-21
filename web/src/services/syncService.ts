@@ -177,6 +177,12 @@ class SyncService {
           return await this.executeIncomeOperation(operation);
         case 'card':
           return await this.executeCardOperation(operation);
+        case 'bank':
+          return await this.executeBankOperation(operation);
+        case 'ewallet':
+          return await this.executeEWalletOperation(operation);
+        case 'repayment':
+          return await this.executeRepaymentOperation(operation);
         default:
           console.warn('Unknown entity type:', operation.entity);
           return false;
@@ -188,6 +194,7 @@ class SyncService {
   }
 
   private async executeExpenseOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -208,6 +215,7 @@ class SyncService {
   }
 
   private async executeCategoryOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -228,6 +236,7 @@ class SyncService {
   }
 
   private async executeBudgetOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -248,6 +257,7 @@ class SyncService {
   }
 
   private async executeRecurringOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -268,6 +278,7 @@ class SyncService {
   }
 
   private async executeIncomeOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -288,6 +299,7 @@ class SyncService {
   }
 
   private async executeCardOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
     
     switch (operation.type) {
@@ -307,6 +319,69 @@ class SyncService {
     }
   }
 
+  private async executeBankOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = operation.payload as any;
+    
+    switch (operation.type) {
+      case 'create':
+        await bankService.create(payload);
+        return true;
+      case 'update':
+        if (!payload.id) return false;
+        await bankService.update(payload.id, payload);
+        return true;
+      case 'delete':
+        if (!payload.id) return false;
+        await bankService.delete(payload.id);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private async executeEWalletOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = operation.payload as any;
+    
+    switch (operation.type) {
+      case 'create':
+        await ewalletService.create(payload);
+        return true;
+      case 'update':
+        if (!payload.id) return false;
+        await ewalletService.update(payload.id, payload);
+        return true;
+      case 'delete':
+        if (!payload.id) return false;
+        await ewalletService.delete(payload.id);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private async executeRepaymentOperation(operation: QueuedOperation): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = operation.payload as any;
+    
+    switch (operation.type) {
+      case 'create':
+        await repaymentService.create(payload);
+        return true;
+      case 'update':
+        if (!payload.id) return false;
+        await repaymentService.update(payload.id, payload);
+        return true;
+      case 'delete':
+        if (!payload.id) return false;
+        await repaymentService.delete(payload.id);
+        return true;
+      default:
+        return false;
+    }
+  }
+
   /**
    * Refresh cache for a specific entity
    */
@@ -317,6 +392,7 @@ class SyncService {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any;
 
       switch (entity) {

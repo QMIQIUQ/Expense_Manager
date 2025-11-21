@@ -13,7 +13,7 @@ interface UseOptimisticCRUDOptions {
   onSuccess?: (data: unknown) => void;
   onError?: (error: unknown) => void;
   retryToQueueOnFail?: boolean;
-  entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card';
+  entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment';
   suppressNotification?: boolean;
 }
 
