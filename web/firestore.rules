@@ -88,6 +88,13 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
+    // Banks collection (bank account management)
+    match /banks/{bankId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+    
     // Feature Settings collection (tab visibility and ordering)
     match /featureSettings/{settingsId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());

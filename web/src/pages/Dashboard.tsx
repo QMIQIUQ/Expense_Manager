@@ -101,6 +101,7 @@ const Dashboard: React.FC = () => {
     status: 'deleting' | 'complete' | 'error';
   } | null>(null);
   const [queueCount, setQueueCount] = useState<number>(0);
+  const [isUploadingQueue, setIsUploadingQueue] = useState<boolean>(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
@@ -1413,7 +1414,6 @@ const Dashboard: React.FC = () => {
                   maxWidth: '90vw',
                   backgroundColor: 'var(--bg-primary)',
                   borderColor: 'var(--border-color)',
-                  transform: isMobile ? undefined : 'translateX(calc(-100% + 32px))',
                 }}
               >
                   {/* Language Section */}
@@ -1715,26 +1715,83 @@ const Dashboard: React.FC = () => {
 
                 {/* Offline Queue Status Section */}
                 {queueCount > 0 && (
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                    <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-orange-600 text-lg">⚠️</span>
-                        <span className="text-sm font-semibold text-orange-800">
+                        <span className="text-lg">⚠️</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--warning-text)' }}>
                           {queueCount} {t('pendingUploads') || 'Pending Uploads'}
                         </span>
                       </div>
-                      <p className="text-xs text-orange-700 mb-2">
+                      <p className="text-xs mb-3" style={{ color: 'var(--warning-text)' }}>
                         {t('pendingUploadsDesc') || 'Some changes are queued for upload. They will sync when connection is restored.'}
                       </p>
-                      <button
-                        onClick={() => {
-                          handleClearOfflineQueue();
-                          setShowHamburgerMenu(false);
-                        }}
-                        className="w-full mt-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 border border-red-300 rounded transition-colors font-medium"
-                      >
-                        {t('clearQueue') || 'Clear Queue'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (isUploadingQueue) return; // 防止重复点击
+                            
+                            try {
+                              // 乐观更新：立即显示处理中状态
+                              setIsUploadingQueue(true);
+                              showNotification('info', t('processing') || '处理中...', { duration: 0 });
+                              
+                              // 模拟清除队列显示（乐观更新）
+                              const previousQueueCount = queueCount;
+                              setQueueCount(0);
+                              
+                              // 实际重新加载数据，触发同步
+                              await loadData();
+                              
+                              // 成功后显示通知
+                              showNotification('success', t('queueCleared') || '数据同步成功');
+                              setShowHamburgerMenu(false);
+                            } catch (error) {
+                              console.error('Failed to retry upload:', error);
+                              // 失败后恢复队列计数
+                              setQueueCount(offlineQueue.count());
+                              showNotification('error', t('errorSavingData') || '同步失败，请重试。');
+                            } finally {
+                              setIsUploadingQueue(false);
+                            }
+                          }}
+                          disabled={isUploadingQueue}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
+                          style={{
+                            backgroundColor: isUploadingQueue ? 'var(--disabled-bg)' : 'var(--accent-primary)',
+                            color: isUploadingQueue ? 'var(--text-secondary)' : 'white',
+                            border: 'none',
+                            cursor: isUploadingQueue ? 'not-allowed' : 'pointer',
+                            opacity: isUploadingQueue ? 0.6 : 1
+                          }}
+                        >
+                          {isUploadingQueue ? (
+                            <>
+                              <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>{t('processing') || '处理中...'}</span>
+                            </>
+                          ) : (
+                            <span>{t('retryUpload') || '重新上传'}</span>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleClearOfflineQueue();
+                            setShowHamburgerMenu(false);
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors"
+                          style={{
+                            color: 'var(--error-text)',
+                            backgroundColor: 'var(--error-bg)',
+                            border: '1px solid var(--error-border)'
+                          }}
+                        >
+                          {t('clearQueue') || 'Clear Queue'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

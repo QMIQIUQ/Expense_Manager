@@ -398,33 +398,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         })()}
       </div>
 
-      {/* Total spending summary */}
-      {filteredWallets.length > 0 && (() => {
-        const totalSpending = Object.values(getWalletStats).reduce(
-          (sum, stats) => sum + stats.totalSpending,
-          0
-        );
-        return totalSpending > 0 ? (
-          <div style={{
-            marginTop: '16px',
-            padding: '16px',
-            backgroundColor: 'var(--card-bg)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-              {t('totalSpending')}:
-            </span>
-            <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-primary)' }}>
-              ${totalSpending.toFixed(2)}
-            </span>
-          </div>
-        ) : null;
-      })()}
-
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('confirmDelete')}

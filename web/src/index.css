@@ -28,9 +28,13 @@
   --error-bg: #fef2f2;
   --info-bg: #eff6ff;
   --success-text: #22c55e;
+  --success-border: #86efac;
   --warning-text: #f97316;
+  --warning-border: #fdba74;
   --error-text: #ef4444;
+  --error-border: #fca5a5;
   --info-text: #3b82f6;
+  --info-border: #93c5fd;
   --hover-bg: rgba(0, 0, 0, 0.04);
   --select-bg: #ffffff;
   --disabled-bg: #f9fafb;
@@ -100,9 +104,13 @@
   
   /* Status text colors (bright for visibility in dark mode) */
   --success-text: #86efac;
+  --success-border: #4ade80;
   --warning-text: #fdba74;
+  --warning-border: #fb923c;
   --error-text: #fca5a5;
+  --error-border: #f87171;
   --info-text: #93c5fd;
+  --info-border: #60a5fa;
   
   /* Purple accent system for dark mode */
   --accent-primary: #a78bfa;
@@ -369,6 +377,10 @@ button:not(:disabled):hover {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes slideIn {
