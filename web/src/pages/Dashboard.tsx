@@ -508,6 +508,25 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
+  //#region Cache Update Helpers
+  // Update cache after successful operations for better offline support
+  const updateCacheAfterChange = React.useCallback(() => {
+    if (!currentUser) return;
+    
+    dataCacheService.initCache(currentUser.uid, {
+      expenses,
+      incomes,
+      categories,
+      budgets,
+      recurringExpenses,
+      repayments,
+      cards,
+      ewallets,
+      banks,
+    });
+  }, [currentUser, expenses, incomes, categories, budgets, recurringExpenses, repayments, cards, ewallets, banks]);
+  //#endregion
+
   //#region Event Handlers - Expenses
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
@@ -532,6 +551,8 @@ const Dashboard: React.FC = () => {
         onSuccess: () => {
           // Replace temp expense with real data
           loadData();
+          // Update cache for offline use
+          setTimeout(updateCacheAfterChange, 500);
         },
         onError: () => {
           // Rollback optimistic update
@@ -557,6 +578,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
+          // Update cache for offline use
+          setTimeout(updateCacheAfterChange, 500);
         },
         onError: () => {
           // Rollback optimistic update
@@ -583,6 +606,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {
           loadData();
+          // Update cache for offline use
+          setTimeout(updateCacheAfterChange, 500);
         },
         onError: () => {
           if (originalExpense) {
