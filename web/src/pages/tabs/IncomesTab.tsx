@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
+import { SearchBar } from '../../components/common/SearchBar';
 import { Income, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon } from '../../components/icons';
@@ -54,12 +55,11 @@ const IncomesTab: React.FC<Props> = ({
       </div>
 
       {/* Search by name */}
-      <input
-        type="text"
+      <SearchBar
         placeholder={t('searchByName')}
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={styles.searchInput}
+        onChange={setSearchTerm}
+        style={{ marginBottom: 8 }}
       />
 
       {isAdding && (
@@ -87,7 +87,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: '12px',
   },
   header: {
     display: 'flex',

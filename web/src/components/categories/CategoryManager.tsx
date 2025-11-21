@@ -3,6 +3,9 @@ import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import CategoryForm from './CategoryForm';
+import { SearchBar } from '../common/SearchBar';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -100,7 +103,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelectionMode,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<Category>();
 
   const startInlineEdit = (category: Category) => {
     // Close the add form if it's open
@@ -161,15 +172,29 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       {/* Search Bar */}
       <div style={styles.searchContainer}>
-        <input
-          type="text"
+        <SearchBar
           placeholder={t('searchByName') || 'Search by name...'}
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          style={styles.searchInput}
+          onChange={setSearchTerm}
         />
       </div>
+
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={toggleSelectionMode}
+        onSelectAll={() => selectAll(filteredCategories)}
+        onDeleteSelected={() => {
+          const ids = Array.from(selectedIds);
+          if (ids.length === 0) return;
+          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
+          
+          ids.forEach(id => onDelete(id));
+          clearSelection();
+          setIsSelectionMode(false);
+        }}
+        style={{ marginBottom: '16px' }}
+      />
 
       <div style={styles.categoryList}>
         {filteredCategories.length === 0 ? (
@@ -195,6 +220,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   borderRadius: '8px',
                 }}
               >
+                {isSelectionMode && !editingId && (
+                  <div style={{ paddingRight: '12px', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(category.id!)}
+                      onChange={() => toggleSelection(category.id!)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                  </div>
+                )}
                 {editingId === category.id ? (
                   // Inline Edit Mode
                   <div style={{ width: '100%' }}>
@@ -453,7 +488,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: '12px',
   },
   header: {
     display: 'flex',
@@ -503,7 +538,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '15px',
-    marginBottom: '20px',
+    marginBottom: '12px',
     border: '1px solid var(--border-color)',
   },
   formGroup: {
@@ -574,7 +609,7 @@ const styles = {
   categoryList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
+    gap: '8px',
   },
   categoryInfo: {
     display: 'flex',

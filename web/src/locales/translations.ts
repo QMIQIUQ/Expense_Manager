@@ -509,6 +509,7 @@ export const translations = {
   repaymentUpdated: { en: 'Repayment updated successfully', zh: '還款已成功更新', 'zh-CN': '还款已成功更新' },
   repaymentDeleted: { en: 'Repayment deleted successfully', zh: '還款已成功刪除', 'zh-CN': '还款已成功删除' },
   confirmDeleteRepayment: { en: 'Are you sure you want to delete this repayment?', zh: '您確定要刪除此還款記錄嗎？', 'zh-CN': '您确定要删除此还款记录吗？' },
+  confirmDeleteSelected: { en: 'Are you sure you want to delete the selected items?', zh: '您確定要刪除選取的項目嗎？', 'zh-CN': '您确定要删除选中的项目吗？' },
   excessConvertedToIncome: { en: 'Excess amount converted to income', zh: '多還金額已轉為收入', 'zh-CN': '多还金额已转为收入' },
   viewRepayments: { en: 'View Repayments', zh: '查看還款', 'zh-CN': '查看还款' },
   hideRepayments: { en: 'Hide Repayments', zh: '隱藏還款', 'zh-CN': '隐藏还款' },

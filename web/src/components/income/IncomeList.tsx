@@ -3,6 +3,8 @@ import { Income, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { EditIcon, DeleteIcon } from '../icons';
 import IncomeForm from './IncomeForm';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -137,6 +139,16 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
 
   const groupedIncomes = groupIncomesByDate();
 
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelectionMode,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<Income>();
+
   if (incomes.length === 0) {
     return (
       <div style={styles.emptyState}>
@@ -152,6 +164,23 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={toggleSelectionMode}
+        onSelectAll={() => selectAll(incomes)}
+        onDeleteSelected={() => {
+          const ids = Array.from(selectedIds);
+          if (ids.length === 0) return;
+          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
+          
+          // Loop delete since no bulk API
+          ids.forEach(id => onDelete(id));
+          clearSelection();
+          setIsSelectionMode(false);
+        }}
+        style={{ marginBottom: '8px' }}
+      />
       {groupedIncomes.map(({ date, incomes: dayIncomes, dailyTotal }) => {
         const isCollapsed = collapsedGroups.has(date);
         return (
@@ -168,7 +197,23 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             
             {/* Incomes for this date - hidden when collapsed */}
             {!isCollapsed && dayIncomes.map((income) => (
-        <div key={income.id} className="income-card" style={openMenuId === income.id ? { zIndex: 9999 } : undefined}>
+        <div key={income.id} className="income-card" style={{
+          ...(openMenuId === income.id ? { zIndex: 9999 } : {}),
+          display: 'flex',
+          gap: '10px',
+          ...(isSelectionMode && selectedIds.has(income.id!) ? { border: '1px solid var(--accent-primary)' } : {})
+        }}>
+          {isSelectionMode && !editingId && (
+            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.has(income.id!)}
+                onChange={() => toggleSelection(income.id!)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+            </div>
+          )}
+          <div style={{ flex: 1, position: 'relative' }}>
           {editingId === income.id ? (
             // Inline Edit Mode
             <IncomeForm
@@ -298,6 +343,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
               </div>
             </>
           )}
+          </div>
         </div>
       ))}
           </div>
@@ -311,7 +357,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '16px',
+    gap: '8px',
   },
   amountBadge: {
     position: 'absolute' as const,
@@ -511,8 +557,8 @@ const styles = {
   dateGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
-    marginBottom: '12px',
+    gap: '8px',
+    marginBottom: '8px',
   },
   dateGroupHeader: {
     display: 'flex',

@@ -202,21 +202,23 @@ const Dashboard: React.FC = () => {
         const ewalletsData = await dataService.getEWallets(currentUser.uid);
         setEWallets(ewalletsData);
       } catch (ewalletError) {
-              try {
-                const banksData = await dataService.getBanks(currentUser.uid);
-                setBanks(banksData);
-                // Save bank names for quick suggestions
-                const bankNames = (banksData || []).map(b => b.name).filter(Boolean);
-                const bankNamesSave = [...new Set(bankNames)];
-                if (bankNamesSave.length > 0) {
-                  localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
-                }
-              } catch (bankError) {
-                console.warn('Could not load banks:', bankError);
-                setBanks([]);
-              }
         console.warn('Could not load e-wallets:', ewalletError);
         setEWallets([]);
+      }
+      
+      // Load banks with error handling
+      try {
+        const banksData = await dataService.getBanks(currentUser.uid);
+        setBanks(banksData);
+        // Save bank names for quick suggestions
+        const bankNames = (banksData || []).map(b => b.name).filter(Boolean);
+        const bankNamesSave = [...new Set(bankNames)];
+        if (bankNamesSave.length > 0) {
+          localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
+        }
+      } catch (bankError) {
+        console.warn('Could not load banks:', bankError);
+        setBanks([]);
       }
       
       // Load feature settings with error handling
@@ -2226,27 +2228,6 @@ const Dashboard: React.FC = () => {
                 maxHeight: '85vh',
                 overflowY: 'auto'
               }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addExpense')}</h3>
-                  <button
-                    aria-label="Close"
-                    onClick={() => setShowAddSheet(false)}
-                    style={{
-                      padding: '8px',
-                      borderRadius: '6px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18.3 5.71L12 12.01 5.7 5.71 4.29 7.12l6.3 6.3-6.3 6.3 1.41 1.41 6.3-6.3 6.29 6.3 1.42-1.41-6.3-6.3 6.3-6.3-1.41-1.41z" fill="var(--text-secondary)"/>
-                    </svg>
-                  </button>
-                </div>
                 <ExpenseForm
                   onSubmit={(data) => { handleAddExpense(data); setShowAddSheet(false); }}
                   onCancel={() => setShowAddSheet(false)}

@@ -32,7 +32,7 @@ const styles = {
   section: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '15px',
+    gap: '10px',
   },
 };
 

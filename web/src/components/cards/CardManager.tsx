@@ -3,7 +3,10 @@ import { Card, Bank, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardForm from './CardForm';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { SearchBar } from '../common/SearchBar';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../icons';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 interface CardManagerProps {
   cards: Card[];
@@ -25,6 +28,7 @@ const CardManager: React.FC<CardManagerProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -69,6 +73,20 @@ const CardManager: React.FC<CardManagerProps> = ({
   const toggleExpand = (cardId: string) => {
     setExpandedCardId(expandedCardId === cardId ? null : cardId);
   };
+
+  const filteredCards = cards.filter(card => 
+    card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (card.last4Digits && card.last4Digits.includes(searchTerm))
+  );
+
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<Card>();
 
   const styles = {
     menuContainer: {
@@ -148,6 +166,37 @@ const CardManager: React.FC<CardManagerProps> = ({
         </button>
       </div>
 
+      <SearchBar
+        placeholder={t('searchByName')}
+        value={searchTerm}
+        onChange={setSearchTerm}
+        style={{ marginBottom: 20 }}
+      />
+
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={() => {
+            if (isSelectionMode) {
+                clearSelection();
+                setIsSelectionMode(false);
+            } else {
+                setIsSelectionMode(true);
+            }
+        }}
+        onSelectAll={() => selectAll(filteredCards)}
+        onDeleteSelected={() => {
+          if (selectedIds.size > 0) {
+             if (confirm(t('confirmDeleteSelected'))) {
+                 selectedIds.forEach(id => onDelete(id));
+                 clearSelection();
+                 setIsSelectionMode(false);
+             }
+          }
+        }}
+        style={{ marginBottom: 20 }}
+      />
+
       {isAdding && (
         <div className="form-card">
           <CardForm
@@ -160,13 +209,13 @@ const CardManager: React.FC<CardManagerProps> = ({
         </div>
       )}
 
-      {cards.length === 0 && !isAdding ? (
+      {filteredCards.length === 0 && !isAdding ? (
         <div className="empty-state">
           <p className="empty-text">{t('noCardsYet')}</p>
         </div>
       ) : (
         <div className="card-list">
-          {cards.map((card) => {
+          {filteredCards.map((card) => {
             const isEditing = editingId === card.id;
             const isExpanded = expandedCardId === card.id;
             const stats: CardStats = calculateCardStats(card, expenses, categories);
@@ -186,7 +235,18 @@ const CardManager: React.FC<CardManagerProps> = ({
             }
 
             return (
-              <div key={card.id} className="credit-card" style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
+              <div key={card.id} className={`credit-card ${isSelectionMode && selectedIds.has(card.id!) ? 'selected' : ''}`} style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
+                {isSelectionMode && (
+                    <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.has(card.id!)}
+                            onChange={() => toggleSelection(card.id!)}
+                            className="multi-select-checkbox"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                )}
                 <div className="card-header">
                   <div className="card-info">
                     <h3 className="card-name">{card.name}</h3>

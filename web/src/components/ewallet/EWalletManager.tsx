@@ -4,8 +4,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon, CloseIcon } from '../icons';
 import EWalletForm from './EWalletForm';
 import ConfirmModal from '../ConfirmModal';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import { SearchBar } from '../common/SearchBar';
 
-// (Inline icon/color pickers moved into EWalletForm for consistency)
+// (Inline icon/color picker moved into EWalletForm for consistency)
 
 interface EWalletManagerProps {
   ewallets: EWallet[];
@@ -82,6 +85,15 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     wallet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     wallet.provider?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<EWallet>();
 
 
 
@@ -184,14 +196,32 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
       </div>
 
       <div className="search-container">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+        <SearchBar
           placeholder={t('searchEWallets')}
-          className="form-input"
+          value={searchTerm}
+          onChange={setSearchTerm}
         />
       </div>
+
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={() => {
+            if (isSelectionMode) {
+                clearSelection();
+                setIsSelectionMode(false);
+            } else {
+                setIsSelectionMode(true);
+            }
+        }}
+        onSelectAll={() => selectAll(filteredWallets)}
+        onDeleteSelected={() => {
+          if (selectedIds.size > 0) {
+             setDeleteConfirm({ isOpen: true, walletId: null });
+          }
+        }}
+        style={{ marginBottom: 20 }}
+      />
 
       {isAdding && (
         <div className="form-card">
@@ -204,7 +234,18 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           <div className="no-data">{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => (
-            <div key={wallet.id} className="ewallet-card" style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
+            <div key={wallet.id} className={`ewallet-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
+              {isSelectionMode && (
+                  <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                      <input
+                          type="checkbox"
+                          checked={selectedIds.has(wallet.id!)}
+                          onChange={() => toggleSelection(wallet.id!)}
+                          className="multi-select-checkbox"
+                          onClick={(e) => e.stopPropagation()}
+                      />
+                  </div>
+              )}
               {editingId === wallet.id ? (
                 <div className="form-card" style={{ width: '100%' }}>
                   <EWalletForm
@@ -390,14 +431,21 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('confirmDelete')}
-        message={t('confirmDeleteEWallet')}
+        message={deleteConfirm.walletId ? t('confirmDeleteEWallet') : t('confirmDeleteSelected')}
         confirmText={t('delete')}
         cancelText={t('cancel')}
         danger={true}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (deleteConfirm.walletId) {
-            onDelete(deleteConfirm.walletId);
+            await onDelete(deleteConfirm.walletId);
+          } else if (isSelectionMode) {
+             for (const id of selectedIds) {
+                 await onDelete(id);
+             }
+             clearSelection();
+             setIsSelectionMode(false);
           }
+          setDeleteConfirm({ isOpen: false, walletId: null });
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, walletId: null })}
       />

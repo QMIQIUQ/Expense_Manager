@@ -4,6 +4,9 @@ import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import BudgetForm from './BudgetForm';
+import { SearchBar } from '../common/SearchBar';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -76,6 +79,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     budget.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<Budget>();
+
 
 
 
@@ -133,15 +145,31 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
       {/* Search Bar */}
       <div style={styles.searchContainer}>
-        <input
-          type="text"
+        <SearchBar
           placeholder={t('searchByName') || 'Search by category name...'}
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          style={styles.searchInput}
+          onChange={setSearchTerm}
         />
       </div>
+
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={() => {
+            if (isSelectionMode) {
+                clearSelection();
+                setIsSelectionMode(false);
+            } else {
+                setIsSelectionMode(true);
+            }
+        }}
+        onSelectAll={() => selectAll(filteredBudgets)}
+        onDeleteSelected={() => {
+          if (selectedIds.size > 0) {
+             setDeleteConfirm({ isOpen: true, budgetId: null });
+          }
+        }}
+      />
 
       <div style={styles.budgetList}>
         {filteredBudgets.length === 0 ? (
@@ -155,7 +183,18 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
             return (
-              <div key={budget.id} className="budget-card" style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
+              <div key={budget.id} className={`budget-card ${isSelectionMode && selectedIds.has(budget.id!) ? 'selected' : ''}`} style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
+                {isSelectionMode && (
+                    <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.has(budget.id!)}
+                            onChange={() => toggleSelection(budget.id!)}
+                            className="multi-select-checkbox"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                )}
                 {editingId === budget.id ? (
                   <BudgetForm
                     initialData={{
@@ -194,7 +233,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     <div style={styles.budgetRow1}>
                       <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
                       <div style={styles.budgetAmount}>
-                        <span style={styles.spent}>${spent.toFixed(2)}</span>
+                        <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>
                         <span style={styles.total}>${budget.amount.toFixed(2)}</span>
                       </div>
@@ -281,14 +320,19 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('deleteBudget')}
-        message={t('confirmDeleteBudget')}
+        message={deleteConfirm.budgetId ? t('confirmDeleteBudget') : t('confirmDeleteSelected')}
         confirmText={t('delete')}
         cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.budgetId) {
             onDelete(deleteConfirm.budgetId);
+          } else if (isSelectionMode) {
+             selectedIds.forEach(id => onDelete(id));
+             clearSelection();
+             setIsSelectionMode(false);
           }
+          setDeleteConfirm({ isOpen: false, budgetId: null });
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, budgetId: null })}
       />
@@ -300,7 +344,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: '12px',
   },
   header: {
     display: 'flex',
@@ -345,7 +389,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '15px',
-    marginBottom: '20px',
+    marginBottom: '12px',
     border: '1px solid var(--border-color)',
   },
   formGroup: {
@@ -369,8 +413,8 @@ const styles = {
   budgetList: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '15px',
-    marginTop: '20px',
+    gap: '12px',
+    marginTop: '12px',
   },
   budgetRow1: {
     display: 'flex',

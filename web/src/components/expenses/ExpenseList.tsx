@@ -5,6 +5,9 @@ import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
 import ExpenseForm from './ExpenseForm';
 import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../icons';
+import { SearchBar } from '../common/SearchBar';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -71,8 +74,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const {
+    isSelectionMode: multiSelectEnabled,
+    selectedIds,
+    toggleSelectionMode,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setSelectedIds,
+    setIsSelectionMode: setMultiSelectEnabled
+  } = useMultiSelect<Expense>();
+
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -313,13 +325,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       <div style={styles.filterSection}>
         {/* Simplified filter - always visible */}
         <div style={styles.filterRow}>
-          <input
-            type="text"
+          <SearchBar
             placeholder={t('searchExpenses')}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            style={{ ...styles.filterInput, flex: 1 }}
+            onChange={setSearchTerm}
+            style={{ flex: 1 }}
           />
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -413,45 +423,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       </div>
 
       {/* Action buttons row - positioned at top-right of list */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => { setMultiSelectEnabled((s) => { if (s) setSelectedIds(new Set()); return !s; }); }}
-          className="btn btn-secondary"
-          aria-pressed={multiSelectEnabled}
-          aria-label="Toggle multi-select"
-        >
-          {multiSelectEnabled ? t('cancel') : t('multiSelect')}
-        </button>
-        {multiSelectEnabled && (
-          <>
-            <button
-              onClick={() => {
-                const filtered = filteredAndSortedExpenses();
-                const allIds = new Set(filtered.map(exp => exp.id!));
-                setSelectedIds(allIds);
-              }}
-              className="btn btn-success"
-              aria-label="Select all"
-            >
-              ✓ {t('selectAll') || 'Select All'}
-            </button>
-            <button
-              onClick={() => {
-                const ids = Array.from(selectedIds);
-                if (ids.length === 0) return;
-                if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
-                onBulkDelete && onBulkDelete(ids);
-                setSelectedIds(new Set());
-                setMultiSelectEnabled(false);
-              }}
-              className="btn btn-danger"
-              aria-label="Delete selected"
-            >
-              🗑 {t('deleteSelected')} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
-            </button>
-          </>
-        )}
-      </div>
+      <MultiSelectToolbar
+        isSelectionMode={multiSelectEnabled}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={toggleSelectionMode}
+        onSelectAll={() => selectAll(filteredAndSortedExpenses())}
+        onDeleteSelected={() => {
+          const ids = Array.from(selectedIds);
+          if (ids.length === 0) return;
+          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
+          onBulkDelete && onBulkDelete(ids);
+          clearSelection();
+          setMultiSelectEnabled(false);
+        }}
+      />
 
       {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
@@ -535,13 +520,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <input
                           type="checkbox"
                           checked={selectedIds.has(expense.id!)}
-                          onChange={() => {
-                            setSelectedIds(prev => {
-                              const ns = new Set(prev);
-                              if (ns.has(expense.id!)) ns.delete(expense.id!); else ns.add(expense.id!);
-                              return ns;
-                            });
-                          }}
+                          onChange={() => toggleSelection(expense.id!)}
                           aria-label={`Select expense ${expense.description}`}
                         />
                       )}
@@ -825,17 +804,20 @@ const styles = {
     flex: 1,
     minWidth: '120px',
     padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    outline: 'none',
   },
   toggleFiltersButton: {
     padding: '10px 16px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: 'var(--card-bg)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
     cursor: 'pointer',
     minWidth: '120px',
     display: 'flex',
@@ -843,9 +825,6 @@ const styles = {
     justifyContent: 'center',
     gap: '4px',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      backgroundColor: '#f5f5f5',
-    }
   } as React.CSSProperties,
   dateFilterGroup: {
     display: 'flex',
@@ -863,10 +842,13 @@ const styles = {
   dateInput: {
     flex: 1,
     padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     fontSize: '14px',
     minWidth: '120px',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    outline: 'none',
   },
   filters: {
     display: 'flex',

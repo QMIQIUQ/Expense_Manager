@@ -4,6 +4,9 @@ import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import RecurringForm from './RecurringForm';
+import { SearchBar } from '../common/SearchBar';
+import { useMultiSelect } from '../../hooks/useMultiSelect';
+import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -111,6 +114,15 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     expense.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const {
+    isSelectionMode,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    clearSelection,
+    setIsSelectionMode
+  } = useMultiSelect<RecurringExpense>();
+
 
 
 
@@ -193,15 +205,31 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
       {/* Search Bar */}
       <div style={styles.searchContainer}>
-        <input
-          type="text"
+        <SearchBar
           placeholder={t('searchByName') || 'Search by name...'}
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          style={styles.searchInput}
+          onChange={setSearchTerm}
         />
       </div>
+
+      <MultiSelectToolbar
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedIds.size}
+        onToggleSelectionMode={() => {
+            if (isSelectionMode) {
+                clearSelection();
+                setIsSelectionMode(false);
+            } else {
+                setIsSelectionMode(true);
+            }
+        }}
+        onSelectAll={() => selectAll(filteredRecurringExpenses)}
+        onDeleteSelected={() => {
+          if (selectedIds.size > 0) {
+             setDeleteConfirm({ isOpen: true, recurringId: null });
+          }
+        }}
+      />
 
       <div style={styles.expenseList}>
         {filteredRecurringExpenses.length === 0 ? (
@@ -210,7 +238,18 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           </div>
         ) : (
           filteredRecurringExpenses.map((expense) => (
-            <div key={expense.id} className="recurring-card" style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
+            <div key={expense.id} className={`recurring-card ${isSelectionMode && selectedIds.has(expense.id!) ? 'selected' : ''}`} style={openMenuId === expense.id ? { zIndex: 9999 } : undefined}>
+              {isSelectionMode && (
+                  <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                      <input
+                          type="checkbox"
+                          checked={selectedIds.has(expense.id!)}
+                          onChange={() => toggleSelection(expense.id!)}
+                          className="multi-select-checkbox"
+                          onClick={(e) => e.stopPropagation()}
+                      />
+                  </div>
+              )}
               {editingId === expense.id ? (
                 <RecurringForm
                   initialData={{
@@ -391,14 +430,19 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('deleteRecurringExpense')}
-        message={t('confirmDeleteRecurring')}
+        message={deleteConfirm.recurringId ? t('confirmDeleteRecurring') : t('confirmDeleteSelected')}
         confirmText={t('delete')}
         cancelText={t('cancel')}
         danger={true}
         onConfirm={() => {
           if (deleteConfirm.recurringId) {
             onDelete(deleteConfirm.recurringId);
+          } else if (isSelectionMode) {
+             selectedIds.forEach(id => onDelete(id));
+             clearSelection();
+             setIsSelectionMode(false);
           }
+          setDeleteConfirm({ isOpen: false, recurringId: null });
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, recurringId: null })}
       />
