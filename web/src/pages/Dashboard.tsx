@@ -35,7 +35,11 @@ import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
+import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { offlineQueue } from '../utils/offlineQueue';
+import { networkStatusService } from '../services/networkStatusService';
+import { syncService } from '../services/syncService';
+import { dataCacheService } from '../services/dataCacheService';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -111,6 +115,16 @@ const Dashboard: React.FC = () => {
   //#endregion
   
   //#region Effects
+  // Initialize network and sync services
+  useEffect(() => {
+    networkStatusService.initialize();
+    syncService.initialize();
+    
+    return () => {
+      networkStatusService.cleanup();
+    };
+  }, []);
+  
   // Track offline queue count
   useEffect(() => {
     const updateQueueCount = () => {
@@ -141,6 +155,32 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      // Check if we have cached data and are offline
+      const cachedData = dataCacheService.getCache(currentUser.uid);
+      const isOffline = !networkStatusService.isOnline;
+      
+      if (isOffline && cachedData) {
+        // Load from cache when offline
+        console.log('📦 Loading data from cache (offline mode)');
+        setExpenses(cachedData.expenses);
+        setIncomes(cachedData.incomes);
+        setCategories(cachedData.categories);
+        setBudgets(cachedData.budgets);
+        setRecurringExpenses(cachedData.recurringExpenses);
+        setRepayments(cachedData.repayments);
+        setCards(cachedData.cards);
+        setEWallets(cachedData.ewallets);
+        setBanks(cachedData.banks);
+        
+        showNotification('info', t('usingCachedData') || 'Using cached data (offline mode)', {
+          duration: 5000,
+        });
+        
+        setInitialLoading(false);
+        return;
+      }
+      
+      // Load from Firebase when online
       await categoryService.initializeDefaults(currentUser.uid);
       
       // Check if user is admin
@@ -212,9 +252,43 @@ const Dashboard: React.FC = () => {
         console.warn('Could not load feature settings:', settingsError);
         setFeatureSettings(null);
       }
+      
+      // Cache all data for offline use (only when online)
+      if (networkStatusService.isOnline) {
+        dataCacheService.initCache(currentUser.uid, {
+          expenses: expensesData,
+          incomes: incomesData,
+          categories: categoriesData,
+          budgets: budgetsData,
+          recurringExpenses: recurringData,
+          repayments: repaymentsData,
+          cards: cards,
+          ewallets: ewallets,
+          banks: banks,
+        });
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
+      
+      // Try to load from cache if online load fails
+      const cachedData = dataCacheService.getCache(currentUser.uid);
+      if (cachedData) {
+        console.log('📦 Falling back to cached data after error');
+        setExpenses(cachedData.expenses);
+        setIncomes(cachedData.incomes);
+        setCategories(cachedData.categories);
+        setBudgets(cachedData.budgets);
+        setRecurringExpenses(cachedData.recurringExpenses);
+        setRepayments(cachedData.repayments);
+        setCards(cachedData.cards);
+        setEWallets(cachedData.ewallets);
+        setBanks(cachedData.banks);
+        
+        showNotification('info', t('usingCachedData') || 'Using cached data', {
+          duration: 5000,
+        });
+      }
     } finally {
       setInitialLoading(false);
     }
@@ -435,6 +509,25 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
+  //#region Cache Update Helpers
+  // Update cache after successful operations for better offline support
+  const updateCacheAfterChange = React.useCallback(() => {
+    if (!currentUser) return;
+    
+    dataCacheService.initCache(currentUser.uid, {
+      expenses,
+      incomes,
+      categories,
+      budgets,
+      recurringExpenses,
+      repayments,
+      cards,
+      ewallets,
+      banks,
+    });
+  }, [currentUser, expenses, incomes, categories, budgets, recurringExpenses, repayments, cards, ewallets, banks]);
+  //#endregion
+
   //#region Event Handlers - Expenses
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
@@ -457,8 +550,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          // Replace temp expense with real data
-          loadData();
+          // Replace temp expense with real data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           // Rollback optimistic update
@@ -483,7 +578,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Reload data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           // Rollback optimistic update
@@ -509,7 +607,10 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Reload data and update cache
+          loadData().then(() => {
+            updateCacheAfterChange();
+          });
         },
         onError: () => {
           if (originalExpense) {
@@ -1386,6 +1487,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-actions">
+          {/* Network Status Indicator */}
+          <NetworkStatusIndicator />
+          
           {/* Hamburger Menu */}
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button

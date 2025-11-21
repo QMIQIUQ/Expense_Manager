@@ -1,7 +1,7 @@
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card';
+  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'ewallet' | 'bank' | 'repayment';
   payload: unknown;
   timestamp: number;
   retryCount: number;
@@ -110,5 +110,15 @@ export const offlineQueue = {
     }
 
     return { success, failed };
+  },
+
+  // Get operations by entity type
+  getByEntity(entity: QueuedOperation['entity']): QueuedOperation[] {
+    return this.getAll().filter(op => op.entity === entity);
+  },
+
+  // Check if there are pending operations
+  hasPendingOperations(): boolean {
+    return this.count() > 0;
   },
 };
