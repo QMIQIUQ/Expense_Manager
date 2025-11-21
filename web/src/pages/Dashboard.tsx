@@ -36,6 +36,10 @@ import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
+import { dataService } from '../services/dataService';
+import { syncService } from '../services/syncService';
+import { networkStatus } from '../utils/networkStatus';
+import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -141,23 +145,31 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
-      await categoryService.initializeDefaults(currentUser.uid);
+      // Initialize defaults only if online
+      if (networkStatus.isOnline) {
+        await categoryService.initializeDefaults(currentUser.uid);
+      }
       
-      // Check if user is admin
-      const adminStatus = await adminService.isAdmin(currentUser.uid);
-      setIsAdmin(adminStatus);
+      // Check if user is admin (skip if offline)
+      if (networkStatus.isOnline) {
+        const adminStatus = await adminService.isAdmin(currentUser.uid);
+        setIsAdmin(adminStatus);
+      }
       
-      // Load user settings
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
-      setBillingCycleDay(userSettings.billingCycleDay);
+      // Load user settings (skip if offline)
+      if (networkStatus.isOnline) {
+        const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
+        setBillingCycleDay(userSettings.billingCycleDay);
+      }
       
+      // Use dataService to load with caching
       const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
-        expenseService.getAll(currentUser.uid),
-        incomeService.getAll(currentUser.uid),
-        categoryService.getAll(currentUser.uid),
-        budgetService.getAll(currentUser.uid),
-        recurringExpenseService.getAll(currentUser.uid),
-        repaymentService.getAll(currentUser.uid),
+        dataService.getExpenses(currentUser.uid),
+        dataService.getIncomes(currentUser.uid),
+        dataService.getCategories(currentUser.uid),
+        dataService.getBudgets(currentUser.uid),
+        dataService.getRecurringExpenses(currentUser.uid),
+        dataService.getRepayments(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
@@ -169,7 +181,7 @@ const Dashboard: React.FC = () => {
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
-        const cardsData = await cardService.getAll(currentUser.uid);
+        const cardsData = await dataService.getCards(currentUser.uid);
         setCards(cardsData);
         
         // Save unique bank names to localStorage for autocomplete
@@ -184,15 +196,17 @@ const Dashboard: React.FC = () => {
       
       // Load e-wallets with error handling
       try {
-        await ewalletService.initializeDefaults(currentUser.uid);
-        const ewalletsData = await ewalletService.getAll(currentUser.uid);
+        if (networkStatus.isOnline) {
+          await ewalletService.initializeDefaults(currentUser.uid);
+        }
+        const ewalletsData = await dataService.getEWallets(currentUser.uid);
         setEWallets(ewalletsData);
       } catch (ewalletError) {
               try {
-                const banksData = await bankService.getAll(currentUser.uid);
+                const banksData = await dataService.getBanks(currentUser.uid);
                 setBanks(banksData);
                 // Save bank names for quick suggestions
-                const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[]])];
+                const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[])];
                 if (bankNamesSave.length > 0) {
                   localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
                 }
@@ -206,11 +220,20 @@ const Dashboard: React.FC = () => {
       
       // Load feature settings with error handling
       try {
-        const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
-        setFeatureSettings(settingsData);
+        if (networkStatus.isOnline) {
+          const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
+          setFeatureSettings(settingsData);
+        }
       } catch (settingsError) {
         console.warn('Could not load feature settings:', settingsError);
         setFeatureSettings(null);
+      }
+      
+      // If online, refresh all caches in the background for future use
+      if (networkStatus.isOnline) {
+        syncService.refreshAllCaches(currentUser.uid).catch((error) => {
+          console.warn('Background cache refresh failed:', error);
+        });
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -449,6 +472,9 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setExpenses((prev) => [optimisticExpense, ...prev]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [optimisticExpense, ...data]);
 
     await optimisticCRUD.run(
       { type: 'create', data: expenseData },
@@ -463,6 +489,8 @@ const Dashboard: React.FC = () => {
         onError: () => {
           // Rollback optimistic update
           setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== tempId));
         },
       }
     );
@@ -471,10 +499,14 @@ const Dashboard: React.FC = () => {
 
 
   const handleDeleteExpense = async (id: string) => {
+    if (!currentUser) return;
     const expenseToDelete = expenses.find((e) => e.id === id);
     
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    
+    // Update cache optimistically
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: expenseToDelete },
@@ -489,6 +521,8 @@ const Dashboard: React.FC = () => {
           // Rollback optimistic update
           if (expenseToDelete) {
             setExpenses((prev) => [expenseToDelete, ...prev]);
+            // Rollback cache
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
           }
         },
       }
@@ -2249,6 +2283,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Network Status Indicator */}
+      <NetworkStatusIndicator />
     </>
   );
 };
