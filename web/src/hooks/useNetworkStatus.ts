@@ -1,20 +1,21 @@
-import { useState, useEffect } from 'react';
-import { networkStatusService } from '../services/networkStatusService';
-
 /**
- * Hook to track network online/offline status
- * @returns boolean indicating if the device is online
+ * useNetworkStatus Hook
+ * React hook for monitoring network connectivity status
  */
-export const useNetworkStatus = (): boolean => {
-  const [isOnline, setIsOnline] = useState<boolean>(() => networkStatusService.isOnline);
+
+import { useState, useEffect } from 'react';
+import { networkStatus } from '../utils/networkStatus';
+
+export const useNetworkStatus = () => {
+  const [isOnline, setIsOnline] = useState(networkStatus.isOnline);
 
   useEffect(() => {
     // Subscribe to network status changes
-    const unsubscribe = networkStatusService.subscribe((online) => {
+    const unsubscribe = networkStatus.subscribe((online) => {
       setIsOnline(online);
     });
 
-    // Cleanup subscription on unmount
+    // Cleanup on unmount
     return unsubscribe;
   }, []);
 

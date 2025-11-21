@@ -35,11 +35,11 @@ import ImportExportModal from '../components/importexport/ImportExportModal';
 import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
-import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { offlineQueue } from '../utils/offlineQueue';
-import { networkStatusService } from '../services/networkStatusService';
+import { dataService } from '../services/dataService';
 import { syncService } from '../services/syncService';
-import { dataCacheService } from '../services/dataCacheService';
+import { networkStatus } from '../utils/networkStatus';
+import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -115,16 +115,6 @@ const Dashboard: React.FC = () => {
   //#endregion
   
   //#region Effects
-  // Initialize network and sync services
-  useEffect(() => {
-    networkStatusService.initialize();
-    syncService.initialize();
-    
-    return () => {
-      networkStatusService.cleanup();
-    };
-  }, []);
-  
   // Track offline queue count
   useEffect(() => {
     const updateQueueCount = () => {
@@ -155,49 +145,31 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
-      // Check if we have cached data and are offline
-      const cachedData = dataCacheService.getCache(currentUser.uid);
-      const isOffline = !networkStatusService.isOnline;
-      
-      if (isOffline && cachedData) {
-        // Load from cache when offline
-        console.log('📦 Loading data from cache (offline mode)');
-        setExpenses(cachedData.expenses);
-        setIncomes(cachedData.incomes);
-        setCategories(cachedData.categories);
-        setBudgets(cachedData.budgets);
-        setRecurringExpenses(cachedData.recurringExpenses);
-        setRepayments(cachedData.repayments);
-        setCards(cachedData.cards);
-        setEWallets(cachedData.ewallets);
-        setBanks(cachedData.banks);
-        
-        showNotification('info', t('usingCachedData') || 'Using cached data (offline mode)', {
-          duration: 5000,
-        });
-        
-        setInitialLoading(false);
-        return;
+      // Initialize defaults only if online
+      if (networkStatus.isOnline) {
+        await categoryService.initializeDefaults(currentUser.uid);
       }
       
-      // Load from Firebase when online
-      await categoryService.initializeDefaults(currentUser.uid);
+      // Check if user is admin (skip if offline)
+      if (networkStatus.isOnline) {
+        const adminStatus = await adminService.isAdmin(currentUser.uid);
+        setIsAdmin(adminStatus);
+      }
       
-      // Check if user is admin
-      const adminStatus = await adminService.isAdmin(currentUser.uid);
-      setIsAdmin(adminStatus);
+      // Load user settings (skip if offline)
+      if (networkStatus.isOnline) {
+        const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
+        setBillingCycleDay(userSettings.billingCycleDay);
+      }
       
-      // Load user settings
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
-      setBillingCycleDay(userSettings.billingCycleDay);
-      
+      // Use dataService to load with caching
       const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
-        expenseService.getAll(currentUser.uid),
-        incomeService.getAll(currentUser.uid),
-        categoryService.getAll(currentUser.uid),
-        budgetService.getAll(currentUser.uid),
-        recurringExpenseService.getAll(currentUser.uid),
-        repaymentService.getAll(currentUser.uid),
+        dataService.getExpenses(currentUser.uid),
+        dataService.getIncomes(currentUser.uid),
+        dataService.getCategories(currentUser.uid),
+        dataService.getBudgets(currentUser.uid),
+        dataService.getRecurringExpenses(currentUser.uid),
+        dataService.getRepayments(currentUser.uid),
       ]);
 
       setExpenses(expensesData);
@@ -209,7 +181,7 @@ const Dashboard: React.FC = () => {
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
-        const cardsData = await cardService.getAll(currentUser.uid);
+        const cardsData = await dataService.getCards(currentUser.uid);
         setCards(cardsData);
         
         // Save unique bank names to localStorage for autocomplete
@@ -224,15 +196,18 @@ const Dashboard: React.FC = () => {
       
       // Load e-wallets with error handling
       try {
-        await ewalletService.initializeDefaults(currentUser.uid);
-        const ewalletsData = await ewalletService.getAll(currentUser.uid);
+        if (networkStatus.isOnline) {
+          await ewalletService.initializeDefaults(currentUser.uid);
+        }
+        const ewalletsData = await dataService.getEWallets(currentUser.uid);
         setEWallets(ewalletsData);
       } catch (ewalletError) {
               try {
-                const banksData = await bankService.getAll(currentUser.uid);
+                const banksData = await dataService.getBanks(currentUser.uid);
                 setBanks(banksData);
                 // Save bank names for quick suggestions
-                const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[]])];
+                const bankNames = (banksData || []).map(b => b.name).filter(Boolean);
+                const bankNamesSave = [...new Set(bankNames)];
                 if (bankNamesSave.length > 0) {
                   localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
                 }
@@ -246,49 +221,24 @@ const Dashboard: React.FC = () => {
       
       // Load feature settings with error handling
       try {
-        const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
-        setFeatureSettings(settingsData);
+        if (networkStatus.isOnline) {
+          const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
+          setFeatureSettings(settingsData);
+        }
       } catch (settingsError) {
         console.warn('Could not load feature settings:', settingsError);
         setFeatureSettings(null);
       }
       
-      // Cache all data for offline use (only when online)
-      if (networkStatusService.isOnline) {
-        dataCacheService.initCache(currentUser.uid, {
-          expenses: expensesData,
-          incomes: incomesData,
-          categories: categoriesData,
-          budgets: budgetsData,
-          recurringExpenses: recurringData,
-          repayments: repaymentsData,
-          cards: cards,
-          ewallets: ewallets,
-          banks: banks,
+      // If online, refresh all caches in the background for future use
+      if (networkStatus.isOnline) {
+        syncService.refreshAllCaches(currentUser.uid).catch((error) => {
+          console.warn('Background cache refresh failed:', error);
         });
       }
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
-      
-      // Try to load from cache if online load fails
-      const cachedData = dataCacheService.getCache(currentUser.uid);
-      if (cachedData) {
-        console.log('📦 Falling back to cached data after error');
-        setExpenses(cachedData.expenses);
-        setIncomes(cachedData.incomes);
-        setCategories(cachedData.categories);
-        setBudgets(cachedData.budgets);
-        setRecurringExpenses(cachedData.recurringExpenses);
-        setRepayments(cachedData.repayments);
-        setCards(cachedData.cards);
-        setEWallets(cachedData.ewallets);
-        setBanks(cachedData.banks);
-        
-        showNotification('info', t('usingCachedData') || 'Using cached data', {
-          duration: 5000,
-        });
-      }
     } finally {
       setInitialLoading(false);
     }
@@ -509,25 +459,6 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
-  //#region Cache Update Helpers
-  // Update cache after successful operations for better offline support
-  const updateCacheAfterChange = React.useCallback(() => {
-    if (!currentUser) return;
-    
-    dataCacheService.initCache(currentUser.uid, {
-      expenses,
-      incomes,
-      categories,
-      budgets,
-      recurringExpenses,
-      repayments,
-      cards,
-      ewallets,
-      banks,
-    });
-  }, [currentUser, expenses, incomes, categories, budgets, recurringExpenses, repayments, cards, ewallets, banks]);
-  //#endregion
-
   //#region Event Handlers - Expenses
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
@@ -542,6 +473,9 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setExpenses((prev) => [optimisticExpense, ...prev]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [optimisticExpense, ...data]);
 
     await optimisticCRUD.run(
       { type: 'create', data: expenseData },
@@ -550,14 +484,14 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          // Replace temp expense with real data and update cache
-          loadData().then(() => {
-            updateCacheAfterChange();
-          });
+          // Replace temp expense with real data
+          loadData();
         },
         onError: () => {
           // Rollback optimistic update
           setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== tempId));
         },
       }
     );
@@ -566,10 +500,14 @@ const Dashboard: React.FC = () => {
 
 
   const handleDeleteExpense = async (id: string) => {
+    if (!currentUser) return;
     const expenseToDelete = expenses.find((e) => e.id === id);
     
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    
+    // Update cache optimistically
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: expenseToDelete },
@@ -578,15 +516,14 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          // Reload data and update cache
-          loadData().then(() => {
-            updateCacheAfterChange();
-          });
+          loadData();
         },
         onError: () => {
           // Rollback optimistic update
           if (expenseToDelete) {
             setExpenses((prev) => [expenseToDelete, ...prev]);
+            // Rollback cache
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
           }
         },
       }
@@ -607,10 +544,7 @@ const Dashboard: React.FC = () => {
         entityType: 'expense',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          // Reload data and update cache
-          loadData().then(() => {
-            updateCacheAfterChange();
-          });
+          loadData();
         },
         onError: () => {
           if (originalExpense) {
@@ -1487,9 +1421,6 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-actions">
-          {/* Network Status Indicator */}
-          <NetworkStatusIndicator />
-          
           {/* Hamburger Menu */}
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
@@ -1841,7 +1772,6 @@ const Dashboard: React.FC = () => {
                               showNotification('info', t('processing') || '处理中...', { duration: 0 });
                               
                               // 模拟清除队列显示（乐观更新）
-                              const previousQueueCount = queueCount;
                               setQueueCount(0);
                               
                               // 实际重新加载数据，触发同步
@@ -2353,6 +2283,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Network Status Indicator */}
+      <NetworkStatusIndicator />
     </>
   );
 };

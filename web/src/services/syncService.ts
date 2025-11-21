@@ -1,9 +1,8 @@
 /**
- * Sync Service - Manages synchronization of offline operations with Firebase
- * Handles automatic sync when connection is restored and manual sync triggers
+ * Sync Service
+ * Handles background synchronization of offline data with Firestore
  */
 
-import { offlineQueue, QueuedOperation } from '../utils/offlineQueue';
 import { expenseService } from './expenseService';
 import { categoryService } from './categoryService';
 import { budgetService } from './budgetService';
@@ -13,168 +12,155 @@ import { cardService } from './cardService';
 import { ewalletService } from './ewalletService';
 import { bankService } from './bankService';
 import { repaymentService } from './repaymentService';
-import { networkStatusService } from './networkStatusService';
+import { offlineQueue, QueuedOperation } from '../utils/offlineQueue';
+import { networkStatus } from '../utils/networkStatus';
+import { sessionCache, CacheableEntity } from '../utils/sessionCache';
 
 export interface SyncProgress {
   total: number;
   completed: number;
   failed: number;
-  inProgress: boolean;
+  currentOperation?: string;
 }
 
-type SyncListener = (progress: SyncProgress) => void;
+type SyncProgressCallback = (progress: SyncProgress) => void;
 
 class SyncService {
-  private listeners: Set<SyncListener> = new Set();
-  private isSyncing: boolean = false;
-  private autoSyncEnabled: boolean;
-  private networkUnsubscribe: (() => void) | null = null;
+  private isSyncing = false;
+  private syncCallbacks: Set<SyncProgressCallback> = new Set();
+  private autoSyncEnabled = true;
 
   constructor() {
-    // Initialize autoSyncEnabled from localStorage
-    this.autoSyncEnabled = this.isAutoSyncEnabled();
-  }
-
-  /**
-   * Initialize the sync service
-   */
-  initialize(): void {
-    // Subscribe to network status changes for auto-sync
-    this.networkUnsubscribe = networkStatusService.subscribe((isOnline) => {
-      if (isOnline && this.autoSyncEnabled && offlineQueue.hasPendingOperations()) {
-        console.log('🔄 Connection restored, starting auto-sync...');
-        this.syncAll();
+    // Subscribe to network status changes
+    networkStatus.subscribe((isOnline) => {
+      if (isOnline && this.autoSyncEnabled) {
+        // Delay sync slightly to ensure connection is stable
+        setTimeout(() => {
+          this.syncOfflineQueue();
+        }, 1000);
       }
     });
-  }
-
-  /**
-   * Cleanup the sync service
-   */
-  cleanup(): void {
-    if (this.networkUnsubscribe) {
-      this.networkUnsubscribe();
-      this.networkUnsubscribe = null;
-    }
   }
 
   /**
    * Subscribe to sync progress updates
    */
-  subscribe(listener: SyncListener): () => void {
-    this.listeners.add(listener);
+  onSyncProgress(callback: SyncProgressCallback): () => void {
+    this.syncCallbacks.add(callback);
     return () => {
-      this.listeners.delete(listener);
+      this.syncCallbacks.delete(callback);
     };
   }
 
   /**
-   * Enable/disable auto-sync
+   * Notify all sync progress listeners
    */
-  setAutoSync(enabled: boolean): void {
-    this.autoSyncEnabled = enabled;
-    localStorage.setItem('autoSyncEnabled', JSON.stringify(enabled));
+  private notifyProgress(progress: SyncProgress) {
+    this.syncCallbacks.forEach((callback) => {
+      try {
+        callback(progress);
+      } catch (error) {
+        console.error('Error in sync progress callback:', error);
+      }
+    });
   }
 
   /**
-   * Get auto-sync status
+   * Enable/disable automatic sync when connection is restored
    */
-  isAutoSyncEnabled(): boolean {
-    try {
-      const saved = localStorage.getItem('autoSyncEnabled');
-      return saved ? JSON.parse(saved) : true;
-    } catch {
-      return true;
-    }
+  setAutoSync(enabled: boolean) {
+    this.autoSyncEnabled = enabled;
   }
 
   /**
    * Check if sync is currently in progress
    */
-  get syncing(): boolean {
+  get isSyncInProgress(): boolean {
     return this.isSyncing;
   }
 
   /**
-   * Sync all pending operations
+   * Get pending operations count
    */
-  async syncAll(): Promise<{ success: number; failed: number }> {
+  get pendingCount(): number {
+    return offlineQueue.count();
+  }
+
+  /**
+   * Sync offline queue with server
+   */
+  async syncOfflineQueue(): Promise<{ success: number; failed: number }> {
     if (this.isSyncing) {
-      console.warn('⚠️ Sync already in progress');
+      console.log('Sync already in progress, skipping...');
       return { success: 0, failed: 0 };
     }
 
-    if (!networkStatusService.isOnline) {
-      console.warn('⚠️ Cannot sync while offline');
+    if (!networkStatus.isOnline) {
+      console.log('Device is offline, cannot sync');
       return { success: 0, failed: 0 };
     }
 
     const queue = offlineQueue.getAll();
     if (queue.length === 0) {
-      console.log('✅ No operations to sync');
+      console.log('No pending operations to sync');
       return { success: 0, failed: 0 };
     }
 
     this.isSyncing = true;
-    this.notifyListeners({
+    let success = 0;
+    let failed = 0;
+
+    this.notifyProgress({
       total: queue.length,
       completed: 0,
       failed: 0,
-      inProgress: true,
+      currentOperation: 'Starting sync...',
     });
-
-    console.log(`🔄 Starting sync of ${queue.length} operations...`);
-
-    let success = 0;
-    let failed = 0;
 
     for (let i = 0; i < queue.length; i++) {
       const operation = queue[i];
       
+      this.notifyProgress({
+        total: queue.length,
+        completed: success,
+        failed,
+        currentOperation: `Syncing ${operation.entity} (${operation.type})...`,
+      });
+
       try {
         const result = await this.executeOperation(operation);
         if (result) {
           offlineQueue.dequeue(operation.id);
           success++;
-          console.log(`✅ Synced operation ${i + 1}/${queue.length}: ${operation.entity} ${operation.type}`);
         } else {
           const canRetry = offlineQueue.incrementRetry(operation.id);
           if (!canRetry) {
             failed++;
-            console.error(`❌ Operation failed after max retries: ${operation.entity} ${operation.type}`);
           }
         }
       } catch (error) {
-        console.error(`❌ Error syncing operation ${i + 1}/${queue.length}:`, error);
+        console.error('Error executing queued operation:', error);
         const canRetry = offlineQueue.incrementRetry(operation.id);
         if (!canRetry) {
           failed++;
         }
       }
-
-      // Notify progress
-      this.notifyListeners({
-        total: queue.length,
-        completed: success,
-        failed,
-        inProgress: true,
-      });
     }
 
     this.isSyncing = false;
-    this.notifyListeners({
+
+    this.notifyProgress({
       total: queue.length,
       completed: success,
       failed,
-      inProgress: false,
+      currentOperation: 'Sync complete',
     });
 
-    console.log(`✅ Sync complete: ${success} succeeded, ${failed} failed`);
     return { success, failed };
   }
 
   /**
-   * Execute a single operation
+   * Execute a queued operation
    */
   private async executeOperation(operation: QueuedOperation): Promise<boolean> {
     try {
@@ -191,14 +177,14 @@ class SyncService {
           return await this.executeIncomeOperation(operation);
         case 'card':
           return await this.executeCardOperation(operation);
-        case 'ewallet':
-          return await this.executeEWalletOperation(operation);
         case 'bank':
           return await this.executeBankOperation(operation);
+        case 'ewallet':
+          return await this.executeEWalletOperation(operation);
         case 'repayment':
           return await this.executeRepaymentOperation(operation);
         default:
-          console.error('Unknown entity type:', operation.entity);
+          console.warn('Unknown entity type:', operation.entity);
           return false;
       }
     } catch (error) {
@@ -207,17 +193,21 @@ class SyncService {
     }
   }
 
-  // Entity-specific operation executors
   private async executeExpenseOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await expenseService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await expenseService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await expenseService.delete(payload.id);
         return true;
       default:
@@ -226,15 +216,20 @@ class SyncService {
   }
 
   private async executeCategoryOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await categoryService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await categoryService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await categoryService.delete(payload.id);
         return true;
       default:
@@ -243,15 +238,20 @@ class SyncService {
   }
 
   private async executeBudgetOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await budgetService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await budgetService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await budgetService.delete(payload.id);
         return true;
       default:
@@ -260,15 +260,20 @@ class SyncService {
   }
 
   private async executeRecurringOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await recurringExpenseService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await recurringExpenseService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await recurringExpenseService.delete(payload.id);
         return true;
       default:
@@ -277,15 +282,20 @@ class SyncService {
   }
 
   private async executeIncomeOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await incomeService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await incomeService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await incomeService.delete(payload.id);
         return true;
       default:
@@ -294,15 +304,20 @@ class SyncService {
   }
 
   private async executeCardOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await cardService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await cardService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await cardService.delete(payload.id);
         return true;
       default:
@@ -310,33 +325,21 @@ class SyncService {
     }
   }
 
-  private async executeEWalletOperation(operation: QueuedOperation): Promise<boolean> {
-    const payload = operation.payload as any;
-    switch (operation.type) {
-      case 'create':
-        await ewalletService.create(payload);
-        return true;
-      case 'update':
-        await ewalletService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        await ewalletService.delete(payload.id);
-        return true;
-      default:
-        return false;
-    }
-  }
-
   private async executeBankOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await bankService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await bankService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await bankService.delete(payload.id);
         return true;
       default:
@@ -344,16 +347,43 @@ class SyncService {
     }
   }
 
-  private async executeRepaymentOperation(operation: QueuedOperation): Promise<boolean> {
+  private async executeEWalletOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    
+    switch (operation.type) {
+      case 'create':
+        await ewalletService.create(payload);
+        return true;
+      case 'update':
+        if (!payload.id) return false;
+        await ewalletService.update(payload.id, payload);
+        return true;
+      case 'delete':
+        if (!payload.id) return false;
+        await ewalletService.delete(payload.id);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private async executeRepaymentOperation(operation: QueuedOperation): Promise<boolean> {
+    // Type assertion needed as payload can be any entity type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = operation.payload as any;
+    
     switch (operation.type) {
       case 'create':
         await repaymentService.create(payload);
         return true;
       case 'update':
+        if (!payload.id) return false;
         await repaymentService.update(payload.id, payload);
         return true;
       case 'delete':
+        if (!payload.id) return false;
         await repaymentService.delete(payload.id);
         return true;
       default:
@@ -362,16 +392,78 @@ class SyncService {
   }
 
   /**
-   * Notify all listeners of sync progress
+   * Refresh cache for a specific entity
    */
-  private notifyListeners(progress: SyncProgress): void {
-    this.listeners.forEach(listener => {
-      try {
-        listener(progress);
-      } catch (error) {
-        console.error('Error in sync listener:', error);
+  async refreshCache(entity: CacheableEntity, userId: string): Promise<void> {
+    if (!networkStatus.isOnline) {
+      console.log('Cannot refresh cache while offline');
+      return;
+    }
+
+    try {
+      let data: any;
+
+      switch (entity) {
+        case 'expenses':
+          data = await expenseService.getAll(userId);
+          break;
+        case 'categories':
+          data = await categoryService.getAll(userId);
+          break;
+        case 'budgets':
+          data = await budgetService.getAll(userId);
+          break;
+        case 'recurring':
+          data = await recurringExpenseService.getAll(userId);
+          break;
+        case 'incomes':
+          data = await incomeService.getAll(userId);
+          break;
+        case 'cards':
+          data = await cardService.getAll(userId);
+          break;
+        case 'banks':
+          data = await bankService.getAll(userId);
+          break;
+        case 'ewallets':
+          data = await ewalletService.getAll(userId);
+          break;
+        case 'repayments':
+          data = await repaymentService.getAll(userId);
+          break;
+        case 'featureSettings':
+          // Feature settings handled separately as they need special initialization
+          console.log('Feature settings not cached via refreshCache');
+          return;
+        case 'userSettings':
+          // User settings handled separately
+          console.log('User settings not cached via refreshCache');
+          return;
+        default:
+          console.warn('Unknown entity type for cache refresh:', entity);
+          return;
       }
-    });
+
+      sessionCache.set(entity, userId, data);
+    } catch (error) {
+      console.error(`Error refreshing cache for ${entity}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh all caches for a user
+   */
+  async refreshAllCaches(userId: string): Promise<void> {
+    const { SYNCABLE_ENTITIES } = await import('../constants/cacheEntities');
+
+    const promises = SYNCABLE_ENTITIES.map((entity) => 
+      this.refreshCache(entity, userId).catch((error) => {
+        console.error(`Failed to refresh cache for ${entity}:`, error);
+      })
+    );
+
+    await Promise.all(promises);
   }
 }
 

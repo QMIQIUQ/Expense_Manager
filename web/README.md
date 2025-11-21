@@ -48,6 +48,15 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - ✅ Real-time synchronization
 - ✅ Access from any device
 
+### 8. **Offline-First Sync (離線優先同步)** 🆕
+- ✅ Work seamlessly without internet connection
+- ✅ Automatic background synchronization when online
+- ✅ Session-based caching for instant offline access
+- ✅ Visual network status indicator
+- ✅ Queue management for pending operations
+- ✅ Manual and automatic sync options
+- ✅ Smart retry logic with exponential backoff
+
 ## 🛠️ Technology Stack
 
 - **React 18** - UI framework
@@ -225,12 +234,19 @@ web/
 └── vite.config.ts
 ```
 
+## 📚 Documentation
+
+- **[OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)** - Detailed explanation of the offline-first synchronization system
+- **[OFFLINE_TESTING_GUIDE.md](OFFLINE_TESTING_GUIDE.md)** - Step-by-step testing guide for offline functionality
+- **[UX_OPTIMISTIC_CRUD.md](UX_OPTIMISTIC_CRUD.md)** - Optimistic UI and notification system documentation
+- **[ADMIN_SETUP.md](ADMIN_SETUP.md)** - Admin user setup instructions
+
 ## 🚀 Future Enhancements
 
+- [x] Offline-first sync with automatic background synchronization ✅
+- [x] Session-based caching for fast offline access ✅
 - [ ] Receipt scanning with OCR
 - [ ] Advanced data visualization with charts
-- [ ] Budget alerts and notifications
-- [ ] Automatic generation of recurring expenses
 - [ ] Multi-currency support
 - [ ] Dark mode
 - [ ] Mobile app version

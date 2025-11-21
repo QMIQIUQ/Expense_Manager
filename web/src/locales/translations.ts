@@ -240,7 +240,6 @@ export const translations = {
   queueCleared: { en: 'Offline queue cleared', zh: '離線佇列已清除', 'zh-CN': '离线队列已清除' },
   clearQueue: { en: 'Clear Queue', zh: '清除佇列', 'zh-CN': '清除队列' },
   retryUpload: { en: 'Retry Upload', zh: '重新上傳', 'zh-CN': '重新上传' },
-  processing: { en: 'Processing...', zh: '處理中...', 'zh-CN': '处理中...' },
 
   // User Profile
   userProfile: { en: 'User Profile', zh: '使用者資料', 'zh-CN': '用户资料' },
@@ -535,20 +534,14 @@ export const translations = {
   completed: { en: 'Completed', zh: '已完成', 'zh-CN': '已完成' },
   pending: { en: 'Pending', zh: '待收款', 'zh-CN': '待收款' },
   
-  // Network Status & Offline
-  networkOnline: { en: 'Online', zh: '線上', 'zh-CN': '在线' },
-  networkOffline: { en: 'Offline', zh: '離線', 'zh-CN': '离线' },
-  pendingOperations: { en: 'Pending operations', zh: '待處理操作', 'zh-CN': '待处理操作' },
-  syncing: { en: 'Syncing', zh: '同步中', 'zh-CN': '同步中' },
-  syncComplete: { en: 'Sync complete', zh: '同步完成', 'zh-CN': '同步完成' },
-  synced: { en: 'synced', zh: '已同步', 'zh-CN': '已同步' },
-  syncFailed: { en: 'failed', zh: '失敗', 'zh-CN': '失败' },
-  offlineOperations: { en: 'Offline Operations', zh: '離線操作', 'zh-CN': '离线操作' },
-  syncNow: { en: 'Sync Now', zh: '立即同步', 'zh-CN': '立即同步' },
-  clearOfflineQueue: { en: 'Clear Queue', zh: '清除佇列', 'zh-CN': '清除队列' },
-  syncOfflineNote: { en: 'Connect to internet to sync', zh: '連接網路以同步', 'zh-CN': '连接网络以同步' },
-  confirmClearOfflineQueue: { en: 'Are you sure you want to clear all pending offline operations?', zh: '您確定要清除所有待處理的離線操作嗎？', 'zh-CN': '您确定要清除所有待处理的离线操作吗？' },
-  usingCachedData: { en: 'Using cached data (offline mode)', zh: '使用快取資料（離線模式）', 'zh-CN': '使用缓存数据（离线模式）' },
+  // Offline & Sync
+  offline: { en: 'Offline', zh: '離線', 'zh-CN': '离线' },
+  online: { en: 'Online', zh: '線上', 'zh-CN': '在线' },
+  syncing: { en: 'Syncing...', zh: '同步中...', 'zh-CN': '同步中...' },
+  pendingChanges: { en: 'pending changes', zh: '待同步', 'zh-CN': '待同步' },
+  offlineMode: { en: 'Offline mode - showing cached data', zh: '離線模式 - 顯示快取資料', 'zh-CN': '离线模式 - 显示缓存数据' },
+  syncSuccess: { en: 'Successfully synced operations', zh: '同步成功', 'zh-CN': '同步成功' },
+  syncPartialFail: { en: 'Some operations failed to sync', zh: '部分操作同步失敗', 'zh-CN': '部分操作同步失败' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
