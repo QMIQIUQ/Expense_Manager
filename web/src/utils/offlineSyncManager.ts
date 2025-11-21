@@ -67,17 +67,48 @@ class OfflineSyncManager {
   /**
    * Handle online event
    */
-  private handleOnline = (): void => {
-    console.log('[OfflineSyncManager] Network connection detected');
-    this.isOnline = true;
-    this.notifyStatusChange();
+  private handleOnline = async (): Promise<void> => {
+    console.log('[OfflineSyncManager] Network connection detected, verifying...');
     
-    // Automatically sync queued operations
-    this.syncQueuedOperations();
+    // Verify actual connectivity with a ping
+    const actuallyOnline = await this.verifyConnectivity();
     
-    // Start auto-sync interval
-    this.startAutoSync();
+    if (actuallyOnline) {
+      console.log('[OfflineSyncManager] Connectivity verified');
+      this.isOnline = true;
+      this.notifyStatusChange();
+      
+      // Automatically sync queued operations
+      this.syncQueuedOperations();
+      
+      // Start auto-sync interval
+      this.startAutoSync();
+    } else {
+      console.log('[OfflineSyncManager] False online event, still offline');
+    }
   };
+
+  /**
+   * Verify actual connectivity by attempting a network request
+   */
+  private async verifyConnectivity(): Promise<boolean> {
+    try {
+      // Use a lightweight endpoint or Firebase connectivity check
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
+      const response = await fetch('https://www.gstatic.com/generate_204', {
+        method: 'HEAD',
+        cache: 'no-cache',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
 
   /**
    * Handle offline event

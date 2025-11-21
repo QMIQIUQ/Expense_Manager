@@ -48,17 +48,33 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({ showInH
     return t('online') || 'Online';
   };
 
+  const getAriaLabel = () => {
+    if (!isOnline) {
+      return 'Network status: Offline';
+    }
+    if (isSyncing) {
+      return 'Network status: Syncing data';
+    }
+    if (queuedOperations > 0) {
+      return `Network status: Online with ${queuedOperations} pending changes`;
+    }
+    return 'Network status: Online';
+  };
+
   if (showInHeader) {
     return (
       <div
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
+        role="status"
+        aria-live="polite"
+        aria-label={getAriaLabel()}
         style={{
           backgroundColor: !isOnline ? 'var(--error-bg)' : 'var(--warning-bg)',
           border: `1px solid ${!isOnline ? 'var(--error-border)' : 'var(--warning-border)'}`,
           color: getStatusColor(),
         }}
       >
-        <span className={isSyncing ? 'animate-spin' : ''}>
+        <span className={isSyncing ? 'animate-spin' : ''} aria-hidden="true">
           {getStatusIcon()}
         </span>
         <span>{getStatusText()}</span>
@@ -68,8 +84,14 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({ showInH
 
   // Inline version for use in other places
   return (
-    <div className="flex items-center gap-1 text-xs" style={{ color: getStatusColor() }}>
-      <span className={isSyncing ? 'animate-spin' : ''}>{getStatusIcon()}</span>
+    <div 
+      className="flex items-center gap-1 text-xs" 
+      role="status"
+      aria-live="polite"
+      aria-label={getAriaLabel()}
+      style={{ color: getStatusColor() }}
+    >
+      <span className={isSyncing ? 'animate-spin' : ''} aria-hidden="true">{getStatusIcon()}</span>
       <span>{getStatusText()}</span>
     </div>
   );

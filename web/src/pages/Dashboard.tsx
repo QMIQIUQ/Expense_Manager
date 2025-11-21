@@ -316,74 +316,105 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!currentUser) return;
 
+    // Type guard helpers
+    const isValidCreatePayload = (payload: unknown): boolean => {
+      return typeof payload === 'object' && payload !== null;
+    };
+
+    const isValidUpdatePayload = (payload: unknown): payload is { id: string; [key: string]: unknown } => {
+      return typeof payload === 'object' && payload !== null && 'id' in payload && typeof (payload as { id: unknown }).id === 'string';
+    };
+
+    const isValidDeletePayload = (payload: unknown): payload is string => {
+      return typeof payload === 'string' && payload.length > 0;
+    };
+
     const executeQueuedOperation = async (operation: typeof offlineQueue.getAll extends () => infer T ? T extends Array<infer U> ? U : never : never): Promise<boolean> => {
       try {
         const { type, entity, payload } = operation;
         
         switch (entity) {
           case 'expense':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await expenseService.create(payload as Parameters<typeof expenseService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await expenseService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await expenseService.delete(payload);
+            } else {
+              console.warn('Invalid payload for expense operation:', type, payload);
+              return false;
             }
             break;
           
           case 'category':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await categoryService.create(payload as Parameters<typeof categoryService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await categoryService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await categoryService.delete(payload);
+            } else {
+              console.warn('Invalid payload for category operation:', type, payload);
+              return false;
             }
             break;
           
           case 'budget':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await budgetService.create(payload as Parameters<typeof budgetService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await budgetService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await budgetService.delete(payload);
+            } else {
+              console.warn('Invalid payload for budget operation:', type, payload);
+              return false;
             }
             break;
           
           case 'recurring':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await recurringExpenseService.create(payload as Parameters<typeof recurringExpenseService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await recurringExpenseService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await recurringExpenseService.delete(payload);
+            } else {
+              console.warn('Invalid payload for recurring operation:', type, payload);
+              return false;
             }
             break;
           
           case 'income':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await incomeService.create(payload as Parameters<typeof incomeService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await incomeService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await incomeService.delete(payload);
+            } else {
+              console.warn('Invalid payload for income operation:', type, payload);
+              return false;
             }
             break;
           
           case 'card':
-            if (type === 'create') {
+            if (type === 'create' && isValidCreatePayload(payload)) {
               await cardService.create(payload as Parameters<typeof cardService.create>[0]);
-            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
-              const { id, ...updates } = payload as { id: string };
+            } else if (type === 'update' && isValidUpdatePayload(payload)) {
+              const { id, ...updates } = payload;
               await cardService.update(id, updates);
-            } else if (type === 'delete' && typeof payload === 'string') {
+            } else if (type === 'delete' && isValidDeletePayload(payload)) {
               await cardService.delete(payload);
+            } else {
+              console.warn('Invalid payload for card operation:', type, payload);
+              return false;
             }
             break;
           
