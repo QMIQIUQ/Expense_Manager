@@ -36,6 +36,9 @@ import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
+import { offlineSyncManager } from '../utils/offlineSyncManager';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -58,6 +61,7 @@ const Dashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
   const optimisticCRUD = useOptimisticCRUD();
+  const { syncStatus, manualSync, cacheData, getCachedData } = useOfflineSync();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -141,6 +145,33 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      // If offline, try to load from cache first
+      if (!syncStatus.isOnline) {
+        const cachedExpenses = getCachedData<Expense[]>('expenses');
+        const cachedIncomes = getCachedData<Income[]>('incomes');
+        const cachedCategories = getCachedData<Category[]>('categories');
+        const cachedBudgets = getCachedData<Budget[]>('budgets');
+        const cachedRecurring = getCachedData<RecurringExpense[]>('recurringExpenses');
+        const cachedRepayments = getCachedData<Repayment[]>('repayments');
+        const cachedCards = getCachedData<Card[]>('cards');
+        const cachedEWallets = getCachedData<EWallet[]>('ewallets');
+        const cachedBanks = getCachedData<Bank[]>('banks');
+
+        if (cachedExpenses) setExpenses(cachedExpenses);
+        if (cachedIncomes) setIncomes(cachedIncomes);
+        if (cachedCategories) setCategories(cachedCategories);
+        if (cachedBudgets) setBudgets(cachedBudgets);
+        if (cachedRecurring) setRecurringExpenses(cachedRecurring);
+        if (cachedRepayments) setRepayments(cachedRepayments);
+        if (cachedCards) setCards(cachedCards);
+        if (cachedEWallets) setEWallets(cachedEWallets);
+        if (cachedBanks) setBanks(cachedBanks);
+
+        showNotification('info', t('offlineMode') || 'Offline mode - showing cached data', { duration: 5000 });
+        setInitialLoading(false);
+        return;
+      }
+
       await categoryService.initializeDefaults(currentUser.uid);
       
       // Check if user is admin
@@ -160,17 +191,27 @@ const Dashboard: React.FC = () => {
         repaymentService.getAll(currentUser.uid),
       ]);
 
+      // Update state
       setExpenses(expensesData);
       setIncomes(incomesData);
       setCategories(categoriesData);
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
       setRepayments(repaymentsData);
+
+      // Cache data for offline access
+      cacheData('expenses', expensesData);
+      cacheData('incomes', incomesData);
+      cacheData('categories', categoriesData);
+      cacheData('budgets', budgetsData);
+      cacheData('recurringExpenses', recurringData);
+      cacheData('repayments', repaymentsData);
       
       // Load cards separately with error handling to prevent breaking existing functionality
       try {
         const cardsData = await cardService.getAll(currentUser.uid);
         setCards(cardsData);
+        cacheData('cards', cardsData);
         
         // Save unique bank names to localStorage for autocomplete
         const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
@@ -187,10 +228,12 @@ const Dashboard: React.FC = () => {
         await ewalletService.initializeDefaults(currentUser.uid);
         const ewalletsData = await ewalletService.getAll(currentUser.uid);
         setEWallets(ewalletsData);
+        cacheData('ewallets', ewalletsData);
       } catch (ewalletError) {
               try {
                 const banksData = await bankService.getAll(currentUser.uid);
                 setBanks(banksData);
+                cacheData('banks', banksData);
                 // Save bank names for quick suggestions
                 const bankNamesSave = [...new Set([...(banksData || []).map(b => b.name).filter(Boolean) as string[]])];
                 if (bankNamesSave.length > 0) {
@@ -218,7 +261,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setInitialLoading(false);
     }
-  }, [currentUser, showNotification, t]);
+  }, [currentUser, showNotification, t, syncStatus.isOnline, getCachedData, cacheData]);
   //#endregion
 
   //#region Budget Notifications
@@ -268,6 +311,96 @@ const Dashboard: React.FC = () => {
       loadData();
     }
   }, [currentUser, loadData]);
+
+  // Set up operation executor for offline sync manager
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const executeQueuedOperation = async (operation: typeof offlineQueue.getAll extends () => infer T ? T extends Array<infer U> ? U : never : never): Promise<boolean> => {
+      try {
+        const { type, entity, payload } = operation;
+        
+        switch (entity) {
+          case 'expense':
+            if (type === 'create') {
+              await expenseService.create(payload as Parameters<typeof expenseService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await expenseService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await expenseService.delete(payload);
+            }
+            break;
+          
+          case 'category':
+            if (type === 'create') {
+              await categoryService.create(payload as Parameters<typeof categoryService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await categoryService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await categoryService.delete(payload);
+            }
+            break;
+          
+          case 'budget':
+            if (type === 'create') {
+              await budgetService.create(payload as Parameters<typeof budgetService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await budgetService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await budgetService.delete(payload);
+            }
+            break;
+          
+          case 'recurring':
+            if (type === 'create') {
+              await recurringExpenseService.create(payload as Parameters<typeof recurringExpenseService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await recurringExpenseService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await recurringExpenseService.delete(payload);
+            }
+            break;
+          
+          case 'income':
+            if (type === 'create') {
+              await incomeService.create(payload as Parameters<typeof incomeService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await incomeService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await incomeService.delete(payload);
+            }
+            break;
+          
+          case 'card':
+            if (type === 'create') {
+              await cardService.create(payload as Parameters<typeof cardService.create>[0]);
+            } else if (type === 'update' && typeof payload === 'object' && payload !== null && 'id' in payload) {
+              const { id, ...updates } = payload as { id: string };
+              await cardService.update(id, updates);
+            } else if (type === 'delete' && typeof payload === 'string') {
+              await cardService.delete(payload);
+            }
+            break;
+          
+          default:
+            console.warn(`Unknown entity type: ${entity}`);
+            return false;
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Failed to execute queued operation:', error);
+        return false;
+      }
+    };
+
+    offlineSyncManager.setOperationExecutor(executeQueuedOperation);
+  }, [currentUser]);
 
   // Smart tab refresh: Reload data when switching tabs
   useEffect(() => {
@@ -1386,6 +1519,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-actions">
+          {/* Network Status Indicator */}
+          <NetworkStatusIndicator showInHeader={true} />
+          
           {/* Hamburger Menu */}
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
@@ -1729,28 +1865,27 @@ const Dashboard: React.FC = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
-                            if (isUploadingQueue) return; // 防止重复点击
+                            if (isUploadingQueue) return;
                             
                             try {
-                              // 乐观更新：立即显示处理中状态
                               setIsUploadingQueue(true);
-                              showNotification('info', t('processing') || '处理中...', { duration: 0 });
+                              showNotification('info', t('syncing') || 'Syncing...', { duration: 0 });
                               
-                              // 模拟清除队列显示（乐观更新）
-                              const previousQueueCount = queueCount;
-                              setQueueCount(0);
+                              // Use the new sync manager
+                              const result = await manualSync();
                               
-                              // 实际重新加载数据，触发同步
-                              await loadData();
+                              if (result.success > 0) {
+                                showNotification('success', t('syncSuccess') || `Successfully synced ${result.success} operations`);
+                                // Reload data to show updated values
+                                await loadData();
+                              } else if (result.failed > 0) {
+                                showNotification('error', t('syncPartialFail') || `${result.failed} operations failed to sync`);
+                              }
                               
-                              // 成功后显示通知
-                              showNotification('success', t('queueCleared') || '数据同步成功');
                               setShowHamburgerMenu(false);
                             } catch (error) {
-                              console.error('Failed to retry upload:', error);
-                              // 失败后恢复队列计数
-                              setQueueCount(offlineQueue.count());
-                              showNotification('error', t('errorSavingData') || '同步失败，请重试。');
+                              console.error('Failed to sync:', error);
+                              showNotification('error', t('errorSavingData') || 'Sync failed, please retry.');
                             } finally {
                               setIsUploadingQueue(false);
                             }
