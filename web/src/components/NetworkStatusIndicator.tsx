@@ -63,7 +63,7 @@ const NetworkStatusIndicator: React.FC = () => {
       }}>
         <span style={styles.dot}>●</span>
         <span style={styles.text}>
-          {isOnline ? t('online') || 'Online' : t('offline') || 'Offline'}
+          {isOnline ? t('networkOnline') || 'Online' : t('networkOffline') || 'Offline'}
         </span>
       </div>
 
@@ -95,7 +95,7 @@ const NetworkStatusIndicator: React.FC = () => {
           <span>✓</span>
           <span style={styles.text}>
             {t('syncComplete') || 'Sync complete'}: {syncProgress.completed} {t('synced') || 'synced'}
-            {syncProgress.failed > 0 && `, ${syncProgress.failed} ${t('failed') || 'failed'}`}
+            {syncProgress.failed > 0 && `, ${syncProgress.failed} ${t('syncFailed') || 'failed'}`}
           </span>
         </div>
       )}
@@ -129,7 +129,7 @@ const NetworkStatusIndicator: React.FC = () => {
               onClick={handleClearQueue}
             >
               <span>🗑️</span>
-              <span>{t('clearQueue') || 'Clear Queue'}</span>
+              <span>{t('clearOfflineQueue') || 'Clear Queue'}</span>
             </button>
 
             {!isOnline && (

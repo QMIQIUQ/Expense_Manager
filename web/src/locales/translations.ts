@@ -532,6 +532,21 @@ export const translations = {
   markAsIncomplete: { en: 'Mark as incomplete', zh: '標記為未完成', 'zh-CN': '标记为未完成' },
   completed: { en: 'Completed', zh: '已完成', 'zh-CN': '已完成' },
   pending: { en: 'Pending', zh: '待收款', 'zh-CN': '待收款' },
+  
+  // Network Status & Offline
+  networkOnline: { en: 'Online', zh: '線上', 'zh-CN': '在线' },
+  networkOffline: { en: 'Offline', zh: '離線', 'zh-CN': '离线' },
+  pendingOperations: { en: 'Pending operations', zh: '待處理操作', 'zh-CN': '待处理操作' },
+  syncing: { en: 'Syncing', zh: '同步中', 'zh-CN': '同步中' },
+  syncComplete: { en: 'Sync complete', zh: '同步完成', 'zh-CN': '同步完成' },
+  synced: { en: 'synced', zh: '已同步', 'zh-CN': '已同步' },
+  syncFailed: { en: 'failed', zh: '失敗', 'zh-CN': '失败' },
+  offlineOperations: { en: 'Offline Operations', zh: '離線操作', 'zh-CN': '离线操作' },
+  syncNow: { en: 'Sync Now', zh: '立即同步', 'zh-CN': '立即同步' },
+  clearOfflineQueue: { en: 'Clear Queue', zh: '清除佇列', 'zh-CN': '清除队列' },
+  syncOfflineNote: { en: 'Connect to internet to sync', zh: '連接網路以同步', 'zh-CN': '连接网络以同步' },
+  confirmClearOfflineQueue: { en: 'Are you sure you want to clear all pending offline operations?', zh: '您確定要清除所有待處理的離線操作嗎？', 'zh-CN': '您确定要清除所有待处理的离线操作吗？' },
+  usingCachedData: { en: 'Using cached data (offline mode)', zh: '使用快取資料（離線模式）', 'zh-CN': '使用缓存数据（离线模式）' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
