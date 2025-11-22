@@ -227,7 +227,7 @@ web/
 │   ├── types/                # TypeScript type definitions
 │   ├── utils/                # Utility functions
 │   │   ├── dateUtils.ts      # Date/time utilities (local timezone handling)
-│   │   └── export/           # Export utilities (CSV, etc.)
+│   │   └── exportUtils.ts    # Export utilities (CSV, etc.)
 │   ├── contexts/             # React contexts (Auth)
 │   ├── config/               # Firebase configuration
 │   └── pages/                # Page components
