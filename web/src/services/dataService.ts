@@ -152,8 +152,38 @@ export const dataService = {
   },
 
   /**
+   * Compare two data arrays for equality (efficient comparison)
+   * Uses id and updatedAt for quick comparison to avoid expensive JSON.stringify
+   */
+  areDataEqual<T extends EntityData>(data1: T, data2: T): boolean {
+    if (data1.length !== data2.length) return false;
+    if (data1.length === 0) return true;
+    
+    // For arrays of objects with 'id' property, compare ids and updatedAt
+    if (typeof data1[0] === 'object' && data1[0] !== null && 'id' in data1[0]) {
+      const items1 = data1 as { id: string; updatedAt?: Date | string }[];
+      const items2 = data2 as { id: string; updatedAt?: Date | string }[];
+      
+      // Create maps for O(1) lookup
+      const map1 = new Map(items1.map(item => [item.id, item.updatedAt?.toString() || '']));
+      const map2 = new Map(items2.map(item => [item.id, item.updatedAt?.toString() || '']));
+      
+      // Check if all ids exist and timestamps match
+      for (const [id, timestamp] of map1) {
+        if (map2.get(id) !== timestamp) return false;
+      }
+      
+      return true;
+    }
+    
+    // Fallback: JSON comparison for simple arrays (rare case)
+    return JSON.stringify(data1) === JSON.stringify(data2);
+  },
+
+  /**
    * Get data with Stale-While-Revalidate strategy
    * Returns cached data immediately, then updates in background
+   * Optimized to prevent unnecessary re-renders by comparing data efficiently
    */
   async getDataWithRevalidate<T extends EntityData>(
     entity: CacheableEntity,
@@ -168,14 +198,18 @@ export const dataService = {
     if (cached && networkStatus.isOnline) {
       console.log(`Using cached ${entity}, revalidating in background...`);
       
-      // Fetch fresh data in background
+      // Fetch fresh data in background (non-blocking)
       fetchFn()
         .then((freshData) => {
-          sessionCache.set(entity, userId, freshData);
-          console.log(`Background revalidation complete for ${entity}`);
-          // Notify callback if data changed
-          if (onUpdate && JSON.stringify(cached) !== JSON.stringify(freshData)) {
-            onUpdate(freshData);
+          // Only update if data actually changed (prevents unnecessary re-renders)
+          if (!this.areDataEqual(cached, freshData)) {
+            sessionCache.set(entity, userId, freshData);
+            console.log(`Background revalidation complete for ${entity} (data changed)`);
+            if (onUpdate) {
+              onUpdate(freshData);
+            }
+          } else {
+            console.log(`Background revalidation complete for ${entity} (no changes)`);
           }
         })
         .catch((error) => {

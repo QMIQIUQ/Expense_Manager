@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Income, IncomeType, IncomeCategory, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface IncomeFormProps {
   onSubmit: (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -24,7 +25,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    date: initialData?.date || new Date().toISOString().split('T')[0],
+    date: initialData?.date || getTodayLocal(),
     type: initialData?.type || ('other' as IncomeType),
     category: initialData?.category || ('default' as IncomeCategory),
     payerName: initialData?.payerName || '',
@@ -89,7 +90,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
       setFormData({
         title: '',
         amount: 0,
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayLocal(),
         type: 'other' as IncomeType,
         category: 'default' as IncomeCategory,
         payerName: '',

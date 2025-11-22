@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Expense, Category, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { BaseForm } from '../common/BaseForm';
 
@@ -34,8 +35,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     description: initialData?.description || '',
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     category: initialData?.category || '',
-    date: initialData?.date || new Date().toISOString().split('T')[0],
-    time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
+    date: initialData?.date || getTodayLocal(),
+    time: initialData?.time || getCurrentTimeLocal(),
     notes: initialData?.notes || '',
     cardId: initialData?.cardId || '',
     bankId: initialData?.bankId || '',
@@ -96,8 +97,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         description: '',
         amount: 0,
         category: '',
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5), // Reset to current time
+        date: getTodayLocal(),
+        time: getCurrentTimeLocal(), // Reset to current time
         notes: '',
         cardId: '',
         bankId: '',

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Expense, Category, Card, EWallet, Repayment, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
 import ExpenseForm from './ExpenseForm';
@@ -61,10 +62,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   focusExpenseId,
 }) => {
   const { t } = useLanguage();
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayLocal();
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  const oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
+  const oneMonthAgoStr = formatDateLocal(oneMonthAgo);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');

@@ -2,6 +2,7 @@ import React from 'react';
 import { Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -24,8 +25,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
   // Color palette for pie chart
   const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
   
-  // Calculate billing cycle date range
-  const getBillingCycleDates = () => {
+  // Memoize billing cycle calculation (only recalculates when billingCycleDay changes)
+  const { cycleStart, cycleEnd } = React.useMemo(() => {
     const now = new Date();
     const currentDay = now.getDate();
     
@@ -43,13 +44,12 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     }
     
     return { cycleStart, cycleEnd };
-  };
+  }, [billingCycleDay]);
   
-  const calculateStats = () => {
+  // Memoize expensive calculations (only recalculates when dependencies change)
+  const stats = React.useMemo(() => {
     const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
-
-    const { cycleStart, cycleEnd } = getBillingCycleDates();
     
     // Calculate monthly expenses based on billing cycle
     const monthly = expenses
@@ -67,7 +67,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       })
       .reduce((sum, inc) => sum + inc.amount, 0);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayLocal();
     const daily = expenses
       .filter((exp) => exp.date === today)
       .reduce((sum, exp) => sum + exp.amount, 0);
@@ -109,24 +109,29 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       totalUnrecovered,
       netCashflow,
     };
-  };
+  }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
+  // Memoize category calculations
+  const categories = React.useMemo(() => 
+    Object.entries(stats.byCategory)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5),
+    [stats.byCategory]
+  );
 
-  const stats = calculateStats();
-  const categories = Object.entries(stats.byCategory)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
+  // Memoize pie chart data preparation
+  const pieData = React.useMemo(() => 
+    Object.entries(stats.byCategory)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: ((value / stats.total) * 100).toFixed(1)
+      })),
+    [stats.byCategory, stats.total]
+  );
 
-  // Prepare pie chart data - show all categories for complete view
-  const pieData = Object.entries(stats.byCategory)
-    .sort(([, a], [, b]) => b - a)
-    .map(([name, value]) => ({
-      name,
-      value,
-      percentage: ((value / stats.total) * 100).toFixed(1)
-    }));
-
-  // Prepare spending trend data (last 7 days)
-  const getSpendingTrend = () => {
+  // Memoize spending trend data (last 7 days)
+  const spendingTrend = React.useMemo(() => {
     const last7Days: { [date: string]: number } = {};
     const today = new Date();
     
@@ -134,7 +139,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       last7Days[dateStr] = 0;
     }
     
@@ -149,18 +154,19 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       amount: parseFloat(amount.toFixed(2))
     }));
-  };
+  }, [expenses]);
 
-  const trendData = getSpendingTrend();
-
-  // Get recent expenses (last 5)
-  const recentExpenses = [...expenses]
-    .sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
-    })
-    .slice(0, 5);
+  // Memoize recent expenses sorting (last 5)
+  const recentExpenses = React.useMemo(() => 
+    [...expenses]
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 5),
+    [expenses]
+  );
 
   return (
     <div className="dashboard-summary">
@@ -376,11 +382,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         </div>
       )}
 
-      {trendData.length > 0 && (
+      {spendingTrend.length > 0 && (
         <div className="chart-container card">
           <h3 className="section-title">{t('spendingTrend')} (7 Days)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={trendData}>
+            <LineChart data={spendingTrend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 

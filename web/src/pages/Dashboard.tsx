@@ -175,84 +175,88 @@ const Dashboard: React.FC = () => {
         console.log('Phase 2: Background initialization and updates...');
         setIsRevalidating(true);
         
-        // Initialize defaults in background
-        categoryService.initializeDefaults(currentUser.uid).catch(err => 
-          console.warn('Background category init failed:', err)
-        );
-        
-        // Check admin status
-        adminService.isAdmin(currentUser.uid)
-          .then(setIsAdmin)
-          .catch(err => console.warn('Admin check failed:', err));
-        
-        // Load user settings
-        userSettingsService.getOrCreate(currentUser.uid)
-          .then(settings => setBillingCycleDay(settings.billingCycleDay))
-          .catch(err => console.warn('User settings load failed:', err))
-          .finally(() => setIsRevalidating(false));
-      }
-      
-      // Load cards with Stale-While-Revalidate
-      dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
-        setCards(cardsData);
-        const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
-        if (bankNames.length > 0) {
-          localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
-        }
-      })
-        .then(cardsData => {
-          setCards(cardsData);
-          const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
-          if (bankNames.length > 0) {
-            localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
-          }
-        })
-        .catch(err => {
-          console.warn('Could not load cards:', err);
-          setCards([]);
-        });
-      
-      // Load e-wallets with Stale-While-Revalidate
-      if (networkStatus.isOnline) {
-        ewalletService.initializeDefaults(currentUser.uid).catch(err => 
-          console.warn('E-wallet init failed:', err)
-        );
-      }
-      dataService.getDataWithRevalidate('ewallets', currentUser.uid, () => ewalletService.getAll(currentUser.uid), setEWallets)
-        .then(setEWallets)
-        .catch(err => {
-          console.warn('Could not load e-wallets:', err);
-          setEWallets([]);
-        });
-      
-      // Load banks with Stale-While-Revalidate
-      dataService.getDataWithRevalidate('banks', currentUser.uid, () => bankService.getAll(currentUser.uid), (banksData) => {
-        setBanks(banksData);
-        const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
-        if (bankNames.length > 0) {
-          localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
-        }
-      })
-        .then(banksData => {
-          setBanks(banksData);
-          const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
-          if (bankNames.length > 0) {
-            localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
-          }
-        })
-        .catch(err => {
-          console.warn('Could not load banks:', err);
-          setBanks([]);
-        });
-      
-      // Load feature settings in background
-      if (networkStatus.isOnline) {
-        featureSettingsService.getOrCreate(currentUser.uid)
-          .then(setFeatureSettings)
-          .catch(err => {
+        // Batch all background tasks to complete together
+        Promise.all([
+          // Initialize defaults in background
+          categoryService.initializeDefaults(currentUser.uid).catch(err => {
+            console.warn('Background category init failed:', err);
+            return null;
+          }),
+          
+          // Check admin status
+          adminService.isAdmin(currentUser.uid).catch(err => {
+            console.warn('Admin check failed:', err);
+            return false;
+          }),
+          
+          // Load user settings
+          userSettingsService.getOrCreate(currentUser.uid).catch(err => {
+            console.warn('User settings load failed:', err);
+            return { billingCycleDay: 1 };
+          }),
+          
+          // Load cards
+          dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
+            setCards(cardsData);
+            const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
+            if (bankNames.length > 0) {
+              localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+            }
+          }).catch(err => {
+            console.warn('Could not load cards:', err);
+            return [];
+          }),
+          
+          // Initialize and load e-wallets
+          ewalletService.initializeDefaults(currentUser.uid)
+            .catch(() => null)
+            .then(() => dataService.getDataWithRevalidate('ewallets', currentUser.uid, () => ewalletService.getAll(currentUser.uid), setEWallets))
+            .catch(err => {
+              console.warn('Could not load e-wallets:', err);
+              return [];
+            }),
+          
+          // Load banks
+          dataService.getDataWithRevalidate('banks', currentUser.uid, () => bankService.getAll(currentUser.uid), (banksData) => {
+            setBanks(banksData);
+            const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
+            if (bankNames.length > 0) {
+              localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+            }
+          }).catch(err => {
+            console.warn('Could not load banks:', err);
+            return [];
+          }),
+          
+          // Load feature settings
+          featureSettingsService.getOrCreate(currentUser.uid).catch(err => {
             console.warn('Could not load feature settings:', err);
-            setFeatureSettings(null);
-          });
+            return null;
+          }),
+        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings]) => {
+          // Apply all state updates together (single render cycle)
+          if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
+          if (userSettings) setBillingCycleDay(userSettings.billingCycleDay);
+          if (Array.isArray(cardsData) && cardsData.length > 0) {
+            setCards(cardsData);
+            const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
+            if (bankNames.length > 0) {
+              localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+            }
+          }
+          if (Array.isArray(ewalletsData) && ewalletsData.length > 0) setEWallets(ewalletsData);
+          if (Array.isArray(banksData) && banksData.length > 0) {
+            setBanks(banksData);
+            const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
+            if (bankNames.length > 0) {
+              localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+            }
+          }
+          if (featSettings) setFeatureSettings(featSettings);
+        }).finally(() => {
+          setIsRevalidating(false);
+          console.log('Phase 2: Background initialization complete');
+        });
       }
     } catch (error) {
       console.error('Error loading data:', error);

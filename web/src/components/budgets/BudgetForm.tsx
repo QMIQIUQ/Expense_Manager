@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types';
 import { BaseForm } from '../common/BaseForm';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface BudgetFormData {
   categoryId: string;
@@ -34,7 +35,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       categoryName: '',
       amount: 0,
       period: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: getTodayLocal(),
       alertThreshold: 80,
     }
   );

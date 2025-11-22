@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -32,7 +33,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    date: initialData?.date || new Date().toISOString().split('T')[0],
+    date: initialData?.date || getTodayLocal(),
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
     paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank'),
@@ -110,7 +111,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!initialData) {
       setFormData({
         amount: 0,
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayLocal(),
         payerName: '',
         note: '',
         paymentMethod: 'cash',

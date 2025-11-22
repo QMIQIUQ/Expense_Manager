@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category, Card, Bank } from '../../types';
 import { BaseForm } from '../common/BaseForm';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface RecurringFormData {
   description: string;
@@ -45,7 +46,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
       amount: 0,
       category: '',
       frequency: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: getTodayLocal(),
       endDate: '',
       dayOfWeek: 1,
       dayOfMonth: 1,
