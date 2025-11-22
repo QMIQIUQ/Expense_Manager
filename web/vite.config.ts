@@ -11,14 +11,42 @@ export default defineConfig(() => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Split vendor code
-          'react-vendor': ['react', 'react-dom'],
-          // Split Firebase libraries
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            if (id.includes('exceljs')) {
+              return 'exceljs.min';
+            }
+            // Other node_modules
+            return 'vendor';
+          }
+          // Split large components by feature
+          if (id.includes('/components/dashboard/')) {
+            return 'dashboard-components';
+          }
+          if (id.includes('/components/cards/')) {
+            return 'cards-components';
+          }
+          if (id.includes('/components/recurring/')) {
+            return 'recurring-components';
+          }
+          if (id.includes('/components/budgets/')) {
+            return 'budget-components';
+          }
+          if (id.includes('/components/income/')) {
+            return 'income-components';
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increase limit to 1000 kB to reduce warnings
+    chunkSizeWarningLimit: 1000,
+    minify: 'esbuild',
+    target: 'es2015',
   },
 }))

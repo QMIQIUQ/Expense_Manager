@@ -35,9 +35,10 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     date: initialData?.date || new Date().toISOString().split('T')[0],
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
-    paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet'),
+    paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank'),
     cardId: initialData?.cardId || '',
     paymentMethodName: initialData?.paymentMethodName || '',
+    bankId: initialData?.bankId || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -83,15 +84,24 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (submitData.paymentMethod === 'cash') {
       delete submitData.cardId;
       delete submitData.paymentMethodName;
+      delete submitData.bankId;
     } else if (submitData.paymentMethod === 'credit_card') {
       delete submitData.paymentMethodName;
+      delete submitData.bankId;
       if (!submitData.cardId) {
         delete submitData.cardId;
       }
     } else if (submitData.paymentMethod === 'e_wallet') {
       delete submitData.cardId;
+      delete submitData.bankId;
       if (!submitData.paymentMethodName || submitData.paymentMethodName.trim() === '') {
         delete submitData.paymentMethodName;
+      }
+    } else if (submitData.paymentMethod === 'bank') {
+      delete submitData.cardId;
+      delete submitData.paymentMethodName;
+      if (!submitData.bankId) {
+        delete submitData.bankId;
       }
     }
     
@@ -106,6 +116,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         paymentMethod: 'cash',
         cardId: '',
         paymentMethodName: '',
+        bankId: '',
       });
     }
   };
@@ -204,9 +215,10 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             onChange={(e) => {
               setFormData(prev => ({
                 ...prev,
-                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
+                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
                 cardId: e.target.value !== 'credit_card' ? '' : prev.cardId,
                 paymentMethodName: e.target.value !== 'e_wallet' ? '' : prev.paymentMethodName,
+                bankId: e.target.value !== 'bank' ? '' : prev.bankId,
               }));
             }}
             className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
@@ -219,6 +231,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             <option value="cash">💵 {t('cash')}</option>
             <option value="credit_card">💳 {t('creditCard')}</option>
             <option value="e_wallet">📱 {t('eWallet')}</option>
+            <option value="bank">🏦 {t('bankTransfer')}</option>
           </select>
         </div>
 
@@ -242,6 +255,33 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           />
         </div>
       </div>
+
+      {formData.paymentMethod === 'bank' && _banks.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="bankId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {t('selectBank')}
+          </label>
+          <select
+            id="bankId"
+            name="bankId"
+            value={formData.bankId}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectBank')}</option>
+            {_banks.map((bank) => (
+              <option key={bank.id} value={bank.id}>
+                🏦 {bank.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
         <div className="flex flex-col gap-1">

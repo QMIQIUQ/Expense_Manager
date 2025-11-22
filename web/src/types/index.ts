@@ -10,7 +10,7 @@ export interface UserSettings {
 }
 
 // Payment method types
-export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet';
+export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet' | 'bank';
 
 export interface Expense {
   id?: string;
@@ -29,6 +29,7 @@ export interface Expense {
   cardId?: string; // Optional: credit card used for this expense
   paymentMethod?: PaymentMethodType; // Type of payment method
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
+  bankId?: string; // For bank transfers, reference to the bank
   // Repayment tracking
   needsRepaymentTracking?: boolean; // Whether this expense needs repayment tracking in dashboard
   repaymentTrackingCompleted?: boolean; // Whether tracking has been marked as completed
@@ -101,6 +102,7 @@ export interface RecurringExpense {
   // Payment method information
   paymentMethod?: PaymentMethodType; // Type of payment method
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
+  bankId?: string; // For bank transfers, reference to the bank
   createdAt: Date;
   updatedAt: Date;
 }
@@ -118,6 +120,7 @@ export interface Repayment {
   paymentMethod?: PaymentMethodType; // Type of payment method used for repayment
   cardId?: string; // Optional: credit card used for this repayment
   paymentMethodName?: string; // For e-wallets, store the name (e.g., "PayPal", "Apple Pay")
+  bankId?: string; // For bank transfers, reference to the bank
   createdAt: Date;
   updatedAt: Date;
 }

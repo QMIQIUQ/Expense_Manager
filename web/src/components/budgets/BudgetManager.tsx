@@ -231,7 +231,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <>
                     {/* First row: Period and Amount */}
                     <div style={styles.budgetRow1}>
-                      <span style={styles.budgetPeriod}>{t(`period${budget.period.charAt(0).toUpperCase() + budget.period.slice(1)}` as any)}</span>
+                      <span style={styles.budgetPeriod}>{({ daily: t('periodDaily'), weekly: t('periodWeekly'), monthly: t('periodMonthly'), yearly: t('periodYearly') } as Record<string,string>)[budget.period]}</span>
                       <div style={styles.budgetAmount}>
                         <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>

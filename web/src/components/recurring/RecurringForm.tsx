@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Category, Card } from '../../types';
+import { Category, Card, Bank } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 
 interface RecurringFormData {
@@ -13,15 +13,17 @@ interface RecurringFormData {
   dayOfWeek: number;
   dayOfMonth: number;
   isActive: boolean;
-  paymentMethod: 'cash' | 'credit_card' | 'e_wallet';
+  paymentMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank';
   cardId: string;
   paymentMethodName: string;
+  bankId: string;
 }
 
 interface RecurringFormProps {
   initialData?: RecurringFormData;
   categories: Category[];
   cards: Card[];
+  banks?: Bank[];
   onSubmit: (data: RecurringFormData) => void;
   onCancel: () => void;
   isEditing?: boolean;
@@ -31,6 +33,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
   initialData,
   categories,
   cards,
+  banks = [],
   onSubmit,
   onCancel,
   isEditing = false
@@ -50,6 +53,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
       paymentMethod: 'cash',
       cardId: '',
       paymentMethodName: '',
+      bankId: '',
     }
   );
 
@@ -184,9 +188,10 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
             value={formData.paymentMethod}
             onChange={(e) => setFormData({ 
               ...formData, 
-              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet',
+              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
               cardId: e.target.value !== 'credit_card' ? '' : formData.cardId,
               paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
+              bankId: e.target.value !== 'bank' ? '' : formData.bankId,
             })}
             className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
             style={{
@@ -198,8 +203,32 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
             <option value="cash">💵 {t('cash')}</option>
             <option value="credit_card">💳 {t('creditCard')}</option>
             <option value="e_wallet">📱 {t('eWallet')}</option>
+            <option value="bank">🏦 {t('bankTransfer')}</option>
           </select>
         </div>
+
+        {formData.paymentMethod === 'bank' && banks && banks.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
+            <select
+              value={formData.bankId}
+              onChange={(e) => setFormData({ ...formData, bankId: e.target.value })}
+              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              style={{
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-color)'
+              }}
+            >
+              <option value="">{t('selectBank')}</option>
+              {banks.map((bank) => (
+                <option key={bank.id} value={bank.id}>
+                  🏦 {bank.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {formData.paymentMethod === 'credit_card' && (
           <div className="flex flex-col gap-1">

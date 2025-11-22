@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet } from '../../types';
+import { Expense, Category, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { BaseForm } from '../common/BaseForm';
@@ -11,6 +11,7 @@ interface ExpenseFormProps {
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
+  banks?: Bank[];
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
   title?: string;
@@ -23,6 +24,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   categories,
   cards = [],
   ewallets = [],
+  banks = [],
   onCreateEWallet,
   onCreateCard,
   title,
@@ -36,6 +38,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     time: initialData?.time || new Date().toTimeString().slice(0, 5), // Default to current time HH:mm
     notes: initialData?.notes || '',
     cardId: initialData?.cardId || '',
+    bankId: initialData?.bankId || '',
     paymentMethod: initialData?.paymentMethod || 'cash',
     paymentMethodName: initialData?.paymentMethodName || '',
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
@@ -69,15 +72,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       amount: formData.amount / 100
     };
     if (formData.paymentMethod === 'cash') {
-      // Clear card and e-wallet info for cash
+      // Clear card, e-wallet and bank info for cash
       delete submitData.cardId;
       delete submitData.paymentMethodName;
+      delete submitData.bankId;
     } else if (formData.paymentMethod === 'credit_card') {
-      // Clear e-wallet info for credit card
+      // Clear e-wallet and bank info for credit card
       delete submitData.paymentMethodName;
+      delete submitData.bankId;
     } else if (formData.paymentMethod === 'e_wallet') {
-      // Clear card info for e-wallet
+      // Clear card and bank info for e-wallet
       delete submitData.cardId;
+      delete submitData.bankId;
+    } else if (formData.paymentMethod === 'bank') {
+      // Clear card and e-wallet info for bank
+      delete submitData.cardId;
+      delete submitData.paymentMethodName;
     }
     
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
@@ -90,6 +100,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         time: new Date().toTimeString().slice(0, 5), // Reset to current time
         notes: '',
         cardId: '',
+        bankId: '',
         paymentMethod: 'cash',
         paymentMethodName: '',
         needsRepaymentTracking: false,
@@ -256,6 +267,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           <option value="cash">💵 {t('cash')}</option>
           <option value="credit_card">💳 {t('creditCard')}</option>
           <option value="e_wallet">📱 {t('eWallet')}</option>
+          <option value="bank">🏦 {t('bankTransfer')}</option>
         </select>
       </div>
 
@@ -303,6 +315,31 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               + {t('addCard')}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Bank Selection - Shown when bank is selected */}
+      {formData.paymentMethod === 'bank' && banks.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
+          <select
+            name="bankId"
+            value={formData.bankId}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectBank')}</option>
+            {banks.map((bank) => (
+              <option key={bank.id} value={bank.id}>
+                🏦 {bank.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 

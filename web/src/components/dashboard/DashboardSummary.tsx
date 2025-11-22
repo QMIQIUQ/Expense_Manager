@@ -166,10 +166,10 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     <div className="dashboard-summary">
       <div className="summary-cards-grid">
         <div className="summary-card">
-          <div className="card-icon">💰</div>
+          <div className="card-icon error-bg">💰</div>
           <div className="card-content">
-            <div className="card-label">Monthly Expense</div>
-            <div className="card-value">${stats.monthly.toFixed(2)}</div>
+            <div className="card-label">{t('monthlyExpense') || 'Monthly Expense'}</div>
+            <div className="card-value error-text">${stats.monthly.toFixed(2)}</div>
           </div>
         </div>
 

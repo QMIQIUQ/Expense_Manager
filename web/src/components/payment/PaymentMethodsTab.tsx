@@ -123,7 +123,6 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
           <div>
             {/* Lazy-load BankManager to avoid initial bundle weight if not enabled */}
             <React.Suspense fallback={<div>{t('loading')}</div>}>
-              {/* @ts-ignore */}
               <BankManager
                 banks={banks || []}
                 onAdd={onAddBank!}

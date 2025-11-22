@@ -526,6 +526,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           onUpdate={handleInlineUpdate}
           cards={cards}
           ewallets={ewallets}
+          banks={banks}
           maxAmount={expense.amount}
         />
       )}

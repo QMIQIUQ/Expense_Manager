@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Repayment, Card, EWallet } from '../../types';
+import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DeleteIcon, EditIcon } from '../icons';
@@ -13,6 +13,7 @@ interface RepaymentListProps {
   onUpdate?: (id: string, data: Partial<Repayment>) => void;
   cards?: Card[];
   ewallets?: EWallet[];
+  banks?: Bank[];
   maxAmount?: number;
 }
 
@@ -23,6 +24,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
   onUpdate,
   cards = [],
   ewallets: _ewallets = [],
+  banks: _banks = [],
   maxAmount: _maxAmount,
 }) => {
   const { t } = useLanguage();
@@ -137,6 +139,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                 initialData={repayment}
                 cards={cards}
                 ewallets={_ewallets}
+                banks={_banks}
                 onSubmit={(data) => {
                   if (onUpdate && repayment.id) {
                     onUpdate(repayment.id, data);

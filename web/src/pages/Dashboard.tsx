@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -20,24 +20,25 @@ import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
-import CategoryManager from '../components/categories/CategoryManager';
-import BudgetManager from '../components/budgets/BudgetManager';
-import RecurringExpenseManager from '../components/recurring/RecurringExpenseManager';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import CardsSummary from '../components/dashboard/CardsSummary';
-import IncomesTab from './tabs/IncomesTab';
-import AdminTab from './tabs/AdminTab';
-import UserProfile from './UserProfile';
-import FeatureManager from '../components/settings/FeatureManager';
-import PaymentMethodsTab from '../components/payment/PaymentMethodsTab';
+import InlineLoading from '../components/InlineLoading';
+
+// Lazy load heavy components
+const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
+const BudgetManager = lazy(() => import('../components/budgets/BudgetManager'));
+const RecurringExpenseManager = lazy(() => import('../components/recurring/RecurringExpenseManager'));
+const IncomesTab = lazy(() => import('./tabs/IncomesTab'));
+const AdminTab = lazy(() => import('./tabs/AdminTab'));
+const UserProfile = lazy(() => import('./UserProfile'));
+const FeatureManager = lazy(() => import('../components/settings/FeatureManager'));
+const PaymentMethodsTab = lazy(() => import('../components/payment/PaymentMethodsTab'));
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
-import InlineLoading from '../components/InlineLoading';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
-import { syncService } from '../services/syncService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 
@@ -76,6 +77,7 @@ const Dashboard: React.FC = () => {
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -145,33 +147,18 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
-      // Initialize defaults only if online
-      if (networkStatus.isOnline) {
-        await categoryService.initializeDefaults(currentUser.uid);
-      }
-      
-      // Check if user is admin (skip if offline)
-      if (networkStatus.isOnline) {
-        const adminStatus = await adminService.isAdmin(currentUser.uid);
-        setIsAdmin(adminStatus);
-      }
-      
-      // Load user settings (skip if offline)
-      if (networkStatus.isOnline) {
-        const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
-        setBillingCycleDay(userSettings.billingCycleDay);
-      }
-      
-      // Use dataService to load with caching
+      // Phase 1: Load cached data first (instant display)
+      console.log('Phase 1: Loading cached data...');
       const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
-        dataService.getExpenses(currentUser.uid),
-        dataService.getIncomes(currentUser.uid),
-        dataService.getCategories(currentUser.uid),
-        dataService.getBudgets(currentUser.uid),
-        dataService.getRecurringExpenses(currentUser.uid),
-        dataService.getRepayments(currentUser.uid),
+        dataService.getDataWithRevalidate('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
+        dataService.getDataWithRevalidate('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
+        dataService.getDataWithRevalidate('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
+        dataService.getDataWithRevalidate('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
+        dataService.getDataWithRevalidate('recurring', currentUser.uid, () => recurringExpenseService.getAll(currentUser.uid), setRecurringExpenses),
+        dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
       ]);
 
+      // Set initial data (from cache or fresh)
       setExpenses(expensesData);
       setIncomes(incomesData);
       setCategories(categoriesData);
@@ -179,69 +166,97 @@ const Dashboard: React.FC = () => {
       setRecurringExpenses(recurringData);
       setRepayments(repaymentsData);
       
-      // Load cards separately with error handling to prevent breaking existing functionality
-      try {
-        const cardsData = await dataService.getCards(currentUser.uid);
-        setCards(cardsData);
+      // End initial loading immediately
+      setInitialLoading(false);
+      console.log('Phase 1 complete: UI ready with cached data');
+      
+      // Phase 2: Initialize and load additional data in background (only if online)
+      if (networkStatus.isOnline) {
+        console.log('Phase 2: Background initialization and updates...');
+        setIsRevalidating(true);
         
-        // Save unique bank names to localStorage for autocomplete
+        // Initialize defaults in background
+        categoryService.initializeDefaults(currentUser.uid).catch(err => 
+          console.warn('Background category init failed:', err)
+        );
+        
+        // Check admin status
+        adminService.isAdmin(currentUser.uid)
+          .then(setIsAdmin)
+          .catch(err => console.warn('Admin check failed:', err));
+        
+        // Load user settings
+        userSettingsService.getOrCreate(currentUser.uid)
+          .then(settings => setBillingCycleDay(settings.billingCycleDay))
+          .catch(err => console.warn('User settings load failed:', err))
+          .finally(() => setIsRevalidating(false));
+      }
+      
+      // Load cards with Stale-While-Revalidate
+      dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
+        setCards(cardsData);
         const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
         if (bankNames.length > 0) {
           localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
         }
-      } catch (cardError) {
-        console.warn('Could not load cards. This is normal if cards collection rules are not set up yet:', cardError);
-        setCards([]);
-      }
-      
-      // Load e-wallets with error handling
-      try {
-        if (networkStatus.isOnline) {
-          await ewalletService.initializeDefaults(currentUser.uid);
-        }
-        const ewalletsData = await dataService.getEWallets(currentUser.uid);
-        setEWallets(ewalletsData);
-      } catch (ewalletError) {
-        console.warn('Could not load e-wallets:', ewalletError);
-        setEWallets([]);
-      }
-      
-      // Load banks with error handling
-      try {
-        const banksData = await dataService.getBanks(currentUser.uid);
-        setBanks(banksData);
-        // Save bank names for quick suggestions
-        const bankNames = (banksData || []).map(b => b.name).filter(Boolean);
-        const bankNamesSave = [...new Set(bankNames)];
-        if (bankNamesSave.length > 0) {
-          localStorage.setItem('cardBankNames', JSON.stringify(bankNamesSave));
-        }
-      } catch (bankError) {
-        console.warn('Could not load banks:', bankError);
-        setBanks([]);
-      }
-      
-      // Load feature settings with error handling
-      try {
-        if (networkStatus.isOnline) {
-          const settingsData = await featureSettingsService.getOrCreate(currentUser.uid);
-          setFeatureSettings(settingsData);
-        }
-      } catch (settingsError) {
-        console.warn('Could not load feature settings:', settingsError);
-        setFeatureSettings(null);
-      }
-      
-      // If online, refresh all caches in the background for future use
-      if (networkStatus.isOnline) {
-        syncService.refreshAllCaches(currentUser.uid).catch((error) => {
-          console.warn('Background cache refresh failed:', error);
+      })
+        .then(cardsData => {
+          setCards(cardsData);
+          const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
+          if (bankNames.length > 0) {
+            localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+          }
+        })
+        .catch(err => {
+          console.warn('Could not load cards:', err);
+          setCards([]);
         });
+      
+      // Load e-wallets with Stale-While-Revalidate
+      if (networkStatus.isOnline) {
+        ewalletService.initializeDefaults(currentUser.uid).catch(err => 
+          console.warn('E-wallet init failed:', err)
+        );
+      }
+      dataService.getDataWithRevalidate('ewallets', currentUser.uid, () => ewalletService.getAll(currentUser.uid), setEWallets)
+        .then(setEWallets)
+        .catch(err => {
+          console.warn('Could not load e-wallets:', err);
+          setEWallets([]);
+        });
+      
+      // Load banks with Stale-While-Revalidate
+      dataService.getDataWithRevalidate('banks', currentUser.uid, () => bankService.getAll(currentUser.uid), (banksData) => {
+        setBanks(banksData);
+        const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
+        if (bankNames.length > 0) {
+          localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+        }
+      })
+        .then(banksData => {
+          setBanks(banksData);
+          const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
+          if (bankNames.length > 0) {
+            localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
+          }
+        })
+        .catch(err => {
+          console.warn('Could not load banks:', err);
+          setBanks([]);
+        });
+      
+      // Load feature settings in background
+      if (networkStatus.isOnline) {
+        featureSettingsService.getOrCreate(currentUser.uid)
+          .then(setFeatureSettings)
+          .catch(err => {
+            console.warn('Could not load feature settings:', err);
+            setFeatureSettings(null);
+          });
       }
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
-    } finally {
       setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
@@ -1996,6 +2011,7 @@ const Dashboard: React.FC = () => {
         deleteProgress={deleteProgress || undefined}
         onDismissImport={handleDismissImport}
         onDismissDelete={handleDismissDelete}
+        isRevalidating={isRevalidating}
       />
 
       <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
@@ -2083,94 +2099,111 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'incomes' && (
-          <IncomesTab
-            incomes={incomes}
-            expenses={expenses}
-            onAddIncome={handleAddIncome}
-            onInlineUpdate={handleInlineUpdateIncome}
-            onDeleteIncome={handleDeleteIncome}
-            onOpenExpenseById={(id) => { setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
-          />
+          <Suspense fallback={<InlineLoading />}>
+            <IncomesTab
+              incomes={incomes}
+              expenses={expenses}
+              onAddIncome={handleAddIncome}
+              onInlineUpdate={handleInlineUpdateIncome}
+              onDeleteIncome={handleDeleteIncome}
+              onOpenExpenseById={(id) => { setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'categories' && (
           <div className="flex flex-col gap-4">
-            <CategoryManager
-              categories={categories}
-              expenses={expenses}
-              onAdd={handleAddCategory}
-              onUpdate={handleUpdateCategory}
-              onDelete={handleDeleteCategory}
-              onUpdateExpense={handleInlineUpdateExpense}
-              onDeleteExpense={handleDeleteExpense}
-            />
+            <Suspense fallback={<InlineLoading />}>
+              <CategoryManager
+                categories={categories}
+                expenses={expenses}
+                onAdd={handleAddCategory}
+                onUpdate={handleUpdateCategory}
+                onDelete={handleDeleteCategory}
+                onUpdateExpense={handleInlineUpdateExpense}
+                onDeleteExpense={handleDeleteExpense}
+              />
+            </Suspense>
           </div>
         )}
 
         {activeTab === 'budgets' && (
           <div className="flex flex-col gap-4">
-            <BudgetManager
-              budgets={budgets}
-              categories={categories}
-              onAdd={handleAddBudget}
-              onUpdate={handleUpdateBudget}
-              onDelete={handleDeleteBudget}
-              spentByCategory={getSpentByCategory()}
-            />
+            <Suspense fallback={<InlineLoading />}>
+              <BudgetManager
+                budgets={budgets}
+                categories={categories}
+                onAdd={handleAddBudget}
+                onUpdate={handleUpdateBudget}
+                onDelete={handleDeleteBudget}
+                spentByCategory={getSpentByCategory()}
+              />
+            </Suspense>
           </div>
         )}
 
         {activeTab === 'recurring' && (
           <div className="flex flex-col gap-4">
-            <RecurringExpenseManager
-              recurringExpenses={recurringExpenses}
-              categories={categories}
-              cards={cards}
-              onAdd={handleAddRecurring}
-              onUpdate={handleUpdateRecurring}
-              onDelete={handleDeleteRecurring}
-              onToggleActive={handleToggleRecurring}
-            />
+            <Suspense fallback={<InlineLoading />}>
+              <RecurringExpenseManager
+                recurringExpenses={recurringExpenses}
+                categories={categories}
+                banks={banks}
+                cards={cards}
+                onAdd={handleAddRecurring}
+                onUpdate={handleUpdateRecurring}
+                onDelete={handleDeleteRecurring}
+                onToggleActive={handleToggleRecurring}
+              />
+            </Suspense>
           </div>
         )}
 
         {activeTab === 'paymentMethods' && (
-          <PaymentMethodsTab
-            cards={cards}
-            ewallets={ewallets}
-            categories={categories}
-            expenses={expenses}
-            onAddCard={handleAddCard}
-            onUpdateCard={handleUpdateCard}
-            onDeleteCard={handleDeleteCard}
-            onAddEWallet={handleAddEWallet}
-            onUpdateEWallet={handleUpdateEWallet}
-            onDeleteEWallet={handleDeleteEWallet}
-            banks={banks}
-            onAddBank={handleAddBank}
-            onUpdateBank={handleUpdateBank}
-            onDeleteBank={handleDeleteBank}
-          />
+          <Suspense fallback={<InlineLoading />}>
+            <PaymentMethodsTab
+              cards={cards}
+              ewallets={ewallets}
+              categories={categories}
+              expenses={expenses}
+              onAddCard={handleAddCard}
+              onUpdateCard={handleUpdateCard}
+              onDeleteCard={handleDeleteCard}
+              onAddEWallet={handleAddEWallet}
+              onUpdateEWallet={handleUpdateEWallet}
+              onDeleteEWallet={handleDeleteEWallet}
+              banks={banks}
+              onAddBank={handleAddBank}
+              onUpdateBank={handleUpdateBank}
+              onDeleteBank={handleDeleteBank}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'settings' && featureSettings && (
           <div className="flex flex-col gap-4">
-            <FeatureManager
-              enabledFeatures={featureSettings.enabledFeatures}
-              tabFeatures={featureSettings.tabFeatures}
-              hamburgerFeatures={featureSettings.hamburgerFeatures}
-              onUpdate={handleUpdateFeatureSettings}
-              onReset={handleResetFeatureSettings}
-            />
+            <Suspense fallback={<InlineLoading />}>
+              <FeatureManager
+                enabledFeatures={featureSettings.enabledFeatures}
+                tabFeatures={featureSettings.tabFeatures}
+                hamburgerFeatures={featureSettings.hamburgerFeatures}
+                onUpdate={handleUpdateFeatureSettings}
+                onReset={handleResetFeatureSettings}
+              />
+            </Suspense>
           </div>
         )}
 
         {activeTab === 'profile' && (
-          <UserProfile />
+          <Suspense fallback={<InlineLoading />}>
+            <UserProfile />
+          </Suspense>
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <AdminTab />
+          <Suspense fallback={<InlineLoading />}>
+            <AdminTab />
+          </Suspense>
         )}
       </div>
 
@@ -2244,6 +2277,7 @@ const Dashboard: React.FC = () => {
                   categories={categories}
                   cards={cards}
                   ewallets={ewallets}
+                  banks={banks}
                   onCreateEWallet={() => {
                     setShowAddExpenseForm(false);
                     setActiveTab('paymentMethods');
@@ -2338,6 +2372,7 @@ const Dashboard: React.FC = () => {
                   categories={categories}
                   cards={cards}
                   ewallets={ewallets}
+                  banks={banks}
                   onCreateEWallet={() => {
                     setShowAddSheet(false);
                     setActiveTab('paymentMethods');

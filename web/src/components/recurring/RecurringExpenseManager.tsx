@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RecurringExpense, Category, Card } from '../../types';
+import { RecurringExpense, Category, Card, Bank } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
@@ -38,6 +38,7 @@ const responsiveStyles = `
 interface RecurringExpenseManagerProps {
   recurringExpenses: RecurringExpense[];
   categories: Category[];
+  banks?: Bank[];
   cards?: Card[];
   onAdd: (expense: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   onUpdate: (id: string, updates: Partial<RecurringExpense>) => void;
@@ -48,6 +49,7 @@ interface RecurringExpenseManagerProps {
 const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   recurringExpenses,
   categories,
+  banks = [],
   cards = [],
   onAdd,
   onUpdate,
@@ -170,6 +172,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
           <RecurringForm
             categories={categories}
             cards={cards}
+            banks={banks}
             onSubmit={(data) => {
               // Create expense data without undefined values
               const baseData = {
@@ -265,9 +268,11 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                     paymentMethod: expense.paymentMethod || 'cash',
                     cardId: expense.cardId || '',
                     paymentMethodName: expense.paymentMethodName || '',
+                    bankId: expense.bankId || '',
                   }}
                   categories={categories}
                   cards={cards}
+                  banks={banks}
                   onSubmit={(data) => {
                     const updates: Partial<RecurringExpense> = {};
                     if (expense.description !== data.description) updates.description = data.description;
@@ -346,7 +351,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       )}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {t(`freq${expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1)}` as any)}
+                      {({ daily: t('freqDaily'), weekly: t('freqWeekly'), monthly: t('freqMonthly'), yearly: t('freqYearly') } as Record<string,string>)[expense.frequency]}
                     </div>
 
                     {/* Desktop: Show individual buttons */}

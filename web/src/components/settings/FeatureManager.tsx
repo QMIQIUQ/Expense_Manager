@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FeatureTab, DEFAULT_FEATURES } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../locales/translations';
-import { DragIcon, CheckIcon } from '../icons';
+import { DragIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 
 interface FeatureManagerProps {
@@ -126,6 +126,8 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Track hover/focus state for add (+) buttons to apply interactive styles
+  const [hoveredAdd, setHoveredAdd] = useState<FeatureTab | null>(null);
 
   // Update local state when props change
   useEffect(() => {
@@ -337,13 +339,14 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                   <button
                     onClick={() => handleToggleFeature(feature)}
                     style={{
-                      ...styles.actionButton,
+                      ...styles.removeButton,
                       ...(localEnabled.length === 1 ? styles.actionButtonDisabled : {})
                     }}
                     aria-label="Disable feature"
+                    title={t('disableFeature') || 'Disable feature'}
                     disabled={localEnabled.length === 1}
                   >
-                    <CheckIcon size={20} />
+                    ✕
                   </button>
                 </div>
               );
@@ -385,7 +388,14 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                       </div>
                     </div>
                     <button
-                      style={styles.addButton}
+                      style={{
+                        ...styles.addButton,
+                        ...(hoveredAdd === feature ? styles.addButtonHover : {})
+                      }}
+                      onMouseEnter={() => setHoveredAdd(feature)}
+                      onMouseLeave={() => setHoveredAdd((prev) => prev === feature ? null : prev)}
+                      onFocus={() => setHoveredAdd(feature)}
+                      onBlur={() => setHoveredAdd((prev) => prev === feature ? null : prev)}
                       aria-label="Enable feature"
                     >
                       +
@@ -624,15 +634,37 @@ const styles = {
     opacity: 0.5,
     cursor: 'not-allowed',
   },
+  removeButton: {
+    padding: '8px',
+    color: 'var(--error-text)',
+    backgroundColor: 'var(--error-bg)',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: '600' as const,
+    lineHeight: 1,
+  },
   addButton: {
     padding: '8px',
-    color: 'var(--text-secondary)',
-    backgroundColor: 'transparent',
+    color: 'var(--success-text)',
+    backgroundColor: 'var(--success-bg)',
     border: 'none',
+    borderRadius: '8px',
     cursor: 'pointer',
     flexShrink: 0,
     fontSize: '20px',
     fontWeight: 'bold' as const,
+    lineHeight: 1,
+    transition: 'filter 0.15s ease',
+  },
+  addButtonHover: {
+    filter: 'brightness(1.15)',
+    boxShadow: '0 0 0 2px var(--success-bg), 0 0 0 4px rgba(0,0,0,0.4)',
   },
   emptyState: {
     textAlign: 'center' as const,

@@ -23,19 +23,21 @@ interface HeaderStatusBarProps {
   deleteProgress?: DeleteProgress;
   onDismissImport?: () => void;
   onDismissDelete?: () => void;
+  isRevalidating?: boolean;
 }
 
 const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({ 
   importProgress,
   deleteProgress,
   onDismissImport,
-  onDismissDelete
+  onDismissDelete,
+  isRevalidating
 }) => {
   const { notifications, hideNotification } = useNotification();
   const { t } = useLanguage();
 
-  // 如果沒有通知也沒有匯入/刪除進度，不顯示
-  if (notifications.length === 0 && !importProgress && !deleteProgress) {
+  // 如果沒有通知也沒有匯入/刪除進度也沒有正在重新驗證，不顯示
+  if (notifications.length === 0 && !importProgress && !deleteProgress && !isRevalidating) {
     return null;
   }
 
@@ -172,6 +174,22 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* 背景更新指示器 */}
+      {isRevalidating && (
+        <div style={{
+          ...styles.stickyWrapper,
+          ...styles.statusItem,
+          ...styles.statusItemImporting
+        }}>
+          <div style={styles.statusRow}>
+            <div style={styles.statusLeft}>
+              <span style={styles.spinnerIcon}>⟳</span>
+              <span style={styles.statusText}>{t('updatingData')}</span>
+            </div>
+          </div>
         </div>
       )}
 

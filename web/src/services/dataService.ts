@@ -104,6 +104,7 @@ export const dataService = {
 
   /**
    * Generic method to get data with caching
+   * Implements Stale-While-Revalidate strategy for better UX
    */
   async getData<T extends EntityData>(
     entity: CacheableEntity,
@@ -148,6 +149,44 @@ export const dataService = {
     console.log(`Using cached ${entity}`);
     const cached = sessionCache.get<T>(entity, userId);
     return cached || ([] as unknown as T);
+  },
+
+  /**
+   * Get data with Stale-While-Revalidate strategy
+   * Returns cached data immediately, then updates in background
+   */
+  async getDataWithRevalidate<T extends EntityData>(
+    entity: CacheableEntity,
+    userId: string,
+    fetchFn: () => Promise<T>,
+    onUpdate?: (data: T) => void
+  ): Promise<T> {
+    const cached = sessionCache.get<T>(entity, userId);
+    
+    // If we have cached data and we're online, return it immediately
+    // and fetch fresh data in the background
+    if (cached && networkStatus.isOnline) {
+      console.log(`Using cached ${entity}, revalidating in background...`);
+      
+      // Fetch fresh data in background
+      fetchFn()
+        .then((freshData) => {
+          sessionCache.set(entity, userId, freshData);
+          console.log(`Background revalidation complete for ${entity}`);
+          // Notify callback if data changed
+          if (onUpdate && JSON.stringify(cached) !== JSON.stringify(freshData)) {
+            onUpdate(freshData);
+          }
+        })
+        .catch((error) => {
+          console.warn(`Background revalidation failed for ${entity}:`, error);
+        });
+      
+      return cached;
+    }
+    
+    // No cache or offline - use regular getData
+    return this.getData(entity, userId, false, fetchFn);
   },
 
   /**

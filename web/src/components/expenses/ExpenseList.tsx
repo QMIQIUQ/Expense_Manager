@@ -505,6 +505,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   categories={categories}
                   cards={cards}
                   ewallets={ewallets}
+                  banks={banks}
                   onSubmit={(data) => {
                     onInlineUpdate(expense.id!, data);
                     setEditingId(null);
@@ -607,6 +608,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
                           {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                           {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
+                          {expense.paymentMethod === 'bank' && `🏦 ${t('bankTransfer')}`}
                           {expense.paymentMethod === 'credit_card' && expense.cardId && (
                             <span>
                               {cards.find(c => c.id === expense.cardId)?.name && `(${cards.find(c => c.id === expense.cardId)?.name})`}
