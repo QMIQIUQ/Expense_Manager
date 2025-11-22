@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Income, IncomeType, IncomeCategory, Expense } from '../../types';
+import { Income, IncomeType, IncomeCategory, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
@@ -10,6 +10,9 @@ interface IncomeFormProps {
   initialData?: Income;
   expenses?: Expense[]; // For linking to expenses
   preselectedExpenseId?: string; // Pre-select an expense when creating from expense detail
+  cards?: Card[]; // For payment method selection
+  ewallets?: EWallet[]; // For payment method selection
+  banks?: Bank[]; // For payment method selection
   title?: string;
 }
 
@@ -19,6 +22,9 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   initialData,
   expenses = [],
   preselectedExpenseId,
+  cards = [],
+  ewallets = [],
+  banks = [],
   title,
 }) => {
   const { t } = useLanguage();
@@ -31,6 +37,10 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     payerName: initialData?.payerName || '',
     linkedExpenseId: initialData?.linkedExpenseId || preselectedExpenseId || '',
     note: initialData?.note || '',
+    paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank'),
+    paymentMethodName: initialData?.paymentMethodName || '',
+    cardId: initialData?.cardId || '',
+    bankId: initialData?.bankId || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -84,6 +94,22 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
       delete submitData.category;
     }
     
+    // Clean up payment method fields based on selection
+    if (formData.paymentMethod === 'cash') {
+      delete submitData.cardId;
+      delete submitData.bankId;
+      delete submitData.paymentMethodName;
+    } else if (formData.paymentMethod === 'credit_card') {
+      delete submitData.bankId;
+      delete submitData.paymentMethodName;
+    } else if (formData.paymentMethod === 'e_wallet') {
+      delete submitData.cardId;
+      delete submitData.bankId;
+    } else if (formData.paymentMethod === 'bank') {
+      delete submitData.cardId;
+      delete submitData.paymentMethodName;
+    }
+    
     onSubmit(submitData as Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     
     if (!initialData) {
@@ -96,6 +122,10 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         payerName: '',
         linkedExpenseId: '',
         note: '',
+        paymentMethod: 'cash',
+        paymentMethodName: '',
+        cardId: '',
+        bankId: '',
       });
     }
   };
@@ -246,6 +276,102 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           )}
         </div>
       </div>
+
+      {/* Payment Method Selection */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
+        <select
+          name="paymentMethod"
+          value={formData.paymentMethod}
+          onChange={handleChange}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        >
+          <option value="cash">💵 {t('cash')}</option>
+          <option value="credit_card">💳 {t('creditCard')}</option>
+          <option value="e_wallet">📱 {t('eWallet')}</option>
+          <option value="bank">🏦 {t('bankTransfer')}</option>
+        </select>
+      </div>
+
+      {/* Card Selection - Shown when credit card is selected */}
+      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
+          <select
+            name="cardId"
+            value={formData.cardId}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectPaymentMethod')}</option>
+            {cards.map((card) => (
+              <option key={card.id} value={card.id}>
+                💳 {card.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* E-Wallet Selection - Shown when e-wallet is selected */}
+      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectEWallet')}</label>
+          <select
+            name="paymentMethodName"
+            value={formData.paymentMethodName}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectEWallet')}</option>
+            {ewallets.map((wallet) => (
+              <option key={wallet.id} value={wallet.name}>
+                {wallet.icon} {wallet.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Bank Selection - Shown when bank is selected */}
+      {formData.paymentMethod === 'bank' && banks.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
+          <select
+            name="bankId"
+            value={formData.bankId}
+            onChange={handleChange}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectBank')}</option>
+            {banks.map((bank) => (
+              <option key={bank.id} value={bank.id}>
+                🏦 {bank.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (
         <div className="flex flex-col gap-1">

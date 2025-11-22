@@ -57,6 +57,13 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - ✅ Manual and automatic sync options
 - ✅ Smart retry logic with exponential backoff
 
+
+### 9. **Payment Methods (付款方式)** 🏦
+- ✅ Manage Cards, Banks, and E-Wallets
+- ✅ Add / edit / delete entries
+- ✅ Optimistic offline updates with queued sync
+- ✅ Dark mode–aware styling (tabs + action buttons)
+
 ## 🛠️ Technology Stack
 
 - **React 18** - UI framework

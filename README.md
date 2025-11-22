@@ -131,6 +131,13 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - [ ] Dark mode toggle
 - [ ] PDF export
 
+
+## 🆕 Recent Changes
+- Added Bank option to payment methods (Cards / Banks / E-Wallets) and fixed missing banks prop in CardForm.
+- Optimized initial load: cached offline data shown first, background sync minimizes dashboard stutter.
+- Fixed expense date revert issue with optimistic cache updates (see OFFLINE_SYNC_FIX.md).
+- UI: Numeric dashboard metrics now color-coded; replaced "Used" button with an ❌ icon; unified green styling for + Add buttons.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:

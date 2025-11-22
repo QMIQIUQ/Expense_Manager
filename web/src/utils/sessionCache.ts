@@ -16,6 +16,7 @@ export type CacheableEntity =
   | 'banks'
   | 'ewallets'
   | 'repayments'
+  | 'transfers'
   | 'featureSettings'
   | 'userSettings';
 

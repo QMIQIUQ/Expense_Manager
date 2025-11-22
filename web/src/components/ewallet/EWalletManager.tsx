@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { EWallet, Expense, Category } from '../../types';
+import { EWallet, Expense, Income, Category, Transfer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import EWalletForm from './EWalletForm';
@@ -13,6 +13,8 @@ import { SearchBar } from '../common/SearchBar';
 interface EWalletManagerProps {
   ewallets: EWallet[];
   expenses: Expense[];
+  incomes: Income[]; // Add incomes for balance calculation
+  transfers: Transfer[];
   categories: Category[];
   onAdd: (ewallet: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onUpdate: (id: string, ewallet: Partial<EWallet>) => Promise<void>;
@@ -22,6 +24,8 @@ interface EWalletManagerProps {
 const EWalletManager: React.FC<EWalletManagerProps> = ({
   ewallets,
   expenses,
+  incomes,
+  transfers,
   categories,
   onAdd,
   onUpdate,
@@ -57,28 +61,64 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     };
   }, [openMenuId]);
 
-  // Calculate wallet stats
+  // Calculate wallet stats including balance
   const getWalletStats = useMemo(() => {
-    const stats: { [walletName: string]: { totalSpending: number; expenses: Expense[] } } = {};
+    const stats: { 
+      [walletName: string]: { 
+        totalIncome: number;
+        totalSpending: number;
+        balance: number;
+        expenses: Expense[];
+        incomes: Income[];
+      } 
+    } = {};
     
     ewallets.forEach((wallet) => {
+      // Calculate expenses
       const walletExpenses = expenses.filter(
         (exp) => exp.paymentMethod === 'e_wallet' && exp.paymentMethodName === wallet.name
       );
       const totalSpending = walletExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       
+      // Calculate incomes
+      const walletIncomes = incomes.filter(
+        (inc) => inc.paymentMethod === 'e_wallet' && inc.paymentMethodName === wallet.name
+      );
+      const totalIncome = walletIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+      
+      // Calculate transfers
+      const outgoingTransfers = transfers.filter(
+        (t) => t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === wallet.name
+      );
+      const totalOutgoing = outgoingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      
+      const incomingTransfers = transfers.filter(
+        (t) => t.toPaymentMethod === 'e_wallet' && t.toPaymentMethodName === wallet.name
+      );
+      const totalIncoming = incomingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      
+      // Calculate balance (income + incoming transfers - spending - outgoing transfers)
+      const balance = totalIncome + totalIncoming - totalSpending - totalOutgoing;
+      
       stats[wallet.name] = {
+        totalIncome,
         totalSpending,
+        balance,
         expenses: walletExpenses.sort((a, b) => {
           const dateA = new Date(`${a.date} ${a.time || '00:00'}`).getTime();
           const dateB = new Date(`${b.date} ${b.time || '00:00'}`).getTime();
+          return dateB - dateA;
+        }),
+        incomes: walletIncomes.sort((a, b) => {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
           return dateB - dateA;
         }),
       };
     });
     
     return stats;
-  }, [ewallets, expenses]);
+  }, [ewallets, expenses, incomes, transfers]);
 
   // Filter e-wallets based on search
   const filteredWallets = ewallets.filter((wallet) =>
@@ -234,7 +274,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           <div className="no-data">{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => (
-            <div key={wallet.id} className={`ewallet-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
+            <div key={wallet.id} className={`credit-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
               {isSelectionMode && (
                   <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
                       <input
@@ -256,98 +296,56 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                   />
                 </div>
               ) : (
-                // View Mode - Simplified design matching screenshot
+                // View Mode - Card-like design matching credit card layout
                 <>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px'
-                  }}>
-                    {/* Left: Icon, Name, Status, and Provider */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                      {/* Icon with colored circle background */}
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        backgroundColor: wallet.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '20px',
-                        flexShrink: 0
-                      }}>
-                        {wallet.icon}
-                      </div>
-
-                      {/* Name, Status indicator, and Provider */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <h3 style={{
-                            margin: 0,
-                            fontSize: '16px',
-                            fontWeight: 500,
-                            color: 'var(--text-primary)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {wallet.name}
-                          </h3>
-                          {/* Active status indicator (blue dot) */}
-                          <div style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: '#4285F4',
-                            flexShrink: 0
-                          }} />
+                  {/* Card Header with Name and Actions */}
+                  <div className="card-header">
+                    <div className="card-info">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Icon with colored circle background */}
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          backgroundColor: wallet.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          flexShrink: 0
+                        }}>
+                          {wallet.icon}
                         </div>
-                        {wallet.provider && (
-                          <p style={{
-                            margin: 0,
-                            fontSize: '14px',
-                            color: 'var(--text-secondary)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {wallet.provider}
-                          </p>
-                        )}
+                        <div>
+                          <h3 className="card-name">{wallet.name}</h3>
+                          {wallet.provider && (
+                            <p style={{
+                              margin: 0,
+                              fontSize: '14px',
+                              color: 'var(--text-secondary)'
+                            }}>
+                              {wallet.provider}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Right: Action buttons */}
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                      {/* Desktop: Show individual buttons */}
-                      <div className="desktop-actions" style={{ display: 'flex', gap: '8px' }}>
+                    <div className="card-actions">
+                      {/* Desktop: Show both buttons */}
+                      <div className="desktop-actions">
                         <button 
                           onClick={() => startInlineEdit(wallet)} 
                           className="btn-icon btn-icon-primary"
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
+                          aria-label={t('edit')}
                         >
-                          <EditIcon size={16} />
+                          <EditIcon size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm({ isOpen: true, walletId: wallet.id! })}
                           className="btn-icon btn-icon-danger"
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
+                          aria-label={t('delete')}
                         >
-                          <DeleteIcon size={16} />
+                          <DeleteIcon size={18} />
                         </button>
                       </div>
 
@@ -392,40 +390,41 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     </div>
                   </div>
 
-
+                  {/* Stats Grid - Same layout as credit cards */}
+                  {(() => {
+                    const stats = getWalletStats[wallet.name];
+                    if (!stats) return null;
+                    
+                    return (
+                      <div className="stats-grid">
+                        <div className="stat-card info">
+                          <p className="stat-label">{t('walletIncome')}</p>
+                          <p className="stat-value success-text">${stats.totalIncome.toFixed(2)}</p>
+                        </div>
+                        <div className="stat-card success">
+                          <p className="stat-label">{t('walletSpending')}</p>
+                          <p className="stat-value info-text">${stats.totalSpending.toFixed(2)}</p>
+                        </div>
+                        <div className="stat-card accent">
+                          <p className="stat-label">{t('walletBalance')}</p>
+                          <p className="stat-value" style={{ 
+                            color: stats.balance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
+                          }}>
+                            ${stats.balance.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="stat-card warning">
+                          <p className="stat-label">{t('transactions')}</p>
+                          <p className="stat-value warning-text">{stats.expenses.length + stats.incomes.length}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
           ))
         )}
-        
-        {/* In-container spending summary with dropdown */}
-        {filteredWallets.length > 0 && (() => {
-          const totalSpending = Object.values(getWalletStats).reduce(
-            (sum, stats) => sum + stats.totalSpending,
-            0
-          );
-          return totalSpending > 0 ? (
-            <div style={{
-              padding: '16px',
-              borderTop: '1px solid var(--border-color)',
-              marginTop: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                {t('totalSpending')}:
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                  ${totalSpending.toFixed(2)}
-                </span>
-                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>▼</span>
-              </div>
-            </div>
-          ) : null;
-        })()}
       </div>
 
       <ConfirmModal

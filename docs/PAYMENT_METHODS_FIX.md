@@ -28,3 +28,9 @@ The "Payment Methods" section had broken styling in dark mode:
 - Verify that the active tab is clearly visible and highlighted with the accent color.
 - Verify that the list of Cards and E-Wallets displays correctly.
 - Check that the Edit/Delete actions are accessible.
+
+
+## Recent Update: Bank Option Added
+- Added full Bank list to payment method selector (now: Cards / Banks / E-Wallets).
+- Ensured CardForm & PaymentMethodsTab properly pass and render `banks`.
+- Banks follow optimistic + cache update pattern (no stale reload after edits).

@@ -2,13 +2,16 @@ import React, { useState, useMemo } from 'react';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { SearchBar } from '../../components/common/SearchBar';
-import { Income, Expense } from '../../types';
+import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon } from '../../components/icons';
 
 interface Props {
   incomes: Income[];
   expenses: Expense[];
+  cards: Card[];
+  ewallets: EWallet[];
+  banks: Bank[];
   onAddIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onInlineUpdate: (id: string, updates: Partial<Income>) => void;
   onDeleteIncome: (id: string) => void;
@@ -18,6 +21,9 @@ interface Props {
 const IncomesTab: React.FC<Props> = ({
   incomes,
   expenses,
+  cards,
+  ewallets,
+  banks,
   onAddIncome,
   onInlineUpdate,
   onDeleteIncome,
@@ -68,6 +74,9 @@ const IncomesTab: React.FC<Props> = ({
             onSubmit={handleSubmit}
             onCancel={() => setIsAdding(false)}
             expenses={expenses}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
           />
         </div>
       )}
@@ -75,6 +84,9 @@ const IncomesTab: React.FC<Props> = ({
       <IncomeList
         incomes={filteredIncomes}
         expenses={expenses}
+        cards={cards}
+        ewallets={ewallets}
+        banks={banks}
         onDelete={onDeleteIncome}
         onInlineUpdate={onInlineUpdate}
         onOpenExpenseById={onOpenExpenseById}

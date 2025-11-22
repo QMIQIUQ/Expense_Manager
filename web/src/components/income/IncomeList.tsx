@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Income, Expense } from '../../types';
+import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { EditIcon, DeleteIcon } from '../icons';
 import IncomeForm from './IncomeForm';
@@ -28,12 +28,15 @@ const responsiveStyles = `
 interface IncomeListProps {
   incomes: Income[];
   expenses: Expense[];
+  cards: Card[];
+  ewallets: EWallet[];
+  banks: Bank[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Income>) => void;
   onOpenExpenseById?: (id: string) => void;
 }
 
-const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, onInlineUpdate, onOpenExpenseById }) => {
+const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -219,6 +222,9 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, onDelete, on
             <IncomeForm
               initialData={income}
               expenses={expenses}
+              cards={cards}
+              ewallets={ewallets}
+              banks={banks}
               onSubmit={(data) => {
                 onInlineUpdate(income.id!, data);
                 setEditingId(null);

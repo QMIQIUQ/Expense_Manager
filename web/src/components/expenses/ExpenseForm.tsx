@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet, Bank } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
@@ -15,6 +15,7 @@ interface ExpenseFormProps {
   banks?: Bank[];
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
+  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   title?: string;
 }
 
@@ -28,6 +29,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   banks = [],
   onCreateEWallet,
   onCreateCard,
+  onAddTransfer,
   title,
 }) => {
   const { t } = useLanguage();
@@ -44,6 +46,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     paymentMethodName: initialData?.paymentMethodName || '',
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
+  const [enableTransfer, setEnableTransfer] = useState(false);
+  const [transferFromPaymentMethod, setTransferFromPaymentMethod] = useState<'cash' | 'credit_card' | 'e_wallet' | 'bank'>('cash');
+  const [transferFromCardId, setTransferFromCardId] = useState('');
+  const [transferFromEWalletName, setTransferFromEWalletName] = useState('');
+  const [transferFromBankId, setTransferFromBankId] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,6 +98,29 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       delete submitData.paymentMethodName;
     }
     
+    // Handle transfer if enabled
+    if (enableTransfer && onAddTransfer) {
+      const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        amount: formData.amount / 100,
+        date: formData.date,
+        time: formData.time,
+        note: `${t('transfer')} - ${formData.description}`,
+        fromPaymentMethod: transferFromPaymentMethod,
+        fromPaymentMethodName: transferFromPaymentMethod === 'e_wallet' ? transferFromEWalletName : '',
+        fromCardId: transferFromPaymentMethod === 'credit_card' ? transferFromCardId : undefined,
+        fromBankId: transferFromPaymentMethod === 'bank' ? transferFromBankId : undefined,
+        toPaymentMethod: formData.paymentMethod,
+        toPaymentMethodName: formData.paymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
+        toCardId: formData.paymentMethod === 'credit_card' ? formData.cardId : undefined,
+        toBankId: formData.paymentMethod === 'bank' ? formData.bankId : undefined,
+      };
+      
+      // Submit transfer asynchronously
+      onAddTransfer(transferData).catch((err) => {
+        console.error('Failed to create transfer:', err);
+      });
+    }
+    
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
     if (!initialData) {
       setFormData({
@@ -106,6 +136,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         paymentMethodName: '',
         needsRepaymentTracking: false,
       });
+      setEnableTransfer(false);
+      setTransferFromPaymentMethod('cash');
+      setTransferFromCardId('');
+      setTransferFromEWalletName('');
+      setTransferFromBankId('');
     }
   };
 
@@ -418,6 +453,127 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           }}
         />
       </div>
+
+      {/* Transfer Option - Only show if onAddTransfer is provided and payment method is not cash */}
+      {onAddTransfer && formData.paymentMethod !== 'cash' && (
+        <div className="flex flex-col gap-3 border-t pt-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="enableTransfer"
+              checked={enableTransfer}
+              onChange={(e) => setEnableTransfer(e.target.checked)}
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+            />
+            <label htmlFor="enableTransfer" className="text-sm font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>
+              💱 {t('alsoTransferFrom')}
+            </label>
+          </div>
+
+          {enableTransfer && (
+            <div className="flex flex-col gap-3 pl-6 border-l-2" style={{ borderColor: 'var(--accent-primary)' }}>
+              {/* From Payment Method Selection */}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {t('transferFromPaymentMethod')}
+                </label>
+                <select
+                  value={transferFromPaymentMethod}
+                  onChange={(e) => {
+                    setTransferFromPaymentMethod(e.target.value as any);
+                    setTransferFromCardId('');
+                    setTransferFromEWalletName('');
+                    setTransferFromBankId('');
+                  }}
+                  className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  <option value="cash">💵 {t('cash')}</option>
+                  <option value="credit_card">💳 {t('creditCard')}</option>
+                  <option value="e_wallet">📱 {t('eWallet')}</option>
+                  <option value="bank">🏦 {t('bankTransfer')}</option>
+                </select>
+              </div>
+
+              {/* Card Selection for Transfer From */}
+              {transferFromPaymentMethod === 'credit_card' && cards.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
+                  <select
+                    value={transferFromCardId}
+                    onChange={(e) => setTransferFromCardId(e.target.value)}
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
+                    <option value="">{t('selectCard')}</option>
+                    {cards.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        💳 {card.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* E-Wallet Selection for Transfer From */}
+              {transferFromPaymentMethod === 'e_wallet' && ewallets.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWallet')}</label>
+                  <select
+                    value={transferFromEWalletName}
+                    onChange={(e) => setTransferFromEWalletName(e.target.value)}
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
+                    <option value="">{t('selectPaymentMethod')}</option>
+                    {ewallets.map((wallet) => (
+                      <option key={wallet.name} value={wallet.name}>
+                        {wallet.icon} {wallet.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Bank Selection for Transfer From */}
+              {transferFromPaymentMethod === 'bank' && banks.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
+                  <select
+                    value={transferFromBankId}
+                    onChange={(e) => setTransferFromBankId(e.target.value)}
+                    className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
+                    <option value="">{t('selectBank')}</option>
+                    {banks.map((bank) => (
+                      <option key={bank.id} value={bank.id}>
+                        🏦 {bank.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 border-t pt-4">
         <input

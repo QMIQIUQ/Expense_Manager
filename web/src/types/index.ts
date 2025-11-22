@@ -142,6 +142,33 @@ export interface Income {
   payerName?: string; // For repayments from friends
   linkedExpenseId?: string; // FK to expenses.id - can link to one expense (deprecated, use Repayment instead)
   note?: string;
+  // Payment method fields for tracking which wallet/account received the income
+  paymentMethod?: 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+  paymentMethodName?: string; // Name of the e-wallet, card, or bank
+  cardId?: string; // FK to cards.id
+  bankId?: string; // FK to banks.id
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Transfer between payment methods
+export interface Transfer {
+  id?: string;
+  userId: string;
+  amount: number;
+  date: string;
+  time?: string; // Optional time in HH:mm format
+  // Source (from)
+  fromPaymentMethod: PaymentMethodType;
+  fromPaymentMethodName?: string; // For e-wallet
+  fromCardId?: string;
+  fromBankId?: string;
+  // Destination (to)
+  toPaymentMethod: PaymentMethodType;
+  toPaymentMethodName?: string; // For e-wallet
+  toCardId?: string;
+  toBankId?: string;
+  note?: string;
   createdAt: Date;
   updatedAt: Date;
 }

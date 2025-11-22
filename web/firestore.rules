@@ -133,5 +133,33 @@ service cloud.firestore {
                        request.resource.data.billingCycleDay <= 31;
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
+    
+    // Transfers collection (tracks money transfers between payment methods)
+    match /transfers/{transferId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.amount is number &&
+                      request.resource.data.amount > 0 &&
+                      request.resource.data.fromPaymentMethod is string &&
+                      request.resource.data.toPaymentMethod is string &&
+                      // Prevent transfers to the same account
+                      !(request.resource.data.fromPaymentMethod == request.resource.data.toPaymentMethod &&
+                        request.resource.data.fromPaymentMethod == 'cash') &&
+                      !(request.resource.data.fromPaymentMethod == 'credit_card' &&
+                        request.resource.data.toPaymentMethod == 'credit_card' &&
+                        request.resource.data.fromCardId == request.resource.data.toCardId) &&
+                      !(request.resource.data.fromPaymentMethod == 'e_wallet' &&
+                        request.resource.data.toPaymentMethod == 'e_wallet' &&
+                        request.resource.data.fromPaymentMethodName == request.resource.data.toPaymentMethodName) &&
+                      !(request.resource.data.fromPaymentMethod == 'bank' &&
+                        request.resource.data.toPaymentMethod == 'bank' &&
+                        request.resource.data.fromBankId == request.resource.data.toBankId);
+      allow update: if isAuthenticated() && 
+                       (isOwner(resource.data.userId) || isAdmin()) &&
+                       request.resource.data.amount is number &&
+                       request.resource.data.amount > 0;
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
   }
 }

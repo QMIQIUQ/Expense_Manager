@@ -5,7 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer } from '../types';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -18,6 +18,7 @@ import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
 import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
+import { transferService } from '../services/transferService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
@@ -68,6 +69,7 @@ const Dashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [repayments, setRepayments] = useState<Repayment[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
@@ -149,13 +151,14 @@ const Dashboard: React.FC = () => {
     try {
       // Phase 1: Load cached data first (instant display)
       console.log('Phase 1: Loading cached data...');
-      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData, transfersData] = await Promise.all([
         dataService.getDataWithRevalidate('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
         dataService.getDataWithRevalidate('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
         dataService.getDataWithRevalidate('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
         dataService.getDataWithRevalidate('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
         dataService.getDataWithRevalidate('recurring', currentUser.uid, () => recurringExpenseService.getAll(currentUser.uid), setRecurringExpenses),
         dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
+        dataService.getDataWithRevalidate('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
       ]);
 
       // Set initial data (from cache or fresh)
@@ -165,6 +168,7 @@ const Dashboard: React.FC = () => {
       setBudgets(budgetsData);
       setRecurringExpenses(recurringData);
       setRepayments(repaymentsData);
+      setTransfers(transfersData);
       
       // End initial loading immediately
       setInitialLoading(false);
@@ -1122,6 +1126,62 @@ const Dashboard: React.FC = () => {
         onError: () => {
           if (incomeToDelete) {
             setIncomes((prev) => [...prev, incomeToDelete]);
+          }
+        },
+      }
+    );
+  };
+  //#endregion
+
+  //#region Event Handlers - Transfers
+  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (!currentUser) return;
+    
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTransfer: Transfer = {
+      ...transferData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setTransfers((prev) => [optimisticTransfer, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: transferData },
+      () => transferService.create({ ...transferData, userId: currentUser.uid }),
+      {
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', 'Transfer added successfully');
+        },
+        onError: () => {
+          setTransfers((prev) => prev.filter((t) => t.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleDeleteTransfer = async (id: string) => {
+    const transferToDelete = transfers.find((t) => t.id === id);
+    
+    // Optimistic update
+    setTransfers((prev) => prev.filter((t) => t.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: transferToDelete },
+      () => transferService.delete(id),
+      {
+        retryToQueueOnFail: true,
+        onSuccess: () => {
+          loadData();
+          showNotification('success', 'Transfer deleted successfully');
+        },
+        onError: () => {
+          if (transferToDelete) {
+            setTransfers((prev) => [...prev, transferToDelete]);
           }
         },
       }
@@ -2107,6 +2167,9 @@ const Dashboard: React.FC = () => {
             <IncomesTab
               incomes={incomes}
               expenses={expenses}
+              cards={cards}
+              ewallets={ewallets}
+              banks={banks}
               onAddIncome={handleAddIncome}
               onInlineUpdate={handleInlineUpdateIncome}
               onDeleteIncome={handleDeleteIncome}
@@ -2170,6 +2233,8 @@ const Dashboard: React.FC = () => {
               ewallets={ewallets}
               categories={categories}
               expenses={expenses}
+              incomes={incomes}
+              transfers={transfers}
               onAddCard={handleAddCard}
               onUpdateCard={handleUpdateCard}
               onDeleteCard={handleDeleteCard}
@@ -2180,6 +2245,8 @@ const Dashboard: React.FC = () => {
               onAddBank={handleAddBank}
               onUpdateBank={handleUpdateBank}
               onDeleteBank={handleDeleteBank}
+              onAddTransfer={handleAddTransfer}
+              onDeleteTransfer={handleDeleteTransfer}
             />
           </Suspense>
         )}
@@ -2290,6 +2357,7 @@ const Dashboard: React.FC = () => {
                     setShowAddExpenseForm(false);
                     setActiveTab('paymentMethods');
                   }}
+                  onAddTransfer={handleAddTransfer}
                 />
               </div>
             </div>
