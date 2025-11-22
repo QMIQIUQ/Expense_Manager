@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Expense, Category, Card, EWallet, Repayment } from '../../types';
+import { Expense, Category, Card, EWallet, Repayment, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
@@ -33,6 +33,7 @@ interface ExpenseListProps {
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
+  banks?: Bank[];
   repayments?: Repayment[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
@@ -47,6 +48,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   categories,
   cards = [],
   ewallets = [],
+  banks = [],
   repayments = [],
   onDelete,
   onInlineUpdate,
@@ -739,6 +741,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     onRepaymentChange={onReloadRepayments}
                     cards={cards}
                     ewallets={ewallets}
+                    banks={banks}
                   />
                 </div>
               )}

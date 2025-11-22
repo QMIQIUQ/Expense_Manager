@@ -2069,6 +2069,7 @@ const Dashboard: React.FC = () => {
               categories={categories}
               cards={cards}
               ewallets={ewallets}
+              banks={banks}
               repayments={repayments}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}

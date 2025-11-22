@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Expense, Repayment, Card, EWallet } from '../../types';
+import { Expense, Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { repaymentService } from '../../services/repaymentService';
 import { incomeService } from '../../services/incomeService';
@@ -16,9 +16,10 @@ interface RepaymentManagerProps {
   onRepaymentChange?: () => void; // Callback to notify parent of changes
   cards?: Card[];
   ewallets?: EWallet[];
+  banks?: Bank[];
 }
 
-const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false, onRepaymentChange, cards = [], ewallets = [] }) => {
+const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, inline = false, onRepaymentChange, cards = [], ewallets = [], banks = [] }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
   const { showNotification, updateNotification } = useNotification();
@@ -510,6 +511,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
             initialData={editingRepayment || undefined}
             cards={cards}
             ewallets={ewallets}
+            banks={banks}
           />
         </div>
       )}

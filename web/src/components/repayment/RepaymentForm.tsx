@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Repayment, Card, EWallet } from '../../types';
+import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 
@@ -11,6 +11,7 @@ interface RepaymentFormProps {
   maxAmount?: number; // Maximum amount that can be repaid (for validation)
   cards?: Card[];
   ewallets?: EWallet[];
+  banks?: Bank[]; // Available for future use (currently card.bankName is used)
   title?: string;
 }
 
@@ -25,6 +26,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   maxAmount,
   cards = [],
   ewallets = [],
+  // banks prop available for future use (currently card.bankName is used)
   title,
 }) => {
   const { t } = useLanguage();
@@ -261,7 +263,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             <option value="">{t('selectCard')}</option>
             {cards.map((card) => (
               <option key={card.id} value={card.id}>
-                {card.name}
+                {card.bankName ? `${card.bankName} - ${card.name}` : card.name}
               </option>
             ))}
           </select>
