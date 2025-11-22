@@ -147,19 +147,7 @@ const CardManager: React.FC<CardManagerProps> = ({
         <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('creditCards')}</h3>
         <button 
           onClick={() => setIsAdding(true)} 
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 12px',
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-primary)',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className="btn btn-accent-light"
         >
           <PlusIcon size={18} />
           <span>{t('addCard')}</span>

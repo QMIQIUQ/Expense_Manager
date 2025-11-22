@@ -298,6 +298,7 @@ export const translations = {
   points: { en: 'Points', zh: '點數', 'zh-CN': '点数' },
   cashbackRules: { en: 'Cashback Rules', zh: '回饋規則', 'zh-CN': '回馈规则' },
   addCashbackRule: { en: 'Add Cashback Rule', zh: '新增回饋規則', 'zh-CN': '添加回馈规则' },
+  noCashbackRulesHint: { en: 'No cashback rules yet. Add one to get started!', zh: '尚未新增回饋規則，現在就建立一個！', 'zh-CN': '尚未添加回馈规则，现在就创建一个！' },
   linkedCategory: { en: 'Linked Category', zh: '關聯類別', 'zh-CN': '关联分类' },
   minSpendForRate: { en: 'Min Spend for Higher Rate', zh: '較高回饋門檻', 'zh-CN': '较高回馈门槛' },
   rateIfMet: { en: 'Rate if Met (%)', zh: '達標回饋率 (%)', 'zh-CN': '达标回馈率 (%)' },

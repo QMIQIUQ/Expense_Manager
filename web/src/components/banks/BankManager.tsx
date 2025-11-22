@@ -158,7 +158,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
       <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('banks')}</h3>
         {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', border: 'none', borderRadius: 8, fontWeight: 600 }}>
+          <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
             <PlusIcon size={18} />
             <span>{t('addBank')}</span>
           </button>
@@ -222,7 +222,13 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         {filteredBanks.map((bank) => {
           const stats = getBankStats[bank.id!];
           const isEditing = editingId === bank.id;
-
+          if (isEditing) {
+            return (
+              <div key={bank.id} className="form-card" style={{ width: '100%' }}>
+                <BankForm initialData={bank} onSubmit={handleUpdate} onCancel={() => setEditingId(null)} title={t('editBank')} />
+              </div>
+            );
+          }
           return (
             <div key={bank.id} className={`credit-card ${isSelectionMode && selectedIds.has(bank.id!) ? 'selected' : ''}`} style={openMenuId === bank.id ? { zIndex: 9999 } : {}}>
               {isSelectionMode && (
@@ -236,12 +242,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                       />
                   </div>
               )}
-              {isEditing ? (
-                <div className="form-card" style={{ width: '100%' }}>
-                  <BankForm initialData={bank} onSubmit={handleUpdate} onCancel={() => setEditingId(null)} title={t('editBank')} />
-                </div>
-              ) : (
-                <>
+              <>
                   {/* Card Header */}
                   <div className="card-header">
                     <div className="card-info">
@@ -329,8 +330,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                       </div>
                     </div>
                   )}
-                </>
-              )}
+              </>
             </div>
           );
         })}

@@ -430,7 +430,7 @@ const CardForm: React.FC<CardFormProps> = ({
           </div>
 
           {cashbackRules.length === 0 && (
-            <p className="text-sm italic" style={{ color: 'var(--text-tertiary)' }}>No cashback rules yet. Add one to get started!</p>
+            <p className="text-sm italic" style={{ color: 'var(--text-tertiary)' }}>{t('noCashbackRulesHint')}</p>
           )}
 
           {cashbackRules.map((rule, index) => (

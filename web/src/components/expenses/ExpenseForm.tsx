@@ -381,27 +381,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       {/* E-Wallet Selection - Only shown when e-wallet is selected */}
       {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <AutocompleteDropdown
-          options={ewallets.map((wallet): AutocompleteOption => ({
-            id: wallet.name,
-            label: wallet.name,
-            icon: wallet.icon,
-            subtitle: wallet.provider,
-            color: wallet.color,
-          }))}
-          value={formData.paymentMethodName}
-          onChange={(value) => {
-            setFormData((prev) => ({ ...prev, paymentMethodName: value }));
-            if (errors.paymentMethodName) {
-              setErrors((prev) => ({ ...prev, paymentMethodName: '' }));
-            }
-          }}
-          label={t('eWallet')}
-          placeholder={t('searchOrSelect')}
-          error={errors.paymentMethodName}
-          createNewLabel={onCreateEWallet ? t('createNew') + ' ' + t('eWallet') : undefined}
-          onCreateNew={onCreateEWallet}
-        />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWallet')}</label>
+          <select
+            name="paymentMethodName"
+            value={formData.paymentMethodName}
+            onChange={handleChange}
+            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
+              errors.paymentMethodName ? 'border-red-500' : ''
+            }`}
+            style={{
+              borderColor: errors.paymentMethodName ? undefined : 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <option value="">{t('selectPaymentMethod')}</option>
+            {ewallets.map((wallet) => (
+              <option key={wallet.name} value={wallet.name}>
+                {wallet.icon} {wallet.name}
+              </option>
+            ))}
+          </select>
+          {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
+        </div>
       )}
       
       {/* E-Wallet Name Input - Fallback when no e-wallets available */}

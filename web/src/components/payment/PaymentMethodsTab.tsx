@@ -4,7 +4,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import CardManager from '../cards/CardManager';
 import EWalletManager from '../ewallet/EWalletManager';
 import BankManager from '../banks/BankManager';
-import TransferForm from '../transfer/TransferForm';
 
 interface PaymentMethodsTabProps {
   cards: Card[];
@@ -51,15 +50,10 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
 }) => {
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
-  const [showTransferModal, setShowTransferModal] = useState(false);
   
-  // TODO: TransferList will use onDeleteTransfer
+  // TODO: TransferList will use onDeleteTransfer and onAddTransfer
   void onDeleteTransfer;
-
-  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    await onAddTransfer(transferData);
-    setShowTransferModal(false);
-  };
+  void onAddTransfer;
 
   const styles = {
     container: {
@@ -88,25 +82,6 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
     content: {
       marginTop: '8px',
     },
-    fab: {
-      position: 'fixed' as const,
-      bottom: '24px',
-      right: '24px',
-      width: '56px',
-      height: '56px',
-      borderRadius: '50%',
-      backgroundColor: 'var(--accent-primary)',
-      color: 'white',
-      border: 'none',
-      fontSize: '24px',
-      cursor: 'pointer',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s',
-      zIndex: 1000,
-    } as const,
   };
 
   return (
@@ -176,60 +151,6 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
           </div>
         )}
       </div>
-
-      {/* Floating Action Button for Transfer */}
-      <button
-        onClick={() => setShowTransferModal(true)}
-        style={styles.fab}
-        title={t('addTransfer')}
-      >
-        💱
-      </button>
-
-      {/* Transfer Modal */}
-      {showTransferModal && (
-        <div
-          className="fixed inset-0 z-[9998]"
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowTransferModal(false)}
-          />
-          {/* Sheet */}
-          <div className="absolute inset-x-0 bottom-0">
-            <div className="mx-auto w-full max-w-7xl">
-              <div style={{ 
-                backgroundColor: 'var(--card-bg)', 
-                borderTopLeftRadius: '16px',
-                borderTopRightRadius: '16px',
-                borderTop: '1px solid var(--border-color)',
-                padding: '12px 16px',
-                maxHeight: '85vh',
-                overflowY: 'auto'
-              }}>
-                <h2 style={{ 
-                  fontSize: '1.25rem', 
-                  fontWeight: 600, 
-                  marginBottom: '16px',
-                  color: 'var(--text-primary)'
-                }}>
-                  {t('addTransfer')}
-                </h2>
-                <TransferForm
-                  cards={cards}
-                  ewallets={ewallets}
-                  banks={banks}
-                  onSubmit={handleAddTransfer}
-                  onCancel={() => setShowTransferModal(false)}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

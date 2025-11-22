@@ -213,21 +213,9 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
       <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
         <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('eWallets')}</h3>
         {!isAdding && (
-          <button
-            onClick={() => setIsAdding(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              backgroundColor: 'var(--accent-light)',
-              color: 'var(--accent-primary)',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
+          <button 
+            onClick={() => setIsAdding(true)} 
+            className="btn btn-accent-light"
           >
             <PlusIcon size={18} />
             <span>{t('addEWallet')}</span>
@@ -273,21 +261,12 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         {filteredWallets.length === 0 ? (
           <div className="no-data">{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
-          filteredWallets.map((wallet) => (
-            <div key={wallet.id} className={`credit-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
-              {isSelectionMode && (
-                  <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
-                      <input
-                          type="checkbox"
-                          checked={selectedIds.has(wallet.id!)}
-                          onChange={() => toggleSelection(wallet.id!)}
-                          className="multi-select-checkbox"
-                          onClick={(e) => e.stopPropagation()}
-                      />
-                  </div>
-              )}
-              {editingId === wallet.id ? (
-                <div className="form-card" style={{ width: '100%' }}>
+          filteredWallets.map((wallet) => {
+            const isEditing = editingId === wallet.id;
+            if (isEditing) {
+              // Render only form card (remove outer credit-card frame)
+              return (
+                <div key={wallet.id} className="form-card" style={{ width: '100%' }}>
                   <EWalletForm
                     initialData={wallet}
                     onSubmit={saveInlineEdit}
@@ -295,8 +274,22 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     title={t('editEWallet')}
                   />
                 </div>
-              ) : (
-                // View Mode - Card-like design matching credit card layout
+              );
+            }
+            return (
+              <div key={wallet.id} className={`credit-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
+                {isSelectionMode && (
+                    <div className="selection-checkbox-wrapper" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.has(wallet.id!)}
+                            onChange={() => toggleSelection(wallet.id!)}
+                            className="multi-select-checkbox"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                )}
+                {/* View Mode - Card-like design matching credit card layout */}
                 <>
                   {/* Card Header with Name and Actions */}
                   <div className="card-header">
@@ -421,9 +414,9 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     );
                   })()}
                 </>
-              )}
-            </div>
-          ))
+              </div>
+            );
+          })
         )}
       </div>
 
