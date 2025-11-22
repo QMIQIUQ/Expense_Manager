@@ -40,6 +40,8 @@ interface ExpenseListProps {
   onEdit?: (exp: Expense | null) => void;
   onBulkDelete?: (ids: string[]) => void;
   onReloadRepayments?: () => void; // Callback to reload repayments
+  onCreateCard?: () => void;
+  onCreateEWallet?: () => void;
   focusExpenseId?: string; // when set, scroll and highlight
 }
 
@@ -54,6 +56,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onInlineUpdate,
   onBulkDelete,
   onReloadRepayments,
+  onCreateCard,
+  onCreateEWallet,
   focusExpenseId,
 }) => {
   const { t } = useLanguage();
@@ -506,6 +510,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     setEditingId(null);
                   }}
                   onCancel={() => setEditingId(null)}
+                  onCreateCard={onCreateCard}
+                  onCreateEWallet={onCreateEWallet}
                   title={t('editExpense')}
                 />
               ) : (

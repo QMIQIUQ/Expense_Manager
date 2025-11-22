@@ -12,6 +12,7 @@ interface ExpenseFormProps {
   cards?: Card[];
   ewallets?: EWallet[];
   onCreateEWallet?: () => void;
+  onCreateCard?: () => void;
   title?: string;
 }
 
@@ -23,6 +24,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   cards = [],
   ewallets = [],
   onCreateEWallet,
+  onCreateCard,
   title,
 }) => {
   const { t } = useLanguage();
@@ -257,7 +259,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </select>
       </div>
 
-      {/* Card Selection - Only shown when credit card is selected */}
+      {/* Card Selection - Shown when credit card is selected */}
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
@@ -279,6 +281,28 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Card Creation Prompt - Shown when credit card is selected but no cards available */}
+      {formData.paymentMethod === 'credit_card' && cards.length === 0 && (
+        <div className="flex flex-col gap-2 p-3 border rounded" style={{
+          borderColor: 'var(--border-color)',
+          backgroundColor: 'var(--input-bg)',
+        }}>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            {t('noCardsYet')}
+          </p>
+          {onCreateCard && (
+            <button
+              type="button"
+              onClick={onCreateCard}
+              className="text-sm text-blue-600 hover:underline text-left"
+              style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+            >
+              + {t('addCard')}
+            </button>
+          )}
         </div>
       )}
 

@@ -2075,6 +2075,8 @@ const Dashboard: React.FC = () => {
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
               onReloadRepayments={reloadRepayments}
+              onCreateCard={() => setActiveTab('paymentMethods')}
+              onCreateEWallet={() => setActiveTab('paymentMethods')}
               focusExpenseId={focusExpenseId || undefined}
             />
           </div>
@@ -2246,6 +2248,10 @@ const Dashboard: React.FC = () => {
                     setShowAddExpenseForm(false);
                     setActiveTab('paymentMethods');
                   }}
+                  onCreateCard={() => {
+                    setShowAddExpenseForm(false);
+                    setActiveTab('paymentMethods');
+                  }}
                 />
               </div>
             </div>
@@ -2333,6 +2339,10 @@ const Dashboard: React.FC = () => {
                   cards={cards}
                   ewallets={ewallets}
                   onCreateEWallet={() => {
+                    setShowAddSheet(false);
+                    setActiveTab('paymentMethods');
+                  }}
+                  onCreateCard={() => {
                     setShowAddSheet(false);
                     setActiveTab('paymentMethods');
                   }}
