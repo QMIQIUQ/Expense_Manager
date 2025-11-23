@@ -14,13 +14,18 @@ export default defineConfig(() => ({
         manualChunks: (id) => {
           // Split vendor code
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // Group React and React-dependent libraries together
+            // Use more specific path matching to avoid false positives
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || 
+                id.includes('node_modules/react-router') || id.includes('node_modules/recharts/') ||
+                id.includes('node_modules/@reduxjs/toolkit/') || id.includes('node_modules/react-redux/') ||
+                id.includes('node_modules/use-sync-external-store/')) {
               return 'react-vendor';
             }
-            if (id.includes('firebase')) {
+            if (id.includes('node_modules/firebase/') || id.includes('node_modules/@firebase/')) {
               return 'firebase';
             }
-            if (id.includes('exceljs')) {
+            if (id.includes('node_modules/exceljs/')) {
               return 'exceljs.min';
             }
             // Other node_modules
