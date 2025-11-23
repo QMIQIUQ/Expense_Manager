@@ -292,6 +292,13 @@ All Firebase operations are abstracted into service modules:
 - **budgetService.ts**: CRUD operations for budgets
 - **recurringExpenseService.ts**: CRUD operations for recurring expenses
 
+### Utility Layer
+
+Helper functions for common operations:
+
+- **dateUtils.ts**: Date/time utilities for local timezone handling (getTodayLocal, getCurrentTimeLocal, formatDateLocal)
+- **exportUtils.ts**: CSV export functionality
+
 ### Component Structure
 
 React components are organized by feature:

@@ -118,6 +118,8 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 
 **[See agent-priority-rules.md for development guidelines (for agents and developers) →](agent-priority-rules.md)**
 
+**[See DATE_HANDLING_REFACTORING.md for date/time utility documentation →](docs/DATE_HANDLING_REFACTORING.md)**
+
 ## 🚧 Future Enhancements
 
 - [x] Backend API integration for cloud sync ✅

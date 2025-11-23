@@ -232,7 +232,9 @@ web/
 │   │   ├── budgetService.ts
 │   │   └── recurringExpenseService.ts
 │   ├── types/                # TypeScript type definitions
-│   ├── utils/                # Utility functions (export, etc.)
+│   ├── utils/                # Utility functions
+│   │   ├── dateUtils.ts      # Date/time utilities (local timezone handling)
+│   │   └── exportUtils.ts    # Export utilities (CSV, etc.)
 │   ├── contexts/             # React contexts (Auth)
 │   ├── config/               # Firebase configuration
 │   └── pages/                # Page components
@@ -247,6 +249,7 @@ web/
 - **[OFFLINE_TESTING_GUIDE.md](OFFLINE_TESTING_GUIDE.md)** - Step-by-step testing guide for offline functionality
 - **[UX_OPTIMISTIC_CRUD.md](UX_OPTIMISTIC_CRUD.md)** - Optimistic UI and notification system documentation
 - **[ADMIN_SETUP.md](ADMIN_SETUP.md)** - Admin user setup instructions
+- **[../docs/DATE_HANDLING_REFACTORING.md](../docs/DATE_HANDLING_REFACTORING.md)** - Date/time utility functions and timezone handling
 
 ## 🚀 Future Enhancements
 

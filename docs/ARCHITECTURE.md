@@ -329,7 +329,8 @@ web/
 │   │   └── index.ts
 │   │
 │   ├── utils/
-│   │   └── exportUtils.ts
+│   │   ├── dateUtils.ts       # Date/time utilities for local timezone handling
+│   │   └── exportUtils.ts     # CSV export utilities
 │   │
 │   ├── contexts/
 │   │   └── AuthContext.tsx
@@ -418,6 +419,43 @@ web/
 │ Collection   │
 └──────────────┘
 ```
+
+## Utility Functions
+
+### Date Utilities (`utils/dateUtils.ts`)
+
+The application uses dedicated date utility functions to ensure consistent timezone handling across all components:
+
+```typescript
+// Get today's date in local timezone (YYYY-MM-DD)
+getTodayLocal(): string
+
+// Get current time in local timezone (HH:MM)
+getCurrentTimeLocal(): string
+
+// Format a date to YYYY-MM-DD in local timezone
+formatDateLocal(date: Date | string): string
+```
+
+**Purpose:**
+- Avoid timezone bugs caused by UTC conversions
+- Provide consistent date/time formatting across the application
+- Ensure users see dates in their local timezone
+
+**Used in:**
+- ExpenseForm - Default date/time for new expenses
+- IncomeForm - Default date/time for new income entries
+- BudgetForm - Date handling for budget periods
+- RecurringForm - Date scheduling for recurring expenses
+- RepaymentForm - Repayment date handling
+- DashboardSummary - Filtering expenses by today's date
+- ExpenseList - Date filtering and display
+
+**See:** [DATE_HANDLING_REFACTORING.md](DATE_HANDLING_REFACTORING.md) for detailed documentation
+
+### Export Utilities (`utils/exportUtils.ts`)
+
+Handles CSV export functionality for expenses and other data.
 
 ## Deployment Flow
 

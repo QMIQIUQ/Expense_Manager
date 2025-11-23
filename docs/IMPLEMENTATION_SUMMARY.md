@@ -224,7 +224,9 @@ web/
 │   │   ├── budgetService.ts
 │   │   └── recurringExpenseService.ts
 │   ├── types/            # TypeScript Types
-│   ├── utils/            # Utilities (export, etc.)
+│   ├── utils/            # Utility Functions
+│   │   ├── dateUtils.ts  # Date/time utilities (local timezone)
+│   │   └── exportUtils.ts # CSV export
 │   ├── contexts/         # React Contexts (Auth)
 │   ├── config/           # Firebase Config
 │   └── pages/            # Page Components
@@ -350,6 +352,7 @@ Each tab provides full CRUD functionality with inline forms and lists.
 1. **web/README.md** - Updated with feature list and setup guide
 2. **FEATURES.md** - Detailed feature documentation
 3. **IMPLEMENTATION_SUMMARY.md** - This document
+4. **DATE_HANDLING_REFACTORING.md** - Date/time utility documentation
 
 ### Code Comments
 - Service layer functions documented
