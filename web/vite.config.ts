@@ -14,7 +14,11 @@ export default defineConfig(() => ({
         manualChunks: (id) => {
           // Split vendor code
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // Group React and React-dependent libraries together
+            if (id.includes('react') || id.includes('react-dom') || 
+                id.includes('react-router') || id.includes('recharts') ||
+                id.includes('@reduxjs/toolkit') || id.includes('react-redux') ||
+                id.includes('use-sync-external-store')) {
               return 'react-vendor';
             }
             if (id.includes('firebase')) {
