@@ -457,8 +457,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         />
       </div>
 
-      {/* Transfer Option - Only show if onAddTransfer is provided and payment method is not cash */}
-      {onAddTransfer && formData.paymentMethod !== 'cash' && (
+      {/* Transfer Option - Only show if onAddTransfer is provided */}
+      {onAddTransfer && (
         <div className="flex flex-col gap-3 border-t pt-4">
           <div className="flex items-center gap-2">
             <input

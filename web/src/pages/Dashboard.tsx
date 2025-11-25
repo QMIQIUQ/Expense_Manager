@@ -2367,6 +2367,7 @@ const Dashboard: React.FC = () => {
               onReloadRepayments={reloadRepayments}
               onCreateCard={() => setActiveTab('paymentMethods')}
               onCreateEWallet={() => setActiveTab('paymentMethods')}
+              onAddTransfer={handleAddTransfer}
               focusExpenseId={focusExpenseId || undefined}
             />
           </div>
@@ -2655,6 +2656,7 @@ const Dashboard: React.FC = () => {
                   cards={cards}
                   ewallets={ewallets}
                   banks={banks}
+                  onAddTransfer={handleAddTransfer}
                   onCreateEWallet={() => {
                     setShowAddSheet(false);
                     setActiveTab('paymentMethods');

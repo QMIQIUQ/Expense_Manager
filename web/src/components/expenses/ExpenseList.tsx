@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Expense, Category, Card, EWallet, Repayment, Bank } from '../../types';
+import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
 import ConfirmModal from '../ConfirmModal';
@@ -43,6 +43,7 @@ interface ExpenseListProps {
   onReloadRepayments?: () => void; // Callback to reload repayments
   onCreateCard?: () => void;
   onCreateEWallet?: () => void;
+  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   focusExpenseId?: string; // when set, scroll and highlight
 }
 
@@ -59,6 +60,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onReloadRepayments,
   onCreateCard,
   onCreateEWallet,
+  onAddTransfer,
   focusExpenseId,
 }) => {
   const { t } = useLanguage();
@@ -514,6 +516,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   onCancel={() => setEditingId(null)}
                   onCreateCard={onCreateCard}
                   onCreateEWallet={onCreateEWallet}
+                  onAddTransfer={onAddTransfer}
                   title={t('editExpense')}
                 />
               ) : (

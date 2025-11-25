@@ -1,26 +1,38 @@
 import React from 'react';
 import ExpenseForm from '../../components/expenses/ExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
-import { Expense, Category } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 
 interface Props {
   expenses: Expense[];
   categories: Category[];
+  cards?: Card[];
+  ewallets?: EWallet[];
+  banks?: Bank[];
   editingExpense: Expense | null;
   onAddExpense: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onUpdateExpense: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onEdit: (exp: Expense | null) => void;
   onDeleteExpense: (id: string) => void;
+  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onCreateEWallet?: () => void;
+  onCreateCard?: () => void;
 }
 
 const ExpensesTab: React.FC<Props> = ({
   expenses,
   categories,
+  cards = [],
+  ewallets = [],
+  banks = [],
   editingExpense,
   onAddExpense,
   onUpdateExpense,
   onEdit,
   onDeleteExpense,
+  onAddTransfer,
+  onCreateEWallet,
+  onCreateCard,
 }) => {
   return (
     <div style={styles.expensesTab}>
@@ -33,6 +45,12 @@ const ExpensesTab: React.FC<Props> = ({
           onCancel={editingExpense ? () => onEdit(null) : undefined}
           initialData={editingExpense || undefined}
           categories={categories}
+          cards={cards}
+          ewallets={ewallets}
+          banks={banks}
+          onAddTransfer={onAddTransfer}
+          onCreateEWallet={onCreateEWallet}
+          onCreateCard={onCreateCard}
         />
       </div>
 
