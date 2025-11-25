@@ -955,6 +955,9 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setRecurringExpenses((prev) => [...prev, optimisticRecurring]);
+    
+    // Update cache optimistically
+    dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => [...data, optimisticRecurring]);
 
     await optimisticCRUD.run(
       { type: 'create', data: recurringData },
@@ -962,11 +965,23 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp recurring expense with real ID
+          const newId = result as string;
+          const realRecurring: RecurringExpense = {
+            ...optimisticRecurring,
+            id: newId,
+          };
+          setRecurringExpenses((prev) => prev.map((r) => (r.id === tempId ? realRecurring : r)));
+          // Update cache with real ID
+          dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
+            data.map((r) => (r.id === tempId ? realRecurring : r))
+          );
         },
         onError: () => {
           setRecurringExpenses((prev) => prev.filter((r) => r.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => data.filter((r) => r.id !== tempId));
         },
       }
     );
@@ -979,6 +994,13 @@ const Dashboard: React.FC = () => {
     setRecurringExpenses((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
+        data.map((r) => (r.id === id ? { ...r, ...updates } : r))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalRecurring },
@@ -987,13 +1009,19 @@ const Dashboard: React.FC = () => {
         entityType: 'recurring',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalRecurring) {
             setRecurringExpenses((prev) =>
               prev.map((r) => (r.id === id ? originalRecurring : r))
             );
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
+                data.map((r) => (r.id === id ? originalRecurring : r))
+              );
+            }
           }
         },
       }
@@ -1005,6 +1033,11 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setRecurringExpenses((prev) => prev.filter((r) => r.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => data.filter((r) => r.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: recurringToDelete },
@@ -1013,11 +1046,15 @@ const Dashboard: React.FC = () => {
         entityType: 'recurring',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (recurringToDelete) {
             setRecurringExpenses((prev) => [...prev, recurringToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => [...data, recurringToDelete]);
+            }
           }
         },
       }
@@ -1031,6 +1068,13 @@ const Dashboard: React.FC = () => {
     setRecurringExpenses((prev) =>
       prev.map((r) => (r.id === id ? { ...r, isActive } : r))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
+        data.map((r) => (r.id === id ? { ...r, isActive } : r))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: { isActive }, originalData: originalRecurring },
@@ -1039,13 +1083,19 @@ const Dashboard: React.FC = () => {
         entityType: 'recurring',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalRecurring) {
             setRecurringExpenses((prev) =>
               prev.map((r) => (r.id === id ? originalRecurring : r))
             );
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
+                data.map((r) => (r.id === id ? originalRecurring : r))
+              );
+            }
           }
         },
       }
@@ -1067,6 +1117,9 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setIncomes((prev) => [optimisticIncome, ...prev]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [optimisticIncome, ...data]);
 
     await optimisticCRUD.run(
       { type: 'create', data: incomeData },
@@ -1074,11 +1127,23 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp income with real ID
+          const newId = result as string;
+          const realIncome: Income = {
+            ...optimisticIncome,
+            id: newId,
+          };
+          setIncomes((prev) => prev.map((i) => (i.id === tempId ? realIncome : i)));
+          // Update cache with real ID
+          dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
+            data.map((i) => (i.id === tempId ? realIncome : i))
+          );
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== tempId));
         },
       }
     );
@@ -1089,6 +1154,13 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
+        data.map((i) => (i.id === id ? { ...i, ...updates } : i))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalIncome },
@@ -1097,11 +1169,17 @@ const Dashboard: React.FC = () => {
         entityType: 'income',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalIncome) {
             setIncomes((prev) => prev.map((i) => (i.id === id ? originalIncome : i)));
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
+                data.map((i) => (i.id === id ? originalIncome : i))
+              );
+            }
           }
         },
       }
@@ -1113,6 +1191,11 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setIncomes((prev) => prev.filter((i) => i.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: incomeToDelete },
@@ -1121,11 +1204,15 @@ const Dashboard: React.FC = () => {
         entityType: 'income',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (incomeToDelete) {
             setIncomes((prev) => [...prev, incomeToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [...data, incomeToDelete]);
+            }
           }
         },
       }
@@ -1203,6 +1290,9 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setCards((prev) => [optimisticCard, ...prev]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [optimisticCard, ...data]);
 
     await optimisticCRUD.run(
       { type: 'create', data: cardData },
@@ -1210,11 +1300,23 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'card',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp card with real ID
+          const newId = result as string;
+          const realCard: Card = {
+            ...optimisticCard,
+            id: newId,
+          };
+          setCards((prev) => prev.map((c) => (c.id === tempId ? realCard : c)));
+          // Update cache with real ID
+          dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
+            data.map((c) => (c.id === tempId ? realCard : c))
+          );
         },
         onError: () => {
           setCards((prev) => prev.filter((c) => c.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== tempId));
         },
       }
     );
@@ -1226,6 +1328,9 @@ const Dashboard: React.FC = () => {
     const tempId = `temp-${Date.now()}`;
     const optimisticBank: Bank = { ...bankData, id: tempId, userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date() };
     setBanks(prev => [...prev, optimisticBank]);
+    
+    // Update cache optimistically
+    dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, optimisticBank]);
 
     await optimisticCRUD.run(
       { type: 'create', data: bankData },
@@ -1233,8 +1338,24 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'bank',
         retryToQueueOnFail: true,
-        onSuccess: () => loadData(),
-        onError: () => setBanks(prev => prev.filter(b => b.id !== tempId)),
+        onSuccess: (result) => {
+          // Replace temp bank with real ID
+          const newId = result as string;
+          const realBank: Bank = {
+            ...optimisticBank,
+            id: newId,
+          };
+          setBanks((prev) => prev.map((b) => (b.id === tempId ? realBank : b)));
+          // Update cache with real ID
+          dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
+            data.map((b) => (b.id === tempId ? realBank : b))
+          );
+        },
+        onError: () => {
+          setBanks(prev => prev.filter(b => b.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== tempId));
+        },
       }
     );
   };
@@ -1244,6 +1365,13 @@ const Dashboard: React.FC = () => {
     if (!original) return;
     // Optimistic
     setBanks(prev => prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date() } : b));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
+        data.map((b) => (b.id === id ? { ...b, ...updates } : b))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: original },
@@ -1251,8 +1379,18 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'bank',
         retryToQueueOnFail: true,
-        onSuccess: () => loadData(),
-        onError: () => setBanks(prev => prev.map(b => b.id === id ? original : b)),
+        onSuccess: () => {
+          // Cache already updated optimistically, no need to reload
+        },
+        onError: () => {
+          setBanks(prev => prev.map(b => b.id === id ? original : b));
+          // Rollback cache
+          if (currentUser) {
+            dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
+              data.map((b) => (b.id === id ? original : b))
+            );
+          }
+        },
       }
     );
   };
@@ -1261,6 +1399,11 @@ const Dashboard: React.FC = () => {
     const original = banks.find(b => b.id === id);
     if (!original) return;
     setBanks(prev => prev.filter(b => b.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: original },
@@ -1268,8 +1411,16 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'bank',
         retryToQueueOnFail: true,
-        onSuccess: () => loadData(),
-        onError: () => setBanks(prev => [...prev, original]),
+        onSuccess: () => {
+          // Cache already updated optimistically, no need to reload
+        },
+        onError: () => {
+          setBanks(prev => [...prev, original]);
+          // Rollback cache
+          if (currentUser) {
+            dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, original]);
+          }
+        },
       }
     );
   };
@@ -1281,6 +1432,13 @@ const Dashboard: React.FC = () => {
     setCards((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
+        data.map((c) => (c.id === id ? { ...c, ...updates } : c))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: updates, originalData: originalCard },
@@ -1289,13 +1447,19 @@ const Dashboard: React.FC = () => {
         entityType: 'card',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalCard) {
             setCards((prev) =>
               prev.map((c) => (c.id === id ? originalCard : c))
             );
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
+                data.map((c) => (c.id === id ? originalCard : c))
+              );
+            }
           }
         },
       }
@@ -1307,6 +1471,11 @@ const Dashboard: React.FC = () => {
     
     // Optimistic update
     setCards((prev) => prev.filter((c) => c.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: cardToDelete },
@@ -1315,11 +1484,15 @@ const Dashboard: React.FC = () => {
         entityType: 'card',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (cardToDelete) {
             setCards((prev) => [...prev, cardToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [...data, cardToDelete]);
+            }
           }
         },
       }
@@ -1340,19 +1513,34 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setEWallets((prev) => [...prev, optimisticWallet]);
+    
+    // Update cache optimistically
+    dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, optimisticWallet]);
 
     await optimisticCRUD.run(
       { type: 'create', data: walletData },
       () => ewalletService.create({ ...walletData, userId: currentUser.uid }),
       {
-        entityType: 'category', // Using category type as ewallet is similar
+        entityType: 'ewallet',
         retryToQueueOnFail: true,
         successMessage: t('eWalletAdded'),
-        onSuccess: () => {
-          loadData();
+        onSuccess: (result) => {
+          // Replace temp e-wallet with real ID
+          const newId = result as string;
+          const realWallet: EWallet = {
+            ...optimisticWallet,
+            id: newId,
+          };
+          setEWallets((prev) => prev.map((w) => (w.id === tempId ? realWallet : w)));
+          // Update cache with real ID
+          dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
+            data.map((w) => (w.id === tempId ? realWallet : w))
+          );
         },
         onError: () => {
           setEWallets((prev) => prev.filter((w) => w.id !== tempId));
+          // Rollback cache
+          dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== tempId));
         },
       }
     );
@@ -1365,20 +1553,33 @@ const Dashboard: React.FC = () => {
     setEWallets((prev) =>
       prev.map((w) => (w.id === id ? { ...w, ...updates, updatedAt: new Date() } : w))
     );
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
+        data.map((w) => (w.id === id ? { ...w, ...updates } : w))
+      );
+    }
 
     await optimisticCRUD.run(
       { type: 'update', data: { id, updates }, originalData: originalWallet },
       () => ewalletService.update(id, updates),
       {
-        entityType: 'category', // Using category type as ewallet is similar
+        entityType: 'ewallet',
         retryToQueueOnFail: true,
         successMessage: t('eWalletUpdated'),
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (originalWallet) {
             setEWallets((prev) => prev.map((w) => (w.id === id ? originalWallet : w)));
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
+                data.map((w) => (w.id === id ? originalWallet : w))
+              );
+            }
           }
         },
       }
@@ -1390,20 +1591,29 @@ const Dashboard: React.FC = () => {
 
     // Optimistic update
     setEWallets((prev) => prev.filter((w) => w.id !== id));
+    
+    // Update cache optimistically
+    if (currentUser) {
+      dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== id));
+    }
 
     await optimisticCRUD.run(
       { type: 'delete', data: { id }, originalData: walletToDelete },
       () => ewalletService.delete(id),
       {
-        entityType: 'category', // Using category type as ewallet is similar
+        entityType: 'ewallet',
         retryToQueueOnFail: true,
         successMessage: t('eWalletDeleted'),
         onSuccess: () => {
-          loadData();
+          // Cache already updated optimistically, no need to reload
         },
         onError: () => {
           if (walletToDelete) {
             setEWallets((prev) => [...prev, walletToDelete]);
+            // Rollback cache
+            if (currentUser) {
+              dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, walletToDelete]);
+            }
           }
         },
       }
