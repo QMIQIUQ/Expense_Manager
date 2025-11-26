@@ -11,6 +11,7 @@ import RecentExpensesWidget from './RecentExpensesWidget';
 import BudgetProgressWidget from './BudgetProgressWidget';
 import TrackedExpensesWidget from './TrackedExpensesWidget';
 import CardsSummaryWidget from './CardsSummaryWidget';
+import QuickAddWidget from './QuickAddWidget';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -60,7 +61,7 @@ const renderWidget = (type: DashboardWidgetType, data: WidgetProps): React.React
     case 'cards-summary':
       return <CardsSummaryWidget {...data} />;
     case 'quick-add':
-      return null; // Quick add is handled separately
+      return <QuickAddWidget {...data} />;
     default:
       return null;
   }
@@ -82,10 +83,13 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   }
 
   const widgetTitle = widget.title || t(metadata.defaultTitle as TranslationKey) || metadata.defaultTitleFallback;
+  
+  // Force medium size for quick-add widget to ensure proper form display
+  const effectiveSize = widget.type === 'quick-add' ? 'medium' : widget.size;
 
   return (
     <div
-      className={`widget-container ${getSizeClass(widget.size)} ${!widget.enabled ? 'widget-disabled' : ''}`}
+      className={`widget-container ${getSizeClass(effectiveSize)} ${!widget.enabled ? 'widget-disabled' : ''}`}
       style={{
         opacity: widget.enabled ? 1 : 0.5,
         position: 'relative',
@@ -122,7 +126,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         </div>
       )}
 
-      {widget.type !== 'summary-cards' && widget.type !== 'quick-add' && (
+      {widget.type !== 'summary-cards' && (
         <div className="widget-header">
           <span className="widget-icon">{metadata.icon}</span>
           <h3 className="widget-title">{widgetTitle}</h3>

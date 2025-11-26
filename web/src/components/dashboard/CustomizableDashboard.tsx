@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Expense, Income, Repayment, Budget, Card } from '../../types';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
+import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
+import { quickExpenseService } from '../../services/quickExpenseService';
 import { WidgetContainer, WidgetProps } from './widgets';
 import DashboardCustomizer from './DashboardCustomizer';
 
@@ -13,8 +15,13 @@ interface CustomizableDashboardProps {
   repayments: Repayment[];
   budgets: Budget[];
   cards: Card[];
+  categories: Category[];
+  ewallets: EWallet[];
+  banks: Bank[];
   billingCycleDay: number;
   onMarkTrackingCompleted?: (expenseId: string) => void;
+  onQuickAdd?: () => void;
+  onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
@@ -23,14 +30,20 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   repayments,
   budgets,
   cards,
+  categories,
+  ewallets,
+  banks,
   billingCycleDay,
   onMarkTrackingCompleted,
+  onQuickAdd,
+  onQuickExpenseAdd,
 }) => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_DASHBOARD_LAYOUT);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
 
   // Load user's dashboard layout
   useEffect(() => {
@@ -51,6 +64,21 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     loadLayout();
   }, [currentUser]);
 
+  // Load quick expense presets
+  const loadQuickExpensePresets = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const presets = await quickExpenseService.getPresets(currentUser.uid);
+      setQuickExpensePresets(presets);
+    } catch (error) {
+      console.error('Failed to load quick expense presets:', error);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    loadQuickExpensePresets();
+  }, [loadQuickExpensePresets]);
+
   // Save widget changes
   const handleSaveWidgets = async (newWidgets: DashboardWidget[]) => {
     if (!currentUser) return;
@@ -70,8 +98,15 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     repayments,
     budgets,
     cards,
+    categories,
+    ewallets,
+    banks,
     billingCycleDay,
     onMarkTrackingCompleted,
+    onQuickAdd,
+    quickExpensePresets,
+    onQuickExpenseAdd,
+    onQuickExpensePresetsChange: loadQuickExpensePresets,
   };
 
   // Get enabled widgets sorted by order

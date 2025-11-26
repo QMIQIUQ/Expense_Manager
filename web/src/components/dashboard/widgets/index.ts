@@ -8,6 +8,7 @@ export { default as RecentExpensesWidget } from './RecentExpensesWidget';
 export { default as BudgetProgressWidget } from './BudgetProgressWidget';
 export { default as TrackedExpensesWidget } from './TrackedExpensesWidget';
 export { default as CardsSummaryWidget } from './CardsSummaryWidget';
+export { default as QuickAddWidget } from './QuickAddWidget';
 
 // Export types
 export type { WidgetProps } from './types';

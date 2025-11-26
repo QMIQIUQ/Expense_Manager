@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer } from '../types';
+import { QuickExpensePreset } from '../types/quickExpense';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -540,7 +541,40 @@ const Dashboard: React.FC = () => {
     );
   };
 
-
+  // Handle quick expense add from preset
+  const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
+    if (!currentUser) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().slice(0, 5);
+    
+    // Find category name from categoryId
+    const category = categories.find(c => c.id === preset.categoryId);
+    const categoryName = category?.name || '';
+    
+    // Find e-wallet name if ewalletId is set
+    const ewallet = preset.ewalletId ? ewallets.find(w => w.id === preset.ewalletId) : null;
+    
+    // Build expense data, excluding undefined fields (Firebase doesn't accept undefined)
+    const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
+      description: preset.name,
+      amount: preset.amount,
+      category: categoryName,
+      date: today,
+      time: now,
+      paymentMethod: preset.paymentMethod || 'cash',
+      notes: preset.description || '',
+    };
+    
+    // Only add payment-specific fields if they exist
+    if (preset.cardId) expenseData.cardId = preset.cardId;
+    if (preset.bankId) expenseData.bankId = preset.bankId;
+    // For e-wallet, use paymentMethodName (the wallet's name), not ewalletId
+    if (ewallet) expenseData.paymentMethodName = ewallet.name;
+    
+    await handleAddExpense(expenseData);
+    // Note: handleAddExpense via optimisticCRUD already shows notification
+  };
 
   const handleDeleteExpense = async (id: string) => {
     if (!currentUser) return;
@@ -1804,17 +1838,15 @@ const Dashboard: React.FC = () => {
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
-      <div className="dashboard-card dashboard-header relative mb-8" style={{ 
-        paddingTop: '20px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        border: 'none',
-        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-      }}>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-white mb-1 truncate">{t('appTitle')}</h1>
-          <p className="text-sm text-white/90 truncate">
-            {t('welcome')}, {getDisplayName(currentUser)}
-          </p>
+      <div className="dashboard-header-modern">
+        <div className="header-brand">
+          <span className="header-logo">💰</span>
+          <div className="header-text">
+            <h1 className="header-title">{t('appTitleShort')}</h1>
+            <p className="header-subtitle">
+              {t('welcome')}, {getDisplayName(currentUser)}
+            </p>
+          </div>
         </div>
 
         <div className="header-actions">
@@ -1822,16 +1854,16 @@ const Dashboard: React.FC = () => {
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-              className="p-3 hover:bg-white/20 rounded-lg transition-colors relative"
+              className="header-menu-btn"
               aria-label="Menu"
               aria-expanded={showHamburgerMenu}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"/>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               {queueCount > 0 && (
                 <span 
-                  className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  className="header-badge"
                   title={t('pendingUploads') || `${queueCount} pending uploads`}
                 >
                   {queueCount}
@@ -2352,8 +2384,13 @@ const Dashboard: React.FC = () => {
             repayments={repayments}
             budgets={budgets}
             cards={cards}
+            categories={categories}
+            ewallets={ewallets}
+            banks={banks}
             billingCycleDay={billingCycleDay}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
+            onQuickAdd={() => setShowAddExpenseForm(true)}
+            onQuickExpenseAdd={handleQuickExpenseAdd}
           />
         )}
 

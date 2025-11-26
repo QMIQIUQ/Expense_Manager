@@ -9,6 +9,7 @@ export const translations = {
   add: { en: 'Add', zh: '新增', 'zh-CN': '添加' },
   close: { en: 'Close', zh: '關閉', 'zh-CN': '关闭' },
   confirm: { en: 'Confirm', zh: '確認', 'zh-CN': '确认' },
+  confirmEdit: { en: 'Confirm Edit', zh: '確認編輯', 'zh-CN': '确认编辑' },
   loading: { en: 'Loading...', zh: '載入中...', 'zh-CN': '加载中...' },
   search: { en: 'Search', zh: '搜尋', 'zh-CN': '搜索' },
   filter: { en: 'Filter', zh: '篩選', 'zh-CN': '筛选' },
@@ -16,6 +17,7 @@ export const translations = {
 
   // Header
   appTitle: { en: '💰 Expense Manager', zh: '💰 支出管理器', 'zh-CN': '💰 支出管理器' },
+  appTitleShort: { en: 'Expense Manager', zh: '支出管理器', 'zh-CN': '支出管理器' },
   welcome: { en: 'Welcome', zh: '歡迎', 'zh-CN': '欢迎' },
   logout: { en: 'Logout', zh: '登出', 'zh-CN': '退出登录' },
   template: { en: '📥 Template', zh: '📥 範本', 'zh-CN': '📥 模板' },
@@ -341,6 +343,9 @@ export const translations = {
   selectDay: { en: 'Select Day', zh: '選擇日期', 'zh-CN': '选择日期' },
   billingCycleHint: { en: 'Example: If you set day 15, monthly data will be calculated from 15th to 14th of next month.', zh: '例如：若設定為 15 日，月度數據將從每月 15 日到次月 14 日計算。', 'zh-CN': '例如：若设定为 15 日，月度数据将从每月 15 日到次月 14 日计算。' },
   saving: { en: 'Saving...', zh: '儲存中...', 'zh-CN': '保存中...' },
+  createSuccess: { en: 'Created successfully!', zh: '建立成功！', 'zh-CN': '创建成功！' },
+  updateSuccess: { en: 'Updated successfully!', zh: '更新成功！', 'zh-CN': '更新成功！' },
+  deleteSuccess: { en: 'Deleted successfully!', zh: '刪除成功！', 'zh-CN': '删除成功！' },
   settingsSaved: { en: 'Settings saved successfully', zh: '設定已成功儲存', 'zh-CN': '设定已成功保存' },
   errorLoadingSettings: { en: 'Error loading settings', zh: '載入設定時發生錯誤', 'zh-CN': '载入设定时发生错误' },
   errorSavingSettings: { en: 'Error saving settings', zh: '儲存設定時發生錯誤', 'zh-CN': '保存设定时发生错误' },
@@ -590,6 +595,15 @@ export const translations = {
   cardsSummary: { en: 'Cards Summary', zh: '信用卡摘要', 'zh-CN': '信用卡摘要' },
   enabledWidgets: { en: 'Enabled Widgets', zh: '已啟用組件', 'zh-CN': '已启用组件' },
   disabledWidgets: { en: 'Disabled Widgets', zh: '未啟用組件', 'zh-CN': '未启用组件' },
+
+  // Quick Expense
+  addQuickExpense: { en: 'Add Quick Expense', zh: '新增快速支出', 'zh-CN': '添加快速支出' },
+  editQuickExpense: { en: 'Edit Quick Expense', zh: '編輯快速支出', 'zh-CN': '编辑快速支出' },
+  presetName: { en: 'Name', zh: '名稱', 'zh-CN': '名称' },
+  quickExpenseNamePlaceholder: { en: 'e.g., Morning Coffee', zh: '例如：早餐', 'zh-CN': '例如：早餐' },
+  addExpenseManually: { en: 'Add Expense Manually', zh: '手動新增支出', 'zh-CN': '手动添加支出' },
+  quickExpenseAdded: { en: 'Quick expense added!', zh: '已新增快速支出！', 'zh-CN': '已添加快速支出！' },
+  bankAccount: { en: 'Bank Account', zh: '銀行帳戶', 'zh-CN': '银行账户' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
