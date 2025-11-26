@@ -2046,3 +2046,510 @@ button:not(:disabled):hover {
   background-color: rgba(139, 92, 246, 0.1) !important;
 }
 
+/* ============================================ */
+/* Dashboard Widgets & Customizer Styles       */
+/* ============================================ */
+
+/* Widget Container */
+.widget-container {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.widget-container:hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+/* Widget sizes */
+.widget-small { flex: 0 0 calc(33.333% - 12px); min-width: 200px; }
+.widget-medium { flex: 0 0 calc(50% - 8px); min-width: 280px; }
+.widget-large { flex: 0 0 calc(66.666% - 8px); min-width: 360px; }
+.widget-full { flex: 0 0 100%; }
+
+@media (max-width: 768px) {
+  .widget-small, .widget-medium, .widget-large, .widget-full {
+    flex: 0 0 100%;
+    min-width: unset;
+  }
+}
+
+.widget-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+
+/* Widget header */
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.widget-icon {
+  font-size: 20px;
+}
+
+.widget-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Widget edit controls */
+.widget-edit-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.widget-drag-handle {
+  cursor: grab;
+  color: var(--text-tertiary);
+  font-size: 16px;
+  padding: 4px;
+}
+
+.widget-drag-handle:active {
+  cursor: grabbing;
+}
+
+.widget-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.widget-action-btn {
+  padding: 4px 8px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.widget-action-btn:hover {
+  background: var(--accent-light);
+}
+
+/* Widget empty state */
+.widget-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.widget-empty-state span {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.widget-empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Widget placeholder (when disabled in edit mode) */
+.widget-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 2px dashed var(--border-color);
+}
+
+.widget-placeholder-icon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+
+.widget-placeholder-text {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* Dashboard Widgets Grid */
+.dashboard-widgets-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+/* Dashboard Customizer */
+.customizer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.customizer-modal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px var(--shadow-lg);
+}
+
+.customizer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.customizer-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.customizer-header .btn-close {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customizer-header .btn-close:hover {
+  background: var(--bg-tertiary);
+}
+
+.customizer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.customizer-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+/* Widget list in customizer */
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  cursor: grab;
+  transition: all 0.2s;
+}
+
+.widget-item:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.widget-item.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px var(--shadow-md);
+}
+
+.widget-item.disabled {
+  opacity: 0.6;
+}
+
+.widget-item .widget-drag-handle {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.widget-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.widget-info .widget-icon {
+  font-size: 24px;
+}
+
+.widget-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.widget-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.widget-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-move {
+  padding: 6px 10px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.btn-move:hover:not(:disabled) {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.btn-move:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-toggle {
+  padding: 6px 10px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  transform: scale(1.1);
+}
+
+.btn-toggle.visible {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.btn-toggle.visible:hover {
+  background: var(--success-text);
+  color: white;
+}
+
+.btn-toggle.hidden {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 2px dashed #dc2626 !important;
+}
+
+.btn-toggle.hidden:hover {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+/* Dark mode overrides for hidden toggle button */
+.dark .btn-toggle.hidden {
+  background: rgba(220, 38, 38, 0.2) !important;
+  color: #f87171 !important;
+  border: 2px dashed #f87171 !important;
+}
+
+.dark .btn-toggle.hidden:hover {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+/* Add widget section */
+.add-widget-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.add-widget-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.available-widgets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-add-widget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-add-widget:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+/* Customizer footer */
+.customizer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Budget progress widget */
+.budget-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budget-progress-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.budget-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.budget-category {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.budget-amount {
+  font-weight: 500;
+}
+
+.budget-status {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.budget-percentage {
+  color: var(--text-secondary);
+}
+
+/* Cards summary widget */
+.cards-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-stats {
+  display: flex;
+  gap: 16px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Customize button for dashboard header */
+.btn-customize {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-customize:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-light);
+}
+

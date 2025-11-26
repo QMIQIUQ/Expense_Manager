@@ -565,6 +565,31 @@ export const translations = {
   offlineMode: { en: 'Offline mode - showing cached data', zh: '離線模式 - 顯示快取資料', 'zh-CN': '离线模式 - 显示缓存数据' },
   syncSuccess: { en: 'Successfully synced operations', zh: '同步成功', 'zh-CN': '同步成功' },
   syncPartialFail: { en: 'Some operations failed to sync', zh: '部分操作同步失敗', 'zh-CN': '部分操作同步失败' },
+
+  // Dashboard Customization
+  customizeDashboard: { en: 'Customize Dashboard', zh: '自訂儀表板', 'zh-CN': '自定义仪表板' },
+  customize: { en: 'Customize', zh: '自訂', 'zh-CN': '自定义' },
+  noWidgetsEnabled: { en: 'No widgets enabled. Click customize to add widgets.', zh: '尚無啟用的組件。點擊自訂來新增組件。', 'zh-CN': '尚无启用的组件。点击自定义来添加组件。' },
+  moveUp: { en: 'Move Up', zh: '上移', 'zh-CN': '上移' },
+  moveDown: { en: 'Move Down', zh: '下移', 'zh-CN': '下移' },
+  hide: { en: 'Hide', zh: '隱藏', 'zh-CN': '隐藏' },
+  show: { en: 'Show', zh: '顯示', 'zh-CN': '显示' },
+  widgetHidden: { en: 'Widget hidden', zh: '組件已隱藏', 'zh-CN': '组件已隐藏' },
+  addWidget: { en: 'Add Widget', zh: '新增組件', 'zh-CN': '添加组件' },
+  noExpenseData: { en: 'No expense data available', zh: '暫無支出資料', 'zh-CN': '暂无支出数据' },
+  noTrendData: { en: 'No trend data available', zh: '暫無趨勢資料', 'zh-CN': '暂无趋势数据' },
+  overBudget: { en: 'Over budget', zh: '超出預算', 'zh-CN': '超出预算' },
+  noTrackedExpenses: { en: 'No tracked expenses', zh: '暫無追蹤中的支出', 'zh-CN': '暂无追踪中的支出' },
+  noCards: { en: 'No cards', zh: '暫無卡片', 'zh-CN': '暂无卡片' },
+  limit: { en: 'Limit', zh: '額度', 'zh-CN': '额度' },
+  utilization: { en: 'Utilization', zh: '使用率', 'zh-CN': '使用率' },
+  noDataAvailable: { en: 'No data available', zh: '暫無資料', 'zh-CN': '暂无数据' },
+  summaryCards: { en: 'Summary Cards', zh: '摘要卡片', 'zh-CN': '摘要卡片' },
+  expenseChart: { en: 'Expense Chart', zh: '支出圖表', 'zh-CN': '支出图表' },
+  budgetProgress: { en: 'Budget Progress', zh: '預算進度', 'zh-CN': '预算进度' },
+  cardsSummary: { en: 'Cards Summary', zh: '信用卡摘要', 'zh-CN': '信用卡摘要' },
+  enabledWidgets: { en: 'Enabled Widgets', zh: '已啟用組件', 'zh-CN': '已启用组件' },
+  disabledWidgets: { en: 'Disabled Widgets', zh: '未啟用組件', 'zh-CN': '未启用组件' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

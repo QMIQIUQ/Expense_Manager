@@ -21,8 +21,7 @@ import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
-import DashboardSummary from '../components/dashboard/DashboardSummary';
-import CardsSummary from '../components/dashboard/CardsSummary';
+import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import InlineLoading from '../components/InlineLoading';
 
 // Lazy load heavy components
@@ -271,9 +270,13 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Budget Notifications
+  // Track if budget check has been done this session to prevent duplicates
+  const budgetCheckDoneRef = React.useRef(false);
+  
   // Budget notifications check
   useEffect(() => {
-    if (!budgets.length || !expenses.length) return;
+    // Skip if already checked this session or no data
+    if (budgetCheckDoneRef.current || !budgets.length || !expenses.length) return;
 
     // Check budgets once when data is loaded
     const checkBudgets = async () => {
@@ -284,14 +287,20 @@ const Dashboard: React.FC = () => {
       const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate);
       
       if (alerts.length > 0) {
-        // Show notifications for each alert
+        // Show notifications for each alert with unique ID to prevent duplicates
         alerts.forEach(alert => {
-          showNotification(alert.type, alert.message, { duration: 0 });
+          showNotification(alert.type, alert.message, { 
+            duration: 0,
+            id: `budget-alert-${alert.budget.id}` // Unique ID prevents duplicate notifications
+          });
         });
         
         // Update last check time
         localStorage.setItem('lastBudgetCheck', new Date().toISOString());
       }
+      
+      // Mark as done for this session
+      budgetCheckDoneRef.current = true;
     };
 
     // Check after a short delay to avoid overwhelming the user at startup
@@ -2337,18 +2346,15 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
-          <div className="flex flex-col gap-6">
-            <DashboardSummary 
-              expenses={expenses} 
-              incomes={incomes} 
-              repayments={repayments}
-              billingCycleDay={billingCycleDay}
-              onMarkTrackingCompleted={handleMarkTrackingCompleted}
-            />
-            {cards.length > 0 && (
-              <CardsSummary cards={cards} categories={categories} expenses={expenses} />
-            )}
-          </div>
+          <CustomizableDashboard
+            expenses={expenses}
+            incomes={incomes}
+            repayments={repayments}
+            budgets={budgets}
+            cards={cards}
+            billingCycleDay={billingCycleDay}
+            onMarkTrackingCompleted={handleMarkTrackingCompleted}
+          />
         )}
 
         {activeTab === 'expenses' && (

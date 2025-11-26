@@ -281,6 +281,46 @@ Date,Description,Category,Amount,Notes
 
 ---
 
+### 8. Dashboard Customization (儀表板自定義)
+
+**Purpose**: Personalize your dashboard by showing/hiding widgets and reordering them.
+
+**Capabilities**:
+- 9 customizable widget components
+- Show/hide individual widgets
+- Reorder widgets via drag-and-drop or arrow buttons
+- Layout settings saved per user in Firebase
+- Reset to default layout anytime
+
+**Available Widgets**:
+| Widget | Icon | Description |
+|--------|------|-------------|
+| 摘要卡片 | 📊 | Today, monthly expenses, and income overview |
+| 支出圖表 | 🥧 | Pie chart showing spending by category |
+| 支出趨勢 | 📈 | Line chart of last 7 days spending |
+| 熱門類別 | 📋 | Top spending categories with amounts |
+| 最近支出 | 🧾 | Latest expense transactions |
+| 預算進度 | 🎯 | Progress bars for active budgets |
+| 信用卡摘要 | 💳 | Credit card usage and cashback summary |
+| 追蹤中的支出 | 👁️ | Expenses waiting for repayment |
+| 新增支出 | ➕ | Quick add expense button |
+
+**User Flow**:
+1. Navigate to Dashboard (儀表板) tab
+2. Click ⚙️ settings icon in the header
+3. In the customization modal:
+   - Toggle **顯示/隱藏** buttons to show/hide widgets
+   - Use ↑↓ arrows or drag to reorder
+4. Click **儲存** to save your layout
+5. Use **重設為預設** to restore default layout
+
+**Data Storage**:
+- Collection: `dashboardLayouts`
+- Document ID: User's UID
+- Persists across sessions and devices
+
+---
+
 ## Technical Architecture
 
 ### Service Layer
@@ -291,6 +331,7 @@ All Firebase operations are abstracted into service modules:
 - **categoryService.ts**: CRUD operations for categories
 - **budgetService.ts**: CRUD operations for budgets
 - **recurringExpenseService.ts**: CRUD operations for recurring expenses
+- **dashboardLayoutService.ts**: CRUD operations for dashboard layouts
 
 ### Utility Layer
 
@@ -307,7 +348,10 @@ React components are organized by feature:
 - **categories/**: Category manager component
 - **budgets/**: Budget manager component
 - **recurring/**: Recurring expense manager
-- **dashboard/**: Dashboard summary component
+- **dashboard/**: Dashboard components
+  - `CustomizableDashboard.tsx`: Main dashboard container
+  - `DashboardCustomizer.tsx`: Customization modal
+  - `widgets/`: Individual widget components
 
 ### Data Flow
 
@@ -414,5 +458,5 @@ https://github.com/QMIQIUQ/Expense_Manager
 
 ---
 
-**Last Updated**: 2024
-**Version**: 1.0.0
+**Last Updated**: November 2025
+**Version**: 1.1.0

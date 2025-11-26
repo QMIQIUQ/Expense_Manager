@@ -161,5 +161,13 @@ service cloud.firestore {
                        request.resource.data.amount > 0;
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // Dashboard Layouts collection (stores user's dashboard widget preferences)
+    match /dashboardLayouts/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
   }
 }

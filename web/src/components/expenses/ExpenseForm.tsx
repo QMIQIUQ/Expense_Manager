@@ -483,7 +483,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 <select
                   value={transferFromPaymentMethod}
                   onChange={(e) => {
-                    setTransferFromPaymentMethod(e.target.value as any);
+                    setTransferFromPaymentMethod(e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank');
                     setTransferFromCardId('');
                     setTransferFromEWalletName('');
                     setTransferFromBankId('');

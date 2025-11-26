@@ -66,7 +66,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         actions: options?.actions,
       };
 
-      setNotifications((prev) => [...prev, notification]);
+      setNotifications((prev) => {
+        // If notification with same ID exists, don't add duplicate
+        if (prev.some((n) => n.id === id)) {
+          return prev;
+        }
+        return [...prev, notification];
+      });
 
       // Auto-dismiss if duration > 0
       if (duration > 0) {
