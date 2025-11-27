@@ -3090,13 +3090,22 @@ button:not(:disabled):hover {
 }
 
 /* Touch devices: always show action buttons */
-@media (hover: none), (pointer: coarse) {
+@media (hover: none) {
   .quick-expense-item-actions {
-    opacity: 0.8;
+    opacity: 1 !important;
   }
-  
-  .quick-expense-item:active .quick-expense-item-actions {
-    opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .quick-expense-item-actions {
+    opacity: 1 !important;
+  }
+}
+
+/* Mobile screen fallback: always show on small screens */
+@media (max-width: 768px) {
+  .quick-expense-item-actions {
+    opacity: 1 !important;
   }
 }
 
