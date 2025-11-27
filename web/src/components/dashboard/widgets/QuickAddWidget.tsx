@@ -313,7 +313,16 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
         {/* Category */}
         <select
           value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+          onChange={(e) => {
+            const categoryId = e.target.value;
+            const cat = categories.find(c => c.id === categoryId);
+            // 同步图标为所选种类图标，若无则保持原来的或默认
+            setFormData({ 
+              ...formData, 
+              categoryId, 
+              icon: cat?.icon || formData.icon || '💰'
+            });
+          }}
           className="inline-select"
         >
           <option value="">{t('selectCategory')}</option>
@@ -414,9 +423,11 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >
-                {/* Row 1: Icon + Amount */}
+                {/* Row 1: Category Name Chip + Amount (icon removed per request) */}
                 <div className="quick-expense-row">
-                  <span className="quick-expense-icon">{preset.icon || category?.icon || '💰'}</span>
+                  <span className="category-chip quick-expense-category-chip">
+                    {category?.name || t('uncategorized')}
+                  </span>
                   <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
                 </div>
                 {/* Row 2: Name + Menu */}

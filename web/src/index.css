@@ -2739,8 +2739,7 @@ button:not(:disabled):hover {
   align-items: stretch;
   gap: 2px;
   width: 100%;
-  padding: 10px 12px;
-  padding-right: 32px; /* Space for menu button */
+  padding: 10px 12px; /* Uniform horizontal padding; reserve menu space only on row 2 so amount can align flush right */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
@@ -2788,11 +2787,34 @@ button:not(:disabled):hover {
   flex-shrink: 0;
 }
 
+/* Category chip inside quick expense (smaller & truncated) */
+.quick-expense-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px; /* further reduced */
+  font-weight: 500; /* lighter weight for smaller size */
+  padding: 1px 5px; /* tighter horizontal padding */
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .quick-expense-category-chip {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 /* Row 2: Name */
 .quick-expense-row-2 {
   display: flex;
   align-items: center;
   width: 100%;
+  padding-right: 32px; /* Reserve space for the menu trigger without shifting amount in row 1 */
 }
 
 .quick-expense-name {
