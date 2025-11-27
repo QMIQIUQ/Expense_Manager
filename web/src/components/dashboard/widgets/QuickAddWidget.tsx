@@ -411,15 +411,18 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >
-                {/* Row 1: Category Name Chip + Amount (icon removed per request) */}
-                <div className="quick-expense-row">
+                {/* Row 1: Category chip */}
+                <div className="quick-expense-row-category">
                   <span className="category-chip quick-expense-category-chip">
                     {category?.name || t('uncategorized')}
                   </span>
+                </div>
+                {/* Row 2: Amount (prominent) */}
+                <div className="quick-expense-row-amount">
                   <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
                 </div>
-                {/* Row 2: Name + Menu */}
-                <div className="quick-expense-row-2">
+                {/* Row 3: Name + Menu */}
+                <div className="quick-expense-row-name">
                   <span className="quick-expense-name">{preset.name}</span>
                   {/* Hamburger menu - positioned inside button in row 2 */}
                   <div className="quick-expense-menu-wrapper" ref={openMenuId === preset.id ? menuRef : null}>

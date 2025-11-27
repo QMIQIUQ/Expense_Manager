@@ -350,31 +350,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     <>
       <style>{responsiveStyles}</style>
       <div style={styles.container}>
-      {/* Quick Expense Scroll Bar */}
-      {quickExpensePresets.length > 0 && onQuickExpenseAdd && (
-        <div className="quick-expense-scroll-container">
-          <div className="quick-expense-scroll-bar">
-            {quickExpensePresets.map((preset) => {
-              const category = categories.find((c) => c.id === preset.categoryId);
-              return (
-                <button
-                  key={preset.id}
-                  className={`quick-expense-scroll-btn ${quickExpenseLoading === preset.id ? 'loading' : ''}`}
-                  onClick={() => handleQuickExpenseClick(preset)}
-                  disabled={!!quickExpenseLoading}
-                >
-                  <span className="quick-expense-scroll-category">
-                    {category?.name || t('uncategorized')}
-                  </span>
-                  <span className="quick-expense-scroll-name">{preset.name}</span>
-                  <span className="quick-expense-scroll-amount">${preset.amount.toFixed(2)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Filter Section */}
       <div style={styles.filterSection}>
         {/* Simplified filter - always visible */}
@@ -393,6 +368,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             {showAdvancedFilters ? '▼ ' : '▶ '}{t('filters')}
           </button>
         </div>
+        {/* moved quick expense out of filterSection */}
         {/* Advanced filters - collapsible */}
         {showAdvancedFilters && (
           <>
@@ -475,6 +451,32 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           </>
         )}
       </div>
+
+      {/* Quick Expense Scroll Bar: below filter section, above multi-select */}
+      {quickExpensePresets.length > 0 && onQuickExpenseAdd && (
+        <div className="quick-expense-scroll-container">
+          <div className="quick-expense-scroll-bar">
+            {quickExpensePresets.map((preset) => {
+              const category = categories.find((c) => c.id === preset.categoryId);
+              return (
+                <button
+                  key={preset.id}
+                  className={`quick-expense-scroll-btn ${quickExpenseLoading === preset.id ? 'loading' : ''}`}
+                  onClick={() => handleQuickExpenseClick(preset)}
+                  disabled={!!quickExpenseLoading}
+                  aria-label={`Quick add ${preset.name}`}
+                >
+                  <span className="quick-expense-scroll-category">
+                    {category?.name || t('uncategorized')}
+                  </span>
+                  <span className="quick-expense-scroll-name">{preset.name}</span>
+                  <span className="quick-expense-scroll-amount">${preset.amount.toFixed(2)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Action buttons row - positioned at top-right of list */}
       <MultiSelectToolbar

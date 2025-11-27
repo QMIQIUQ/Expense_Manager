@@ -24,6 +24,27 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
     return { cycleStart, cycleEnd };
   }, [billingCycleDay]);
 
+  // Get progress color based on percentage (same as BudgetManager)
+  const getProgressColor = (percentage: number, threshold: number = 80) => {
+    if (percentage >= 100) return '#dc2626'; // Red - over budget
+    if (percentage >= 90) return '#ea580c'; // Orange-red
+    if (percentage >= threshold) return '#f59e0b'; // Orange - warning
+    if (percentage >= 60) return '#fbbf24'; // Yellow
+    if (percentage >= 40) return '#a3e635'; // Light green
+    return '#22c55e'; // Green - safe
+  };
+
+  // Get period label
+  const getPeriodLabel = (period: string) => {
+    const labels: Record<string, string> = {
+      daily: t('periodDaily'),
+      weekly: t('periodWeekly'),
+      monthly: t('periodMonthly'),
+      yearly: t('periodYearly'),
+    };
+    return labels[period] || period;
+  };
+
   // Calculate budget progress
   const budgetProgress = React.useMemo(() => {
     return budgets.map((budget) => {
@@ -39,6 +60,7 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
       const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
       const remaining = Math.max(0, budget.amount - spent);
       const isOverBudget = spent > budget.amount;
+      const progressColor = getProgressColor(percentage, budget.alertThreshold || 80);
 
       return {
         ...budget,
@@ -46,6 +68,7 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
         remaining,
         percentage,
         isOverBudget,
+        progressColor,
       };
     });
   }, [budgets, expenses, cycleStart, cycleEnd]);
@@ -63,25 +86,45 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
     <div className="budget-progress-list">
       {budgetProgress.map((budget) => (
         <div key={budget.id} className="budget-progress-item">
-          <div className="budget-info">
-            <span className="budget-category">{budget.categoryName}</span>
-            <span className={`budget-amount ${budget.isOverBudget ? 'error-text' : ''}`}>
-              ${budget.spent.toFixed(2)} / ${budget.amount.toFixed(2)}
+          {/* Row 1: Period chip and Amount */}
+          <div className="budget-progress-row-1">
+            <span className="budget-period-chip">
+              {getPeriodLabel(budget.period)}
             </span>
+            <div className="budget-amounts">
+              <span 
+                className="budget-spent" 
+                style={{ color: budget.progressColor }}
+              >
+                ${budget.spent.toFixed(2)}
+              </span>
+              <span className="budget-separator"> / </span>
+              <span className="budget-total">${budget.amount.toFixed(2)}</span>
+            </div>
           </div>
-          <div className="progress-bar">
-            <div
-              className={`progress-fill ${budget.isOverBudget ? 'error-bg' : budget.percentage > 80 ? 'warning-bg' : 'success-bg'}`}
-              style={{ width: `${Math.min(100, budget.percentage)}%` }}
-            />
-          </div>
-          <div className="budget-status">
-            <span className="budget-percentage">{budget.percentage.toFixed(1)}%</span>
+
+          {/* Row 2: Category name + Status */}
+          <div className="budget-progress-row-2">
+            <span className="budget-category-name">{budget.categoryName}</span>
             {budget.isOverBudget ? (
-              <span className="error-text">{t('overBudget')}</span>
+              <span className="budget-status-text error-text">{t('overBudget')}</span>
             ) : (
-              <span className="success-text">${budget.remaining.toFixed(2)} {t('remaining')}</span>
+              <span className="budget-status-text success-text">${budget.remaining.toFixed(2)} {t('remaining')}</span>
             )}
+          </div>
+
+          {/* Row 3: Progress bar and percentage */}
+          <div className="budget-progress-row-3">
+            <div className="budget-progress-bar">
+              <div
+                className="budget-progress-fill"
+                style={{ 
+                  width: `${Math.min(100, budget.percentage)}%`,
+                  backgroundColor: budget.progressColor,
+                }}
+              />
+            </div>
+            <span className="budget-percentage">{budget.percentage.toFixed(1)}%</span>
           </div>
         </div>
       ))}

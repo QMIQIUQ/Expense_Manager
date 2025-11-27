@@ -81,19 +81,30 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     loadQuickExpensePresets();
   }, [loadQuickExpensePresets]);
 
-  // Save widget changes
+  // Save widget changes (Optimistic Update)
   const handleSaveWidgets = async (newWidgets: DashboardWidget[]) => {
     if (!currentUser) return;
     
+    // Store previous state for rollback
+    const previousWidgets = [...widgets];
+    
+    // 1. Optimistic Update: Update UI immediately
+    setWidgets(newWidgets.sort((a, b) => a.order - b.order));
+    
     try {
+      // 2. Save to Firebase in background
       await dashboardLayoutService.updateWidgets(currentUser.uid, newWidgets);
-      setWidgets(newWidgets.sort((a, b) => a.order - b.order));
-      // Notify success
-      showNotification('success', t('saveSuccess') || '已保存自定义列表');
+      
+      // 3. Notify success
+      showNotification('success', t('saveSuccess') || '已保存自定義列表');
     } catch (error) {
       console.error('Failed to save dashboard layout:', error);
-       // Notify error
-       showNotification('error', t('saveFailed') || '保存失败，请稍后重试');
+      
+      // 4. Rollback on failure
+      setWidgets(previousWidgets);
+      
+      // 5. Notify error
+      showNotification('error', t('saveFailed') || '保存失敗，請稍後重試');
     }
   };
 

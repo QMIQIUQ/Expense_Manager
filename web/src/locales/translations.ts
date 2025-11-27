@@ -366,6 +366,10 @@ export const translations = {
   small: { en: 'Small', zh: '小', 'zh-CN': '小' },
   medium: { en: 'Medium', zh: '中', 'zh-CN': '中' },
   large: { en: 'Large', zh: '大', 'zh-CN': '大' },
+  // Dashboard Customizer controls
+  order: { en: 'order', zh: '順序', 'zh-CN': '顺序' },
+  size: { en: 'size', zh: '大小', 'zh-CN': '大小' },
+  full: { en: 'Full', zh: '全寬', 'zh-CN': '全宽' },
 
   // Category deletion with expense management
   warning: { en: 'Warning', zh: '警告', 'zh-CN': '警告' },

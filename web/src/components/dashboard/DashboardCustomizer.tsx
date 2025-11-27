@@ -25,25 +25,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
     );
   };
 
-  // Move widget up
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    setLocalWidgets((prev) => {
-      const newWidgets = [...prev];
-      [newWidgets[index - 1], newWidgets[index]] = [newWidgets[index], newWidgets[index - 1]];
-      return newWidgets.map((w, i) => ({ ...w, order: i }));
-    });
-  };
-
-  // Move widget down
-  const handleMoveDown = (index: number) => {
-    if (index >= localWidgets.length - 1) return;
-    setLocalWidgets((prev) => {
-      const newWidgets = [...prev];
-      [newWidgets[index], newWidgets[index + 1]] = [newWidgets[index + 1], newWidgets[index]];
-      return newWidgets.map((w, i) => ({ ...w, order: i }));
-    });
-  };
+  // Arrow move controls removed; ordering is handled via drag-and-drop and numeric input.
 
   // Drag and drop handlers
   const handleDragStart = (index: number) => {
@@ -122,6 +104,26 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                   onDragEnd={handleDragEnd}
                 >
                   <div className="widget-drag-handle">⋮⋮</div>
+                  <input
+                    type="number"
+                    min={1}
+                    max={localWidgets.length}
+                    value={index + 1}
+                    onChange={(e) => {
+                      const newOrder = parseInt(e.target.value) - 1;
+                      if (!Number.isNaN(newOrder) && newOrder >= 0 && newOrder < localWidgets.length && newOrder !== index) {
+                        setLocalWidgets((prev) => {
+                          const newWidgets = [...prev];
+                          const [movedWidget] = newWidgets.splice(index, 1);
+                          newWidgets.splice(newOrder, 0, movedWidget);
+                          return newWidgets.map((w, i) => ({ ...w, order: i }));
+                        });
+                      }
+                    }}
+                    className="widget-order-input"
+                    title={t('order')}
+                    aria-label="order"
+                  />
                   
                   <div className="widget-info">
                     <span className="widget-icon">{metadata.icon}</span>
@@ -134,22 +136,21 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                   </div>
 
                   <div className="widget-controls">
-                    <button
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0}
-                      className="btn-move"
-                      title={t('moveUp')}
+                    <select
+                      value={widget.size}
+                      onChange={(e) => {
+                        const newSize = e.target.value as import('../../types/dashboard').WidgetSize;
+                        setLocalWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, size: newSize } : w)));
+                      }}
+                      className="widget-size-select"
+                      title={t('size')}
                     >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === localWidgets.length - 1}
-                      className="btn-move"
-                      title={t('moveDown')}
-                    >
-                      ↓
-                    </button>
+                      <option value="small">{t('small')}</option>
+                      <option value="medium">{t('medium')}</option>
+                      <option value="large">{t('large')}</option>
+                      <option value="full">{t('full')}</option>
+                    </select>
+                    {/* Up/Down arrow buttons removed per request */}
                     <button
                       onClick={() => handleToggle(widget.id)}
                       className="btn-visibility"

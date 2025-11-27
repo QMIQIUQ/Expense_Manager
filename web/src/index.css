@@ -2118,6 +2118,19 @@ button:not(:disabled):hover {
   color: var(--text-secondary);
 }
 
+/* Utility text color classes for summary cards */
+.error-text {
+  color: var(--error-text) !important;
+}
+
+.success-text {
+  color: var(--success-text) !important;
+}
+
+.warning-text {
+  color: var(--warning-text) !important;
+}
+
 .btn-icon:hover {
   filter: brightness(0.95);
 }
@@ -2491,6 +2504,62 @@ button:not(:disabled):hover {
 .widget-controls {
   display: flex;
   gap: 4px;
+  align-items: center;
+}
+
+.widget-order-input {
+  width: 50px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+/* Hide native number input spinners for cleaner UI */
+.widget-order-input::-webkit-outer-spin-button,
+.widget-order-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.widget-order-input {
+  -moz-appearance: textfield;
+}
+
+.widget-order-input:hover {
+  border-color: var(--accent-primary);
+}
+
+.widget-order-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.widget-size-select {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.widget-size-select:hover {
+  border-color: var(--accent-primary);
+}
+
+.widget-size-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .btn-move {
@@ -2619,39 +2688,113 @@ button:not(:disabled):hover {
 .budget-progress-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .budget-progress-item {
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-}
-
-.budget-info {
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 3px 10px var(--shadow);
+  transition: all 0.2s ease;
 }
 
-.budget-category {
+/* Row 1: Period chip and amounts */
+.budget-progress-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.budget-period-chip {
+  padding: 5px 10px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  border-radius: 16px;
+  font-size: 11px;
   font-weight: 600;
+  text-transform: capitalize;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.budget-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.budget-spent {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.budget-separator {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.budget-total {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Row 2: Category name + Status */
+.budget-progress-row-2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-category-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
-.budget-amount {
-  font-weight: 500;
+/* Row 3: Progress bar and status */
+.budget-progress-row-3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.budget-status {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  font-size: 12px;
+.budget-progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
 }
 
 .budget-percentage {
+  font-size: 12px;
   color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 45px;
+  text-align: right;
+  /* Reset styles from generic [class*="tag"] selector */
+  background: transparent !important;
+  border: none !important;
+  padding: 0;
+}
+
+.budget-status-text {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Cards summary widget */
@@ -2737,9 +2880,10 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
-  padding: 10px 12px; /* Uniform horizontal padding; reserve menu space only on row 2 so amount can align flush right */
+  min-height: 80px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
@@ -2773,12 +2917,21 @@ button:not(:disabled):hover {
   animation: spin 0.8s linear infinite;
 }
 
-/* Row layout: Icon + Amount */
-.quick-expense-row {
+/* Row 1: Category chip row */
+.quick-expense-row-category {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
+}
+
+/* Row 2: Amount row (prominent) */
+.quick-expense-row-amount {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin: 4px 0;
 }
 
 .quick-expense-icon {
@@ -2787,53 +2940,59 @@ button:not(:disabled):hover {
   flex-shrink: 0;
 }
 
-/* Category chip inside quick expense (smaller & truncated) */
+/* Category chip inside quick expense */
 .quick-expense-category-chip {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 10px; /* further reduced */
-  font-weight: 500; /* lighter weight for smaller size */
-  padding: 1px 5px; /* tighter horizontal padding */
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  max-width: 70%;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .dark .quick-expense-category-chip {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: var(--accent-light);
+  color: var(--accent-primary);
 }
 
-/* Row 2: Name + Menu */
-.quick-expense-row-2 {
+/* Amount styling */
+.quick-expense-amount {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Row 3: Name + Menu */
+.quick-expense-row-name {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   width: 100%;
-  gap: 8px;
+  gap: 4px;
+  min-height: 36px; /* Fixed height for 2 lines of text */
 }
 
 .quick-expense-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
   flex: 1;
-}
-
-.quick-expense-amount {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent-primary);
-  flex-shrink: 0;
+  min-width: 0;
+  /* Limit to 2 lines with ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .quick-expense-edit,
@@ -2883,7 +3042,7 @@ button:not(:disabled):hover {
   color: var(--text-secondary);
   font-size: 13px;
   transition: all 0.2s;
-  min-height: 68px; /* Match quick expense button height */
+  min-height: 80px; /* Match quick-expense-btn height */
 }
 
 .quick-expense-add-btn:hover {
@@ -3437,15 +3596,15 @@ button:not(:disabled):hover {
 
 /* ==================== Quick Expense Scroll Bar (Expense List) ==================== */
 .quick-expense-scroll-container {
-  margin-bottom: 16px;
-  padding-bottom: 4px;
+  margin: 4px 0 8px;
+  padding: 0;
 }
 
 .quick-expense-scroll-bar {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   overflow-x: auto;
-  padding: 4px 0;
+  padding: 2px 0;
   scrollbar-width: thin;
   scrollbar-color: var(--accent-primary) transparent;
 }
@@ -3467,13 +3626,13 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 16px;
-  min-width: 100px;
-  max-width: 140px;
+  gap: 2px;
+  padding: 6px 10px;
+  min-width: 84px;
+  max-width: 120px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -3515,7 +3674,7 @@ button:not(:disabled):hover {
   font-size: 10px;
   font-weight: 500;
   color: var(--text-secondary);
-  padding: 2px 6px;
+  padding: 0 6px;
   background: var(--accent-light);
   border-radius: 4px;
   white-space: nowrap;
@@ -3525,7 +3684,7 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-scroll-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -3535,7 +3694,7 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-scroll-amount {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--accent-primary);
 }
