@@ -2293,27 +2293,27 @@ button:not(:disabled):hover {
   background: var(--accent-light);
 }
 
-/* Widget empty state */
+/* Widget empty state - compact single row */
 .widget-empty-state {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  gap: 6px;
+  padding: 8px 12px;
   color: var(--text-secondary);
-  text-align: center;
-  min-height: 80px;
 }
 
 .widget-empty-state span {
-  font-size: 28px;
-  margin-bottom: 6px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .widget-empty-state p {
   margin: 0;
   font-size: 13px;
   color: var(--text-tertiary);
+  line-height: 1;
 }
 
 /* Widget placeholder (when disabled in edit mode) */
@@ -2736,11 +2736,11 @@ button:not(:disabled):hover {
 .quick-expense-btn {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  align-items: stretch;
+  gap: 2px;
   width: 100%;
-  padding: 16px 12px;
+  padding: 10px 12px;
+  padding-right: 32px; /* Space for menu button */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
@@ -2774,25 +2774,43 @@ button:not(:disabled):hover {
   animation: spin 0.8s linear infinite;
 }
 
+/* Row layout: Icon + Amount */
+.quick-expense-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .quick-expense-icon {
-  font-size: 28px;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Row 2: Name */
+.quick-expense-row-2 {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .quick-expense-name {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  flex: 1;
 }
 
 .quick-expense-amount {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--accent-primary);
+  flex-shrink: 0;
 }
 
 .quick-expense-edit,
@@ -3107,6 +3125,115 @@ button:not(:disabled):hover {
   .quick-expense-item-actions {
     opacity: 1 !important;
   }
+}
+
+/* Quick Expense Menu (hamburger style) */
+.quick-expense-menu-wrapper {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-menu-trigger {
+  padding: 4px 8px;
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+  border: none !important;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-menu-trigger:hover {
+  filter: brightness(0.95);
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-menu-trigger:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-trigger {
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-trigger:hover {
+  filter: brightness(1.1);
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 120px;
+  background-color: #ffffff !important;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.dark .quick-expense-dropdown {
+  background-color: #1e1e2e !important;
+  border-color: #3f3f46;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.quick-expense-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.quick-expense-dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.dark .quick-expense-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.quick-expense-dropdown-item.danger {
+  color: var(--danger);
+}
+
+.quick-expense-dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .quick-expense-action-btn {

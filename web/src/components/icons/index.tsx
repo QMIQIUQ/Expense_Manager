@@ -215,6 +215,14 @@ export const MenuIcon: React.FC<IconProps> = (props) => (
   </SvgIcon>
 );
 
+export const MoreVerticalIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="5" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+  </SvgIcon>
+);
+
 export const DownloadIcon: React.FC<IconProps> = (props) => (
   <SvgIcon {...props}>
     <path

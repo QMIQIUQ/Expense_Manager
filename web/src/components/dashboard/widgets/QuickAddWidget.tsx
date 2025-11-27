@@ -25,7 +25,9 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   
   // Form state
   const [formData, setFormData] = useState<QuickExpensePresetInput>({
@@ -48,6 +50,21 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       nameInputRef.current.focus();
     }
   }, [isAdding]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   const resetForm = () => {
     setFormData({
@@ -164,6 +181,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
   const handleDeletePreset = async (presetId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setOpenMenuId(null);
     
     // 1. Save original preset for rollback
     const deletedPreset = localPresets.find(p => p.id === presetId);
@@ -200,6 +218,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
   const handleEditPreset = (preset: QuickExpensePreset, e: React.MouseEvent) => {
     e.stopPropagation();
+    setOpenMenuId(null);
     setEditingPresetId(preset.id);
     setFormData({
       name: preset.name,
@@ -213,6 +232,11 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       icon: preset.icon || '💰',
     });
     setIsAdding(true);
+  };
+
+  const toggleMenu = (presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === presetId ? null : presetId);
   };
 
   const handleStartAdding = () => {
@@ -390,27 +414,43 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >
-                <span className="quick-expense-icon">{preset.icon || category?.icon || '💰'}</span>
-                <span className="quick-expense-name">{preset.name}</span>
-                <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
+                {/* Row 1: Icon + Amount */}
+                <div className="quick-expense-row">
+                  <span className="quick-expense-icon">{preset.icon || category?.icon || '💰'}</span>
+                  <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
+                </div>
+                {/* Row 2: Name + Menu */}
+                <div className="quick-expense-row-2">
+                  <span className="quick-expense-name">{preset.name}</span>
+                </div>
               </button>
-              <div className="quick-expense-item-actions">
+              {/* Hamburger menu - positioned in row 2 */}
+              <div className="quick-expense-menu-wrapper" ref={openMenuId === preset.id ? menuRef : null}>
                 <button
-                  className="btn-icon btn-icon-primary"
-                  onClick={(e) => handleEditPreset(preset, e)}
-                  aria-label={t('edit')}
-                  title={t('edit')}
+                  className="quick-expense-menu-trigger"
+                  onClick={(e) => toggleMenu(preset.id, e)}
+                  aria-label={t('more')}
                 >
-                  <EditIcon size={16} />
+                  ⋮
                 </button>
-                <button
-                  className="btn-icon btn-icon-danger"
-                  onClick={(e) => handleDeletePreset(preset.id, e)}
-                  aria-label={t('delete')}
-                  title={t('delete')}
-                >
-                  <DeleteIcon size={16} />
-                </button>
+                {openMenuId === preset.id && (
+                  <div className="quick-expense-dropdown">
+                    <button
+                      className="quick-expense-dropdown-item"
+                      onClick={(e) => handleEditPreset(preset, e)}
+                    >
+                      <EditIcon size={14} />
+                      <span>{t('edit')}</span>
+                    </button>
+                    <button
+                      className="quick-expense-dropdown-item danger"
+                      onClick={(e) => handleDeletePreset(preset.id, e)}
+                    >
+                      <DeleteIcon size={14} />
+                      <span>{t('delete')}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
