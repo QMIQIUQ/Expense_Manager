@@ -42,6 +42,7 @@ import { offlineQueue } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
+import { sessionCache } from '../utils/sessionCache';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -78,7 +79,6 @@ const Dashboard: React.FC = () => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -170,8 +170,7 @@ const Dashboard: React.FC = () => {
       setRepayments(repaymentsData);
       setTransfers(transfersData);
       
-      // End initial loading immediately
-      setInitialLoading(false);
+      // Initial UI now rendered; no blocking loader needed
       console.log('Phase 1 complete: UI ready with cached data');
       
       // Phase 2: Initialize and load additional data in background (only if online)
@@ -265,7 +264,6 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
-      setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
   //#endregion
@@ -324,92 +322,25 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // 如果已有缓存，先关闭初始加载占位，随后再异步刷新
+      const uid = currentUser.uid;
+      const hasCached = !!(
+        sessionCache.get('expenses', uid) ||
+        sessionCache.get('incomes', uid) ||
+        sessionCache.get('repayments', uid) ||
+        sessionCache.get('categories', uid) ||
+        sessionCache.get('budgets', uid) ||
+        sessionCache.get('recurring', uid)
+      );
+      if (hasCached) {
+        // Cached data present: UI already renders instantly; no loader toggle needed
+      }
       loadData();
     }
   }, [currentUser, loadData]);
 
-  // Smart tab refresh: Reload data when switching tabs
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    const refreshTabData = async () => {
-      try {
-        switch (activeTab) {
-          case 'expenses': {
-            // Reload expenses and repayments
-            const [expensesData, repaymentsData] = await Promise.all([
-              expenseService.getAll(currentUser.uid),
-              repaymentService.getAll(currentUser.uid),
-            ]);
-            setExpenses(expensesData);
-            setRepayments(repaymentsData);
-            break;
-          }
-          case 'incomes': {
-            // Reload incomes
-            const incomesData = await incomeService.getAll(currentUser.uid);
-            setIncomes(incomesData);
-            break;
-          }
-          case 'dashboard': {
-            // Reload all for dashboard
-            const [dashExpenses, dashIncomes, dashRepayments] = await Promise.all([
-              expenseService.getAll(currentUser.uid),
-              incomeService.getAll(currentUser.uid),
-              repaymentService.getAll(currentUser.uid),
-            ]);
-            setExpenses(dashExpenses);
-            setIncomes(dashIncomes);
-            setRepayments(dashRepayments);
-            break;
-          }
-          case 'categories': {
-            // Reload categories and budgets
-            const [categoriesData, budgetsData] = await Promise.all([
-              categoryService.getAll(currentUser.uid),
-              budgetService.getAll(currentUser.uid),
-            ]);
-            setCategories(categoriesData);
-            setBudgets(budgetsData);
-            break;
-          }
-          case 'recurring': {
-            // Reload recurring expenses
-            const recurringData = await recurringExpenseService.getAll(currentUser.uid);
-            setRecurringExpenses(recurringData);
-            break;
-          }
-          case 'paymentMethods': {
-            // Reload cards and ewallets
-            try {
-              const cardsData = await cardService.getAll(currentUser.uid);
-              setCards(cardsData);
-            } catch (error) {
-              console.warn('Could not reload cards:', error);
-            }
-            try {
-              const ewalletsData = await ewalletService.getAll(currentUser.uid);
-              setEWallets(ewalletsData);
-            } catch (error) {
-              console.warn('Could not reload e-wallets:', error);
-            }
-            break;
-          }
-          // Admin and settings tabs don't need auto-refresh
-          default:
-            break;
-        }
-      } catch (error) {
-        console.error('Error refreshing tab data:', error);
-        // Silent fail - don't show notification to avoid annoying users
-      }
-    };
-    
-    // Don't refresh on initial mount, only on tab change
-    if (!initialLoading) {
-      refreshTabData();
-    }
-  }, [activeTab, currentUser, initialLoading]);
+  // Tab switching now instant - no refetch, uses cached data + optimistic updates
+  // Background revalidation happens only on initial load via loadData()
   //#endregion
 
   //#region Click Outside Handlers
@@ -1826,15 +1757,6 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Render
-  if (initialLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <InlineLoading size={24} />
-        <p className="ml-3 text-lg text-gray-600">{t('loading')}</p>
-      </div>
-    );
-  }
-
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
@@ -2417,7 +2339,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'incomes' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <IncomesTab
               incomes={incomes}
               expenses={expenses}
@@ -2434,7 +2356,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'categories' && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <CategoryManager
                 categories={categories}
                 expenses={expenses}
@@ -2450,7 +2372,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'budgets' && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <BudgetManager
                 budgets={budgets}
                 categories={categories}
@@ -2465,7 +2387,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'recurring' && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <RecurringExpenseManager
                 recurringExpenses={recurringExpenses}
                 categories={categories}
@@ -2481,7 +2403,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'paymentMethods' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <PaymentMethodsTab
               cards={cards}
               ewallets={ewallets}
@@ -2507,7 +2429,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'settings' && featureSettings && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <FeatureManager
                 enabledFeatures={featureSettings.enabledFeatures}
                 tabFeatures={featureSettings.tabFeatures}
@@ -2520,13 +2442,13 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'profile' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <UserProfile />
           </Suspense>
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <AdminTab />
           </Suspense>
         )}

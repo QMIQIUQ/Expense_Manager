@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
 import { QuickExpensePreset } from '../../types/quickExpense';
@@ -40,6 +41,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
 }) => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
+  const { showNotification } = useNotification();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_DASHBOARD_LAYOUT);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,8 +88,12 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     try {
       await dashboardLayoutService.updateWidgets(currentUser.uid, newWidgets);
       setWidgets(newWidgets.sort((a, b) => a.order - b.order));
+      // Notify success
+      showNotification('success', t('saveSuccess') || '已保存自定义列表');
     } catch (error) {
       console.error('Failed to save dashboard layout:', error);
+       // Notify error
+       showNotification('error', t('saveFailed') || '保存失败，请稍后重试');
     }
   };
 
