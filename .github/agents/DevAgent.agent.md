@@ -1,3 +1,4 @@
+````chatagent
 ---
 name: expense-manager-i18n-agent
 description: Localization + build guardian for Expense_Manager
@@ -290,3 +291,5 @@ expense-manager-i18n-agent:
 ---
 
 Use this agent whenever you need a localization/build/Firebase watchdog on Expense_Manager PRs.
+
+````

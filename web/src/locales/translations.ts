@@ -597,6 +597,7 @@ export const translations = {
   disabledWidgets: { en: 'Disabled Widgets', zh: '未啟用組件', 'zh-CN': '未启用组件' },
 
   // Quick Expense
+  quickExpenses: { en: 'Quick Expenses', zh: '快速支出', 'zh-CN': '快速支出' },
   addQuickExpense: { en: 'Add Quick Expense', zh: '新增快速支出', 'zh-CN': '添加快速支出' },
   editQuickExpense: { en: 'Edit Quick Expense', zh: '編輯快速支出', 'zh-CN': '编辑快速支出' },
   presetName: { en: 'Name', zh: '名稱', 'zh-CN': '名称' },

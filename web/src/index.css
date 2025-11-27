@@ -2809,12 +2809,13 @@ button:not(:disabled):hover {
   color: var(--text-primary);
 }
 
-/* Row 2: Name */
+/* Row 2: Name + Menu */
 .quick-expense-row-2 {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding-right: 32px; /* Reserve space for the menu trigger without shifting amount in row 1 */
+  gap: 8px;
 }
 
 .quick-expense-name {
@@ -2873,8 +2874,8 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 16px 12px;
+  gap: 4px;
+  padding: 10px 12px;
   border: 2px dashed var(--border-color);
   background: transparent;
   border-radius: 12px;
@@ -2882,6 +2883,7 @@ button:not(:disabled):hover {
   color: var(--text-secondary);
   font-size: 13px;
   transition: all 0.2s;
+  min-height: 68px; /* Match quick expense button height */
 }
 
 .quick-expense-add-btn:hover {
@@ -3151,9 +3153,10 @@ button:not(:disabled):hover {
 
 /* Quick Expense Menu (hamburger style) */
 .quick-expense-menu-wrapper {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
   z-index: 10;
   background: transparent !important;
   border: none !important;

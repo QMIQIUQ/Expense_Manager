@@ -433,36 +433,38 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                 {/* Row 2: Name + Menu */}
                 <div className="quick-expense-row-2">
                   <span className="quick-expense-name">{preset.name}</span>
+                  {/* Hamburger menu - positioned inside button in row 2 */}
+                  <div className="quick-expense-menu-wrapper" ref={openMenuId === preset.id ? menuRef : null}>
+                    <div
+                      className="quick-expense-menu-trigger"
+                      onClick={(e) => toggleMenu(preset.id, e)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('more')}
+                    >
+                      ⋮
+                    </div>
+                    {openMenuId === preset.id && (
+                      <div className="quick-expense-dropdown">
+                        <button
+                          className="quick-expense-dropdown-item"
+                          onClick={(e) => handleEditPreset(preset, e)}
+                        >
+                          <EditIcon size={14} />
+                          <span>{t('edit')}</span>
+                        </button>
+                        <button
+                          className="quick-expense-dropdown-item danger"
+                          onClick={(e) => handleDeletePreset(preset.id, e)}
+                        >
+                          <DeleteIcon size={14} />
+                          <span>{t('delete')}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </button>
-              {/* Hamburger menu - positioned in row 2 */}
-              <div className="quick-expense-menu-wrapper" ref={openMenuId === preset.id ? menuRef : null}>
-                <button
-                  className="quick-expense-menu-trigger"
-                  onClick={(e) => toggleMenu(preset.id, e)}
-                  aria-label={t('more')}
-                >
-                  ⋮
-                </button>
-                {openMenuId === preset.id && (
-                  <div className="quick-expense-dropdown">
-                    <button
-                      className="quick-expense-dropdown-item"
-                      onClick={(e) => handleEditPreset(preset, e)}
-                    >
-                      <EditIcon size={14} />
-                      <span>{t('edit')}</span>
-                    </button>
-                    <button
-                      className="quick-expense-dropdown-item danger"
-                      onClick={(e) => handleDeletePreset(preset.id, e)}
-                    >
-                      <DeleteIcon size={14} />
-                      <span>{t('delete')}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           );
         })}

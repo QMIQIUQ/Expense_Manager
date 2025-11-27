@@ -81,6 +81,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     isOpen: false,
     expenseId: null,
   });
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const {
@@ -440,10 +441,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onDeleteSelected={() => {
           const ids = Array.from(selectedIds);
           if (ids.length === 0) return;
-          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
-          onBulkDelete && onBulkDelete(ids);
-          clearSelection();
-          setMultiSelectEnabled(false);
+          setBulkDeleteConfirm(true);
         }}
       />
 
@@ -779,6 +777,24 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           }
         }}
         onCancel={() => setDeleteConfirm({ isOpen: false, expenseId: null })}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={bulkDeleteConfirm}
+        title={t('deleteSelected')}
+        message={t('confirmBulkDelete').replace('{count}', selectedIds.size.toString())}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        onConfirm={() => {
+          const ids = Array.from(selectedIds);
+          onBulkDelete && onBulkDelete(ids);
+          clearSelection();
+          setMultiSelectEnabled(false);
+          setBulkDeleteConfirm(false);
+        }}
+        onCancel={() => setBulkDeleteConfirm(false)}
+        danger={true}
       />
     </div>
     </>

@@ -132,8 +132,8 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
   },
   'quick-add': {
     type: 'quick-add',
-    defaultTitle: 'addExpense',
-    defaultTitleFallback: 'Quick Add',
+    defaultTitle: 'quickExpenses',
+    defaultTitleFallback: 'Quick Expenses',
     description: 'Quick add expense button',
     icon: '➕',
     defaultSize: 'medium',
