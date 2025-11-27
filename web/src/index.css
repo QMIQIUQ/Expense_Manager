@@ -3089,6 +3089,17 @@ button:not(:disabled):hover {
   opacity: 1;
 }
 
+/* Touch devices: always show action buttons */
+@media (hover: none), (pointer: coarse) {
+  .quick-expense-item-actions {
+    opacity: 0.8;
+  }
+  
+  .quick-expense-item:active .quick-expense-item-actions {
+    opacity: 1;
+  }
+}
+
 .quick-expense-action-btn {
   width: 24px;
   height: 24px;
