@@ -3435,3 +3435,107 @@ button:not(:disabled):hover {
   font-size: 16px;
 }
 
+/* ==================== Quick Expense Scroll Bar (Expense List) ==================== */
+.quick-expense-scroll-container {
+  margin-bottom: 16px;
+  padding-bottom: 4px;
+}
+
+.quick-expense-scroll-bar {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) transparent;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+.quick-expense-scroll-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  min-width: 100px;
+  max-width: 140px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.quick-expense-scroll-btn:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quick-expense-scroll-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.quick-expense-scroll-btn.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.quick-expense-scroll-btn.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .quick-expense-scroll-btn.loading::after {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.quick-expense-scroll-category {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  background: var(--accent-light);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.quick-expense-scroll-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.quick-expense-scroll-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}

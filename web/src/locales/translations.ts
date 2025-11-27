@@ -3,6 +3,8 @@
 export const translations = {
   // Common
   save: { en: 'Save', zh: '儲存', 'zh-CN': '保存' },
+  saveSuccess: { en: 'Saved successfully', zh: '儲存成功', 'zh-CN': '保存成功' },
+  saveFailed: { en: 'Failed to save, please try again', zh: '儲存失敗，請稍後重試', 'zh-CN': '保存失败，请稍后重试' },
   cancel: { en: 'Cancel', zh: '取消', 'zh-CN': '取消' },
   delete: { en: 'Delete', zh: '刪除', 'zh-CN': '删除' },
   edit: { en: 'Edit', zh: '編輯', 'zh-CN': '编辑' },
@@ -66,6 +68,7 @@ export const translations = {
   descriptionPlaceholder: { en: 'e.g., Grocery shopping', zh: '例如：購物', 'zh-CN': '例如：购物' },
   notesPlaceholder: { en: 'Additional notes (optional)', zh: '額外備註（選填）', 'zh-CN': '额外备注（选填）' },
   selectCategory: { en: 'Select a category', zh: '選擇類別', 'zh-CN': '选择分类' },
+  uncategorized: { en: 'Uncategorized', zh: '未分類', 'zh-CN': '未分类' },
   pleaseSelectCategory: { en: 'Please select a category.', zh: '請選擇類別。', 'zh-CN': '请选择分类。' },
   pleaseFillField: { en: 'Please fill in this field.', zh: '請填寫此欄位。', 'zh-CN': '请填写此字段。' },
   addNewExpense: { en: 'Add New Expense', zh: '新增支出', 'zh-CN': '添加支出' },

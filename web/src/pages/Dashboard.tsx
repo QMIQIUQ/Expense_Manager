@@ -20,10 +20,10 @@ import { featureSettingsService } from '../services/featureSettingsService';
 import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
+import { quickExpenseService } from '../services/quickExpenseService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
-import InlineLoading from '../components/InlineLoading';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
@@ -79,6 +79,7 @@ const Dashboard: React.FC = () => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
@@ -236,7 +237,13 @@ const Dashboard: React.FC = () => {
             console.warn('Could not load feature settings:', err);
             return null;
           }),
-        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings]) => {
+          
+          // Load quick expense presets
+          quickExpenseService.getPresets(currentUser.uid).catch(err => {
+            console.warn('Could not load quick expense presets:', err);
+            return [];
+          }),
+        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
           // Apply all state updates together (single render cycle)
           if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
           if (userSettings) setBillingCycleDay(userSettings.billingCycleDay);
@@ -256,6 +263,7 @@ const Dashboard: React.FC = () => {
             }
           }
           if (featSettings) setFeatureSettings(featSettings);
+          if (Array.isArray(quickPresets)) setQuickExpensePresets(quickPresets);
         }).finally(() => {
           setIsRevalidating(false);
           console.log('Phase 2: Background initialization complete');
@@ -2334,6 +2342,8 @@ const Dashboard: React.FC = () => {
               onCreateEWallet={() => setActiveTab('paymentMethods')}
               onAddTransfer={handleAddTransfer}
               focusExpenseId={focusExpenseId || undefined}
+              quickExpensePresets={quickExpensePresets}
+              onQuickExpenseAdd={handleQuickExpenseAdd}
             />
           </div>
         )}

@@ -15,7 +15,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   quickExpensePresets = [],
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
-  onQuickAdd,
+  // onQuickAdd is available in WidgetProps but not used in this component
 }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();

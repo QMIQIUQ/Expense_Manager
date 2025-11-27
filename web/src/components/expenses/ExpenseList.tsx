@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer } from '../../types';
+import { QuickExpensePreset } from '../../types/quickExpense';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
 import ConfirmModal from '../ConfirmModal';
@@ -45,6 +46,9 @@ interface ExpenseListProps {
   onCreateEWallet?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   focusExpenseId?: string; // when set, scroll and highlight
+  // Quick expense related
+  quickExpensePresets?: QuickExpensePreset[];
+  onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -62,6 +66,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onCreateEWallet,
   onAddTransfer,
   focusExpenseId,
+  quickExpensePresets = [],
+  onQuickExpenseAdd,
 }) => {
   const { t } = useLanguage();
   const today = getTodayLocal();
@@ -98,6 +104,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -327,10 +334,47 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const groupedExpenses = groupExpensesByDate();
 
+  // Handle quick expense click
+  const handleQuickExpenseClick = async (preset: QuickExpensePreset) => {
+    if (!onQuickExpenseAdd || quickExpenseLoading) return;
+    
+    setQuickExpenseLoading(preset.id);
+    try {
+      await onQuickExpenseAdd(preset);
+    } finally {
+      setQuickExpenseLoading(null);
+    }
+  };
+
   return (
     <>
       <style>{responsiveStyles}</style>
       <div style={styles.container}>
+      {/* Quick Expense Scroll Bar */}
+      {quickExpensePresets.length > 0 && onQuickExpenseAdd && (
+        <div className="quick-expense-scroll-container">
+          <div className="quick-expense-scroll-bar">
+            {quickExpensePresets.map((preset) => {
+              const category = categories.find((c) => c.id === preset.categoryId);
+              return (
+                <button
+                  key={preset.id}
+                  className={`quick-expense-scroll-btn ${quickExpenseLoading === preset.id ? 'loading' : ''}`}
+                  onClick={() => handleQuickExpenseClick(preset)}
+                  disabled={!!quickExpenseLoading}
+                >
+                  <span className="quick-expense-scroll-category">
+                    {category?.name || t('uncategorized')}
+                  </span>
+                  <span className="quick-expense-scroll-name">{preset.name}</span>
+                  <span className="quick-expense-scroll-amount">${preset.amount.toFixed(2)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filter Section */}
       <div style={styles.filterSection}>
         {/* Simplified filter - always visible */}
