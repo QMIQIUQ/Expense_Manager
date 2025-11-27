@@ -3,7 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { WidgetProps } from './types';
-import { QuickExpensePreset, QuickExpensePresetInput, DEFAULT_QUICK_EXPENSE_ICONS } from '../../../types/quickExpense';
+import { QuickExpensePreset, QuickExpensePresetInput } from '../../../types/quickExpense';
 import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
 
@@ -24,7 +24,6 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [showIconPicker, setShowIconPicker] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -77,7 +76,6 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     });
     setIsAdding(false);
     setEditingPresetId(null);
-    setShowIconPicker(false);
   };
 
   const handleQuickExpenseClick = async (preset: QuickExpensePreset) => {
@@ -255,46 +253,22 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   // Inline edit form
   const renderInlineForm = () => (
     <div className="quick-expense-inline-form" onKeyDown={handleKeyDown}>
-      <div className="inline-form-row">
-        {/* Icon picker */}
-        <div className="inline-icon-picker">
-          <button 
-            type="button"
-            className="icon-picker-trigger"
-            onClick={() => setShowIconPicker(!showIconPicker)}
-          >
-            {formData.icon}
-          </button>
-          {showIconPicker && (
-            <div className="icon-picker-dropdown">
-              {DEFAULT_QUICK_EXPENSE_ICONS.map((icon) => (
-                <button
-                  key={icon}
-                  type="button"
-                  className={`icon-option-small ${formData.icon === icon ? 'selected' : ''}`}
-                  onClick={() => {
-                    setFormData({ ...formData, icon });
-                    setShowIconPicker(false);
-                  }}
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Name input */}
+      {/* Row 1: Name */}
+      <div className="inline-form-field">
+        <label className="inline-form-label">{t('presetName')}</label>
         <input
           ref={nameInputRef}
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder={t('quickExpenseNamePlaceholder')}
-          className="inline-input inline-input-name"
+          className="inline-input"
         />
+      </div>
 
-        {/* Amount input */}
+      {/* Row 2: Amount */}
+      <div className="inline-form-field">
+        <label className="inline-form-label">{t('amount')}</label>
         <div className="inline-amount-wrapper">
           <span className="currency-symbol">$</span>
           <input
@@ -309,50 +283,57 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
         </div>
       </div>
 
-      <div className="inline-form-row">
-        {/* Category */}
-        <select
-          value={formData.categoryId}
-          onChange={(e) => {
-            const categoryId = e.target.value;
-            const cat = categories.find(c => c.id === categoryId);
-            // 同步图标为所选种类图标，若无则保持原来的或默认
-            setFormData({ 
+      {/* Row 3: Category + Payment Method (2 columns on desktop) */}
+      <div className="inline-form-grid">
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('category')}</label>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => {
+              const categoryId = e.target.value;
+              const cat = categories.find(c => c.id === categoryId);
+              setFormData({ 
+                ...formData, 
+                categoryId, 
+                icon: cat?.icon || formData.icon || '💰'
+              });
+            }}
+            className="inline-select"
+          >
+            <option value="">{t('selectCategory')}</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('paymentMethod')}</label>
+          <select
+            value={formData.paymentMethod}
+            onChange={(e) => setFormData({ 
               ...formData, 
-              categoryId, 
-              icon: cat?.icon || formData.icon || '💰'
-            });
-          }}
-          className="inline-select"
-        >
-          <option value="">{t('selectCategory')}</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
+              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+              cardId: undefined,
+              ewalletId: undefined,
+              bankId: undefined,
+            })}
+            className="inline-select"
+          >
+            <option value="cash">{t('cash')}</option>
+            <option value="credit_card">{t('creditCard')}</option>
+            <option value="e_wallet">{t('eWallet')}</option>
+            <option value="bank">{t('bankAccount')}</option>
+          </select>
+        </div>
+      </div>
 
-        {/* Payment Method */}
-        <select
-          value={formData.paymentMethod}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-            cardId: undefined,
-            ewalletId: undefined,
-            bankId: undefined,
-          })}
-          className="inline-select"
-        >
-          <option value="cash">{t('cash')}</option>
-          <option value="credit_card">{t('creditCard')}</option>
-          <option value="e_wallet">{t('eWallet')}</option>
-          <option value="bank">{t('bankAccount')}</option>
-        </select>
-
-        {/* Sub-payment selector */}
-        {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
+      {/* Row 4: Sub-payment selector (if needed) */}
+      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectCard')}</label>
           <select
             value={formData.cardId || ''}
             onChange={(e) => setFormData({ ...formData, cardId: e.target.value || undefined })}
@@ -363,9 +344,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={card.id} value={card.id}>{card.name}</option>
             ))}
           </select>
-        )}
+        </div>
+      )}
 
-        {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectEWallet')}</label>
           <select
             value={formData.ewalletId || ''}
             onChange={(e) => setFormData({ ...formData, ewalletId: e.target.value || undefined })}
@@ -376,9 +360,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
             ))}
           </select>
-        )}
+        </div>
+      )}
 
-        {formData.paymentMethod === 'bank' && banks.length > 0 && (
+      {formData.paymentMethod === 'bank' && banks.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectBank')}</label>
           <select
             value={formData.bankId || ''}
             onChange={(e) => setFormData({ ...formData, bankId: e.target.value || undefined })}
@@ -389,16 +376,17 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={bank.id} value={bank.id}>{bank.name}</option>
             ))}
           </select>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Actions */}
       <div className="inline-form-actions">
         <button 
           onClick={handleSavePreset} 
           className="inline-btn inline-btn-save"
           disabled={!formData.name || !formData.categoryId || formData.amount <= 0}
         >
-          {editingPresetId ? t('confirmEdit') : t('save')}
+          {editingPresetId ? t('update') : t('save')}
         </button>
         <button 
           onClick={resetForm} 
@@ -446,20 +434,24 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                     </div>
                     {openMenuId === preset.id && (
                       <div className="quick-expense-dropdown">
-                        <button
+                        <div
                           className="quick-expense-dropdown-item"
                           onClick={(e) => handleEditPreset(preset, e)}
+                          role="button"
+                          tabIndex={0}
                         >
                           <EditIcon size={14} />
                           <span>{t('edit')}</span>
-                        </button>
-                        <button
+                        </div>
+                        <div
                           className="quick-expense-dropdown-item danger"
                           onClick={(e) => handleDeletePreset(preset.id, e)}
+                          role="button"
+                          tabIndex={0}
                         >
                           <DeleteIcon size={14} />
                           <span>{t('delete')}</span>
-                        </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -484,14 +476,6 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
       {/* Inline form */}
       {isAdding && renderInlineForm()}
-
-      {/* Regular add expense button */}
-      {onQuickAdd && (
-        <button onClick={onQuickAdd} className="quick-add-regular-btn">
-          <span>📝</span>
-          <span>{t('addExpenseManually')}</span>
-        </button>
-      )}
     </div>
   );
 };

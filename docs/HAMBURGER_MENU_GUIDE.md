@@ -184,17 +184,125 @@ const styles = {
 
 For dark mode, ensure:
 
-1. **Solid background**: Use `#1e1e2e` or similar opaque color
-2. **Border color**: Use `#3f3f46` for visibility
+1. **Use CSS variables**: Use `var(--card-bg)` instead of hardcoded colors
+2. **Border color**: Use `var(--border-color)` for visibility
 3. **Enhanced shadow**: Use `box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6)`
+4. **Hover effect**: Use gradient for dark mode hover states
 
-Example for CSS-based dropdown:
+## Dropdown Menu Specifications
+
+All dropdown menus should follow these exact specifications (based on ExpenseList.tsx):
+
+### Menu Container Styles
+
+| Property | Value |
+|----------|-------|
+| position | `absolute` |
+| top | `100%` (appears below trigger) |
+| right | `0` |
+| margin-top | `4px` |
+| min-width | `160px` |
+| background-color | `var(--card-bg)` |
+| border | `1px solid var(--border-color)` |
+| border-radius | `8px` |
+| box-shadow | `0 4px 6px rgba(0,0,0,0.1)` |
+| z-index | `9999` |
+
+### Menu Item Styles
+
+| Property | Value |
+|----------|-------|
+| display | `flex` |
+| align-items | `center` |
+| gap | `8px` |
+| width | `100%` |
+| padding | `12px 16px` |
+| border | `none` |
+| background-color | `transparent` |
+| color | `var(--text-primary)` |
+| font-size | `14px` |
+| cursor | `pointer` |
+| text-align | `left` |
+
+### Hover States
 
 ```css
+/* Light mode */
+.menu-item-hover:hover {
+  background: var(--hover-bg);
+}
+
+/* Dark mode */
+.dark .menu-item-hover:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15));
+}
+```
+
+### Danger Item Styles
+
+For delete actions, use:
+
+```css
+.menu-item.danger {
+  color: var(--error-text);
+}
+
+.menu-item.danger:hover {
+  background: var(--error-bg);
+}
+```
+
+### CSS Class Implementation (for CSS-based dropdowns)
+
+```css
+.quick-expense-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 160px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 9999;
+}
+
 .dark .quick-expense-dropdown {
-  background-color: #1e1e2e !important;
-  border-color: #3f3f46;
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.quick-expense-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.quick-expense-dropdown-item:hover {
+  background: var(--hover-bg);
+}
+
+.dark .quick-expense-dropdown-item:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(167, 139, 250, 0.15));
+}
+
+.quick-expense-dropdown-item.danger {
+  color: var(--error-text);
+}
+
+.quick-expense-dropdown-item.danger:hover {
+  background: var(--error-bg);
 }
 ```
 

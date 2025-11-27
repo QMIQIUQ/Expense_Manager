@@ -39,6 +39,114 @@ The global stylesheet exposes a `.btn` utility for standard CTAs.
 
 Disable buttons with the `disabled` attribute only. The shared styles already dim opacity and block pointer events for both themes.
 
+## Form Action Buttons (BaseForm Pattern)
+
+All form dialogs (create/edit) should follow the `BaseForm` component pattern for consistent button styling.
+
+### Standard Form Buttons
+
+```tsx
+{/* Form Actions - from BaseForm.tsx */}
+<div className="flex gap-3 pt-2">
+  <button
+    type="submit"
+    className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+    style={{
+      backgroundColor: 'var(--accent-light)',
+      color: 'var(--accent-primary)',
+      fontWeight: 600,
+      borderRadius: '6px',
+      lineHeight: 1.2,
+    }}
+  >
+    {submitLabel || t('save')}
+  </button>
+  <button
+    type="button"
+    onClick={onCancel}
+    className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
+    style={{
+      backgroundColor: 'var(--bg-secondary)',
+      color: 'var(--text-primary)',
+      fontWeight: 600,
+      borderRadius: '6px',
+      lineHeight: 1.2,
+    }}
+  >
+    {cancelLabel || t('cancel')}
+  </button>
+</div>
+```
+
+### Form Button Specifications
+
+| Property | Submit/Save Button | Cancel Button |
+|----------|-------------------|---------------|
+| Background | `var(--accent-light)` | `var(--bg-secondary)` |
+| Color | `var(--accent-primary)` | `var(--text-primary)` |
+| Padding | `8px 16px` (py-2 px-4) | `8px 20px` (py-2 px-5) |
+| Border Radius | `6px` | `6px` |
+| Font Size | `14px` (text-sm) | `14px` (text-sm) |
+| Font Weight | `600` | `600` |
+| Line Height | `1.2` | `1.2` |
+| Flex | `flex: 1` (fills space) | Fixed width |
+
+### CSS Class Implementation (Inline Forms)
+
+For inline forms outside of `BaseForm`, use these CSS classes:
+
+```css
+.inline-form-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.inline-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  line-height: 1.2;
+}
+
+.inline-btn-save {
+  flex: 1;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.inline-btn-cancel {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px 20px;
+}
+```
+
+### Hover Effects
+
+```css
+.inline-btn-save:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.dark .inline-btn-save:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.inline-btn-cancel:hover {
+  filter: brightness(0.95);
+}
+
+.dark .inline-btn-cancel:hover {
+  filter: brightness(1.1);
+}
+```
+
 ## Icon-Chip Buttons
 
 Use icon chips for inline actions (Edit/Delete/Link). Layout rules:
@@ -89,6 +197,7 @@ import { PlusIcon } from '../icons';
 - Hover/focus transitions are already defined globally. Do not add bespoke `transition` rules unless necessary.
 - For destructive actions inside cards, prefer icon chips + confirmation instead of inline red text links.
 - The dark theme automatically injects purple glows and status text overrides. If you see white flashes, you likely used raw `#fff` instead of `var(--card-bg)`.
+- Use `filter: brightness()` for hover effects: `0.95` for light mode, `1.1` for dark mode.
 
 ## Accessibility
 
@@ -98,6 +207,8 @@ import { PlusIcon } from '../icons';
 
 ## Reference Implementations
 
+- **BaseForm (standard pattern)**: `web/src/components/common/BaseForm.tsx`
+- **Inline Form Buttons**: `web/src/components/dashboard/widgets/QuickAddWidget.tsx`
 - Expenses: `web/src/components/expenses/ExpenseList.tsx`
 - Incomes: `web/src/pages/tabs/IncomesTab.tsx`
 - Cards/E-Wallets: `web/src/components/payment/PaymentMethodsTab.tsx`
