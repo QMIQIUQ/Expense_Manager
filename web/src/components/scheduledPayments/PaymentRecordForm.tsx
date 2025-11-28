@@ -8,6 +8,8 @@ import {
   PaymentMethodType 
 } from '../../types';
 import { getTodayLocal } from '../../utils/dateUtils';
+import { CloseIcon } from '../icons';
+import { getCurrencySymbol } from './ScheduledPaymentForm';
 
 interface PaymentRecordFormData {
   expectedAmount: number;
@@ -46,6 +48,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
+  const currencySymbol = getCurrencySymbol(scheduledPayment.currency);
   
   const [formData, setFormData] = useState<PaymentRecordFormData>({
     expectedAmount: scheduledPayment.amount,
@@ -79,21 +82,43 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   const difference = (actualAmountInCents / 100) - formData.expectedAmount;
 
   return (
-    <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-      <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-        {t('confirmPayment')}
-      </h4>
-      
+    <div className="flex flex-col gap-4" style={{ 
+      backgroundColor: 'var(--bg-secondary)', 
+      padding: '16px',
+      borderRadius: '8px',
+      border: '1px solid var(--border-color)'
+    }}>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          {t('confirmPayment')}
+        </h3>
+        <button 
+          onClick={onCancel} 
+          className="p-1 rounded-full transition-colors"
+          style={{ 
+            color: 'var(--text-secondary)',
+            backgroundColor: 'transparent',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label={t('cancel')}
+          type="button"
+        >
+          <CloseIcon size={20} />
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Payment Info Summary */}
-        <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
           <div className="flex justify-between items-center mb-2">
-            <span style={{ color: 'var(--text-secondary)' }}>{t('scheduledPayment')}:</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('scheduledPayment')}:</span>
             <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{scheduledPayment.name}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span style={{ color: 'var(--text-secondary)' }}>{t('expectedAmount')}:</span>
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>${scheduledPayment.amount.toFixed(2)}</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('expectedAmount')}:</span>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{currencySymbol}{scheduledPayment.amount.toFixed(2)}</span>
           </div>
         </div>
 
@@ -109,11 +134,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               onChange={(e) => setFormData({ ...formData, periodYear: parseInt(e.target.value) || currentYear })}
               min="2020"
               max="2100"
-              className="w-full p-3 rounded-lg border"
+              className="w-full p-3 rounded-lg outline-none transition-all"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
+                border: '1px solid var(--border-color)'
               }}
             />
           </div>
@@ -124,11 +149,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             <select
               value={formData.periodMonth}
               onChange={(e) => setFormData({ ...formData, periodMonth: parseInt(e.target.value) })}
-              className="w-full p-3 rounded-lg border"
+              className="w-full p-3 rounded-lg outline-none transition-all"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
+                border: '1px solid var(--border-color)'
               }}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
@@ -143,7 +168,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         {/* Actual Amount Paid */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('actualAmountPaid')} ($) *
+            {t('actualAmountPaid')} ({currencySymbol}) *
           </label>
           <input
             type="text"
@@ -157,11 +182,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             }}
             onFocus={(e) => e.target.select()}
             required
-            className="w-full p-3 rounded-lg border"
+            className="w-full p-3 rounded-lg outline-none transition-all"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
+              border: '1px solid var(--border-color)'
             }}
           />
         </div>
@@ -176,9 +201,9 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             }}
           >
             {difference > 0 ? (
-              <span>💰 {t('overpaid')}: ${difference.toFixed(2)}</span>
+              <span>💰 {t('overpaid')}: {currencySymbol}{difference.toFixed(2)}</span>
             ) : (
-              <span>⚠️ {t('underpaid')}: ${Math.abs(difference).toFixed(2)}</span>
+              <span>⚠️ {t('underpaid')}: {currencySymbol}{Math.abs(difference).toFixed(2)}</span>
             )}
           </div>
         )}
@@ -193,11 +218,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             value={formData.paidDate}
             onChange={(e) => setFormData({ ...formData, paidDate: e.target.value })}
             required
-            className="w-full p-3 rounded-lg border"
+            className="w-full p-3 rounded-lg outline-none transition-all"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
+              border: '1px solid var(--border-color)'
             }}
           />
         </div>
@@ -216,11 +241,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
               bankId: e.target.value !== 'bank' ? '' : formData.bankId,
             })}
-            className="w-full p-3 rounded-lg border"
+            className="w-full p-3 rounded-lg outline-none transition-all"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
+              border: '1px solid var(--border-color)'
             }}
           >
             <option value="cash">💵 {t('cash')}</option>
@@ -239,11 +264,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             <select
               value={formData.cardId}
               onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-              className="w-full p-3 rounded-lg border"
+              className="w-full p-3 rounded-lg outline-none transition-all"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
+                border: '1px solid var(--border-color)'
               }}
             >
               <option value="">{t('selectCard')}</option>
@@ -266,11 +291,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               <select
                 value={formData.paymentMethodName}
                 onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-                className="w-full p-3 rounded-lg border"
+                className="w-full p-3 rounded-lg outline-none transition-all"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
-                  borderColor: 'var(--border-color)'
+                  border: '1px solid var(--border-color)'
                 }}
               >
                 <option value="">{t('selectEWallet')}</option>
@@ -286,11 +311,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
                 value={formData.paymentMethodName}
                 onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
                 placeholder={t('eWalletPlaceholder')}
-                className="w-full p-3 rounded-lg border"
+                className="w-full p-3 rounded-lg outline-none transition-all"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
-                  borderColor: 'var(--border-color)'
+                  border: '1px solid var(--border-color)'
                 }}
               />
             )}
@@ -306,11 +331,11 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             <select
               value={formData.bankId}
               onChange={(e) => setFormData({ ...formData, bankId: e.target.value })}
-              className="w-full p-3 rounded-lg border"
+              className="w-full p-3 rounded-lg outline-none transition-all"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
+                border: '1px solid var(--border-color)'
               }}
             >
               <option value="">{t('selectBank')}</option>
@@ -333,38 +358,43 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             onChange={(e) => setFormData({ ...formData, note: e.target.value })}
             placeholder={t('notesPlaceholder')}
             rows={2}
-            className="w-full p-3 rounded-lg border resize-none"
+            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
+              border: '1px solid var(--border-color)'
             }}
           />
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3 mt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 p-3 rounded-lg font-medium"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-color)'
-            }}
-          >
-            {t('cancel')}
-          </button>
+        {/* Form Actions - matching BaseForm pattern */}
+        <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            className="flex-1 p-3 rounded-lg font-medium"
+            className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors"
             style={{
-              backgroundColor: 'var(--accent-primary)',
-              color: 'white'
+              backgroundColor: 'var(--accent-light)',
+              color: 'var(--accent-primary)',
+              fontWeight: 600,
+              borderRadius: '6px',
+              lineHeight: 1.2,
             }}
           >
             ✓ {t('confirmPayment')}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              borderRadius: '6px',
+              lineHeight: 1.2,
+            }}
+          >
+            {t('cancel')}
           </button>
         </div>
       </form>

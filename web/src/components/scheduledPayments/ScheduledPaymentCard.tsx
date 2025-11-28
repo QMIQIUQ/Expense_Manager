@@ -12,6 +12,26 @@ import {
 import { EditIcon, DeleteIcon } from '../icons';
 import PaymentRecordForm from './PaymentRecordForm';
 import PaymentHistoryList from './PaymentHistoryList';
+import { getCurrencySymbol } from './ScheduledPaymentForm';
+
+// Responsive styles matching RecurringExpenseManager
+const responsiveCardStyles = `
+  .scheduled-payment-card .desktop-actions {
+    display: none;
+    gap: 8px;
+  }
+  .scheduled-payment-card .mobile-actions {
+    display: block;
+  }
+  @media (min-width: 640px) {
+    .scheduled-payment-card .desktop-actions {
+      display: flex;
+    }
+    .scheduled-payment-card .mobile-actions {
+      display: none;
+    }
+  }
+`;
 
 interface ScheduledPaymentCardProps {
   payment: ScheduledPayment;
@@ -80,14 +100,26 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
     };
   }, [openMenuId]);
 
-  // Get category info
-  const category = categories.find(c => c.name === payment.category);
-  const categoryStyle = category ? {
-    background: `${category.color}20`,
-    color: category.color,
-  } : {
-    background: '#e0e7ff',
-    color: '#4338ca',
+  // Get category color from user's category settings
+  const getCategoryColor = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    if (category && category.color) {
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 99, g: 102, b: 241 };
+      };
+      
+      const rgb = hexToRgb(category.color);
+      const bg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+      const text = category.color;
+      
+      return { background: bg, color: text };
+    }
+    return { background: '#e0e7ff', color: '#4338ca' };
   };
 
   // Type icon
@@ -119,6 +151,8 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
   };
 
   const progress = getProgress();
+  const currencySymbol = getCurrencySymbol(payment.currency);
+  const categoryStyle = getCategoryColor(payment.category);
 
   const handlePaymentSubmit = (data: {
     expectedAmount: number;
@@ -142,337 +176,380 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
   };
 
   return (
-    <div 
-      className="scheduled-payment-card"
-      style={{
-        backgroundColor: 'var(--card-bg)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '12px',
-        padding: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}
-    >
-      {/* Header Row: Type, Category, Status, Amount */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '16px' }}>{getTypeIcon()}</span>
-          <span 
-            style={{
-              padding: '4px 10px',
-              borderRadius: '16px',
-              fontSize: '12px',
-              fontWeight: 600,
-              ...categoryStyle,
-            }}
-          >
-            {category?.icon} {payment.category}
-          </span>
-          {payment.isActive ? (
-            <span style={{ color: 'var(--success-text)', fontSize: '11px', fontWeight: 500 }}>
-              ● {t('active')}
+    <>
+      <style>{responsiveCardStyles}</style>
+      <div className="scheduled-payment-card">
+        {/* Row 1: Type Icon, Category, Status, Amount */}
+        <div style={styles.row1}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '16px' }}>{getTypeIcon()}</span>
+            <span 
+              className="category-chip"
+              style={{
+                ...styles.category,
+                ...categoryStyle
+              }}
+            >
+              {categories.find(c => c.name === payment.category)?.icon} {payment.category}
             </span>
-          ) : (
-            <span style={{ color: 'var(--error-text)', fontSize: '11px', fontWeight: 500 }}>
-              ● {t('inactive')}
-            </span>
-          )}
-          {payment.isCompleted && (
-            <span style={{ color: 'var(--success-text)', fontSize: '11px', fontWeight: 500 }}>
-              ✓ {t('completed')}
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--error-text)', whiteSpace: 'nowrap' }}>
-          ${payment.amount.toFixed(2)}
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
-            /{payment.frequency === 'monthly' ? t('freqMonthly') : t('freqYearly')}
-          </span>
-        </div>
-      </div>
-
-      {/* Name and Description */}
-      <div>
-        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)' }}>
-          {payment.name}
-        </h4>
-        {payment.description && (
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-            {payment.description}
-          </p>
-        )}
-      </div>
-
-      {/* Payment Info Row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-        <span>📅 {t('dueDay')}: {payment.dueDay}</span>
-        {payment.paymentMethod && (
-          <span>
-            {payment.paymentMethod === 'credit_card' && '💳'}
-            {payment.paymentMethod === 'e_wallet' && '📱'}
-            {payment.paymentMethod === 'bank' && '🏦'}
-            {payment.paymentMethod === 'cash' && '💵'}
-            {' '}
-            {payment.paymentMethod === 'credit_card' && cards.find(c => c.id === payment.cardId)?.name}
-            {payment.paymentMethod === 'e_wallet' && payment.paymentMethodName}
-            {payment.paymentMethod === 'bank' && banks.find(b => b.id === payment.bankId)?.name}
-            {payment.paymentMethod === 'cash' && t('cash')}
-          </span>
-        )}
-        {summary?.nextDueDate && (
-          <span style={{ color: 'var(--warning-text)' }}>
-            ⏰ {t('nextDue')}: {summary.nextDueDate}
-          </span>
-        )}
-      </div>
-
-      {/* Progress Bar for Installment/Debt */}
-      {progress && (
-        <div style={{ marginTop: '4px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {t('totalPaid')}: ${progress.totalPaid.toFixed(2)} / ${progress.totalAmount.toFixed(2)}
-            </span>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {progress.percentage.toFixed(0)}%
-            </span>
-          </div>
-          <div style={{ 
-            height: '6px', 
-            backgroundColor: 'var(--bg-secondary)', 
-            borderRadius: '3px',
-            overflow: 'hidden'
-          }}>
-            <div 
-              style={{ 
-                height: '100%', 
-                width: `${progress.percentage}%`,
-                backgroundColor: progress.percentage >= 100 ? 'var(--success-text)' : 'var(--accent-primary)',
-                borderRadius: '3px',
-                transition: 'width 0.3s ease'
-              }} 
-            />
-          </div>
-          {progress.remaining > 0 && (
-            <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--warning-text)' }}>
-              {t('remainingAmount')}: ${progress.remaining.toFixed(2)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Summary Stats */}
-      {summary && (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
-          gap: '8px',
-          padding: '8px',
-          backgroundColor: 'var(--bg-secondary)',
-          borderRadius: '8px',
-          fontSize: '12px'
-        }}>
-          <div>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
-            <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>${summary.totalPaid.toFixed(2)}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('paymentCount')}:</span>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{summary.paymentCount}</div>
-          </div>
-          {summary.remainingPayments !== undefined && (
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>{t('remainingPayments')}:</span>
-              <div style={{ fontWeight: 600, color: 'var(--warning-text)' }}>{summary.remainingPayments}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-        {/* Confirm Payment Button */}
-        {payment.isActive && !payment.isCompleted && (
-          <button
-            onClick={() => setShowPaymentForm(!showPaymentForm)}
-            disabled={isPeriodPaid}
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '10px 16px',
-              backgroundColor: isPeriodPaid ? 'var(--success-bg)' : 'var(--accent-light)',
-              color: isPeriodPaid ? 'var(--success-text)' : 'var(--accent-primary)',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: isPeriodPaid ? 'default' : 'pointer',
-              opacity: isPeriodPaid ? 0.8 : 1,
-            }}
-          >
-            {isPeriodPaid ? (
-              <>✓ {t('paidThisMonth')}</>
+            {payment.isActive ? (
+              <span style={styles.activeStatus}>● {t('active')}</span>
             ) : (
-              <>💰 {t('confirmPayment')}</>
+              <span style={styles.inactiveStatus}>● {t('inactive')}</span>
             )}
-          </button>
-        )}
-
-        {/* View History Button */}
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: 'var(--bg-secondary)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            cursor: 'pointer',
-          }}
-        >
-          📋 {showHistory ? t('hideHistory') : t('viewHistory')}
-        </button>
-
-        {/* Desktop Actions */}
-        <div className="desktop-actions" style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => onToggleActive(!payment.isActive)}
-            className={`btn-icon ${payment.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
-            title={payment.isActive ? t('pause') : t('resume')}
-          >
-            {payment.isActive ? '⏸' : '▶'}
-          </button>
-          <button onClick={onEdit} className="btn-icon btn-icon-primary" title={t('edit')}>
-            <EditIcon size={18} />
-          </button>
-          <button onClick={onDelete} className="btn-icon btn-icon-danger" title={t('delete')}>
-            <DeleteIcon size={18} />
-          </button>
+            {payment.isCompleted && (
+              <span style={styles.completedStatus}>✓ {t('completed')}</span>
+            )}
+          </div>
+          <div style={styles.amount}>
+            {currencySymbol}{payment.amount.toFixed(2)}
+            <span style={styles.frequency}>/{payment.frequency === 'monthly' ? t('freqMonthly') : t('freqYearly')}</span>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
-        <div className="mobile-actions" style={{ position: 'relative' }}>
+        {/* Row 2: Name and Description */}
+        <div style={styles.row2}>
+          <h4 style={styles.name}>{payment.name}</h4>
+          {payment.description && (
+            <p style={styles.description}>{payment.description}</p>
+          )}
+        </div>
+
+        {/* Row 3: Payment Info */}
+        <div style={styles.row3}>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
+            {payment.paymentMethod === 'credit_card' && (
+              <span>💳 {cards.find(c => c.id === payment.cardId)?.name || t('creditCard')}</span>
+            )}
+            {payment.paymentMethod === 'e_wallet' && (
+              <span>📱 {payment.paymentMethodName || t('eWallet')}</span>
+            )}
+            {payment.paymentMethod === 'bank' && (
+              <span>🏦 {banks.find(b => b.id === payment.bankId)?.name || t('bankTransfer')}</span>
+            )}
+            {(!payment.paymentMethod || payment.paymentMethod === 'cash') && (
+              <span>💵 {t('cash')}</span>
+            )}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            📅 {t('dueDay')}: {payment.dueDay}
+          </div>
+          {summary?.nextDueDate && (
+            <div style={{ fontSize: '12px', color: 'var(--warning-text)' }}>
+              ⏰ {t('nextDue')}: {summary.nextDueDate}
+            </div>
+          )}
+        </div>
+
+        {/* Progress Bar for Installment/Debt */}
+        {progress && (
+          <div style={styles.progressContainer}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {t('totalPaid')}: {currencySymbol}{progress.totalPaid.toFixed(2)} / {currencySymbol}{progress.totalAmount.toFixed(2)}
+              </span>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {progress.percentage.toFixed(0)}%
+              </span>
+            </div>
+            <div style={styles.progressBar}>
+              <div 
+                style={{ 
+                  ...styles.progressFill,
+                  width: `${progress.percentage}%`,
+                  backgroundColor: progress.percentage >= 100 ? 'var(--success-text)' : 'var(--accent-primary)',
+                }} 
+              />
+            </div>
+            {progress.remaining > 0 && (
+              <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--warning-text)' }}>
+                {t('remainingAmount')}: {currencySymbol}{progress.remaining.toFixed(2)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Summary Stats */}
+        {summary && (
+          <div style={styles.summaryGrid}>
+            <div>
+              <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
+              <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>{currencySymbol}{summary.totalPaid.toFixed(2)}</div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-secondary)' }}>{t('paymentCount')}:</span>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{summary.paymentCount}</div>
+            </div>
+            {summary.remainingPayments !== undefined && (
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('remainingPayments')}:</span>
+                <div style={{ fontWeight: 600, color: 'var(--warning-text)' }}>{summary.remainingPayments}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons Row */}
+        <div style={styles.actionsRow}>
+          {/* Confirm Payment Button */}
+          {payment.isActive && !payment.isCompleted && (
+            <button
+              onClick={() => setShowPaymentForm(!showPaymentForm)}
+              disabled={isPeriodPaid}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '10px 16px',
+                backgroundColor: isPeriodPaid ? 'var(--success-bg)' : 'var(--accent-light)',
+                color: isPeriodPaid ? 'var(--success-text)' : 'var(--accent-primary)',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: isPeriodPaid ? 'default' : 'pointer',
+                opacity: isPeriodPaid ? 0.8 : 1,
+              }}
+            >
+              {isPeriodPaid ? (
+                <>✓ {t('paidThisMonth')}</>
+              ) : (
+                <>💰 {t('confirmPayment')}</>
+              )}
+            </button>
+          )}
+
+          {/* View History Button */}
           <button
-            className="menu-trigger-button"
-            onClick={() => setOpenMenuId(openMenuId === payment.id ? null : payment.id!)}
-            aria-label="More"
-          >
-            ⋮
-          </button>
-          {openMenuId === payment.id && (
-            <div style={{
-              position: 'absolute',
-              right: 0,
-              top: '100%',
-              marginTop: '4px',
-              backgroundColor: 'var(--card-bg)',
+            onClick={() => setShowHistory(!showHistory)}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-secondary)',
               border: '1px solid var(--border-color)',
               borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-              zIndex: 9999,
-              minWidth: '160px',
-            }}>
-              <button
-                className="menu-item-hover"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  onToggleActive(!payment.isActive);
-                }}
-              >
-                <span>{payment.isActive ? '⏸' : '▶'}</span>
-                {payment.isActive ? t('pause') : t('resume')}
-              </button>
-              <button
-                className="menu-item-hover"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  onEdit();
-                }}
-              >
-                <EditIcon size={16} />
-                {t('edit')}
-              </button>
-              <button
-                className="menu-item-hover"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: 'var(--error-text)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  onDelete();
-                }}
-              >
-                <DeleteIcon size={16} />
-                {t('delete')}
-              </button>
-            </div>
-          )}
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            📋 {showHistory ? t('hideHistory') : t('viewHistory')}
+          </button>
+
+          {/* Desktop Actions */}
+          <div className="desktop-actions">
+            <button
+              onClick={() => onToggleActive(!payment.isActive)}
+              className={`btn-icon ${payment.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
+              title={payment.isActive ? t('pause') : t('resume')}
+            >
+              {payment.isActive ? '⏸' : '▶'}
+            </button>
+            <button onClick={onEdit} className="btn-icon btn-icon-primary" title={t('edit')}>
+              <EditIcon size={18} />
+            </button>
+            <button onClick={onDelete} className="btn-icon btn-icon-danger" title={t('delete')}>
+              <DeleteIcon size={18} />
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          <div className="mobile-actions" style={styles.menuContainer}>
+            <button
+              className="menu-trigger-button"
+              onClick={() => setOpenMenuId(openMenuId === payment.id ? null : payment.id!)}
+              aria-label="More"
+            >
+              ⋮
+            </button>
+            {openMenuId === payment.id && (
+              <div style={styles.menu}>
+                <button
+                  className="menu-item-hover"
+                  style={styles.menuItem}
+                  onClick={() => {
+                    setOpenMenuId(null);
+                    onToggleActive(!payment.isActive);
+                  }}
+                >
+                  <span style={styles.menuIcon}>{payment.isActive ? '⏸' : '▶'}</span>
+                  {payment.isActive ? t('pause') : t('resume')}
+                </button>
+                <button
+                  className="menu-item-hover"
+                  style={styles.menuItem}
+                  onClick={() => {
+                    setOpenMenuId(null);
+                    onEdit();
+                  }}
+                >
+                  <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                  {t('edit')}
+                </button>
+                <button
+                  className="menu-item-hover"
+                  style={{ ...styles.menuItem, color: 'var(--error-text)' }}
+                  onClick={() => {
+                    setOpenMenuId(null);
+                    onDelete();
+                  }}
+                >
+                  <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                  {t('delete')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Payment Form */}
+        {showPaymentForm && (
+          <PaymentRecordForm
+            scheduledPayment={payment}
+            cards={cards}
+            banks={banks}
+            ewallets={ewallets}
+            onSubmit={handlePaymentSubmit}
+            onCancel={() => setShowPaymentForm(false)}
+          />
+        )}
+
+        {/* Payment History */}
+        {showHistory && (
+          <PaymentHistoryList
+            records={records}
+            onDelete={onDeletePaymentRecord}
+          />
+        )}
       </div>
-
-      {/* Payment Form */}
-      {showPaymentForm && (
-        <PaymentRecordForm
-          scheduledPayment={payment}
-          cards={cards}
-          banks={banks}
-          ewallets={ewallets}
-          onSubmit={handlePaymentSubmit}
-          onCancel={() => setShowPaymentForm(false)}
-        />
-      )}
-
-      {/* Payment History */}
-      {showHistory && (
-        <PaymentHistoryList
-          records={records}
-          onDelete={onDeletePaymentRecord}
-        />
-      )}
-    </div>
+    </>
   );
+};
+
+const styles = {
+  row1: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  row2: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  row3: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap' as const,
+  },
+  category: {
+    padding: '5px 10px',
+    borderRadius: '16px',
+    fontSize: '12px',
+    fontWeight: '600' as const,
+    boxShadow: '0 1px 3px var(--shadow)',
+  },
+  activeStatus: {
+    color: 'var(--success-text)',
+    fontSize: '11px',
+    fontWeight: '500' as const,
+  },
+  inactiveStatus: {
+    color: 'var(--error-text)',
+    fontSize: '11px',
+    fontWeight: '500' as const,
+  },
+  completedStatus: {
+    color: 'var(--success-text)',
+    fontSize: '11px',
+    fontWeight: '500' as const,
+  },
+  amount: {
+    fontSize: '18px',
+    fontWeight: '600' as const,
+    color: 'var(--error-text)',
+    whiteSpace: 'nowrap' as const,
+  },
+  frequency: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontWeight: '400' as const,
+  },
+  name: {
+    margin: 0,
+    fontSize: '15px',
+    fontWeight: '500' as const,
+    color: 'var(--text-primary)',
+  },
+  description: {
+    margin: '4px 0 0',
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+  },
+  progressContainer: {
+    marginTop: '4px',
+  },
+  progressBar: {
+    height: '6px',
+    backgroundColor: 'var(--bg-secondary)',
+    borderRadius: '3px',
+    overflow: 'hidden' as const,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '3px',
+    transition: 'width 0.3s ease',
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+    gap: '8px',
+    padding: '8px',
+    backgroundColor: 'var(--bg-secondary)',
+    borderRadius: '8px',
+    fontSize: '12px',
+  },
+  actionsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '4px',
+  },
+  menuContainer: {
+    position: 'relative' as const,
+  },
+  menu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 9999,
+    minWidth: '160px',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
+  },
 };
 
 export default ScheduledPaymentCard;
