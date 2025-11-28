@@ -1,9 +1,6 @@
-/* Tailwind directives removed to avoid build errors when PostCSS/Tailwind is not active */
-/* If Tailwind is enabled via PostCSS, re-add:
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
-*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* CSS Variables for theming - Enhanced with Purple Accent System */
 :root {
