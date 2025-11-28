@@ -628,6 +628,58 @@ export const translations = {
   quickAddPresetAria: { en: 'Quick add {name}', zh: '快速新增 {name}', 'zh-CN': '快速添加 {name}' },
   followSystem: { en: 'Follow System', zh: '跟随系统', 'zh-CN': '跟随系统' },
   bankAccount: { en: 'Bank Account', zh: '銀行帳戶', 'zh-CN': '银行账户' },
+  
+  // Scheduled Payments Feature (定期付款/待還款)
+  scheduledPayments: { en: 'Scheduled Payments', zh: '定期付款', 'zh-CN': '定期付款' },
+  addScheduledPayment: { en: 'Add Scheduled Payment', zh: '新增定期付款', 'zh-CN': '添加定期付款' },
+  editScheduledPayment: { en: 'Edit Scheduled Payment', zh: '編輯定期付款', 'zh-CN': '编辑定期付款' },
+  deleteScheduledPayment: { en: 'Delete Scheduled Payment', zh: '刪除定期付款', 'zh-CN': '删除定期付款' },
+  confirmDeleteScheduledPayment: { en: 'Are you sure you want to delete this scheduled payment?', zh: '您確定要刪除此定期付款嗎？', 'zh-CN': '您确定要删除此定期付款吗？' },
+  noScheduledPaymentsYet: { en: 'No scheduled payments yet. Add your first one! 📅', zh: '尚未設定定期付款。新增您的第一筆！📅', 'zh-CN': '尚未设定定期付款。添加您的第一笔！📅' },
+  scheduledPaymentNamePlaceholder: { en: 'e.g., Netflix, Car Loan, Credit Card Bill', zh: '例如：Netflix、車貸、信用卡帳單', 'zh-CN': '例如：Netflix、车贷、信用卡账单' },
+  
+  // Payment Types
+  paymentType: { en: 'Payment Type', zh: '付款類型', 'zh-CN': '付款类型' },
+  subscription: { en: 'Subscription', zh: '訂閱服務', 'zh-CN': '订阅服务' },
+  installment: { en: 'Installment', zh: '分期付款', 'zh-CN': '分期付款' },
+  debt: { en: 'Debt', zh: '待還款/欠款', 'zh-CN': '待还款/欠款' },
+  allTypes: { en: 'All Types', zh: '所有類型', 'zh-CN': '所有类型' },
+  
+  // Installment/Debt Settings
+  totalInstallments: { en: 'Total Installments', zh: '總期數', 'zh-CN': '总期数' },
+  interestRate: { en: 'Interest Rate', zh: '利率', 'zh-CN': '利率' },
+  autoCalculateMonthly: { en: 'Auto-calculate monthly amount from total', zh: '根據總金額自動計算每月付款', 'zh-CN': '根据总金额自动计算每月付款' },
+  calculatedMonthlyAmount: { en: 'Calculated monthly amount', zh: '計算出的每月金額', 'zh-CN': '计算出的每月金额' },
+  withInterest: { en: 'with interest', zh: '含利息', 'zh-CN': '含利息' },
+  monthlyAmount: { en: 'Monthly Amount', zh: '每月金額', 'zh-CN': '每月金额' },
+  yearlyAmount: { en: 'Yearly Amount', zh: '每年金額', 'zh-CN': '每年金额' },
+  
+  // Due Date
+  dueDay: { en: 'Due Day', zh: '繳款日', 'zh-CN': '缴款日' },
+  nextDue: { en: 'Next Due', zh: '下次繳款', 'zh-CN': '下次缴款' },
+  
+  // Payment Confirmation
+  confirmPayment: { en: 'Confirm Payment', zh: '確認付款', 'zh-CN': '确认付款' },
+  paidThisMonth: { en: 'Paid This Month', zh: '本月已繳', 'zh-CN': '本月已缴' },
+  expectedAmount: { en: 'Expected Amount', zh: '預期金額', 'zh-CN': '预期金额' },
+  actualAmountPaid: { en: 'Actual Amount Paid', zh: '實際付款金額', 'zh-CN': '实际付款金额' },
+  paymentDate: { en: 'Payment Date', zh: '付款日期', 'zh-CN': '付款日期' },
+  overpaid: { en: 'Overpaid', zh: '多付', 'zh-CN': '多付' },
+  underpaid: { en: 'Underpaid', zh: '少付', 'zh-CN': '少付' },
+  year: { en: 'Year', zh: '年', 'zh-CN': '年' },
+  name: { en: 'Name', zh: '名稱', 'zh-CN': '名称' },
+  
+  // Payment History
+  paymentHistory: { en: 'Payment History', zh: '付款記錄', 'zh-CN': '付款记录' },
+  viewHistory: { en: 'View History', zh: '查看記錄', 'zh-CN': '查看记录' },
+  hideHistory: { en: 'Hide History', zh: '隱藏記錄', 'zh-CN': '隐藏记录' },
+  noPaymentRecords: { en: 'No payment records yet', zh: '尚無付款記錄', 'zh-CN': '尚无付款记录' },
+  totalExpected: { en: 'Total Expected', zh: '預期總額', 'zh-CN': '预期总额' },
+  totalPaid: { en: 'Total Paid', zh: '已付總額', 'zh-CN': '已付总额' },
+  totalDifference: { en: 'Difference', zh: '差異', 'zh-CN': '差异' },
+  paymentCount: { en: 'Payment Count', zh: '付款次數', 'zh-CN': '付款次数' },
+  remainingPayments: { en: 'Remaining Payments', zh: '剩餘期數', 'zh-CN': '剩余期数' },
+  scheduledPayment: { en: 'Scheduled Payment', zh: '定期付款', 'zh-CN': '定期付款' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
