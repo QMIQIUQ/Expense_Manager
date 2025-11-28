@@ -457,18 +457,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         <div className="quick-expense-scroll-container">
           <div className="quick-expense-scroll-bar">
             {quickExpensePresets.map((preset) => {
-              const category = categories.find((c) => c.id === preset.categoryId);
+              // Compact quick expense button: no category chip; derive aria-label with placeholder replacement
+              const ariaLabel = (t('quickAddPresetAria') || 'Quick add {name}').replace('{name}', preset.name);
               return (
                 <button
                   key={preset.id}
                   className={`quick-expense-scroll-btn ${quickExpenseLoading === preset.id ? 'loading' : ''}`}
                   onClick={() => handleQuickExpenseClick(preset)}
                   disabled={!!quickExpenseLoading}
-                  aria-label={`Quick add ${preset.name}`}
+                  aria-label={ariaLabel}
                 >
-                  <span className="quick-expense-scroll-category">
-                    {category?.name || t('uncategorized')}
-                  </span>
+                  {/* Compact layout: show name + amount inline. Category chip removed per user request */}
                   <span className="quick-expense-scroll-name">{preset.name}</span>
                   <span className="quick-expense-scroll-amount">${preset.amount.toFixed(2)}</span>
                 </button>

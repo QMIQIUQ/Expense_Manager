@@ -321,6 +321,47 @@ button:not(:disabled):hover {
   color: var(--text-primary) !important;
 }
 
+/* Standard hamburger dropdown panel (apply this class to unify colors) */
+.hamburger-menu-panel {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow);
+  padding: 4px 0;
+}
+
+.dark .hamburger-menu-panel {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+/* Optional: section header buttons inside hamburger panel */
+.hamburger-menu-panel .section-toggle-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.hamburger-menu-panel .section-toggle-button:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.dark .hamburger-menu-panel .section-toggle-button:hover {
+  background: linear-gradient(90deg, rgba(124,58,237,0.12), rgba(167,139,250,0.18));
+}
+
 /* Ensure hamburger menu dropdown is always on top */
 .dark .z-\[9999\] {
   z-index: 9999 !important;
@@ -3793,7 +3834,7 @@ button:not(:disabled):hover {
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding: 2px 0;
+  padding: 2px 0; /* Restore small vertical padding to prevent hover translate clipping */
   scrollbar-width: thin;
   scrollbar-color: var(--accent-primary) transparent;
 }
@@ -3812,25 +3853,25 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-scroll-btn {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
-  padding: 6px 10px;
-  min-width: 84px;
-  max-width: 120px;
+  gap: 6px;
+  padding: 2px 8px; /* Add minimal vertical padding to avoid top being cut off on hover */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .quick-expense-scroll-btn:hover:not(:disabled) {
   background: var(--accent-light);
   border-color: var(--accent-primary);
-  transform: translateY(-2px);
+  transform: translateY(-1px); /* Smaller lift to reduce chance of clipping */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -3859,32 +3900,24 @@ button:not(:disabled):hover {
   background: rgba(0, 0, 0, 0.3);
 }
 
-.quick-expense-scroll-category {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  padding: 0 6px;
-  background: var(--accent-light);
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
+/* Category chip removed in compact mode; retain selector commented for potential future restoration */
+/* .quick-expense-scroll-category { */
+/*   display: none; */
+/* } */
 
 .quick-expense-scroll-name {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  max-width: 140px;
 }
 
 .quick-expense-scroll-amount {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent-primary);
 }
 

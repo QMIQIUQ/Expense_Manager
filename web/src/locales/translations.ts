@@ -625,6 +625,8 @@ export const translations = {
   quickExpenseNamePlaceholder: { en: 'e.g., Morning Coffee', zh: '例如：早餐', 'zh-CN': '例如：早餐' },
   addExpenseManually: { en: 'Add Expense Manually', zh: '手動新增支出', 'zh-CN': '手动添加支出' },
   quickExpenseAdded: { en: 'Quick expense added!', zh: '已新增快速支出！', 'zh-CN': '已添加快速支出！' },
+  quickAddPresetAria: { en: 'Quick add {name}', zh: '快速新增 {name}', 'zh-CN': '快速添加 {name}' },
+  followSystem: { en: 'Follow System', zh: '跟随系统', 'zh-CN': '跟随系统' },
   bankAccount: { en: 'Bank Account', zh: '銀行帳戶', 'zh-CN': '银行账户' },
 } as const;
 

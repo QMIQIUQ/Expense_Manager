@@ -5,12 +5,20 @@ const ThemeToggle: React.FC = () => {
   const { theme, effectiveTheme, setTheme } = useTheme();
 
   const isSystemMode = theme === 'system';
-  const manualTheme = isSystemMode ? 'light' : theme;
+  // When in system mode, reflect the actual resolved system theme (effectiveTheme)
+  const displayedTheme = isSystemMode ? effectiveTheme : theme;
 
+  // Toggle button behavior: if currently following system, clicking exits system mode
+  // and preserves the current effective theme. Subsequent clicks toggle light/dark.
   const handleToggle = () => {
-    if (!isSystemMode) {
-      setTheme(manualTheme === 'light' ? 'dark' : 'light');
+    if (isSystemMode) {
+      // In system mode: invert the current effective system theme when user clicks.
+      // If system is dark -> switch to light manual; if system is light -> switch to dark manual.
+      setTheme(effectiveTheme === 'light' ? 'dark' : 'light');
+      return;
     }
+    // Manual mode: invert displayed theme.
+    setTheme(displayedTheme === 'light' ? 'dark' : 'light');
   };
 
   const handleSystemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,17 +38,16 @@ const ThemeToggle: React.FC = () => {
             onClick={handleToggle}
             style={{
               ...styles.switch,
-              opacity: isSystemMode ? 0.5 : 1,
-              cursor: isSystemMode ? 'not-allowed' : 'pointer',
+              opacity: isSystemMode ? 0.9 : 1,
+              cursor: 'pointer',
             }}
-            disabled={isSystemMode}
-            aria-label={`Toggle theme. Currently ${manualTheme}`}
+            aria-label={`Toggle theme. Current: ${isSystemMode ? 'system (' + displayedTheme + ')' : displayedTheme}`}
           >
             <div
               style={{
                 ...styles.slider,
-                transform: manualTheme === 'dark' ? 'translateX(20px)' : 'translateX(0)',
-                backgroundColor: isSystemMode ? '#ccc' : 'var(--bg-primary, white)',
+                transform: displayedTheme === 'dark' ? 'translateX(20px)' : 'translateX(0)',
+                backgroundColor: isSystemMode ? 'var(--bg-primary, #ccc)' : 'var(--bg-primary, white)',
               }}
             />
           </button>

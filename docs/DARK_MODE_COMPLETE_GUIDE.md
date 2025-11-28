@@ -99,7 +99,9 @@ Keep every new component on this variable stack. If a design needs a nuance that
 
 Users can now change both the theme mode and typography scale, so layouts must remain responsive to these runtime switches:
 
-- `ThemeToggle` cycles through `light → dark → system`. The system option tracks `prefers-color-scheme`, so verify that browser-level changes flip our tokens instantly.
+- `ThemeToggle` cycles through `light → dark → system`. In **system mode** the slider position reflects the current resolved system theme (`effectiveTheme`). A user click while in system mode now immediately exits system mode and INVERTS the effective theme (dark → light, light → dark) to provide instant visual feedback. Browser-level changes to `prefers-color-scheme` still update tokens instantly when system mode remains active.
+  - Accessibility: `aria-label` reports `system (light)` or `system (dark)` when following system, and the plain mode name otherwise.
+  - Internationalization: label text “跟随系统” is mapped to translation key `followSystem`.
 - `FontFamily` options (`system`, `serif`, `mono`) write to `--font-family-base`. Do not override `font-family` locally unless there is a strong brand reason.
 - `FontScale` options (`small`, `medium`, `large`) map to `14px`, `16px`, and `18px` root font sizes. Use relative units (`rem`, `%`) in new components so text scales uniformly.
 
