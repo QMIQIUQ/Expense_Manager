@@ -12,6 +12,7 @@ describe('ExpenseForm - Basic Tests', () => {
       color: '#FF5733',
       userId: 'test-user',
       createdAt: new Date(),
+      isDefault: false,
     },
   ];
 

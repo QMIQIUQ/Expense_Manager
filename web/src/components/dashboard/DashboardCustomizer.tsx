@@ -87,9 +87,33 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         </div>
 
         <div className="customizer-content">
-          <p className="customizer-hint">
-            {t('dragToReorder')}
-          </p>
+          <div className="customizer-toolbar">
+            <p className="customizer-hint">
+              {t('dragToReorder')}
+            </p>
+            <div className="bulk-size-control">
+              <label htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
+              <select
+                id="bulk-size-select"
+                onChange={(e) => {
+                  const newSize = e.target.value as import('../../types/dashboard').WidgetSize;
+                  if (newSize) {
+                    setLocalWidgets((prev) => prev.map((w) => ({ ...w, size: newSize })));
+                    // Reset select to placeholder
+                    e.target.value = '';
+                  }
+                }}
+                className="bulk-size-select"
+                defaultValue=""
+              >
+                <option value="" disabled>{t('selectSize')}</option>
+                <option value="small">{t('small')}</option>
+                <option value="medium">{t('medium')}</option>
+                <option value="large">{t('large')}</option>
+                <option value="full">{t('full')}</option>
+              </select>
+            </div>
+          </div>
 
           <div className="widget-list">
             {localWidgets.map((widget, index) => {
@@ -131,7 +155,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       <span className="widget-name">
                         {t(metadata.defaultTitle as TranslationKey) || metadata.defaultTitleFallback}
                       </span>
-                      <span className="widget-desc">{metadata.description}</span>
+                      <span className="widget-desc">{t(metadata.description as TranslationKey)}</span>
                     </div>
                   </div>
 

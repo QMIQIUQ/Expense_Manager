@@ -61,6 +61,7 @@ describe('CategoryForm', () => {
       color: '#FF6B9D',
       userId: 'test-user',
       createdAt: new Date(),
+      isDefault: false,
     };
 
     render(

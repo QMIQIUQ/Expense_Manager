@@ -12,6 +12,7 @@ describe('ExpenseForm', () => {
       color: '#FF5733',
       userId: 'test-user',
       createdAt: new Date(),
+      isDefault: false,
     },
     {
       id: '2',
@@ -20,6 +21,7 @@ describe('ExpenseForm', () => {
       color: '#3357FF',
       userId: 'test-user',
       createdAt: new Date(),
+      isDefault: false,
     },
   ];
 
@@ -155,6 +157,10 @@ describe('ExpenseForm', () => {
         billingCycleEnd: 31,
         userId: 'test-user',
         createdAt: new Date(),
+        cardLimit: 5000,
+        billingDay: 25,
+        cardType: 'cashback' as const,
+        updatedAt: new Date(),
       },
     ];
 

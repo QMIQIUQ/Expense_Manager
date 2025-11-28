@@ -17,7 +17,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, size = 'medi
       case 'full':
         return 8;
       default:
-        return 5;
+        return 3;
     }
   }, [size]);
 

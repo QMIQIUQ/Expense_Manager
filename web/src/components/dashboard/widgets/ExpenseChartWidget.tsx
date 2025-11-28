@@ -7,26 +7,76 @@ const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
 
 const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
   const { t } = useLanguage();
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
+  const [containerHeight, setContainerHeight] = React.useState(300);
   
-  // Determine chart dimensions based on widget size
+  // Determine chart dimensions based on widget size and container height
   const chartConfig = React.useMemo(() => {
     const isSmall = size === 'small' || isMobile;
     const isLarge = size === 'large' || size === 'full';
     
+    // Calculate dynamic outer radius based on container height
+    // Reserve space for legend (approximately 80-100px)
+    const legendSpace = 100;
+    const availableRadius = Math.max(0, (containerHeight - legendSpace) / 2);
+    const baseRadius = isSmall ? 70 : isLarge ? 140 : 110;
+    const dynamicRadius = Math.min(baseRadius, availableRadius);
+    
     return {
       height: isSmall ? 200 : isLarge ? 350 : 300,
-      outerRadius: isSmall ? 55 : isLarge ? 120 : 100,
-      cy: isSmall ? '40%' : '45%',
+      outerRadius: Math.max(60, dynamicRadius),
+      cy: isSmall ? '38%' : '42%',
       fontSize: isSmall ? 10 : 12,
     };
-  }, [size, isMobile]);
+  }, [size, isMobile, containerHeight]);
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Update container height based on actual size
+  React.useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const widgetContent = containerRef.current.closest('.widget-content');
+        if (widgetContent) {
+          const availableHeight = widgetContent.clientHeight;
+          if (availableHeight > 100) {
+            // Use available height, with min/max constraints
+            const calculatedHeight = Math.max(200, Math.min(availableHeight, 450));
+            setContainerHeight(calculatedHeight);
+            return;
+          }
+        }
+        // Fallback to configured height
+        setContainerHeight(chartConfig.height);
+      }
+    };
+
+    // Initial update
+    updateHeight();
+    
+    // Use ResizeObserver for more accurate tracking
+    const resizeObserver = new ResizeObserver(updateHeight);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+      const widgetContent = containerRef.current.closest('.widget-content');
+      if (widgetContent) {
+        resizeObserver.observe(widgetContent);
+      }
+    }
+
+    // Also listen to window resize
+    window.addEventListener('resize', updateHeight);
+    
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [chartConfig.height]);
 
   // Calculate category totals
   const pieData = React.useMemo(() => {
@@ -62,8 +112,18 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }
   }
 
   return (
-    <ResponsiveContainer width="100%" height={chartConfig.height}>
-      <PieChart>
+    <div 
+      ref={containerRef} 
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        minHeight: chartConfig.height,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <ResponsiveContainer width="100%" height={containerHeight}>
+        <PieChart>
         <Pie
           data={pieData}
           cx="50%"
@@ -92,8 +152,9 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }
             return item ? `${value} (${item.percentage}%)` : value;
           }}
         />
-      </PieChart>
-    </ResponsiveContainer>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 
