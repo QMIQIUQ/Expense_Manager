@@ -278,7 +278,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
           <input
             type="number"
             value={formData.amount || ''}
-            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
             placeholder="0.00"
             className="inline-input inline-input-amount"
             step="0.01"

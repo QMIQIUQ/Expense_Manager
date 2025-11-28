@@ -1,5 +1,5 @@
 // Widget component props types
-import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank } from '../../../types';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord } from '../../../types';
 import { QuickExpensePreset } from '../../../types/quickExpense';
 import { WidgetSize } from '../../../types/dashboard';
 
@@ -21,4 +21,11 @@ export interface WidgetProps {
   onQuickExpensePresetsChange?: () => void;
   // Widget size for adaptive layouts
   size?: WidgetSize;
+  // Scheduled payments related
+  scheduledPayments?: ScheduledPayment[];
+  scheduledPaymentRecords?: ScheduledPaymentRecord[];
+  onConfirmScheduledPayment?: (
+    scheduledPaymentId: string,
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
+  ) => void;
 }

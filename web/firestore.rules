@@ -182,5 +182,36 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
+    
+    // Scheduled Payments collection (subscriptions, installments, debts)
+    match /scheduledPayments/{paymentId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.name is string &&
+                      request.resource.data.amount is number &&
+                      request.resource.data.amount > 0 &&
+                      request.resource.data.type is string &&
+                      request.resource.data.frequency is string &&
+                      request.resource.data.dueDay is number &&
+                      request.resource.data.dueDay >= 1 &&
+                      request.resource.data.dueDay <= 31;
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
+    
+    // Scheduled Payment Records collection (tracks individual payment confirmations)
+    match /scheduledPaymentRecords/{recordId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.scheduledPaymentId is string &&
+                      request.resource.data.expectedAmount is number &&
+                      request.resource.data.actualAmount is number &&
+                      request.resource.data.actualAmount > 0 &&
+                      request.resource.data.paidDate is string;
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+    }
   }
 }

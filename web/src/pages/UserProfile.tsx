@@ -85,8 +85,13 @@ const UserProfile: React.FC = () => {
                   type="number"
                   min="1"
                   max="31"
-                  value={billingCycleDay}
-                  onChange={(e) => setBillingCycleDay(parseInt(e.target.value) || 1)}
+                  value={billingCycleDay || ''}
+                  onChange={(e) => setBillingCycleDay(e.target.value === '' ? 0 : parseInt(e.target.value))}
+                  onBlur={(e) => {
+                    if (!e.target.value || parseInt(e.target.value) < 1) {
+                      setBillingCycleDay(1);
+                    }
+                  }}
                   style={styles.input}
                   disabled={saving}
                 />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank } from '../../types';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
@@ -24,6 +24,13 @@ interface CustomizableDashboardProps {
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
   onNavigateToExpenses?: () => void;
+  // Scheduled payments related
+  scheduledPayments?: ScheduledPayment[];
+  scheduledPaymentRecords?: ScheduledPaymentRecord[];
+  onConfirmScheduledPayment?: (
+    scheduledPaymentId: string,
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
+  ) => void;
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
@@ -40,6 +47,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onQuickAdd,
   onQuickExpenseAdd,
   onNavigateToExpenses,
+  scheduledPayments = [],
+  scheduledPaymentRecords = [],
+  onConfirmScheduledPayment,
 }) => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
@@ -126,6 +136,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     quickExpensePresets,
     onQuickExpenseAdd,
     onQuickExpensePresetsChange: loadQuickExpensePresets,
+    scheduledPayments,
+    scheduledPaymentRecords,
+    onConfirmScheduledPayment,
   };
 
   // Get enabled widgets sorted by order
