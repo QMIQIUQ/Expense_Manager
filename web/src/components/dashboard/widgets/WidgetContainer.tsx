@@ -86,6 +86,12 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   const { t } = useLanguage();
   const metadata = WIDGET_METADATA[widget.type];
 
+  // Handle invalid widget type
+  if (!metadata) {
+    console.error(`Invalid widget type: ${widget.type}`);
+    return null;
+  }
+
   if (!widget.enabled && !isEditing) {
     return null;
   }
