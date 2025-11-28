@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ScheduledPayment, ScheduledPaymentRecord, Category } from '../../types';
+import { getCurrencySymbol } from './ScheduledPaymentForm';
 
 interface PaymentAnalyticsProps {
   scheduledPayments: ScheduledPayment[];
@@ -21,8 +22,18 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Total scheduled amount this month
+    // Get predominant currency (most used currency among active payments)
     const activePayments = scheduledPayments.filter(p => p.isActive && !p.isCompleted);
+    const currencyCounts: { [key: string]: number } = {};
+    activePayments.forEach(p => {
+      const curr = p.currency || 'MYR';
+      currencyCounts[curr] = (currencyCounts[curr] || 0) + 1;
+    });
+    const predominantCurrency = Object.entries(currencyCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'MYR';
+    const currencySymbol = getCurrencySymbol(predominantCurrency);
+
+    // Total scheduled amount this month
     const totalScheduledMonthly = activePayments.reduce((sum, p) => {
       if (p.frequency === 'monthly') return sum + p.amount;
       if (p.frequency === 'yearly') return sum + (p.amount / 12);
@@ -111,6 +122,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
       byPaymentMethod,
       monthlyTrend,
       totalPayments: paymentRecords.length,
+      currencySymbol,
     };
   }, [scheduledPayments, paymentRecords, categories]);
 
@@ -147,7 +159,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
         <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('totalScheduled')}</div>
           <div className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
-            ${analytics.totalScheduledMonthly.toFixed(2)}
+            {analytics.currencySymbol}{analytics.totalScheduledMonthly.toFixed(2)}
           </div>
           <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>/month</div>
         </div>
@@ -206,7 +218,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
                     backgroundColor: 'var(--accent-light)',
                     minHeight: '4px',
                   }}
-                  title={`Expected: $${month.expected.toFixed(2)}`}
+                  title={`Expected: ${analytics.currencySymbol}${month.expected.toFixed(2)}`}
                 />
                 <div 
                   className="w-3 rounded-t"
@@ -215,7 +227,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
                     backgroundColor: 'var(--accent-primary)',
                     minHeight: '4px',
                   }}
-                  title={`Actual: $${month.actual.toFixed(2)}`}
+                  title={`Actual: ${analytics.currencySymbol}${month.actual.toFixed(2)}`}
                 />
               </div>
               <div className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
@@ -250,7 +262,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{category}</span>
                     <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      ${data.amount.toFixed(2)}
+                      {analytics.currencySymbol}{data.amount.toFixed(2)}
                     </span>
                   </div>
                   <div 
@@ -293,7 +305,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
                         {getPaymentMethodName(method)}
                       </span>
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                        ${data.amount.toFixed(2)} ({data.count})
+                        {analytics.currencySymbol}{data.amount.toFixed(2)} ({data.count})
                       </span>
                     </div>
                     <div 
@@ -325,7 +337,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
       <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('averagePayment')}</div>
         <div className="text-3xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
-          ${analytics.avgPayment.toFixed(2)}
+          {analytics.currencySymbol}{analytics.avgPayment.toFixed(2)}
         </div>
         <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           {t('paymentCount')}: {analytics.totalPayments}

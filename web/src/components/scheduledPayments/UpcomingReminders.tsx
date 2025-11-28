@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ScheduledPayment, Category } from '../../types';
+import { formatCurrency } from './ScheduledPaymentForm';
 
 interface UpcomingRemindersProps {
   scheduledPayments: ScheduledPayment[];
@@ -138,7 +139,7 @@ const UpcomingReminders: React.FC<UpcomingRemindersProps> = ({
                   className="font-semibold"
                   style={{ color: 'var(--error-text)' }}
                 >
-                  ${payment.amount.toFixed(2)}
+                  {formatCurrency(payment.amount, payment.currency)}
                 </div>
                 <div 
                   className="text-xs"

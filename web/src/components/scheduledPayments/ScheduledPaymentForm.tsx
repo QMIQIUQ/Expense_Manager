@@ -14,8 +14,8 @@ import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
 
-// Common currencies
-const CURRENCIES = [
+// Common currencies - exported for use in other components
+export const CURRENCIES = [
   { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
   { code: 'USD', name: 'US Dollar', symbol: '$' },
   { code: 'TWD', name: 'New Taiwan Dollar', symbol: 'NT$' },
@@ -25,6 +25,19 @@ const CURRENCIES = [
   { code: 'GBP', name: 'British Pound', symbol: '£' },
   { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
 ];
+
+// Helper to get currency symbol
+export const getCurrencySymbol = (currencyCode?: string): string => {
+  if (!currencyCode) return 'RM'; // Default to MYR
+  const currency = CURRENCIES.find(c => c.code === currencyCode);
+  return currency?.symbol || currencyCode;
+};
+
+// Helper to format amount with currency
+export const formatCurrency = (amount: number, currencyCode?: string): string => {
+  const symbol = getCurrencySymbol(currencyCode);
+  return `${symbol}${amount.toFixed(2)}`;
+};
 
 interface ScheduledPaymentFormData {
   name: string;
@@ -769,9 +782,25 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               </button>
               
               {formData.splitParticipants.length > 0 && amountInCents > 0 && (
-                <div className="p-2 rounded-lg text-sm" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>
-                  {t('yourShare')}: ${((amountInCents / 100) - formData.splitParticipants.reduce((sum, p) => sum + p.shareAmount, 0)).toFixed(2)}
-                </div>
+                (() => {
+                  const totalParticipantShare = formData.splitParticipants.reduce((sum, p) => sum + p.shareAmount, 0);
+                  const yourShare = (amountInCents / 100) - totalParticipantShare;
+                  const isInvalid = yourShare < 0;
+                  return (
+                    <div 
+                      className="p-2 rounded-lg text-sm" 
+                      style={{ 
+                        backgroundColor: isInvalid ? 'var(--error-bg)' : 'var(--success-bg)', 
+                        color: isInvalid ? 'var(--error-text)' : 'var(--success-text)' 
+                      }}
+                    >
+                      {t('yourShare')}: {formatCurrency(Math.max(0, yourShare), formData.currency)}
+                      {isInvalid && (
+                        <span className="ml-2">⚠️ {t('shareExceedsTotal') || 'Shares exceed total amount'}</span>
+                      )}
+                    </div>
+                  );
+                })()
               )}
             </div>
           )}

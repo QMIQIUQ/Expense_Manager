@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ScheduledPayment, ScheduledPaymentRecord, Category } from '../../types';
+import { formatCurrency } from './ScheduledPaymentForm';
 
 interface PaymentCalendarViewProps {
   scheduledPayments: ScheduledPayment[];
@@ -211,7 +212,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium" style={{ color: 'var(--error-text)' }}>
-                        ${payment.amount.toFixed(2)}
+                        {formatCurrency(payment.amount, payment.currency)}
                       </span>
                       {isPaid && (
                         <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>

@@ -750,6 +750,7 @@ export const translations = {
   theirShare: { en: 'Their Share', zh: '他們的份額', 'zh-CN': '他们的份额' },
   personName: { en: 'Person Name', zh: '人名', 'zh-CN': '人名' },
   shareAmount: { en: 'Share Amount', zh: '分攤金額', 'zh-CN': '分摊金额' },
+  shareExceedsTotal: { en: 'Shares exceed total amount', zh: '分攤金額超過總額', 'zh-CN': '分摊金额超过总额' },
   
   // Analytics Dashboard
   analytics: { en: 'Analytics', zh: '分析', 'zh-CN': '分析' },
