@@ -686,6 +686,84 @@ export const translations = {
   noPendingPayments: { en: 'No pending payments this month!', zh: '本月無待繳付款！', 'zh-CN': '本月无待缴付款！' },
   pendingPayments: { en: 'Pending Payments', zh: '待繳付款', 'zh-CN': '待缴付款' },
   overdue: { en: 'Overdue', zh: '已逾期', 'zh-CN': '已逾期' },
+  
+  // Notification Reminders
+  notifications: { en: 'Notifications', zh: '通知', 'zh-CN': '通知' },
+  enableReminders: { en: 'Enable Reminders', zh: '啟用提醒', 'zh-CN': '启用提醒' },
+  reminderDaysBefore: { en: 'Days Before Due Date', zh: '到期日前幾天', 'zh-CN': '到期日前几天' },
+  reminderDaysBeforeHint: { en: 'Get notified X days before due date', zh: '在到期日前X天收到通知', 'zh-CN': '在到期日前X天收到通知' },
+  noUpcomingReminders: { en: 'No upcoming reminders', zh: '沒有即將到期的提醒', 'zh-CN': '没有即将到期的提醒' },
+  dueIn: { en: 'Due in', zh: '還有', 'zh-CN': '还有' },
+  days: { en: 'days', zh: '天', 'zh-CN': '天' },
+  today: { en: 'Today', zh: '今天', 'zh-CN': '今天' },
+  tomorrow: { en: 'Tomorrow', zh: '明天', 'zh-CN': '明天' },
+  upcomingPayments: { en: 'Upcoming Payments', zh: '即將到期的付款', 'zh-CN': '即将到期的付款' },
+  
+  // Auto-generate Expenses
+  autoGenerateExpense: { en: 'Auto Generate Expense', zh: '自動產生支出', 'zh-CN': '自动生成支出' },
+  autoGenerateExpenseHint: { en: 'Automatically create expense record when payment is confirmed', zh: '確認付款時自動建立支出記錄', 'zh-CN': '确认付款时自动创建支出记录' },
+  expenseGenerated: { en: 'Expense record created', zh: '已建立支出記錄', 'zh-CN': '已创建支出记录' },
+  
+  // Recurring End Date
+  hasEndDate: { en: 'Has End Date', zh: '有結束日期', 'zh-CN': '有结束日期' },
+  noEndDate: { en: 'No End Date (Until Cancelled)', zh: '無結束日期（直到取消）', 'zh-CN': '无结束日期（直到取消）' },
+  untilCancelled: { en: 'Until Cancelled', zh: '直到取消', 'zh-CN': '直到取消' },
+  endsOn: { en: 'Ends On', zh: '結束於', 'zh-CN': '结束于' },
+  
+  // Bulk Payment Confirmation  
+  selectAll: { en: 'Select All', zh: '全選', 'zh-CN': '全选' },
+  deselectAll: { en: 'Deselect All', zh: '取消全選', 'zh-CN': '取消全选' },
+  selectedCount: { en: 'Selected', zh: '已選擇', 'zh-CN': '已选择' },
+  confirmSelected: { en: 'Confirm Selected', zh: '確認已選', 'zh-CN': '确认已选' },
+  bulkConfirm: { en: 'Bulk Confirm', zh: '批量確認', 'zh-CN': '批量确认' },
+  bulkConfirmSuccess: { en: 'Successfully confirmed {count} payments', zh: '成功確認 {count} 筆付款', 'zh-CN': '成功确认 {count} 笔付款' },
+  
+  // Payment Calendar View
+  calendar: { en: 'Calendar', zh: '日曆', 'zh-CN': '日历' },
+  calendarView: { en: 'Calendar View', zh: '日曆檢視', 'zh-CN': '日历视图' },
+  listView: { en: 'List View', zh: '列表檢視', 'zh-CN': '列表视图' },
+  noPaymentsOnDate: { en: 'No payments on this date', zh: '此日期無付款', 'zh-CN': '此日期无付款' },
+  paymentsOnDate: { en: 'Payments on this date', zh: '此日期的付款', 'zh-CN': '此日期的付款' },
+  
+  // Export Payment History
+  export: { en: 'Export', zh: '匯出', 'zh-CN': '导出' },
+  exportPaymentHistory: { en: 'Export Payment History', zh: '匯出付款記錄', 'zh-CN': '导出付款记录' },
+  exportFormat: { en: 'Export Format', zh: '匯出格式', 'zh-CN': '导出格式' },
+  exportRange: { en: 'Date Range', zh: '日期範圍', 'zh-CN': '日期范围' },
+  exportAll: { en: 'Export All', zh: '匯出全部', 'zh-CN': '导出全部' },
+  exportSuccess: { en: 'Export successful', zh: '匯出成功', 'zh-CN': '导出成功' },
+  
+  // Currency Support
+  currency: { en: 'Currency', zh: '貨幣', 'zh-CN': '货币' },
+  selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
+  exchangeRate: { en: 'Exchange Rate', zh: '匯率', 'zh-CN': '汇率' },
+  baseCurrency: { en: 'Base Currency', zh: '基礎貨幣', 'zh-CN': '基础货币' },
+  convertedAmount: { en: 'Converted Amount', zh: '換算金額', 'zh-CN': '换算金额' },
+  
+  // Shared Payments
+  sharedPayment: { en: 'Shared Payment', zh: '共享付款', 'zh-CN': '共享付款' },
+  splitWith: { en: 'Split With', zh: '與...分攤', 'zh-CN': '与...分摊' },
+  addPerson: { en: 'Add Person', zh: '新增人員', 'zh-CN': '添加人员' },
+  splitEqually: { en: 'Split Equally', zh: '平均分攤', 'zh-CN': '平均分摊' },
+  customSplit: { en: 'Custom Split', zh: '自定義分攤', 'zh-CN': '自定义分摊' },
+  yourShare: { en: 'Your Share', zh: '你的份額', 'zh-CN': '你的份额' },
+  theirShare: { en: 'Their Share', zh: '他們的份額', 'zh-CN': '他们的份额' },
+  personName: { en: 'Person Name', zh: '人名', 'zh-CN': '人名' },
+  shareAmount: { en: 'Share Amount', zh: '分攤金額', 'zh-CN': '分摊金额' },
+  
+  // Analytics Dashboard
+  analytics: { en: 'Analytics', zh: '分析', 'zh-CN': '分析' },
+  paymentAnalytics: { en: 'Payment Analytics', zh: '付款分析', 'zh-CN': '付款分析' },
+  monthlyTrend: { en: 'Monthly Trend', zh: '月度趨勢', 'zh-CN': '月度趋势' },
+  categoryBreakdown: { en: 'Category Breakdown', zh: '分類明細', 'zh-CN': '分类明细' },
+  paymentMethodBreakdown: { en: 'Payment Method Breakdown', zh: '付款方式明細', 'zh-CN': '付款方式明细' },
+  totalScheduled: { en: 'Total Scheduled', zh: '總計預定', 'zh-CN': '总计预定' },
+  onTimePayments: { en: 'On-Time Payments', zh: '準時付款', 'zh-CN': '准时付款' },
+  latePayments: { en: 'Late Payments', zh: '逾期付款', 'zh-CN': '逾期付款' },
+  averagePayment: { en: 'Average Payment', zh: '平均付款', 'zh-CN': '平均付款' },
+  paymentAccuracy: { en: 'Payment Accuracy', zh: '付款準確率', 'zh-CN': '付款准确率' },
+  expectedVsActual: { en: 'Expected vs Actual', zh: '預期 vs 實際', 'zh-CN': '预期 vs 实际' },
+  viewAnalytics: { en: 'View Analytics', zh: '查看分析', 'zh-CN': '查看分析' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

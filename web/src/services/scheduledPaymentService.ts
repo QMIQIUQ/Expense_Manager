@@ -320,4 +320,93 @@ export const scheduledPaymentService = {
     
     return pending;
   },
+
+  // Export payment history to CSV format
+  exportPaymentHistoryToCSV(
+    scheduledPayments: ScheduledPayment[],
+    paymentRecords: ScheduledPaymentRecord[]
+  ): string {
+    const headers = [
+      'Payment Name',
+      'Category',
+      'Type',
+      'Expected Amount',
+      'Actual Amount',
+      'Difference',
+      'Due Date',
+      'Paid Date',
+      'Payment Method',
+      'Note',
+    ];
+
+    const rows = paymentRecords.map(record => {
+      const payment = scheduledPayments.find(p => p.id === record.scheduledPaymentId);
+      return [
+        payment?.name || 'Unknown',
+        payment?.category || '',
+        payment?.type || '',
+        record.expectedAmount.toFixed(2),
+        record.actualAmount.toFixed(2),
+        record.difference.toFixed(2),
+        record.dueDate,
+        record.paidDate,
+        record.paymentMethod || 'cash',
+        record.note || '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    return csvContent;
+  },
+
+  // Download payment history as CSV file
+  downloadPaymentHistoryCSV(
+    scheduledPayments: ScheduledPayment[],
+    paymentRecords: ScheduledPaymentRecord[],
+    filename: string = 'payment-history.csv'
+  ): void {
+    const csvContent = this.exportPaymentHistoryToCSV(scheduledPayments, paymentRecords);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  // Get upcoming payments with reminders
+  async getUpcomingReminders(userId: string): Promise<ScheduledPayment[]> {
+    const activePayments = await this.getActive(userId);
+    const today = new Date();
+    const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+    return activePayments.filter(payment => {
+      if (!payment.enableReminders) return false;
+      
+      const reminderDays = payment.reminderDaysBefore || 3;
+      const dueDay = payment.dueDay;
+      
+      // Calculate days until due
+      let daysUntilDue: number;
+      if (dueDay >= currentDay) {
+        daysUntilDue = dueDay - currentDay;
+      } else {
+        // Due date is next month
+        daysUntilDue = (daysInMonth - currentDay) + dueDay;
+      }
+      
+      // Show if within reminder window
+      return daysUntilDue <= reminderDays && daysUntilDue >= 0;
+    });
+  },
 };

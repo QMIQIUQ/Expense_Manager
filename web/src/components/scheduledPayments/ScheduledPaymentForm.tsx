@@ -7,11 +7,24 @@ import {
   EWallet,
   ScheduledPaymentType, 
   ScheduledPaymentFrequency,
-  PaymentMethodType 
+  PaymentMethodType,
+  PaymentSplitParticipant 
 } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
+
+// Common currencies
+const CURRENCIES = [
+  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'TWD', name: 'New Taiwan Dollar', symbol: 'NT$' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+];
 
 interface ScheduledPaymentFormData {
   name: string;
@@ -21,16 +34,24 @@ interface ScheduledPaymentFormData {
   amount: number;
   totalAmount: number;
   interestRate: number;
+  currency: string;
   frequency: ScheduledPaymentFrequency;
   dueDay: number;
   startDate: string;
   endDate: string;
+  hasEndDate: boolean;
   totalInstallments: number;
   paymentMethod: PaymentMethodType;
   cardId: string;
   paymentMethodName: string;
   bankId: string;
   isActive: boolean;
+  // New fields
+  enableReminders: boolean;
+  reminderDaysBefore: number;
+  autoGenerateExpense: boolean;
+  isShared: boolean;
+  splitParticipants: PaymentSplitParticipant[];
 }
 
 interface ScheduledPaymentFormProps {
@@ -64,16 +85,24 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
     amount: initialData?.amount || 0,
     totalAmount: initialData?.totalAmount || 0,
     interestRate: initialData?.interestRate || 0,
+    currency: initialData?.currency || 'MYR',
     frequency: initialData?.frequency || 'monthly',
     dueDay: initialData?.dueDay || 1,
     startDate: initialData?.startDate || getTodayLocal(),
     endDate: initialData?.endDate || '',
+    hasEndDate: initialData?.hasEndDate || false,
     totalInstallments: initialData?.totalInstallments || 12,
     paymentMethod: initialData?.paymentMethod || 'cash',
     cardId: initialData?.cardId || '',
     paymentMethodName: initialData?.paymentMethodName || '',
     bankId: initialData?.bankId || '',
     isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
+    // New fields
+    enableReminders: initialData?.enableReminders !== undefined ? initialData.enableReminders : true,
+    reminderDaysBefore: initialData?.reminderDaysBefore || 3,
+    autoGenerateExpense: initialData?.autoGenerateExpense || false,
+    isShared: initialData?.isShared || false,
+    splitParticipants: initialData?.splitParticipants || [],
   });
 
   const [amountInCents, setAmountInCents] = useState(
@@ -532,6 +561,221 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             </select>
           </div>
         )}
+
+        {/* Currency Selection */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {t('currency')}
+          </label>
+          <select
+            value={formData.currency}
+            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)'
+            }}
+          >
+            {CURRENCIES.map((curr) => (
+              <option key={curr.code} value={curr.code}>
+                {curr.symbol} {curr.code} - {curr.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* End Date Option (for subscriptions) */}
+        {formData.type === 'subscription' && (
+          <div className="flex flex-col gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="hasEndDate"
+                checked={formData.hasEndDate}
+                onChange={(e) => setFormData({ ...formData, hasEndDate: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <label htmlFor="hasEndDate" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('hasEndDate')}
+              </label>
+            </div>
+            
+            {formData.hasEndDate && (
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                style={{
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)',
+                  borderColor: 'var(--border-color)'
+                }}
+              />
+            )}
+            
+            {!formData.hasEndDate && (
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {t('untilCancelled')}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Reminder Settings */}
+        <div className="flex flex-col gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="enableReminders"
+              checked={formData.enableReminders}
+              onChange={(e) => setFormData({ ...formData, enableReminders: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <label htmlFor="enableReminders" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              🔔 {t('enableReminders')}
+            </label>
+          </div>
+          
+          {formData.enableReminders && (
+            <div className="flex items-center gap-2 ml-6">
+              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {t('reminderDaysBefore')}:
+              </label>
+              <input
+                type="number"
+                value={formData.reminderDaysBefore}
+                onChange={(e) => setFormData({ ...formData, reminderDaysBefore: parseInt(e.target.value) || 3 })}
+                min="1"
+                max="30"
+                className="w-16 p-2 rounded-lg border text-center"
+                style={{
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-primary)',
+                  borderColor: 'var(--border-color)'
+                }}
+              />
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('days')}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Auto-generate Expense */}
+        <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <input
+            type="checkbox"
+            id="autoGenerateExpense"
+            checked={formData.autoGenerateExpense}
+            onChange={(e) => setFormData({ ...formData, autoGenerateExpense: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <div className="flex flex-col">
+            <label htmlFor="autoGenerateExpense" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              📝 {t('autoGenerateExpense')}
+            </label>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {t('autoGenerateExpenseHint')}
+            </span>
+          </div>
+        </div>
+
+        {/* Shared Payment Option */}
+        <div className="flex flex-col gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isShared"
+              checked={formData.isShared}
+              onChange={(e) => setFormData({ ...formData, isShared: e.target.checked, splitParticipants: e.target.checked ? formData.splitParticipants : [] })}
+              className="w-4 h-4"
+            />
+            <label htmlFor="isShared" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              👥 {t('sharedPayment')}
+            </label>
+          </div>
+          
+          {formData.isShared && (
+            <div className="flex flex-col gap-2 ml-6 mt-2">
+              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {t('splitWith')}:
+              </label>
+              
+              {formData.splitParticipants.map((participant, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={participant.name}
+                    onChange={(e) => {
+                      const updated = [...formData.splitParticipants];
+                      updated[index].name = e.target.value;
+                      setFormData({ ...formData, splitParticipants: updated });
+                    }}
+                    placeholder={t('personName')}
+                    className="flex-1 p-2 rounded-lg border"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)'
+                    }}
+                  />
+                  <input
+                    type="number"
+                    value={participant.shareAmount}
+                    onChange={(e) => {
+                      const updated = [...formData.splitParticipants];
+                      updated[index].shareAmount = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, splitParticipants: updated });
+                    }}
+                    placeholder={t('shareAmount')}
+                    min="0"
+                    step="0.01"
+                    className="w-24 p-2 rounded-lg border text-right"
+                    style={{
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = formData.splitParticipants.filter((_, i) => i !== index);
+                      setFormData({ ...formData, splitParticipants: updated });
+                    }}
+                    className="p-2 rounded-lg"
+                    style={{ color: 'var(--error-text)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    splitParticipants: [...formData.splitParticipants, { name: '', shareAmount: 0 }]
+                  });
+                }}
+                className="flex items-center gap-1 p-2 rounded-lg text-sm"
+                style={{
+                  backgroundColor: 'var(--accent-light)',
+                  color: 'var(--accent-primary)'
+                }}
+              >
+                + {t('addPerson')}
+              </button>
+              
+              {formData.splitParticipants.length > 0 && amountInCents > 0 && (
+                <div className="p-2 rounded-lg text-sm" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>
+                  {t('yourShare')}: ${((amountInCents / 100) - formData.splitParticipants.reduce((sum, p) => sum + p.shareAmount, 0)).toFixed(2)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Description (Optional) */}
         <div className="flex flex-col gap-1">

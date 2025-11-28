@@ -13,9 +13,14 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon } from '../icons';
 import ScheduledPaymentForm from './ScheduledPaymentForm';
 import ScheduledPaymentCard from './ScheduledPaymentCard';
+import PaymentCalendarView from './PaymentCalendarView';
+import PaymentAnalytics from './PaymentAnalytics';
+import BulkPaymentConfirm from './BulkPaymentConfirm';
+import UpcomingReminders from './UpcomingReminders';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import { scheduledPaymentService } from '../../services/scheduledPaymentService';
 
 // Responsive styles
 const responsiveStyles = `
@@ -35,6 +40,8 @@ const responsiveStyles = `
     }
   }
 `;
+
+type ViewMode = 'list' | 'calendar' | 'analytics';
 
 interface ScheduledPaymentManagerProps {
   scheduledPayments: ScheduledPayment[];
@@ -74,6 +81,8 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [summaries, setSummaries] = useState<{ [id: string]: ScheduledPaymentSummary }>({});
   const [periodPaidStatus, setPeriodPaidStatus] = useState<{ [id: string]: boolean }>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; paymentId: string | null }>({
@@ -175,6 +184,27 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     setPeriodPaidStatus(prev => ({ ...prev, [paymentId]: true }));
   };
 
+  // Handle bulk confirm
+  const handleBulkConfirmPayments = (paymentsToConfirm: Array<{
+    scheduledPaymentId: string;
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>;
+  }>) => {
+    paymentsToConfirm.forEach(({ scheduledPaymentId, recordData }) => {
+      onConfirmPayment(scheduledPaymentId, recordData);
+      setPeriodPaidStatus(prev => ({ ...prev, [scheduledPaymentId]: true }));
+    });
+  };
+
+  // Handle export
+  const handleExportHistory = () => {
+    const date = new Date().toISOString().split('T')[0];
+    scheduledPaymentService.downloadPaymentHistoryCSV(
+      scheduledPayments, 
+      paymentRecords, 
+      `payment-history-${date}.csv`
+    );
+  };
+
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
@@ -182,28 +212,130 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>{t('scheduledPayments')}</h2>
-        {!isAdding && (
-          <button 
-            onClick={() => setIsAdding(true)} 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              backgroundColor: 'var(--accent-light)',
-              color: 'var(--accent-primary)',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            <PlusIcon size={18} />
-            <span>{t('addScheduledPayment')}</span>
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {!isAdding && (
+            <>
+              <button 
+                onClick={() => setIsAdding(true)} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--accent-light)',
+                  color: 'var(--accent-primary)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <PlusIcon size={18} />
+                <span className="hidden sm:inline">{t('add')}</span>
+              </button>
+              <button 
+                onClick={() => setShowBulkConfirm(true)} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--success-bg)',
+                  color: 'var(--success-text)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                ✓ <span className="hidden sm:inline">{t('bulkConfirm')}</span>
+              </button>
+              <button 
+                onClick={handleExportHistory} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+                title={t('exportPaymentHistory')}
+              >
+                📥 <span className="hidden sm:inline">{t('export')}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* View Mode Toggle */}
+      <div style={{ display: 'flex', gap: '4px', padding: '4px', borderRadius: '10px', backgroundColor: 'var(--bg-secondary)' }}>
+        <button
+          onClick={() => setViewMode('list')}
+          style={{
+            flex: 1,
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: viewMode === 'list' ? 'var(--card-bg)' : 'transparent',
+            color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: viewMode === 'list' ? 600 : 400,
+            cursor: 'pointer',
+            boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+          }}
+        >
+          📋 {t('listView')}
+        </button>
+        <button
+          onClick={() => setViewMode('calendar')}
+          style={{
+            flex: 1,
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: viewMode === 'calendar' ? 'var(--card-bg)' : 'transparent',
+            color: viewMode === 'calendar' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: viewMode === 'calendar' ? 600 : 400,
+            cursor: 'pointer',
+            boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+          }}
+        >
+          📅 {t('calendarView')}
+        </button>
+        <button
+          onClick={() => setViewMode('analytics')}
+          style={{
+            flex: 1,
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: viewMode === 'analytics' ? 'var(--card-bg)' : 'transparent',
+            color: viewMode === 'analytics' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: viewMode === 'analytics' ? 600 : 400,
+            cursor: 'pointer',
+            boxShadow: viewMode === 'analytics' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+          }}
+        >
+          📊 {t('analytics')}
+        </button>
+      </div>
+
+      {/* Upcoming Reminders */}
+      <UpcomingReminders
+        scheduledPayments={scheduledPayments}
+        categories={categories}
+        onPaymentClick={(payment) => {
+          setViewMode('list');
+          setSearchTerm(payment.name);
+        }}
+      />
 
       {/* Add Form */}
       {isAdding && (
@@ -222,16 +354,23 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                 amount: data.amount,
                 totalAmount: data.totalAmount || undefined,
                 interestRate: data.interestRate || undefined,
+                currency: data.currency || undefined,
                 frequency: data.frequency,
                 dueDay: data.dueDay,
                 startDate: data.startDate,
                 endDate: data.endDate || undefined,
+                hasEndDate: data.hasEndDate || undefined,
                 totalInstallments: data.totalInstallments || undefined,
                 paymentMethod: data.paymentMethod || undefined,
                 cardId: data.cardId || undefined,
                 paymentMethodName: data.paymentMethodName || undefined,
                 bankId: data.bankId || undefined,
                 isActive: data.isActive,
+                enableReminders: data.enableReminders,
+                reminderDaysBefore: data.reminderDaysBefore,
+                autoGenerateExpense: data.autoGenerateExpense,
+                isShared: data.isShared,
+                splitParticipants: data.splitParticipants.length > 0 ? data.splitParticipants : undefined,
               });
             }}
             onCancel={() => setIsAdding(false)}
@@ -239,148 +378,200 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
         </div>
       )}
 
-      {/* Search and Filter */}
-      <div style={styles.searchContainer}>
-        <SearchBar
-          placeholder={t('searchByName') || 'Search by name...'}
-          value={searchTerm}
-          onChange={setSearchTerm}
-        />
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          style={{
-            padding: '10px 16px',
-            borderRadius: '8px',
-            border: '1px solid var(--border-color)',
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)',
-            fontSize: '14px',
-            cursor: 'pointer',
+      {/* Calendar View */}
+      {viewMode === 'calendar' && !isAdding && (
+        <PaymentCalendarView
+          scheduledPayments={scheduledPayments}
+          paymentRecords={paymentRecords}
+          categories={categories}
+          onPaymentClick={(payment) => {
+            setViewMode('list');
+            setSearchTerm(payment.name);
           }}
-        >
-          <option value="all">{t('allTypes')}</option>
-          <option value="subscription">🔄 {t('subscription')}</option>
-          <option value="installment">📅 {t('installment')}</option>
-          <option value="debt">💳 {t('debt')}</option>
-        </select>
-      </div>
+        />
+      )}
 
-      {/* Multi-Select Toolbar */}
-      <MultiSelectToolbar
-        isSelectionMode={isSelectionMode}
-        selectedCount={selectedIds.size}
-        onToggleSelectionMode={() => {
-          if (isSelectionMode) {
-            clearSelection();
-            setIsSelectionMode(false);
-          } else {
-            setIsSelectionMode(true);
-          }
-        }}
-        onSelectAll={() => selectAll(filteredPayments)}
-        onDeleteSelected={() => {
-          if (selectedIds.size > 0) {
-            setDeleteConfirm({ isOpen: true, paymentId: null });
-          }
-        }}
-      />
+      {/* Analytics View */}
+      {viewMode === 'analytics' && !isAdding && (
+        <PaymentAnalytics
+          scheduledPayments={scheduledPayments}
+          paymentRecords={paymentRecords}
+          categories={categories}
+        />
+      )}
 
-      {/* Payment List */}
-      <div style={styles.paymentList}>
-        {filteredPayments.length === 0 ? (
-          <div style={styles.noData}>
-            <p>{scheduledPayments.length === 0 ? t('noScheduledPaymentsYet') : t('noResults')}</p>
-          </div>
-        ) : (
-          filteredPayments.map((payment) => (
-            <div 
-              key={payment.id} 
-              className={isSelectionMode && selectedIds.has(payment.id!) ? 'selected' : ''}
-              style={{ position: 'relative' }}
+      {/* List View */}
+      {viewMode === 'list' && !isAdding && (
+        <>
+          {/* Search and Filter */}
+          <div style={styles.searchContainer}>
+            <SearchBar
+              placeholder={t('searchByName') || 'Search by name...'}
+              value={searchTerm}
+              onChange={setSearchTerm}
+            />
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)',
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
             >
-              {isSelectionMode && (
-                <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(payment.id!)}
-                    onChange={() => toggleSelection(payment.id!)}
-                    className="multi-select-checkbox"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+              <option value="all">{t('allTypes')}</option>
+              <option value="subscription">🔄 {t('subscription')}</option>
+              <option value="installment">📅 {t('installment')}</option>
+              <option value="debt">💳 {t('debt')}</option>
+            </select>
+          </div>
+
+          {/* Multi-Select Toolbar */}
+          <MultiSelectToolbar
+            isSelectionMode={isSelectionMode}
+            selectedCount={selectedIds.size}
+            onToggleSelectionMode={() => {
+              if (isSelectionMode) {
+                clearSelection();
+                setIsSelectionMode(false);
+              } else {
+                setIsSelectionMode(true);
+              }
+            }}
+            onSelectAll={() => selectAll(filteredPayments)}
+            onDeleteSelected={() => {
+              if (selectedIds.size > 0) {
+                setDeleteConfirm({ isOpen: true, paymentId: null });
+              }
+            }}
+          />
+
+          {/* Payment List */}
+          <div style={styles.paymentList}>
+            {filteredPayments.length === 0 ? (
+              <div style={styles.noData}>
+                <p>{scheduledPayments.length === 0 ? t('noScheduledPaymentsYet') : t('noResults')}</p>
+              </div>
+            ) : (
+              filteredPayments.map((payment) => (
+                <div 
+                  key={payment.id} 
+                  className={isSelectionMode && selectedIds.has(payment.id!) ? 'selected' : ''}
+                  style={{ position: 'relative' }}
+                >
+                  {isSelectionMode && (
+                    <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10 }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(payment.id!)}
+                        onChange={() => toggleSelection(payment.id!)}
+                        className="multi-select-checkbox"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                  
+                  {editingId === payment.id ? (
+                    <ScheduledPaymentForm
+                      initialData={{
+                        name: payment.name,
+                        description: payment.description || '',
+                        category: payment.category,
+                        type: payment.type,
+                        amount: payment.amount,
+                        totalAmount: payment.totalAmount || 0,
+                        interestRate: payment.interestRate || 0,
+                        currency: payment.currency || 'MYR',
+                        frequency: payment.frequency,
+                        dueDay: payment.dueDay,
+                        startDate: payment.startDate,
+                        endDate: payment.endDate || '',
+                        hasEndDate: payment.hasEndDate || false,
+                        totalInstallments: payment.totalInstallments || 12,
+                        paymentMethod: payment.paymentMethod || 'cash',
+                        cardId: payment.cardId || '',
+                        paymentMethodName: payment.paymentMethodName || '',
+                        bankId: payment.bankId || '',
+                        isActive: payment.isActive,
+                        enableReminders: payment.enableReminders ?? true,
+                        reminderDaysBefore: payment.reminderDaysBefore || 3,
+                        autoGenerateExpense: payment.autoGenerateExpense || false,
+                        isShared: payment.isShared || false,
+                        splitParticipants: payment.splitParticipants || [],
+                      }}
+                      categories={categories}
+                      cards={cards}
+                      banks={banks}
+                      ewallets={ewallets}
+                      onSubmit={(data) => {
+                        handleEditSubmit({
+                          name: data.name,
+                          description: data.description || undefined,
+                          category: data.category,
+                          type: data.type,
+                          amount: data.amount,
+                          totalAmount: data.totalAmount || undefined,
+                          interestRate: data.interestRate || undefined,
+                          currency: data.currency || undefined,
+                          frequency: data.frequency,
+                          dueDay: data.dueDay,
+                          startDate: data.startDate,
+                          endDate: data.endDate || undefined,
+                          hasEndDate: data.hasEndDate || undefined,
+                          totalInstallments: data.totalInstallments || undefined,
+                          paymentMethod: data.paymentMethod || undefined,
+                          cardId: data.cardId || undefined,
+                          paymentMethodName: data.paymentMethodName || undefined,
+                          bankId: data.bankId || undefined,
+                          isActive: data.isActive,
+                          enableReminders: data.enableReminders,
+                          reminderDaysBefore: data.reminderDaysBefore,
+                          autoGenerateExpense: data.autoGenerateExpense,
+                          isShared: data.isShared,
+                          splitParticipants: data.splitParticipants.length > 0 ? data.splitParticipants : undefined,
+                        });
+                      }}
+                      onCancel={() => setEditingId(null)}
+                      isEditing={true}
+                    />
+                  ) : (
+                    <ScheduledPaymentCard
+                      payment={payment}
+                      summary={summaries[payment.id!]}
+                      records={getRecordsForPayment(payment.id!)}
+                      categories={categories}
+                      cards={cards}
+                      banks={banks}
+                      ewallets={ewallets}
+                      onEdit={() => setEditingId(payment.id!)}
+                      onDelete={() => setDeleteConfirm({ isOpen: true, paymentId: payment.id! })}
+                      onToggleActive={(isActive) => onToggleActive(payment.id!, isActive)}
+                      onConfirmPayment={(data) => handleConfirmPayment(payment.id!, data)}
+                      onDeletePaymentRecord={onDeletePaymentRecord}
+                      isPeriodPaid={periodPaidStatus[payment.id!] || false}
+                    />
+                  )}
                 </div>
-              )}
-              
-              {editingId === payment.id ? (
-                <ScheduledPaymentForm
-                  initialData={{
-                    name: payment.name,
-                    description: payment.description || '',
-                    category: payment.category,
-                    type: payment.type,
-                    amount: payment.amount,
-                    totalAmount: payment.totalAmount || 0,
-                    interestRate: payment.interestRate || 0,
-                    frequency: payment.frequency,
-                    dueDay: payment.dueDay,
-                    startDate: payment.startDate,
-                    endDate: payment.endDate || '',
-                    totalInstallments: payment.totalInstallments || 12,
-                    paymentMethod: payment.paymentMethod || 'cash',
-                    cardId: payment.cardId || '',
-                    paymentMethodName: payment.paymentMethodName || '',
-                    bankId: payment.bankId || '',
-                    isActive: payment.isActive,
-                  }}
-                  categories={categories}
-                  cards={cards}
-                  banks={banks}
-                  ewallets={ewallets}
-                  onSubmit={(data) => {
-                    handleEditSubmit({
-                      name: data.name,
-                      description: data.description || undefined,
-                      category: data.category,
-                      type: data.type,
-                      amount: data.amount,
-                      totalAmount: data.totalAmount || undefined,
-                      interestRate: data.interestRate || undefined,
-                      frequency: data.frequency,
-                      dueDay: data.dueDay,
-                      startDate: data.startDate,
-                      endDate: data.endDate || undefined,
-                      totalInstallments: data.totalInstallments || undefined,
-                      paymentMethod: data.paymentMethod || undefined,
-                      cardId: data.cardId || undefined,
-                      paymentMethodName: data.paymentMethodName || undefined,
-                      bankId: data.bankId || undefined,
-                      isActive: data.isActive,
-                    });
-                  }}
-                  onCancel={() => setEditingId(null)}
-                  isEditing={true}
-                />
-              ) : (
-                <ScheduledPaymentCard
-                  payment={payment}
-                  summary={summaries[payment.id!]}
-                  records={getRecordsForPayment(payment.id!)}
-                  categories={categories}
-                  cards={cards}
-                  banks={banks}
-                  ewallets={ewallets}
-                  onEdit={() => setEditingId(payment.id!)}
-                  onDelete={() => setDeleteConfirm({ isOpen: true, paymentId: payment.id! })}
-                  onToggleActive={(isActive) => onToggleActive(payment.id!, isActive)}
-                  onConfirmPayment={(data) => handleConfirmPayment(payment.id!, data)}
-                  onDeletePaymentRecord={onDeletePaymentRecord}
-                  isPeriodPaid={periodPaidStatus[payment.id!] || false}
-                />
-              )}
-            </div>
-          ))
-        )}
-      </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Bulk Confirm Modal */}
+      {showBulkConfirm && (
+        <BulkPaymentConfirm
+          scheduledPayments={scheduledPayments}
+          paymentRecords={paymentRecords}
+          categories={categories}
+          onConfirmPayments={handleBulkConfirmPayments}
+          onClose={() => setShowBulkConfirm(false)}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

@@ -318,6 +318,13 @@ export type ScheduledPaymentType = 'subscription' | 'installment' | 'debt';
 // Frequency of payment
 export type ScheduledPaymentFrequency = 'monthly' | 'yearly';
 
+// Split participant for shared payments
+export interface PaymentSplitParticipant {
+  name: string;
+  shareAmount: number;
+  isPaid?: boolean;
+}
+
 // Scheduled Payment - represents a recurring/scheduled payment like subscriptions or debts
 export interface ScheduledPayment {
   id?: string;
@@ -332,11 +339,15 @@ export interface ScheduledPayment {
   totalAmount?: number; // For installments/debts: total amount to be paid
   interestRate?: number; // Optional interest rate percentage (e.g., 5 for 5%)
   
+  // Currency support
+  currency?: string; // Currency code (e.g., "USD", "MYR", "TWD")
+  
   // Schedule info
   frequency: ScheduledPaymentFrequency; // monthly or yearly
   dueDay: number; // Day of the month (1-31) for monthly, or day of year for yearly
   startDate: string; // When payments start (YYYY-MM-DD)
   endDate?: string; // When payments end (optional, for installments)
+  hasEndDate?: boolean; // Explicitly track if payment has an end date
   totalInstallments?: number; // For installments: total number of payments
   
   // Payment method
@@ -344,6 +355,17 @@ export interface ScheduledPayment {
   cardId?: string;
   paymentMethodName?: string; // For e-wallets
   bankId?: string;
+  
+  // Notification/Reminder settings
+  enableReminders?: boolean; // Whether to show reminders
+  reminderDaysBefore?: number; // Days before due date to show reminder (default: 3)
+  
+  // Auto-generate expense option
+  autoGenerateExpense?: boolean; // Automatically create expense when payment is confirmed
+  
+  // Shared payment info
+  isShared?: boolean; // Whether this is a shared/split payment
+  splitParticipants?: PaymentSplitParticipant[]; // People sharing this payment
   
   // Status
   isActive: boolean;
