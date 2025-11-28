@@ -17,6 +17,11 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   const { t } = useLanguage();
   const [localWidgets, setLocalWidgets] = useState<DashboardWidget[]>([...widgets]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // Track the input values for order fields - allow empty string while user is editing
+  const [orderInputValues, setOrderInputValues] = useState<{ [widgetId: string]: string }>({});
+  
+  // Regex pattern for numeric input validation
+  const NUMERIC_PATTERN = /^\d+$/;
 
   // Toggle widget visibility
   const handleToggle = (widgetId: string) => {
@@ -129,12 +134,29 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                 >
                   <div className="widget-drag-handle">⋮⋮</div>
                   <input
-                    type="number"
-                    min={1}
-                    max={localWidgets.length}
-                    value={index + 1}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={orderInputValues[widget.id] !== undefined ? orderInputValues[widget.id] : String(index + 1)}
                     onChange={(e) => {
-                      const newOrder = parseInt(e.target.value) - 1;
+                      const inputValue = e.target.value;
+                      // Allow empty string or numbers only
+                      if (inputValue === '' || NUMERIC_PATTERN.test(inputValue)) {
+                        setOrderInputValues(prev => ({ ...prev, [widget.id]: inputValue }));
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const inputValue = e.target.value;
+                      const newOrder = parseInt(inputValue) - 1;
+                      
+                      // Clear the temporary input value
+                      setOrderInputValues(prev => {
+                        const newState = { ...prev };
+                        delete newState[widget.id];
+                        return newState;
+                      });
+                      
+                      // Only reorder if valid
                       if (!Number.isNaN(newOrder) && newOrder >= 0 && newOrder < localWidgets.length && newOrder !== index) {
                         setLocalWidgets((prev) => {
                           const newWidgets = [...prev];
@@ -142,6 +164,11 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                           newWidgets.splice(newOrder, 0, movedWidget);
                           return newWidgets.map((w, i) => ({ ...w, order: i }));
                         });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
                       }
                     }}
                     className="widget-order-input"

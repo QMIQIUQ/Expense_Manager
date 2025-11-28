@@ -1038,6 +1038,9 @@ const Dashboard: React.FC = () => {
   ) => {
     if (!currentUser) return;
 
+    // Find the scheduled payment to check if autoGenerateExpense is enabled
+    const scheduledPayment = scheduledPayments.find(p => p.id === scheduledPaymentId);
+
     const tempId = `temp-${Date.now()}`;
     const optimisticRecord: ScheduledPaymentRecord = {
       ...recordData,
@@ -1059,13 +1062,46 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           const newId = result as string;
           const realRecord: ScheduledPaymentRecord = {
             ...optimisticRecord,
             id: newId,
           };
           setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
+          
+          // Auto-generate expense if enabled
+          if (scheduledPayment?.autoGenerateExpense) {
+            try {
+              const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
+                userId: currentUser.uid,
+                description: scheduledPayment.name,
+                amount: recordData.actualAmount,
+                category: scheduledPayment.category,
+                date: recordData.paidDate,
+                notes: recordData.note || `${t('scheduledPayment')}: ${scheduledPayment.name}`,
+                paymentMethod: recordData.paymentMethod || scheduledPayment.paymentMethod,
+                cardId: recordData.cardId || scheduledPayment.cardId,
+                paymentMethodName: recordData.paymentMethodName || scheduledPayment.paymentMethodName,
+                bankId: recordData.bankId || scheduledPayment.bankId,
+              };
+              
+              const expenseId = await expenseService.create(expenseData);
+              
+              // Create optimistic expense for immediate UI update
+              const newExpense: Expense = {
+                ...expenseData,
+                id: expenseId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              setExpenses((prev) => [newExpense, ...prev]);
+              
+              showNotification('success', t('expenseGenerated') || 'Expense record created');
+            } catch (error) {
+              console.error('Failed to auto-generate expense:', error);
+            }
+          }
         },
         onError: () => {
           setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== tempId));
