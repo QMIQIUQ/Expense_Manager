@@ -19,6 +19,9 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   // Track the input values for order fields - allow empty string while user is editing
   const [orderInputValues, setOrderInputValues] = useState<{ [widgetId: string]: string }>({});
+  
+  // Regex pattern for numeric input validation
+  const NUMERIC_PATTERN = /^\d+$/;
 
   // Toggle widget visibility
   const handleToggle = (widgetId: string) => {
@@ -138,7 +141,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                     onChange={(e) => {
                       const inputValue = e.target.value;
                       // Allow empty string or numbers only
-                      if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                      if (inputValue === '' || NUMERIC_PATTERN.test(inputValue)) {
                         setOrderInputValues(prev => ({ ...prev, [widget.id]: inputValue }));
                       }
                     }}

@@ -103,14 +103,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       // Cast payment method to proper type
       const toPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
       
-      // Validate transfer: from and to should be different
-      const isSamePaymentMethod = transferFromPaymentMethod === toPaymentMethod &&
-        (transferFromPaymentMethod === 'cash' ||
-         (transferFromPaymentMethod === 'credit_card' && transferFromCardId === formData.cardId) ||
-         (transferFromPaymentMethod === 'e_wallet' && transferFromEWalletName === formData.paymentMethodName) ||
-         (transferFromPaymentMethod === 'bank' && transferFromBankId === formData.bankId));
+      // Helper to check if transfer source and destination are the same
+      const isSamePaymentSource = (
+        fromMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+        toMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank'
+      ): boolean => {
+        if (fromMethod !== toMethod) return false;
+        switch (fromMethod) {
+          case 'cash': return true;
+          case 'credit_card': return transferFromCardId === formData.cardId;
+          case 'e_wallet': return transferFromEWalletName === formData.paymentMethodName;
+          case 'bank': return transferFromBankId === formData.bankId;
+        }
+      };
       
-      if (!isSamePaymentMethod) {
+      if (!isSamePaymentSource(transferFromPaymentMethod, toPaymentMethod)) {
         const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
           amount: formData.amount / 100,
           date: formData.date,
