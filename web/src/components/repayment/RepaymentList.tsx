@@ -151,35 +151,45 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
 
 
             ) : (
-              <>
-                {/* First row: Date, Payment Method Chip, Amount */}
-                <div style={styles.repaymentRow1}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
-                    {/* Payment Method Chip */}
-                    <span style={getPaymentChipStyle()}>
-                      {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
-                      {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
-                      {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
-                    </span>
-                  </div>
-                  <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
-                </div>
-
-                {/* Second row: Payer Name */}
-                {repayment.payerName && (
-                  <div style={styles.repaymentRow2}>
-                    <span style={getPayerNameStyle()}>{repayment.payerName}</span>
-                  </div>
-                )}
-
-                {/* Third row: Note, Edit, Delete */}
-                <div style={styles.repaymentRow3}>
-                  <div style={{ flex: 1 }}>
-                    {repayment.note && (
-                      <span style={getNoteStyle()}>{repayment.note}</span>
+              <div style={styles.repaymentContent}>
+                {/* Left section: Main info */}
+                <div style={styles.leftSection}>
+                  {/* Row 1: Payer Name (if exists) or Payment Method */}
+                  <div style={styles.headerRow}>
+                    {repayment.payerName ? (
+                      <span style={getPayerNameStyle()}>{repayment.payerName}</span>
+                    ) : (
+                      <span style={getPaymentChipStyle()}>
+                        {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                        {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
+                        {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
+                      </span>
                     )}
                   </div>
+                  
+                  {/* Row 2: Date and Payment Method (if payer exists) */}
+                  <div style={styles.metaRow}>
+                    <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
+                    {repayment.payerName && (
+                      <span style={{ ...getPaymentChipStyle(), fontSize: '11px', padding: '2px 8px' }}>
+                        {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                        {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
+                        {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Row 3: Note (if exists) */}
+                  {repayment.note && (
+                    <div style={styles.noteRow}>
+                      <span style={getNoteStyle()}>{repayment.note}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right section: Amount and Actions */}
+                <div style={styles.rightSection}>
+                  <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
                   <div style={styles.actions}>
                     <button
                       onClick={() => startInlineEdit(repayment)}
@@ -187,7 +197,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                       aria-label="Edit repayment"
                       title={t('edit')}
                     >
-                      <EditIcon size={18} />
+                      <EditIcon size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteClick(repayment.id!)}
@@ -195,11 +205,11 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                       aria-label="Delete repayment"
                       title={t('delete')}
                     >
-                      <DeleteIcon size={18} />
+                      <DeleteIcon size={16} />
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         ))}
@@ -231,29 +241,43 @@ const styles = {
     background: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
     borderRadius: '12px',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
+    padding: '14px 16px',
     boxShadow: '0 2px 8px var(--shadow)',
     transition: 'all 0.2s ease',
   } as React.CSSProperties,
-  repaymentRow1: {
+  repaymentContent: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
+    gap: '16px',
   },
-  repaymentRow2: {
+  leftSection: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    minWidth: 0,
+  },
+  rightSection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-end',
+    gap: '8px',
+    flexShrink: 0,
+  },
+  headerRow: {
     display: 'flex',
     alignItems: 'center',
-    marginLeft: '2px',
+    gap: '8px',
   },
-  repaymentRow3: {
+  metaRow: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: '8px',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  noteRow: {
+    marginTop: '2px',
   },
   paymentChip: {
     padding: '4px 10px',
@@ -265,29 +289,32 @@ const styles = {
     boxShadow: '0 1px 3px rgba(22, 163, 74, 0.15)',
   },
   amount: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '700' as const,
     color: '#16a34a',
     whiteSpace: 'nowrap' as const,
     textShadow: '0 1px 2px rgba(22, 163, 74, 0.1)',
   },
   date: {
-    fontSize: '0.9rem',
+    fontSize: '0.85rem',
     color: '#666',
   },
   payerName: {
-    fontSize: '1rem',
-    fontWeight: '500',
+    fontSize: '0.95rem',
+    fontWeight: '600',
     color: '#333',
   },
   noteText: {
-    fontSize: '0.9rem',
-    color: '#666',
+    fontSize: '0.8rem',
+    color: '#888',
     fontStyle: 'italic',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   actions: {
     display: 'flex',
-    gap: '8px',
+    gap: '4px',
   },
   noData: {
     textAlign: 'center' as const,

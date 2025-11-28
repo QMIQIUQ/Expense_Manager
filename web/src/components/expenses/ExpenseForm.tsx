@@ -100,25 +100,37 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     
     // Handle transfer if enabled
     if (enableTransfer && onAddTransfer) {
-      const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-        amount: formData.amount / 100,
-        date: formData.date,
-        time: formData.time,
-        note: `${t('transfer')} - ${formData.description}`,
-        fromPaymentMethod: transferFromPaymentMethod,
-        fromPaymentMethodName: transferFromPaymentMethod === 'e_wallet' ? transferFromEWalletName : '',
-        fromCardId: transferFromPaymentMethod === 'credit_card' ? transferFromCardId : undefined,
-        fromBankId: transferFromPaymentMethod === 'bank' ? transferFromBankId : undefined,
-        toPaymentMethod: formData.paymentMethod,
-        toPaymentMethodName: formData.paymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
-        toCardId: formData.paymentMethod === 'credit_card' ? formData.cardId : undefined,
-        toBankId: formData.paymentMethod === 'bank' ? formData.bankId : undefined,
-      };
+      // Cast payment method to proper type
+      const toPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
       
-      // Submit transfer asynchronously
-      onAddTransfer(transferData).catch((err) => {
-        console.error('Failed to create transfer:', err);
-      });
+      // Validate transfer: from and to should be different
+      const isSamePaymentMethod = transferFromPaymentMethod === toPaymentMethod &&
+        (transferFromPaymentMethod === 'cash' ||
+         (transferFromPaymentMethod === 'credit_card' && transferFromCardId === formData.cardId) ||
+         (transferFromPaymentMethod === 'e_wallet' && transferFromEWalletName === formData.paymentMethodName) ||
+         (transferFromPaymentMethod === 'bank' && transferFromBankId === formData.bankId));
+      
+      if (!isSamePaymentMethod) {
+        const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+          amount: formData.amount / 100,
+          date: formData.date,
+          time: formData.time,
+          note: `${t('transfer')} - ${formData.description}`,
+          fromPaymentMethod: transferFromPaymentMethod,
+          fromPaymentMethodName: transferFromPaymentMethod === 'e_wallet' ? transferFromEWalletName : '',
+          fromCardId: transferFromPaymentMethod === 'credit_card' ? transferFromCardId : undefined,
+          fromBankId: transferFromPaymentMethod === 'bank' ? transferFromBankId : undefined,
+          toPaymentMethod: toPaymentMethod,
+          toPaymentMethodName: toPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
+          toCardId: toPaymentMethod === 'credit_card' ? formData.cardId : undefined,
+          toBankId: toPaymentMethod === 'bank' ? formData.bankId : undefined,
+        };
+        
+        // Submit transfer asynchronously
+        onAddTransfer(transferData).catch((err) => {
+          console.error('Failed to create transfer:', err);
+        });
+      }
     }
     
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
