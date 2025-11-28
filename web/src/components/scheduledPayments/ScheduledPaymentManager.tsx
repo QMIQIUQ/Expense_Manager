@@ -20,7 +20,6 @@ import UpcomingReminders from './UpcomingReminders';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
-import { scheduledPaymentService } from '../../services/scheduledPaymentService';
 import SubTabs from '../common/SubTabs';
 
 // Responsive styles

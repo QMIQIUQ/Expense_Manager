@@ -21,7 +21,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get payments for a specific day
-  const getPaymentsForDay = (day: number, month: number, year: number) => {
+  const getPaymentsForDay = (day: number, month: number, _year: number) => {
     return scheduledPayments.filter(payment => {
       if (!payment.isActive || payment.isCompleted) return false;
       
