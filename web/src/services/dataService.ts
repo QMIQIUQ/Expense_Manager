@@ -23,7 +23,9 @@ import {
   Card, 
   EWallet, 
   Bank, 
-  Repayment 
+  Repayment,
+  ScheduledPayment,
+  ScheduledPaymentRecord
 } from '../types';
 
 type EntityData = 
@@ -36,6 +38,8 @@ type EntityData =
   | EWallet[]
   | Bank[]
   | Repayment[]
+  | ScheduledPayment[]
+  | ScheduledPaymentRecord[]
   | unknown[];
 
 export const dataService = {

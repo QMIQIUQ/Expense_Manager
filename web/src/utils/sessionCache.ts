@@ -22,6 +22,8 @@ export type CacheableEntity =
   | 'ewallets'
   | 'repayments'
   | 'transfers'
+  | 'scheduledPayments'
+  | 'scheduledPaymentRecords'
   | 'featureSettings'
   | 'userSettings';
 
@@ -156,6 +158,9 @@ export const sessionCache = {
       'banks',
       'ewallets',
       'repayments',
+      'transfers',
+      'scheduledPayments',
+      'scheduledPaymentRecords',
       'featureSettings',
       'userSettings'
     ];

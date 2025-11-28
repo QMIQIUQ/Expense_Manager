@@ -1002,6 +1002,7 @@ button:not(:disabled):hover {
 .recurring-card,
 .payment-card,
 .repayment-card,
+.scheduled-payment-card,
 .hover-card {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1013,6 +1014,7 @@ button:not(:disabled):hover {
 .recurring-card:hover,
 .payment-card:hover,
 .repayment-card:hover,
+.scheduled-payment-card:hover,
 .ewallet-card:hover,
 .credit-card:hover,
 .summary-card:hover,
@@ -1032,6 +1034,7 @@ button:not(:disabled):hover {
 .dark .recurring-card:hover,
 .dark .payment-card:hover,
 .dark .repayment-card:hover,
+.dark .scheduled-payment-card:hover,
 .dark .ewallet-card:hover,
 .dark .credit-card:hover,
 .dark .summary-card:hover,
@@ -1042,6 +1045,28 @@ button:not(:disabled):hover {
   border-color: var(--accent-primary);
   box-shadow: var(--purple-glow);
   transform: translateY(-2px);
+}
+
+/* Scheduled Payment Card Styles */
+.scheduled-payment-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.dark .scheduled-payment-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.scheduled-payment-card.selected {
+  border-color: var(--accent-primary);
+  background-color: var(--accent-light);
 }
 
 /* Dashboard Summary Specific Styles */

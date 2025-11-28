@@ -53,7 +53,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
 
   return (
     <BaseForm
-      title={isEditing ? t('editBudget') : t('setBudget')}
+      title={isEditing ? t('editBudget') : t('addBudget')}
       onSubmit={handleSubmit}
       onCancel={onCancel}
     >
@@ -134,10 +134,15 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%) *</label>
             <input
               type="number"
-              value={formData.alertThreshold}
+              value={formData.alertThreshold || ''}
               onChange={(e) =>
-                setFormData({ ...formData, alertThreshold: parseInt(e.target.value) || 0 })
+                setFormData({ ...formData, alertThreshold: e.target.value === '' ? 0 : parseInt(e.target.value) })
               }
+              onBlur={(e) => {
+                if (!e.target.value || parseInt(e.target.value) < 1) {
+                  setFormData({ ...formData, alertThreshold: 80 });
+                }
+              }}
               onFocus={(e) => e.target.select()}
               min="1"
               max="100"

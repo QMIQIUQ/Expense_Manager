@@ -174,6 +174,12 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         />
       </div>
 
+      {isAdding && (
+        <div className="form-card">
+          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -193,12 +199,6 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
-        </div>
-      )}
 
       <style>{`
         .desktop-actions {

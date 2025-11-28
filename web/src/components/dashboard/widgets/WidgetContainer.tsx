@@ -12,6 +12,7 @@ import BudgetProgressWidget from './BudgetProgressWidget';
 import TrackedExpensesWidget from './TrackedExpensesWidget';
 import CardsSummaryWidget from './CardsSummaryWidget';
 import QuickAddWidget from './QuickAddWidget';
+import PendingPaymentsWidget from './PendingPaymentsWidget';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -69,6 +70,8 @@ const renderWidget = (
       return <CardsSummaryWidget {...propsWithSize} />;
     case 'quick-add':
       return <QuickAddWidget {...propsWithSize} />;
+    case 'pending-payments':
+      return <PendingPaymentsWidget {...propsWithSize} />;
     default:
       return null;
   }
