@@ -12,6 +12,7 @@ import { getTodayLocal } from '../../utils/dateUtils';
 interface PaymentRecordFormData {
   expectedAmount: number;
   actualAmount: number;
+  difference: number;
   periodYear: number;
   periodMonth: number;
   dueDate: string;
@@ -49,6 +50,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   const [formData, setFormData] = useState<PaymentRecordFormData>({
     expectedAmount: scheduledPayment.amount,
     actualAmount: scheduledPayment.amount,
+    difference: 0,
     periodYear: currentYear,
     periodMonth: currentMonth,
     dueDate: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(scheduledPayment.dueDay).padStart(2, '0')}`,
@@ -71,7 +73,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
       ...formData,
       actualAmount,
       difference: actualAmount - formData.expectedAmount,
-    } as PaymentRecordFormData & { difference: number });
+    });
   };
 
   const difference = (actualAmountInCents / 100) - formData.expectedAmount;

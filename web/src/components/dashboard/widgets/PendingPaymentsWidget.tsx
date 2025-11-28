@@ -191,7 +191,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
                   }}
                   title={t('confirmPayment')}
                 >
-                  ✓ {isCompact ? '' : t('confirm') || 'Confirm'}
+                  ✓ {isCompact ? '' : t('confirm')}
                 </button>
               )}
             </div>

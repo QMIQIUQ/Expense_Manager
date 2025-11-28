@@ -28,6 +28,8 @@ const removeUndefinedFields = (data: Record<string, unknown>): Record<string, un
 };
 
 // Calculate monthly payment from total amount with optional interest
+// Uses simple interest: total amount * (1 + interest rate) divided equally across all months
+// This is not compound interest - the interest is calculated once on the principal
 export const calculateInstallmentAmount = (
   totalAmount: number,
   months: number,
@@ -36,7 +38,7 @@ export const calculateInstallmentAmount = (
   if (interestRate === 0) {
     return totalAmount / months;
   }
-  // Simple interest calculation: total * (1 + rate/100) / months
+  // Simple interest: add interest to total, then divide by number of payments
   const totalWithInterest = totalAmount * (1 + interestRate / 100);
   return totalWithInterest / months;
 };
