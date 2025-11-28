@@ -695,8 +695,8 @@ export const translations = {
   noUpcomingReminders: { en: 'No upcoming reminders', zh: '沒有即將到期的提醒', 'zh-CN': '没有即将到期的提醒' },
   dueIn: { en: 'Due in', zh: '還有', 'zh-CN': '还有' },
   days: { en: 'days', zh: '天', 'zh-CN': '天' },
-  today: { en: 'Today', zh: '今天', 'zh-CN': '今天' },
-  tomorrow: { en: 'Tomorrow', zh: '明天', 'zh-CN': '明天' },
+  dueToday: { en: 'Today', zh: '今天', 'zh-CN': '今天' },
+  dueTomorrow: { en: 'Tomorrow', zh: '明天', 'zh-CN': '明天' },
   upcomingPayments: { en: 'Upcoming Payments', zh: '即將到期的付款', 'zh-CN': '即将到期的付款' },
   
   // Auto-generate Expenses
@@ -711,7 +711,6 @@ export const translations = {
   endsOn: { en: 'Ends On', zh: '結束於', 'zh-CN': '结束于' },
   
   // Bulk Payment Confirmation  
-  selectAll: { en: 'Select All', zh: '全選', 'zh-CN': '全选' },
   deselectAll: { en: 'Deselect All', zh: '取消全選', 'zh-CN': '取消全选' },
   selectedCount: { en: 'Selected', zh: '已選擇', 'zh-CN': '已选择' },
   confirmSelected: { en: 'Confirm Selected', zh: '確認已選', 'zh-CN': '确认已选' },
@@ -731,8 +730,7 @@ export const translations = {
   exportFormat: { en: 'Export Format', zh: '匯出格式', 'zh-CN': '导出格式' },
   exportRange: { en: 'Date Range', zh: '日期範圍', 'zh-CN': '日期范围' },
   exportAll: { en: 'Export All', zh: '匯出全部', 'zh-CN': '导出全部' },
-  exportSuccess: { en: 'Export successful', zh: '匯出成功', 'zh-CN': '导出成功' },
-  
+
   // Currency Support
   currency: { en: 'Currency', zh: '貨幣', 'zh-CN': '货币' },
   selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
@@ -756,7 +754,7 @@ export const translations = {
   analytics: { en: 'Analytics', zh: '分析', 'zh-CN': '分析' },
   paymentAnalytics: { en: 'Payment Analytics', zh: '付款分析', 'zh-CN': '付款分析' },
   monthlyTrend: { en: 'Monthly Trend', zh: '月度趨勢', 'zh-CN': '月度趋势' },
-  categoryBreakdown: { en: 'Category Breakdown', zh: '分類明細', 'zh-CN': '分类明细' },
+  paymentCategoryBreakdown: { en: 'Category Breakdown', zh: '分類明細', 'zh-CN': '分类明细' },
   paymentMethodBreakdown: { en: 'Payment Method Breakdown', zh: '付款方式明細', 'zh-CN': '付款方式明细' },
   totalScheduled: { en: 'Total Scheduled', zh: '總計預定', 'zh-CN': '总计预定' },
   onTimePayments: { en: 'On-Time Payments', zh: '準時付款', 'zh-CN': '准时付款' },
