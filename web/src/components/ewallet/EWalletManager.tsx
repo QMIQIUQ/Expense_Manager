@@ -231,6 +231,12 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         />
       </div>
 
+      {isAdding && (
+        <div className="form-card">
+          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -250,12 +256,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
-        </div>
-      )}
 
       <div className="ewallet-list">
         {filteredWallets.length === 0 ? (

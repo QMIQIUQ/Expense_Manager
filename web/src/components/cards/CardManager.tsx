@@ -162,6 +162,18 @@ const CardManager: React.FC<CardManagerProps> = ({
         style={{ marginBottom: 20 }}
       />
 
+      {isAdding && (
+        <div className="form-card">
+          <CardForm
+            onSubmit={handleAdd}
+            onCancel={() => setIsAdding(false)}
+            categories={categories}
+            // Provide banks for autocomplete in CardForm
+            banks={banks}
+          />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -181,18 +193,6 @@ const CardManager: React.FC<CardManagerProps> = ({
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <CardForm
-            onSubmit={handleAdd}
-            onCancel={() => setIsAdding(false)}
-            categories={categories}
-            // Provide banks for autocomplete in CardForm
-            banks={banks}
-          />
-        </div>
-      )}
 
       {filteredCards.length === 0 && !isAdding ? (
         <div className="empty-state">

@@ -88,7 +88,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="flex flex-col gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+    <div className="form-card flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button

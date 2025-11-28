@@ -156,7 +156,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
     <div className="flex flex-col gap-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('totalScheduled')}</div>
           <div className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
             {analytics.currencySymbol}{analytics.totalScheduledMonthly.toFixed(2)}
@@ -164,7 +164,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
           <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>/month</div>
         </div>
 
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('onTimePayments')}</div>
           <div className="text-2xl font-bold mt-1" style={{ color: 'var(--success-text)' }}>
             {analytics.onTimeCount}
@@ -177,7 +177,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
           </div>
         </div>
 
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('latePayments')}</div>
           <div className="text-2xl font-bold mt-1" style={{ color: 'var(--warning-text)' }}>
             {analytics.lateCount}
@@ -190,7 +190,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
           </div>
         </div>
 
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('paymentAccuracy')}</div>
           <div className="text-2xl font-bold mt-1" style={{ 
             color: analytics.accuracy >= 95 ? 'var(--success-text)' : 
@@ -203,7 +203,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
       </div>
 
       {/* Monthly Trend Chart */}
-      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+      <div className="form-card">
         <h3 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
           📈 {t('monthlyTrend')}
         </h3>
@@ -250,7 +250,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
 
       {/* Category Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <h3 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
             📊 {t('categoryBreakdown')}
           </h3>
@@ -289,7 +289,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
         </div>
 
         {/* Payment Method Breakdown */}
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--card-bg)' }}>
+        <div className="form-card">
           <h3 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
             💳 {t('paymentMethodBreakdown')}
           </h3>
@@ -334,7 +334,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
       </div>
 
       {/* Average Payment */}
-      <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'var(--card-bg)' }}>
+      <div className="form-card text-center">
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('averagePayment')}</div>
         <div className="text-3xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
           {analytics.currencySymbol}{analytics.avgPayment.toFixed(2)}
