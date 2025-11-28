@@ -8,7 +8,6 @@ import {
   query,
   where,
   Timestamp,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
@@ -77,16 +76,18 @@ export const scheduledPaymentService = {
   async getAll(userId: string): Promise<ScheduledPayment[]> {
     const q = query(
       collection(db, SCHEDULED_PAYMENTS_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('dueDay', 'asc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
+    const payments = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate(),
       updatedAt: doc.data().updatedAt?.toDate(),
     })) as ScheduledPayment[];
+    
+    // Sort by dueDay on client side to avoid requiring composite index
+    return payments.sort((a, b) => a.dueDay - b.dueDay);
   },
 
   // Get active scheduled payments
@@ -165,32 +166,36 @@ export const scheduledPaymentService = {
     const q = query(
       collection(db, PAYMENT_RECORDS_COLLECTION),
       where('userId', '==', userId),
-      where('scheduledPaymentId', '==', scheduledPaymentId),
-      orderBy('paidDate', 'desc')
+      where('scheduledPaymentId', '==', scheduledPaymentId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
+    const records = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate(),
       updatedAt: doc.data().updatedAt?.toDate(),
     })) as ScheduledPaymentRecord[];
+    
+    // Sort by paidDate on client side to avoid requiring composite index
+    return records.sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime());
   },
 
   // Get all payment records for a user
   async getAllPaymentRecords(userId: string): Promise<ScheduledPaymentRecord[]> {
     const q = query(
       collection(db, PAYMENT_RECORDS_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('paidDate', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
+    const records = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate(),
       updatedAt: doc.data().updatedAt?.toDate(),
     })) as ScheduledPaymentRecord[];
+    
+    // Sort by paidDate on client side to avoid requiring composite index
+    return records.sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime());
   },
 
   // Update a payment record

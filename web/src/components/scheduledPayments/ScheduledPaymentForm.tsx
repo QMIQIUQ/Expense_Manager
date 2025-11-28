@@ -300,8 +300,13 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.totalInstallments}
-                  onChange={(e) => setFormData({ ...formData, totalInstallments: parseInt(e.target.value) || 1 })}
+                  value={formData.totalInstallments || ''}
+                  onChange={(e) => setFormData({ ...formData, totalInstallments: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+                  onBlur={(e) => {
+                    if (!e.target.value || parseInt(e.target.value) < 1) {
+                      setFormData({ ...formData, totalInstallments: 1 });
+                    }
+                  }}
                   min="1"
                   max="360"
                   required
@@ -320,8 +325,13 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 </label>
                 <input
                   type="number"
-                  value={formData.interestRate}
-                  onChange={(e) => setFormData({ ...formData, interestRate: parseFloat(e.target.value) || 0 })}
+                  value={formData.interestRate || ''}
+                  onChange={(e) => setFormData({ ...formData, interestRate: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                  onBlur={(e) => {
+                    if (!e.target.value) {
+                      setFormData({ ...formData, interestRate: 0 });
+                    }
+                  }}
                   min="0"
                   max="100"
                   step="0.1"
@@ -420,8 +430,13 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             </label>
             <input
               type="number"
-              value={formData.dueDay}
-              onChange={(e) => setFormData({ ...formData, dueDay: parseInt(e.target.value) || 1 })}
+              value={formData.dueDay || ''}
+              onChange={(e) => setFormData({ ...formData, dueDay: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+              onBlur={(e) => {
+                if (!e.target.value || parseInt(e.target.value) < 1) {
+                  setFormData({ ...formData, dueDay: 1 });
+                }
+              }}
               min="1"
               max="31"
               required
@@ -658,8 +673,13 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               </label>
               <input
                 type="number"
-                value={formData.reminderDaysBefore}
-                onChange={(e) => setFormData({ ...formData, reminderDaysBefore: parseInt(e.target.value) || 3 })}
+                value={formData.reminderDaysBefore || ''}
+                onChange={(e) => setFormData({ ...formData, reminderDaysBefore: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+                onBlur={(e) => {
+                  if (!e.target.value || parseInt(e.target.value) < 1) {
+                    setFormData({ ...formData, reminderDaysBefore: 3 });
+                  }
+                }}
                 min="1"
                 max="30"
                 className="w-16 p-2 rounded-lg border text-center"
@@ -734,11 +754,18 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                   />
                   <input
                     type="number"
-                    value={participant.shareAmount}
+                    value={participant.shareAmount || ''}
                     onChange={(e) => {
                       const updated = [...formData.splitParticipants];
-                      updated[index].shareAmount = parseFloat(e.target.value) || 0;
+                      updated[index].shareAmount = e.target.value === '' ? 0 : parseFloat(e.target.value);
                       setFormData({ ...formData, splitParticipants: updated });
+                    }}
+                    onBlur={(e) => {
+                      if (!e.target.value) {
+                        const updated = [...formData.splitParticipants];
+                        updated[index].shareAmount = 0;
+                        setFormData({ ...formData, splitParticipants: updated });
+                      }
                     }}
                     placeholder={t('shareAmount')}
                     min="0"

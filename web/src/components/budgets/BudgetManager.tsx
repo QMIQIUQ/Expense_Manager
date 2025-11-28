@@ -122,13 +122,22 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} style={styles.addButton}>
             <PlusIcon size={18} />
-            <span>{t('setBudget')}</span>
+            <span>{t('addBudget')}</span>
           </button>
         )}
       </div>
 
+      {/* Search Bar */}
+      <div style={styles.searchContainer}>
+        <SearchBar
+          placeholder={t('searchByName') || 'Search by category name...'}
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
+      </div>
+
       {isAdding && (
-        <div className="mb-5">
+        <div className="form-card mb-5">
           <BudgetForm
             categories={categories}
             onSubmit={(data) => {
@@ -142,15 +151,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           />
         </div>
       )}
-
-      {/* Search Bar */}
-      <div style={styles.searchContainer}>
-        <SearchBar
-          placeholder={t('searchByName') || 'Search by category name...'}
-          value={searchTerm}
-          onChange={setSearchTerm}
-        />
-      </div>
 
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}

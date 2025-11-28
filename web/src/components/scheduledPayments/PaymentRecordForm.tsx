@@ -130,8 +130,13 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             </label>
             <input
               type="number"
-              value={formData.periodYear}
-              onChange={(e) => setFormData({ ...formData, periodYear: parseInt(e.target.value) || currentYear })}
+              value={formData.periodYear || ''}
+              onChange={(e) => setFormData({ ...formData, periodYear: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+              onBlur={(e) => {
+                if (!e.target.value || parseInt(e.target.value) < 2020) {
+                  setFormData({ ...formData, periodYear: currentYear });
+                }
+              }}
               min="2020"
               max="2100"
               className="w-full p-3 rounded-lg outline-none transition-all"

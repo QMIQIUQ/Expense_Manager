@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ScheduledPayment, 
   ScheduledPaymentRecord,
@@ -21,6 +21,7 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { scheduledPaymentService } from '../../services/scheduledPaymentService';
+import SubTabs from '../common/SubTabs';
 
 // Responsive styles
 const responsiveStyles = `
@@ -89,6 +90,13 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     isOpen: false,
     paymentId: null,
   });
+
+  // View mode tabs configuration
+  const viewModeTabs = useMemo(() => [
+    { id: 'list', label: t('listView'), icon: '📋' },
+    { id: 'calendar', label: t('calendarView'), icon: '📅' },
+    { id: 'analytics', label: t('analytics'), icon: '📊' },
+  ], [t]);
 
   // Load summaries for all payments
   useEffect(() => {
@@ -195,16 +203,6 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     });
   };
 
-  // Handle export
-  const handleExportHistory = () => {
-    const date = new Date().toISOString().split('T')[0];
-    scheduledPaymentService.downloadPaymentHistoryCSV(
-      scheduledPayments, 
-      paymentRecords, 
-      `payment-history-${date}.csv`
-    );
-  };
-
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
@@ -252,79 +250,9 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
               >
                 ✓ <span className="hidden sm:inline">{t('bulkConfirm')}</span>
               </button>
-              <button 
-                onClick={handleExportHistory} 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                }}
-                title={t('exportPaymentHistory')}
-              >
-                📥 <span className="hidden sm:inline">{t('export')}</span>
-              </button>
             </>
           )}
         </div>
-      </div>
-
-      {/* View Mode Toggle */}
-      <div style={{ display: 'flex', gap: '4px', padding: '4px', borderRadius: '10px', backgroundColor: 'var(--bg-secondary)' }}>
-        <button
-          onClick={() => setViewMode('list')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: viewMode === 'list' ? 'var(--card-bg)' : 'transparent',
-            color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            fontWeight: viewMode === 'list' ? 600 : 400,
-            cursor: 'pointer',
-            boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          📋 {t('listView')}
-        </button>
-        <button
-          onClick={() => setViewMode('calendar')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: viewMode === 'calendar' ? 'var(--card-bg)' : 'transparent',
-            color: viewMode === 'calendar' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            fontWeight: viewMode === 'calendar' ? 600 : 400,
-            cursor: 'pointer',
-            boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          📅 {t('calendarView')}
-        </button>
-        <button
-          onClick={() => setViewMode('analytics')}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: viewMode === 'analytics' ? 'var(--card-bg)' : 'transparent',
-            color: viewMode === 'analytics' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            fontWeight: viewMode === 'analytics' ? 600 : 400,
-            cursor: 'pointer',
-            boxShadow: viewMode === 'analytics' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          📊 {t('analytics')}
-        </button>
       </div>
 
       {/* Upcoming Reminders */}
@@ -337,9 +265,16 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
         }}
       />
 
+      {/* View Mode Toggle */}
+      <SubTabs
+        tabs={viewModeTabs}
+        activeTab={viewMode}
+        onTabChange={(tabId) => setViewMode(tabId as ViewMode)}
+      />
+
       {/* Add Form */}
       {isAdding && (
-        <div className="mb-5">
+        <div className="form-card">
           <ScheduledPaymentForm
             categories={categories}
             cards={cards}

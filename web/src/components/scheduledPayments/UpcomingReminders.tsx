@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ScheduledPayment, Category } from '../../types';
 import { formatCurrency } from './ScheduledPaymentForm';
@@ -15,6 +15,7 @@ const UpcomingReminders: React.FC<UpcomingRemindersProps> = ({
   onPaymentClick,
 }) => {
   const { t } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(true);
   const today = new Date();
   const currentDay = today.getDate();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
@@ -65,93 +66,110 @@ const UpcomingReminders: React.FC<UpcomingRemindersProps> = ({
 
   // Get due date label
   const getDueDateLabel = (daysUntilDue: number) => {
-    if (daysUntilDue === 0) return { text: t('today'), color: 'var(--error-text)' };
-    if (daysUntilDue === 1) return { text: t('tomorrow'), color: 'var(--warning-text)' };
+    if (daysUntilDue === 0) return { text: t('dueToday'), color: 'var(--error-text)' };
+    if (daysUntilDue === 1) return { text: t('dueTomorrow'), color: 'var(--warning-text)' };
     return { text: `${t('dueIn')} ${daysUntilDue} ${t('days')}`, color: 'var(--text-secondary)' };
   };
 
+  // Don't render anything if no upcoming payments
   if (upcomingPayments.length === 0) {
-    return (
-      <div 
-        className="p-4 rounded-lg text-center"
-        style={{ backgroundColor: 'var(--card-bg)' }}
-      >
-        <span className="text-2xl">🔔</span>
-        <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {t('noUpcomingReminders')}
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div 
-      className="p-4 rounded-lg"
+      className="rounded-lg overflow-hidden"
       style={{ backgroundColor: 'var(--card-bg)' }}
     >
-      <h3 className="font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-        🔔 {t('upcomingPayments')}
-      </h3>
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 flex items-center justify-between text-left transition-all hover:opacity-80"
+        style={{ backgroundColor: 'var(--card-bg)' }}
+      >
+        <h3 className="font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          🔔 {t('upcomingPayments')}
+          <span 
+            className="text-xs px-2 py-0.5 rounded-full"
+            style={{ 
+              backgroundColor: 'var(--error-bg)', 
+              color: 'var(--error-text)' 
+            }}
+          >
+            {upcomingPayments.length}
+          </span>
+        </h3>
+        <span 
+          className="text-lg transition-transform"
+          style={{ 
+            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            color: 'var(--text-secondary)'
+          }}
+        >
+          ▼
+        </span>
+      </button>
       
-      <div className="flex flex-col gap-2">
-        {upcomingPayments.map(({ payment, daysUntilDue }) => {
-          const categoryInfo = getCategoryInfo(payment.category);
-          const dueLabel = getDueDateLabel(daysUntilDue);
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 flex flex-col gap-3">
+          {upcomingPayments.map(({ payment, daysUntilDue }) => {
+            const categoryInfo = getCategoryInfo(payment.category);
+            const dueLabel = getDueDateLabel(daysUntilDue);
 
           return (
             <button
               key={payment.id}
               onClick={() => onPaymentClick?.(payment)}
-              className="flex items-center justify-between p-3 rounded-lg text-left transition-all hover:opacity-80"
+              className="recent-expense-item"
               style={{ 
-                backgroundColor: daysUntilDue === 0 
-                  ? 'var(--error-bg)' 
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left',
+                borderColor: daysUntilDue === 0 
+                  ? 'var(--error-border)' 
                   : daysUntilDue === 1 
-                    ? 'var(--warning-bg)' 
-                    : 'var(--bg-secondary)' 
+                    ? 'var(--warning-border)' 
+                    : undefined
               }}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div 
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
-                  style={{ backgroundColor: `${categoryInfo.color}20` }}
+              <div className="recent-expense-info">
+                <span 
+                  className="recent-expense-category"
+                  style={{ 
+                    backgroundColor: daysUntilDue === 0 
+                      ? 'var(--error-bg)' 
+                      : daysUntilDue === 1 
+                        ? 'var(--warning-bg)' 
+                        : undefined,
+                    color: daysUntilDue === 0 
+                      ? 'var(--error-text)' 
+                      : daysUntilDue === 1 
+                        ? 'var(--warning-text)' 
+                        : undefined
+                  }}
                 >
-                  {categoryInfo.icon}
-                </div>
-                <div className="min-w-0">
-                  <div 
-                    className="font-medium truncate"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {payment.name}
-                  </div>
-                  <div 
-                    className="text-sm"
-                    style={{ color: dueLabel.color }}
-                  >
-                    {dueLabel.text}
-                  </div>
-                </div>
+                  {categoryInfo.icon} {payment.category}
+                </span>
+                <span className="recent-expense-desc">{payment.name}</span>
               </div>
               
-              <div className="text-right">
-                <div 
-                  className="font-semibold"
-                  style={{ color: 'var(--error-text)' }}
-                >
+              <div className="recent-expense-right">
+                <span className="recent-expense-amount error-text">
                   {formatCurrency(payment.amount, payment.currency)}
-                </div>
-                <div 
-                  className="text-xs"
-                  style={{ color: 'var(--text-secondary)' }}
+                </span>
+                <span 
+                  className="recent-expense-date"
+                  style={{ color: dueLabel.color }}
                 >
-                  {t('dueDay')} {payment.dueDay}
-                </div>
+                  {dueLabel.text}
+                </span>
               </div>
             </button>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

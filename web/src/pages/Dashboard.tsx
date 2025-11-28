@@ -160,8 +160,8 @@ const Dashboard: React.FC = () => {
         dataService.getDataWithRevalidate('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
         dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
         dataService.getDataWithRevalidate('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
-        scheduledPaymentService.getAll(currentUser.uid).catch(() => [] as ScheduledPayment[]),
-        scheduledPaymentService.getAllPaymentRecords(currentUser.uid).catch(() => [] as ScheduledPaymentRecord[]),
+        dataService.getDataWithRevalidate('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
+        dataService.getDataWithRevalidate('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), setScheduledPaymentRecords),
       ]);
 
       // Set initial data (from cache or fresh)
