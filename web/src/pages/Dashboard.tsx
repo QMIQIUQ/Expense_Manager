@@ -5,7 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer } from '../types';
+import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
@@ -21,6 +21,7 @@ import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
+import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
@@ -29,6 +30,7 @@ import CustomizableDashboard from '../components/dashboard/CustomizableDashboard
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
 const BudgetManager = lazy(() => import('../components/budgets/BudgetManager'));
 const RecurringExpenseManager = lazy(() => import('../components/recurring/RecurringExpenseManager'));
+const ScheduledPaymentManager = lazy(() => import('../components/scheduledPayments/ScheduledPaymentManager'));
 const IncomesTab = lazy(() => import('./tabs/IncomesTab'));
 const AdminTab = lazy(() => import('./tabs/AdminTab'));
 const UserProfile = lazy(() => import('./UserProfile'));
@@ -74,6 +76,8 @@ const Dashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
+  const [scheduledPaymentRecords, setScheduledPaymentRecords] = useState<ScheduledPaymentRecord[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [ewallets, setEWallets] = useState<EWallet[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -152,7 +156,7 @@ const Dashboard: React.FC = () => {
     try {
       // Phase 1: Load cached data first (instant display)
       console.log('Phase 1: Loading cached data...');
-      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData, transfersData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
         dataService.getDataWithRevalidate('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
         dataService.getDataWithRevalidate('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
         dataService.getDataWithRevalidate('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
@@ -160,6 +164,8 @@ const Dashboard: React.FC = () => {
         dataService.getDataWithRevalidate('recurring', currentUser.uid, () => recurringExpenseService.getAll(currentUser.uid), setRecurringExpenses),
         dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
         dataService.getDataWithRevalidate('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
+        scheduledPaymentService.getAll(currentUser.uid).catch(() => [] as ScheduledPayment[]),
+        scheduledPaymentService.getAllPaymentRecords(currentUser.uid).catch(() => [] as ScheduledPaymentRecord[]),
       ]);
 
       // Set initial data (from cache or fresh)
@@ -170,6 +176,8 @@ const Dashboard: React.FC = () => {
       setRecurringExpenses(recurringData);
       setRepayments(repaymentsData);
       setTransfers(transfersData);
+      setScheduledPayments(scheduledPaymentsData);
+      setScheduledPaymentRecords(scheduledPaymentRecordsData);
       
       // Initial UI now rendered; no blocking loader needed
       console.log('Phase 1 complete: UI ready with cached data');
@@ -1082,6 +1090,193 @@ const Dashboard: React.FC = () => {
         },
       }
     );
+  };
+  //#endregion
+
+  //#region Event Handlers - Scheduled Payments
+  const handleAddScheduledPayment = async (paymentData: Omit<ScheduledPayment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!currentUser) return;
+    
+    const tempId = `temp-${Date.now()}`;
+    const optimisticPayment: ScheduledPayment = {
+      ...paymentData,
+      id: tempId,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setScheduledPayments((prev) => [...prev, optimisticPayment]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: paymentData },
+      () => scheduledPaymentService.create({ ...paymentData, userId: currentUser.uid }),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: (result) => {
+          const newId = result as string;
+          const realPayment: ScheduledPayment = {
+            ...optimisticPayment,
+            id: newId,
+          };
+          setScheduledPayments((prev) => prev.map((p) => (p.id === tempId ? realPayment : p)));
+        },
+        onError: () => {
+          setScheduledPayments((prev) => prev.filter((p) => p.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleUpdateScheduledPayment = async (id: string, updates: Partial<ScheduledPayment>) => {
+    const original = scheduledPayments.find((p) => p.id === id);
+    
+    setScheduledPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: updates, originalData: original },
+      () => scheduledPaymentService.update(id, updates),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {},
+        onError: () => {
+          if (original) {
+            setScheduledPayments((prev) =>
+              prev.map((p) => (p.id === id ? original : p))
+            );
+          }
+        },
+      }
+    );
+  };
+
+  const handleDeleteScheduledPayment = async (id: string) => {
+    const original = scheduledPayments.find((p) => p.id === id);
+    
+    setScheduledPayments((prev) => prev.filter((p) => p.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: original },
+      () => scheduledPaymentService.delete(id),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {},
+        onError: () => {
+          if (original) {
+            setScheduledPayments((prev) => [...prev, original]);
+          }
+        },
+      }
+    );
+  };
+
+  const handleToggleScheduledPaymentActive = async (id: string, isActive: boolean) => {
+    const original = scheduledPayments.find((p) => p.id === id);
+    
+    setScheduledPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive } : p))
+    );
+
+    await optimisticCRUD.run(
+      { type: 'update', data: { isActive }, originalData: original },
+      () => scheduledPaymentService.toggleActive(id, isActive),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {},
+        onError: () => {
+          if (original) {
+            setScheduledPayments((prev) =>
+              prev.map((p) => (p.id === id ? original : p))
+            );
+          }
+        },
+      }
+    );
+  };
+
+  const handleConfirmScheduledPayment = async (
+    scheduledPaymentId: string,
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
+  ) => {
+    if (!currentUser) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticRecord: ScheduledPaymentRecord = {
+      ...recordData,
+      id: tempId,
+      userId: currentUser.uid,
+      scheduledPaymentId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setScheduledPaymentRecords((prev) => [optimisticRecord, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: { ...recordData, scheduledPaymentId } },
+      () => scheduledPaymentService.createPaymentRecord({
+        ...recordData,
+        userId: currentUser.uid,
+        scheduledPaymentId,
+      }),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: (result) => {
+          const newId = result as string;
+          const realRecord: ScheduledPaymentRecord = {
+            ...optimisticRecord,
+            id: newId,
+          };
+          setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
+        },
+        onError: () => {
+          setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleDeleteScheduledPaymentRecord = async (id: string) => {
+    const original = scheduledPaymentRecords.find((r) => r.id === id);
+    
+    setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: original },
+      () => scheduledPaymentService.deletePaymentRecord(id),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {},
+        onError: () => {
+          if (original) {
+            setScheduledPaymentRecords((prev) => [...prev, original]);
+          }
+        },
+      }
+    );
+  };
+
+  const getScheduledPaymentSummary = async (payment: ScheduledPayment): Promise<ScheduledPaymentSummary> => {
+    if (!currentUser) {
+      return {
+        scheduledPaymentId: payment.id!,
+        totalPaid: 0,
+        totalExpected: 0,
+        paymentCount: 0,
+      };
+    }
+    return scheduledPaymentService.getPaymentSummary(currentUser.uid, payment);
+  };
+
+  const isScheduledPaymentPeriodPaid = async (paymentId: string, year: number, month: number): Promise<boolean> => {
+    if (!currentUser) return false;
+    return scheduledPaymentService.isPeriodPaid(currentUser.uid, paymentId, year, month);
   };
   //#endregion
 
@@ -2322,6 +2517,9 @@ const Dashboard: React.FC = () => {
             onQuickAdd={() => setShowAddExpenseForm(true)}
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onNavigateToExpenses={() => setActiveTab('expenses')}
+            scheduledPayments={scheduledPayments}
+            scheduledPaymentRecords={scheduledPaymentRecords}
+            onConfirmScheduledPayment={handleConfirmScheduledPayment}
           />
         )}
 
@@ -2397,7 +2595,28 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'recurring' && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
+            {/* Scheduled Payments Section */}
+            <Suspense fallback={<></>}>
+              <ScheduledPaymentManager
+                scheduledPayments={scheduledPayments}
+                paymentRecords={scheduledPaymentRecords}
+                categories={categories}
+                banks={banks}
+                cards={cards}
+                ewallets={ewallets}
+                onAdd={handleAddScheduledPayment}
+                onUpdate={handleUpdateScheduledPayment}
+                onDelete={handleDeleteScheduledPayment}
+                onToggleActive={handleToggleScheduledPaymentActive}
+                onConfirmPayment={handleConfirmScheduledPayment}
+                onDeletePaymentRecord={handleDeleteScheduledPaymentRecord}
+                getSummary={getScheduledPaymentSummary}
+                isPeriodPaid={isScheduledPaymentPeriodPaid}
+              />
+            </Suspense>
+
+            {/* Original Recurring Expenses Section - kept for backwards compatibility */}
             <Suspense fallback={<></>}>
               <RecurringExpenseManager
                 recurringExpenses={recurringExpenses}

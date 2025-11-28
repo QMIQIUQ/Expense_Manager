@@ -611,6 +611,7 @@ export const translations = {
   budgetProgress: { en: 'Budget Progress', zh: '預算進度', 'zh-CN': '预算进度' },
   budgetProgressDesc: { en: 'Progress bars for active budgets', zh: '進行中的預算進度條', 'zh-CN': '进行中的预算进度条' },
   trackedExpensesDesc: { en: 'Expenses waiting for repayment', zh: '等待還款的支出', 'zh-CN': '等待还款的支出' },
+  pendingPaymentsDesc: { en: 'Scheduled payments due this month', zh: '本月待繳的定期付款', 'zh-CN': '本月待缴的定期付款' },
   quickAddDesc: { en: 'Quick add expense button', zh: '快速新增支出按鈕', 'zh-CN': '快速添加支出按钮' },
   cardsSummary: { en: 'Cards Summary', zh: '信用卡摘要', 'zh-CN': '信用卡摘要' },
   // Duplicate keys cleanup: keep a single definition above; removing repeated block here
@@ -680,6 +681,11 @@ export const translations = {
   paymentCount: { en: 'Payment Count', zh: '付款次數', 'zh-CN': '付款次数' },
   remainingPayments: { en: 'Remaining Payments', zh: '剩餘期數', 'zh-CN': '剩余期数' },
   scheduledPayment: { en: 'Scheduled Payment', zh: '定期付款', 'zh-CN': '定期付款' },
+  
+  // Dashboard Widget - Pending Payments
+  noPendingPayments: { en: 'No pending payments this month!', zh: '本月無待繳付款！', 'zh-CN': '本月无待缴付款！' },
+  pendingPayments: { en: 'Pending Payments', zh: '待繳付款', 'zh-CN': '待缴付款' },
+  overdue: { en: 'Overdue', zh: '已逾期', 'zh-CN': '已逾期' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

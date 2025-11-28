@@ -10,6 +10,7 @@ export type DashboardWidgetType =
   | 'cards-summary'      // Credit cards summary
   | 'budget-progress'    // Budget progress bars
   | 'tracked-expenses'   // Expenses needing repayment tracking
+  | 'pending-payments'   // Scheduled payments due this month
   | 'quick-add';         // Quick add expense button
 
 // Widget size options
@@ -130,6 +131,16 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     minSize: 'small',
     maxSize: 'large',
   },
+  'pending-payments': {
+    type: 'pending-payments',
+    defaultTitle: 'pendingPayments',
+    defaultTitleFallback: 'Pending Payments',
+    description: 'pendingPaymentsDesc',
+    icon: '📅',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
   'quick-add': {
     type: 'quick-add',
     defaultTitle: 'quickExpenses',
@@ -152,6 +163,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
   { id: 'widget-6', type: 'budget-progress', enabled: false, order: 5, size: 'medium' },
   { id: 'widget-7', type: 'cards-summary', enabled: false, order: 6, size: 'full' },
   { id: 'widget-8', type: 'tracked-expenses', enabled: false, order: 7, size: 'medium' },
+  { id: 'widget-9', type: 'pending-payments', enabled: false, order: 8, size: 'medium' },
 ];
 
 // Helper to generate unique widget ID
