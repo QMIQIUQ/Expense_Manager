@@ -23,6 +23,7 @@ interface CustomizableDashboardProps {
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
+  onNavigateToExpenses?: () => void;
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
@@ -38,6 +39,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
+  onNavigateToExpenses,
 }) => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
@@ -161,6 +163,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
             key={widget.id}
             widget={widget}
             data={widgetData}
+            onNavigateToExpenses={onNavigateToExpenses}
           />
         ))}
       </div>

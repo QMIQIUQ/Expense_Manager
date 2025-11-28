@@ -5,9 +5,22 @@ import { WidgetProps } from './types';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses }) => {
+const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
   const { t } = useLanguage();
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
+  
+  // Determine chart dimensions based on widget size
+  const chartConfig = React.useMemo(() => {
+    const isSmall = size === 'small' || isMobile;
+    const isLarge = size === 'large' || size === 'full';
+    
+    return {
+      height: isSmall ? 200 : isLarge ? 350 : 300,
+      outerRadius: isSmall ? 55 : isLarge ? 120 : 100,
+      cy: isSmall ? '40%' : '45%',
+      fontSize: isSmall ? 10 : 12,
+    };
+  }, [size, isMobile]);
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -49,15 +62,15 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses }) => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={chartConfig.height}>
       <PieChart>
         <Pie
           data={pieData}
           cx="50%"
-          cy={isMobile ? '40%' : '45%'}
+          cy={chartConfig.cy}
           labelLine={false}
           label={false}
-          outerRadius={isMobile ? 70 : 100}
+          outerRadius={chartConfig.outerRadius}
           fill="#8884d8"
           dataKey="value"
         >
@@ -71,7 +84,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses }) => {
           verticalAlign="bottom"
           align="center"
           wrapperStyle={{
-            fontSize: isMobile ? '11px' : '12px',
+            fontSize: `${chartConfig.fontSize}px`,
             paddingTop: '10px',
           }}
           formatter={(value: string) => {

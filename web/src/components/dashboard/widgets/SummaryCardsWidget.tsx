@@ -8,8 +8,12 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   incomes,
   repayments,
   billingCycleDay = 1,
+  size = 'full',
 }) => {
   const { t } = useLanguage();
+  
+  // Determine layout based on size
+  const isCompact = size === 'small' || size === 'medium';
 
   // Calculate billing cycle dates
   const { cycleStart, cycleEnd } = React.useMemo(() => {
@@ -85,7 +89,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
 
   return (
-    <div className="summary-cards-grid">
+    <div className={`summary-cards-grid ${isCompact ? 'summary-cards-compact' : ''}`}>
       <div className="summary-card">
         <div className="card-icon error-bg">💰</div>
         <div className="card-content">

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { ShowMoreButton } from './widgets';
 
 interface CardsSummaryProps {
   cards: Card[];
@@ -11,6 +12,11 @@ interface CardsSummaryProps {
 
 const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses }) => {
   const { t } = useLanguage();
+  const [showAll, setShowAll] = useState(false);
+  const maxItems = 3;
+  
+  // Determine how many cards to display
+  const displayCards = showAll ? cards : cards.slice(0, maxItems);
 
   if (cards.length === 0) {
     return (
@@ -30,7 +36,7 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
       </h3>
       
       <div className="cards-list">
-        {cards.slice(0, 3).map((card) => {
+        {displayCards.map((card) => {
           const stats = calculateCardStats(card, expenses, categories);
           const utilizationPercent = (stats.currentCycleSpending / card.cardLimit) * 100;
           
@@ -105,11 +111,13 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
           );
         })}
 
-        {cards.length > 3 && (
-          <p className="more-cards-text">
-            +{cards.length - 3} {t('more')} cards
-          </p>
-        )}
+        <ShowMoreButton
+          totalCount={cards.length}
+          visibleCount={maxItems}
+          isExpanded={showAll}
+          onToggle={() => setShowAll(!showAll)}
+          itemLabel={t('cards')}
+        />
       </div>
     </div>
   );

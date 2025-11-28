@@ -23,6 +23,7 @@ interface WidgetContainerProps {
   onToggle?: (widgetId: string, enabled: boolean) => void;
   onMoveUp?: (widgetId: string) => void;
   onMoveDown?: (widgetId: string) => void;
+  onNavigateToExpenses?: () => void;
 }
 
 // Get CSS class for widget size
@@ -42,26 +43,32 @@ const getSizeClass = (size: WidgetSize): string => {
 };
 
 // Render appropriate widget component based on type
-const renderWidget = (type: DashboardWidgetType, data: WidgetProps): React.ReactNode => {
+const renderWidget = (
+  type: DashboardWidgetType, 
+  data: WidgetProps, 
+  size: WidgetSize,
+  onNavigateToExpenses?: () => void
+): React.ReactNode => {
+  const propsWithSize = { ...data, size };
   switch (type) {
     case 'summary-cards':
-      return <SummaryCardsWidget {...data} />;
+      return <SummaryCardsWidget {...propsWithSize} />;
     case 'expense-chart':
-      return <ExpenseChartWidget {...data} />;
+      return <ExpenseChartWidget {...propsWithSize} />;
     case 'spending-trend':
-      return <SpendingTrendWidget {...data} />;
+      return <SpendingTrendWidget {...propsWithSize} />;
     case 'category-breakdown':
-      return <CategoryBreakdownWidget {...data} />;
+      return <CategoryBreakdownWidget {...propsWithSize} />;
     case 'recent-expenses':
-      return <RecentExpensesWidget {...data} />;
+      return <RecentExpensesWidget {...propsWithSize} onViewAll={onNavigateToExpenses} />;
     case 'budget-progress':
-      return <BudgetProgressWidget {...data} />;
+      return <BudgetProgressWidget {...propsWithSize} />;
     case 'tracked-expenses':
-      return <TrackedExpensesWidget {...data} />;
+      return <TrackedExpensesWidget {...propsWithSize} />;
     case 'cards-summary':
-      return <CardsSummaryWidget {...data} />;
+      return <CardsSummaryWidget {...propsWithSize} />;
     case 'quick-add':
-      return <QuickAddWidget {...data} />;
+      return <QuickAddWidget {...propsWithSize} />;
     default:
       return null;
   }
@@ -74,6 +81,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onToggle,
   onMoveUp,
   onMoveDown,
+  onNavigateToExpenses,
 }) => {
   const { t } = useLanguage();
   const metadata = WIDGET_METADATA[widget.type];
@@ -84,8 +92,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
   const widgetTitle = widget.title || t(metadata.defaultTitle as TranslationKey) || metadata.defaultTitleFallback;
   
-  // Force medium size for quick-add widget to ensure proper form display
-  const effectiveSize = widget.type === 'quick-add' ? 'medium' : widget.size;
+  // Use the widget's configured size
+  const effectiveSize = widget.size;
 
   return (
     <div
@@ -135,7 +143,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
       <div className="widget-content">
         {widget.enabled ? (
-          renderWidget(widget.type, data)
+          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses)
         ) : (
           <div className="widget-placeholder">
             <span className="widget-placeholder-icon">{metadata.icon}</span>

@@ -1475,6 +1475,10 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 12px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .category-info {
@@ -1544,16 +1548,17 @@ button:not(:disabled):hover {
 }
 
 .recent-expense-category {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  color: var(--chip-text);
   display: inline-block;
-  padding: 2px 8px;
-  background-color: var(--info-bg);
-  border-radius: 4px;
-  max-width: 100%;
+  padding: 2px 6px;
+  background-color: var(--chip-bg);
+  border-radius: 10px;
+  max-width: fit-content;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .recent-expense-right {
@@ -1670,6 +1675,42 @@ button:not(:disabled):hover {
   color: var(--text-tertiary);
 }
 
+.more-cards-button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.more-cards-button:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+}
+
+.more-cards-button:active {
+  transform: scale(0.98);
+}
+
+.dark .more-cards-button {
+  border-color: var(--border-color);
+  color: var(--accent-primary);
+}
+
+.dark .more-cards-button:hover {
+  background: var(--button-hover);
+  border-color: var(--accent-primary);
+}
+
 /* Placeholder text */
 .dark input::placeholder,
 .dark textarea::placeholder,
@@ -1706,11 +1747,67 @@ button:not(:disabled):hover {
 }
 
 /* Tooltips */
-.dark [class*="tooltip"] {
+.dark [class*="tooltip"]:not(.recharts-tooltip-wrapper):not(.recharts-tooltip-wrapper *) {
   background-color: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
+}
+
+/* Recharts Tooltip styling */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-tertiary) 100%) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  padding: 10px 14px !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: linear-gradient(135deg, #252338 0%, #1a1625 100%) !important;
+  border: 1px solid var(--accent-primary) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(167, 139, 250, 0.15) !important;
+}
+
+/* Remove all inner borders in tooltip */
+.recharts-tooltip-wrapper .recharts-default-tooltip * {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label {
+  display: none !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 2px 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-name {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-value {
+  color: var(--accent-primary) !important;
+  font-weight: 700 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-separator {
+  color: var(--text-tertiary) !important;
 }
 
 /* Code blocks (if any) */
@@ -2228,11 +2325,12 @@ button:not(:disabled):hover {
 .widget-large { flex: 1 1 calc(66.666% - 8px); min-width: 360px; max-width: 100%; }
 .widget-full { flex: 0 0 100%; width: 100%; }
 
-/* When only one medium widget in a row, let it fill the space */
-.dashboard-widgets-grid .widget-medium:only-child,
-.dashboard-widgets-grid .widget-medium:last-child:nth-child(odd) {
-  flex: 0 0 100%;
-}
+/* Removed special-case that forced a lone medium widget to full width
+   so that size changes (small/medium/large/full) are visually consistent.
+   Previously:
+   .dashboard-widgets-grid .widget-medium:only-child,
+   .dashboard-widgets-grid .widget-medium:last-child:nth-child(odd) { flex: 0 0 100%; }
+*/
 
 @media (max-width: 768px) {
   .widget-small, .widget-medium, .widget-large, .widget-full {
@@ -2882,8 +2980,9 @@ button:not(:disabled):hover {
   align-items: stretch;
   gap: 4px;
   width: 100%;
-  min-height: 80px;
-  padding: 10px 12px;
+  /* Reduce default vertical space; allow auto height */
+  padding: 8px 10px;
+  min-height: 72px; /* slightly smaller; can be tuned further */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
@@ -3697,4 +3796,183 @@ button:not(:disabled):hover {
   font-size: 12px;
   font-weight: 700;
   color: var(--accent-primary);
+}
+
+/* ==================== Widget Size Adaptations ==================== */
+
+/* Summary Cards Compact Mode */
+.summary-cards-grid.summary-cards-compact {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.summary-cards-compact .summary-card {
+  padding: 8px;
+}
+
+.summary-cards-compact .card-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.summary-cards-compact .card-label {
+  font-size: 10px;
+}
+
+.summary-cards-compact .card-value {
+  font-size: 14px;
+}
+
+/* Category List Compact Mode */
+.category-list.category-list-compact .category-item {
+  padding: 8px 10px;
+}
+
+.category-list-compact .category-info {
+  gap: 4px;
+}
+
+.category-list-compact .category-name {
+  font-size: 12px;
+}
+
+.category-list-compact .category-amount {
+  font-size: 11px;
+}
+
+.category-list-compact .progress-bar {
+  height: 4px;
+}
+
+/* Recent Expenses Compact Mode */
+.recent-expenses-list.recent-expenses-compact .recent-expense-item {
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.recent-expenses-compact .recent-expense-desc {
+  font-size: 12px;
+}
+
+.recent-expenses-compact .recent-expense-category {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.recent-expenses-compact .recent-expense-amount {
+  font-size: 12px;
+}
+
+.recent-expenses-compact .recent-expense-date {
+  font-size: 10px;
+}
+
+.recent-expenses-list.recent-expenses-compact {
+  gap: 8px;
+}
+
+/* Tracked Expenses Compact Mode */
+.tracked-expenses-list.tracked-expenses-compact .tracked-expense-card {
+  padding: 10px;
+}
+
+.tracked-expenses-compact .tracked-expense-title {
+  font-size: 12px;
+}
+
+.tracked-expenses-compact .tracked-expense-date {
+  font-size: 10px;
+}
+
+.tracked-expenses-compact .tracked-amount-label,
+.tracked-expenses-compact .tracked-amount-value {
+  font-size: 11px;
+}
+
+.tracked-expenses-compact .tracked-expense-amounts {
+  gap: 4px;
+}
+
+.tracked-expenses-compact .category-percentage {
+  font-size: 10px;
+}
+
+.tracked-expenses-compact .progress-bar {
+  height: 4px;
+}
+
+.tracked-more-text {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+/* Cards Summary Compact Mode */
+.cards-summary-widget.cards-summary-compact {
+  gap: 12px;
+}
+
+.cards-summary-compact .credit-card-summary-item {
+  padding: 12px;
+}
+
+.cards-summary-compact .card-name {
+  font-size: 14px;
+}
+
+.cards-summary-compact .utilization-info {
+  font-size: 11px;
+}
+
+/* Quick Expense Widget Compact Mode */
+.quick-expense-widget.quick-expense-compact .quick-expense-grid {
+  gap: 6px;
+}
+
+.quick-expense-compact .quick-expense-btn {
+  padding: 4px 6px; /* tighter vertical padding */
+  min-width: 78px;
+  min-height: auto; /* let content define height */
+}
+
+.quick-expense-compact .quick-expense-category-chip {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.quick-expense-compact .quick-expense-amount {
+  font-size: 12px;
+}
+
+.quick-expense-compact .quick-expense-name {
+  font-size: 9px;
+}
+
+.quick-expense-compact .quick-expense-add-btn {
+  min-width: 60px;
+  min-height: 55px;
+  padding: 6px;
+  font-size: 10px;
+}
+
+.quick-expense-compact .quick-expense-grid {
+  gap: 6px;
+}
+
+.quick-expense-compact .quick-expense-row-amount {
+  margin: 0; /* remove extra vertical margin */
+}
+
+.quick-expense-compact .quick-expense-row-name {
+  gap: 2px;
+  min-height: 20px; /* smaller for compact mode */
+}
+
+.quick-expense-compact .quick-expense-menu-trigger {
+  font-size: 14px;
+  padding: 2px 4px;
 }

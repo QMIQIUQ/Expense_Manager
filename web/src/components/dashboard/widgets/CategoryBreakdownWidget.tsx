@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
+import ShowMoreButton from './ShowMoreButton';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
   const { t } = useLanguage();
+  
+  const [showAll, setShowAll] = useState(false);
+
+  // Determine how many categories to show initially based on size
+  const maxCategories = React.useMemo(() => {
+    switch (size) {
+      case 'small':
+        return 3;
+      case 'large':
+      case 'full':
+        return 8;
+      default:
+        return 5;
+    }
+  }, [size]);
 
   // Calculate category totals
-  const { categories, total } = React.useMemo(() => {
+  const { allCategories, total } = React.useMemo(() => {
     const byCategory: { [key: string]: number } = {};
     let total = 0;
 
@@ -18,12 +34,13 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses }) => {
       total += exp.amount;
     });
 
-    const categories = Object.entries(byCategory)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5);
+    const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
 
-    return { categories, total };
+    return { allCategories: sorted, total };
   }, [expenses]);
+
+  // Determine which categories to display (respect showAll state)
+  const categories = showAll ? allCategories : allCategories.slice(0, maxCategories);
 
   if (categories.length === 0) {
     return (
@@ -35,7 +52,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses }) => {
   }
 
   return (
-    <div className="category-list">
+    <div className={`category-list ${size === 'small' ? 'category-list-compact' : ''}`}>
       {categories.map(([category, amount]) => {
         const percentage = total > 0 ? (amount / total) * 100 : 0;
         return (
@@ -50,10 +67,19 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses }) => {
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="category-percentage">{percentage.toFixed(1)}%</span>
+            {size !== 'small' && (
+              <span className="category-percentage">{percentage.toFixed(1)}%</span>
+            )}
           </div>
         );
       })}
+
+      <ShowMoreButton
+        totalCount={allCategories.length}
+        visibleCount={maxCategories}
+        isExpanded={showAll}
+        onToggle={() => setShowAll(!showAll)}
+      />
     </div>
   );
 };

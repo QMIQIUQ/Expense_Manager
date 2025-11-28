@@ -2321,6 +2321,7 @@ const Dashboard: React.FC = () => {
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => setShowAddExpenseForm(true)}
             onQuickExpenseAdd={handleQuickExpenseAdd}
+            onNavigateToExpenses={() => setActiveTab('expenses')}
           />
         )}
 

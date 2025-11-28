@@ -6,8 +6,22 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   expenses,
   repayments,
   onMarkTrackingCompleted,
+  size = 'medium',
 }) => {
   const { t } = useLanguage();
+  
+  // Determine display settings based on size
+  const isCompact = size === 'small';
+  const maxItems = React.useMemo(() => {
+    switch (size) {
+      case 'small':
+        return 2;
+      case 'large':
+        return 6;
+      default:
+        return 4;
+    }
+  }, [size]);
 
   // Get tracked expenses and repayment totals
   const { trackedExpenses, repaymentTotals } = React.useMemo(() => {
@@ -35,8 +49,8 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   }
 
   return (
-    <div className="tracked-expenses-list">
-      {trackedExpenses.map((expense) => {
+    <div className={`tracked-expenses-list ${isCompact ? 'tracked-expenses-compact' : ''}`}>
+      {trackedExpenses.slice(0, maxItems).map((expense) => {
         const repaid = repaymentTotals[expense.id!] || 0;
         const remaining = expense.amount - repaid;
         const percentage = (repaid / expense.amount) * 100;
@@ -76,11 +90,16 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
               <div className="progress-fill success-bg" style={{ width: `${percentage}%` }} />
             </div>
             <span className="category-percentage">
-              {percentage.toFixed(1)}% {t('collected')}
+              {percentage.toFixed(0)}% {t('collected')}
             </span>
           </div>
         );
       })}
+      {trackedExpenses.length > maxItems && (
+        <div className="tracked-more-text">
+          +{trackedExpenses.length - maxItems} {t('more')}
+        </div>
+      )}
     </div>
   );
 };

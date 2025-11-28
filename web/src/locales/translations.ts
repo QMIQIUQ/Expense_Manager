@@ -376,6 +376,8 @@ export const translations = {
   categoryInUse: { en: 'This category is being used by', zh: '此類別正被使用於', 'zh-CN': '此分类正被使用于' },
   and: { en: 'and', zh: '以及', 'zh-CN': '以及' },
   more: { en: 'more', zh: '更多', 'zh-CN': '更多' },
+  showLess: { en: 'Show less', zh: '收起', 'zh-CN': '收起' },
+  viewAll: { en: 'View all', zh: '查看全部', 'zh-CN': '查看全部' },
   chooseDeletionAction: { en: 'What would you like to do with these expenses?', zh: '您想如何處理這些支出？', 'zh-CN': '您想如何处理这些支出？' },
   reassignToCategory: { en: 'Reassign expenses to another category', zh: '將支出重新分配到其他類別', 'zh-CN': '将支出重新分配到其他分类' },
   deleteExpensesToo: { en: 'Delete all expenses in this category', zh: '刪除此類別中的所有支出', 'zh-CN': '删除此分类中的所有支出' },

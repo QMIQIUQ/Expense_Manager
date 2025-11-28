@@ -4,8 +4,21 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { formatDateLocal } from '../../../utils/dateUtils';
 
-const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses }) => {
+const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
   const { t } = useLanguage();
+  
+  // Determine chart dimensions based on widget size
+  const chartConfig = React.useMemo(() => {
+    switch (size) {
+      case 'small':
+        return { height: 160, fontSize: 9, xAxisHeight: 45, showGrid: false };
+      case 'large':
+      case 'full':
+        return { height: 280, fontSize: 12, xAxisHeight: 60, showGrid: true };
+      default:
+        return { height: 220, fontSize: 11, xAxisHeight: 60, showGrid: true };
+    }
+  }, [size]);
 
   // Calculate last 7 days spending trend
   const spendingTrend = React.useMemo(() => {
@@ -43,25 +56,25 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses }) => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={chartConfig.height}>
       <LineChart data={spendingTrend}>
-        <CartesianGrid strokeDasharray="3 3" />
+        {chartConfig.showGrid && <CartesianGrid strokeDasharray="3 3" />}
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 11 }}
+          tick={{ fontSize: chartConfig.fontSize }}
           angle={-45}
           textAnchor="end"
-          height={60}
+          height={chartConfig.xAxisHeight}
         />
-        <YAxis tick={{ fontSize: 11 }} />
+        <YAxis tick={{ fontSize: chartConfig.fontSize }} />
         <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
         <Line
           type="monotone"
           dataKey="amount"
           stroke="var(--accent-primary)"
           strokeWidth={2}
-          dot={{ r: 4 }}
-          activeDot={{ r: 6 }}
+          dot={{ r: size === 'small' ? 3 : 4 }}
+          activeDot={{ r: size === 'small' ? 4 : 6 }}
         />
       </LineChart>
     </ResponsiveContainer>

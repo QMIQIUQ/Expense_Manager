@@ -15,6 +15,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   quickExpensePresets = [],
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
+  size = 'medium',
   // onQuickAdd is available in WidgetProps but not used in this component
 }) => {
   const { t } = useLanguage();
@@ -27,6 +28,9 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Determine display settings based on size
+  const isCompact = size === 'small';
   
   // Form state
   const [formData, setFormData] = useState<QuickExpensePresetInput>({
@@ -399,7 +403,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   );
 
   return (
-    <div className="quick-expense-widget">
+    <div className={`quick-expense-widget ${isCompact ? 'quick-expense-compact' : ''}`}>
       {/* Quick expense buttons grid */}
       <div className="quick-expense-grid">
         {localPresets.map((preset) => {
@@ -471,8 +475,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
             onClick={handleStartAdding}
             aria-label={t('addQuickExpense')}
           >
-            <PlusIcon size={20} />
-            <span>{t('addQuickExpense')}</span>
+            <PlusIcon size={isCompact ? 16 : 20} />
+            <span>{isCompact ? t('add') : t('addQuickExpense')}</span>
           </button>
         )}
       </div>

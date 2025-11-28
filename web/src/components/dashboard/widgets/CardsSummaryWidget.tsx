@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { calculateCardStats } from '../../../utils/cardUtils';
 import { WidgetProps } from './types';
+import ShowMoreButton from './ShowMoreButton';
 
-const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses }) => {
+const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses, size = 'full' }) => {
   const { t } = useLanguage();
+  const [showAll, setShowAll] = useState(false);
+  
+  // Determine display settings based on size - only 'small' uses compact mode
+  const isCompact = size === 'small';
+  const maxItems = React.useMemo(() => {
+    switch (size) {
+      case 'small':
+        return 1;
+      case 'medium':
+        return 2;
+      default:
+        return 3;
+    }
+  }, [size]);
+  
+  // Determine how many cards to display
+  const displayCards = showAll ? cards : cards.slice(0, maxItems);
 
   if (cards.length === 0) {
     return (
@@ -16,8 +34,8 @@ const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses
   }
 
   return (
-    <div className="cards-summary-widget">
-      {cards.slice(0, 3).map((card) => {
+    <div className={`cards-summary-widget ${isCompact ? 'cards-summary-compact' : ''}`}>
+      {displayCards.map((card) => {
         const stats = calculateCardStats(card, expenses, categories);
         const utilizationPercent = card.cardLimit > 0 
           ? (stats.currentCycleSpending / card.cardLimit) * 100 
@@ -91,11 +109,13 @@ const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses
         );
       })}
 
-      {cards.length > 3 && (
-        <p className="more-cards-text">
-          +{cards.length - 3} {t('more')} {t('cards')}
-        </p>
-      )}
+      <ShowMoreButton
+        totalCount={cards.length}
+        visibleCount={maxItems}
+        isExpanded={showAll}
+        onToggle={() => setShowAll(!showAll)}
+        itemLabel={t('cards')}
+      />
     </div>
   );
 };

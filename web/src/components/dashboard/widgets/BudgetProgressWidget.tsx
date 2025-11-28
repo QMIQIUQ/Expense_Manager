@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
+import ShowMoreButton from './ShowMoreButton';
 
-const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billingCycleDay = 1 }) => {
+const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
+  const [showAll, setShowAll] = useState(false);
+  
+  // Determine max items based on size
+  const maxItems = React.useMemo(() => {
+    switch (size) {
+      case 'small':
+        return 2;
+      case 'large':
+      case 'full':
+        return 6;
+      default:
+        return 3;
+    }
+  }, [size]);
 
   // Calculate billing cycle
   const { cycleStart, cycleEnd } = React.useMemo(() => {
@@ -81,10 +96,13 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
       </div>
     );
   }
+  
+  // Determine how many to display
+  const displayBudgets = showAll ? budgetProgress : budgetProgress.slice(0, maxItems);
 
   return (
     <div className="budget-progress-list">
-      {budgetProgress.map((budget) => (
+      {displayBudgets.map((budget) => (
         <div key={budget.id} className="budget-progress-item">
           {/* Row 1: Period chip and Amount */}
           <div className="budget-progress-row-1">
@@ -128,6 +146,14 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, billin
           </div>
         </div>
       ))}
+      
+      <ShowMoreButton
+        totalCount={budgetProgress.length}
+        visibleCount={maxItems}
+        isExpanded={showAll}
+        onToggle={() => setShowAll(!showAll)}
+        itemLabel={t('budgets')}
+      />
     </div>
   );
 };
