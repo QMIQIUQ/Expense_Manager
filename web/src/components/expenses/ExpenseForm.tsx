@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { BaseForm } from '../common/BaseForm';
 
@@ -33,11 +34,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const today = useToday();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     category: initialData?.category || '',
-    date: initialData?.date || getTodayLocal(),
+    date: initialData?.date || today,
     time: initialData?.time || getCurrentTimeLocal(),
     notes: initialData?.notes || '',
     cardId: initialData?.cardId || '',
@@ -276,7 +278,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            max={new Date().toISOString().split('T')[0]}
+            max={today}
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
               errors.date ? 'border-red-500' : ''
             }`}

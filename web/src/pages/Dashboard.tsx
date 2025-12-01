@@ -43,6 +43,7 @@ import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
+import { getTodayLocal } from '../utils/dateUtils';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -487,7 +488,7 @@ const Dashboard: React.FC = () => {
   const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
     if (!currentUser) return;
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayLocal();
     const now = new Date().toTimeString().slice(0, 5);
     
     // Find category name from categoryId

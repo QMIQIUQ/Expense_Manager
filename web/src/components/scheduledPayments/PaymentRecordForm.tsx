@@ -7,7 +7,7 @@ import {
   ScheduledPayment,
   PaymentMethodType 
 } from '../../types';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 import { CloseIcon } from '../icons';
 import { getCurrencySymbol } from './ScheduledPaymentForm';
 
@@ -44,6 +44,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   onCancel,
 }) => {
   const { t } = useLanguage();
+  const todayDate = useToday();
   
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -57,7 +58,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
     periodYear: currentYear,
     periodMonth: currentMonth,
     dueDate: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(scheduledPayment.dueDay).padStart(2, '0')}`,
-    paidDate: getTodayLocal(),
+    paidDate: todayDate,
     paymentMethod: scheduledPayment.paymentMethod || 'cash',
     cardId: scheduledPayment.cardId || '',
     paymentMethodName: scheduledPayment.paymentMethodName || '',

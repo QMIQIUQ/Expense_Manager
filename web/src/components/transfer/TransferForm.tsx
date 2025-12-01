@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Transfer, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
+import { getCurrentTimeLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 
 interface TransferFormProps {
   onSubmit: (transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -22,9 +23,10 @@ const TransferForm: React.FC<TransferFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const today = useToday();
   const [formData, setFormData] = useState({
     amount: 0,
-    date: getTodayLocal(),
+    date: today,
     time: getCurrentTimeLocal(),
     fromPaymentMethod: 'cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
     fromPaymentMethodName: '',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -31,9 +31,10 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const today = useToday();
   const [formData, setFormData] = useState({
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    date: initialData?.date || getTodayLocal(),
+    date: initialData?.date || today,
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
     paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank'),

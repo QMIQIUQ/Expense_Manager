@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category, Card, Bank } from '../../types';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 
 interface RecurringFormData {
   description: string;
@@ -40,13 +40,14 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const today = useToday();
   const [formData, setFormData] = React.useState<RecurringFormData>(
     initialData || {
       description: '',
       amount: 0,
       category: '',
       frequency: 'monthly',
-      startDate: getTodayLocal(),
+      startDate: today,
       endDate: '',
       dayOfWeek: 1,
       dayOfMonth: 1,

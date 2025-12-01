@@ -11,7 +11,7 @@ import {
   PaymentSplitParticipant 
 } from '../../types';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
 
 // Common currencies - exported for use in other components
@@ -89,6 +89,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const today = useToday();
   
   const [formData, setFormData] = useState<ScheduledPaymentFormData>({
     name: initialData?.name || '',
@@ -101,7 +102,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
     currency: initialData?.currency || 'MYR',
     frequency: initialData?.frequency || 'monthly',
     dueDay: initialData?.dueDay || 1,
-    startDate: initialData?.startDate || getTodayLocal(),
+    startDate: initialData?.startDate || today,
     endDate: initialData?.endDate || '',
     hasEndDate: initialData?.hasEndDate || false,
     totalInstallments: initialData?.totalInstallments || 12,

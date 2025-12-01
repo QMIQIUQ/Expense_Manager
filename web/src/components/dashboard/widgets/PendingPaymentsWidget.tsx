@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
+import { getTodayLocal } from '../../../utils/dateUtils';
 
 const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
@@ -59,7 +60,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
       periodYear: currentYear,
       periodMonth: currentMonth,
       dueDate: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(payment.dueDay).padStart(2, '0')}`,
-      paidDate: today.toISOString().split('T')[0],
+      paidDate: getTodayLocal(),
       paymentMethod: payment.paymentMethod,
       cardId: payment.cardId,
       paymentMethodName: payment.paymentMethodName,
