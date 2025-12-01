@@ -2965,6 +2965,13 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+.budget-period-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .budget-period-chip {
   padding: 5px 10px;
   background: var(--accent-light);
@@ -2974,6 +2981,19 @@ button:not(:disabled):hover {
   font-weight: 600;
   text-transform: capitalize;
   box-shadow: 0 1px 3px var(--shadow);
+}
+
+.budget-period-range {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.budget-rollover-badge {
+  font-size: 12px;
+  padding: 2px 4px;
+  background-color: var(--accent-light);
+  border-radius: 4px;
 }
 
 .budget-amounts {
@@ -3011,6 +3031,321 @@ button:not(:disabled):hover {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+/* Daily budget info row */
+.budget-daily-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+/* Budget Suggestion Card Styles */
+.budget-suggestion-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.budget-suggestion-card:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.suggestion-category {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.suggestion-confidence {
+  font-size: 14px;
+}
+
+.suggestion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggestion-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--accent-light);
+  border-radius: 8px;
+}
+
+.suggestion-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.suggestion-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.suggestion-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.suggestion-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.detail-label {
+  color: var(--text-tertiary);
+}
+
+.detail-value {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.suggestion-meta {
+  text-align: center;
+}
+
+.months-analyzed {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.suggestion-apply-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-apply-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.suggestion-apply-btn:active {
+  transform: translateY(0);
+}
+
+/* Budget History Styles */
+.budget-history {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.budget-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.budget-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.budget-history-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 60px;
+  gap: 4px;
+  padding-bottom: 20px;
+  position: relative;
+}
+
+.budget-history-chart::before {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-color);
+  opacity: 0.5;
+}
+
+.budget-history-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  position: relative;
+}
+
+.budget-history-bar {
+  width: 100%;
+  max-width: 24px;
+  min-height: 4px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s ease;
+  position: absolute;
+  bottom: 20px;
+}
+
+.budget-history-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  position: absolute;
+  bottom: 2px;
+  white-space: nowrap;
+}
+
+.budget-history-legend {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.budget-history-100-line {
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+/* Budget History Advanced Chart */
+.budget-history-advanced {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.budget-history-view-toggle {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.budget-history-view-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.budget-history-chart-container {
+  width: 100%;
+  height: 180px;
+  margin-top: 8px;
+}
+
+.budget-chart-tooltip {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.budget-chart-tooltip .label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.budget-chart-tooltip .value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.budget-chart-tooltip .value .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.budget-history-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.budget-history-legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.budget-daily-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.budget-daily-label {
+  color: var(--text-tertiary);
+}
+
+.budget-daily-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.budget-daily-value.over-daily {
+  color: #dc2626;
+}
+
+.budget-pace-indicator {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.budget-pace-indicator.over {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.budget-pace-indicator.under {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
 }
 
 /* Row 3: Progress bar and status */

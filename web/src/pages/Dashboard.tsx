@@ -295,7 +295,7 @@ const Dashboard: React.FC = () => {
       const lastChecked = localStorage.getItem('lastBudgetCheck');
       const lastCheckedDate = lastChecked ? new Date(lastChecked) : null;
       
-      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate);
+      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate, billingCycleDay, repayments);
       
       if (alerts.length > 0) {
         // Show notifications for each alert with unique ID to prevent duplicates
@@ -317,7 +317,7 @@ const Dashboard: React.FC = () => {
     // Check after a short delay to avoid overwhelming the user at startup
     const timer = setTimeout(checkBudgets, 2000);
     return () => clearTimeout(timer);
-  }, [budgets, expenses, showNotification]);
+  }, [budgets, expenses, showNotification, billingCycleDay, repayments]);
   //#endregion
 
   //#region Data Refresh Functions
@@ -1827,14 +1827,44 @@ const Dashboard: React.FC = () => {
     setDeleteProgress(null);
   };
 
-  // Calculate spending by category
+  // Calculate spending by category (with repayment deduction and billing cycle filtering)
   const getSpentByCategory = () => {
+    // Calculate billing cycle period
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+    }
+
+    // Build repayment lookup map
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    for (const rep of repayments) {
+      repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+    }
+
+    // Helper to get net amount after repayments
+    const getNetAmount = (exp: Expense): number => {
+      const repaid = repaymentsByExpense[exp.id || ''] || 0;
+      return Math.max(0, exp.amount - repaid);
+    };
+
     const spent: { [key: string]: number } = {};
     expenses.forEach((exp) => {
-      if (!spent[exp.category]) {
-        spent[exp.category] = 0;
+      // Only count expenses within current billing cycle
+      const expDate = new Date(exp.date);
+      if (expDate >= cycleStart && expDate < cycleEnd) {
+        if (!spent[exp.category]) {
+          spent[exp.category] = 0;
+        }
+        spent[exp.category] += getNetAmount(exp);
       }
-      spent[exp.category] += exp.amount;
     });
     return spent;
   };
@@ -2469,10 +2499,13 @@ const Dashboard: React.FC = () => {
               <BudgetManager
                 budgets={budgets}
                 categories={categories}
+                expenses={expenses}
+                repayments={repayments}
                 onAdd={handleAddBudget}
                 onUpdate={handleUpdateBudget}
                 onDelete={handleDeleteBudget}
                 spentByCategory={getSpentByCategory()}
+                billingCycleDay={billingCycleDay}
               />
             </Suspense>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Budget, Category } from '../../types';
+import { Budget, Category, Expense, Repayment } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
@@ -7,6 +7,14 @@ import BudgetForm from './BudgetForm';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import { getAllBudgetSuggestions } from '../../utils/budgetSuggestions';
+import BudgetSuggestionCard from './BudgetSuggestionCard';
+import BudgetHistory from './BudgetHistory';
+import { getEffectiveBudgetAmount } from '../../utils/budgetRollover';
+import BudgetTemplates from './BudgetTemplates';
+import { getTodayLocal } from '../../utils/dateUtils';
+import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
+import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -30,25 +38,103 @@ const responsiveStyles = `
 interface BudgetManagerProps {
   budgets: Budget[];
   categories: Category[];
+  expenses?: Expense[];
+  repayments?: Repayment[];
   onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   onUpdate: (id: string, updates: Partial<Budget>) => void;
   onDelete: (id: string) => void;
   spentByCategory: { [key: string]: number };
+  billingCycleDay?: number;
 }
 
 const BudgetManager: React.FC<BudgetManagerProps> = ({
   budgets,
   categories,
+  expenses = [],
+  repayments = [],
   onAdd,
   onUpdate,
   onDelete,
   spentByCategory,
+  billingCycleDay = 1,
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'usage-high' | 'usage-low' | 'name' | 'amount'>('usage-high');
+  const [filterBy, setFilterBy] = useState<'all' | 'over' | 'warning' | 'normal'>('all');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showAdjustments, setShowAdjustments] = useState(false);
+  const [dismissedAdjustments, setDismissedAdjustments] = useState<Set<string>>(new Set());
+
+  // Get budget adjustment suggestions
+  const adjustmentSuggestions = React.useMemo(() => {
+    if (!showAdjustments || expenses.length === 0 || budgets.length === 0) return [];
+    
+    const suggestions = getAdjustmentSuggestions(budgets, expenses, repayments, billingCycleDay);
+    return suggestions.filter((s) => !dismissedAdjustments.has(s.budgetId));
+  }, [showAdjustments, budgets, expenses, repayments, billingCycleDay, dismissedAdjustments]);
+
+  // Handle applying adjustment suggestion
+  const handleApplyAdjustment = (budgetId: string, newAmount: number) => {
+    onUpdate(budgetId, { amount: newAmount });
+    setDismissedAdjustments((prev) => new Set([...prev, budgetId]));
+  };
+
+  // Handle dismissing adjustment suggestion
+  const handleDismissAdjustment = (budgetId: string) => {
+    setDismissedAdjustments((prev) => new Set([...prev, budgetId]));
+  };
+
+  // Handle applying a budget template
+  const handleApplyTemplate = (budgetsFromTemplate: Array<{ categoryName: string; categoryId: string; amount: number; alertThreshold: number }>) => {
+    // Create all budgets from the template
+    budgetsFromTemplate.forEach((b) => {
+      // Check if budget for this category already exists
+      const exists = budgets.some((existing) => existing.categoryId === b.categoryId);
+      if (!exists) {
+        onAdd({
+          categoryId: b.categoryId,
+          categoryName: b.categoryName,
+          amount: b.amount,
+          period: 'monthly',
+          startDate: getTodayLocal(),
+          alertThreshold: b.alertThreshold,
+        });
+      }
+    });
+    setShowTemplates(false);
+  };
+
+  // Get budget suggestions
+  const budgetSuggestions = React.useMemo(() => {
+    if (!showSuggestions || expenses.length === 0) return [];
+    
+    // Get categories that don't have budgets yet
+    const existingBudgetCategories = new Set(budgets.map((b) => b.categoryName));
+    const allSuggestions = getAllBudgetSuggestions(expenses, repayments, billingCycleDay, 3);
+    
+    return allSuggestions.filter((s) => !existingBudgetCategories.has(s.categoryName));
+  }, [showSuggestions, expenses, repayments, budgets, billingCycleDay]);
+
+  const handleApplySuggestion = (categoryName: string, amount: number) => {
+    const category = categories.find((c) => c.name === categoryName);
+    if (category) {
+      onAdd({
+        categoryId: category.id!,
+        categoryName: categoryName,
+        amount: amount,
+        period: 'monthly',
+        startDate: new Date().toISOString().split('T')[0],
+        alertThreshold: 80,
+      });
+      setShowSuggestions(false);
+    }
+  };
 
 
   // Close menu when clicking outside
@@ -73,11 +159,53 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     isOpen: false,
     budgetId: null,
   });
+
+  // Calculate budget status for filtering and sorting
+  const getBudgetStatus = (budget: Budget): { percentage: number; status: 'over' | 'warning' | 'normal' } => {
+    const spent = spentByCategory[budget.categoryName] || 0;
+    const effectiveAmount = getEffectiveBudgetAmount(budget);
+    const percentage = effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : 0;
+    
+    if (percentage >= 100) return { percentage, status: 'over' };
+    if (percentage >= budget.alertThreshold) return { percentage, status: 'warning' };
+    return { percentage, status: 'normal' };
+  };
   
-  // Filter budgets by search term
-  const filteredBudgets = budgets.filter((budget) =>
-    budget.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter and sort budgets
+  const filteredAndSortedBudgets = React.useMemo(() => {
+    let result = budgets.filter((budget) =>
+      budget.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Apply filter
+    if (filterBy !== 'all') {
+      result = result.filter((budget) => {
+        const { status } = getBudgetStatus(budget);
+        return status === filterBy;
+      });
+    }
+
+    // Apply sort
+    result.sort((a, b) => {
+      const statusA = getBudgetStatus(a);
+      const statusB = getBudgetStatus(b);
+
+      switch (sortBy) {
+        case 'usage-high':
+          return statusB.percentage - statusA.percentage;
+        case 'usage-low':
+          return statusA.percentage - statusB.percentage;
+        case 'name':
+          return a.categoryName.localeCompare(b.categoryName);
+        case 'amount':
+          return b.amount - a.amount;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [budgets, searchTerm, filterBy, sortBy, spentByCategory]);
 
   const {
     isSelectionMode,
@@ -106,12 +234,38 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   };
 
   const getProgressColor = (percentage: number, threshold: number) => {
-    if (percentage >= 100) return '#dc2626'; // Red - over budget
+    if (percentage >= 100) return 'var(--error-text)'; // Red - over budget
     if (percentage >= 90) return '#ea580c'; // Orange-red
-    if (percentage >= threshold) return '#f59e0b'; // Orange - warning
+    if (percentage >= threshold) return 'var(--warning-text)'; // Orange - warning
     if (percentage >= 60) return '#fbbf24'; // Yellow
     if (percentage >= 40) return '#a3e635'; // Light green
-    return '#22c55e'; // Green - safe
+    return 'var(--success-text)'; // Green - safe
+  };
+
+  // Calculate period range for monthly budgets
+  const getPeriodRange = (period: string): string => {
+    if (period !== 'monthly') return '';
+    
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
+    }
+
+    const formatDate = (date: Date) => {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${month}/${day}`;
+    };
+
+    return `${formatDate(cycleStart)} - ${formatDate(cycleEnd)}`;
   };
 
   return (
@@ -119,13 +273,101 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
-        {!isAdding && (
-          <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-            <PlusIcon size={18} />
-            <span>{t('addBudget')}</span>
+        <div style={styles.headerActions}>
+          <button 
+            onClick={() => setShowTemplates(true)} 
+            style={styles.templateButton}
+          >
+            📋 {t('budgetTemplates') || 'Templates'}
           </button>
-        )}
+          {expenses.length > 0 && (
+            <button 
+              onClick={() => setShowSuggestions(!showSuggestions)} 
+              style={{
+                ...styles.suggestionButton,
+                backgroundColor: showSuggestions ? 'var(--accent-primary)' : 'var(--accent-light)',
+                color: showSuggestions ? 'white' : 'var(--accent-primary)',
+              }}
+            >
+              💡 {t('budgetSuggestions') || 'Suggestions'}
+            </button>
+          )}
+          {budgets.length > 0 && expenses.length > 0 && (
+            <button 
+              onClick={() => setShowAdjustments(!showAdjustments)} 
+              style={{
+                ...styles.adjustmentButton,
+                backgroundColor: showAdjustments ? 'var(--accent-primary)' : 'transparent',
+                color: showAdjustments ? 'white' : 'var(--text-secondary)',
+              }}
+            >
+              📊 {t('budgetAdjustments') || 'Adjustments'}
+            </button>
+          )}
+          {!isAdding && (
+            <button onClick={() => setIsAdding(true)} style={styles.addButton}>
+              <PlusIcon size={18} />
+              <span>{t('addBudget')}</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Budget Templates Modal */}
+      {showTemplates && (
+        <BudgetTemplates
+          categories={categories}
+          onApplyTemplate={handleApplyTemplate}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
+
+      {/* Budget Adjustment Suggestions Section */}
+      {showAdjustments && (
+        <div style={styles.adjustmentsSection}>
+          <div style={styles.suggestionsHeader}>
+            <span style={styles.suggestionsTitle}>{t('adjustmentSuggestions') || 'Adjustment Suggestions'}</span>
+            <span style={styles.suggestionsSubtitle}>{t('basedOnHistory') || 'Based on your spending history'}</span>
+          </div>
+          {adjustmentSuggestions.length === 0 ? (
+            <p style={styles.noSuggestions}>{t('noAdjustmentSuggestions') || 'No adjustment suggestions at this time'}</p>
+          ) : (
+            <div style={styles.adjustmentsGrid}>
+              {adjustmentSuggestions.map((suggestion) => (
+                <BudgetAdjustmentCard
+                  key={suggestion.budgetId}
+                  suggestion={suggestion}
+                  onApply={handleApplyAdjustment}
+                  onDismiss={handleDismissAdjustment}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Budget Suggestions Section */}
+      {showSuggestions && (
+        <div style={styles.suggestionsSection}>
+          <div style={styles.suggestionsHeader}>
+            <span style={styles.suggestionsTitle}>{t('budgetSuggestions') || 'Budget Suggestions'}</span>
+            <span style={styles.suggestionsSubtitle}>{t('basedOnHistory') || 'Based on your spending history'}</span>
+          </div>
+          {budgetSuggestions.length === 0 ? (
+            <p style={styles.noSuggestions}>{t('noSuggestions') || 'No suggestions available'}</p>
+          ) : (
+            <div style={styles.suggestionsGrid}>
+              {budgetSuggestions.map((suggestion) => (
+                <BudgetSuggestionCard
+                  key={suggestion.categoryName}
+                  {...suggestion}
+                  onApply={handleApplySuggestion}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search Bar */}
       <div style={styles.searchContainer}>
@@ -136,12 +378,49 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         />
       </div>
 
+      {/* Sort and Filter Controls */}
+      <div style={styles.controlsRow}>
+        <div style={styles.controlGroup}>
+          <label style={styles.controlLabel}>{t('sortBy') || 'Sort'}:</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            style={styles.controlSelect}
+          >
+            <option value="usage-high">{t('usageHighToLow') || 'Usage: High → Low'}</option>
+            <option value="usage-low">{t('usageLowToHigh') || 'Usage: Low → High'}</option>
+            <option value="name">{t('categoryName') || 'Category Name'}</option>
+            <option value="amount">{t('budgetAmount') || 'Budget Amount'}</option>
+          </select>
+        </div>
+        <div style={styles.controlGroup}>
+          <label style={styles.controlLabel}>{t('filter') || 'Filter'}:</label>
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value as typeof filterBy)}
+            style={styles.controlSelect}
+          >
+            <option value="all">{t('allBudgets') || 'All'}</option>
+            <option value="over">{t('overBudgetOnly') || '🔴 Over Budget'}</option>
+            <option value="warning">{t('warningOnly') || '🟡 Warning'}</option>
+            <option value="normal">{t('normalOnly') || '🟢 Normal'}</option>
+          </select>
+        </div>
+        <span style={styles.resultCount}>
+          {filteredAndSortedBudgets.length} / {budgets.length}
+        </span>
+      </div>
+
       {isAdding && (
         <div className="form-card mb-5">
           <BudgetForm
             categories={categories}
             onSubmit={(data) => {
-              onAdd(data);
+              // Convert amount from cents to dollars
+              onAdd({
+                ...data,
+                amount: data.amount / 100,
+              });
               setIsAdding(false);
             }}
             onCancel={() => {
@@ -163,7 +442,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 setIsSelectionMode(true);
             }
         }}
-        onSelectAll={() => selectAll(filteredBudgets)}
+        onSelectAll={() => selectAll(filteredAndSortedBudgets)}
         onDeleteSelected={() => {
           if (selectedIds.size > 0) {
              setDeleteConfirm({ isOpen: true, budgetId: null });
@@ -172,14 +451,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       />
 
       <div style={styles.budgetList}>
-        {filteredBudgets.length === 0 ? (
+        {filteredAndSortedBudgets.length === 0 ? (
           <div style={styles.noData}>
             <p>{budgets.length === 0 ? t('noBudgetsYet') : t('noResults') || 'No results found'}</p>
           </div>
         ) : (
-          filteredBudgets.map((budget) => {
+          filteredAndSortedBudgets.map((budget) => {
             const spent = spentByCategory[budget.categoryName] || 0;
-            const percentage = getProgressPercentage(budget.categoryName, budget.amount);
+            const effectiveAmount = getEffectiveBudgetAmount(budget);
+            const percentage = getProgressPercentage(budget.categoryName, effectiveAmount);
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
             return (
@@ -204,6 +484,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       period: budget.period,
                       startDate: budget.startDate,
                       alertThreshold: budget.alertThreshold,
+                      rolloverEnabled: budget.rolloverEnabled,
+                      rolloverPercentage: budget.rolloverPercentage,
+                      rolloverCap: budget.rolloverCap,
                     }}
                     categories={categories}
                     onSubmit={(data) => {
@@ -217,6 +500,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       if (budget.period !== data.period) updates.period = data.period;
                       if (budget.startDate !== data.startDate) updates.startDate = data.startDate;
                       if (budget.alertThreshold !== data.alertThreshold) updates.alertThreshold = data.alertThreshold;
+                      // Rollover fields
+                      if (budget.rolloverEnabled !== data.rolloverEnabled) updates.rolloverEnabled = data.rolloverEnabled;
+                      if (budget.rolloverPercentage !== data.rolloverPercentage) updates.rolloverPercentage = data.rolloverPercentage;
+                      if (budget.rolloverCap !== data.rolloverCap) updates.rolloverCap = data.rolloverCap;
 
                       if (Object.keys(updates).length > 0) {
                         onUpdate(budget.id!, updates);
@@ -231,17 +518,30 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                   <>
                     {/* First row: Period and Amount */}
                     <div style={styles.budgetRow1}>
-                      <span style={styles.budgetPeriod}>{({ daily: t('periodDaily'), weekly: t('periodWeekly'), monthly: t('periodMonthly'), yearly: t('periodYearly') } as Record<string,string>)[budget.period]}</span>
+                      <div style={styles.periodInfo}>
+                        <span style={styles.budgetPeriod}>{({ daily: t('periodDaily'), weekly: t('periodWeekly'), monthly: t('periodMonthly'), yearly: t('periodYearly') } as Record<string,string>)[budget.period]}</span>
+                        {budget.period === 'monthly' && (
+                          <span style={styles.periodRange}>{getPeriodRange(budget.period)}</span>
+                        )}
+                      </div>
                       <div style={styles.budgetAmount}>
                         <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
                         <span style={styles.separator}> / </span>
-                        <span style={styles.total}>${budget.amount.toFixed(2)}</span>
+                        <span style={styles.total}>${effectiveAmount.toFixed(2)}</span>
                       </div>
                     </div>
 
-                    {/* Second row: Category name */}
+                    {/* Second row: Category name and rollover badge */}
                     <div style={styles.budgetRow2}>
                       <h4 style={styles.budgetCategory}>{budget.categoryName}</h4>
+                      {budget.rolloverEnabled && (
+                        <span style={styles.rolloverBadge} title={t('rolloverEnabled') || 'Rollover Enabled'}>🔄</span>
+                      )}
+                      {budget.accumulatedRollover && budget.accumulatedRollover > 0 && (
+                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: $${budget.accumulatedRollover.toFixed(2)}`}>
+                          +${budget.accumulatedRollover.toFixed(2)}
+                        </span>
+                      )}
                     </div>
 
                     {/* Third row: Progress bar, percentage, and Hamburger */}
@@ -295,7 +595,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                               </button>
                               <button
                                 className="menu-item-hover"
-                                style={{ ...styles.menuItem, color: '#b91c1c' }}
+                                style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                                 onClick={() => {
                                   setOpenMenuId(null);
                                   setDeleteConfirm({ isOpen: true, budgetId: budget.id! });
@@ -309,6 +609,32 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         </div>
                       </div>
                     </div>
+
+                    {/* History toggle button */}
+                    {budget.period === 'monthly' && expenses.length > 0 && (
+                      <button
+                        style={styles.historyToggle}
+                        onClick={() => setExpandedHistoryId(expandedHistoryId === budget.id ? null : budget.id!)}
+                      >
+                        {expandedHistoryId === budget.id 
+                          ? (t('hideHistory') || 'Hide History') 
+                          : (t('showHistory') || 'Show History')}
+                        <span style={{ marginLeft: '4px' }}>{expandedHistoryId === budget.id ? '▲' : '▼'}</span>
+                      </button>
+                    )}
+
+                    {/* Budget History */}
+                    {expandedHistoryId === budget.id && budget.period === 'monthly' && (
+                      <BudgetHistory
+                        categoryName={budget.categoryName}
+                        budgetAmount={budget.amount}
+                        expenses={expenses}
+                        repayments={repayments}
+                        billingCycleDay={billingCycleDay}
+                        periodsToShow={6}
+                        showAdvanced={true}
+                      />
+                    )}
                   </>
                 )}
               </div>
@@ -350,12 +676,58 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap' as const,
+    gap: '12px',
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
   },
   title: {
     margin: 0,
     fontSize: '24px',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
+  },
+  templateButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
+    transition: 'all 0.2s',
+  },
+  adjustmentButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  suggestionButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   addButton: {
     display: 'flex',
@@ -371,14 +743,90 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
+  adjustmentsSection: {
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '12px',
+  },
+  adjustmentsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gap: '12px',
+  },
+  suggestionsSection: {
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--accent-light)',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '12px',
+  },
+  suggestionsHeader: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    marginBottom: '12px',
+  },
+  suggestionsTitle: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: 'var(--text-primary)',
+  },
+  suggestionsSubtitle: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  },
+  suggestionsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '12px',
+  },
+  noSuggestions: {
+    color: 'var(--text-tertiary)',
+    fontSize: '14px',
+    textAlign: 'center' as const,
+    padding: '20px',
+  },
   searchContainer: {
     display: 'flex',
     gap: '10px',
   },
+  controlsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap' as const,
+    marginTop: '8px',
+  },
+  controlGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  controlLabel: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontWeight: '500' as const,
+  },
+  controlSelect: {
+    padding: '6px 10px',
+    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+  resultCount: {
+    fontSize: '12px',
+    color: 'var(--text-tertiary)',
+    marginLeft: 'auto',
+  },
   searchInput: {
     flex: 1,
     padding: '10px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
     fontSize: '14px',
   },
@@ -422,6 +870,17 @@ const styles = {
     justifyContent: 'space-between',
     gap: '12px',
   },
+  periodInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  periodRange: {
+    fontSize: '11px',
+    color: 'var(--text-tertiary)',
+    fontWeight: '400' as const,
+  },
   budgetRow2: {
     display: 'flex',
     alignItems: 'center',
@@ -436,6 +895,22 @@ const styles = {
     fontSize: '15px',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
+  },
+  rolloverBadge: {
+    marginLeft: '6px',
+    fontSize: '12px',
+    padding: '2px 6px',
+    backgroundColor: 'var(--accent-light)',
+    borderRadius: '4px',
+  },
+  rolloverAmount: {
+    marginLeft: '6px',
+    fontSize: '11px',
+    fontWeight: '500' as const,
+    color: 'var(--accent-primary)',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    padding: '2px 6px',
+    borderRadius: '4px',
   },
   budgetPeriod: {
     padding: '5px 10px',
@@ -490,8 +965,8 @@ const styles = {
   },
   editBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '12px',
@@ -502,8 +977,8 @@ const styles = {
   },
   deleteBtn: {
     padding: '8px',
-    backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     border: 'none',
     borderRadius: '8px',
     fontSize: '12px',
@@ -517,8 +992,8 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -554,6 +1029,21 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
+  },
+  historyToggle: {
+    width: '100%',
+    padding: '8px',
+    marginTop: '8px',
+    backgroundColor: 'transparent',
+    border: '1px dashed var(--border-color)',
+    borderRadius: '6px',
+    color: 'var(--text-secondary)',
+    fontSize: '11px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
   },
 };
 

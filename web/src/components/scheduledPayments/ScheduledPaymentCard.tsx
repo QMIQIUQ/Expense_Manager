@@ -335,7 +335,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
               cursor: 'pointer',
             }}
           >
-            📋 {showHistory ? t('hideHistory') : t('viewHistory')}
+            📋 {showHistory ? t('hidePaymentHistory') : t('viewPaymentHistory')}
           </button>
 
           {/* Desktop Actions */}

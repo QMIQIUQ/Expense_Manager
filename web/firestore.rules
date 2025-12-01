@@ -49,8 +49,43 @@ service cloud.firestore {
     // Budgets collection
     match /budgets/{budgetId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-      allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.amount is number &&
+                      request.resource.data.amount > 0 &&
+                      request.resource.data.categoryId is string &&
+                      request.resource.data.period is string &&
+                      request.resource.data.alertThreshold is number &&
+                      request.resource.data.alertThreshold >= 0 &&
+                      request.resource.data.alertThreshold <= 100 &&
+                      // Rollover validation (optional fields)
+                      (!('rolloverEnabled' in request.resource.data) || request.resource.data.rolloverEnabled is bool) &&
+                      (!('rolloverPercentage' in request.resource.data) || 
+                        (request.resource.data.rolloverPercentage is number &&
+                         request.resource.data.rolloverPercentage >= 0 &&
+                         request.resource.data.rolloverPercentage <= 100)) &&
+                      (!('rolloverCap' in request.resource.data) || 
+                        request.resource.data.rolloverCap is number) &&
+                      (!('accumulatedRollover' in request.resource.data) || 
+                        request.resource.data.accumulatedRollover is number);
+      allow update: if isAuthenticated() && 
+                       (isOwner(resource.data.userId) || isAdmin()) &&
+                       request.resource.data.amount is number &&
+                       request.resource.data.amount > 0 &&
+                       request.resource.data.alertThreshold is number &&
+                       request.resource.data.alertThreshold >= 0 &&
+                       request.resource.data.alertThreshold <= 100 &&
+                       // Rollover validation (optional fields)
+                       (!('rolloverEnabled' in request.resource.data) || request.resource.data.rolloverEnabled is bool) &&
+                       (!('rolloverPercentage' in request.resource.data) || 
+                         (request.resource.data.rolloverPercentage is number &&
+                          request.resource.data.rolloverPercentage >= 0 &&
+                          request.resource.data.rolloverPercentage <= 100)) &&
+                       (!('rolloverCap' in request.resource.data) || 
+                         request.resource.data.rolloverCap is number) &&
+                       (!('accumulatedRollover' in request.resource.data) || 
+                         request.resource.data.accumulatedRollover is number);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
     // Recurring expenses collection

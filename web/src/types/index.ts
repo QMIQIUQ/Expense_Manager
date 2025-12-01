@@ -81,8 +81,34 @@ export interface Budget {
   period: 'monthly' | 'weekly' | 'yearly';
   startDate: string;
   alertThreshold: number; // percentage (e.g., 80 means alert at 80%)
+  // Rollover settings (Phase 3)
+  rolloverEnabled?: boolean; // Whether unused budget rolls over to next period
+  rolloverPercentage?: number; // 0-100, percentage of unused budget to roll over (100 = full)
+  rolloverCap?: number; // Maximum rollover amount (optional cap)
+  accumulatedRollover?: number; // Current accumulated rollover from previous periods
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Budget Template - predefined or custom budget sets (Phase 3.2)
+export interface BudgetTemplateBudget {
+  categoryName: string;
+  amount: number; // as percentage of total budget or fixed amount
+  isPercentage: boolean; // true = percentage of total, false = fixed amount
+  alertThreshold: number;
+}
+
+export interface BudgetTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  isBuiltIn: boolean; // true = system template, false = user custom
+  userId?: string; // only for custom templates
+  totalBudget?: number; // suggested total monthly budget
+  budgets: BudgetTemplateBudget[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface RecurringExpense {

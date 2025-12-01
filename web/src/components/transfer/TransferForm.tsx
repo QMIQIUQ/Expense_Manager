@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Transfer, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getTodayLocal } from '../../utils/dateUtils';
 import { BaseForm } from '../common/BaseForm';
 import { getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';

@@ -3,6 +3,7 @@ import { Income, IncomeType, IncomeCategory, Expense, Card, EWallet, Bank } from
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface IncomeFormProps {
   onSubmit: (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;

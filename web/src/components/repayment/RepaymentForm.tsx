@@ -3,6 +3,7 @@ import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface RepaymentFormProps {
   expenseId: string;
