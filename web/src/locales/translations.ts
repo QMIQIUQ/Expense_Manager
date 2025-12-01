@@ -622,6 +622,7 @@ export const translations = {
   quickExpenses: { en: 'Quick Expenses', zh: '快速支出', 'zh-CN': '快速支出' },
   addQuickExpense: { en: 'Add Quick Expense', zh: '新增快速支出', 'zh-CN': '添加快速支出' },
   editQuickExpense: { en: 'Edit Quick Expense', zh: '編輯快速支出', 'zh-CN': '编辑快速支出' },
+  manageQuickExpenses: { en: 'Manage Quick Expenses', zh: '管理快速支出', 'zh-CN': '管理快速支出' },
   presetName: { en: 'Name', zh: '名稱', 'zh-CN': '名称' },
   quickExpenseNamePlaceholder: { en: 'e.g., Morning Coffee', zh: '例如：早餐', 'zh-CN': '例如：早餐' },
   addExpenseManually: { en: 'Add Expense Manually', zh: '手動新增支出', 'zh-CN': '手动添加支出' },

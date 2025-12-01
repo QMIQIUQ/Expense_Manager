@@ -24,6 +24,12 @@ This document describes the new repayment tracking feature that allows users to 
 - **Repayment List**: View all repayments with edit/delete options
 - **Summary View**: Shows original expense, total repaid, and remaining amount
 
+### 4. Dashboard Integration
+- **Net Expense Calculation**: All dashboard expense totals (monthly, daily, total, by category) automatically deduct repayment amounts
+- **Real-time Updates**: When repayments are added, dashboard statistics update to reflect net expenses
+- **Category Breakdown**: Category spending is calculated as net amounts (expense - repayments)
+- **Cashflow Calculation**: Net cashflow reflects repayment-adjusted expenses
+
 ## How to Use
 
 ### Adding a Repayment
@@ -127,6 +133,8 @@ All UI labels, messages, and descriptions are available in all supported languag
 - **RepaymentList**: Displays list of repayments with actions
 - **RepaymentManager**: Main container managing form, list, and logic
 - **Modal**: Generic modal component for displaying the manager
+- **DashboardSummary**: Dashboard component that calculates net expenses (with repayments deducted)
+- **SummaryCardsWidget**: Widget displaying monthly/daily expenses with repayment deductions
 
 ### Services
 - **repaymentService**: CRUD operations for repayments

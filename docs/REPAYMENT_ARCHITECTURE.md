@@ -87,6 +87,40 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Dashboard Integration
+
+The dashboard components integrate repayment data to show **net expense amounts** (expense - repayments).
+
+### Affected Calculations
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Expenses | Sum of all expense amounts | Sum of (expense.amount - repaid) for each expense |
+| Monthly Expenses | Sum of expenses in billing cycle | Sum of net amounts in billing cycle |
+| Daily Expenses | Sum of today's expenses | Sum of today's net amounts |
+| Category Breakdown | Sum by category | Sum of net amounts by category |
+| Net Cashflow | Income - Expenses | Income - Net Expenses |
+
+### Implementation
+
+```typescript
+// Helper function to calculate net expense amount
+const getNetAmount = (exp: Expense) => {
+  const repaid = repaymentsByExpense[exp.id || ''] || 0;
+  return Math.max(0, exp.amount - repaid);
+};
+
+// Example: Monthly expense calculation
+const monthly = expenses
+  .filter(exp => isInBillingCycle(exp))
+  .reduce((sum, exp) => sum + getNetAmount(exp), 0);
+```
+
+### Components Updated
+
+- **DashboardSummary.tsx**: Main dashboard summary with all expense statistics
+- **SummaryCardsWidget.tsx**: Widget cards for monthly/daily expenses
+
 ## Data Flow Diagrams
 
 ### 1. Adding a Repayment

@@ -409,9 +409,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
         {localPresets.map((preset) => {
           const category = categories.find((c) => c.id === preset.categoryId);
           return (
-            <div key={preset.id} className="quick-expense-item">
+            <div
+              key={preset.id}
+              className={`quick-expense-item ${openMenuId === preset.id ? 'menu-open' : ''}`}
+            >
               <button
-                className={`quick-expense-btn ${isLoading === preset.id ? 'loading' : ''}`}
+                className={`quick-expense-btn ${isLoading === preset.id ? 'loading' : ''} ${openMenuId === preset.id ? 'menu-open' : ''}`}
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >

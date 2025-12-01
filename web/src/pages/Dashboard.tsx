@@ -484,6 +484,17 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Reload quick expense presets
+  const handleReloadQuickExpensePresets = async () => {
+    if (!currentUser) return;
+    try {
+      const presets = await quickExpenseService.getPresets(currentUser.uid);
+      setQuickExpensePresets(presets);
+    } catch (error) {
+      console.error('Failed to reload quick expense presets:', error);
+    }
+  };
+
   // Handle quick expense add from preset
   const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
     if (!currentUser) return;
@@ -2386,6 +2397,7 @@ const Dashboard: React.FC = () => {
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => setShowAddExpenseForm(true)}
             onQuickExpenseAdd={handleQuickExpenseAdd}
+            onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}
@@ -2413,6 +2425,8 @@ const Dashboard: React.FC = () => {
               focusExpenseId={focusExpenseId || undefined}
               quickExpensePresets={quickExpensePresets}
               onQuickExpenseAdd={handleQuickExpenseAdd}
+              onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
+              onManageQuickExpenses={() => setActiveTab('dashboard')}
             />
           </div>
         )}

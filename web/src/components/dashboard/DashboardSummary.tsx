@@ -1,5 +1,5 @@
 import React from 'react';
-import { Expense, Income, Repayment } from '../../types';
+import type { Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
@@ -48,16 +48,32 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
   
   // Memoize expensive calculations (only recalculates when dependencies change)
   const stats = React.useMemo(() => {
-    const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    // Build repayment totals first (needed for net expense calculations)
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    repayments.forEach((rep) => {
+      if (rep.expenseId) {
+        repaymentsByExpense[rep.expenseId] =
+          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+      }
+    });
+
+    // Helper to get net expense amount (expense - repayments, min 0)
+    const getNetAmount = (exp: Expense) => {
+      const repaid = repaymentsByExpense[exp.id || ''] || 0;
+      return Math.max(0, exp.amount - repaid);
+    };
+
+    // Total expenses (deducting repayments)
+    const total = expenses.reduce((sum, exp) => sum + getNetAmount(exp), 0);
     const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
     
-    // Calculate monthly expenses based on billing cycle
+    // Calculate monthly expenses based on billing cycle (deducting repayments)
     const monthly = expenses
       .filter((exp) => {
         const expDate = new Date(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
-      .reduce((sum, exp) => sum + exp.amount, 0);
+      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
     // Calculate monthly income based on billing cycle
     const monthlyIncome = incomes
@@ -68,27 +84,21 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
       .reduce((sum, inc) => sum + inc.amount, 0);
 
     const today = getTodayLocal();
+    // Daily expenses (deducting repayments)
     const daily = expenses
       .filter((exp) => exp.date === today)
-      .reduce((sum, exp) => sum + exp.amount, 0);
+      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
+    // Category breakdown (deducting repayments)
     const byCategory: { [key: string]: number } = {};
     expenses.forEach((exp) => {
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
-      byCategory[exp.category] += exp.amount;
+      byCategory[exp.category] += getNetAmount(exp);
     });
 
-    // Total unrecovered is now calculated from tracked expenses only
-    const repaymentsByExpense: { [expenseId: string]: number } = {};
-    repayments.forEach((rep) => {
-      if (rep.expenseId) {
-        repaymentsByExpense[rep.expenseId] =
-          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
-      }
-    });
-
+    // Total unrecovered from tracked expenses only
     const totalUnrecovered = expenses
       .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
@@ -97,6 +107,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         return sum + remaining;
       }, 0);
 
+    // Net cashflow now reflects repayment-adjusted expenses
     const netCashflow = monthlyIncome - monthly;
 
     return {

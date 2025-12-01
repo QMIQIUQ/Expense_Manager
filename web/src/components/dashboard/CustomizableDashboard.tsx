@@ -23,6 +23,7 @@ interface CustomizableDashboardProps {
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
+  onQuickExpensePresetsChange?: () => void;
   onNavigateToExpenses?: () => void;
   // Scheduled payments related
   scheduledPayments?: ScheduledPayment[];
@@ -46,6 +47,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
+  onQuickExpensePresetsChange,
   onNavigateToExpenses,
   scheduledPayments = [],
   scheduledPaymentRecords = [],
@@ -135,7 +137,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     onQuickAdd,
     quickExpensePresets,
     onQuickExpenseAdd,
-    onQuickExpensePresetsChange: loadQuickExpensePresets,
+    onQuickExpensePresetsChange: onQuickExpensePresetsChange || loadQuickExpensePresets,
     scheduledPayments,
     scheduledPaymentRecords,
     onConfirmScheduledPayment,

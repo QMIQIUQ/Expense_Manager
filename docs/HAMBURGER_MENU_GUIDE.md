@@ -158,19 +158,93 @@ const styles = {
 }
 ```
 
+## Portal-Based Floating Menu Pattern (Recommended)
+
+For widgets or components with complex stacking contexts (e.g., inside cards with shadows, transforms, or overflow), use a **Portal-based floating menu** to avoid z-index and positioning issues.
+
+### Implementation Example (QuickAddWidget)
+
+```tsx
+import ReactDOM from 'react-dom';
+
+type FloatingQuickMenuProps = { anchorId: string; children: React.ReactNode };
+const FloatingQuickMenu: React.FC<FloatingQuickMenuProps> = ({ anchorId, children }) => {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const menuContentRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const el = document.getElementById(anchorId);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // Place menu below and align right edge with anchor's right edge
+    const top = rect.bottom + 4;
+    const right = window.innerWidth - rect.right;
+    setPos({ top, right });
+  }, [anchorId]);
+
+  if (!pos) return null;
+  return ReactDOM.createPortal(
+    <div
+      ref={menuContentRef}
+      className="quick-expense-dropdown"
+      style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 10000 }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+};
+
+// Usage:
+<div
+  className="quick-expense-action-btn"
+  id={`preset-${preset.id}-action`}
+  onClick={(e) => toggleMenu(preset.id, e)}
+>
+  ⋮
+</div>
+{openMenuId === preset.id && (
+  <FloatingQuickMenu anchorId={`preset-${preset.id}-action`}>
+    <div className="quick-expense-dropdown-item" onClick={handleEdit}>
+      <EditIcon size={14} />
+      <span>{t('edit')}</span>
+    </div>
+    <div className="quick-expense-dropdown-item danger" onClick={handleDelete}>
+      <DeleteIcon size={14} />
+      <span>{t('delete')}</span>
+    </div>
+  </FloatingQuickMenu>
+)}
+```
+
+### Benefits of Portal Pattern
+
+1. **Escapes stacking context** - Menu renders directly to `document.body`, avoiding parent container limitations
+2. **No overflow issues** - Parent's `overflow: hidden` won't clip the menu
+3. **Consistent z-index** - Always on top regardless of parent element z-index
+4. **Better positioning** - Uses `getBoundingClientRect()` for accurate viewport-relative positioning
+5. **Fixed positioning** - Menu stays in place when scrolling (use `position: fixed`)
+
+### When to Use Portal vs Standard
+
+- **Use Portal**: Inside widgets, cards, complex layouts with transforms/shadows
+- **Use Standard**: Simple flat layouts, full-page components without stacking context issues
+
 ## Key Points
 
 ### ✅ DO
 
 1. **Use `⋮` character** for the trigger button (Unicode: U+22EE)
-2. **Use `top: 100%`** to position dropdown BELOW the button
-3. **Use `zIndex: 9999`** to ensure menu appears above other content
-4. **Use solid background colors** (not transparent/semi-transparent)
-5. **Close menu on outside click** using `useEffect` with `mousedown` listener
-6. **Stop event propagation** when toggling menu: `e.stopPropagation()`
-7. **Clear menu state** before performing action: `setOpenMenuId(null)`
-8. **Use `menu-trigger-button` class** for consistent button styling
-9. **Use `menu-item-hover` class** for menu items
+2. **Use `top: 100%`** to position dropdown BELOW the button (for standard pattern)
+3. **Use Portal pattern** for widgets/cards to avoid stacking context issues
+4. **Use `zIndex: 10000`** for portal-based menus (higher than standard 9999)
+5. **Use solid background colors** (not transparent/semi-transparent)
+6. **Close menu on outside click** using `useEffect` with `mousedown` listener
+7. **Stop event propagation** when toggling menu: `e.stopPropagation()`
+8. **Clear menu state** before performing action: `setOpenMenuId(null)`
+9. **Use `menu-trigger-button` class** for consistent button styling
+10. **Use `menu-item-hover` class** for menu items
+11. **Assign unique `id`** to anchor element for portal positioning
 
 ### ❌ DON'T
 
@@ -179,6 +253,7 @@ const styles = {
 3. **Don't use low z-index values** - Menu may be hidden behind other elements
 4. **Don't forget click-outside handler** - Menu will stay open indefinitely
 5. **Don't use SVG icons for trigger** - Use `⋮` text character instead
+6. **Don't rely on parent positioning in widgets** - Use portal pattern instead
 
 ## Dark Mode Considerations
 
@@ -256,17 +331,18 @@ For delete actions, use:
 
 ```css
 .quick-expense-dropdown {
+  /* When used inside portal, position is overridden to fixed via inline style */
   position: absolute;
   top: 100%;
   right: 0;
   margin-top: 4px;
-  min-width: 160px;
-  background-color: var(--card-bg);
+  min-width: 120px;
+  background-color: #ffffff !important;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  z-index: 9999;
+  z-index: 10000;
 }
 
 .dark .quick-expense-dropdown {
@@ -325,19 +401,31 @@ Reference these files for working examples:
 ## Troubleshooting
 
 ### Menu appears behind other elements
-- Increase `z-index` to `9999`
+- **Standard pattern**: Increase `z-index` to `9999`
+- **Widget/Card pattern**: Use Portal-based floating menu instead
 - Check parent elements don't have `overflow: hidden`
+- Verify parent doesn't create new stacking context (check for `transform`, `filter`, `opacity < 1`)
+
+### Menu gets clipped by parent container
+- **Solution**: Use Portal pattern (renders to `document.body`)
+- Alternatively, set parent `overflow: visible` (may affect layout)
 
 ### Content visible through menu background
 - Use solid colors with `!important` if needed
 - Check for global CSS rules affecting `[class*="dropdown"]` or `[class*="menu"]`
 
 ### Menu appears in wrong position
-- Ensure parent has `position: relative`
-- Use `top: 100%` for dropdown to appear below trigger
-- Check for conflicting `transform` properties
+- **Standard pattern**: Ensure parent has `position: relative`, use `top: 100%`
+- **Portal pattern**: Verify anchor element has unique `id`, check `getBoundingClientRect()` calculation
+- Check for conflicting `transform` properties on ancestors
+
+### Menu width is incorrect
+- For portal pattern, use `right: window.innerWidth - rect.right` instead of fixed `left` offset
+- Let CSS `min-width` control minimum size, content determines actual width
+- Don't hardcode width assumptions in positioning logic
 
 ### Menu doesn't close on outside click
 - Verify `useEffect` cleanup function is working
 - Check `mousedown` event listener is properly attached
 - Ensure `menuRef` is correctly assigned
+- For portal menus, click-outside detection still works on trigger element
