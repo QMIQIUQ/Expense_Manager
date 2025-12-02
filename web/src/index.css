@@ -2938,6 +2938,140 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* Mobile responsive styles for dashboard customizer widget list */
+@media (max-width: 480px) {
+  .customizer-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .customizer-header {
+    padding: 16px;
+  }
+
+  .customizer-header h2 {
+    font-size: 18px;
+  }
+
+  .customizer-content {
+    padding: 12px;
+  }
+
+  .customizer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .customizer-hint {
+    min-width: auto;
+  }
+
+  .bulk-size-control {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Widget item responsive layout */
+  .widget-item {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .widget-item .widget-drag-handle {
+    order: 1;
+  }
+
+  .widget-order-input {
+    order: 2;
+    width: 40px;
+    padding: 4px 6px;
+  }
+
+  .widget-info {
+    order: 3;
+    flex: 1 1 calc(100% - 80px);
+    min-width: 0;
+  }
+
+  .widget-info .widget-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .widget-details {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .widget-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .widget-desc {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .widget-controls {
+    order: 4;
+    flex: 0 0 100%;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+  }
+
+  .widget-size-select {
+    font-size: 11px;
+    padding: 5px 6px;
+    min-width: 50px;
+  }
+
+  .customizer-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .customizer-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .footer-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Additional responsive adjustments for medium mobile screens */
+@media (max-width: 360px) {
+  .widget-info {
+    flex: 1 1 100%;
+  }
+
+  .widget-controls {
+    gap: 6px;
+  }
+
+  .widget-size-select {
+    min-width: 45px;
+  }
+}
+
 /* Budget progress widget */
 .budget-progress-list {
   display: flex;
