@@ -2993,6 +2993,7 @@ button:not(:disabled):hover {
 
   .widget-info {
     order: 3;
+    /* 80px accounts for drag handle (~30px) + order input (~40px) + gaps (~10px) */
     flex: 1 1 calc(100% - 80px);
     min-width: 0;
   }
@@ -3057,12 +3058,8 @@ button:not(:disabled):hover {
   }
 }
 
-/* Additional responsive adjustments for medium mobile screens */
+/* Additional responsive adjustments for very small mobile screens */
 @media (max-width: 360px) {
-  .widget-info {
-    flex: 1 1 100%;
-  }
-
   .widget-controls {
     gap: 6px;
   }
