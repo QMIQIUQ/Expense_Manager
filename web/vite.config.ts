@@ -47,6 +47,9 @@ export default defineConfig(() => ({
           if (id.includes('/components/income/')) {
             return 'income-components';
           }
+          if (id.includes('/components/scheduledPayments/')) {
+            return 'scheduled-payments-components';
+          }
         },
       },
     },
