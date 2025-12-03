@@ -1458,24 +1458,28 @@ button:not(:disabled):hover {
 .pending-payments-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pending-payment-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  box-shadow: 0 3px 10px var(--shadow);
+  gap: 10px;
+  box-shadow: 0 2px 6px var(--shadow);
   transition: all 0.2s ease;
 }
 
+.pending-payment-card.clickable {
+  cursor: pointer;
+}
+
 .pending-payments-compact .pending-payment-card {
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .pending-payment-card:hover {
@@ -1483,16 +1487,20 @@ button:not(:disabled):hover {
   box-shadow: 0 4px 12px var(--shadow-md);
 }
 
+.pending-payment-card.clickable:hover {
+  border-color: var(--accent-primary);
+}
+
 .pending-payment-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .pending-payment-icon {
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
@@ -1504,29 +1512,29 @@ button:not(:disabled):hover {
 .pending-payment-name {
   font-weight: 500;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .pending-payments-compact .pending-payment-name {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .pending-payment-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--text-secondary);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .pending-payment-category {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -1548,27 +1556,27 @@ button:not(:disabled):hover {
 .pending-payment-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pending-payment-amount {
   font-weight: 600;
   color: var(--error-text);
-  font-size: 15px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .pending-payments-compact .pending-payment-amount {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .pending-payment-confirm-btn {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background-color: var(--success-bg);
   color: var(--success-text);
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -1601,20 +1609,21 @@ button:not(:disabled):hover {
 .tracked-expense-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-complete {
-  padding: 6px 12px;
+  padding: 4px 8px;
   border: none;
   background: var(--accent-primary);
   color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-complete:hover {
@@ -1625,50 +1634,65 @@ button:not(:disabled):hover {
 .tracked-expense-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
   flex: 1;
+  min-width: 0;
 }
 
 .tracked-expense-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracked-expense-card.clickable {
+  cursor: pointer;
+}
+
+.tracked-expense-card.clickable:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .tracked-expense-date {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
 .tracked-expense-amounts {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .tracked-amount-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
+  align-items: flex-end;
 }
 
 .tracked-amount-label {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 9px;
+  color: var(--text-tertiary);
 }
 
 .tracked-amount-value {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .progress-bar {
-  height: 8px;
+  height: 4px;
   background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
+  margin-top: 6px;
 }
 
 .progress-fill {
@@ -1745,9 +1769,37 @@ button:not(:disabled):hover {
   transition: all 0.2s ease;
 }
 
+.recent-expense-item.clickable {
+  cursor: pointer;
+}
+
 .recent-expense-item:hover {
   box-shadow: 0 4px 12px var(--shadow-md);
   transform: translateY(-2px);
+}
+
+.recent-expense-item.clickable:hover {
+  border-color: var(--accent-primary);
+}
+
+/* Focused payment highlight animation */
+.focused-payment {
+  animation: focusPaymentPulse 1s ease-in-out 3;
+}
+
+@keyframes focusPaymentPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb, 59, 130, 246), 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb, 59, 130, 246), 0.3);
+  }
+}
+
+.focused-payment > div,
+.focused-payment .scheduled-payment-card {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 59, 130, 246), 0.2);
 }
 
 .recent-expense-info {
@@ -2219,7 +2271,21 @@ button:not(:disabled):hover {
 .ewallet-card,
 .credit-card,
 .summary-card,
-.tracked-expense-card,
+.tracked-expense-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  position: relative;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all 0.2s ease;
+  overflow: visible;
+}
+
 .recent-expense-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -2559,7 +2625,8 @@ button:not(:disabled):hover {
 
 /* For compact widgets that don't need min-height */
 .widget-container:has(.quick-expense-compact),
-.widget-container:has(.widget-empty-state) {
+.widget-container:has(.widget-empty-state),
+.widget-container:has(.tracked-expenses-list) {
   min-height: auto;
 }
 

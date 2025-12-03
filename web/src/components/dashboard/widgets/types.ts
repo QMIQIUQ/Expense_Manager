@@ -15,6 +15,8 @@ export interface WidgetProps {
   billingCycleDay: number;
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
+  onNavigateToExpense?: (expenseId: string) => void;
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
   // Quick expense related
   quickExpensePresets?: QuickExpensePreset[];
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;

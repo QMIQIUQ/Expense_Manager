@@ -98,6 +98,7 @@ const Dashboard: React.FC = () => {
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
+  const [focusScheduledPaymentId, setFocusScheduledPaymentId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{
     id: string;
     current: number;
@@ -2431,6 +2432,14 @@ const Dashboard: React.FC = () => {
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
+            onNavigateToExpense={(expenseId) => {
+              setFocusExpenseId(expenseId);
+              setActiveTab('expenses');
+            }}
+            onNavigateToScheduledPayment={(scheduledPaymentId) => {
+              setFocusScheduledPaymentId(scheduledPaymentId);
+              setActiveTab('recurring');
+            }}
             onCustomizingChange={setIsDashboardCustomizing}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}
@@ -2531,6 +2540,7 @@ const Dashboard: React.FC = () => {
               onDeletePaymentRecord={handleDeleteScheduledPaymentRecord}
               getSummary={getScheduledPaymentSummary}
               isPeriodPaid={isScheduledPaymentPeriodPaid}
+              focusPaymentId={focusScheduledPaymentId || undefined}
             />
           </Suspense>
         )}

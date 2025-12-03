@@ -25,6 +25,8 @@ interface WidgetContainerProps {
   onMoveUp?: (widgetId: string) => void;
   onMoveDown?: (widgetId: string) => void;
   onNavigateToExpenses?: () => void;
+  onNavigateToExpense?: (expenseId: string) => void;
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
 }
 
 // Get CSS class for widget size
@@ -48,7 +50,9 @@ const renderWidget = (
   type: DashboardWidgetType, 
   data: WidgetProps, 
   size: WidgetSize,
-  onNavigateToExpenses?: () => void
+  onNavigateToExpenses?: () => void,
+  onNavigateToExpense?: (expenseId: string) => void,
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void
 ): React.ReactNode => {
   const propsWithSize = { ...data, size };
   switch (type) {
@@ -61,7 +65,7 @@ const renderWidget = (
     case 'category-breakdown':
       return <CategoryBreakdownWidget {...propsWithSize} />;
     case 'recent-expenses':
-      return <RecentExpensesWidget {...propsWithSize} onViewAll={onNavigateToExpenses} />;
+      return <RecentExpensesWidget {...propsWithSize} onViewAll={onNavigateToExpenses} onNavigateToExpense={onNavigateToExpense} />;
     case 'budget-progress':
       return <BudgetProgressWidget {...propsWithSize} />;
     case 'tracked-expenses':
@@ -71,7 +75,7 @@ const renderWidget = (
     case 'quick-add':
       return <QuickAddWidget {...propsWithSize} />;
     case 'pending-payments':
-      return <PendingPaymentsWidget {...propsWithSize} />;
+      return <PendingPaymentsWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
     default:
       return null;
   }
@@ -85,6 +89,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onMoveUp,
   onMoveDown,
   onNavigateToExpenses,
+  onNavigateToExpense,
+  onNavigateToScheduledPayment,
 }) => {
   const { t } = useLanguage();
   const metadata = WIDGET_METADATA[widget.type];
@@ -152,7 +158,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
       <div className="widget-content">
         {widget.enabled ? (
-          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses)
+          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment)
         ) : (
           <div className="widget-placeholder">
             <span className="widget-placeholder-icon">{metadata.icon}</span>

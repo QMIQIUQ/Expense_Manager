@@ -58,6 +58,7 @@ interface ScheduledPaymentManagerProps {
   onDeletePaymentRecord: (recordId: string) => void;
   getSummary: (payment: ScheduledPayment) => Promise<ScheduledPaymentSummary>;
   isPeriodPaid: (paymentId: string, year: number, month: number) => Promise<boolean>;
+  focusPaymentId?: string;
 }
 
 const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
@@ -75,6 +76,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
   onDeletePaymentRecord,
   getSummary,
   isPeriodPaid,
+  focusPaymentId,
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
@@ -89,6 +91,26 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     isOpen: false,
     paymentId: null,
   });
+  const [focusedPaymentId, setFocusedPaymentId] = useState<string | null>(null);
+
+  // Handle focus payment from dashboard
+  useEffect(() => {
+    if (focusPaymentId) {
+      setFocusedPaymentId(focusPaymentId);
+      // Scroll to the focused payment
+      setTimeout(() => {
+        const element = document.querySelector(`[data-payment-id="${focusPaymentId}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      // Clear focus after 3 seconds
+      const timer = setTimeout(() => {
+        setFocusedPaymentId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [focusPaymentId]);
 
   // View mode tabs configuration
   const viewModeTabs = useMemo(() => [
@@ -393,8 +415,9 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
             ) : (
               filteredPayments.map((payment) => (
                 <div 
-                  key={payment.id} 
-                  className={isSelectionMode && selectedIds.has(payment.id!) ? 'selected' : ''}
+                  key={payment.id}
+                  data-payment-id={payment.id}
+                  className={`${isSelectionMode && selectedIds.has(payment.id!) ? 'selected' : ''} ${focusedPaymentId === payment.id ? 'focused-payment' : ''}`}
                   style={{ position: 'relative' }}
                 >
                   {isSelectionMode && (

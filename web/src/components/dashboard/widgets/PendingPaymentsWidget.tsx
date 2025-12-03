@@ -8,6 +8,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   scheduledPaymentRecords = [],
   categories,
   onConfirmScheduledPayment,
+  onNavigateToScheduledPayment,
   size = 'medium',
 }) => {
   const { t } = useLanguage();
@@ -110,7 +111,13 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
         const isDueSoon = daysUntilDue >= 0 && daysUntilDue <= 3;
 
         return (
-          <div key={payment.id} className="pending-payment-card">
+          <div 
+            key={payment.id} 
+            className={`pending-payment-card ${onNavigateToScheduledPayment ? 'clickable' : ''}`}
+            onClick={() => onNavigateToScheduledPayment?.(payment.id!)}
+            role={onNavigateToScheduledPayment ? 'button' : undefined}
+            tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
+          >
             <div className="pending-payment-info">
               <span className="pending-payment-icon">{getTypeIcon(payment.type)}</span>
               <div className="pending-payment-details">
@@ -147,7 +154,10 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
               
               {onConfirmScheduledPayment && (
                 <button
-                  onClick={() => handleQuickConfirm(payment)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickConfirm(payment);
+                  }}
                   className="pending-payment-confirm-btn"
                   title={t('confirmPayment')}
                 >

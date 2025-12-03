@@ -4,9 +4,10 @@ import { WidgetProps } from './types';
 
 interface RecentExpensesWidgetProps extends WidgetProps {
   onViewAll?: () => void;
+  onNavigateToExpense?: (expenseId: string) => void;
 }
 
-const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, size = 'medium', onViewAll }) => {
+const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, size = 'medium', onViewAll, onNavigateToExpense }) => {
   const { t } = useLanguage();
   
   // Determine how many expenses to show based on size
@@ -51,7 +52,13 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
   return (
     <div className={`recent-expenses-list ${isCompact ? 'recent-expenses-compact' : ''}`}>
       {recentExpenses.map((expense) => (
-        <div key={expense.id} className="recent-expense-item">
+        <div 
+          key={expense.id} 
+          className={`recent-expense-item ${onNavigateToExpense ? 'clickable' : ''}`}
+          onClick={() => onNavigateToExpense?.(expense.id!)}
+          role={onNavigateToExpense ? 'button' : undefined}
+          tabIndex={onNavigateToExpense ? 0 : undefined}
+        >
           <div className="recent-expense-info">
             <span className="recent-expense-category">{expense.category}</span>
             <span className="recent-expense-desc">{expense.description}</span>

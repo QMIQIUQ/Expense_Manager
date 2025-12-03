@@ -25,6 +25,8 @@ interface CustomizableDashboardProps {
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
   onQuickExpensePresetsChange?: () => void;
   onNavigateToExpenses?: () => void;
+  onNavigateToExpense?: (expenseId: string) => void;
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
   onCustomizingChange?: (isCustomizing: boolean) => void;
   // Scheduled payments related
   scheduledPayments?: ScheduledPayment[];
@@ -50,6 +52,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   onNavigateToExpenses,
+  onNavigateToExpense,
+  onNavigateToScheduledPayment,
   onCustomizingChange,
   scheduledPayments = [],
   scheduledPaymentRecords = [],
@@ -143,6 +147,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     billingCycleDay,
     onMarkTrackingCompleted,
     onQuickAdd,
+    onNavigateToExpense,
+    onNavigateToScheduledPayment,
     quickExpensePresets,
     onQuickExpenseAdd,
     onQuickExpensePresetsChange: onQuickExpensePresetsChange || loadQuickExpensePresets,
@@ -187,6 +193,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
             widget={widget}
             data={widgetData}
             onNavigateToExpenses={onNavigateToExpenses}
+            onNavigateToExpense={onNavigateToExpense}
+            onNavigateToScheduledPayment={onNavigateToScheduledPayment}
           />
         ))}
       </div>
