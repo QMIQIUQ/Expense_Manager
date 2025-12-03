@@ -145,29 +145,48 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       const inputValue = e.target.value;
                       // Allow empty string or numbers only
                       if (inputValue === '' || NUMERIC_PATTERN.test(inputValue)) {
-                        setOrderInputValues(prev => ({ ...prev, [widget.id]: inputValue }));
+                        // Limit to max value (number of widgets)
+                        const maxValue = localWidgets.length;
+                        const numValue = parseInt(inputValue);
+                        
+                        // If input exceeds max, clamp it
+                        let finalValue = inputValue;
+                        if (!Number.isNaN(numValue) && numValue > maxValue) {
+                          finalValue = String(maxValue);
+                        }
+                        // Don't allow 0
+                        if (numValue === 0) {
+                          finalValue = '1';
+                        }
+                        
+                        setOrderInputValues(prev => ({ ...prev, [widget.id]: finalValue }));
+                        
+                        // If valid number, immediately reorder
+                        const newOrder = parseInt(finalValue) - 1;
+                        if (!Number.isNaN(newOrder) && newOrder >= 0 && newOrder < localWidgets.length && newOrder !== index) {
+                          // Clear input value first
+                          setOrderInputValues(prev => {
+                            const newState = { ...prev };
+                            delete newState[widget.id];
+                            return newState;
+                          });
+                          // Reorder widgets
+                          setLocalWidgets((prev) => {
+                            const newWidgets = [...prev];
+                            const [movedWidget] = newWidgets.splice(index, 1);
+                            newWidgets.splice(newOrder, 0, movedWidget);
+                            return newWidgets.map((w, i) => ({ ...w, order: i }));
+                          });
+                        }
                       }
                     }}
-                    onBlur={(e) => {
-                      const inputValue = e.target.value;
-                      const newOrder = parseInt(inputValue) - 1;
-                      
-                      // Clear the temporary input value
+                    onBlur={() => {
+                      // Clear temporary input value on blur
                       setOrderInputValues(prev => {
                         const newState = { ...prev };
                         delete newState[widget.id];
                         return newState;
                       });
-                      
-                      // Only reorder if valid
-                      if (!Number.isNaN(newOrder) && newOrder >= 0 && newOrder < localWidgets.length && newOrder !== index) {
-                        setLocalWidgets((prev) => {
-                          const newWidgets = [...prev];
-                          const [movedWidget] = newWidgets.splice(index, 1);
-                          newWidgets.splice(newOrder, 0, movedWidget);
-                          return newWidgets.map((w, i) => ({ ...w, order: i }));
-                        });
-                      }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
