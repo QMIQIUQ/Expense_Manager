@@ -316,6 +316,54 @@ export const DragIcon: React.FC<IconProps> = (props) => (
   </SvgIcon>
 );
 
+export const DocumentIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <path
+      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <path
+      d="M14 2v6h6M16 13H8m8 4H8m2-8H8"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </SvgIcon>
+);
+
+export const ChartBarIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <path d="M18 17V9m-5 8V5m-5 12v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </SvgIcon>
+);
+
+export const BarChartSimpleIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <rect x="4" y="10" width="3" height="10" fill="currentColor" rx="0.5" />
+    <rect x="10" y="6" width="3" height="14" fill="currentColor" rx="0.5" />
+    <rect x="16" y="8" width="3" height="12" fill="currentColor" rx="0.5" />
+  </SvgIcon>
+);
+
+export const LightBulbIcon: React.FC<IconProps> = (props) => (
+  <SvgIcon {...props}>
+    <path
+      d="M9 18h6M10 22h4M15 8A5 5 0 1 0 9 8c0 2.5 2 3.5 2 5.5M12 3v1"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  </SvgIcon>
+);
+
 // Export all icons as a collection
 export const Icons = {
   // Emoji Icons
@@ -347,6 +395,10 @@ export const Icons = {
   Alert: AlertIcon,
   Calendar: CalendarIcon,
   Drag: DragIcon,
+  Document: DocumentIcon,
+  ChartBar: ChartBarIcon,
+  BarChartSimple: BarChartSimpleIcon,
+  LightBulb: LightBulbIcon,
 };
 
 export default Icons;

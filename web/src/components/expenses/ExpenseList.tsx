@@ -13,6 +13,7 @@ import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../i
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import DatePicker from '../common/DatePicker';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -90,7 +91,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [dateFrom, setDateFrom] = useState(oneMonthAgoStr);
   const [dateTo, setDateTo] = useState(today);
   const [allDates, setAllDates] = useState(false);
-  const [sortBy, setSortBy] = useState('date-desc');
+  const [sortBy] = useState('date-desc'); // Currently only date-desc is used
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expenseId: string | null }>({
     isOpen: false,
@@ -557,32 +558,23 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 />
                 <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
               </div>
+              {/* Use shared DatePicker for desktop calendar support */}
               <div style={styles.dateFilterGroup}>
-                <label style={styles.dateLabel}>{t('from')}</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label={t('from')}
                   value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  style={styles.dateInput}
+                  onChange={setDateFrom}
                   disabled={allDates || !!monthFilter}
+                  style={{ ...styles.dateInput, width: '100%' }}
                 />
               </div>
-              <div style={styles.dateFilterGroup}>
-                <label style={styles.dateLabel}>{t('to')}</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  style={styles.dateInput}
-                  disabled={allDates || !!monthFilter}
-                />
-              </div>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={styles.filterSelect} aria-label="Sort expenses">
-                <option value="date-desc">{t('sortByDateDesc')}</option>
-                <option value="date-asc">{t('sortByDateAsc')}</option>
-                <option value="amount-desc">{t('sortByAmountDesc')}</option>
-                <option value="amount-asc">{t('sortByAmountAsc')}</option>
-              </select>
+              <DatePicker
+                label={t('to')}
+                value={dateTo}
+                onChange={setDateTo}
+                disabled={allDates || !!monthFilter}
+                style={{ ...styles.dateInput, width: '100%' }}
+              />
             </div>
           </>
         )}
@@ -1229,7 +1221,7 @@ const styles = {
     justifyContent: 'center',
     gap: '4px',
     transition: 'all 0.2s ease',
-  } as React.CSSProperties,
+  },
   dateFilterGroup: {
     display: 'flex',
     alignItems: 'center',
@@ -1535,7 +1527,7 @@ const styles = {
     border: '1px solid rgba(0,0,0,0.08)',
     backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
-    fontWeight: 600 as const,
+    fontWeight: 600,
   },
   selectAllButton: {
     borderRadius: '8px',
@@ -1544,7 +1536,7 @@ const styles = {
     color: 'var(--success-text)',
     padding: '8px 12px',
     cursor: 'pointer',
-    fontWeight: 600 as const,
+    fontWeight: 600,
   },
   deleteSelectedButton: {
     borderRadius: '8px',
@@ -1553,7 +1545,7 @@ const styles = {
     color: 'var(--error-text)',
     padding: '8px 12px',
     cursor: 'pointer',
-    fontWeight: 600 as const,
+    fontWeight: 600,
   },
   selectRow: {
     display: 'flex',

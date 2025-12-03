@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Expense, Repayment } from '../../types';
+import { ChartBarIcon, BarChartSimpleIcon } from '../icons';
 import {
   BarChart,
   Bar,
@@ -159,9 +160,13 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                 ...viewButtonStyle,
                 backgroundColor: viewMode === 'bar' ? 'var(--accent-primary)' : 'transparent',
                 color: viewMode === 'bar' ? 'white' : 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '28px',
               }}
             >
-              ▮▮▮
+              <BarChartSimpleIcon size={14} />
             </button>
             <button
               onClick={() => setViewMode('chart')}
@@ -169,30 +174,62 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                 ...viewButtonStyle,
                 backgroundColor: viewMode === 'chart' ? 'var(--accent-primary)' : 'transparent',
                 color: viewMode === 'chart' ? 'white' : 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '28px',
               }}
             >
-              📊
+              <ChartBarIcon size={14} />
             </button>
           </div>
         )}
       </div>
 
+      {/* Statistics (only in advanced mode) - Show BEFORE charts */}
+      {showAdvanced && (
+        <div style={statsStyles.container}>
+          <div style={statsStyles.item}>
+            <span style={statsStyles.label}>{t('average') || 'Avg'}</span>
+            <span style={statsStyles.value}>${stats.avg.toFixed(0)}</span>
+          </div>
+          <div style={statsStyles.item}>
+            <span style={statsStyles.label}>{t('highest') || 'High'}</span>
+            <span style={statsStyles.value}>${stats.max.toFixed(0)}</span>
+          </div>
+          <div style={statsStyles.item}>
+            <span style={statsStyles.label}>{t('lowest') || 'Low'}</span>
+            <span style={statsStyles.value}>${stats.min.toFixed(0)}</span>
+          </div>
+          <div style={statsStyles.item}>
+            <span style={statsStyles.label}>{t('overBudget') || 'Over budget'}</span>
+            <span style={{ ...statsStyles.value, color: stats.overBudgetCount > 0 ? 'var(--error-text)' : 'var(--success-text)' }}>
+              {stats.overBudgetCount}/{periods.length}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Simple Bar View (default) */}
       {viewMode === 'bar' && (
         <div className="budget-history-chart">
-          {periods.map((period, index) => (
-            <div key={index} className="budget-history-bar-container">
-              <div 
-                className="budget-history-bar"
-                style={{
-                  height: `${Math.min((period.percentage / maxPercentage) * 100, 100)}%`,
-                  backgroundColor: getBarColor(period.percentage),
-                }}
-                title={`${period.label}: $${period.spent.toFixed(0)} (${period.percentage.toFixed(0)}%)`}
-              />
-              <span className="budget-history-label">{period.label}</span>
-            </div>
-          ))}
+          {periods.map((period, index) => {
+            const maxBarHeight = 60; // max height in pixels
+            const barHeight = Math.max(4, (period.percentage / maxPercentage) * maxBarHeight);
+            return (
+              <div key={index} className="budget-history-bar-container">
+                <div 
+                  className="budget-history-bar"
+                  style={{
+                    height: `${Math.min(barHeight, maxBarHeight)}px`,
+                    backgroundColor: getBarColor(period.percentage),
+                  }}
+                  title={`${period.label}: $${period.spent.toFixed(0)} (${period.percentage.toFixed(0)}%)`}
+                />
+                <span className="budget-history-label">{period.label}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -225,30 +262,6 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Statistics (only in advanced mode) */}
-      {showAdvanced && (
-        <div style={statsStyles.container}>
-          <div style={statsStyles.item}>
-            <span style={statsStyles.label}>{t('average') || 'Avg'}</span>
-            <span style={statsStyles.value}>${stats.avg.toFixed(0)}</span>
-          </div>
-          <div style={statsStyles.item}>
-            <span style={statsStyles.label}>{t('highest') || 'High'}</span>
-            <span style={statsStyles.value}>${stats.max.toFixed(0)}</span>
-          </div>
-          <div style={statsStyles.item}>
-            <span style={statsStyles.label}>{t('lowest') || 'Low'}</span>
-            <span style={statsStyles.value}>${stats.min.toFixed(0)}</span>
-          </div>
-          <div style={statsStyles.item}>
-            <span style={statsStyles.label}>{t('overBudget') || 'Over'}</span>
-            <span style={{ ...statsStyles.value, color: stats.overBudgetCount > 0 ? 'var(--error-text)' : 'var(--success-text)' }}>
-              {stats.overBudgetCount}/{periods.length}
-            </span>
-          </div>
         </div>
       )}
 
@@ -300,6 +313,7 @@ const statsStyles = {
     justifyContent: 'space-around',
     padding: '8px 0',
     marginTop: '8px',
+    marginBottom: '12px',
     borderTop: '1px solid var(--border-color)',
   } as React.CSSProperties,
   item: {

@@ -37,7 +37,7 @@ const BudgetAdjustmentCard: React.FC<BudgetAdjustmentCardProps> = ({
   };
 
   return (
-    <div style={styles.card}>
+    <div className="budget-suggestion-card budget-adjustment-card">
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <span style={styles.icon}>{isIncrease ? '📈' : '📉'}</span>
@@ -113,15 +113,7 @@ const BudgetAdjustmentCard: React.FC<BudgetAdjustmentCardProps> = ({
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  card: {
-    backgroundColor: 'var(--card-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
+  
   header: {
     display: 'flex',
     justifyContent: 'space-between',

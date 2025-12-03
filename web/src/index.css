@@ -1454,6 +1454,150 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* ==================== Pending Payments Widget ==================== */
+.pending-payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-payment-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 3px 10px var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.pending-payments-compact .pending-payment-card {
+  padding: 10px;
+}
+
+.pending-payment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.pending-payment-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-payment-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.pending-payment-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.pending-payment-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-payments-compact .pending-payment-name {
+  font-size: 13px;
+}
+
+.pending-payment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.pending-payment-category {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pending-payment-due {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.pending-payment-due.overdue {
+  color: var(--error-text);
+  font-weight: 500;
+}
+
+.pending-payment-due.due-soon {
+  color: var(--warning-text);
+  font-weight: 500;
+}
+
+.pending-payment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pending-payment-amount {
+  font-weight: 600;
+  color: var(--error-text);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.pending-payments-compact .pending-payment-amount {
+  font-size: 14px;
+}
+
+.pending-payment-confirm-btn {
+  padding: 6px 12px;
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pending-payment-confirm-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.pending-payments-more {
+  text-align: center;
+  padding: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Dark mode styles */
+.dark .pending-payment-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.dark .pending-payment-card:hover {
+  box-shadow: 0 6px 16px var(--shadow-lg);
+}
+
 .tracked-expense-header {
   display: flex;
   justify-content: space-between;
@@ -2327,7 +2471,8 @@ button:not(:disabled):hover {
   padding: 8px 12px;
   background-color: var(--accent-light);
   color: var(--accent-primary);
-  border: none;
+  border: 1px solid transparent;
+  outline: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 20px;
@@ -2336,14 +2481,34 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-clip: padding-box;
 }
 
 .menu-trigger-button:hover {
   filter: brightness(0.95);
+  border-color: transparent;
 }
 
 .dark .menu-trigger-button:hover {
   filter: brightness(1.1);
+}
+
+/* Remove focus outlines specifically for the menu trigger to avoid square borders */
+.menu-trigger-button:focus,
+.menu-trigger-button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Ensure the header menu container has no border that could appear around the trigger */
+.header-menu-container {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Multi-select styles */
@@ -2633,20 +2798,56 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+
+.customizer-hint-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.customizer-hint-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.customizer-btn-reset-inline {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.customizer-btn-reset-inline:hover {
+  background: var(--danger-color, #ef4444);
+  color: white;
+  border-color: var(--danger-color, #ef4444);
 }
 
 .customizer-hint {
   color: var(--text-secondary);
   font-size: 14px;
-  padding: 12px;
+  padding: 10px 14px;
   background: var(--bg-secondary);
   border-radius: 8px;
   margin: 0;
   flex: 1;
-  min-width: 200px;
+  min-width: 150px;
 }
 
 .bulk-size-control {
@@ -2927,10 +3128,74 @@ button:not(:disabled):hover {
 /* Customizer footer */
 .customizer-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
+}
+
+/* Customizer button base style */
+.customizer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+/* Reset button - full width, secondary style */
+.customizer-btn-reset {
+  width: 100%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.customizer-btn-reset:hover {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+}
+
+/* Button row: save + cancel */
+.customizer-btn-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Save button - accent light style per UI_BUTTON_STYLE_GUIDE */
+.customizer-btn-save {
+  flex: 1;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.customizer-btn-save:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.dark .customizer-btn-save:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* Cancel button - secondary style per UI_BUTTON_STYLE_GUIDE */
+.customizer-btn-cancel {
+  padding: 8px 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.customizer-btn-cancel:hover {
+  filter: brightness(0.95);
+}
+
+.dark .customizer-btn-cancel:hover {
+  filter: brightness(1.1);
 }
 
 .footer-actions {
@@ -3038,9 +3303,12 @@ button:not(:disabled):hover {
   }
 
   .customizer-footer {
-    flex-direction: column;
-    gap: 12px;
     padding: 12px;
+  }
+
+  .customizer-btn {
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .customizer-footer .btn {
@@ -3314,16 +3582,15 @@ button:not(:disabled):hover {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  height: 60px;
   gap: 4px;
-  padding-bottom: 20px;
+  padding-top: 8px;
   position: relative;
 }
 
 .budget-history-chart::before {
   content: '';
   position: absolute;
-  bottom: 20px;
+  bottom: 18px;
   left: 0;
   right: 0;
   height: 1px;
@@ -3336,26 +3603,23 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  height: 100%;
-  position: relative;
+  gap: 4px;
 }
 
 .budget-history-bar {
   width: 100%;
   max-width: 24px;
+  height: 60px;
   min-height: 4px;
   border-radius: 3px 3px 0 0;
-  transition: height 0.3s ease;
-  position: absolute;
-  bottom: 20px;
+  transition: all 0.3s ease;
 }
 
 .budget-history-label {
   font-size: 9px;
   color: var(--text-tertiary);
-  position: absolute;
-  bottom: 2px;
   white-space: nowrap;
+  margin-top: 4px;
 }
 
 .budget-history-legend {
@@ -3593,12 +3857,175 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* ========================================
+   Quick Expense Card - Simplified Structure
+   ======================================== */
+.quick-expense-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-expense-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  padding-right: 36px; /* Space for menu button */
+  min-height: 90px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+}
+
+.quick-expense-card-btn:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.quick-expense-card-btn.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.quick-expense-card-btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--accent-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.quick-expense-card-category {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-expense-card-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1.2;
+}
+
+.quick-expense-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Menu trigger button - positioned top-right */
+.quick-expense-card-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.quick-expense-card-menu-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Portal-based floating menu */
+.quick-expense-floating-menu {
+  min-width: 140px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.dark .quick-expense-floating-menu {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.quick-expense-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.quick-expense-menu-item:hover {
+  background: var(--hover-bg);
+}
+
+.dark .quick-expense-menu-item:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.15), rgba(167, 139, 250, 0.2));
+}
+
+.quick-expense-menu-item.danger {
+  color: var(--error-text);
+}
+
+.quick-expense-menu-item.danger:hover {
+  background: var(--error-bg);
+}
+
+/* Legacy classes - kept for backward compatibility */
 .quick-expense-item {
   position: relative;
+  opacity: 1 !important;
 }
 
 .quick-expense-item.menu-open {
   z-index: 10001; /* ensure dropdown sits above neighboring cards */
+  opacity: 1 !important;
+}
+
+.quick-expense-item:hover {
+  opacity: 1 !important;
 }
 
 .quick-expense-btn {
@@ -3622,12 +4049,17 @@ button:not(:disabled):hover {
   background: var(--accent-light);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--shadow-md);
+  opacity: 1 !important;
 }
 
-.quick-expense-btn.menu-open:hover,
-.quick-expense-btn.menu-open {
-  /* Prevent transform from creating a lower stacking context while menu is open */
-  transform: none;
+.quick-expense-item.menu-open .quick-expense-btn,
+.quick-expense-item.menu-open .quick-expense-btn:hover {
+  /* Prevent transform and hover effects while menu is open */
+  transform: none !important;
+  opacity: 1 !important;
+  background: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
 }
 
 .quick-expense-btn.loading {
@@ -3738,13 +4170,15 @@ button:not(:disabled):hover {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  visibility: hidden;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, visibility 0.2s;
   box-shadow: 0 2px 4px var(--shadow);
 }
 
 .quick-expense-item:hover .quick-expense-edit,
 .quick-expense-item:hover .quick-expense-delete {
+  visibility: visible;
   opacity: 1;
 }
 
@@ -3759,6 +4193,7 @@ button:not(:disabled):hover {
 .quick-expense-edit:hover,
 .quick-expense-delete:hover {
   background: var(--bg-tertiary);
+  opacity: 1 !important;
 }
 
 .quick-expense-add-btn {
@@ -4075,6 +4510,38 @@ button:not(:disabled):hover {
   .quick-expense-item-actions {
     opacity: 1 !important;
   }
+
+  /* Pending Payments mobile layout */
+  .pending-payment-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pending-payment-info {
+    width: 100%;
+  }
+
+  .pending-payment-actions {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .pending-payment-amount {
+    font-size: 16px;
+  }
+
+  .pending-payment-confirm-btn {
+    flex: 1;
+    max-width: 120px;
+  }
+
+  .pending-payment-meta {
+    flex-wrap: wrap;
+  }
 }
 
 /* Quick Expense Menu (hamburger style) */
@@ -4087,6 +4554,7 @@ button:not(:disabled):hover {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  opacity: 1 !important;
 }
 
 .quick-expense-menu-trigger {
@@ -4138,18 +4606,20 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-dropdown {
-  /* When used inside portal, we override to fixed via inline style */
   position: absolute;
-  top: 100%;
+  top: 32px; /* Position below the trigger button */
   right: 0;
-  margin-top: 4px;
-  min-width: 120px;
-  background-color: var(--card-bg);
+  min-width: 160px;
+  background-color: var(--card-bg) !important;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 4px 12px var(--shadow-md);
-  overflow: hidden;
-  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  overflow: visible;
+  z-index: 10000; /* Above card but below modals */
+  opacity: 1 !important;
+  /* Ensure solid background by removing any inherited transparency */
+  backdrop-filter: none;
+  isolation: isolate; /* Create new stacking context */
 }
 
 .quick-expense-dropdown-item {
@@ -4157,21 +4627,27 @@ button:not(:disabled):hover {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 16px;
   border: none;
   background-color: transparent;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   text-align: left;
+  opacity: 1 !important;
 }
 
 .quick-expense-dropdown-item:hover {
-  background: var(--hover-bg);
+  background-color: transparent;
 }
 
 .dark .quick-expense-dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background-color: transparent;
+}
+
+.dark .quick-expense-dropdown {
+  background-color: #1a1625 !important; /* Force solid dark background */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
 }
 
 .quick-expense-dropdown-item.danger {
@@ -4334,6 +4810,12 @@ button:not(:disabled):hover {
   overflow-x: auto;
   padding: 2px 0; /* Restore small vertical padding to prevent hover translate clipping */
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* Show scrollbar on hover or scroll for Firefox */
+.quick-expense-scroll-bar:hover,
+.quick-expense-scroll-bar:active {
   scrollbar-color: var(--accent-primary) transparent;
 }
 
@@ -4346,8 +4828,14 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-scroll-bar::-webkit-scrollbar-thumb {
-  background: var(--accent-primary);
+  background: transparent;
   border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.quick-expense-scroll-bar:hover::-webkit-scrollbar-thumb,
+.quick-expense-scroll-bar:active::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
 }
 
 .quick-expense-scroll-btn {

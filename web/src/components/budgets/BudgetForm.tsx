@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
+import DatePicker from '../common/DatePicker';
 
 interface BudgetFormData {
   categoryId: string;
@@ -145,25 +146,22 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
 
           {/* Show start date only for weekly/yearly budgets */}
           {formData.period !== 'monthly' && (
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-            </div>
+            <DatePicker
+              label={t('startDate')}
+              value={formData.startDate}
+              onChange={(value) => setFormData({ ...formData, startDate: value })}
+              required
+              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              style={{
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)'
+              }}
+            />
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} (%) *</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} *</label>
             <input
               type="number"
               value={formData.alertThreshold || ''}

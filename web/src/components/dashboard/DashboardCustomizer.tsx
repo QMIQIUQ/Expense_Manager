@@ -93,9 +93,12 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
 
         <div className="customizer-content">
           <div className="customizer-toolbar">
-            <p className="customizer-hint">
-              {t('dragToReorder')}
-            </p>
+            <div className="customizer-hint-box">
+              <span className="customizer-hint-text">{t('dragToReorder')}</span>
+              <button onClick={handleReset} className="customizer-btn-reset-inline">
+                {t('resetToDefaults')}
+              </button>
+            </div>
             <div className="bulk-size-control">
               <label htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
               <select
@@ -252,15 +255,12 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         </div>
 
         <div className="customizer-footer">
-          <button onClick={handleReset} className="btn btn-secondary">
-            {t('resetToDefaults')}
-          </button>
-          <div className="footer-actions">
-            <button onClick={onClose} className="btn btn-secondary">
-              {t('cancel')}
-            </button>
-            <button onClick={handleSave} className="btn btn-primary">
+          <div className="customizer-btn-row">
+            <button onClick={handleSave} className="customizer-btn customizer-btn-save">
               {t('save')}
+            </button>
+            <button onClick={onClose} className="customizer-btn customizer-btn-cancel">
+              {t('cancel')}
             </button>
           </div>
         </div>

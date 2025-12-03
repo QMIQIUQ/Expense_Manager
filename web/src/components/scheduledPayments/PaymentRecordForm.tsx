@@ -10,6 +10,7 @@ import {
 import { useToday } from '../../hooks/useToday';
 import { CloseIcon } from '../icons';
 import { getCurrencySymbol } from './ScheduledPaymentForm';
+import DatePicker from '../common/DatePicker';
 
 interface PaymentRecordFormData {
   expectedAmount: number;
@@ -215,23 +216,18 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         )}
 
         {/* Payment Date */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('paymentDate')} *
-          </label>
-          <input
-            type="date"
-            value={formData.paidDate}
-            onChange={(e) => setFormData({ ...formData, paidDate: e.target.value })}
-            required
-            className="w-full p-3 rounded-lg outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)'
-            }}
-          />
-        </div>
+        <DatePicker
+          label={t('paymentDate')}
+          value={formData.paidDate}
+          onChange={(value) => setFormData({ ...formData, paidDate: value })}
+          required
+          className="w-full p-3 rounded-lg outline-none transition-all"
+          style={{
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)'
+          }}
+        />
 
         {/* Payment Method */}
         <div className="flex flex-col gap-1">

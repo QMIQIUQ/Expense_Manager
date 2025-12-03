@@ -40,7 +40,7 @@ export const translations = {
   expenses: { en: 'Expenses', zh: '支出', 'zh-CN': '支出' },
   categories: { en: 'Categories', zh: '類別', 'zh-CN': '分类' },
   budgets: { en: 'Budgets', zh: '預算', 'zh-CN': '预算' },
-  recurring: { en: 'Recurring', zh: '定期付款', 'zh-CN': '定期付款' },
+  recurring: { en: 'Recurring', zh: '定期帳單', 'zh-CN': '定期账单' },
   cards: { en: 'Cards', zh: '信用卡', 'zh-CN': '信用卡' },
   paymentMethods: { en: 'Payment Methods', zh: '支付方式', 'zh-CN': '支付方式' },
   monthlyExpense: { en: 'Monthly Expense', zh: '本月支出', 'zh-CN': '本月支出' },
@@ -125,6 +125,7 @@ export const translations = {
 
   // Budgets
   budgetManagement: { en: 'Budget Management', zh: '預算管理', 'zh-CN': '预算管理' },
+  budgetList: { en: 'Budget List', zh: '預算列表', 'zh-CN': '预算列表' },
   setBudget: { en: 'Set Budget', zh: '設定預算', 'zh-CN': '设定预算' },
   noBudgetsYet: { en: 'No budgets set yet. Create your first budget! 💰', zh: '尚未設定預算。建立您的第一個預算！💰', 'zh-CN': '尚未设定预算。创建您的第一个预算！💰' },
   budgetName: { en: 'Budget Name', zh: '預算名稱', 'zh-CN': '预算名称' },
@@ -712,12 +713,12 @@ export const translations = {
   bankAccount: { en: 'Bank Account', zh: '銀行帳戶', 'zh-CN': '银行账户' },
   
   // Scheduled Payments Feature (定期付款/待還款)
-  scheduledPayments: { en: 'Scheduled Payments', zh: '定期付款', 'zh-CN': '定期付款' },
+  scheduledPayments: { en: 'Scheduled Payments', zh: '定期帳單', 'zh-CN': '定期账单' },
   addScheduledPayment: { en: 'Add Scheduled Payment', zh: '新增定期付款', 'zh-CN': '添加定期付款' },
   editScheduledPayment: { en: 'Edit Scheduled Payment', zh: '編輯定期付款', 'zh-CN': '编辑定期付款' },
   deleteScheduledPayment: { en: 'Delete Scheduled Payment', zh: '刪除定期付款', 'zh-CN': '删除定期付款' },
   confirmDeleteScheduledPayment: { en: 'Are you sure you want to delete this scheduled payment?', zh: '您確定要刪除此定期付款嗎？', 'zh-CN': '您确定要删除此定期付款吗？' },
-  noScheduledPaymentsYet: { en: 'No scheduled payments yet. Add your first one! 📅', zh: '尚未設定定期付款。新增您的第一筆！📅', 'zh-CN': '尚未设定定期付款。添加您的第一笔！📅' },
+  noScheduledPaymentsYet: { en: 'No scheduled payments yet. Add your first one! 📅', zh: '尚未設定定期帳單。新增您的第一筆！📅', 'zh-CN': '尚未设定定期账单。添加您的第一笔！📅' },
   scheduledPaymentNamePlaceholder: { en: 'e.g., Netflix, Car Loan, Credit Card Bill', zh: '例如：Netflix、車貸、信用卡帳單', 'zh-CN': '例如：Netflix、车贷、信用卡账单' },
   
   // Payment Types

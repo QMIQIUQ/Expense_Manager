@@ -5,6 +5,7 @@ import { getTodayLocal } from '../../utils/dateUtils';
 import { BaseForm } from '../common/BaseForm';
 import { getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
+import DatePicker from '../common/DatePicker';
 
 interface TransferFormProps {
   onSubmit: (transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -213,26 +214,20 @@ const TransferForm: React.FC<TransferFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('date')} *
-          </label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.date ? 'border-red-500' : ''
-            }`}
-            style={{
-              borderColor: errors.date ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-            }}
-          />
-          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
-        </div>
+        <DatePicker
+          label={t('date')}
+          value={formData.date}
+          onChange={(value) => setFormData({ ...formData, date: value })}
+          required
+          error={!!errors.date}
+          errorMessage={errors.date}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: errors.date ? undefined : 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        />
       </div>
 
       {/* From Payment Method */}

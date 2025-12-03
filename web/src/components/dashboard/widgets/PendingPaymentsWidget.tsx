@@ -100,7 +100,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   };
 
   return (
-    <div className={`pending-payments-list ${isCompact ? 'pending-payments-compact' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className={`pending-payments-list ${isCompact ? 'pending-payments-compact' : ''}`}>
       {pendingPayments.slice(0, maxItems).map((payment) => {
         const categoryInfo = getCategoryInfo(payment.category);
         const today = new Date();
@@ -110,52 +110,26 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
         const isDueSoon = daysUntilDue >= 0 && daysUntilDue <= 3;
 
         return (
-          <div
-            key={payment.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: isCompact ? '10px' : '12px 14px',
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '10px',
-              gap: '12px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '16px' }}>{getTypeIcon(payment.type)}</span>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ 
-                  fontWeight: 500, 
-                  color: 'var(--text-primary)',
-                  fontSize: isCompact ? '13px' : '14px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
+          <div key={payment.id} className="pending-payment-card">
+            <div className="pending-payment-info">
+              <span className="pending-payment-icon">{getTypeIcon(payment.type)}</span>
+              <div className="pending-payment-details">
+                <div className="pending-payment-name">
                   {payment.name}
                 </div>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  fontSize: '12px', 
-                  color: 'var(--text-secondary)',
-                  marginTop: '2px'
-                }}>
-                  <span style={{
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    backgroundColor: `${categoryInfo.color}20`,
-                    color: categoryInfo.color,
-                    fontSize: '11px',
-                  }}>
+                <div className="pending-payment-meta">
+                  <span 
+                    className="pending-payment-category"
+                    style={{
+                      backgroundColor: `${categoryInfo.color}20`,
+                      color: categoryInfo.color,
+                    }}
+                  >
                     {categoryInfo.icon} {payment.category}
                   </span>
-                  <span style={{
-                    color: isOverdue ? 'var(--error-text)' : isDueSoon ? 'var(--warning-text)' : 'var(--text-secondary)',
-                    fontWeight: isOverdue || isDueSoon ? 500 : 400,
-                  }}>
+                  <span 
+                    className={`pending-payment-due ${isOverdue ? 'overdue' : isDueSoon ? 'due-soon' : ''}`}
+                  >
                     {isOverdue 
                       ? `⚠️ ${t('overdue')}` 
                       : isDueSoon 
@@ -166,30 +140,15 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ 
-                fontWeight: 600, 
-                color: 'var(--error-text)',
-                fontSize: isCompact ? '14px' : '15px',
-                whiteSpace: 'nowrap',
-              }}>
+            <div className="pending-payment-actions">
+              <span className="pending-payment-amount">
                 ${payment.amount.toFixed(2)}
               </span>
               
               {onConfirmScheduledPayment && (
                 <button
                   onClick={() => handleQuickConfirm(payment)}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'var(--success-bg)',
-                    color: 'var(--success-text)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
+                  className="pending-payment-confirm-btn"
                   title={t('confirmPayment')}
                 >
                   ✓ {isCompact ? '' : t('confirm')}
@@ -201,12 +160,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
       })}
       
       {pendingPayments.length > maxItems && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '8px', 
-          color: 'var(--text-secondary)',
-          fontSize: '12px',
-        }}>
+        <div className="pending-payments-more">
           +{pendingPayments.length - maxItems} {t('more')}
         </div>
       )}

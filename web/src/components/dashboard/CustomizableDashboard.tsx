@@ -25,6 +25,7 @@ interface CustomizableDashboardProps {
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
   onQuickExpensePresetsChange?: () => void;
   onNavigateToExpenses?: () => void;
+  onCustomizingChange?: (isCustomizing: boolean) => void;
   // Scheduled payments related
   scheduledPayments?: ScheduledPayment[];
   scheduledPaymentRecords?: ScheduledPaymentRecord[];
@@ -49,6 +50,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   onNavigateToExpenses,
+  onCustomizingChange,
   scheduledPayments = [],
   scheduledPaymentRecords = [],
   onConfirmScheduledPayment,
@@ -57,8 +59,14 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   const { t } = useLanguage();
   const { showNotification } = useNotification();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_DASHBOARD_LAYOUT);
-  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [isCustomizing, setIsCustomizingState] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Wrapper to notify parent when customizing state changes
+  const setIsCustomizing = useCallback((value: boolean) => {
+    setIsCustomizingState(value);
+    onCustomizingChange?.(value);
+  }, [onCustomizingChange]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
 
   // Load user's dashboard layout

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -6,6 +7,75 @@ import { WidgetProps } from './types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../../types/quickExpense';
 import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
+
+// Portal-based floating menu component for better z-index handling
+interface FloatingMenuProps {
+  anchorId: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}
+
+const FloatingMenu: React.FC<FloatingMenuProps> = ({ anchorId, children, onClose }) => {
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const anchor = document.getElementById(anchorId);
+    if (!anchor) return;
+    
+    const updatePosition = () => {
+      const rect = anchor.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    };
+    
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [anchorId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const anchor = document.getElementById(anchorId);
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) &&
+        anchor && 
+        !anchor.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [anchorId, onClose]);
+
+  if (!position) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      ref={menuRef}
+      className="quick-expense-floating-menu"
+      style={{
+        position: 'fixed',
+        top: position.top,
+        right: position.right,
+        zIndex: 10000,
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+};
 
 const QuickAddWidget: React.FC<WidgetProps> = ({
   categories,
@@ -27,7 +97,6 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   
   // Determine display settings based on size
   const isCompact = size === 'small';
@@ -54,19 +123,15 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     }
   }, [isAdding]);
 
-  // Close menu when clicking outside
+  // Close menu on Escape key
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openMenuId) {
         setOpenMenuId(null);
       }
     };
-    if (openMenuId) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [openMenuId]);
 
   const resetForm = () => {
@@ -408,65 +473,62 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       <div className="quick-expense-grid">
         {localPresets.map((preset) => {
           const category = categories.find((c) => c.id === preset.categoryId);
+          const menuAnchorId = `quick-menu-${preset.id}`;
+          
           return (
             <div
               key={preset.id}
-              className={`quick-expense-item ${openMenuId === preset.id ? 'menu-open' : ''}`}
+              className="quick-expense-card"
             >
+              {/* Main button area - clickable to add expense */}
               <button
-                className={`quick-expense-btn ${isLoading === preset.id ? 'loading' : ''} ${openMenuId === preset.id ? 'menu-open' : ''}`}
+                className={`quick-expense-card-btn ${isLoading === preset.id ? 'loading' : ''}`}
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >
-                {/* Row 1: Category chip */}
-                <div className="quick-expense-row-category">
-                  <span className="category-chip quick-expense-category-chip">
-                    {category?.name || t('uncategorized')}
-                  </span>
-                </div>
-                {/* Row 2: Amount (prominent) */}
-                <div className="quick-expense-row-amount">
-                  <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
-                </div>
-                {/* Row 3: Name + Menu */}
-                <div className="quick-expense-row-name">
-                  <span className="quick-expense-name">{preset.name}</span>
-                  {/* Hamburger menu - positioned inside button in row 2 */}
-                  <div className="quick-expense-menu-wrapper" ref={openMenuId === preset.id ? menuRef : null}>
-                    <div
-                      className="quick-expense-menu-trigger"
-                      onClick={(e) => toggleMenu(preset.id, e)}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={t('more')}
-                    >
-                      ⋮
-                    </div>
-                    {openMenuId === preset.id && (
-                      <div className="quick-expense-dropdown">
-                        <div
-                          className="quick-expense-dropdown-item"
-                          onClick={(e) => handleEditPreset(preset, e)}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <EditIcon size={14} />
-                          <span>{t('edit')}</span>
-                        </div>
-                        <div
-                          className="quick-expense-dropdown-item danger"
-                          onClick={(e) => handleDeletePreset(preset.id, e)}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <DeleteIcon size={14} />
-                          <span>{t('delete')}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <span className="quick-expense-card-category">
+                  {category?.name || t('uncategorized')}
+                </span>
+                <span className="quick-expense-card-amount">
+                  ${preset.amount.toFixed(2)}
+                </span>
+                <span className="quick-expense-card-name">
+                  {preset.name}
+                </span>
               </button>
+              
+              {/* Menu trigger button */}
+              <button
+                id={menuAnchorId}
+                className="quick-expense-card-menu-btn"
+                onClick={(e) => toggleMenu(preset.id, e)}
+                aria-label={t('more')}
+              >
+                ⋮
+              </button>
+              
+              {/* Portal-based floating menu */}
+              {openMenuId === preset.id && (
+                <FloatingMenu 
+                  anchorId={menuAnchorId} 
+                  onClose={() => setOpenMenuId(null)}
+                >
+                  <button
+                    className="quick-expense-menu-item"
+                    onClick={(e) => handleEditPreset(preset, e)}
+                  >
+                    <EditIcon size={16} />
+                    <span>{t('edit')}</span>
+                  </button>
+                  <button
+                    className="quick-expense-menu-item danger"
+                    onClick={(e) => handleDeletePreset(preset.id, e)}
+                  >
+                    <DeleteIcon size={16} />
+                    <span>{t('delete')}</span>
+                  </button>
+                </FloatingMenu>
+              )}
             </div>
           );
         })}

@@ -12,6 +12,7 @@ import BudgetSuggestionCard from './BudgetSuggestionCard';
 import BudgetHistory from './BudgetHistory';
 import { getEffectiveBudgetAmount } from '../../utils/budgetRollover';
 import BudgetTemplates from './BudgetTemplates';
+import SubTabs from '../common/SubTabs';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
@@ -62,13 +63,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'usage-high' | 'usage-low' | 'name' | 'amount'>('usage-high');
   const [filterBy, setFilterBy] = useState<'all' | 'over' | 'warning' | 'normal'>('all');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [expandedHistoryIds, setExpandedHistoryIds] = useState<Set<string>>(new Set());
   const [showTemplates, setShowTemplates] = useState(false);
   const [showAdjustments, setShowAdjustments] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'list' | 'suggestions' | 'adjustments'>('list');
   const [dismissedAdjustments, setDismissedAdjustments] = useState<Set<string>>(new Set());
 
   // Get budget adjustment suggestions
@@ -136,6 +139,20 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     }
   };
 
+  // Sub tabs configuration to match Scheduled Payments style
+  const subTabs = [
+    { id: 'list', label: t('budgetList') || '預算列表', icon: '📋' },
+    { id: 'suggestions', label: t('budgetSuggestions') || '預算建議', icon: '💡' },
+    { id: 'adjustments', label: t('budgetAdjustments') || '預算調整', icon: '📊' },
+  ];
+
+  // Sync boolean flags with sub tab selection for backward compatibility
+  useEffect(() => {
+    setShowAdjustments(activeSubTab === 'adjustments');
+    setShowSuggestions(activeSubTab === 'suggestions');
+    setIsAdding(false);
+  }, [activeSubTab]);
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -144,16 +161,19 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       if (openMenuId && !target.closest('.mobile-actions')) {
         setOpenMenuId(null);
       }
+      if (headerMenuOpen && !target.closest('.header-menu-container')) {
+        setHeaderMenuOpen(false);
+      }
     };
 
-    if (openMenuId) {
+    if (openMenuId || headerMenuOpen) {
       document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [openMenuId]);
+  }, [openMenuId, headerMenuOpen]);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; budgetId: string | null }>({
     isOpen: false,
@@ -271,45 +291,48 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   return (
     <div style={styles.container}>
       <style>{responsiveStyles}</style>
+      {/* Sub Tabs - unified style like Scheduled Payments */}
+      <SubTabs
+        tabs={subTabs}
+        activeTab={activeSubTab}
+        onTabChange={(tabId) => setActiveSubTab(tabId as typeof activeSubTab)}
+      />
       <div style={styles.header}>
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
         <div style={styles.headerActions}>
           <button 
-            onClick={() => setShowTemplates(true)} 
-            style={styles.templateButton}
+            onClick={() => setIsAdding(true)} 
+            style={styles.addButton}
+            title={t('addBudget') || '新增預算'}
           >
-            📋 {t('budgetTemplates') || 'Templates'}
+            <PlusIcon size={18} />
+            <span>{t('addBudget') || '新增預算'}</span>
           </button>
-          {expenses.length > 0 && (
-            <button 
-              onClick={() => setShowSuggestions(!showSuggestions)} 
-              style={{
-                ...styles.suggestionButton,
-                backgroundColor: showSuggestions ? 'var(--accent-primary)' : 'var(--accent-light)',
-                color: showSuggestions ? 'white' : 'var(--accent-primary)',
-              }}
+          <div className="header-menu-container" style={styles.headerMenuContainer}>
+            <button
+              className="menu-trigger-button"
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              aria-label="More options"
+              title="選單"
             >
-              💡 {t('budgetSuggestions') || 'Suggestions'}
+              ⋮
             </button>
-          )}
-          {budgets.length > 0 && expenses.length > 0 && (
-            <button 
-              onClick={() => setShowAdjustments(!showAdjustments)} 
-              style={{
-                ...styles.adjustmentButton,
-                backgroundColor: showAdjustments ? 'var(--accent-primary)' : 'transparent',
-                color: showAdjustments ? 'white' : 'var(--text-secondary)',
-              }}
-            >
-              📊 {t('budgetAdjustments') || 'Adjustments'}
-            </button>
-          )}
-          {!isAdding && (
-            <button onClick={() => setIsAdding(true)} style={styles.addButton}>
-              <PlusIcon size={18} />
-              <span>{t('addBudget')}</span>
-            </button>
-          )}
+            {headerMenuOpen && (
+              <div style={styles.headerMenu}>
+                <button
+                  className="menu-item-hover"
+                  style={styles.headerMenuItem}
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    setShowTemplates(true);
+                  }}
+                >
+                  <span style={styles.menuIcon}>📋</span>
+                  <span>{t('budgetTemplates') || '預算模板'}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -322,8 +345,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         />
       )}
 
-      {/* Budget Adjustment Suggestions Section */}
-      {showAdjustments && (
+      {/* Budget Adjustment Suggestions Section (subtab) */}
+      {activeSubTab === 'adjustments' && (
         <div style={styles.adjustmentsSection}>
           <div style={styles.suggestionsHeader}>
             <span style={styles.suggestionsTitle}>{t('adjustmentSuggestions') || 'Adjustment Suggestions'}</span>
@@ -346,8 +369,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         </div>
       )}
 
-      {/* Budget Suggestions Section */}
-      {showSuggestions && (
+      {/* Budget Suggestions Section (subtab) */}
+      {activeSubTab === 'suggestions' && (
         <div style={styles.suggestionsSection}>
           <div style={styles.suggestionsHeader}>
             <span style={styles.suggestionsTitle}>{t('budgetSuggestions') || 'Budget Suggestions'}</span>
@@ -369,7 +392,31 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Budget List (subtab) */}
+      {activeSubTab === 'list' && (
+      <>
+      {/* Add Budget Form */}
+      {isAdding && (
+        <div className="form-card">
+          <BudgetForm
+            categories={categories}
+            onSubmit={(data) => {
+              // Convert amount from cents to dollars
+              onAdd({
+                ...data,
+                amount: data.amount / 100,
+              });
+              setIsAdding(false);
+            }}
+            onCancel={() => {
+              setIsAdding(false);
+              setEditingId(null);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Search Bar - placed after form */}
       <div style={styles.searchContainer}>
         <SearchBar
           placeholder={t('searchByName') || 'Search by category name...'}
@@ -411,26 +458,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         </span>
       </div>
 
-      {isAdding && (
-        <div className="form-card mb-5">
-          <BudgetForm
-            categories={categories}
-            onSubmit={(data) => {
-              // Convert amount from cents to dollars
-              onAdd({
-                ...data,
-                amount: data.amount / 100,
-              });
-              setIsAdding(false);
-            }}
-            onCancel={() => {
-              setIsAdding(false);
-              setEditingId(null);
-            }}
-          />
-        </div>
-      )}
-
+      {activeSubTab === 'list' && (
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -449,6 +477,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           }
         }}
       />
+      )}
 
       <div style={styles.budgetList}>
         {filteredAndSortedBudgets.length === 0 ? (
@@ -614,17 +643,25 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     {budget.period === 'monthly' && expenses.length > 0 && (
                       <button
                         style={styles.historyToggle}
-                        onClick={() => setExpandedHistoryId(expandedHistoryId === budget.id ? null : budget.id!)}
+                        onClick={() => {
+                          const newSet = new Set(expandedHistoryIds);
+                          if (newSet.has(budget.id!)) {
+                            newSet.delete(budget.id!);
+                          } else {
+                            newSet.add(budget.id!);
+                          }
+                          setExpandedHistoryIds(newSet);
+                        }}
                       >
-                        {expandedHistoryId === budget.id 
+                        {expandedHistoryIds.has(budget.id!) 
                           ? (t('hideHistory') || 'Hide History') 
                           : (t('showHistory') || 'Show History')}
-                        <span style={{ marginLeft: '4px' }}>{expandedHistoryId === budget.id ? '▲' : '▼'}</span>
+                        <span style={{ marginLeft: '4px' }}>{expandedHistoryIds.has(budget.id!) ? '▲' : '▼'}</span>
                       </button>
                     )}
 
                     {/* Budget History */}
-                    {expandedHistoryId === budget.id && budget.period === 'monthly' && (
+                    {expandedHistoryIds.has(budget.id!) && budget.period === 'monthly' && (
                       <BudgetHistory
                         categoryName={budget.categoryName}
                         budgetAmount={budget.amount}
@@ -642,6 +679,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           })
         )}
       </div>
+      </>
+      )}
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
@@ -704,6 +743,38 @@ const styles = {
     backgroundColor: 'var(--bg-secondary)',
     color: 'var(--text-primary)',
     transition: 'all 0.2s',
+  },
+  headerMenuContainer: {
+    position: 'relative' as const,
+  },
+  headerMenu: {
+    position: 'absolute' as const,
+    right: 0,
+    top: '100%',
+    marginTop: '4px',
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 9999,
+    minWidth: '160px',
+  },
+  headerMenuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  menuIcon: {
+    display: 'flex',
+    alignItems: 'center',
   },
   adjustmentButton: {
     display: 'flex',
@@ -1025,10 +1096,6 @@ const styles = {
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
-  },
-  menuIcon: {
-    display: 'flex',
-    alignItems: 'center',
   },
   historyToggle: {
     width: '100%',

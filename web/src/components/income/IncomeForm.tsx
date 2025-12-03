@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { getTodayLocal } from '../../utils/dateUtils';
+import DatePicker from '../common/DatePicker';
 
 interface IncomeFormProps {
   onSubmit: (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -210,24 +211,20 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('date')} *</label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.date ? 'border-red-500' : ''
-            }`}
-            style={{
-              borderColor: errors.date ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
-          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
-        </div>
+        <DatePicker
+          label={t('date')}
+          value={formData.date}
+          onChange={(value) => setFormData({ ...formData, date: value })}
+          required
+          error={!!errors.date}
+          errorMessage={errors.date}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: errors.date ? undefined : 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

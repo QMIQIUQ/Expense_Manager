@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Category, Card, Bank } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
+import DatePicker from '../common/DatePicker';
 
 interface RecurringFormData {
   description: string;
@@ -167,21 +168,18 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              required
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            />
-          </div>
+          <DatePicker
+            label={t('startDate')}
+            value={formData.startDate}
+            onChange={(value) => setFormData({ ...formData, startDate: value })}
+            required
+            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)'
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-1">

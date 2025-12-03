@@ -85,6 +85,7 @@ const Dashboard: React.FC = () => {
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
+  const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -423,7 +424,8 @@ const Dashboard: React.FC = () => {
     showImportExportDropdown ||
     showImportModal ||
     showAddSheet ||
-    showAddExpenseForm;
+    showAddExpenseForm ||
+    isDashboardCustomizing;
   //#endregion
 
   //#region Event Handlers - Auth
@@ -2429,6 +2431,7 @@ const Dashboard: React.FC = () => {
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
+            onCustomizingChange={setIsDashboardCustomizing}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}
             onConfirmScheduledPayment={handleConfirmScheduledPayment}
