@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import CardManager from '../cards/CardManager';
 import EWalletManager from '../ewallet/EWalletManager';
 import BankManager from '../banks/BankManager';
+import TransferList from '../transfer/TransferList';
 import SubTabs from '../common/SubTabs';
 
 interface PaymentMethodsTabProps {
@@ -27,7 +28,7 @@ interface PaymentMethodsTabProps {
   onDeleteTransfer: (id: string) => Promise<void>;
 }
 
-type PaymentMethodView = 'cards' | 'ewallets' | 'banks';
+type PaymentMethodView = 'cards' | 'ewallets' | 'banks' | 'transfers';
 
 const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   cards,
@@ -52,14 +53,14 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
   
-  // TODO: TransferList will use onDeleteTransfer and onAddTransfer
-  void onDeleteTransfer;
+  // TODO: onAddTransfer will be used for adding transfers from the TransferList view
   void onAddTransfer;
 
   const tabs = useMemo(() => [
     { id: 'cards', label: t('cards'), icon: '💳' },
     { id: 'ewallets', label: t('eWallets'), icon: '📱' },
     { id: 'banks', label: t('banks'), icon: '🏦' },
+    { id: 'transfers', label: t('transfers'), icon: '↔️' },
   ], [t]);
 
   const styles = {
@@ -123,6 +124,20 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
                 onDelete={onDeleteBank!}
               />
             </React.Suspense>
+          </div>
+        )}
+        {activeView === 'transfers' && (
+          <div>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('transferHistory')}
+            </h3>
+            <TransferList
+              transfers={transfers}
+              ewallets={ewallets}
+              banks={banks}
+              cards={cards}
+              onDelete={onDeleteTransfer}
+            />
           </div>
         )}
       </div>

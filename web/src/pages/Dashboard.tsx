@@ -22,6 +22,7 @@ import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
+import { balanceService } from '../services/balanceService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
@@ -466,7 +467,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp expense with real ID
           const newId = result as string;
           const realExpense: Expense = {
@@ -478,6 +479,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
             data.map((e) => (e.id === tempId ? realExpense : e))
           );
+          // Update balance for the payment method
+          await balanceService.handleExpenseCreated(realExpense);
+          // Reload e-wallets and banks to reflect updated balances
+          loadData();
         },
         onError: () => {
           // Rollback optimistic update
@@ -551,8 +556,13 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (add back the expense amount)
+          if (expenseToDelete) {
+            await balanceService.handleExpenseDeleted(expenseToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
         },
         onError: () => {
           // Rollback optimistic update
@@ -1190,7 +1200,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp income with real ID
           const newId = result as string;
           const realIncome: Income = {
@@ -1202,6 +1212,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
             data.map((i) => (i.id === tempId ? realIncome : i))
           );
+          // Update balance for the payment method
+          await balanceService.handleIncomeCreated(realIncome);
+          // Reload to reflect updated balances
+          loadData();
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== tempId));
@@ -1266,8 +1280,13 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (deduct the income amount)
+          if (incomeToDelete) {
+            await balanceService.handleIncomeDeleted(incomeToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
         },
         onError: () => {
           if (incomeToDelete) {
@@ -1303,9 +1322,11 @@ const Dashboard: React.FC = () => {
       () => transferService.create({ ...transferData, userId: currentUser.uid }),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Update balances for both source and destination
+          await balanceService.handleTransferCreated(optimisticTransfer);
           loadData();
-          showNotification('success', 'Transfer added successfully');
+          showNotification('success', t('transferAdded'));
         },
         onError: () => {
           setTransfers((prev) => prev.filter((t) => t.id !== tempId));
@@ -1325,9 +1346,13 @@ const Dashboard: React.FC = () => {
       () => transferService.delete(id),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Update balances for both source and destination (reverse the transfer)
+          if (transferToDelete) {
+            await balanceService.handleTransferDeleted(transferToDelete);
+          }
           loadData();
-          showNotification('success', 'Transfer deleted successfully');
+          showNotification('success', t('transferDeleted'));
         },
         onError: () => {
           if (transferToDelete) {

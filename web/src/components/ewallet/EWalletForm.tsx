@@ -32,6 +32,7 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
     color: initialData?.color || '#4285F4',
     provider: initialData?.provider || '',
     accountNumber: initialData?.accountNumber || '',
+    balance: initialData?.balance?.toString() || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +75,12 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
       const trimmedAccount = formData.accountNumber.trim();
       if (trimmedAccount) {
         payload.accountNumber = trimmedAccount;
+      }
+
+      // Include balance if provided
+      const balanceValue = parseFloat(formData.balance);
+      if (!isNaN(balanceValue)) {
+        payload.balance = balanceValue;
       }
 
       await onSubmit(payload);
@@ -166,6 +173,29 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           maxLength={20}
         />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('accountNumberHelp')}</p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          {t('initialBalance')} ({t('optional')})
+        </label>
+        <input
+          type="number"
+          name="balance"
+          value={formData.balance}
+          onChange={handleChange}
+          onFocus={(e) => e.target.select()}
+          placeholder="0.00"
+          step="0.01"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+          disabled={isSubmitting}
+        />
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('setInitialBalance')}</p>
       </div>
 
       <div className="flex flex-col gap-1">

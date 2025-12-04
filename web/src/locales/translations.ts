@@ -540,6 +540,12 @@ export const translations = {
   walletIncome: { en: 'Income', zh: '收入', 'zh-CN': '收入' },
   walletSpending: { en: 'Spending', zh: '支出', 'zh-CN': '支出' },
   transactions: { en: 'Transactions', zh: '交易數', 'zh-CN': '交易数' },
+  // Balance related
+  setInitialBalance: { en: 'Set Initial Balance', zh: '設定初始餘額', 'zh-CN': '设定初始余额' },
+  initialBalance: { en: 'Initial Balance', zh: '初始餘額', 'zh-CN': '初始余额' },
+  balanceUpdated: { en: 'Balance updated', zh: '餘額已更新', 'zh-CN': '余额已更新' },
+  storedBalance: { en: 'Stored Balance', zh: '儲存餘額', 'zh-CN': '储存余额' },
+  calculatedBalance: { en: 'Calculated Balance', zh: '計算餘額', 'zh-CN': '计算余额' },
   // Transfer
   transfer: { en: 'Transfer', zh: '轉賬', 'zh-CN': '转账' },
   addTransfer: { en: 'Add Transfer', zh: '新增轉賬', 'zh-CN': '添加转账' },
@@ -550,6 +556,11 @@ export const translations = {
   transferDeleted: { en: 'Transfer deleted successfully', zh: '轉賬刪除成功', 'zh-CN': '转账删除成功' },
   alsoTransferFrom: { en: 'Also transfer from another payment method', zh: '同時從其他支付方式轉入', 'zh-CN': '同时从其他支付方式转入' },
   transferFromPaymentMethod: { en: 'Transfer from', zh: '從哪裡轉入', 'zh-CN': '从哪里转入' },
+  transferHistory: { en: 'Transfer History', zh: '轉帳記錄', 'zh-CN': '转账记录' },
+  noTransfersYet: { en: 'No transfers yet', zh: '尚無轉帳記錄', 'zh-CN': '尚无转账记录' },
+  fromAccount: { en: 'From', zh: '從', 'zh-CN': '从' },
+  toAccount: { en: 'To', zh: '至', 'zh-CN': '至' },
+  transfers: { en: 'Transfers', zh: '轉帳', 'zh-CN': '转账' },
   default: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
   deleting: { en: 'Deleting...', zh: '刪除中...', 'zh-CN': '删除中...' },
   
