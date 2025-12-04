@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { BaseForm } from '../common/BaseForm';
 import DatePicker from '../common/DatePicker';
+import TimePicker from '../common/TimePicker';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -19,6 +20,7 @@ interface ExpenseFormProps {
   onCreateCard?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   title?: string;
+  timeFormat?: TimeFormat;
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -33,6 +35,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   onCreateCard,
   onAddTransfer,
   title,
+  timeFormat = '24h',
 }) => {
   const { t } = useLanguage();
   const today = useToday();
@@ -287,21 +290,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             color: 'var(--text-primary)'
           }}
         />
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('time')}</label>
-          <input
-            type="time"
-            name="time"
-            value={formData.time}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
-        </div>
+        <TimePicker
+          label={t('time')}
+          value={formData.time}
+          onChange={(value) => setFormData({ ...formData, time: value })}
+          timeFormat={timeFormat}
+          name="time"
+        />
       </div>
 
       {/* Payment Method Selection */}

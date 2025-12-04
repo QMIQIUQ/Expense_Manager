@@ -3,12 +3,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { useNotification } from '../contexts/NotificationContext';
+import { TimeFormat, DateFormat } from '../types';
 
 const UserProfile: React.FC = () => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
   const { showNotification } = useNotification();
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h');
+  const [dateFormat, setDateFormat] = useState<DateFormat>('YYYY-MM-DD');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -23,6 +26,8 @@ const UserProfile: React.FC = () => {
     try {
       const settings = await userSettingsService.getOrCreate(currentUser.uid);
       setBillingCycleDay(settings.billingCycleDay);
+      setTimeFormat(settings.timeFormat || '24h');
+      setDateFormat(settings.dateFormat || 'YYYY-MM-DD');
     } catch (error) {
       console.error('Error loading user settings:', error);
       showNotification('error', t('errorLoadingSettings'));
@@ -51,6 +56,45 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const handleTimeFormatChange = async (format: TimeFormat) => {
+    if (!currentUser) return;
+    
+    setSaving(true);
+    try {
+      await userSettingsService.update(currentUser.uid, { timeFormat: format });
+      setTimeFormat(format);
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving time format:', error);
+      showNotification('error', t('errorSavingSettings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDateFormatChange = async (format: DateFormat) => {
+    if (!currentUser) return;
+    
+    setSaving(true);
+    try {
+      await userSettingsService.update(currentUser.uid, { dateFormat: format });
+      setDateFormat(format);
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving date format:', error);
+      showNotification('error', t('errorSavingSettings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const dateFormatOptions: { value: DateFormat; label: string; example: string }[] = [
+    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', example: '2024-12-04' },
+    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY', example: '04/12/2024' },
+    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY', example: '12/04/2024' },
+    { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD', example: '2024/12/04' },
+  ];
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>User Profile</h2>
@@ -63,6 +107,75 @@ const UserProfile: React.FC = () => {
         <div style={styles.infoRow}>
           <span style={styles.label}>User ID:</span>
           <span style={styles.value}>{currentUser?.uid}</span>
+        </div>
+      </div>
+
+      {/* Display Settings Section */}
+      <div style={styles.section}>
+        <h3 style={styles.sectionTitle}>{t('displaySettings')}</h3>
+        <div style={styles.settingCard}>
+          <div style={styles.settingHeader}>
+            <div>
+              <h4 style={styles.settingTitle}>{t('timeFormatSettings')}</h4>
+              <p style={styles.settingDescription}>
+                {t('displaySettingsDescription')}
+              </p>
+            </div>
+          </div>
+          {!loading && (
+            <div style={styles.form}>
+              {/* Time Format Toggle */}
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>{t('timeFormatSettings')}</label>
+                <div style={styles.toggleContainer}>
+                  <button
+                    type="button"
+                    onClick={() => handleTimeFormatChange('24h')}
+                    disabled={saving}
+                    style={{
+                      ...styles.toggleButton,
+                      ...(timeFormat === '24h' ? styles.toggleButtonActive : {}),
+                    }}
+                  >
+                    <span style={styles.toggleEmoji}>☀️</span>
+                    <span style={styles.toggleSliderIcon}>⬅️➡️</span>
+                    <span style={styles.toggleEmoji}>🌙</span>
+                    <div style={styles.toggleLabel}>{t('timeFormat24h')}</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTimeFormatChange('12h')}
+                    disabled={saving}
+                    style={{
+                      ...styles.toggleButton,
+                      ...(timeFormat === '12h' ? styles.toggleButtonActive : {}),
+                    }}
+                  >
+                    <span style={styles.toggleSliderIcon}>⬅️➡️</span>
+                    <span style={styles.ampmBadge}>AM/PM</span>
+                    <div style={styles.toggleLabel}>{t('timeFormat12h')}</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Date Format Select */}
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>{t('dateFormatSettings')}</label>
+                <select
+                  value={dateFormat}
+                  onChange={(e) => handleDateFormatChange(e.target.value as DateFormat)}
+                  style={styles.select}
+                  disabled={saving}
+                >
+                  {dateFormatOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.example})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -129,7 +242,7 @@ const UserProfile: React.FC = () => {
   );
 };
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
   container: {
     maxWidth: '800px',
     margin: '0 auto',
@@ -191,7 +304,6 @@ const styles = {
     color: 'var(--text-secondary)',
     margin: 0,
   },
-  // toggleButton removed with change password/email UI
   form: {
     marginTop: '16px',
     paddingTop: '16px',
@@ -215,6 +327,17 @@ const styles = {
     fontSize: '14px',
     boxSizing: 'border-box' as const,
   },
+  select: {
+    width: '100%',
+    padding: '10px 12px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '4px',
+    fontSize: '14px',
+    boxSizing: 'border-box' as const,
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+  },
   helpText: {
     display: 'block',
     marginTop: '4px',
@@ -230,6 +353,51 @@ const styles = {
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500' as const,
+  },
+  toggleContainer: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap' as const,
+  },
+  toggleButton: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    padding: '16px 20px',
+    border: '2px solid var(--border-color)',
+    borderRadius: '12px',
+    backgroundColor: 'var(--bg-secondary)',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    minWidth: '140px',
+  },
+  toggleButtonActive: {
+    borderColor: 'var(--primary-color)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
+  },
+  toggleEmoji: {
+    fontSize: '20px',
+  },
+  toggleSliderIcon: {
+    fontSize: '14px',
+    margin: '4px 0',
+    opacity: 0.6,
+  },
+  ampmBadge: {
+    fontSize: '12px',
+    fontWeight: '600' as const,
+    padding: '4px 8px',
+    backgroundColor: 'var(--primary-color)',
+    color: 'white',
+    borderRadius: '12px',
+    margin: '4px 0',
+  },
+  toggleLabel: {
+    fontSize: '12px',
+    color: 'var(--text-primary)',
+    marginTop: '8px',
+    textAlign: 'center' as const,
   },
 };
 

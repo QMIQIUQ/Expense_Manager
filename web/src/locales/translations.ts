@@ -845,6 +845,16 @@ export const translations = {
   paymentAccuracy: { en: 'Payment Accuracy', zh: '付款準確率', 'zh-CN': '付款准确率' },
   expectedVsActual: { en: 'Expected vs Actual', zh: '預期 vs 實際', 'zh-CN': '预期 vs 实际' },
   viewAnalytics: { en: 'View Analytics', zh: '查看分析', 'zh-CN': '查看分析' },
+  
+  // Time and Date Format Settings
+  timeFormatSettings: { en: 'Time Format', zh: '時間格式', 'zh-CN': '时间格式' },
+  timeFormat12h: { en: '12-hour (AM/PM)', zh: '12小時制 (上午/下午)', 'zh-CN': '12小时制 (上午/下午)' },
+  timeFormat24h: { en: '24-hour', zh: '24小時制', 'zh-CN': '24小时制' },
+  dateFormatSettings: { en: 'Date Format', zh: '日期格式', 'zh-CN': '日期格式' },
+  displaySettings: { en: 'Display Settings', zh: '顯示設定', 'zh-CN': '显示设定' },
+  displaySettingsDescription: { en: 'Customize how time and date are displayed throughout the app', zh: '自訂應用程式中的時間和日期顯示格式', 'zh-CN': '自定义应用程序中的时间和日期显示格式' },
+  am: { en: 'AM', zh: '上午', 'zh-CN': '上午' },
+  pm: { en: 'PM', zh: '下午', 'zh-CN': '下午' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

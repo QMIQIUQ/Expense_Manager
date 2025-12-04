@@ -1,10 +1,18 @@
 // Type definitions for Expense Manager
 
+// Time format type
+export type TimeFormat = '12h' | '24h';
+
+// Date format type
+export type DateFormat = 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD';
+
 // User settings
 export interface UserSettings {
   id?: string;
   userId: string;
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
+  timeFormat?: TimeFormat; // 12-hour or 24-hour format
+  dateFormat?: DateFormat; // Date display format
   createdAt: Date;
   updatedAt: Date;
 }
