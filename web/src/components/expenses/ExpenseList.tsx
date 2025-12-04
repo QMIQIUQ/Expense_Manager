@@ -43,6 +43,7 @@ interface ExpenseListProps {
   ewallets?: EWallet[];
   banks?: Bank[];
   repayments?: Repayment[];
+  transfers?: Transfer[];
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
@@ -66,6 +67,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   ewallets = [],
   banks = [],
   repayments = [],
+  transfers = [],
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -988,6 +990,38 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           )}
                         </div>
                       )}
+                      {/* Transfer Info Display */}
+                      {(() => {
+                        const relatedTransfer = transfers.find(t => 
+                          t.date === expense.date && 
+                          t.amount === expense.amount &&
+                          t.toPaymentMethod === expense.paymentMethod &&
+                          (expense.paymentMethod !== 'e_wallet' || t.toPaymentMethodName === expense.paymentMethodName) &&
+                          (expense.paymentMethod !== 'credit_card' || t.toCardId === expense.cardId) &&
+                          (expense.paymentMethod !== 'bank' || t.toBankId === expense.bankId)
+                        );
+                        if (relatedTransfer) {
+                          const getFromLabel = () => {
+                            if (relatedTransfer.fromPaymentMethod === 'cash') return `💵 ${t('cash')}`;
+                            if (relatedTransfer.fromPaymentMethod === 'credit_card') {
+                              const card = cards.find(c => c.id === relatedTransfer.fromCardId);
+                              return `💳 ${card?.name || t('creditCard')}`;
+                            }
+                            if (relatedTransfer.fromPaymentMethod === 'e_wallet') return `📱 ${relatedTransfer.fromPaymentMethodName || t('eWallet')}`;
+                            if (relatedTransfer.fromPaymentMethod === 'bank') {
+                              const bank = banks.find(b => b.id === relatedTransfer.fromBankId);
+                              return `🏦 ${bank?.name || t('bank')}`;
+                            }
+                            return '';
+                          };
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-primary)', marginTop: '2px' }}>
+                              <span>↩️ {t('from') || '從'}: {getFromLabel()}</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>

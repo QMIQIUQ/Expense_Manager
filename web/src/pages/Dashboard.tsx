@@ -2485,6 +2485,7 @@ const Dashboard: React.FC = () => {
               ewallets={ewallets}
               banks={banks}
               repayments={repayments}
+              transfers={transfers}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
