@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { offlineQueue } from '../utils/offlineQueue';
 
 export interface OptimisticOperation<T> {
@@ -23,7 +24,34 @@ export const useOptimisticCRUD = <T,>() => {
     new Map()
   );
   const { showNotification, hideNotification, updateNotification } = useNotification();
+  const { t } = useLanguage();
   const operationCounter = useRef(0);
+
+  // Get translated messages
+  const getSuccessMessage = (type: 'create' | 'update' | 'delete'): string => {
+    switch (type) {
+      case 'create':
+        return t('successfullyCreated');
+      case 'update':
+        return t('successfullyUpdated');
+      case 'delete':
+        return t('successfullyDeleted');
+      default:
+        return t('operationCompleted');
+    }
+  };
+
+  const getErrorMessage = (type: 'create' | 'update' | 'delete', error: unknown): string => {
+    const action = type === 'create' ? t('create') : type === 'update' ? t('update') : t('delete');
+    const errorMsg = error instanceof Error ? error.message : t('unknownError');
+    
+    // Check for Firebase permission errors
+    if (errorMsg.includes('Missing or insufficient permissions') || errorMsg.includes('permission-denied')) {
+      return `${t('failedTo')} ${action}: ${t('configureFirebaseRules')}`;
+    }
+    
+    return `${t('failedTo')} ${action}: ${errorMsg}`;
+  };
 
   const run = useCallback(
     async <R = unknown,>(
@@ -43,7 +71,7 @@ export const useOptimisticCRUD = <T,>() => {
       // Show pending notification unless suppressed (bulk operations may want one notification)
       let notificationId: string | undefined;
       if (!options?.suppressNotification) {
-        notificationId = showNotification('pending', 'Processing...', {
+        notificationId = showNotification('pending', t('processing'), {
           duration: 0, // Persistent
         });
       }
@@ -99,7 +127,7 @@ export const useOptimisticCRUD = <T,>() => {
           if (notificationId) {
             updateNotification(notificationId, {
               type: 'info',
-              message: 'Operation saved offline. Will retry when connection is restored.',
+              message: t('operationSavedOffline'),
               duration: 5000,
             });
           }
@@ -112,13 +140,13 @@ export const useOptimisticCRUD = <T,>() => {
             duration: 0,
             actions: [
               {
-                label: 'Retry',
+                label: t('retry'),
                 onClick: () => run(operation, apiCall, options),
               },
               ...(options?.entityType
                 ? [
                     {
-                      label: 'Save Offline',
+                      label: t('saveOffline'),
                       onClick: () => {
                         offlineQueue.enqueue({
                           type: operation.type,
@@ -127,7 +155,7 @@ export const useOptimisticCRUD = <T,>() => {
                         });
                         showNotification(
                           'info',
-                          'Operation saved offline. Will retry when connection is restored.',
+                          t('operationSavedOffline'),
                           { duration: 5000 }
                         );
                       },
@@ -146,7 +174,7 @@ export const useOptimisticCRUD = <T,>() => {
         return null;
       }
     },
-    [showNotification, hideNotification, updateNotification]
+    [showNotification, hideNotification, updateNotification, t, getSuccessMessage, getErrorMessage]
   );
 
   const hasId = (data: unknown): data is { id: string } => {
@@ -179,32 +207,7 @@ export const useOptimisticCRUD = <T,>() => {
   };
 };
 
-// Helper functions
-function getSuccessMessage(type: 'create' | 'update' | 'delete'): string {
-  switch (type) {
-    case 'create':
-      return 'Successfully created!';
-    case 'update':
-      return 'Successfully updated!';
-    case 'delete':
-      return 'Successfully deleted!';
-    default:
-      return 'Operation completed!';
-  }
-}
-
-function getErrorMessage(type: 'create' | 'update' | 'delete', error: unknown): string {
-  const action = type === 'create' ? 'create' : type === 'update' ? 'update' : 'delete';
-  const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-  
-  // Check for Firebase permission errors
-  if (errorMsg.includes('Missing or insufficient permissions') || errorMsg.includes('permission-denied')) {
-    return `Failed to ${action}: Please configure Firebase security rules for the cards collection. See PR description for instructions.`;
-  }
-  
-  return `Failed to ${action}: ${errorMsg}`;
-}
-
+// Helper function for checking offline errors
 function isOfflineError(error: unknown): boolean {
   if (error instanceof Error) {
     // Don't treat permission errors as offline errors

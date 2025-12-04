@@ -12,13 +12,14 @@ interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onCancel?: () => void;
   initialData?: Expense;
+  initialTransfer?: Transfer; // Related transfer for this expense
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
   banks?: Bank[];
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
-  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   title?: string;
   timeFormat?: TimeFormat;
   dateFormat?: DateFormat;
@@ -28,6 +29,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   onSubmit,
   onCancel,
   initialData,
+  initialTransfer,
   categories,
   cards = [],
   ewallets = [],
@@ -54,11 +56,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     paymentMethodName: initialData?.paymentMethodName || '',
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
-  const [enableTransfer, setEnableTransfer] = useState(false);
-  const [transferFromPaymentMethod, setTransferFromPaymentMethod] = useState<'cash' | 'credit_card' | 'e_wallet' | 'bank'>('cash');
-  const [transferFromCardId, setTransferFromCardId] = useState('');
-  const [transferFromEWalletName, setTransferFromEWalletName] = useState('');
-  const [transferFromBankId, setTransferFromBankId] = useState('');
+  // Initialize transfer states from initialTransfer if provided
+  // transferTo* = where the money goes TO (user selects this)
+  const [enableTransfer, setEnableTransfer] = useState(!!initialTransfer);
+  const [transferToPaymentMethod, setTransferToPaymentMethod] = useState<'cash' | 'credit_card' | 'e_wallet' | 'bank'>(
+    initialTransfer?.toPaymentMethod || 'cash'
+  );
+  const [transferToCardId, setTransferToCardId] = useState(initialTransfer?.toCardId || '');
+  const [transferToEWalletName, setTransferToEWalletName] = useState(initialTransfer?.toPaymentMethodName || '');
+  const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -108,8 +114,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     
     // Handle transfer if enabled
     if (enableTransfer && onAddTransfer) {
-      // Cast payment method to proper type
-      const toPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+      // fromPaymentMethod = expense's payment method (where money comes from)
+      // toPaymentMethod = user selected destination (where money goes to)
+      const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+      const toPaymentMethod = transferToPaymentMethod;
       
       // Helper to check if transfer source and destination are the same
       const isSamePaymentSource = (
@@ -117,43 +125,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         toMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank'
       ): boolean => {
         if (fromMethod !== toMethod) return false;
-        switch (fromMethod) {
+        switch (toMethod) {
           case 'cash': return true;
-          case 'credit_card': return transferFromCardId === formData.cardId;
-          case 'e_wallet': return transferFromEWalletName === formData.paymentMethodName;
-          case 'bank': return transferFromBankId === formData.bankId;
+          case 'credit_card': return transferToCardId === formData.cardId;
+          case 'e_wallet': return transferToEWalletName === formData.paymentMethodName;
+          case 'bank': return transferToBankId === formData.bankId;
         }
       };
       
-      if (!isSamePaymentSource(transferFromPaymentMethod, toPaymentMethod)) {
+      if (!isSamePaymentSource(fromPaymentMethod, toPaymentMethod)) {
         // Build transfer data, only including defined fields
         const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
           amount: formData.amount / 100,
           date: formData.date,
           time: formData.time,
           note: `${t('transfer')} - ${formData.description}`,
-          fromPaymentMethod: transferFromPaymentMethod,
-          fromPaymentMethodName: transferFromPaymentMethod === 'e_wallet' ? transferFromEWalletName : '',
+          fromPaymentMethod: fromPaymentMethod,
+          fromPaymentMethodName: fromPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
           toPaymentMethod: toPaymentMethod,
-          toPaymentMethodName: toPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
+          toPaymentMethodName: toPaymentMethod === 'e_wallet' ? transferToEWalletName : '',
         };
         
         // Only add optional fields if they have values (Firebase doesn't accept undefined)
-        if (transferFromPaymentMethod === 'credit_card' && transferFromCardId) {
-          transferData.fromCardId = transferFromCardId;
+        if (fromPaymentMethod === 'credit_card' && formData.cardId) {
+          transferData.fromCardId = formData.cardId;
         }
-        if (transferFromPaymentMethod === 'bank' && transferFromBankId) {
-          transferData.fromBankId = transferFromBankId;
+        if (fromPaymentMethod === 'bank' && formData.bankId) {
+          transferData.fromBankId = formData.bankId;
         }
-        if (toPaymentMethod === 'credit_card' && formData.cardId) {
-          transferData.toCardId = formData.cardId;
+        if (toPaymentMethod === 'credit_card' && transferToCardId) {
+          transferData.toCardId = transferToCardId;
         }
-        if (toPaymentMethod === 'bank' && formData.bankId) {
-          transferData.toBankId = formData.bankId;
+        if (toPaymentMethod === 'bank' && transferToBankId) {
+          transferData.toBankId = transferToBankId;
         }
         
-        // Submit transfer asynchronously
-        onAddTransfer(transferData).catch((err) => {
+        // Submit transfer asynchronously (silent mode - no separate notification)
+        onAddTransfer(transferData, true).catch((err) => {
           console.error('Failed to create transfer:', err);
         });
       }
@@ -175,10 +183,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         needsRepaymentTracking: false,
       });
       setEnableTransfer(false);
-      setTransferFromPaymentMethod('cash');
-      setTransferFromCardId('');
-      setTransferFromEWalletName('');
-      setTransferFromBankId('');
+      setTransferToPaymentMethod('cash');
+      setTransferToCardId('');
+      setTransferToEWalletName('');
+      setTransferToBankId('');
     }
   };
 
@@ -498,22 +506,42 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             <label htmlFor="enableTransfer" className="text-sm font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>
               💱 {t('alsoTransferFrom')}
             </label>
+            {/* Show current transfer destination if initialTransfer exists and checkbox is checked */}
+            {enableTransfer && initialTransfer && (
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                (→ {(() => {
+                  if (initialTransfer.toPaymentMethod === 'cash') return `💵 ${t('cash')}`;
+                  if (initialTransfer.toPaymentMethod === 'credit_card') {
+                    const card = cards.find(c => c.id === initialTransfer.toCardId);
+                    return `💳 ${card?.name || t('creditCard')}`;
+                  }
+                  if (initialTransfer.toPaymentMethod === 'e_wallet') {
+                    return `📱 ${initialTransfer.toPaymentMethodName || t('eWallet')}`;
+                  }
+                  if (initialTransfer.toPaymentMethod === 'bank') {
+                    const bank = banks.find(b => b.id === initialTransfer.toBankId);
+                    return `🏦 ${bank?.name || t('bankTransfer')}`;
+                  }
+                  return '';
+                })()})
+              </span>
+            )}
           </div>
 
           {enableTransfer && (
             <div className="flex flex-col gap-3 pl-6 border-l-2" style={{ borderColor: 'var(--accent-primary)' }}>
-              {/* From Payment Method Selection */}
+              {/* To Payment Method Selection */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {t('transferFromPaymentMethod')}
+                  {t('transferToPaymentMethod')}
                 </label>
                 <select
-                  value={transferFromPaymentMethod}
+                  value={transferToPaymentMethod}
                   onChange={(e) => {
-                    setTransferFromPaymentMethod(e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank');
-                    setTransferFromCardId('');
-                    setTransferFromEWalletName('');
-                    setTransferFromBankId('');
+                    setTransferToPaymentMethod(e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank');
+                    setTransferToCardId('');
+                    setTransferToEWalletName('');
+                    setTransferToBankId('');
                   }}
                   className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{
@@ -529,13 +557,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 </select>
               </div>
 
-              {/* Card Selection for Transfer From */}
-              {transferFromPaymentMethod === 'credit_card' && cards.length > 0 && (
+              {/* Card Selection for Transfer To */}
+              {transferToPaymentMethod === 'credit_card' && cards.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
                   <select
-                    value={transferFromCardId}
-                    onChange={(e) => setTransferFromCardId(e.target.value)}
+                    value={transferToCardId}
+                    onChange={(e) => setTransferToCardId(e.target.value)}
                     className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                     style={{
                       borderColor: 'var(--border-color)',
@@ -553,13 +581,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 </div>
               )}
 
-              {/* E-Wallet Selection for Transfer From */}
-              {transferFromPaymentMethod === 'e_wallet' && ewallets.length > 0 && (
+              {/* E-Wallet Selection for Transfer To */}
+              {transferToPaymentMethod === 'e_wallet' && ewallets.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWallet')}</label>
                   <select
-                    value={transferFromEWalletName}
-                    onChange={(e) => setTransferFromEWalletName(e.target.value)}
+                    value={transferToEWalletName}
+                    onChange={(e) => setTransferToEWalletName(e.target.value)}
                     className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                     style={{
                       borderColor: 'var(--border-color)',
@@ -577,13 +605,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 </div>
               )}
 
-              {/* Bank Selection for Transfer From */}
-              {transferFromPaymentMethod === 'bank' && banks.length > 0 && (
+              {/* Bank Selection for Transfer To */}
+              {transferToPaymentMethod === 'bank' && banks.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
                   <select
-                    value={transferFromBankId}
-                    onChange={(e) => setTransferFromBankId(e.target.value)}
+                    value={transferToBankId}
+                    onChange={(e) => setTransferToBankId(e.target.value)}
                     className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                     style={{
                       borderColor: 'var(--border-color)',

@@ -544,8 +544,34 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
     const expenseToDelete = expenses.find((e) => e.id === id);
     
+    // Find related transfer to delete (by matching date, amount, and payment method)
+    // Transfer.fromPaymentMethod should match expense.paymentMethod
+    const relatedTransfer = expenseToDelete ? transfers.find(t => {
+      const dateMatch = t.date === expenseToDelete.date;
+      const amountMatch = Math.abs(t.amount - expenseToDelete.amount) < 0.01;
+      
+      // Match payment method as the source (fromPaymentMethod = expense's payment method)
+      let paymentMethodMatch = false;
+      if (expenseToDelete.paymentMethod === 'credit_card') {
+        paymentMethodMatch = t.fromPaymentMethod === 'credit_card' && t.fromCardId === expenseToDelete.cardId;
+      } else if (expenseToDelete.paymentMethod === 'e_wallet') {
+        paymentMethodMatch = t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === expenseToDelete.paymentMethodName;
+      } else if (expenseToDelete.paymentMethod === 'bank') {
+        paymentMethodMatch = t.fromPaymentMethod === 'bank' && t.fromBankId === expenseToDelete.bankId;
+      } else if (expenseToDelete.paymentMethod === 'cash') {
+        paymentMethodMatch = t.fromPaymentMethod === 'cash';
+      }
+      
+      return dateMatch && amountMatch && paymentMethodMatch;
+    }) : undefined;
+    
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    
+    // Optimistic update: remove related transfer if exists
+    if (relatedTransfer?.id) {
+      setTransfers((prev) => prev.filter((t) => t.id !== relatedTransfer.id));
+    }
     
     // Update cache optimistically
     dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
@@ -563,6 +589,14 @@ const Dashboard: React.FC = () => {
             // Reload to reflect updated balances
             loadData();
           }
+          // Delete related transfer if exists
+          if (relatedTransfer?.id) {
+            try {
+              await transferService.delete(relatedTransfer.id);
+            } catch (err) {
+              console.error('Failed to delete related transfer:', err);
+            }
+          }
         },
         onError: () => {
           // Rollback optimistic update
@@ -570,6 +604,10 @@ const Dashboard: React.FC = () => {
             setExpenses((prev) => [expenseToDelete, ...prev]);
             // Rollback cache
             dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
+          }
+          // Rollback transfer if was removed
+          if (relatedTransfer) {
+            setTransfers((prev) => [relatedTransfer, ...prev]);
           }
         },
       }
@@ -1303,7 +1341,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Transfers
-  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, silent = false) => {
     if (!currentUser) return;
     
     // Optimistic update
@@ -1322,11 +1360,11 @@ const Dashboard: React.FC = () => {
       () => transferService.create({ ...transferData, userId: currentUser.uid }),
       {
         retryToQueueOnFail: true,
+        suppressNotification: silent, // Don't show notification if silent mode
         onSuccess: async () => {
           // Update balances for both source and destination
           await balanceService.handleTransferCreated(optimisticTransfer);
           loadData();
-          showNotification('success', t('transferAdded'));
         },
         onError: () => {
           setTransfers((prev) => prev.filter((t) => t.id !== tempId));

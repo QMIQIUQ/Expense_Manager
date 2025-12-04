@@ -51,7 +51,7 @@ interface ExpenseListProps {
   onReloadRepayments?: () => void; // Callback to reload repayments
   onCreateCard?: () => void;
   onCreateEWallet?: () => void;
-  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   focusExpenseId?: string; // when set, scroll and highlight
   // Quick expense related
   quickExpensePresets?: QuickExpensePreset[];
@@ -195,6 +195,30 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     }
     // Fallback color
     return { background: '#e0e7ff', color: '#4338ca' };
+  };
+
+  // Find related transfer for an expense (by matching date, amount, and payment method)
+  // Transfer.fromPaymentMethod should match expense.paymentMethod (money comes from expense's payment method)
+  const findRelatedTransfer = (expense: Expense): Transfer | undefined => {
+    return transfers.find(t => {
+      // Match by date and amount
+      const dateMatch = t.date === expense.date;
+      const amountMatch = Math.abs(t.amount - expense.amount) < 0.01;
+      
+      // Match payment method as the source (fromPaymentMethod = expense's payment method)
+      let paymentMethodMatch = false;
+      if (expense.paymentMethod === 'credit_card') {
+        paymentMethodMatch = t.fromPaymentMethod === 'credit_card' && t.fromCardId === expense.cardId;
+      } else if (expense.paymentMethod === 'e_wallet') {
+        paymentMethodMatch = t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === expense.paymentMethodName;
+      } else if (expense.paymentMethod === 'bank') {
+        paymentMethodMatch = t.fromPaymentMethod === 'bank' && t.fromBankId === expense.bankId;
+      } else if (expense.paymentMethod === 'cash') {
+        paymentMethodMatch = t.fromPaymentMethod === 'cash';
+      }
+      
+      return dateMatch && amountMatch && paymentMethodMatch;
+    });
   };
 
   // Scroll to and highlight an expense when focusExpenseId changes
@@ -874,6 +898,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {editingId === expense.id ? (
                 <ExpenseForm
                   initialData={expense}
+                  initialTransfer={findRelatedTransfer(expense)}
                   categories={categories}
                   cards={cards}
                   ewallets={ewallets}
@@ -990,33 +1015,28 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           )}
                         </div>
                       )}
-                      {/* Transfer Info Display */}
+                      {/* Transfer Info Display - Show the source (where the money came FROM) */}
                       {(() => {
-                        const relatedTransfer = transfers.find(t => 
-                          t.date === expense.date && 
-                          t.amount === expense.amount &&
-                          t.toPaymentMethod === expense.paymentMethod &&
-                          (expense.paymentMethod !== 'e_wallet' || t.toPaymentMethodName === expense.paymentMethodName) &&
-                          (expense.paymentMethod !== 'credit_card' || t.toCardId === expense.cardId) &&
-                          (expense.paymentMethod !== 'bank' || t.toBankId === expense.bankId)
-                        );
+                        const relatedTransfer = findRelatedTransfer(expense);
+                        
                         if (relatedTransfer) {
-                          const getFromLabel = () => {
-                            if (relatedTransfer.fromPaymentMethod === 'cash') return `💵 ${t('cash')}`;
-                            if (relatedTransfer.fromPaymentMethod === 'credit_card') {
-                              const card = cards.find(c => c.id === relatedTransfer.fromCardId);
+                          // Show the destination (where the money goes TO)
+                          const getToLabel = () => {
+                            if (relatedTransfer.toPaymentMethod === 'cash') return `💵 ${t('cash')}`;
+                            if (relatedTransfer.toPaymentMethod === 'credit_card') {
+                              const card = cards.find(c => c.id === relatedTransfer.toCardId);
                               return `💳 ${card?.name || t('creditCard')}`;
                             }
-                            if (relatedTransfer.fromPaymentMethod === 'e_wallet') return `📱 ${relatedTransfer.fromPaymentMethodName || t('eWallet')}`;
-                            if (relatedTransfer.fromPaymentMethod === 'bank') {
-                              const bank = banks.find(b => b.id === relatedTransfer.fromBankId);
+                            if (relatedTransfer.toPaymentMethod === 'e_wallet') return `📱 ${relatedTransfer.toPaymentMethodName || t('eWallet')}`;
+                            if (relatedTransfer.toPaymentMethod === 'bank') {
+                              const bank = banks.find(b => b.id === relatedTransfer.toBankId);
                               return `🏦 ${bank?.name || t('bank')}`;
                             }
                             return '';
                           };
                           return (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-primary)', marginTop: '2px' }}>
-                              <span>↩️ {t('from') || '從'}: {getFromLabel()}</span>
+                              <span>➡️ {t('to') || '到'}: {getToLabel()}</span>
                             </div>
                           );
                         }
