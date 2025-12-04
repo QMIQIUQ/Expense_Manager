@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { CalendarIcon } from '../icons';
 
 interface DatePickerProps {
@@ -31,6 +32,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   name,
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
     if (value) {
       return new Date(value + 'T00:00:00');
@@ -39,11 +41,17 @@ const DatePicker: React.FC<DatePickerProps> = ({
   });
   const calendarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Close calendar when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+      if (
+        calendarRef.current && 
+        !calendarRef.current.contains(event.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setShowCalendar(false);
       }
     };
@@ -55,6 +63,26 @@ const DatePicker: React.FC<DatePickerProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, [showCalendar]);
+
+  // Update calendar position when shown
+  useEffect(() => {
+    if (showCalendar && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const calendarHeight = 320; // approximate calendar height
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Position above if not enough space below
+      const top = spaceBelow < calendarHeight && spaceAbove > spaceBelow
+        ? rect.top + window.scrollY - calendarHeight - 4
+        : rect.bottom + window.scrollY + 4;
+      
+      setCalendarPosition({
+        top,
+        left: rect.left + window.scrollX,
+      });
+    }
   }, [showCalendar]);
 
   // Update selected month when value changes
@@ -169,8 +197,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
           {required && ' *'}
         </label>
       )}
-      <div className="date-picker-container" ref={calendarRef}>
-        <div className="date-picker-input-group">
+      <div className="date-picker-container" ref={containerRef}>
+        <div className="date-picker-input-group" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             ref={inputRef}
             type="date"
@@ -182,21 +210,46 @@ const DatePicker: React.FC<DatePickerProps> = ({
             required={required}
             disabled={disabled}
             className={`date-picker-input ${error ? 'error' : ''} ${className}`}
-            style={style}
+            style={{
+              ...style,
+              paddingRight: '40px',
+            }}
           />
           <button
             type="button"
             onClick={handleCalendarClick}
             disabled={disabled}
             className="date-picker-icon-btn"
+            style={{
+              position: 'absolute',
+              right: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              borderRadius: '4px',
+              zIndex: 2,
+            }}
             aria-label="Open calendar"
           >
             <CalendarIcon size={20} />
           </button>
         </div>
 
-        {showCalendar && (
-          <div className="date-picker-calendar">
+        {showCalendar && ReactDOM.createPortal(
+          <div 
+            ref={calendarRef}
+            className="date-picker-calendar"
+            style={{
+              position: 'fixed',
+              top: calendarPosition.top,
+              left: calendarPosition.left,
+            }}
+          >
             {/* Calendar Header */}
             <div className="calendar-header">
               <button type="button" onClick={prevMonth} className="calendar-nav-btn">
@@ -240,7 +293,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
                 Today
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       {errorMessage && <span className="text-xs text-red-600">{errorMessage}</span>}
@@ -274,6 +328,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
           transition: border-color 0.2s, box-shadow 0.2s;
         }
 
+        /* Hide native date picker icon */
+        .date-picker-input::-webkit-calendar-picker-indicator {
+          opacity: 0;
+          position: absolute;
+          right: 0;
+          width: 40px;
+          height: 100%;
+          cursor: pointer;
+        }
+
         .date-picker-input:focus {
           border-color: var(--primary-color);
           box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
@@ -301,6 +365,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           color: var(--text-secondary);
           transition: color 0.2s;
           border-radius: 4px;
+          z-index: 1;
         }
 
         .date-picker-icon-btn:hover:not(:disabled) {
@@ -314,16 +379,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
         }
 
         .date-picker-calendar {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          margin-top: 4px;
           background: var(--bg-primary);
           border: 1px solid var(--border-color);
           border-radius: 8px;
-          box-shadow: 0 4px 12px var(--shadow);
+          box-shadow: 0 8px 24px var(--shadow);
           padding: 16px;
-          z-index: 1000;
+          z-index: 10000;
           min-width: 280px;
         }
 
@@ -438,18 +499,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
           border-color: var(--primary-color);
         }
 
-        /* Mobile: Hide calendar icon, use native date picker */
+        /* Mobile: Use native date picker but keep calendar icon visible */
         @media (max-width: 768px) {
-          .date-picker-icon-btn {
-            display: none;
-          }
-
           .date-picker-input {
-            padding: 8px 12px;
-          }
-
-          .date-picker-calendar {
-            display: none;
+            padding: 8px 40px 8px 12px;
           }
         }
       `}</style>
