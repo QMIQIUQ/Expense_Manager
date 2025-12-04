@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TimePickerProps {
   value: string; // HH:MM format (24h)
@@ -21,6 +22,8 @@ const TimePicker: React.FC<TimePickerProps> = ({
   label,
   name,
 }) => {
+  const { t } = useLanguage();
+  
   // Parse the initial time value
   const parseTime = (timeStr: string): { hours: number; minutes: number } => {
     if (!timeStr) {
@@ -282,10 +285,10 @@ const TimePicker: React.FC<TimePickerProps> = ({
                 className={`ampm-toggle ${isAM ? 'am' : 'pm'}`}
                 onClick={handleAMPMToggle}
                 disabled={disabled}
-                aria-label={isAM ? 'Switch to PM' : 'Switch to AM'}
+                aria-label={isAM ? `${t('pm')}` : `${t('am')}`}
               >
-                <span className="ampm-option am">AM</span>
-                <span className="ampm-option pm">PM</span>
+                <span className="ampm-option am">{t('am')}</span>
+                <span className="ampm-option pm">{t('pm')}</span>
                 <span className="ampm-slider" />
               </button>
             </>
