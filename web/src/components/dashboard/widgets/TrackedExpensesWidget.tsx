@@ -1,5 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
@@ -10,6 +12,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   size = 'medium',
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   
   // Determine display settings based on size
   const isCompact = size === 'small';
@@ -70,7 +73,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
                 <span className="tracked-expense-title">
                   {expense.description}
                 </span>
-                <span className="tracked-expense-date">{expense.date} · {percentage.toFixed(0)}%</span>
+                <span className="tracked-expense-date">{formatDateWithUserFormat(expense.date, dateFormat)} · {percentage.toFixed(0)}%</span>
               </div>
               <div className="tracked-expense-amounts">
                 <div className="tracked-amount-item">

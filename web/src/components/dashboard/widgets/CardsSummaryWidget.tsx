@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { calculateCardStats } from '../../../utils/cardUtils';
+import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 
 const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses, size = 'full' }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
   
   // Determine display settings based on size - only 'small' uses compact mode
@@ -47,7 +50,7 @@ const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses
               <div>
                 <h4 className="card-name">{card.name}</h4>
                 <p className="card-meta">
-                  {t('billingCycle')}: {stats.nextBillingDate}
+                  {t('billingCycle')}: {formatDateWithUserFormat(stats.nextBillingDate, dateFormat)}
                 </p>
               </div>
               {card.cardType === 'cashback' && stats.estimatedTotalCashback > 0 && (

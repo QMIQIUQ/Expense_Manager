@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
@@ -21,6 +21,7 @@ interface ExpenseFormProps {
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   title?: string;
   timeFormat?: TimeFormat;
+  dateFormat?: DateFormat;
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -36,6 +37,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   onAddTransfer,
   title,
   timeFormat = '24h',
+  dateFormat = 'YYYY-MM-DD',
 }) => {
   const { t } = useLanguage();
   const today = useToday();
@@ -283,6 +285,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           required
           error={!!errors.date}
           errorMessage={errors.date}
+          dateFormat={dateFormat}
           className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
           style={{
             borderColor: errors.date ? undefined : 'var(--border-color)',

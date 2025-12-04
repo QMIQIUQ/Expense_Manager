@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Income, IncomeType, IncomeCategory, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { getTodayLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 
 interface IncomeFormProps {
@@ -30,6 +31,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const today = useToday();
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
@@ -218,6 +220,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           required
           error={!!errors.date}
           errorMessage={errors.date}
+          dateFormat={dateFormat}
           className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
           style={{
             borderColor: errors.date ? undefined : 'var(--border-color)',
@@ -409,7 +412,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <option value="">-- {t('noLink')} --</option>
             {expenses.map((expense) => (
               <option key={expense.id} value={expense.id}>
-                {expense.description} - ${expense.amount.toFixed(2)} ({expense.date})
+                {expense.description} - ${expense.amount.toFixed(2)} ({formatDateWithUserFormat(expense.date, dateFormat)})
               </option>
             ))}
           </select>

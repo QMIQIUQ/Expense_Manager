@@ -35,7 +35,7 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateEWallet,
   onCreateCard,
 }) => {
-  const { timeFormat } = useUserSettings();
+  const { timeFormat, dateFormat } = useUserSettings();
 
   return (
     <div style={styles.expensesTab}>
@@ -55,6 +55,7 @@ const ExpensesTab: React.FC<Props> = ({
           onCreateEWallet={onCreateEWallet}
           onCreateCard={onCreateCard}
           timeFormat={timeFormat}
+          dateFormat={dateFormat}
         />
       </div>
 

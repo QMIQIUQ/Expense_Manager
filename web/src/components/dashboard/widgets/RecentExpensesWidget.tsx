@@ -1,5 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
 
 interface RecentExpensesWidgetProps extends WidgetProps {
@@ -9,6 +11,7 @@ interface RecentExpensesWidgetProps extends WidgetProps {
 
 const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, size = 'medium', onViewAll, onNavigateToExpense }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   
   // Determine how many expenses to show based on size
   const maxItems = React.useMemo(() => {
@@ -68,10 +71,7 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
               ${expense.amount.toFixed(2)}
             </span>
             <span className="recent-expense-date">
-              {new Date(expense.date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
+              {formatDateWithUserFormat(expense.date, dateFormat)}
             </span>
           </div>
         </div>

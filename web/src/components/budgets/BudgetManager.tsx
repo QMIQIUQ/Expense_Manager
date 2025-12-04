@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Budget, Category, Expense, Repayment } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import BudgetForm from './BudgetForm';
 import { SearchBar } from '../common/SearchBar';
@@ -13,7 +14,7 @@ import BudgetHistory from './BudgetHistory';
 import { getEffectiveBudgetAmount } from '../../utils/budgetRollover';
 import BudgetTemplates from './BudgetTemplates';
 import SubTabs from '../common/SubTabs';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { getTodayLocal, formatDateRangeShort } from '../../utils/dateUtils';
 import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 
@@ -60,6 +61,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   billingCycleDay = 1,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -279,13 +281,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
     }
 
-    const formatDate = (date: Date) => {
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      return `${month}/${day}`;
-    };
+    // Convert dates to YYYY-MM-DD format for the utility function
+    const startStr = `${cycleStart.getFullYear()}-${String(cycleStart.getMonth() + 1).padStart(2, '0')}-${String(cycleStart.getDate()).padStart(2, '0')}`;
+    const endStr = `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, '0')}-${String(cycleEnd.getDate()).padStart(2, '0')}`;
 
-    return `${formatDate(cycleStart)} - ${formatDate(cycleEnd)}`;
+    return formatDateRangeShort(startStr, endStr, dateFormat);
   };
 
   return (

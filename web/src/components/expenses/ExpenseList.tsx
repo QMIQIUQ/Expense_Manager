@@ -2,9 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer } from '../../types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../types/quickExpense';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
+import { getTodayLocal, formatDateLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentManager from '../repayment/RepaymentManager';
@@ -14,6 +15,7 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import DatePicker from '../common/DatePicker';
+import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -78,6 +80,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onManageQuickExpenses,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const { currentUser } = useAuth();
   const { showNotification, updateNotification } = useNotification();
   const today = getTodayLocal();
@@ -265,9 +268,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   const formatDate = (dateString: string, time?: string) => {
-    const date = new Date(dateString);
-    const base = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return time ? `${base} ${time}` : base;
+    const formatted = formatDateWithUserFormat(dateString, dateFormat);
+    return time ? `${formatted} ${time}` : formatted;
   };
 
   const toggleGroupCollapse = (date: string) => {
@@ -565,6 +567,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   value={dateFrom}
                   onChange={setDateFrom}
                   disabled={allDates || !!monthFilter}
+                  dateFormat={dateFormat}
                   style={{ ...styles.dateInput, width: '100%' }}
                 />
               </div>
@@ -573,6 +576,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 value={dateTo}
                 onChange={setDateTo}
                 disabled={allDates || !!monthFilter}
+                dateFormat={dateFormat}
                 style={{ ...styles.dateInput, width: '100%' }}
               />
             </div>
@@ -648,11 +652,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
 
                     <div className="quick-expense-form-field">
-                      <label>{t('category')}</label>
-                      <select
+                      <AutocompleteDropdown
+                        options={categories.map((cat): AutocompleteOption => ({
+                          id: cat.id,
+                          label: cat.name,
+                          icon: cat.icon,
+                          color: cat.color,
+                        }))}
                         value={quickExpenseFormData.categoryId}
-                        onChange={(e) => {
-                          const categoryId = e.target.value;
+                        onChange={(categoryId) => {
                           const cat = categories.find(c => c.id === categoryId);
                           setQuickExpenseFormData({ 
                             ...quickExpenseFormData, 
@@ -660,14 +668,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             icon: cat?.icon || quickExpenseFormData.icon || '💰'
                           });
                         }}
-                      >
-                        <option value="">{t('selectCategory')}</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                          </option>
-                        ))}
-                      </select>
+                        label={t('category')}
+                        placeholder={t('selectCategory')}
+                        allowClear={false}
+                      />
                     </div>
 
                     <div className="quick-expense-form-field">
@@ -881,6 +885,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   onCreateEWallet={onCreateEWallet}
                   onAddTransfer={onAddTransfer}
                   title={t('editExpense')}
+                  dateFormat={dateFormat}
                 />
               ) : (
 

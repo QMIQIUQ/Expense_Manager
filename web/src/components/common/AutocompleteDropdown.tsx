@@ -185,30 +185,26 @@ function AutocompleteDropdown<T = unknown>({
   };
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`ac-select ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="ac-select-label">
           {label}
         </label>
       )}
       
-      <div className="relative">
+      <div className="ac-select-wrapper">
         {/* Input/Display area */}
         <div
-          className={`flex items-center gap-2 px-3 py-2 border rounded-md bg-white cursor-pointer transition-all ${
-            disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''
-          } ${error ? 'border-red-500' : isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'} ${
-            !disabled ? 'hover:border-gray-400' : ''
-          }`}
+          className={`autocomplete-input-container ${disabled ? 'disabled' : ''} ${error ? 'error' : ''} ${isOpen ? 'focused' : ''}`}
           onClick={() => !disabled && inputRef.current?.focus()}
         >
           {/* Icon if selected */}
           {selectedOption?.icon && !isOpen && (
-            <span className="text-xl flex-shrink-0">{selectedOption.icon}</span>
+            <span className="autocomplete-selected-icon">{selectedOption.icon}</span>
           )}
           
           {/* Search icon when open */}
-          {isOpen && <SearchIcon size={18} className="text-gray-400 flex-shrink-0" />}
+          {isOpen && <SearchIcon size={18} className="autocomplete-search-icon" />}
           
           {/* Input field */}
           <input
@@ -220,11 +216,11 @@ function AutocompleteDropdown<T = unknown>({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="flex-1 outline-none bg-transparent text-sm"
+            className="autocomplete-input"
             autoComplete="off"
             role="combobox"
             aria-expanded={isOpen}
-            aria-controls="dropdown-listbox"
+            aria-controls="ac-listbox"
             aria-autocomplete="list"
           />
           
@@ -233,7 +229,7 @@ function AutocompleteDropdown<T = unknown>({
             <button
               type="button"
               onClick={handleClear}
-              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              className="autocomplete-clear-btn"
               aria-label="Clear selection"
             >
               ✕
@@ -242,14 +238,14 @@ function AutocompleteDropdown<T = unknown>({
           
           {/* Dropdown icon */}
           {!loading && (
-            <span className="text-gray-400 flex-shrink-0">
+            <span className="autocomplete-chevron">
               {isOpen ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
             </span>
           )}
           
           {/* Loading spinner */}
           {loading && (
-            <span className="text-gray-400 flex-shrink-0 animate-spin">⏳</span>
+            <span className="autocomplete-loading">⏳</span>
           )}
         </div>
 
@@ -257,9 +253,9 @@ function AutocompleteDropdown<T = unknown>({
         {isOpen && !disabled && (
           <div
             ref={dropdownRef}
-            id="dropdown-listbox"
+            id="ac-listbox"
             role="listbox"
-            className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto"
+            className="ac-select-list"
             style={{ zIndex: designTokens.zIndex.dropdown }}
           >
             {/* Options list */}
@@ -270,36 +266,30 @@ function AutocompleteDropdown<T = unknown>({
                   data-index={index}
                   role="option"
                   aria-selected={value === option.id}
-                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                    index === highlightedIndex
-                      ? 'bg-blue-50'
-                      : value === option.id
-                      ? 'bg-blue-50'
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className={`autocomplete-option ${index === highlightedIndex ? 'highlighted' : ''} ${value === option.id ? 'selected' : ''}`}
                   onClick={() => handleSelect(option)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
                   {/* Icon */}
                   {option.icon && (
-                    <span className="text-xl flex-shrink-0">{option.icon}</span>
+                    <span className="autocomplete-option-icon">{option.icon}</span>
                   )}
                   
                   {/* Color indicator */}
                   {option.color && (
                     <span
-                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      className="autocomplete-option-color"
                       style={{ backgroundColor: option.color }}
                     />
                   )}
                   
                   {/* Label and subtitle */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                  <div className="autocomplete-option-content">
+                    <div className="autocomplete-option-label">
                       {option.label}
                     </div>
                     {option.subtitle && (
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="autocomplete-option-subtitle">
                         {option.subtitle}
                       </div>
                     )}
@@ -307,12 +297,12 @@ function AutocompleteDropdown<T = unknown>({
                   
                   {/* Checkmark for selected */}
                   {value === option.id && (
-                    <span className="text-blue-600 flex-shrink-0">✓</span>
+                    <span className="autocomplete-option-check">✓</span>
                   )}
                 </div>
               ))
             ) : (
-              <div className="px-3 py-4 text-center text-sm text-gray-500">
+              <div className="autocomplete-empty">
                 {loading ? 'Loading...' : 'No results found'}
               </div>
             )}
@@ -320,9 +310,9 @@ function AutocompleteDropdown<T = unknown>({
             {/* Create new option */}
             {createNewLabel && onCreateNew && (
               <>
-                <div className="border-t border-gray-200 my-1" />
+                <div className="autocomplete-divider" />
                 <div
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-50 text-blue-600 font-medium text-sm"
+                  className="autocomplete-create-new"
                   onClick={() => {
                     onCreateNew();
                     setIsOpen(false);
@@ -338,7 +328,236 @@ function AutocompleteDropdown<T = unknown>({
       </div>
 
       {/* Error message */}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="autocomplete-error">{error}</p>}
+
+      <style>{`
+        .ac-select {
+          position: relative;
+          border: none !important;
+          background: none !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .ac-select-label {
+          display: block;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary) !important;
+          margin-bottom: 4px;
+          position: static;
+          transform: none;
+          background: none !important;
+          padding: 0;
+          border: none;
+        }
+
+        .ac-select-wrapper {
+          position: relative;
+          border: none !important;
+          background: none !important;
+          padding: 0 !important;
+        }
+
+        .autocomplete-input-container {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0 12px;
+          height: 38px;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          background: var(--input-bg);
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .autocomplete-input-container:hover:not(.disabled) {
+          border-color: var(--text-secondary);
+        }
+
+        .autocomplete-input-container.focused {
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+        }
+
+        .autocomplete-input-container.error {
+          border-color: var(--error-text);
+        }
+
+        .autocomplete-input-container.disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .autocomplete-selected-icon {
+          font-size: 16px;
+          flex-shrink: 0;
+          line-height: 1;
+        }
+
+        .autocomplete-search-icon {
+          color: var(--text-secondary);
+          flex-shrink: 0;
+        }
+
+        .autocomplete-input {
+          flex: 1;
+          border: none !important;
+          outline: none !important;
+          background: transparent !important;
+          font-size: 14px;
+          color: var(--text-primary);
+          height: 100%;
+          padding: 0 !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+        }
+
+        .autocomplete-input::placeholder {
+          color: var(--text-secondary);
+          opacity: 0.7;
+        }
+
+        .autocomplete-input:focus {
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+
+        .autocomplete-clear-btn {
+          color: var(--text-secondary);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          font-size: 12px;
+          flex-shrink: 0;
+        }
+
+        .autocomplete-clear-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .autocomplete-chevron {
+          color: var(--text-secondary);
+          flex-shrink: 0;
+          display: flex;
+        }
+
+        .autocomplete-loading {
+          color: var(--text-secondary);
+          flex-shrink: 0;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .ac-select-list {
+          position: absolute;
+          width: 100%;
+          margin-top: 4px;
+          background: var(--card-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          max-height: 240px;
+          overflow: auto;
+        }
+
+        .autocomplete-option {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          cursor: pointer;
+          transition: background-color 0.15s;
+        }
+
+        .autocomplete-option:hover,
+        .autocomplete-option.highlighted {
+          background: var(--hover-bg);
+        }
+
+        .autocomplete-option.selected {
+          background: var(--accent-light);
+        }
+
+        .autocomplete-option-icon {
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .autocomplete-option-color {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .autocomplete-option-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .autocomplete-option-label {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .autocomplete-option-subtitle {
+          font-size: 12px;
+          color: var(--text-secondary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .autocomplete-option-check {
+          color: var(--accent-primary);
+          flex-shrink: 0;
+        }
+
+        .autocomplete-empty {
+          padding: 16px 12px;
+          text-align: center;
+          font-size: 14px;
+          color: var(--text-secondary);
+        }
+
+        .autocomplete-divider {
+          border-top: 1px solid var(--border-color);
+          margin: 4px 0;
+        }
+
+        .autocomplete-create-new {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          cursor: pointer;
+          color: var(--accent-primary);
+          font-weight: 500;
+          font-size: 14px;
+        }
+
+        .autocomplete-create-new:hover {
+          background: var(--accent-light);
+        }
+
+        .autocomplete-error {
+          margin-top: 4px;
+          font-size: 12px;
+          color: var(--error-text);
+        }
+      `}</style>
     </div>
   );
 }

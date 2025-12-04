@@ -4,7 +4,7 @@
 export type TimeFormat = '12h' | '24h';
 
 // Date format type
-export type DateFormat = 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD';
+export type DateFormat = 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | 'MMM DD, YYYY' | 'DD MMM YYYY';
 
 // User settings
 export interface UserSettings {

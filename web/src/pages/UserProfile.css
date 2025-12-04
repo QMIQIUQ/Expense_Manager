@@ -1,0 +1,555 @@
+/* UserProfile.css - Modern responsive design for settings page */
+
+.profile-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Page Header */
+.profile-header {
+  margin-bottom: 24px;
+}
+
+.profile-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Card Styles */
+.profile-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.user-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.display-icon {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.billing-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.settings-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* User Info Grid */
+.info-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.info-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 15px;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.info-value-mono {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+}
+
+/* Settings Content */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.setting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setting-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.setting-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.setting-preview strong {
+  color: var(--primary-color);
+}
+
+.setting-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+/* Time Format Toggle */
+.toggle-switch-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.toggle-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 8px;
+}
+
+.toggle-option:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.toggle-option.active {
+  border-color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.toggle-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggle-time {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.toggle-option.active .toggle-time {
+  color: var(--primary-color);
+}
+
+.toggle-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Date Format Grid */
+.date-format-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.date-format-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 6px;
+}
+
+.date-format-option:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.date-format-option.active {
+  border-color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.date-format-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.date-format-example {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.date-format-option.active .date-format-example {
+  color: var(--primary-color);
+}
+
+.date-format-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Billing Cycle Section */
+.billing-input-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.billing-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.billing-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.billing-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.billing-input {
+  width: 80px;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.billing-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.billing-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.billing-suffix {
+  font-size: 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.billing-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Save Button */
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.save-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.save-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.save-button.saving {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Info Notice */
+.info-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.info-notice svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Desktop styles (768px and above) */
+@media (min-width: 768px) {
+  .profile-container {
+    padding: 32px;
+  }
+
+  .profile-title {
+    font-size: 32px;
+  }
+
+  .profile-card {
+    padding: 28px;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .date-format-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .toggle-option {
+    padding: 24px 20px;
+  }
+
+  .toggle-time {
+    font-size: 28px;
+  }
+
+  .billing-input-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .billing-input-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+/* Large desktop styles (1024px and above) */
+@media (min-width: 1024px) {
+  .profile-container {
+    padding: 40px;
+  }
+}
+
+/* Mobile styles (below 480px) */
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 12px;
+  }
+
+  .profile-title {
+    font-size: 24px;
+  }
+
+  .profile-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .card-header {
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .card-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .card-title {
+    font-size: 16px;
+  }
+
+  .toggle-switch-container {
+    grid-template-columns: 1fr;
+  }
+
+  .toggle-option {
+    padding: 16px 12px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .toggle-time {
+    font-size: 20px;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .toggle-text {
+    text-align: left;
+  }
+
+  .date-format-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .date-format-option {
+    padding: 12px 8px;
+  }
+
+  .date-format-example {
+    font-size: 14px;
+  }
+
+  .date-format-label {
+    font-size: 10px;
+  }
+
+  .setting-label-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .billing-input-row {
+    flex-direction: column;
+  }
+
+  .billing-input-group {
+    width: 100%;
+  }
+
+  .save-button {
+    width: 100%;
+    padding: 14px 24px;
+  }
+}
+
+/* Dark mode adjustments */
+:root[data-theme="dark"] .toggle-option.active,
+:root[data-theme="dark"] .date-format-option.active {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+:root[data-theme="dark"] .info-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme="dark"] .info-notice {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme="dark"] .setting-preview {
+  background: rgba(255, 255, 255, 0.08);
+}

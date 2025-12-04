@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import CategoryForm from './CategoryForm';
 import { SearchBar } from '../common/SearchBar';
@@ -46,6 +48,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onDeleteExpense,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -332,7 +335,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 <div style={styles.expenseList}>
                   {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
                     <div key={exp.id} style={styles.expenseItem}>
-                      • {exp.description} (${exp.amount.toFixed(2)} - {exp.date})
+                      • {exp.description} (${exp.amount.toFixed(2)} - {formatDateWithUserFormat(exp.date, dateFormat)})
                     </div>
                   ))}
                   {deleteConfirm.expensesUsingCategory.length > 5 && (

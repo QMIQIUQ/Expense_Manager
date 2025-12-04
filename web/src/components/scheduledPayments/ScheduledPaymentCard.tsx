@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { 
   ScheduledPayment, 
   ScheduledPaymentRecord,
@@ -78,6 +80,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
   isPeriodPaid = false,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -236,7 +239,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           </div>
           {summary?.nextDueDate && (
             <div style={{ fontSize: '12px', color: 'var(--warning-text)' }}>
-              ⏰ {t('nextDue')}: {summary.nextDueDate}
+              ⏰ {t('nextDue')}: {formatDateWithUserFormat(summary.nextDueDate, dateFormat)}
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { getTodayLocal } from '../../utils/dateUtils';
@@ -33,6 +34,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const today = useToday();
   const [formData, setFormData] = useState({
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
@@ -193,6 +195,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           required
           error={!!errors.date}
           errorMessage={errors.date}
+          dateFormat={dateFormat}
           className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
           style={{
             borderColor: errors.date ? undefined : 'var(--border-color)',

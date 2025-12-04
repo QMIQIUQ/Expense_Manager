@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { ShowMoreButton } from './widgets';
 
 interface CardsSummaryProps {
@@ -12,6 +14,7 @@ interface CardsSummaryProps {
 
 const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
   const maxItems = 3;
   
@@ -49,7 +52,7 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
                 <div>
                   <h4 className="card-name">{card.name}</h4>
                   <p className="card-meta">
-                    {t('billingCycle')}: {stats.nextBillingDate}
+                    {t('billingCycle')}: {formatDateWithUserFormat(stats.nextBillingDate, dateFormat)}
                   </p>
                 </div>
                 {card.cardType === 'cashback' && stats.estimatedTotalCashback > 0 && (
