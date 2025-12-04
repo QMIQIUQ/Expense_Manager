@@ -126,6 +126,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       };
       
       if (!isSamePaymentSource(transferFromPaymentMethod, toPaymentMethod)) {
+        // Build transfer data, only including defined fields
         const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
           amount: formData.amount / 100,
           date: formData.date,
@@ -133,13 +134,23 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           note: `${t('transfer')} - ${formData.description}`,
           fromPaymentMethod: transferFromPaymentMethod,
           fromPaymentMethodName: transferFromPaymentMethod === 'e_wallet' ? transferFromEWalletName : '',
-          fromCardId: transferFromPaymentMethod === 'credit_card' ? transferFromCardId : undefined,
-          fromBankId: transferFromPaymentMethod === 'bank' ? transferFromBankId : undefined,
           toPaymentMethod: toPaymentMethod,
           toPaymentMethodName: toPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
-          toCardId: toPaymentMethod === 'credit_card' ? formData.cardId : undefined,
-          toBankId: toPaymentMethod === 'bank' ? formData.bankId : undefined,
         };
+        
+        // Only add optional fields if they have values (Firebase doesn't accept undefined)
+        if (transferFromPaymentMethod === 'credit_card' && transferFromCardId) {
+          transferData.fromCardId = transferFromCardId;
+        }
+        if (transferFromPaymentMethod === 'bank' && transferFromBankId) {
+          transferData.fromBankId = transferFromBankId;
+        }
+        if (toPaymentMethod === 'credit_card' && formData.cardId) {
+          transferData.toCardId = formData.cardId;
+        }
+        if (toPaymentMethod === 'bank' && formData.bankId) {
+          transferData.toBankId = formData.bankId;
+        }
         
         // Submit transfer asynchronously
         onAddTransfer(transferData).catch((err) => {
