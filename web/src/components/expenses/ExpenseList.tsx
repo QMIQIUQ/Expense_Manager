@@ -654,17 +654,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     <div className="quick-expense-form-field">
                       <AutocompleteDropdown
                         options={categories.map((cat): AutocompleteOption => ({
-                          id: cat.id,
+                          id: cat.id || '',
                           label: cat.name,
                           icon: cat.icon,
                           color: cat.color,
                         }))}
                         value={quickExpenseFormData.categoryId}
-                        onChange={(categoryId) => {
-                          const cat = categories.find(c => c.id === categoryId);
+                        onChange={(categoryId: string) => {
+                          const cat = categories.find(c => c.id === (categoryId || ''));
                           setQuickExpenseFormData({ 
                             ...quickExpenseFormData, 
-                            categoryId, 
+                            categoryId: categoryId || '', 
                             icon: cat?.icon || quickExpenseFormData.icon || '💰'
                           });
                         }}

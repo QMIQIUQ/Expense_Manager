@@ -74,13 +74,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           <div className="flex flex-col gap-1">
             <AutocompleteDropdown
               options={categories.map((cat): AutocompleteOption => ({
-                id: cat.id,
+                id: cat.id || '',
                 label: cat.name,
                 icon: cat.icon,
                 color: cat.color,
               }))}
               value={formData.categoryId}
-              onChange={(value) => setFormData({ ...formData, categoryId: value })}
+              onChange={(value: string) => setFormData({ ...formData, categoryId: value || '' })}
               label={`${t('category')} *`}
               placeholder={t('selectCategory')}
               allowClear={false}

@@ -23,13 +23,15 @@ interface TimePickerProps {
 const TimePicker: React.FC<TimePickerProps> = ({
   value,
   onChange,
-  timeFormat = '24h',
+  timeFormat: _timeFormat = '24h',
   disabled = false,
   className = '',
   style = {},
   label,
   name,
 }) => {
+  // Note: timeFormat prop kept for API compatibility but component always uses 12h internally
+  void _timeFormat;
   const parseTime = (timeStr: string): { hours: number; minutes: number } => {
     if (!timeStr) {
       const now = new Date();

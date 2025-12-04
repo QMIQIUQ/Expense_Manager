@@ -16,8 +16,9 @@ const UserProfile: React.FC = () => {
     dateFormat: contextDateFormat,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
-    refreshSettings 
+    refreshSettings: _refreshSettings 
   } = useUserSettings();
+  void _refreshSettings; // Keep for potential future use
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(contextTimeFormat);
   const [dateFormat, setDateFormat] = useState<DateFormat>(contextDateFormat);
@@ -138,7 +139,7 @@ const UserProfile: React.FC = () => {
               <circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
-          <h2 className="card-title">{t('accountInfo') || 'Account Information'}</h2>
+          <h2 className="card-title">{(t as any)('accountInfo') || 'Account Information'}</h2>
         </div>
         <div className="info-grid">
           <div className="info-item">
@@ -146,7 +147,7 @@ const UserProfile: React.FC = () => {
             <span className="info-value">{currentUser?.email}</span>
           </div>
           <div className="info-item">
-            <span className="info-label">{t('userId') || 'User ID'}</span>
+            <span className="info-label">{(t as any)('userId') || 'User ID'}</span>
             <span className="info-value info-value-mono">{currentUser?.uid}</span>
           </div>
         </div>
@@ -257,7 +258,7 @@ const UserProfile: React.FC = () => {
                       className="billing-input"
                       disabled={saving}
                     />
-                    <span className="billing-suffix">{t('dayOfMonth') || 'of each month'}</span>
+                    <span className="billing-suffix">{(t as any)('dayOfMonth') || 'of each month'}</span>
                   </div>
                   <span className="billing-hint">{t('billingCycleHint')}</span>
                 </div>
