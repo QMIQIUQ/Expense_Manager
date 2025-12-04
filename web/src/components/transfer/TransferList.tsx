@@ -164,7 +164,8 @@ const TransferList: React.FC<TransferListProps> = ({
               {getAccountName(
                 transfer.toPaymentMethod,
                 transfer.toPaymentMethodName,
-                transfer.toBankId
+                transfer.toBankId,
+                transfer.toCardId
               )}
             </span>
           </div>
