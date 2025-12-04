@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
@@ -65,6 +66,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
+  const { dateFormat, timeFormat } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -1911,10 +1913,11 @@ const Dashboard: React.FC = () => {
             </button>
             {showHamburgerMenu && (
               <div
-                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto rounded-lg shadow-xl border py-2 z-[9999]"
+                className="fixed right-2 sm:right-4 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
                 style={{
+                  top: '60px',
                   minWidth: '240px',
-                  maxWidth: '90vw',
+                  maxWidth: 'calc(100vw - 16px)',
                   backgroundColor: 'var(--bg-primary)',
                   borderColor: 'var(--border-color)',
                 }}
@@ -2677,6 +2680,8 @@ const Dashboard: React.FC = () => {
                     setActiveTab('paymentMethods');
                   }}
                   onAddTransfer={handleAddTransfer}
+                  dateFormat={dateFormat}
+                  timeFormat={timeFormat}
                 />
               </div>
             </div>
@@ -2773,6 +2778,8 @@ const Dashboard: React.FC = () => {
                     setShowAddSheet(false);
                     setActiveTab('paymentMethods');
                   }}
+                  dateFormat={dateFormat}
+                  timeFormat={timeFormat}
                 />
               </div>
             </div>

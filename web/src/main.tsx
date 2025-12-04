@@ -6,6 +6,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { UserSettingsProvider } from './contexts/UserSettingsContext';
 
 // Centralize all top-level providers here to guarantee `useLanguage` and others
 // are available to every route/component, avoiding hook usage outside provider trees.
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <LanguageProvider>
         <AuthProvider>
           <NotificationProvider>
-            <App />
+            <UserSettingsProvider>
+              <App />
+            </UserSettingsProvider>
           </NotificationProvider>
         </AuthProvider>
       </LanguageProvider>

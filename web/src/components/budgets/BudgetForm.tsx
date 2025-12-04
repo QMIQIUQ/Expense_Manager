@@ -1,9 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { Category } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
+import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 
 interface BudgetFormData {
   categoryId: string;
@@ -34,6 +36,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [showRolloverSettings, setShowRolloverSettings] = React.useState(initialData?.rolloverEnabled || false);
   const [formData, setFormData] = React.useState<BudgetFormData>(
     initialData || {
@@ -69,25 +72,19 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-            <select
+            <AutocompleteDropdown
+              options={categories.map((cat): AutocompleteOption => ({
+                id: cat.id,
+                label: cat.name,
+                icon: cat.icon,
+                color: cat.color,
+              }))}
               value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              required
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-              style={{
-                borderColor: 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <option value="">{t('selectCategory')}</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setFormData({ ...formData, categoryId: value })}
+              label={`${t('category')} *`}
+              placeholder={t('selectCategory')}
+              allowClear={false}
+            />
           </div>
 
           <div className="flex flex-col gap-1">
@@ -151,6 +148,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               value={formData.startDate}
               onChange={(value) => setFormData({ ...formData, startDate: value })}
               required
+              dateFormat={dateFormat}
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
               style={{
                 borderColor: 'var(--border-color)',

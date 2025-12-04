@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { DeleteIcon, EditIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentForm from './RepaymentForm';
@@ -28,6 +30,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
   maxAmount: _maxAmount,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const { effectiveTheme } = useTheme();
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; repaymentId: string | null }>({
     isOpen: false,
@@ -54,12 +57,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return formatDateWithUserFormat(dateString, dateFormat);
   };
 
   // Get theme-aware payment chip style

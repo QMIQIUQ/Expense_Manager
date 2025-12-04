@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Bank, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import CardForm from './CardForm';
 import ConfirmModal from '../ConfirmModal';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { SearchBar } from '../common/SearchBar';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
@@ -29,6 +31,7 @@ const CardManager: React.FC<CardManagerProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -306,7 +309,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                   </div>
                   <div className="stat-card warning">
                     <p className="stat-label">{t('nextBillingDate')}</p>
-                    <p className="stat-value warning-text">{stats.nextBillingDate}</p>
+                    <p className="stat-value warning-text">{formatDateWithUserFormat(stats.nextBillingDate, dateFormat)}</p>
                   </div>
                 </div>
 

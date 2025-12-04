@@ -1,11 +1,13 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
-import { formatDateLocal } from '../../../utils/dateUtils';
+import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
 
 const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
   
@@ -84,10 +86,10 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' 
     });
 
     return Object.entries(last7Days).map(([date, amount]) => ({
-      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: formatDateShort(date, dateFormat),
       amount: parseFloat(amount.toFixed(2)),
     }));
-  }, [expenses]);
+  }, [expenses, dateFormat]);
 
   if (spendingTrend.length === 0) {
     return (

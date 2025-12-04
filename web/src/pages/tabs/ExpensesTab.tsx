@@ -2,6 +2,7 @@ import React from 'react';
 import ExpenseForm from '../../components/expenses/ExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 
 interface Props {
   expenses: Expense[];
@@ -34,6 +35,8 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateEWallet,
   onCreateCard,
 }) => {
+  const { timeFormat, dateFormat } = useUserSettings();
+
   return (
     <div style={styles.expensesTab}>
       <div style={styles.section}>
@@ -51,6 +54,8 @@ const ExpensesTab: React.FC<Props> = ({
           onAddTransfer={onAddTransfer}
           onCreateEWallet={onCreateEWallet}
           onCreateCard={onCreateCard}
+          timeFormat={timeFormat}
+          dateFormat={dateFormat}
         />
       </div>
 

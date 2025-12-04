@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { ScheduledPayment, ScheduledPaymentRecord, Category } from '../../types';
 import { formatCurrency } from './ScheduledPaymentForm';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 
 interface PaymentCalendarViewProps {
   scheduledPayments: ScheduledPayment[];
@@ -17,6 +19,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
   onPaymentClick,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -185,7 +188,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
       {selectedDate && (
         <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
           <h4 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-            {selectedDate.toLocaleDateString()} - {t('paymentsOnDate')}
+            {formatDateWithUserFormat(selectedDate, dateFormat)} - {t('paymentsOnDate')}
           </h4>
           
           {selectedDatePayments.length === 0 ? (

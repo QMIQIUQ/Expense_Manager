@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
+import { formatDateRangeShort } from '../../../utils/dateUtils';
 
 const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
   
   // Determine max items based on size
@@ -63,16 +66,13 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
 
   // Format period range for display
   const formatPeriodRange = (budget: { period: string }, cycleStart: Date, cycleEnd: Date): string => {
-    const formatDate = (date: Date) => {
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      return `${month}/${day}`;
-    };
+    // Convert dates to YYYY-MM-DD format for the utility function
+    const startStr = `${cycleStart.getFullYear()}-${String(cycleStart.getMonth() + 1).padStart(2, '0')}-${String(cycleStart.getDate()).padStart(2, '0')}`;
+    const endStr = `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, '0')}-${String(cycleEnd.getDate()).padStart(2, '0')}`;
     
     // For monthly budgets, show the billing cycle range
-    // cycleEnd is already the last day of the cycle (billingCycleDay - 1)
     if (budget.period === 'monthly') {
-      return `${formatDate(cycleStart)} - ${formatDate(cycleEnd)}`;
+      return formatDateRangeShort(startStr, endStr, dateFormat);
     }
     
     // For weekly/yearly, just return empty for now (can be extended)

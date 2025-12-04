@@ -1,8 +1,9 @@
 import React from 'react';
 import type { Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
+import { getTodayLocal, formatDateLocal, formatDateShort, formatDateWithUserFormat } from '../../utils/dateUtils';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -14,6 +15,7 @@ interface DashboardSummaryProps {
 
 const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted, billingCycleDay = 1 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   
   React.useEffect(() => {
@@ -162,10 +164,10 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     });
     
     return Object.entries(last7Days).map(([date, amount]) => ({
-      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: formatDateShort(date, dateFormat),
       amount: parseFloat(amount.toFixed(2))
     }));
-  }, [expenses]);
+  }, [expenses, dateFormat]);
 
   // Memoize recent expenses sorting (last 5)
   const recentExpenses = React.useMemo(() => 
@@ -281,7 +283,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                     <div className="tracked-expense-header">
                       <div className="tracked-expense-info">
                         <span className="tracked-expense-title">{expense.description}</span>
-                        <span className="tracked-expense-date">{expense.date}</span>
+                        <span className="tracked-expense-date">{formatDateWithUserFormat(expense.date, dateFormat)}</span>
                       </div>
                       {onMarkTrackingCompleted && (
                         <button
@@ -427,7 +429,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 <div className="recent-expense-right">
                   <span className="recent-expense-amount error-text">${expense.amount.toFixed(2)}</span>
                   <span className="recent-expense-date">
-                    {new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {formatDateShort(expense.date, dateFormat)}
                   </span>
                 </div>
               </div>

@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CalendarIcon } from '../icons';
+import { DateFormat } from '../../types';
 
 interface DatePickerProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: string; // Always YYYY-MM-DD format internally
+  onChange: (value: string) => void; // Always returns YYYY-MM-DD format
   max?: string;
   min?: string;
   required?: boolean;
@@ -14,6 +15,7 @@ interface DatePickerProps {
   label?: string;
   errorMessage?: string;
   name?: string;
+  dateFormat?: DateFormat; // Display format for the date
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
@@ -29,6 +31,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   label,
   errorMessage,
   name,
+  dateFormat = 'YYYY-MM-DD',
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
@@ -37,14 +40,108 @@ const DatePicker: React.FC<DatePickerProps> = ({
     }
     return new Date();
   });
+  const [inputValue, setInputValue] = useState(''); // Display value in user's format
+  const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
   const calendarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Format date from YYYY-MM-DD to display format
+  const formatDateForDisplay = (isoDate: string): string => {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    switch (dateFormat) {
+      case 'DD/MM/YYYY':
+        return `${day}/${month}/${year}`;
+      case 'MM/DD/YYYY':
+        return `${month}/${day}/${year}`;
+      case 'YYYY/MM/DD':
+        return `${year}/${month}/${day}`;
+      case 'YYYY-MM-DD':
+      default:
+        return isoDate;
+    }
+  };
+
+  // Parse display format back to YYYY-MM-DD
+  const parseDisplayDate = (displayDate: string): string | null => {
+    if (!displayDate) return null;
+    
+    let year: string, month: string, day: string;
+    
+    // Try to parse based on the current format
+    const dashParts = displayDate.split('-');
+    const slashParts = displayDate.split('/');
+    
+    if (dashParts.length === 3) {
+      // Assume YYYY-MM-DD format for dash-separated
+      [year, month, day] = dashParts;
+    } else if (slashParts.length === 3) {
+      switch (dateFormat) {
+        case 'DD/MM/YYYY':
+          [day, month, year] = slashParts;
+          break;
+        case 'MM/DD/YYYY':
+          [month, day, year] = slashParts;
+          break;
+        case 'YYYY/MM/DD':
+          [year, month, day] = slashParts;
+          break;
+        default:
+          return null;
+      }
+    } else {
+      return null;
+    }
+    
+    // Validate parsed values
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    
+    if (
+      isNaN(yearNum) || yearNum < 1900 || yearNum > 2100 ||
+      isNaN(monthNum) || monthNum < 1 || monthNum > 12 ||
+      isNaN(dayNum) || dayNum < 1 || dayNum > 31
+    ) {
+      return null;
+    }
+    
+    return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+
+  // Get placeholder based on format
+  const getPlaceholder = (): string => {
+    switch (dateFormat) {
+      case 'DD/MM/YYYY':
+        return 'DD/MM/YYYY';
+      case 'MM/DD/YYYY':
+        return 'MM/DD/YYYY';
+      case 'YYYY/MM/DD':
+        return 'YYYY/MM/DD';
+      case 'YYYY-MM-DD':
+      default:
+        return 'YYYY-MM-DD';
+    }
+  };
+
+  // Update input value when value or format changes
+  useEffect(() => {
+    setInputValue(formatDateForDisplay(value));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, dateFormat]);
 
   // Close calendar when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+      if (
+        calendarRef.current && 
+        !calendarRef.current.contains(event.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setShowCalendar(false);
+        setViewMode('days'); // Reset view mode when closing
       }
     };
 
@@ -57,6 +154,20 @@ const DatePicker: React.FC<DatePickerProps> = ({
     };
   }, [showCalendar]);
 
+  // Determine if calendar should open upward (when near bottom of screen)
+  const [openUpward, setOpenUpward] = useState(false);
+  
+  useEffect(() => {
+    if (showCalendar && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const calendarHeight = 380;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      setOpenUpward(spaceBelow < calendarHeight && spaceAbove > spaceBelow);
+    }
+  }, [showCalendar]);
+
   // Update selected month when value changes
   useEffect(() => {
     if (value) {
@@ -66,16 +177,40 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleDateSelect = (date: string) => {
     onChange(date);
+    setInputValue(formatDateForDisplay(date));
     setShowCalendar(false);
+    setViewMode('days'); // Reset view mode when selecting
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
+    const newDisplayValue = e.target.value;
+    setInputValue(newDisplayValue);
+    
+    // Try to parse the input and update the actual value
+    const parsedDate = parseDisplayDate(newDisplayValue);
+    if (parsedDate) {
+      onChange(parsedDate);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // On blur, if parsing fails, revert to the current value's display
+    const parsedDate = parseDisplayDate(inputValue);
+    if (!parsedDate && value) {
+      setInputValue(formatDateForDisplay(value));
+    } else if (parsedDate && parsedDate !== value) {
+      onChange(parsedDate);
+    }
   };
 
   const handleCalendarClick = () => {
     if (!disabled) {
-      setShowCalendar(!showCalendar);
+      if (showCalendar) {
+        setShowCalendar(false);
+        setViewMode('days'); // Reset view mode when closing
+      } else {
+        setShowCalendar(true);
+      }
     }
   };
 
@@ -122,6 +257,102 @@ const DatePicker: React.FC<DatePickerProps> = ({
     setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1));
   };
 
+  const prevYear = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear() - 1, selectedMonth.getMonth()));
+  };
+
+  const nextYear = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear() + 1, selectedMonth.getMonth()));
+  };
+
+  const prevYearRange = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear() - 12, selectedMonth.getMonth()));
+  };
+
+  const nextYearRange = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear() + 12, selectedMonth.getMonth()));
+  };
+
+  const handleMonthSelect = (month: number) => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), month));
+    setViewMode('days');
+  };
+
+  const handleYearSelect = (year: number) => {
+    setSelectedMonth(new Date(year, selectedMonth.getMonth()));
+    setViewMode('months');
+  };
+
+  const handleHeaderClick = () => {
+    if (viewMode === 'days') {
+      setViewMode('months');
+    } else if (viewMode === 'months') {
+      setViewMode('years');
+    }
+  };
+
+  const renderMonthsView = () => {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const selectedYear = selectedMonth.getFullYear();
+    const selectedMonthIndex = selectedMonth.getMonth();
+
+    return (
+      <div className="calendar-months-grid">
+        {months.map((month, index) => {
+          const isCurrentMonth = index === currentMonth && selectedYear === currentYear;
+          const isSelectedMonth = index === selectedMonthIndex;
+          
+          return (
+            <button
+              key={month}
+              type="button"
+              onClick={() => handleMonthSelect(index)}
+              className={`calendar-month-btn ${isCurrentMonth ? 'current' : ''} ${isSelectedMonth ? 'selected' : ''}`}
+            >
+              {month}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderYearsView = () => {
+    const currentYear = new Date().getFullYear();
+    const selectedYear = selectedMonth.getFullYear();
+    const startYear = Math.floor(selectedYear / 12) * 12;
+    const years: number[] = [];
+    
+    for (let i = 0; i < 12; i++) {
+      years.push(startYear + i);
+    }
+
+    return (
+      <div className="calendar-years-grid">
+        {years.map((year) => {
+          const isCurrentYear = year === currentYear;
+          const isSelectedYear = year === selectedYear;
+          
+          return (
+            <button
+              key={year}
+              type="button"
+              onClick={() => handleYearSelect(year)}
+              className={`calendar-year-btn ${isCurrentYear ? 'current' : ''} ${isSelectedYear ? 'selected' : ''}`}
+            >
+              {year}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(selectedMonth);
     const firstDay = getFirstDayOfMonth(selectedMonth);
@@ -158,8 +389,41 @@ const DatePicker: React.FC<DatePickerProps> = ({
     return days;
   };
 
-  const monthName = selectedMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = selectedMonth.toLocaleString('default', { month: 'long' });
+  const yearName = selectedMonth.getFullYear();
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Get header text and navigation based on view mode
+  const getHeaderText = () => {
+    if (viewMode === 'days') {
+      return `${monthName} ${yearName}`;
+    } else if (viewMode === 'months') {
+      return `${yearName}`;
+    } else {
+      const startYear = Math.floor(yearName / 12) * 12;
+      return `${startYear} - ${startYear + 11}`;
+    }
+  };
+
+  const handlePrevClick = () => {
+    if (viewMode === 'days') {
+      prevMonth();
+    } else if (viewMode === 'months') {
+      prevYear();
+    } else {
+      prevYearRange();
+    }
+  };
+
+  const handleNextClick = () => {
+    if (viewMode === 'days') {
+      nextMonth();
+    } else if (viewMode === 'months') {
+      nextYear();
+    } else {
+      nextYearRange();
+    }
+  };
 
   return (
     <div className="date-picker-wrapper">
@@ -169,26 +433,43 @@ const DatePicker: React.FC<DatePickerProps> = ({
           {required && ' *'}
         </label>
       )}
-      <div className="date-picker-container" ref={calendarRef}>
-        <div className="date-picker-input-group">
+      <div className="date-picker-container" ref={containerRef}>
+        <div className="date-picker-input-group" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             ref={inputRef}
-            type="date"
+            type="text"
             name={name}
-            value={value}
+            value={inputValue}
             onChange={handleInputChange}
-            max={max}
-            min={min}
+            onBlur={handleInputBlur}
+            placeholder={getPlaceholder()}
             required={required}
             disabled={disabled}
             className={`date-picker-input ${error ? 'error' : ''} ${className}`}
-            style={style}
+            style={{
+              ...style,
+              paddingRight: '40px',
+            }}
           />
           <button
             type="button"
             onClick={handleCalendarClick}
             disabled={disabled}
             className="date-picker-icon-btn"
+            style={{
+              position: 'absolute',
+              right: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              borderRadius: '4px',
+              zIndex: 2,
+            }}
             aria-label="Open calendar"
           >
             <CalendarIcon size={20} />
@@ -196,50 +477,73 @@ const DatePicker: React.FC<DatePickerProps> = ({
         </div>
 
         {showCalendar && (
-          <div className="date-picker-calendar">
+          <div 
+            ref={calendarRef}
+            className={`date-picker-calendar ${openUpward ? 'open-upward' : ''}`}
+          >
             {/* Calendar Header */}
             <div className="calendar-header">
-              <button type="button" onClick={prevMonth} className="calendar-nav-btn">
+              <button type="button" onClick={handlePrevClick} className="calendar-nav-btn">
                 ‹
               </button>
-              <div className="calendar-month">{monthName}</div>
-              <button type="button" onClick={nextMonth} className="calendar-nav-btn">
+              <button 
+                type="button" 
+                onClick={handleHeaderClick} 
+                className="calendar-month-year-btn"
+                disabled={viewMode === 'years'}
+              >
+                {getHeaderText()}
+              </button>
+              <button type="button" onClick={handleNextClick} className="calendar-nav-btn">
                 ›
               </button>
             </div>
 
-            {/* Week Days */}
-            <div className="calendar-weekdays">
-              {weekDays.map((day) => (
-                <div key={day} className="calendar-weekday">
-                  {day}
+            {/* Days View */}
+            {viewMode === 'days' && (
+              <>
+                {/* Week Days */}
+                <div className="calendar-weekdays">
+                  {weekDays.map((day) => (
+                    <div key={day} className="calendar-weekday">
+                      {day}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Calendar Days */}
-            <div className="calendar-days">{renderCalendar()}</div>
+                {/* Calendar Days */}
+                <div className="calendar-days">{renderCalendar()}</div>
+              </>
+            )}
 
-            {/* Today Button */}
-            <div className="calendar-footer">
-              <button
-                type="button"
-                onClick={() => {
-                  const today = new Date();
-                  const todayStr = formatDate(
-                    today.getFullYear(),
-                    today.getMonth(),
-                    today.getDate()
-                  );
-                  if (!isDateDisabled(todayStr)) {
-                    handleDateSelect(todayStr);
-                  }
-                }}
-                className="calendar-today-btn"
-              >
-                Today
-              </button>
-            </div>
+            {/* Months View */}
+            {viewMode === 'months' && renderMonthsView()}
+
+            {/* Years View */}
+            {viewMode === 'years' && renderYearsView()}
+
+            {/* Today Button - only show in days view */}
+            {viewMode === 'days' && (
+              <div className="calendar-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const today = new Date();
+                    const todayStr = formatDate(
+                      today.getFullYear(),
+                      today.getMonth(),
+                      today.getDate()
+                    );
+                    if (!isDateDisabled(todayStr)) {
+                      handleDateSelect(todayStr);
+                    }
+                  }}
+                  className="calendar-today-btn"
+                >
+                  Today
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -274,6 +578,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
           transition: border-color 0.2s, box-shadow 0.2s;
         }
 
+        .date-picker-input::placeholder {
+          color: var(--text-secondary);
+          opacity: 0.7;
+        }
+
         .date-picker-input:focus {
           border-color: var(--primary-color);
           box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
@@ -301,6 +610,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           color: var(--text-secondary);
           transition: color 0.2s;
           border-radius: 4px;
+          z-index: 1;
         }
 
         .date-picker-icon-btn:hover:not(:disabled) {
@@ -321,10 +631,18 @@ const DatePicker: React.FC<DatePickerProps> = ({
           background: var(--bg-primary);
           border: 1px solid var(--border-color);
           border-radius: 8px;
-          box-shadow: 0 4px 12px var(--shadow);
+          box-shadow: 0 8px 24px var(--shadow);
           padding: 16px;
-          z-index: 1000;
+          z-index: 10000;
           min-width: 280px;
+          max-width: calc(100vw - 32px);
+        }
+
+        .date-picker-calendar.open-upward {
+          top: auto;
+          bottom: 100%;
+          margin-top: 0;
+          margin-bottom: 4px;
         }
 
         .calendar-header {
@@ -332,6 +650,26 @@ const DatePicker: React.FC<DatePickerProps> = ({
           align-items: center;
           justify-content: space-between;
           margin-bottom: 16px;
+        }
+
+        .calendar-month-year-btn {
+          font-weight: 600;
+          font-size: 14px;
+          color: var(--text-primary);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .calendar-month-year-btn:hover:not(:disabled) {
+          background-color: var(--bg-secondary);
+        }
+
+        .calendar-month-year-btn:disabled {
+          cursor: default;
         }
 
         .calendar-month {
@@ -438,18 +776,74 @@ const DatePicker: React.FC<DatePickerProps> = ({
           border-color: var(--primary-color);
         }
 
-        /* Mobile: Hide calendar icon, use native date picker */
+        /* Months Grid */
+        .calendar-months-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .calendar-month-btn {
+          padding: 12px 8px;
+          border: none;
+          background: none;
+          cursor: pointer;
+          font-size: 14px;
+          color: var(--text-primary);
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+
+        .calendar-month-btn:hover {
+          background-color: var(--bg-secondary);
+        }
+
+        .calendar-month-btn.current {
+          border: 2px solid var(--primary-color);
+        }
+
+        .calendar-month-btn.selected {
+          background-color: var(--primary-color);
+          color: white;
+          font-weight: 600;
+        }
+
+        /* Years Grid */
+        .calendar-years-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .calendar-year-btn {
+          padding: 12px 8px;
+          border: none;
+          background: none;
+          cursor: pointer;
+          font-size: 14px;
+          color: var(--text-primary);
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+
+        .calendar-year-btn:hover {
+          background-color: var(--bg-secondary);
+        }
+
+        .calendar-year-btn.current {
+          border: 2px solid var(--primary-color);
+        }
+
+        .calendar-year-btn.selected {
+          background-color: var(--primary-color);
+          color: white;
+          font-weight: 600;
+        }
+
+        /* Mobile: Use native date picker but keep calendar icon visible */
         @media (max-width: 768px) {
-          .date-picker-icon-btn {
-            display: none;
-          }
-
           .date-picker-input {
-            padding: 8px 12px;
-          }
-
-          .date-picker-calendar {
-            display: none;
+            padding: 8px 40px 8px 12px;
           }
         }
       `}</style>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { 
   Category, 
   Card, 
@@ -14,6 +15,7 @@ import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
 import DatePicker from '../common/DatePicker';
+import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 
 // Common currencies - exported for use in other components
 export const CURRENCIES = [
@@ -90,6 +92,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const today = useToday();
   
   const [formData, setFormData] = useState<ScheduledPaymentFormData>({
@@ -244,27 +247,19 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
 
         {/* Category */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('category')} *
-          </label>
-          <select
+          <AutocompleteDropdown
+            options={categories.map((cat): AutocompleteOption => ({
+              id: cat.name,
+              label: cat.name,
+              icon: cat.icon,
+              color: cat.color,
+            }))}
             value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            required
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
-            }}
-          >
-            <option value="">{t('selectCategory')}</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.icon} {cat.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setFormData({ ...formData, category: value })}
+            label={`${t('category')} *`}
+            placeholder={t('selectCategory')}
+            allowClear={false}
+          />
         </div>
 
         {/* For Installment/Debt: Total Amount and Calculate Option */}
@@ -458,6 +453,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           value={formData.startDate}
           onChange={(value) => setFormData({ ...formData, startDate: value })}
           required
+          dateFormat={dateFormat}
           className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
           style={{
             backgroundColor: 'var(--input-bg)',
@@ -630,6 +626,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               <DatePicker
                 value={formData.endDate}
                 onChange={(value) => setFormData({ ...formData, endDate: value })}
+                dateFormat={dateFormat}
                 className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                 style={{
                   backgroundColor: 'var(--input-bg)',

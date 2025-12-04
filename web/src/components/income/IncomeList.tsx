@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { EditIcon, DeleteIcon } from '../icons';
 import IncomeForm from './IncomeForm';
 import ConfirmModal from '../ConfirmModal';
@@ -39,6 +41,7 @@ interface IncomeListProps {
 
 const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -117,8 +120,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDateWithUserFormat(dateString, dateFormat);
   };
 
   // Group incomes by date for display
@@ -241,7 +243,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
               {/* Header row with time, linked expense, date */}
               <div style={styles.headerRow}>
                 <div style={styles.dateDisplay}>
-                  {new Date(income.date).toLocaleDateString()}
+                  {formatDate(income.date)}
                 </div>
                 {income.linkedExpenseId && (
                   <button

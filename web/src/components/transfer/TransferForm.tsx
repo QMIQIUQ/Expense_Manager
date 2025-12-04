@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Transfer, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { BaseForm } from '../common/BaseForm';
 import { getCurrentTimeLocal } from '../../utils/dateUtils';
@@ -25,6 +26,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const today = useToday();
   const [formData, setFormData] = useState({
     amount: 0,
@@ -221,6 +223,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
           required
           error={!!errors.date}
           errorMessage={errors.date}
+          dateFormat={dateFormat}
           className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
           style={{
             borderColor: errors.date ? undefined : 'var(--border-color)',

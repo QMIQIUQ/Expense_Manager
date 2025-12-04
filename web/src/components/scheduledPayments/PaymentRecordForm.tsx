@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { 
   Card, 
   Bank, 
@@ -45,6 +46,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   onCancel,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const todayDate = useToday();
   
   const today = new Date();
@@ -221,6 +223,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
           value={formData.paidDate}
           onChange={(value) => setFormData({ ...formData, paidDate: value })}
           required
+          dateFormat={dateFormat}
           className="w-full p-3 rounded-lg outline-none transition-all"
           style={{
             backgroundColor: 'var(--input-bg)',
