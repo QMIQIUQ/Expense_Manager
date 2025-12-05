@@ -27,8 +27,8 @@ export const useOptimisticCRUD = <T,>() => {
   const { t } = useLanguage();
   const operationCounter = useRef(0);
 
-  // Get translated messages
-  const getSuccessMessage = (type: 'create' | 'update' | 'delete'): string => {
+  // Get translated messages - wrapped in useCallback to ensure stable references
+  const getSuccessMessage = useCallback((type: 'create' | 'update' | 'delete'): string => {
     switch (type) {
       case 'create':
         return t('successfullyCreated');
@@ -39,9 +39,9 @@ export const useOptimisticCRUD = <T,>() => {
       default:
         return t('operationCompleted');
     }
-  };
+  }, [t]);
 
-  const getErrorMessage = (type: 'create' | 'update' | 'delete', error: unknown): string => {
+  const getErrorMessage = useCallback((type: 'create' | 'update' | 'delete', error: unknown): string => {
     const action = type === 'create' ? t('create') : type === 'update' ? t('update') : t('delete');
     const errorMsg = error instanceof Error ? error.message : t('unknownError');
     
@@ -51,7 +51,7 @@ export const useOptimisticCRUD = <T,>() => {
     }
     
     return `${t('failedTo')} ${action}: ${errorMsg}`;
-  };
+  }, [t]);
 
   const run = useCallback(
     async <R = unknown,>(

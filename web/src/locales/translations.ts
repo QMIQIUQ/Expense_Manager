@@ -279,7 +279,6 @@ export const translations = {
   rows: { en: 'rows', zh: '列', 'zh-CN': '行' },
   startImport: { en: 'Start Import', zh: '開始匯入', 'zh-CN': '开始导入' },
   importing: { en: 'Importing...', zh: '匯入中...', 'zh-CN': '导入中...' },
-  processing: { en: 'Processing...', zh: '處理中...', 'zh-CN': '处理中...' },
   updatingData: { en: 'Updating data...', zh: '更新資料中...', 'zh-CN': '更新数据中...' },
   importComplete: { en: 'Import Complete', zh: '匯入完成', 'zh-CN': '导入完成' },
   success: { en: 'Success', zh: '成功', 'zh-CN': '成功' },
@@ -532,7 +531,6 @@ export const translations = {
   paidByHelp: { en: 'Who initially paid for this expense', zh: '誰最初支付了此筆支出', 'zh-CN': '谁最初支付了此笔支出' },
   noIncomesYet: { en: 'No incomes yet', zh: '尚無收入記錄', 'zh-CN': '尚无收入记录' },
   startTrackingIncome: { en: 'Start tracking your income by adding your first entry', zh: '新增第一筆記錄以開始追蹤您的收入', 'zh-CN': '添加第一笔记录以开始追踪您的收入' },
-  update: { en: 'Update', zh: '更新', 'zh-CN': '更新' },
   expense: { en: 'Expense', zh: '支出', 'zh-CN': '支出' },
   receipt: { en: 'Receipt', zh: '收據', 'zh-CN': '收据' },
   
