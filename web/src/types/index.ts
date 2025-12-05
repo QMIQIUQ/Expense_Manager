@@ -66,6 +66,7 @@ export interface EWallet {
   provider?: string; // Optional: provider/company name
   accountNumber?: string; // Optional: last 4 digits or identifier
   isDefault?: boolean; // Whether this is a default/system e-wallet
+  balance?: number; // Account balance (default: 0)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +77,7 @@ export interface Bank {
   name: string; // E.g., 'HSBC', 'Chase'
   country?: string;
   code?: string; // optional bank code
+  balance?: number; // Account balance (default: 0)
   createdAt: Date;
   updatedAt: Date;
 }

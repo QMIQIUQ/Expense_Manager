@@ -1,9 +1,0 @@
-src/components/income/IncomeForm.tsx(120,15): error TS2304: Cannot find name 'getTodayLocal'.
-src/components/repayment/RepaymentForm.tsx(115,15): error TS2304: Cannot find name 'getTodayLocal'.
-src/components/transfer/TransferForm.tsx(143,13): error TS2304: Cannot find name 'getTodayLocal'.
-src/locales/translations.ts(116,3): error TS1117: An object literal cannot have multiple properties with the same name.
-src/locales/translations.ts(132,3): error TS1117: An object literal cannot have multiple properties with the same name.
-src/locales/translations.ts(661,3): error TS1117: An object literal cannot have multiple properties with the same name.
-src/locales/translations.ts(662,3): error TS1117: An object literal cannot have multiple properties with the same name.
-src/locales/translations.ts(663,3): error TS1117: An object literal cannot have multiple properties with the same name.
-src/locales/translations.ts(762,3): error TS1117: An object literal cannot have multiple properties with the same name.

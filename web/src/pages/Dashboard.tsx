@@ -22,6 +22,7 @@ import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
+import { balanceService } from '../services/balanceService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
@@ -466,7 +467,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp expense with real ID
           const newId = result as string;
           const realExpense: Expense = {
@@ -478,6 +479,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
             data.map((e) => (e.id === tempId ? realExpense : e))
           );
+          // Update balance for the payment method
+          await balanceService.handleExpenseCreated(realExpense);
+          // Reload e-wallets and banks to reflect updated balances
+          loadData();
         },
         onError: () => {
           // Rollback optimistic update
@@ -539,8 +544,34 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
     const expenseToDelete = expenses.find((e) => e.id === id);
     
+    // Find related transfer to delete (by matching date, amount, and payment method)
+    // Transfer.fromPaymentMethod should match expense.paymentMethod
+    const relatedTransfer = expenseToDelete ? transfers.find(t => {
+      const dateMatch = t.date === expenseToDelete.date;
+      const amountMatch = Math.abs(t.amount - expenseToDelete.amount) < 0.01;
+      
+      // Match payment method as the source (fromPaymentMethod = expense's payment method)
+      let paymentMethodMatch = false;
+      if (expenseToDelete.paymentMethod === 'credit_card') {
+        paymentMethodMatch = t.fromPaymentMethod === 'credit_card' && t.fromCardId === expenseToDelete.cardId;
+      } else if (expenseToDelete.paymentMethod === 'e_wallet') {
+        paymentMethodMatch = t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === expenseToDelete.paymentMethodName;
+      } else if (expenseToDelete.paymentMethod === 'bank') {
+        paymentMethodMatch = t.fromPaymentMethod === 'bank' && t.fromBankId === expenseToDelete.bankId;
+      } else if (expenseToDelete.paymentMethod === 'cash') {
+        paymentMethodMatch = t.fromPaymentMethod === 'cash';
+      }
+      
+      return dateMatch && amountMatch && paymentMethodMatch;
+    }) : undefined;
+    
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    
+    // Optimistic update: remove related transfer if exists
+    if (relatedTransfer?.id) {
+      setTransfers((prev) => prev.filter((t) => t.id !== relatedTransfer.id));
+    }
     
     // Update cache optimistically
     dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
@@ -551,8 +582,21 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (add back the expense amount)
+          if (expenseToDelete) {
+            await balanceService.handleExpenseDeleted(expenseToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
+          // Delete related transfer if exists
+          if (relatedTransfer?.id) {
+            try {
+              await transferService.delete(relatedTransfer.id);
+            } catch (err) {
+              console.error('Failed to delete related transfer:', err);
+            }
+          }
         },
         onError: () => {
           // Rollback optimistic update
@@ -560,6 +604,10 @@ const Dashboard: React.FC = () => {
             setExpenses((prev) => [expenseToDelete, ...prev]);
             // Rollback cache
             dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
+          }
+          // Rollback transfer if was removed
+          if (relatedTransfer) {
+            setTransfers((prev) => [relatedTransfer, ...prev]);
           }
         },
       }
@@ -1190,7 +1238,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp income with real ID
           const newId = result as string;
           const realIncome: Income = {
@@ -1202,6 +1250,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
             data.map((i) => (i.id === tempId ? realIncome : i))
           );
+          // Update balance for the payment method
+          await balanceService.handleIncomeCreated(realIncome);
+          // Reload to reflect updated balances
+          loadData();
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== tempId));
@@ -1266,8 +1318,13 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (deduct the income amount)
+          if (incomeToDelete) {
+            await balanceService.handleIncomeDeleted(incomeToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
         },
         onError: () => {
           if (incomeToDelete) {
@@ -1284,7 +1341,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Transfers
-  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, silent = false) => {
     if (!currentUser) return;
     
     // Optimistic update
@@ -1303,9 +1360,11 @@ const Dashboard: React.FC = () => {
       () => transferService.create({ ...transferData, userId: currentUser.uid }),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        suppressNotification: silent, // Don't show notification if silent mode
+        onSuccess: async () => {
+          // Update balances for both source and destination
+          await balanceService.handleTransferCreated(optimisticTransfer);
           loadData();
-          showNotification('success', 'Transfer added successfully');
         },
         onError: () => {
           setTransfers((prev) => prev.filter((t) => t.id !== tempId));
@@ -1325,9 +1384,13 @@ const Dashboard: React.FC = () => {
       () => transferService.delete(id),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Update balances for both source and destination (reverse the transfer)
+          if (transferToDelete) {
+            await balanceService.handleTransferDeleted(transferToDelete);
+          }
           loadData();
-          showNotification('success', 'Transfer deleted successfully');
+          showNotification('success', t('transferDeleted'));
         },
         onError: () => {
           if (transferToDelete) {
@@ -2460,6 +2523,7 @@ const Dashboard: React.FC = () => {
               ewallets={ewallets}
               banks={banks}
               repayments={repayments}
+              transfers={transfers}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
