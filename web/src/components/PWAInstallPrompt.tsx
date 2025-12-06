@@ -5,18 +5,33 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Type guard to check if event is a BeforeInstallPromptEvent
+function isBeforeInstallPromptEvent(event: Event): event is BeforeInstallPromptEvent {
+  return 'prompt' in event && 'userChoice' in event;
+}
+
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  // Initialize showInstallPrompt based on localStorage to avoid flash
+  const [showInstallPrompt, setShowInstallPrompt] = useState(() => {
+    return localStorage.getItem('pwa-install-dismissed') !== 'true';
+  });
 
   useEffect(() => {
     const handler = (e: Event) => {
+      // Type guard check before using the event
+      if (!isBeforeInstallPromptEvent(e)) {
+        return;
+      }
+      
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show our custom install prompt
-      setShowInstallPrompt(true);
+      setDeferredPrompt(e);
+      // Show our custom install prompt only if not previously dismissed
+      if (localStorage.getItem('pwa-install-dismissed') !== 'true') {
+        setShowInstallPrompt(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -46,17 +61,9 @@ export const PWAInstallPrompt: React.FC = () => {
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
-    // Remember the user dismissed the prompt (optional: store in localStorage)
+    // Remember the user dismissed the prompt
     localStorage.setItem('pwa-install-dismissed', 'true');
   };
-
-  // Check if user previously dismissed the prompt
-  useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (dismissed === 'true') {
-      setShowInstallPrompt(false);
-    }
-  }, []);
 
   if (!showInstallPrompt) {
     return null;

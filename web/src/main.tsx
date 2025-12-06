@@ -12,12 +12,15 @@ import { registerSW } from 'virtual:pwa-register';
 // Register service worker for PWA functionality
 const updateSW = registerSW({
   onNeedRefresh() {
-    if (confirm('New content available. Reload to update?')) {
+    // Using native confirm for now as a minimal solution
+    // TODO: Replace with custom notification component matching app design
+    const shouldUpdate = confirm('🎉 New version available! Would you like to update now?');
+    if (shouldUpdate) {
       updateSW(true);
     }
   },
   onOfflineReady() {
-    console.log('App ready to work offline');
+    console.log('✅ App ready to work offline');
   },
 });
 
