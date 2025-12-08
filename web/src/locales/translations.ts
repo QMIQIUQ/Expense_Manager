@@ -61,7 +61,7 @@ export const translations = {
   paymentMethods: { en: 'Payment Methods', zh: '支付方式', 'zh-CN': '支付方式' },
   monthlyExpense: { en: 'Monthly Expense', zh: '本月支出', 'zh-CN': '本月支出' },
   disableFeature: { en: 'Disable feature', zh: '停用功能', 'zh-CN': '停用功能' },
-  profile: { en: '👤 Profile', zh: '👤 個人資料', 'zh-CN': '👤 个人资料' },
+  profile: { en: '👤 Settings', zh: '👤 設定', 'zh-CN': '👤 设定' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
   tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
   hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
@@ -880,6 +880,20 @@ export const translations = {
   displaySettingsDescription: { en: 'Customize how time and date are displayed throughout the app', zh: '自訂應用程式中的時間和日期顯示格式', 'zh-CN': '自定义应用程序中的时间和日期显示格式' },
   am: { en: 'AM', zh: '上午', 'zh-CN': '上午' },
   pm: { en: 'PM', zh: '下午', 'zh-CN': '下午' },
+
+  // Network Status
+  networkOnline: { en: 'Online', zh: '線上', 'zh-CN': '在线' },
+  networkOffline: { en: 'Offline', zh: '離線', 'zh-CN': '离线' },
+  networkSyncing: { en: 'Syncing...', zh: '同步中...', 'zh-CN': '同步中...' },
+  networkPending: { en: 'Pending', zh: '待同步', 'zh-CN': '待同步' },
+  networkPendingTitle: { en: '{count} operation(s) pending. Click to retry.', zh: '{count} 個操作待同步，點擊重試。', 'zh-CN': '{count} 个操作待同步，点击重试。' },
+
+  // PWA Install
+  pwaInstallTitle: { en: 'Install PWA App', zh: '安裝 PWA 應用程式', 'zh-CN': '安装 PWA 应用程序' },
+  pwaInstallDescription: { en: 'Install this app on your device for faster startup and offline access.', zh: '將此應用程式安裝到您的裝置上，享受更快速的啟動和離線功能。', 'zh-CN': '将此应用程序安装到您的设备上，享受更快速的启动和离线功能。' },
+  pwaInstallButton: { en: 'Install App', zh: '安裝應用程式', 'zh-CN': '安装应用程序' },
+  pwaInstalled: { en: 'App is already installed on your device', zh: '應用程式已安裝在您的裝置上', 'zh-CN': '应用程序已安装在您的设备上' },
+  pwaNotAvailable: { en: 'PWA installation is not available in your browser', zh: '您的瀏覽器不支援 PWA 安裝', 'zh-CN': '您的浏览器不支持 PWA 安装' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
