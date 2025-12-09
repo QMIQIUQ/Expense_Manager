@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      checks: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,11 +40,11 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
-      - name: Run Firebase hosting preview deploy
-        working-directory: web
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          FIREBASE_PROJECT: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        run: |
-          # Use npx to run the latest firebase-tools; Node 20 is now installed so the engine check will succeed
-          npx firebase-tools@latest hosting:channel:deploy pr-preview-${{ github.run_number }} --expires 7d --project "${FIREBASE_PROJECT}" --token "${FIREBASE_TOKEN}" --json
+      - name: Deploy to Firebase Preview Channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          projectId: expense-manager-41afb
+          expires: 7d
+          entryPoint: ./web
