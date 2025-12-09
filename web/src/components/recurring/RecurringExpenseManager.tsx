@@ -161,6 +161,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
         const today = new Date().toISOString();
         const newViewedIds = new Set(viewedBillIds);
         
+        // Note: Multiple onUpdate calls are intentional as each bill needs individual tracking
+        // The onUpdate function handles optimistic updates to minimize UI blocking
+        // Alternative batching approach would require significant refactoring of the update system
         unviewedBills.forEach((bill) => {
           if (bill.id) {
             onUpdate(bill.id, { lastViewedDue: today });
@@ -174,7 +177,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       return () => clearTimeout(timer);
     }
     // Note: Intentionally not including viewedBillIds in deps to avoid infinite loop
-    // We only want to trigger when showDueBills or unviewedBills change
+    // The effect should only trigger when showDueBills changes or new unviewed bills appear
+    // viewedBillIds is updated inside the effect, so including it would cause unnecessary re-runs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDueBills, unviewedBills, onUpdate]);
 
@@ -265,7 +269,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                 <span style={styles.badge}>{unviewedBills.length}</span>
               )}
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', transform: showDueBills ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+            <span style={{
+              ...styles.collapseArrow,
+              transform: showDueBills ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}>▶</span>
           </div>
           
           {showDueBills && (
@@ -764,6 +771,11 @@ const styles = {
     fontSize: '16px',
     fontWeight: '600' as const,
     color: 'var(--error-text)',
+  },
+  collapseArrow: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    transition: 'transform 0.2s',
   },
 };
 
