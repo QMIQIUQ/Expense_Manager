@@ -87,6 +87,7 @@ Additional secrets:
 - Check the "Actions" tab for workflow errors
 - Ensure GitHub Pages is enabled in repository settings
 - Verify the `deploy.yml` workflow is configured correctly
+- If you see "Branch is not allowed to deploy" error, check that environment protection rules in repository settings don't restrict the deployment branch
 
 ### Firebase not deploying
 - Verify the `firebase-testing` branch exists
@@ -108,4 +109,5 @@ Additional secrets:
 **Fixed Issues** (2025-12-09):
 1. ✅ Fixed GitHub Pages auto-deploy - changed trigger from `main1` to `main` branch
 2. ✅ Separated Firebase deployment to `firebase-testing` branch to avoid conflicts with GitHub Pages
-3. ✅ Both deployments now work independently without interfering with each other
+3. ✅ Removed environment protection specification to prevent deployment rejection errors
+4. ✅ Both deployments now work independently without interfering with each other
