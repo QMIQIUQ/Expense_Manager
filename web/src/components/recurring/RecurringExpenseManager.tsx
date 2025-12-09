@@ -63,6 +63,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDueBills, setShowDueBills] = useState(true); // Collapsible section for due bills
+  const [markedAsViewed, setMarkedAsViewed] = useState(false); // Track if current bills have been marked
   
   // Calculate due bills
   const dueBills = useMemo(() => getDueRecurringExpenses(recurringExpenses), [recurringExpenses]);
@@ -143,9 +144,14 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     setShowDueBills(!showDueBills);
   };
   
+  // Reset markedAsViewed flag when due bills list changes (new bills appear)
+  useEffect(() => {
+    setMarkedAsViewed(false);
+  }, [dueBills.length]);
+  
   // Mark bills as viewed when section is opened (using useEffect)
   useEffect(() => {
-    if (showDueBills && dueBills.length > 0) {
+    if (showDueBills && dueBills.length > 0 && !markedAsViewed) {
       // Delay marking as viewed to ensure user actually sees the content
       const timer = setTimeout(() => {
         const today = new Date().toISOString();
@@ -154,11 +160,12 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             onUpdate(bill.id, { lastViewedDue: today });
           }
         });
+        setMarkedAsViewed(true);
       }, 1000); // 1 second delay
       
       return () => clearTimeout(timer);
     }
-  }, [showDueBills, dueBills, onUpdate]);
+  }, [showDueBills, dueBills, onUpdate, markedAsViewed]);
 
 
 
