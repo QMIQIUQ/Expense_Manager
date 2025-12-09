@@ -1976,9 +1976,9 @@ const Dashboard: React.FC = () => {
             </button>
             {showHamburgerMenu && (
               <div
-                className="fixed right-2 sm:right-4 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
+                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
                 style={{
-                  top: '60px',
+                  top: '100%',
                   minWidth: '240px',
                   maxWidth: 'calc(100vw - 16px)',
                   backgroundColor: 'var(--bg-primary)',
