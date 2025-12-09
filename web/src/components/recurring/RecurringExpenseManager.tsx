@@ -138,26 +138,27 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     setEditingId(expense.id!);
   };
 
-  // Handler to mark all due bills as viewed
-  const handleMarkDueBillsAsViewed = () => {
-    const today = new Date().toISOString();
-    dueBills.forEach((bill) => {
-      if (bill.id) {
-        onUpdate(bill.id, { lastViewedDue: today });
-      }
-    });
-  };
-
   // Handler to toggle due bills section
   const handleToggleDueBills = () => {
-    const newShowState = !showDueBills;
-    setShowDueBills(newShowState);
-    
-    // When opening the section, mark all as viewed
-    if (newShowState && dueBills.length > 0) {
-      handleMarkDueBillsAsViewed();
-    }
+    setShowDueBills(!showDueBills);
   };
+  
+  // Mark bills as viewed when section is opened (using useEffect)
+  useEffect(() => {
+    if (showDueBills && dueBills.length > 0) {
+      // Delay marking as viewed to ensure user actually sees the content
+      const timer = setTimeout(() => {
+        const today = new Date().toISOString();
+        dueBills.forEach((bill) => {
+          if (bill.id) {
+            onUpdate(bill.id, { lastViewedDue: today });
+          }
+        });
+      }, 1000); // 1 second delay
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showDueBills, dueBills, onUpdate]);
 
 
 
@@ -242,9 +243,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
               <span style={{ fontSize: '18px' }}>🔔</span>
               <h3 style={styles.dueBillsTitle}>{t('upcomingDuePayments')}</h3>
-              {dueBills.length > 0 && (
-                <span style={styles.badge}>{dueBills.length}</span>
-              )}
+              <span style={styles.badge}>{dueBills.length}</span>
             </div>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', transform: showDueBills ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
           </div>

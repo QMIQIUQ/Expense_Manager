@@ -42,7 +42,9 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       if (expense.dayOfMonth !== undefined) {
         nextDue.setMonth(nextDue.getMonth() + 1);
         // Handle edge cases like Feb 31 -> Feb 28/29
-        nextDue.setDate(Math.min(expense.dayOfMonth, new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate()));
+        // new Date(year, month+1, 0) gives the last day of 'month'
+        const lastDayOfMonth = new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate();
+        nextDue.setDate(Math.min(expense.dayOfMonth, lastDayOfMonth));
       } else {
         nextDue.setMonth(nextDue.getMonth() + 1);
       }
@@ -53,17 +55,12 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       break;
   }
   
-  // If the next due date is still in the past, it might not have been generated yet
-  // In this case, return today as it's overdue
-  if (nextDue < now) {
-    return now;
-  }
-  
+  // Return the next due date even if it's in the past (overdue)
   return nextDue;
 };
 
 /**
- * Check if a recurring expense is due today
+ * Check if a recurring expense is due today or overdue
  */
 export const isDueToday = (expense: RecurringExpense): boolean => {
   const nextDue = getNextDueDate(expense);
@@ -74,7 +71,11 @@ export const isDueToday = (expense: RecurringExpense): boolean => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  return nextDue >= today && nextDue < tomorrow;
+  const nextDueDate = new Date(nextDue);
+  nextDueDate.setHours(0, 0, 0, 0);
+  
+  // Include both today's bills and overdue bills
+  return nextDueDate < tomorrow;
 };
 
 /**
