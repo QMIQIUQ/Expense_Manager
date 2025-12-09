@@ -105,6 +105,7 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - ✅ Excel/CSV import/export functionality
 - ✅ Multi-device sync via Firebase
 - ✅ User authentication (Email/Password, Google)
+- ✅ **Progressive Web App (PWA)** - Installable on any device with offline support 🆕
 
 **[See web/README.md for setup instructions →](web/README.md)**
 
@@ -120,6 +121,8 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 
 **[See DATE_HANDLING_REFACTORING.md for date/time utility documentation →](docs/DATE_HANDLING_REFACTORING.md)**
 
+**[See docs/PWA_GUIDE.md for Progressive Web App installation and features →](docs/PWA_GUIDE.md)**
+
 ## 🚧 Future Enhancements
 
 - [x] Backend API integration for cloud sync ✅
@@ -127,6 +130,7 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - [x] Import/Export to Excel/CSV ✅
 - [x] Budget setting and alerts ✅
 - [x] Recurring expense tracking ✅
+- [x] Progressive Web App (PWA) with offline support ✅
 - [ ] Data visualization with charts (partially complete)
 - [ ] Receipt photo attachments with OCR
 - [ ] Multi-currency support

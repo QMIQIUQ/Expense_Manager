@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const App: React.FC = () => {
   const router = createBrowserRouter(
@@ -25,7 +26,12 @@ const App: React.FC = () => {
     }
   );
 
-  return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
+  return (
+    <>
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      <PWAInstallPrompt />
+    </>
+  );
 };
 
 export default App;

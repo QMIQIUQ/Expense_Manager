@@ -36,11 +36,6 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   const { notifications, hideNotification } = useNotification();
   const { t } = useLanguage();
 
-  // 如果沒有通知也沒有匯入/刪除進度也沒有正在重新驗證，不顯示
-  if (notifications.length === 0 && !importProgress && !deleteProgress && !isRevalidating) {
-    return null;
-  }
-
   const getNotificationColor = (type: Notification['type']) => {
     switch (type) {
       case 'success':
@@ -71,9 +66,13 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
     }
   };
 
+  // 如果沒有通知也沒有匯入/刪除進度也沒有正在重新驗證，不顯示
+  if (notifications.length === 0 && !importProgress && !deleteProgress && !isRevalidating) {
+    return null;
+  }
+
   return (
     <>
-      {/* 匯入進度 */}
       {importProgress && (
         <div style={{
           ...styles.stickyWrapper,

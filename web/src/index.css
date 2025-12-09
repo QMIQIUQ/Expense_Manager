@@ -435,6 +435,21 @@ button:not(:disabled):hover {
   }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
 .pending {
   opacity: 0.6;
   filter: grayscale(0.3);

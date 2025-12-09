@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build --clearScreen false --logLevel info",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
@@ -42,10 +42,13 @@
     "happy-dom": "^20.0.10",
     "jsdom": "^27.2.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.2.2",
     "vite": "^7.1.12",
-    "vitest": "^4.0.14"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.0.14",
+    "workbox-window": "^7.4.0"
   },
   "description": "A comprehensive expense tracking application built with React, TypeScript, and Firebase. This app helps you track expenses, manage budgets, handle recurring expenses, and export data for analysis.",
   "main": "index.js",

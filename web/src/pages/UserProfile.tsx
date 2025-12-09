@@ -5,6 +5,7 @@ import { useUserSettings } from '../contexts/UserSettingsContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { useNotification } from '../contexts/NotificationContext';
 import { TimeFormat, DateFormat } from '../types';
+import PWAInstallButton from '../components/PWAInstallButton';
 import './UserProfile.css';
 
 const UserProfile: React.FC = () => {
@@ -287,6 +288,22 @@ const UserProfile: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* PWA Installation Card */}
+      <div className="profile-card">
+        <div className="card-header">
+          <div className="card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+          </div>
+          <h2 className="card-title">安裝 PWA 應用程式</h2>
+        </div>
+        <div className="settings-content">
+          <PWAInstallButton />
+        </div>
       </div>
 
       {/* Account Settings Card */}

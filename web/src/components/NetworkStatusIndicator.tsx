@@ -1,76 +1,99 @@
 /**
  * Network Status Indicator Component
- * Displays online/offline status and sync progress
+ * Displays online/offline status and sync progress in header
  */
 
 import React from 'react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const NetworkStatusIndicator: React.FC = () => {
   const isOnline = useNetworkStatus();
   const { isSyncing, pendingCount, syncNow } = useSyncStatus();
-
-  if (isOnline && !isSyncing && pendingCount === 0) {
-    // Everything is fine, don't show anything
-    return null;
-  }
+  const { t } = useLanguage();
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {/* Offline Indicator */}
-      {!isOnline && (
-        <div className="bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 mb-2">
-          <div className="w-2 h-2 rounded-full bg-red-500"></div>
-          <span className="text-sm font-medium">Offline Mode</span>
-        </div>
-      )}
+    <div className="network-status-container">
+      <style>{`
+        .network-status-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: var(--text-secondary, #6b7280);
+        }
 
-      {/* Pending Operations */}
-      {pendingCount > 0 && isOnline && !isSyncing && (
-        <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center justify-between space-x-3 mb-2">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></div>
-            <span className="text-sm font-medium">
-              {pendingCount} pending {pendingCount === 1 ? 'change' : 'changes'}
-            </span>
-          </div>
-          <button
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .status-dot.online {
+          background-color: var(--success-text, #22c55e);
+        }
+
+        .status-dot.offline {
+          background-color: var(--error-text, #ef4444);
+        }
+
+        .status-dot.syncing {
+          background-color: var(--info-text, #3b82f6);
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.pending {
+          background-color: var(--warning-text, #f59e0b);
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        .status-label {
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .status-label.clickable {
+          cursor: pointer;
+          text-decoration: underline;
+        }
+
+        .status-label.clickable:hover {
+          color: var(--warning-text, #f59e0b);
+        }
+      `}</style>
+
+      {pendingCount > 0 ? (
+        <>
+          <span className="status-dot pending" />
+          <span 
+            className="status-label clickable"
             onClick={syncNow}
-            className="text-xs bg-white text-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+            title={t('networkPendingTitle').replace('{count}', String(pendingCount))}
           >
-            Sync Now
-          </button>
-        </div>
-      )}
-
-      {/* Syncing Indicator */}
-      {isSyncing && (
-        <div className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 mb-2">
-          <div className="w-4 h-4">
-            <svg
-              className="animate-spin"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-          <span className="text-sm font-medium">Syncing...</span>
-        </div>
+            {pendingCount} {t('networkPending')}
+          </span>
+        </>
+      ) : isSyncing ? (
+        <>
+          <span className="status-dot syncing" />
+          <span className="status-label">{t('networkSyncing')}</span>
+        </>
+      ) : !isOnline ? (
+        <>
+          <span className="status-dot offline" />
+          <span className="status-label">{t('networkOffline')}</span>
+        </>
+      ) : (
+        <>
+          <span className="status-dot online" />
+          <span className="status-label">{t('networkOnline')}</span>
+        </>
       )}
     </div>
   );
