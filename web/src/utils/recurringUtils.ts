@@ -30,9 +30,10 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       // If dayOfWeek is specified, find next occurrence of that day
       if (expense.dayOfWeek !== undefined) {
         const currentDay = nextDue.getDay();
-        // If we're already on the target day and coming from lastGenerated, add 7 days
+        // If we're already on the target day and have a valid lastGenerated date, add 7 days
         // Otherwise, calculate days until next occurrence of target day
-        if (currentDay === expense.dayOfWeek && expense.lastGenerated) {
+        const hasValidLastGenerated = expense.lastGenerated && !isNaN(new Date(expense.lastGenerated).getTime());
+        if (currentDay === expense.dayOfWeek && hasValidLastGenerated) {
           nextDue.setDate(nextDue.getDate() + 7);
         } else {
           // Calculate days to add: (target - current + 7) % 7
