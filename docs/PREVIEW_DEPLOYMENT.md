@@ -48,14 +48,14 @@ The `copilot/add-pwa-support` branch will automatically deploy to a preview chan
 
 2. **View Deployment Status (查看部署状态)**
    - Go to: https://github.com/QMIQIUQ/Expense_Manager/actions
-   - Click on "Deploy Preview (Feature Branches)"
+   - Click on "Firebase Hosting — Preview Deploy"
    - Find the latest workflow run for your branch
 
 3. **Get Preview URL (获取预览 URL)**
    - The preview URL will be displayed in the workflow logs
-   - Look for the Firebase action output
-   - URL format: `https://expense-manager-41afb--pr-<number>-<hash>.web.app`
-   - Or: `https://expense-manager-41afb--<branch-name>-<hash>.web.app`
+   - Look for the Firebase CLI output in the "Run Firebase hosting preview deploy" step
+   - URL format: `https://expense-manager-41afb--pr-preview-<run-number>-<hash>.web.app`
+   - The URL is printed in JSON format in the logs
 
 4. **Test Your Changes (测试更改)**
    - Open the preview URL in your browser
@@ -75,7 +75,7 @@ You can manually trigger a preview deployment from the GitHub Actions tab:
 您可以从 GitHub Actions 标签手动触发预览部署：
 
 1. Go to: https://github.com/QMIQIUQ/Expense_Manager/actions
-2. Select "Deploy Preview (Feature Branches)" workflow
+2. Select "Firebase Hosting — Preview Deploy" workflow
 3. Click "Run workflow"
 4. Select your branch
 5. Click "Run workflow" button
@@ -96,8 +96,12 @@ Preview deployments expire after 7 days of the last update. This helps keep Fire
 
 **Check:**
 - Ensure your branch name matches the pattern: `copilot/**` or `feature/**`
-- Verify Firebase secrets are configured in repository settings
+- Verify Firebase secrets are configured in repository settings:
+  - `FIREBASE_TOKEN` (required for firebase-tools CLI)
+  - `VITE_FIREBASE_PROJECT_ID` (used as FIREBASE_PROJECT)
+  - All VITE_FIREBASE_* secrets for build
 - Check GitHub Actions is enabled for the repository
+- Ensure Node.js 20 is being used in the workflow
 
 ### Preview URL Not Working (预览 URL 不工作)
 
