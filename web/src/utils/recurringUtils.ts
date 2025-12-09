@@ -30,8 +30,14 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       // If dayOfWeek is specified, find next occurrence of that day
       if (expense.dayOfWeek !== undefined) {
         const currentDay = nextDue.getDay();
-        const daysToAdd = (expense.dayOfWeek - currentDay + 7) % 7 || 7;
-        nextDue.setDate(nextDue.getDate() + daysToAdd);
+        // If we're already on the target day and coming from lastGenerated, add 7 days
+        // Otherwise, calculate days until next occurrence of target day
+        if (currentDay === expense.dayOfWeek && expense.lastGenerated) {
+          nextDue.setDate(nextDue.getDate() + 7);
+        } else {
+          const daysToAdd = (expense.dayOfWeek - currentDay + 7) % 7 || 7;
+          nextDue.setDate(nextDue.getDate() + daysToAdd);
+        }
       } else {
         nextDue.setDate(nextDue.getDate() + 7);
       }
@@ -42,7 +48,9 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       if (expense.dayOfMonth !== undefined) {
         nextDue.setMonth(nextDue.getMonth() + 1);
         // Handle edge cases like Feb 31 -> Feb 28/29
-        // new Date(year, month+1, 0) gives the last day of the current month (after increment)
+        // JavaScript Date trick: new Date(year, month+1, 0) gives the last day of month
+        // This works because day 0 means "the day before the 1st of the next month"
+        // which is the last day of the current month
         const lastDayOfMonth = new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate();
         nextDue.setDate(Math.min(expense.dayOfMonth, lastDayOfMonth));
       } else {

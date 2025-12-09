@@ -144,10 +144,14 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     setShowDueBills(!showDueBills);
   };
   
+  // Calculate unviewed bills
+  const unviewedBills = useMemo(() => 
+    dueBills.filter(bill => bill.id && !viewedBillIds.has(bill.id)),
+    [dueBills, viewedBillIds]
+  );
+  
   // Mark bills as viewed when section is opened (using useEffect)
   useEffect(() => {
-    // Determine if there are unviewed bills
-    const unviewedBills = dueBills.filter(bill => bill.id && !viewedBillIds.has(bill.id));
     const hasUnviewedBills = unviewedBills.length > 0;
     const shouldMarkAsViewed = showDueBills && hasUnviewedBills;
     
@@ -169,7 +173,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       
       return () => clearTimeout(timer);
     }
-  }, [showDueBills, dueBills, onUpdate, viewedBillIds]);
+    // Note: Intentionally not including viewedBillIds in deps to avoid infinite loop
+    // We only want to trigger when showDueBills or unviewedBills change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDueBills, unviewedBills, onUpdate]);
 
 
 
@@ -254,7 +261,9 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
               <span style={{ fontSize: '18px' }}>🔔</span>
               <h3 style={styles.dueBillsTitle}>{t('upcomingDuePayments')}</h3>
-              <span style={styles.badge}>{dueBills.length}</span>
+              {unviewedBills.length > 0 && (
+                <span style={styles.badge}>{unviewedBills.length}</span>
+              )}
             </div>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', transform: showDueBills ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
           </div>
