@@ -71,14 +71,16 @@ When installed, the app provides a native app experience:
 
 ### Manifest Configuration
 
-The app manifest (`manifest.json`) defines the app's metadata:
+The app manifest is dynamically generated based on the deployment base path. The `vite-plugin-pwa` automatically generates the correct manifest with proper `scope` and `start_url` values.
 
+**For Firebase Hosting (base path: `/`):**
 ```json
 {
   "name": "Expense Manager",
   "short_name": "Expense Manager",
   "description": "A comprehensive expense tracking application",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#10b981",
   "background_color": "#ffffff",
@@ -101,6 +103,21 @@ The app manifest (`manifest.json`) defines the app's metadata:
       "purpose": "maskable"
     }
   ]
+}
+```
+
+**For GitHub Pages (base path: `/Expense_Manager/`):**
+```json
+{
+  "name": "Expense Manager",
+  "short_name": "Expense Manager",
+  "description": "A comprehensive expense tracking application",
+  "start_url": "/Expense_Manager/",
+  "scope": "/Expense_Manager/",
+  "display": "standalone",
+  "theme_color": "#10b981",
+  "background_color": "#ffffff",
+  "icons": [...same icons with relative paths...]
 }
 ```
 
@@ -129,15 +146,28 @@ The service worker automatically updates when a new version is deployed:
 
 The PWA plugin is integrated with Vite:
 
+**For Firebase Hosting (default):**
 ```bash
 npm run build
 ```
 
+**For GitHub Pages:**
+```bash
+DEPLOY_BASE=/Expense_Manager/ npm run build
+```
+
+Or on Windows PowerShell:
+```powershell
+$env:DEPLOY_BASE = '/Expense_Manager/'; npm run build; Remove-Item Env:DEPLOY_BASE
+```
+
 This generates:
 - `dist/sw.js` - Service worker file
-- `dist/manifest.webmanifest` - App manifest
+- `dist/manifest.webmanifest` - App manifest (with correct scope/start_url)
 - `dist/workbox-*.js` - Workbox runtime
 - PWA icons in various sizes
+
+**Important:** The `DEPLOY_BASE` environment variable must match your deployment path for PWA installation to work correctly. The manifest's `scope` and `start_url` are automatically set based on this value.
 
 ### Testing PWA Features
 
@@ -189,6 +219,28 @@ Then test:
 - Check that the manifest is valid (DevTools → Application → Manifest)
 - Verify service worker is registered (DevTools → Application → Service Workers)
 - Some browsers require the user to interact with the page first
+
+### PWA Not Installing on GitHub Pages
+
+If the PWA install button appears but nothing happens when clicked:
+
+1. **Check the manifest scope and start_url:**
+   - Open DevTools → Application → Manifest
+   - Verify `scope` and `start_url` match your GitHub Pages URL
+   - For example: `https://username.github.io/Expense_Manager/`
+   - Both should be `/Expense_Manager/` (not `/`)
+
+2. **Rebuild with correct base path:**
+   ```bash
+   DEPLOY_BASE=/Expense_Manager/ npm run build
+   ```
+   
+3. **Clear browser cache and reload:**
+   - Hard reload the page (Ctrl+Shift+R)
+   - Clear site data in DevTools → Application → Storage
+   - Try installing again
+
+**Root Cause:** GitHub Pages deploys to a subdirectory (`/Expense_Manager/`), so the PWA manifest must have matching `scope` and `start_url` values. If these are set to `/`, the browser cannot install the PWA because the scope doesn't match the actual URL.
 
 ### App Not Working Offline
 
