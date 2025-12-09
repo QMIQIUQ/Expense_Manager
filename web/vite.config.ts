@@ -5,9 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
+  const base = process.env.DEPLOY_BASE ?? '/'
 
   return {
-    base: process.env.DEPLOY_BASE ?? '/',
+    base,
     plugins: [
       react(),
       VitePWA({
@@ -20,8 +21,8 @@ export default defineConfig(({ command }) => {
           theme_color: '#10b981',
           background_color: '#ffffff',
           display: 'standalone',
-          scope: '/',
-          start_url: '/',
+          scope: base,
+          start_url: base,
           orientation: 'portrait-primary',
           icons: [
             {
