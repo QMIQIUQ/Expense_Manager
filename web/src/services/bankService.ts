@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDoc,
   query,
   where,
   orderBy,
@@ -20,6 +21,7 @@ export const bankService = {
     const now = Timestamp.now();
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...bank,
+      balance: bank.balance ?? 0, // Default balance to 0
       createdAt: now,
       updatedAt: now,
     });
@@ -52,6 +54,32 @@ export const bankService = {
   async delete(id: string): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
     await deleteDoc(docRef);
+  },
+
+  // Get bank by ID
+  async getById(id: string): Promise<Bank | null> {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return null;
+    
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      createdAt: data.createdAt?.toDate(),
+      updatedAt: data.updatedAt?.toDate(),
+    } as Bank;
+  },
+
+  // Update balance by delta amount (positive to add, negative to subtract)
+  async updateBalance(id: string, deltaAmount: number): Promise<void> {
+    const bank = await this.getById(id);
+    if (!bank) {
+      throw new Error(`Bank with id ${id} not found`);
+    }
+    const currentBalance = bank.balance ?? 0;
+    const newBalance = currentBalance + deltaAmount;
+    await this.update(id, { balance: newBalance });
   },
 };
 

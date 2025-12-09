@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Transfer, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { getTodayLocal } from '../../utils/dateUtils';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
+import { getCurrentTimeLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
+import DatePicker from '../common/DatePicker';
 
 interface TransferFormProps {
   onSubmit: (transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -22,9 +26,11 @@ const TransferForm: React.FC<TransferFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
+  const today = useToday();
   const [formData, setFormData] = useState({
     amount: 0,
-    date: getTodayLocal(),
+    date: today,
     time: getCurrentTimeLocal(),
     fromPaymentMethod: 'cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
     fromPaymentMethodName: '',
@@ -210,26 +216,21 @@ const TransferForm: React.FC<TransferFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('date')} *
-          </label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.date ? 'border-red-500' : ''
-            }`}
-            style={{
-              borderColor: errors.date ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-            }}
-          />
-          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
-        </div>
+        <DatePicker
+          label={t('date')}
+          value={formData.date}
+          onChange={(value) => setFormData({ ...formData, date: value })}
+          required
+          error={!!errors.date}
+          errorMessage={errors.date}
+          dateFormat={dateFormat}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: errors.date ? undefined : 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        />
       </div>
 
       {/* From Payment Method */}

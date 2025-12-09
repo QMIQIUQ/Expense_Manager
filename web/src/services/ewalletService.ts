@@ -57,6 +57,7 @@ export const ewalletService = {
       collection(db, COLLECTION_NAME),
       sanitizePayload({
         ...ewallet,
+        balance: ewallet.balance ?? 0, // Default balance to 0
         createdAt: now,
         updatedAt: now,
       })
@@ -150,6 +151,36 @@ export const ewalletService = {
     const data = docSnap.docs[0].data();
     return {
       id: docSnap.docs[0].id,
+      ...data,
+      createdAt: data.createdAt?.toDate(),
+      updatedAt: data.updatedAt?.toDate(),
+    } as EWallet;
+  },
+
+  // Update balance by delta amount (positive to add, negative to subtract)
+  async updateBalance(id: string, deltaAmount: number): Promise<void> {
+    const wallet = await this.getById(id);
+    if (!wallet) {
+      throw new Error(`E-wallet with id ${id} not found`);
+    }
+    const currentBalance = wallet.balance ?? 0;
+    const newBalance = currentBalance + deltaAmount;
+    await this.update(id, { balance: newBalance });
+  },
+
+  // Find e-wallet by name for a user
+  async findByName(userId: string, name: string): Promise<EWallet | null> {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('userId', '==', userId),
+      where('name', '==', name)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    
+    const data = querySnapshot.docs[0].data();
+    return {
+      id: querySnapshot.docs[0].id,
       ...data,
       createdAt: data.createdAt?.toDate(),
       updatedAt: data.updatedAt?.toDate(),

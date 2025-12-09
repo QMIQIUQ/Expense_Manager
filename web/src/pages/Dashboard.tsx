@@ -4,13 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, RecurringExpense, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer } from '../types';
+import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
-import { recurringExpenseService } from '../services/recurringExpenseService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
 import { bankService } from '../services/bankService';
@@ -20,15 +20,17 @@ import { featureSettingsService } from '../services/featureSettingsService';
 import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
+import { quickExpenseService } from '../services/quickExpenseService';
+import { scheduledPaymentService } from '../services/scheduledPaymentService';
+import { balanceService } from '../services/balanceService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
-import InlineLoading from '../components/InlineLoading';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
 const BudgetManager = lazy(() => import('../components/budgets/BudgetManager'));
-const RecurringExpenseManager = lazy(() => import('../components/recurring/RecurringExpenseManager'));
+const ScheduledPaymentManager = lazy(() => import('../components/scheduledPayments/ScheduledPaymentManager'));
 const IncomesTab = lazy(() => import('./tabs/IncomesTab'));
 const AdminTab = lazy(() => import('./tabs/AdminTab'));
 const UserProfile = lazy(() => import('./UserProfile'));
@@ -42,6 +44,8 @@ import { offlineQueue } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
+import { sessionCache } from '../utils/sessionCache';
+import { getTodayLocal } from '../utils/dateUtils';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -63,6 +67,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
+  const { dateFormat, timeFormat } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -72,16 +77,18 @@ const Dashboard: React.FC = () => {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
+  const [scheduledPaymentRecords, setScheduledPaymentRecords] = useState<ScheduledPaymentRecord[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [ewallets, setEWallets] = useState<EWallet[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
+  const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -94,6 +101,7 @@ const Dashboard: React.FC = () => {
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
+  const [focusScheduledPaymentId, setFocusScheduledPaymentId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{
     id: string;
     current: number;
@@ -151,14 +159,15 @@ const Dashboard: React.FC = () => {
     try {
       // Phase 1: Load cached data first (instant display)
       console.log('Phase 1: Loading cached data...');
-      const [expensesData, incomesData, categoriesData, budgetsData, recurringData, repaymentsData, transfersData] = await Promise.all([
+      const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
         dataService.getDataWithRevalidate('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
         dataService.getDataWithRevalidate('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
         dataService.getDataWithRevalidate('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
         dataService.getDataWithRevalidate('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
-        dataService.getDataWithRevalidate('recurring', currentUser.uid, () => recurringExpenseService.getAll(currentUser.uid), setRecurringExpenses),
         dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
         dataService.getDataWithRevalidate('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
+        dataService.getDataWithRevalidate('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
+        dataService.getDataWithRevalidate('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), setScheduledPaymentRecords),
       ]);
 
       // Set initial data (from cache or fresh)
@@ -166,12 +175,12 @@ const Dashboard: React.FC = () => {
       setIncomes(incomesData);
       setCategories(categoriesData);
       setBudgets(budgetsData);
-      setRecurringExpenses(recurringData);
       setRepayments(repaymentsData);
       setTransfers(transfersData);
+      setScheduledPayments(scheduledPaymentsData);
+      setScheduledPaymentRecords(scheduledPaymentRecordsData);
       
-      // End initial loading immediately
-      setInitialLoading(false);
+      // Initial UI now rendered; no blocking loader needed
       console.log('Phase 1 complete: UI ready with cached data');
       
       // Phase 2: Initialize and load additional data in background (only if online)
@@ -237,7 +246,13 @@ const Dashboard: React.FC = () => {
             console.warn('Could not load feature settings:', err);
             return null;
           }),
-        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings]) => {
+          
+          // Load quick expense presets
+          quickExpenseService.getPresets(currentUser.uid).catch(err => {
+            console.warn('Could not load quick expense presets:', err);
+            return [];
+          }),
+        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
           // Apply all state updates together (single render cycle)
           if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
           if (userSettings) setBillingCycleDay(userSettings.billingCycleDay);
@@ -257,6 +272,7 @@ const Dashboard: React.FC = () => {
             }
           }
           if (featSettings) setFeatureSettings(featSettings);
+          if (Array.isArray(quickPresets)) setQuickExpensePresets(quickPresets);
         }).finally(() => {
           setIsRevalidating(false);
           console.log('Phase 2: Background initialization complete');
@@ -265,7 +281,6 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
-      setInitialLoading(false);
     }
   }, [currentUser, showNotification, t]);
   //#endregion
@@ -285,7 +300,7 @@ const Dashboard: React.FC = () => {
       const lastChecked = localStorage.getItem('lastBudgetCheck');
       const lastCheckedDate = lastChecked ? new Date(lastChecked) : null;
       
-      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate);
+      const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate, billingCycleDay, repayments);
       
       if (alerts.length > 0) {
         // Show notifications for each alert with unique ID to prevent duplicates
@@ -307,7 +322,7 @@ const Dashboard: React.FC = () => {
     // Check after a short delay to avoid overwhelming the user at startup
     const timer = setTimeout(checkBudgets, 2000);
     return () => clearTimeout(timer);
-  }, [budgets, expenses, showNotification]);
+  }, [budgets, expenses, showNotification, billingCycleDay, repayments]);
   //#endregion
 
   //#region Data Refresh Functions
@@ -324,92 +339,25 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // 如果已有缓存，先关闭初始加载占位，随后再异步刷新
+      const uid = currentUser.uid;
+      const hasCached = !!(
+        sessionCache.get('expenses', uid) ||
+        sessionCache.get('incomes', uid) ||
+        sessionCache.get('repayments', uid) ||
+        sessionCache.get('categories', uid) ||
+        sessionCache.get('budgets', uid) ||
+        sessionCache.get('recurring', uid)
+      );
+      if (hasCached) {
+        // Cached data present: UI already renders instantly; no loader toggle needed
+      }
       loadData();
     }
   }, [currentUser, loadData]);
 
-  // Smart tab refresh: Reload data when switching tabs
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    const refreshTabData = async () => {
-      try {
-        switch (activeTab) {
-          case 'expenses': {
-            // Reload expenses and repayments
-            const [expensesData, repaymentsData] = await Promise.all([
-              expenseService.getAll(currentUser.uid),
-              repaymentService.getAll(currentUser.uid),
-            ]);
-            setExpenses(expensesData);
-            setRepayments(repaymentsData);
-            break;
-          }
-          case 'incomes': {
-            // Reload incomes
-            const incomesData = await incomeService.getAll(currentUser.uid);
-            setIncomes(incomesData);
-            break;
-          }
-          case 'dashboard': {
-            // Reload all for dashboard
-            const [dashExpenses, dashIncomes, dashRepayments] = await Promise.all([
-              expenseService.getAll(currentUser.uid),
-              incomeService.getAll(currentUser.uid),
-              repaymentService.getAll(currentUser.uid),
-            ]);
-            setExpenses(dashExpenses);
-            setIncomes(dashIncomes);
-            setRepayments(dashRepayments);
-            break;
-          }
-          case 'categories': {
-            // Reload categories and budgets
-            const [categoriesData, budgetsData] = await Promise.all([
-              categoryService.getAll(currentUser.uid),
-              budgetService.getAll(currentUser.uid),
-            ]);
-            setCategories(categoriesData);
-            setBudgets(budgetsData);
-            break;
-          }
-          case 'recurring': {
-            // Reload recurring expenses
-            const recurringData = await recurringExpenseService.getAll(currentUser.uid);
-            setRecurringExpenses(recurringData);
-            break;
-          }
-          case 'paymentMethods': {
-            // Reload cards and ewallets
-            try {
-              const cardsData = await cardService.getAll(currentUser.uid);
-              setCards(cardsData);
-            } catch (error) {
-              console.warn('Could not reload cards:', error);
-            }
-            try {
-              const ewalletsData = await ewalletService.getAll(currentUser.uid);
-              setEWallets(ewalletsData);
-            } catch (error) {
-              console.warn('Could not reload e-wallets:', error);
-            }
-            break;
-          }
-          // Admin and settings tabs don't need auto-refresh
-          default:
-            break;
-        }
-      } catch (error) {
-        console.error('Error refreshing tab data:', error);
-        // Silent fail - don't show notification to avoid annoying users
-      }
-    };
-    
-    // Don't refresh on initial mount, only on tab change
-    if (!initialLoading) {
-      refreshTabData();
-    }
-  }, [activeTab, currentUser, initialLoading]);
+  // Tab switching now instant - no refetch, uses cached data + optimistic updates
+  // Background revalidation happens only on initial load via loadData()
   //#endregion
 
   //#region Click Outside Handlers
@@ -480,7 +428,8 @@ const Dashboard: React.FC = () => {
     showImportExportDropdown ||
     showImportModal ||
     showAddSheet ||
-    showAddExpenseForm;
+    showAddExpenseForm ||
+    isDashboardCustomizing;
   //#endregion
 
   //#region Event Handlers - Auth
@@ -518,7 +467,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp expense with real ID
           const newId = result as string;
           const realExpense: Expense = {
@@ -530,6 +479,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
             data.map((e) => (e.id === tempId ? realExpense : e))
           );
+          // Update balance for the payment method
+          await balanceService.handleExpenseCreated(realExpense);
+          // Reload e-wallets and banks to reflect updated balances
+          loadData();
         },
         onError: () => {
           // Rollback optimistic update
@@ -541,11 +494,22 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Reload quick expense presets
+  const handleReloadQuickExpensePresets = async () => {
+    if (!currentUser) return;
+    try {
+      const presets = await quickExpenseService.getPresets(currentUser.uid);
+      setQuickExpensePresets(presets);
+    } catch (error) {
+      console.error('Failed to reload quick expense presets:', error);
+    }
+  };
+
   // Handle quick expense add from preset
   const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
     if (!currentUser) return;
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayLocal();
     const now = new Date().toTimeString().slice(0, 5);
     
     // Find category name from categoryId
@@ -580,8 +544,34 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
     const expenseToDelete = expenses.find((e) => e.id === id);
     
+    // Find related transfer to delete (by matching date, amount, and payment method)
+    // Transfer.fromPaymentMethod should match expense.paymentMethod
+    const relatedTransfer = expenseToDelete ? transfers.find(t => {
+      const dateMatch = t.date === expenseToDelete.date;
+      const amountMatch = Math.abs(t.amount - expenseToDelete.amount) < 0.01;
+      
+      // Match payment method as the source (fromPaymentMethod = expense's payment method)
+      let paymentMethodMatch = false;
+      if (expenseToDelete.paymentMethod === 'credit_card') {
+        paymentMethodMatch = t.fromPaymentMethod === 'credit_card' && t.fromCardId === expenseToDelete.cardId;
+      } else if (expenseToDelete.paymentMethod === 'e_wallet') {
+        paymentMethodMatch = t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === expenseToDelete.paymentMethodName;
+      } else if (expenseToDelete.paymentMethod === 'bank') {
+        paymentMethodMatch = t.fromPaymentMethod === 'bank' && t.fromBankId === expenseToDelete.bankId;
+      } else if (expenseToDelete.paymentMethod === 'cash') {
+        paymentMethodMatch = t.fromPaymentMethod === 'cash';
+      }
+      
+      return dateMatch && amountMatch && paymentMethodMatch;
+    }) : undefined;
+    
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    
+    // Optimistic update: remove related transfer if exists
+    if (relatedTransfer?.id) {
+      setTransfers((prev) => prev.filter((t) => t.id !== relatedTransfer.id));
+    }
     
     // Update cache optimistically
     dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
@@ -592,8 +582,21 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'expense',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (add back the expense amount)
+          if (expenseToDelete) {
+            await balanceService.handleExpenseDeleted(expenseToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
+          // Delete related transfer if exists
+          if (relatedTransfer?.id) {
+            try {
+              await transferService.delete(relatedTransfer.id);
+            } catch (err) {
+              console.error('Failed to delete related transfer:', err);
+            }
+          }
         },
         onError: () => {
           // Rollback optimistic update
@@ -601,6 +604,10 @@ const Dashboard: React.FC = () => {
             setExpenses((prev) => [expenseToDelete, ...prev]);
             // Rollback cache
             dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
+          }
+          // Rollback transfer if was removed
+          if (relatedTransfer) {
+            setTransfers((prev) => [relatedTransfer, ...prev]);
           }
         },
       }
@@ -984,165 +991,226 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
-  //#region Event Handlers - Recurring Expenses
-  const handleAddRecurring = async (recurringData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+  //#region Event Handlers - Scheduled Payments
+  const handleAddScheduledPayment = async (paymentData: Omit<ScheduledPayment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
     
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
-    const optimisticRecurring: RecurringExpense = {
-      ...recurringData,
+    const optimisticPayment: ScheduledPayment = {
+      ...paymentData,
       id: tempId,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    setRecurringExpenses((prev) => [...prev, optimisticRecurring]);
-    
-    // Update cache optimistically
-    dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => [...data, optimisticRecurring]);
+    setScheduledPayments((prev) => [...prev, optimisticPayment]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: recurringData },
-      () => recurringExpenseService.create({ ...recurringData, userId: currentUser.uid }),
+      { type: 'create', data: paymentData },
+      () => scheduledPaymentService.create({ ...paymentData, userId: currentUser.uid }),
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
         onSuccess: (result) => {
-          // Replace temp recurring expense with real ID
           const newId = result as string;
-          const realRecurring: RecurringExpense = {
-            ...optimisticRecurring,
+          const realPayment: ScheduledPayment = {
+            ...optimisticPayment,
             id: newId,
           };
-          setRecurringExpenses((prev) => prev.map((r) => (r.id === tempId ? realRecurring : r)));
-          // Update cache with real ID
-          dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
-            data.map((r) => (r.id === tempId ? realRecurring : r))
-          );
+          setScheduledPayments((prev) => prev.map((p) => (p.id === tempId ? realPayment : p)));
         },
         onError: () => {
-          setRecurringExpenses((prev) => prev.filter((r) => r.id !== tempId));
-          // Rollback cache
-          dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => data.filter((r) => r.id !== tempId));
+          setScheduledPayments((prev) => prev.filter((p) => p.id !== tempId));
         },
       }
     );
   };
 
-  const handleUpdateRecurring = async (id: string, updates: Partial<RecurringExpense>) => {
-    const originalRecurring = recurringExpenses.find((r) => r.id === id);
+  const handleUpdateScheduledPayment = async (id: string, updates: Partial<ScheduledPayment>) => {
+    const original = scheduledPayments.find((p) => p.id === id);
     
-    // Optimistic update
-    setRecurringExpenses((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    setScheduledPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
-    
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
-        data.map((r) => (r.id === id ? { ...r, ...updates } : r))
-      );
-    }
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalRecurring },
-      () => recurringExpenseService.update(id, updates),
+      { type: 'update', data: updates, originalData: original },
+      () => scheduledPaymentService.update(id, updates),
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
+        onSuccess: () => {},
         onError: () => {
-          if (originalRecurring) {
-            setRecurringExpenses((prev) =>
-              prev.map((r) => (r.id === id ? originalRecurring : r))
+          if (original) {
+            setScheduledPayments((prev) =>
+              prev.map((p) => (p.id === id ? original : p))
             );
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
-                data.map((r) => (r.id === id ? originalRecurring : r))
-              );
-            }
           }
         },
       }
     );
   };
 
-  const handleDeleteRecurring = async (id: string) => {
-    const recurringToDelete = recurringExpenses.find((r) => r.id === id);
+  const handleDeleteScheduledPayment = async (id: string) => {
+    const original = scheduledPayments.find((p) => p.id === id);
     
-    // Optimistic update
-    setRecurringExpenses((prev) => prev.filter((r) => r.id !== id));
-    
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => data.filter((r) => r.id !== id));
-    }
+    setScheduledPayments((prev) => prev.filter((p) => p.id !== id));
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: recurringToDelete },
-      () => recurringExpenseService.delete(id),
+      { type: 'delete', data: { id }, originalData: original },
+      () => scheduledPaymentService.delete(id),
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
+        onSuccess: () => {},
         onError: () => {
-          if (recurringToDelete) {
-            setRecurringExpenses((prev) => [...prev, recurringToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => [...data, recurringToDelete]);
-            }
+          if (original) {
+            setScheduledPayments((prev) => [...prev, original]);
           }
         },
       }
     );
   };
 
-  const handleToggleRecurring = async (id: string, isActive: boolean) => {
-    const originalRecurring = recurringExpenses.find((r) => r.id === id);
+  const handleToggleScheduledPaymentActive = async (id: string, isActive: boolean) => {
+    const original = scheduledPayments.find((p) => p.id === id);
     
-    // Optimistic update
-    setRecurringExpenses((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, isActive } : r))
+    setScheduledPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive } : p))
     );
-    
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
-        data.map((r) => (r.id === id ? { ...r, isActive } : r))
-      );
-    }
 
     await optimisticCRUD.run(
-      { type: 'update', data: { isActive }, originalData: originalRecurring },
-      () => recurringExpenseService.toggleActive(id, isActive),
+      { type: 'update', data: { isActive }, originalData: original },
+      () => scheduledPaymentService.toggleActive(id, isActive),
       {
         entityType: 'recurring',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
+        onSuccess: () => {},
         onError: () => {
-          if (originalRecurring) {
-            setRecurringExpenses((prev) =>
-              prev.map((r) => (r.id === id ? originalRecurring : r))
+          if (original) {
+            setScheduledPayments((prev) =>
+              prev.map((p) => (p.id === id ? original : p))
             );
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<RecurringExpense[]>('recurring', currentUser.uid, (data) => 
-                data.map((r) => (r.id === id ? originalRecurring : r))
-              );
-            }
           }
         },
       }
     );
+  };
+
+  const handleConfirmScheduledPayment = async (
+    scheduledPaymentId: string,
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
+  ) => {
+    if (!currentUser) return;
+
+    // Find the scheduled payment to check if autoGenerateExpense is enabled
+    const scheduledPayment = scheduledPayments.find(p => p.id === scheduledPaymentId);
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticRecord: ScheduledPaymentRecord = {
+      ...recordData,
+      id: tempId,
+      userId: currentUser.uid,
+      scheduledPaymentId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setScheduledPaymentRecords((prev) => [optimisticRecord, ...prev]);
+
+    await optimisticCRUD.run(
+      { type: 'create', data: { ...recordData, scheduledPaymentId } },
+      () => scheduledPaymentService.createPaymentRecord({
+        ...recordData,
+        userId: currentUser.uid,
+        scheduledPaymentId,
+      }),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: async (result) => {
+          const newId = result as string;
+          const realRecord: ScheduledPaymentRecord = {
+            ...optimisticRecord,
+            id: newId,
+          };
+          setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
+          
+          // Auto-generate expense if enabled
+          if (scheduledPayment?.autoGenerateExpense) {
+            try {
+              const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
+                userId: currentUser.uid,
+                description: scheduledPayment.name,
+                amount: recordData.actualAmount,
+                category: scheduledPayment.category,
+                date: recordData.paidDate,
+                notes: recordData.note || `${t('scheduledPayment')}: ${scheduledPayment.name}`,
+                paymentMethod: recordData.paymentMethod || scheduledPayment.paymentMethod,
+                cardId: recordData.cardId || scheduledPayment.cardId,
+                paymentMethodName: recordData.paymentMethodName || scheduledPayment.paymentMethodName,
+                bankId: recordData.bankId || scheduledPayment.bankId,
+              };
+              
+              const expenseId = await expenseService.create(expenseData);
+              
+              // Create optimistic expense for immediate UI update
+              const newExpense: Expense = {
+                ...expenseData,
+                id: expenseId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              setExpenses((prev) => [newExpense, ...prev]);
+              
+              showNotification('success', t('expenseGenerated') || 'Expense record created');
+            } catch (error) {
+              console.error('Failed to auto-generate expense:', error);
+            }
+          }
+        },
+        onError: () => {
+          setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== tempId));
+        },
+      }
+    );
+  };
+
+  const handleDeleteScheduledPaymentRecord = async (id: string) => {
+    const original = scheduledPaymentRecords.find((r) => r.id === id);
+    
+    setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
+
+    await optimisticCRUD.run(
+      { type: 'delete', data: { id }, originalData: original },
+      () => scheduledPaymentService.deletePaymentRecord(id),
+      {
+        entityType: 'recurring',
+        retryToQueueOnFail: true,
+        onSuccess: () => {},
+        onError: () => {
+          if (original) {
+            setScheduledPaymentRecords((prev) => [...prev, original]);
+          }
+        },
+      }
+    );
+  };
+
+  const getScheduledPaymentSummary = async (payment: ScheduledPayment): Promise<ScheduledPaymentSummary> => {
+    if (!currentUser) {
+      return {
+        scheduledPaymentId: payment.id!,
+        totalPaid: 0,
+        totalExpected: 0,
+        paymentCount: 0,
+      };
+    }
+    return scheduledPaymentService.getPaymentSummary(currentUser.uid, payment);
+  };
+
+  const isScheduledPaymentPeriodPaid = async (paymentId: string, year: number, month: number): Promise<boolean> => {
+    if (!currentUser) return false;
+    return scheduledPaymentService.isPeriodPaid(currentUser.uid, paymentId, year, month);
   };
   //#endregion
 
@@ -1170,7 +1238,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           // Replace temp income with real ID
           const newId = result as string;
           const realIncome: Income = {
@@ -1182,6 +1250,10 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
             data.map((i) => (i.id === tempId ? realIncome : i))
           );
+          // Update balance for the payment method
+          await balanceService.handleIncomeCreated(realIncome);
+          // Reload to reflect updated balances
+          loadData();
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== tempId));
@@ -1246,8 +1318,13 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
+        onSuccess: async () => {
+          // Update balance for the payment method (deduct the income amount)
+          if (incomeToDelete) {
+            await balanceService.handleIncomeDeleted(incomeToDelete);
+            // Reload to reflect updated balances
+            loadData();
+          }
         },
         onError: () => {
           if (incomeToDelete) {
@@ -1264,7 +1341,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Transfers
-  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, silent = false) => {
     if (!currentUser) return;
     
     // Optimistic update
@@ -1283,9 +1360,11 @@ const Dashboard: React.FC = () => {
       () => transferService.create({ ...transferData, userId: currentUser.uid }),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        suppressNotification: silent, // Don't show notification if silent mode
+        onSuccess: async () => {
+          // Update balances for both source and destination
+          await balanceService.handleTransferCreated(optimisticTransfer);
           loadData();
-          showNotification('success', 'Transfer added successfully');
         },
         onError: () => {
           setTransfers((prev) => prev.filter((t) => t.id !== tempId));
@@ -1305,9 +1384,13 @@ const Dashboard: React.FC = () => {
       () => transferService.delete(id),
       {
         retryToQueueOnFail: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Update balances for both source and destination (reverse the transfer)
+          if (transferToDelete) {
+            await balanceService.handleTransferDeleted(transferToDelete);
+          }
           loadData();
-          showNotification('success', 'Transfer deleted successfully');
+          showNotification('success', t('transferDeleted'));
         },
         onError: () => {
           if (transferToDelete) {
@@ -1812,29 +1895,50 @@ const Dashboard: React.FC = () => {
     setDeleteProgress(null);
   };
 
-  // Calculate spending by category
+  // Calculate spending by category (with repayment deduction and billing cycle filtering)
   const getSpentByCategory = () => {
+    // Calculate billing cycle period
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+    }
+
+    // Build repayment lookup map
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    for (const rep of repayments) {
+      repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+    }
+
+    // Helper to get net amount after repayments
+    const getNetAmount = (exp: Expense): number => {
+      const repaid = repaymentsByExpense[exp.id || ''] || 0;
+      return Math.max(0, exp.amount - repaid);
+    };
+
     const spent: { [key: string]: number } = {};
     expenses.forEach((exp) => {
-      if (!spent[exp.category]) {
-        spent[exp.category] = 0;
+      // Only count expenses within current billing cycle
+      const expDate = new Date(exp.date);
+      if (expDate >= cycleStart && expDate < cycleEnd) {
+        if (!spent[exp.category]) {
+          spent[exp.category] = 0;
+        }
+        spent[exp.category] += getNetAmount(exp);
       }
-      spent[exp.category] += exp.amount;
     });
     return spent;
   };
   //#endregion
 
   //#region Render
-  if (initialLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <InlineLoading size={24} />
-        <p className="ml-3 text-lg text-gray-600">{t('loading')}</p>
-      </div>
-    );
-  }
-
   return (
     <>
     <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
@@ -1872,14 +1976,20 @@ const Dashboard: React.FC = () => {
             </button>
             {showHamburgerMenu && (
               <div
-                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto rounded-lg shadow-xl border py-2 z-[9999]"
+                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
                 style={{
+                  top: '100%',
                   minWidth: '240px',
-                  maxWidth: '90vw',
+                  maxWidth: 'calc(100vw - 16px)',
                   backgroundColor: 'var(--bg-primary)',
                   borderColor: 'var(--border-color)',
                 }}
               >
+                  {/* Network Status Section */}
+                <div className="px-4 py-1 border-b border-gray-200">
+                  <NetworkStatusIndicator />
+                </div>
+
                   {/* Language Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
@@ -2391,6 +2501,20 @@ const Dashboard: React.FC = () => {
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => setShowAddExpenseForm(true)}
             onQuickExpenseAdd={handleQuickExpenseAdd}
+            onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
+            onNavigateToExpenses={() => setActiveTab('expenses')}
+            onNavigateToExpense={(expenseId) => {
+              setFocusExpenseId(expenseId);
+              setActiveTab('expenses');
+            }}
+            onNavigateToScheduledPayment={(scheduledPaymentId) => {
+              setFocusScheduledPaymentId(scheduledPaymentId);
+              setActiveTab('recurring');
+            }}
+            onCustomizingChange={setIsDashboardCustomizing}
+            scheduledPayments={scheduledPayments}
+            scheduledPaymentRecords={scheduledPaymentRecords}
+            onConfirmScheduledPayment={handleConfirmScheduledPayment}
           />
         )}
 
@@ -2404,6 +2528,7 @@ const Dashboard: React.FC = () => {
               ewallets={ewallets}
               banks={banks}
               repayments={repayments}
+              transfers={transfers}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
@@ -2412,12 +2537,16 @@ const Dashboard: React.FC = () => {
               onCreateEWallet={() => setActiveTab('paymentMethods')}
               onAddTransfer={handleAddTransfer}
               focusExpenseId={focusExpenseId || undefined}
+              quickExpensePresets={quickExpensePresets}
+              onQuickExpenseAdd={handleQuickExpenseAdd}
+              onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
+              onManageQuickExpenses={() => setActiveTab('dashboard')}
             />
           </div>
         )}
 
         {activeTab === 'incomes' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <IncomesTab
               incomes={incomes}
               expenses={expenses}
@@ -2434,7 +2563,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'categories' && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <CategoryManager
                 categories={categories}
                 expenses={expenses}
@@ -2450,38 +2579,46 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'budgets' && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <BudgetManager
                 budgets={budgets}
                 categories={categories}
+                expenses={expenses}
+                repayments={repayments}
                 onAdd={handleAddBudget}
                 onUpdate={handleUpdateBudget}
                 onDelete={handleDeleteBudget}
                 spentByCategory={getSpentByCategory()}
+                billingCycleDay={billingCycleDay}
               />
             </Suspense>
           </div>
         )}
 
         {activeTab === 'recurring' && (
-          <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
-              <RecurringExpenseManager
-                recurringExpenses={recurringExpenses}
-                categories={categories}
-                banks={banks}
-                cards={cards}
-                onAdd={handleAddRecurring}
-                onUpdate={handleUpdateRecurring}
-                onDelete={handleDeleteRecurring}
-                onToggleActive={handleToggleRecurring}
-              />
-            </Suspense>
-          </div>
+          <Suspense fallback={<></>}>
+            <ScheduledPaymentManager
+              scheduledPayments={scheduledPayments}
+              paymentRecords={scheduledPaymentRecords}
+              categories={categories}
+              banks={banks}
+              cards={cards}
+              ewallets={ewallets}
+              onAdd={handleAddScheduledPayment}
+              onUpdate={handleUpdateScheduledPayment}
+              onDelete={handleDeleteScheduledPayment}
+              onToggleActive={handleToggleScheduledPaymentActive}
+              onConfirmPayment={handleConfirmScheduledPayment}
+              onDeletePaymentRecord={handleDeleteScheduledPaymentRecord}
+              getSummary={getScheduledPaymentSummary}
+              isPeriodPaid={isScheduledPaymentPeriodPaid}
+              focusPaymentId={focusScheduledPaymentId || undefined}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'paymentMethods' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <PaymentMethodsTab
               cards={cards}
               ewallets={ewallets}
@@ -2507,7 +2644,7 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'settings' && featureSettings && (
           <div className="flex flex-col gap-4">
-            <Suspense fallback={<InlineLoading />}>
+            <Suspense fallback={<></>}>
               <FeatureManager
                 enabledFeatures={featureSettings.enabledFeatures}
                 tabFeatures={featureSettings.tabFeatures}
@@ -2520,13 +2657,13 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'profile' && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <UserProfile />
           </Suspense>
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <Suspense fallback={<InlineLoading />}>
+          <Suspense fallback={<></>}>
             <AdminTab />
           </Suspense>
         )}
@@ -2612,6 +2749,8 @@ const Dashboard: React.FC = () => {
                     setActiveTab('paymentMethods');
                   }}
                   onAddTransfer={handleAddTransfer}
+                  dateFormat={dateFormat}
+                  timeFormat={timeFormat}
                 />
               </div>
             </div>
@@ -2708,6 +2847,8 @@ const Dashboard: React.FC = () => {
                     setShowAddSheet(false);
                     setActiveTab('paymentMethods');
                   }}
+                  dateFormat={dateFormat}
+                  timeFormat={timeFormat}
                 />
               </div>
             </div>

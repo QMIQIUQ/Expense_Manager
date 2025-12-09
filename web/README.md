@@ -64,6 +64,15 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - ✅ Optimistic offline updates with queued sync
 - ✅ Dark mode–aware styling (tabs + action buttons)
 
+### 10. **Progressive Web App (PWA) (漸進式網路應用程式)** 🚀 **NEW!**
+- ✅ Installable on desktop and mobile devices
+- ✅ Works offline with service worker caching
+- ✅ Native app-like experience
+- ✅ Fast loading with intelligent caching strategies
+- ✅ Custom install prompt
+- ✅ Auto-updates when new version is available
+- ✅ Access from home screen like a native app
+
 ## 🛠️ Technology Stack
 
 - **React 18** - UI framework
@@ -72,6 +81,7 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - **Firebase Firestore** - Cloud database
 - **Vite** - Build tool
 - **React Router** - Navigation
+- **PWA** - Progressive Web App with Service Workers
 
 ## Getting Started
 
@@ -245,6 +255,7 @@ web/
 
 ## 📚 Documentation
 
+- **[../docs/PWA_GUIDE.md](../docs/PWA_GUIDE.md)** - Progressive Web App features, installation, and troubleshooting
 - **[OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)** - Detailed explanation of the offline-first synchronization system
 - **[OFFLINE_TESTING_GUIDE.md](OFFLINE_TESTING_GUIDE.md)** - Step-by-step testing guide for offline functionality
 - **[UX_OPTIMISTIC_CRUD.md](UX_OPTIMISTIC_CRUD.md)** - Optimistic UI and notification system documentation

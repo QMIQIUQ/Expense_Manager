@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
 import CategoryForm from './CategoryForm';
 import { SearchBar } from '../common/SearchBar';
@@ -46,6 +48,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onDeleteExpense,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -81,6 +84,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     expensesUsingCategory: [],
   });
   
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [deleteAction, setDeleteAction] = useState<'reassign' | 'deleteExpenses' | null>(null);
   const [reassignToCategoryId, setReassignToCategoryId] = useState<string>('');
 
@@ -187,11 +191,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         onDeleteSelected={() => {
           const ids = Array.from(selectedIds);
           if (ids.length === 0) return;
-          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
-          
-          ids.forEach(id => onDelete(id));
-          clearSelection();
-          setIsSelectionMode(false);
+          setBulkDeleteConfirm(true);
         }}
         style={{ marginBottom: '16px' }}
       />
@@ -335,7 +335,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 <div style={styles.expenseList}>
                   {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
                     <div key={exp.id} style={styles.expenseItem}>
-                      • {exp.description} (${exp.amount.toFixed(2)} - {exp.date})
+                      • {exp.description} (${exp.amount.toFixed(2)} - {formatDateWithUserFormat(exp.date, dateFormat)})
                     </div>
                   ))}
                   {deleteConfirm.expensesUsingCategory.length > 5 && (
@@ -480,6 +480,38 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           </div>
         </div>
       )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {bulkDeleteConfirm && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>{t('deleteSelected')}</h3>
+            <div style={styles.modalMessage}>
+              {t('confirmBulkDelete').replace('{count}', selectedIds.size.toString())}
+            </div>
+            <div style={styles.modalActions}>
+              <button
+                onClick={() => {
+                  const ids = Array.from(selectedIds);
+                  ids.forEach(id => onDelete(id));
+                  clearSelection();
+                  setIsSelectionMode(false);
+                  setBulkDeleteConfirm(false);
+                }}
+                style={styles.confirmButton}
+              >
+                {t('delete')}
+              </button>
+              <button
+                onClick={() => setBulkDeleteConfirm(false)}
+                style={styles.cancelButton}
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -583,14 +615,15 @@ const styles = {
     cursor: 'pointer',
   },
   cancelButton: {
-    padding: '10px 20px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
+    padding: '10px 24px',
+    backgroundColor: 'var(--secondary-bg)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
   categoryList: {
     display: 'flex',
@@ -714,16 +747,18 @@ const styles = {
   },
   modalContent: {
     backgroundColor: 'var(--card-bg)',
-    borderRadius: '8px',
-    padding: '24px',
+    borderRadius: '16px',
+    padding: '28px',
     maxWidth: '600px',
     width: '90%',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+    border: '1px solid var(--border-color)',
     maxHeight: '90vh',
     overflow: 'auto',
   },
   modalTitle: {
     margin: '0 0 16px 0',
-    fontSize: '20px',
+    fontSize: '22px',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
@@ -793,14 +828,15 @@ const styles = {
     justifyContent: 'flex-end',
   },
   confirmButton: {
-    padding: '10px 20px',
-    backgroundColor: '#f44336',
-    color: 'white',
+    padding: '10px 24px',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     fontSize: '14px',
     fontWeight: '500' as const,
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
 };
 

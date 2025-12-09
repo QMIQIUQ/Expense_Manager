@@ -1,10 +1,18 @@
 // Type definitions for Expense Manager
 
+// Time format type
+export type TimeFormat = '12h' | '24h';
+
+// Date format type
+export type DateFormat = 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | 'MMM DD, YYYY' | 'DD MMM YYYY';
+
 // User settings
 export interface UserSettings {
   id?: string;
   userId: string;
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
+  timeFormat?: TimeFormat; // 12-hour or 24-hour format
+  dateFormat?: DateFormat; // Date display format
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +66,7 @@ export interface EWallet {
   provider?: string; // Optional: provider/company name
   accountNumber?: string; // Optional: last 4 digits or identifier
   isDefault?: boolean; // Whether this is a default/system e-wallet
+  balance?: number; // Account balance (default: 0)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +77,7 @@ export interface Bank {
   name: string; // E.g., 'HSBC', 'Chase'
   country?: string;
   code?: string; // optional bank code
+  balance?: number; // Account balance (default: 0)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,8 +91,34 @@ export interface Budget {
   period: 'monthly' | 'weekly' | 'yearly';
   startDate: string;
   alertThreshold: number; // percentage (e.g., 80 means alert at 80%)
+  // Rollover settings (Phase 3)
+  rolloverEnabled?: boolean; // Whether unused budget rolls over to next period
+  rolloverPercentage?: number; // 0-100, percentage of unused budget to roll over (100 = full)
+  rolloverCap?: number; // Maximum rollover amount (optional cap)
+  accumulatedRollover?: number; // Current accumulated rollover from previous periods
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Budget Template - predefined or custom budget sets (Phase 3.2)
+export interface BudgetTemplateBudget {
+  categoryName: string;
+  amount: number; // as percentage of total budget or fixed amount
+  isPercentage: boolean; // true = percentage of total, false = fixed amount
+  alertThreshold: number;
+}
+
+export interface BudgetTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  isBuiltIn: boolean; // true = system template, false = user custom
+  userId?: string; // only for custom templates
+  totalBudget?: number; // suggested total monthly budget
+  budgets: BudgetTemplateBudget[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface RecurringExpense {
@@ -308,3 +344,115 @@ export const DEFAULT_EWALLETS = [
   { name: 'Touch \'n Go', icon: '🔵', color: '#0066CC', provider: 'Touch \'n Go' },
   { name: 'Setel', icon: '⚡', color: '#FF6B00', provider: 'Setel' },
 ];
+
+// ===============================================
+// Scheduled Payment Types (定期付款/待還款)
+// ===============================================
+
+// Type of scheduled payment
+export type ScheduledPaymentType = 'subscription' | 'installment' | 'debt';
+
+// Frequency of payment
+export type ScheduledPaymentFrequency = 'monthly' | 'yearly';
+
+// Split participant for shared payments
+export interface PaymentSplitParticipant {
+  name: string;
+  shareAmount: number;
+  isPaid?: boolean;
+}
+
+// Scheduled Payment - represents a recurring/scheduled payment like subscriptions or debts
+export interface ScheduledPayment {
+  id?: string;
+  userId: string;
+  name: string; // Name of the payment (e.g., "Netflix Subscription", "Car Loan")
+  description?: string; // Optional description
+  category: string; // Category for classification
+  type: ScheduledPaymentType; // subscription, installment, or debt
+  
+  // Amount info
+  amount: number; // Amount per payment period
+  totalAmount?: number; // For installments/debts: total amount to be paid
+  interestRate?: number; // Optional interest rate percentage (e.g., 5 for 5%)
+  
+  // Currency support
+  currency?: string; // Currency code (e.g., "USD", "MYR", "TWD")
+  
+  // Schedule info
+  frequency: ScheduledPaymentFrequency; // monthly or yearly
+  dueDay: number; // Day of the month (1-31) for monthly, or day of year for yearly
+  startDate: string; // When payments start (YYYY-MM-DD)
+  endDate?: string; // When payments end (optional, for installments)
+  hasEndDate?: boolean; // Explicitly track if payment has an end date
+  totalInstallments?: number; // For installments: total number of payments
+  
+  // Payment method
+  paymentMethod?: PaymentMethodType;
+  cardId?: string;
+  paymentMethodName?: string; // For e-wallets
+  bankId?: string;
+  
+  // Notification/Reminder settings
+  enableReminders?: boolean; // Whether to show reminders
+  reminderDaysBefore?: number; // Days before due date to show reminder (default: 3)
+  
+  // Auto-generate expense option
+  autoGenerateExpense?: boolean; // Automatically create expense when payment is confirmed
+  
+  // Shared payment info
+  isShared?: boolean; // Whether this is a shared/split payment
+  splitParticipants?: PaymentSplitParticipant[]; // People sharing this payment
+  
+  // Status
+  isActive: boolean;
+  isCompleted?: boolean; // For installments/debts: all payments completed
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Payment Record - tracks individual payments made for a scheduled payment
+export interface ScheduledPaymentRecord {
+  id?: string;
+  userId: string;
+  scheduledPaymentId: string; // FK to ScheduledPayment
+  
+  // Payment details
+  expectedAmount: number; // The expected/scheduled amount
+  actualAmount: number; // The actual amount paid
+  difference: number; // actualAmount - expectedAmount (positive = overpaid, negative = underpaid)
+  
+  // Period tracking
+  periodYear: number; // Year of this payment period
+  periodMonth: number; // Month (1-12) for monthly, or period number for yearly
+  dueDate: string; // The due date for this payment
+  paidDate: string; // When it was actually paid
+  
+  // Payment method used
+  paymentMethod?: PaymentMethodType;
+  cardId?: string;
+  paymentMethodName?: string;
+  bankId?: string;
+  
+  // Notes
+  note?: string;
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Summary of payment history for a scheduled payment
+export interface ScheduledPaymentSummary {
+  scheduledPaymentId: string;
+  totalPaid: number;
+  totalExpected: number;
+  paymentCount: number;
+  remainingPayments?: number; // For installments
+  remainingAmount?: number; // For installments/debts
+  lastPaymentDate?: string;
+  nextDueDate?: string;
+  overdueAmount?: number;
+}

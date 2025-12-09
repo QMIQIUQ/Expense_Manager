@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { EditIcon, DeleteIcon } from '../icons';
 import IncomeForm from './IncomeForm';
+import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 
@@ -38,9 +41,12 @@ interface IncomeListProps {
 
 const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; incomeId: string | null }>({ isOpen: false, incomeId: null });
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
 
   // Close menu when clicking outside
@@ -114,8 +120,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDateWithUserFormat(dateString, dateFormat);
   };
 
   // Group incomes by date for display
@@ -175,12 +180,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
         onDeleteSelected={() => {
           const ids = Array.from(selectedIds);
           if (ids.length === 0) return;
-          if (!window.confirm(t('confirmBulkDelete').replace('{count}', ids.length.toString()))) return;
-          
-          // Loop delete since no bulk API
-          ids.forEach(id => onDelete(id));
-          clearSelection();
-          setIsSelectionMode(false);
+          setBulkDeleteConfirm(true);
         }}
         style={{ marginBottom: '8px' }}
       />
@@ -243,7 +243,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
               {/* Header row with time, linked expense, date */}
               <div style={styles.headerRow}>
                 <div style={styles.dateDisplay}>
-                  {new Date(income.date).toLocaleDateString()}
+                  {formatDate(income.date)}
                 </div>
                 {income.linkedExpenseId && (
                   <button
@@ -298,7 +298,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                         <EditIcon size={18} />
                       </button>
                       <button
-                        onClick={() => income.id && onDelete(income.id)}
+                        onClick={() => income.id && setDeleteConfirm({ isOpen: true, incomeId: income.id })}
                         className="btn-icon btn-icon-danger"
                         aria-label={t('delete')}
                       >
@@ -334,7 +334,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                               style={{ ...styles.menuItem, color: '#b91c1c' }}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                income.id && onDelete(income.id);
+                                income.id && setDeleteConfirm({ isOpen: true, incomeId: income.id });
                               }}
                             >
                               <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
@@ -355,6 +355,40 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
           </div>
         );
       })}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title={t('delete')}
+        message={t('confirmDelete')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        onConfirm={() => {
+          if (deleteConfirm.incomeId) {
+            onDelete(deleteConfirm.incomeId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, incomeId: null })}
+        danger={true}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={bulkDeleteConfirm}
+        title={t('deleteSelected')}
+        message={t('confirmBulkDelete').replace('{count}', selectedIds.size.toString())}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        onConfirm={() => {
+          const ids = Array.from(selectedIds);
+          ids.forEach(id => onDelete(id));
+          clearSelection();
+          setIsSelectionMode(false);
+          setBulkDeleteConfirm(false);
+        }}
+        onCancel={() => setBulkDeleteConfirm(false)}
+        danger={true}
+      />
     </div>
   );
 };

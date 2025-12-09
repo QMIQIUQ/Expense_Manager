@@ -231,6 +231,12 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         />
       </div>
 
+      {isAdding && (
+        <div className="form-card">
+          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -250,12 +256,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
-        </div>
-      )}
 
       <div className="ewallet-list">
         {filteredWallets.length === 0 ? (
@@ -388,6 +388,9 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                     const stats = getWalletStats[wallet.name];
                     if (!stats) return null;
                     
+                    // Use stored balance if available, otherwise use calculated balance
+                    const displayBalance = wallet.balance ?? stats.balance;
+                    
                     return (
                       <div className="stats-grid">
                         <div className="stat-card info">
@@ -401,9 +404,9 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                         <div className="stat-card accent">
                           <p className="stat-label">{t('walletBalance')}</p>
                           <p className="stat-value" style={{ 
-                            color: stats.balance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
+                            color: displayBalance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                           }}>
-                            ${stats.balance.toFixed(2)}
+                            ${displayBalance.toFixed(2)}
                           </p>
                         </div>
                         <div className="stat-card warning">

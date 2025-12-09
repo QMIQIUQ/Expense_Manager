@@ -5,6 +5,11 @@
 
 const CACHE_PREFIX = 'expense_cache_';
 const CACHE_TIMESTAMP_PREFIX = 'expense_cache_ts_';
+// Persistent (cross-session) storage keys
+const PERSIST_PREFIX = 'expense_persist_';
+const PERSIST_TIMESTAMP_PREFIX = 'expense_persist_ts_';
+// Persistent TTL (24h)
+const PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type CacheableEntity = 
   | 'expenses'
@@ -17,6 +22,8 @@ export type CacheableEntity =
   | 'ewallets'
   | 'repayments'
   | 'transfers'
+  | 'scheduledPayments'
+  | 'scheduledPaymentRecords'
   | 'featureSettings'
   | 'userSettings';
 
@@ -31,14 +38,24 @@ export const sessionCache = {
    */
   set<T>(entity: CacheableEntity, userId: string, data: T): void {
     try {
+      const now = Date.now();
       const key = `${CACHE_PREFIX}${entity}_${userId}`;
       const timestampKey = `${CACHE_TIMESTAMP_PREFIX}${entity}_${userId}`;
+      const persistKey = `${PERSIST_PREFIX}${entity}_${userId}`;
+      const persistTimestampKey = `${PERSIST_TIMESTAMP_PREFIX}${entity}_${userId}`;
       
-      sessionStorage.setItem(key, JSON.stringify(data));
-      sessionStorage.setItem(timestampKey, JSON.stringify({
-        timestamp: Date.now(),
-        userId,
-      }));
+      const payload = JSON.stringify(data);
+      const meta = JSON.stringify({ timestamp: now, userId });
+      // Session (fast, cleared on tab close)
+      sessionStorage.setItem(key, payload);
+      sessionStorage.setItem(timestampKey, meta);
+      // Persistent (available next visit)
+      try {
+        localStorage.setItem(persistKey, payload);
+        localStorage.setItem(persistTimestampKey, meta);
+      } catch (e) {
+        // Ignore quota errors silently
+      }
     } catch (error) {
       console.error(`Error saving ${entity} to cache:`, error);
       // If sessionStorage is full, try to clear old caches
@@ -53,12 +70,33 @@ export const sessionCache = {
     try {
       const key = `${CACHE_PREFIX}${entity}_${userId}`;
       const data = sessionStorage.getItem(key);
-      
-      if (!data) {
-        return null;
+      if (data) return JSON.parse(data) as T;
+
+      // Fallback to persistent localStorage (cross-session)
+      const persistKey = `${PERSIST_PREFIX}${entity}_${userId}`;
+      const persistTsKey = `${PERSIST_TIMESTAMP_PREFIX}${entity}_${userId}`;
+      const persistData = localStorage.getItem(persistKey);
+      const persistMetaRaw = localStorage.getItem(persistTsKey);
+      if (persistData && persistMetaRaw) {
+        try {
+          const meta = JSON.parse(persistMetaRaw) as CacheMetadata;
+          if (Date.now() - meta.timestamp < PERSIST_TTL_MS) {
+            // Promote to session cache for faster subsequent access
+            sessionStorage.setItem(key, persistData);
+            sessionStorage.setItem(`${CACHE_TIMESTAMP_PREFIX}${entity}_${userId}`, persistMetaRaw);
+            return JSON.parse(persistData) as T;
+          } else {
+            // Expired persistent cache
+            localStorage.removeItem(persistKey);
+            localStorage.removeItem(persistTsKey);
+          }
+        } catch (e) {
+          // Corrupt metadata -> clear
+          localStorage.removeItem(persistKey);
+          localStorage.removeItem(persistTsKey);
+        }
       }
-      
-      return JSON.parse(data) as T;
+      return null;
     } catch (error) {
       console.error(`Error reading ${entity} from cache:`, error);
       return null;
@@ -100,6 +138,9 @@ export const sessionCache = {
     const timestampKey = `${CACHE_TIMESTAMP_PREFIX}${entity}_${userId}`;
     sessionStorage.removeItem(key);
     sessionStorage.removeItem(timestampKey);
+    // Also remove persistent copies
+    localStorage.removeItem(`${PERSIST_PREFIX}${entity}_${userId}`);
+    localStorage.removeItem(`${PERSIST_TIMESTAMP_PREFIX}${entity}_${userId}`);
   },
 
   /**
@@ -117,6 +158,9 @@ export const sessionCache = {
       'banks',
       'ewallets',
       'repayments',
+      'transfers',
+      'scheduledPayments',
+      'scheduledPaymentRecords',
       'featureSettings',
       'userSettings'
     ];

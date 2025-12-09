@@ -1,6 +1,6 @@
 import { db } from '../config/firebase';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { UserSettings } from '../types';
+import { UserSettings, TimeFormat, DateFormat } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 
 export const userSettingsService = {
@@ -17,6 +17,8 @@ export const userSettingsService = {
       id: docSnap.id,
       userId: data.userId,
       billingCycleDay: data.billingCycleDay || 1,
+      timeFormat: (data.timeFormat as TimeFormat) || '24h',
+      dateFormat: (data.dateFormat as DateFormat) || 'YYYY-MM-DD',
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -50,6 +52,8 @@ export const userSettingsService = {
     const defaultSettings: Omit<UserSettings, 'id' | 'createdAt' | 'updatedAt'> = {
       userId,
       billingCycleDay: 1, // Default to 1st of month
+      timeFormat: '24h', // Default to 24-hour format
+      dateFormat: 'YYYY-MM-DD', // Default date format
     };
     
     await this.create(defaultSettings);

@@ -8,8 +8,12 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   incomes,
   repayments,
   billingCycleDay = 1,
+  size = 'full',
 }) => {
   const { t } = useLanguage();
+  
+  // Determine layout based on size
+  const isCompact = size === 'small' || size === 'medium';
 
   // Calculate billing cycle dates
   const { cycleStart, cycleEnd } = React.useMemo(() => {
@@ -32,12 +36,28 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
 
   // Calculate statistics
   const stats = React.useMemo(() => {
+    // Build repayment totals first (needed for net expense calculations)
+    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    repayments.forEach((rep) => {
+      if (rep.expenseId) {
+        repaymentsByExpense[rep.expenseId] =
+          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+      }
+    });
+
+    // Helper to get net expense amount (expense - repayments, min 0)
+    const getNetAmount = (exp: { id?: string; amount: number }) => {
+      const repaid = repaymentsByExpense[exp.id || ''] || 0;
+      return Math.max(0, exp.amount - repaid);
+    };
+
+    // Monthly expenses (deducting repayments)
     const monthly = expenses
       .filter((exp) => {
         const expDate = new Date(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
-      .reduce((sum, exp) => sum + exp.amount, 0);
+      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
     const monthlyIncome = incomes
       .filter((inc) => {
@@ -47,19 +67,12 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       .reduce((sum, inc) => sum + inc.amount, 0);
 
     const today = getTodayLocal();
+    // Daily expenses (deducting repayments)
     const daily = expenses
       .filter((exp) => exp.date === today)
-      .reduce((sum, exp) => sum + exp.amount, 0);
+      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
-    // Total unrecovered from tracked expenses
-    const repaymentsByExpense: { [expenseId: string]: number } = {};
-    repayments.forEach((rep) => {
-      if (rep.expenseId) {
-        repaymentsByExpense[rep.expenseId] =
-          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
-      }
-    });
-
+    // Total unrecovered from tracked expenses only
     const totalUnrecovered = expenses
       .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
@@ -68,6 +81,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         return sum + remaining;
       }, 0);
 
+    // Net cashflow now reflects repayment-adjusted expenses
     const netCashflow = monthlyIncome - monthly;
 
     const trackedCount = expenses.filter(exp =>
@@ -85,7 +99,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
 
   return (
-    <div className="summary-cards-grid">
+    <div className={`summary-cards-grid ${isCompact ? 'summary-cards-compact' : ''}`}>
       <div className="summary-card">
         <div className="card-icon error-bg">💰</div>
         <div className="card-content">

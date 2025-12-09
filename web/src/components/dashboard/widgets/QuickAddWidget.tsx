@@ -1,11 +1,81 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { WidgetProps } from './types';
-import { QuickExpensePreset, QuickExpensePresetInput, DEFAULT_QUICK_EXPENSE_ICONS } from '../../../types/quickExpense';
+import { QuickExpensePreset, QuickExpensePresetInput } from '../../../types/quickExpense';
 import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
+
+// Portal-based floating menu component for better z-index handling
+interface FloatingMenuProps {
+  anchorId: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}
+
+const FloatingMenu: React.FC<FloatingMenuProps> = ({ anchorId, children, onClose }) => {
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const anchor = document.getElementById(anchorId);
+    if (!anchor) return;
+    
+    const updatePosition = () => {
+      const rect = anchor.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    };
+    
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [anchorId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const anchor = document.getElementById(anchorId);
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) &&
+        anchor && 
+        !anchor.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [anchorId, onClose]);
+
+  if (!position) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      ref={menuRef}
+      className="quick-expense-floating-menu"
+      style={{
+        position: 'fixed',
+        top: position.top,
+        right: position.right,
+        zIndex: 10000,
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+};
 
 const QuickAddWidget: React.FC<WidgetProps> = ({
   categories,
@@ -15,7 +85,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   quickExpensePresets = [],
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
-  onQuickAdd,
+  size = 'medium',
+  // onQuickAdd is available in WidgetProps but not used in this component
 }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
@@ -24,8 +95,11 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  
+  // Determine display settings based on size
+  const isCompact = size === 'small';
   
   // Form state
   const [formData, setFormData] = useState<QuickExpensePresetInput>({
@@ -49,6 +123,17 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     }
   }, [isAdding]);
 
+  // Close menu on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [openMenuId]);
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -60,7 +145,6 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     });
     setIsAdding(false);
     setEditingPresetId(null);
-    setShowIconPicker(false);
   };
 
   const handleQuickExpenseClick = async (preset: QuickExpensePreset) => {
@@ -164,6 +248,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
   const handleDeletePreset = async (presetId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setOpenMenuId(null);
     
     // 1. Save original preset for rollback
     const deletedPreset = localPresets.find(p => p.id === presetId);
@@ -200,6 +285,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
   const handleEditPreset = (preset: QuickExpensePreset, e: React.MouseEvent) => {
     e.stopPropagation();
+    setOpenMenuId(null);
     setEditingPresetId(preset.id);
     setFormData({
       name: preset.name,
@@ -213,6 +299,11 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       icon: preset.icon || '💰',
     });
     setIsAdding(true);
+  };
+
+  const toggleMenu = (presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === presetId ? null : presetId);
   };
 
   const handleStartAdding = () => {
@@ -231,52 +322,28 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   // Inline edit form
   const renderInlineForm = () => (
     <div className="quick-expense-inline-form" onKeyDown={handleKeyDown}>
-      <div className="inline-form-row">
-        {/* Icon picker */}
-        <div className="inline-icon-picker">
-          <button 
-            type="button"
-            className="icon-picker-trigger"
-            onClick={() => setShowIconPicker(!showIconPicker)}
-          >
-            {formData.icon}
-          </button>
-          {showIconPicker && (
-            <div className="icon-picker-dropdown">
-              {DEFAULT_QUICK_EXPENSE_ICONS.map((icon) => (
-                <button
-                  key={icon}
-                  type="button"
-                  className={`icon-option-small ${formData.icon === icon ? 'selected' : ''}`}
-                  onClick={() => {
-                    setFormData({ ...formData, icon });
-                    setShowIconPicker(false);
-                  }}
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Name input */}
+      {/* Row 1: Name */}
+      <div className="inline-form-field">
+        <label className="inline-form-label">{t('presetName')}</label>
         <input
           ref={nameInputRef}
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder={t('quickExpenseNamePlaceholder')}
-          className="inline-input inline-input-name"
+          className="inline-input"
         />
+      </div>
 
-        {/* Amount input */}
+      {/* Row 2: Amount */}
+      <div className="inline-form-field">
+        <label className="inline-form-label">{t('amount')}</label>
         <div className="inline-amount-wrapper">
           <span className="currency-symbol">$</span>
           <input
             type="number"
             value={formData.amount || ''}
-            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
             placeholder="0.00"
             className="inline-input inline-input-amount"
             step="0.01"
@@ -285,41 +352,57 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
         </div>
       </div>
 
-      <div className="inline-form-row">
-        {/* Category */}
-        <select
-          value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-          className="inline-select"
-        >
-          <option value="">{t('selectCategory')}</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
+      {/* Row 3: Category + Payment Method (2 columns on desktop) */}
+      <div className="inline-form-grid">
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('category')}</label>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => {
+              const categoryId = e.target.value;
+              const cat = categories.find(c => c.id === categoryId);
+              setFormData({ 
+                ...formData, 
+                categoryId, 
+                icon: cat?.icon || formData.icon || '💰'
+              });
+            }}
+            className="inline-select"
+          >
+            <option value="">{t('selectCategory')}</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {/* Payment Method */}
-        <select
-          value={formData.paymentMethod}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-            cardId: undefined,
-            ewalletId: undefined,
-            bankId: undefined,
-          })}
-          className="inline-select"
-        >
-          <option value="cash">{t('cash')}</option>
-          <option value="credit_card">{t('creditCard')}</option>
-          <option value="e_wallet">{t('eWallet')}</option>
-          <option value="bank">{t('bankAccount')}</option>
-        </select>
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('paymentMethod')}</label>
+          <select
+            value={formData.paymentMethod}
+            onChange={(e) => setFormData({ 
+              ...formData, 
+              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+              cardId: undefined,
+              ewalletId: undefined,
+              bankId: undefined,
+            })}
+            className="inline-select"
+          >
+            <option value="cash">{t('cash')}</option>
+            <option value="credit_card">{t('creditCard')}</option>
+            <option value="e_wallet">{t('eWallet')}</option>
+            <option value="bank">{t('bankAccount')}</option>
+          </select>
+        </div>
+      </div>
 
-        {/* Sub-payment selector */}
-        {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
+      {/* Row 4: Sub-payment selector (if needed) */}
+      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectCard')}</label>
           <select
             value={formData.cardId || ''}
             onChange={(e) => setFormData({ ...formData, cardId: e.target.value || undefined })}
@@ -330,9 +413,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={card.id} value={card.id}>{card.name}</option>
             ))}
           </select>
-        )}
+        </div>
+      )}
 
-        {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectEWallet')}</label>
           <select
             value={formData.ewalletId || ''}
             onChange={(e) => setFormData({ ...formData, ewalletId: e.target.value || undefined })}
@@ -343,9 +429,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
             ))}
           </select>
-        )}
+        </div>
+      )}
 
-        {formData.paymentMethod === 'bank' && banks.length > 0 && (
+      {formData.paymentMethod === 'bank' && banks.length > 0 && (
+        <div className="inline-form-field">
+          <label className="inline-form-label">{t('selectBank')}</label>
           <select
             value={formData.bankId || ''}
             onChange={(e) => setFormData({ ...formData, bankId: e.target.value || undefined })}
@@ -356,16 +445,17 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
               <option key={bank.id} value={bank.id}>{bank.name}</option>
             ))}
           </select>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Actions */}
       <div className="inline-form-actions">
         <button 
           onClick={handleSavePreset} 
           className="inline-btn inline-btn-save"
           disabled={!formData.name || !formData.categoryId || formData.amount <= 0}
         >
-          {editingPresetId ? t('confirmEdit') : t('save')}
+          {editingPresetId ? t('update') : t('save')}
         </button>
         <button 
           onClick={resetForm} 
@@ -378,40 +468,67 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   );
 
   return (
-    <div className="quick-expense-widget">
+    <div className={`quick-expense-widget ${isCompact ? 'quick-expense-compact' : ''}`}>
       {/* Quick expense buttons grid */}
       <div className="quick-expense-grid">
         {localPresets.map((preset) => {
           const category = categories.find((c) => c.id === preset.categoryId);
+          const menuAnchorId = `quick-menu-${preset.id}`;
+          
           return (
-            <div key={preset.id} className="quick-expense-item">
+            <div
+              key={preset.id}
+              className="quick-expense-card"
+            >
+              {/* Main button area - clickable to add expense */}
               <button
-                className={`quick-expense-btn ${isLoading === preset.id ? 'loading' : ''}`}
+                className={`quick-expense-card-btn ${isLoading === preset.id ? 'loading' : ''}`}
                 onClick={() => handleQuickExpenseClick(preset)}
                 disabled={!!isLoading}
               >
-                <span className="quick-expense-icon">{preset.icon || category?.icon || '💰'}</span>
-                <span className="quick-expense-name">{preset.name}</span>
-                <span className="quick-expense-amount">${preset.amount.toFixed(2)}</span>
+                <span className="quick-expense-card-category">
+                  {category?.name || t('uncategorized')}
+                </span>
+                <span className="quick-expense-card-amount">
+                  ${preset.amount.toFixed(2)}
+                </span>
+                <span className="quick-expense-card-name">
+                  {preset.name}
+                </span>
               </button>
-              <div className="quick-expense-item-actions">
-                <button
-                  className="btn-icon btn-icon-primary"
-                  onClick={(e) => handleEditPreset(preset, e)}
-                  aria-label={t('edit')}
-                  title={t('edit')}
+              
+              {/* Menu trigger button */}
+              <button
+                id={menuAnchorId}
+                className="quick-expense-card-menu-btn"
+                onClick={(e) => toggleMenu(preset.id, e)}
+                aria-label={t('more')}
+              >
+                ⋮
+              </button>
+              
+              {/* Portal-based floating menu */}
+              {openMenuId === preset.id && (
+                <FloatingMenu 
+                  anchorId={menuAnchorId} 
+                  onClose={() => setOpenMenuId(null)}
                 >
-                  <EditIcon size={16} />
-                </button>
-                <button
-                  className="btn-icon btn-icon-danger"
-                  onClick={(e) => handleDeletePreset(preset.id, e)}
-                  aria-label={t('delete')}
-                  title={t('delete')}
-                >
-                  <DeleteIcon size={16} />
-                </button>
-              </div>
+                  <button
+                    className="quick-expense-menu-item"
+                    onClick={(e) => handleEditPreset(preset, e)}
+                  >
+                    <EditIcon size={16} />
+                    <span>{t('edit')}</span>
+                  </button>
+                  <button
+                    className="quick-expense-menu-item danger"
+                    onClick={(e) => handleDeletePreset(preset.id, e)}
+                  >
+                    <DeleteIcon size={16} />
+                    <span>{t('delete')}</span>
+                  </button>
+                </FloatingMenu>
+              )}
             </div>
           );
         })}
@@ -423,22 +540,14 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
             onClick={handleStartAdding}
             aria-label={t('addQuickExpense')}
           >
-            <PlusIcon size={20} />
-            <span>{t('addQuickExpense')}</span>
+            <PlusIcon size={isCompact ? 16 : 20} />
+            <span>{isCompact ? t('add') : t('addQuickExpense')}</span>
           </button>
         )}
       </div>
 
       {/* Inline form */}
       {isAdding && renderInlineForm()}
-
-      {/* Regular add expense button */}
-      {onQuickAdd && (
-        <button onClick={onQuickAdd} className="quick-add-regular-btn">
-          <span>📝</span>
-          <span>{t('addExpenseManually')}</span>
-        </button>
-      )}
     </div>
   );
 };

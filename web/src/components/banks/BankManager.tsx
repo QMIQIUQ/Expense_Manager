@@ -174,6 +174,12 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         />
       </div>
 
+      {isAdding && (
+        <div className="form-card">
+          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -193,12 +199,6 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
-        </div>
-      )}
 
       <style>{`
         .desktop-actions {
@@ -319,9 +319,9 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                       <div className="stat-card accent">
                         <p className="stat-label">{t('walletBalance')}</p>
                         <p className="stat-value" style={{ 
-                          color: stats.balance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
+                          color: (bank.balance ?? stats.balance) >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                         }}>
-                          ${stats.balance.toFixed(2)}
+                          ${(bank.balance ?? stats.balance).toFixed(2)}
                         </p>
                       </div>
                       <div className="stat-card warning">

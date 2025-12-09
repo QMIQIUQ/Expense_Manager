@@ -1,8 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { Category, Card, Bank } from '../../types';
 import { BaseForm } from '../common/BaseForm';
-import { getTodayLocal } from '../../utils/dateUtils';
+import { useToday } from '../../hooks/useToday';
+import DatePicker from '../common/DatePicker';
+import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 
 interface RecurringFormData {
   description: string;
@@ -40,13 +43,15 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
+  const today = useToday();
   const [formData, setFormData] = React.useState<RecurringFormData>(
     initialData || {
       description: '',
       amount: 0,
       category: '',
       frequency: 'monthly',
-      startDate: getTodayLocal(),
+      startDate: today,
       endDate: '',
       dayOfWeek: 1,
       dayOfMonth: 1,
@@ -119,25 +124,19 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('category')} *</label>
-            <select
+            <AutocompleteDropdown
+              options={categories.map((cat): AutocompleteOption => ({
+                id: cat.name,
+                label: cat.name,
+                icon: cat.icon,
+                color: cat.color,
+              }))}
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              required
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            >
-              <option value="">{t('selectCategory')}</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.name}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setFormData({ ...formData, category: value })}
+              label={`${t('category')} *`}
+              placeholder={t('selectCategory')}
+              allowClear={false}
+            />
           </div>
         </div>
 
@@ -166,21 +165,19 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('startDate')} *</label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              required
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            />
-          </div>
+          <DatePicker
+            label={t('startDate')}
+            value={formData.startDate}
+            onChange={(value) => setFormData({ ...formData, startDate: value })}
+            required
+            dateFormat={dateFormat}
+            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)'
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-1">

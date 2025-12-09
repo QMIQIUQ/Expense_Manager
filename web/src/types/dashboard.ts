@@ -10,6 +10,7 @@ export type DashboardWidgetType =
   | 'cards-summary'      // Credit cards summary
   | 'budget-progress'    // Budget progress bars
   | 'tracked-expenses'   // Expenses needing repayment tracking
+  | 'pending-payments'   // Scheduled payments due this month
   | 'quick-add';         // Quick add expense button
 
 // Widget size options
@@ -54,7 +55,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'summary-cards',
     defaultTitle: 'summaryCards',
     defaultTitleFallback: 'Quick Stats',
-    description: 'Today, monthly expenses, and income overview',
+    description: 'summaryCardsDesc',
     icon: '📊',
     defaultSize: 'full',
     minSize: 'medium',
@@ -64,7 +65,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'expense-chart',
     defaultTitle: 'expenseChart',
     defaultTitleFallback: 'Expense Distribution',
-    description: 'Pie chart showing spending by category',
+    description: 'expenseChartDesc',
     icon: '🥧',
     defaultSize: 'medium',
     minSize: 'small',
@@ -74,7 +75,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'spending-trend',
     defaultTitle: 'spendingTrend',
     defaultTitleFallback: 'Spending Trend',
-    description: 'Line chart of last 7 days spending',
+    description: 'spendingTrendDesc',
     icon: '📈',
     defaultSize: 'medium',
     minSize: 'small',
@@ -84,7 +85,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'category-breakdown',
     defaultTitle: 'topCategories',
     defaultTitleFallback: 'Top Categories',
-    description: 'Top spending categories with amounts',
+    description: 'categoryBreakdownDesc',
     icon: '📋',
     defaultSize: 'medium',
     minSize: 'small',
@@ -94,7 +95,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'recent-expenses',
     defaultTitle: 'recentExpenses',
     defaultTitleFallback: 'Recent Expenses',
-    description: 'Latest expense transactions',
+    description: 'recentExpensesDesc',
     icon: '💳',
     defaultSize: 'medium',
     minSize: 'small',
@@ -104,7 +105,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'cards-summary',
     defaultTitle: 'cardsSummary',
     defaultTitleFallback: 'Credit Cards',
-    description: 'Credit card usage and cashback summary',
+    description: 'cardsSummaryDesc',
     icon: '💳',
     defaultSize: 'full',
     minSize: 'medium',
@@ -114,7 +115,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'budget-progress',
     defaultTitle: 'budgetProgress',
     defaultTitleFallback: 'Budget Progress',
-    description: 'Progress bars for active budgets',
+    description: 'budgetProgressDesc',
     icon: '🎯',
     defaultSize: 'medium',
     minSize: 'small',
@@ -124,17 +125,27 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     type: 'tracked-expenses',
     defaultTitle: 'trackedExpenses',
     defaultTitleFallback: 'Tracked Expenses',
-    description: 'Expenses waiting for repayment',
+    description: 'trackedExpensesDesc',
     icon: '🔄',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
+  'pending-payments': {
+    type: 'pending-payments',
+    defaultTitle: 'pendingPayments',
+    defaultTitleFallback: 'Pending Payments',
+    description: 'pendingPaymentsDesc',
+    icon: '📅',
     defaultSize: 'medium',
     minSize: 'small',
     maxSize: 'large',
   },
   'quick-add': {
     type: 'quick-add',
-    defaultTitle: 'addExpense',
-    defaultTitleFallback: 'Quick Add',
-    description: 'Quick add expense button',
+    defaultTitle: 'quickExpenses',
+    defaultTitleFallback: 'Quick Expenses',
+    description: 'quickAddDesc',
     icon: '➕',
     defaultSize: 'medium',
     minSize: 'small',
@@ -152,6 +163,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
   { id: 'widget-6', type: 'budget-progress', enabled: false, order: 5, size: 'medium' },
   { id: 'widget-7', type: 'cards-summary', enabled: false, order: 6, size: 'full' },
   { id: 'widget-8', type: 'tracked-expenses', enabled: false, order: 7, size: 'medium' },
+  { id: 'widget-9', type: 'pending-payments', enabled: false, order: 8, size: 'medium' },
 ];
 
 // Helper to generate unique widget ID

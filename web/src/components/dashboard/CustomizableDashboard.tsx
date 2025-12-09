@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank } from '../../types';
+import { useNotification } from '../../contexts/NotificationContext';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
@@ -22,6 +23,18 @@ interface CustomizableDashboardProps {
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
+  onQuickExpensePresetsChange?: () => void;
+  onNavigateToExpenses?: () => void;
+  onNavigateToExpense?: (expenseId: string) => void;
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
+  onCustomizingChange?: (isCustomizing: boolean) => void;
+  // Scheduled payments related
+  scheduledPayments?: ScheduledPayment[];
+  scheduledPaymentRecords?: ScheduledPaymentRecord[];
+  onConfirmScheduledPayment?: (
+    scheduledPaymentId: string,
+    recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
+  ) => void;
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
@@ -37,12 +50,27 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
+  onQuickExpensePresetsChange,
+  onNavigateToExpenses,
+  onNavigateToExpense,
+  onNavigateToScheduledPayment,
+  onCustomizingChange,
+  scheduledPayments = [],
+  scheduledPaymentRecords = [],
+  onConfirmScheduledPayment,
 }) => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
+  const { showNotification } = useNotification();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_DASHBOARD_LAYOUT);
-  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [isCustomizing, setIsCustomizingState] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Wrapper to notify parent when customizing state changes
+  const setIsCustomizing = useCallback((value: boolean) => {
+    setIsCustomizingState(value);
+    onCustomizingChange?.(value);
+  }, [onCustomizingChange]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
 
   // Load user's dashboard layout
@@ -79,15 +107,30 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     loadQuickExpensePresets();
   }, [loadQuickExpensePresets]);
 
-  // Save widget changes
+  // Save widget changes (Optimistic Update)
   const handleSaveWidgets = async (newWidgets: DashboardWidget[]) => {
     if (!currentUser) return;
     
+    // Store previous state for rollback
+    const previousWidgets = [...widgets];
+    
+    // 1. Optimistic Update: Update UI immediately
+    setWidgets(newWidgets.sort((a, b) => a.order - b.order));
+    
     try {
+      // 2. Save to Firebase in background
       await dashboardLayoutService.updateWidgets(currentUser.uid, newWidgets);
-      setWidgets(newWidgets.sort((a, b) => a.order - b.order));
+      
+      // 3. Notify success
+      showNotification('success', t('saveSuccess') || '已保存自定義列表');
     } catch (error) {
       console.error('Failed to save dashboard layout:', error);
+      
+      // 4. Rollback on failure
+      setWidgets(previousWidgets);
+      
+      // 5. Notify error
+      showNotification('error', t('saveFailed') || '保存失敗，請稍後重試');
     }
   };
 
@@ -104,9 +147,14 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     billingCycleDay,
     onMarkTrackingCompleted,
     onQuickAdd,
+    onNavigateToExpense,
+    onNavigateToScheduledPayment,
     quickExpensePresets,
     onQuickExpenseAdd,
-    onQuickExpensePresetsChange: loadQuickExpensePresets,
+    onQuickExpensePresetsChange: onQuickExpensePresetsChange || loadQuickExpensePresets,
+    scheduledPayments,
+    scheduledPaymentRecords,
+    onConfirmScheduledPayment,
   };
 
   // Get enabled widgets sorted by order
@@ -144,6 +192,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
             key={widget.id}
             widget={widget}
             data={widgetData}
+            onNavigateToExpenses={onNavigateToExpenses}
+            onNavigateToExpense={onNavigateToExpense}
+            onNavigateToScheduledPayment={onNavigateToScheduledPayment}
           />
         ))}
       </div>

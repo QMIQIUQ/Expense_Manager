@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, EWallet, Category, Expense, Bank, Income, Transfer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CardManager from '../cards/CardManager';
 import EWalletManager from '../ewallet/EWalletManager';
 import BankManager from '../banks/BankManager';
+import TransferList from '../transfer/TransferList';
+import SubTabs from '../common/SubTabs';
 
 interface PaymentMethodsTabProps {
   cards: Card[];
@@ -26,7 +28,7 @@ interface PaymentMethodsTabProps {
   onDeleteTransfer: (id: string) => Promise<void>;
 }
 
-type PaymentMethodView = 'cards' | 'ewallets' | 'banks';
+type PaymentMethodView = 'cards' | 'ewallets' | 'banks' | 'transfers';
 
 const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   cards,
@@ -51,9 +53,15 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
   
-  // TODO: TransferList will use onDeleteTransfer and onAddTransfer
-  void onDeleteTransfer;
+  // TODO: onAddTransfer will be used for adding transfers from the TransferList view
   void onAddTransfer;
+
+  const tabs = useMemo(() => [
+    { id: 'cards', label: t('cards'), icon: '💳' },
+    { id: 'ewallets', label: t('eWallets'), icon: '📱' },
+    { id: 'banks', label: t('banks'), icon: '🏦' },
+    { id: 'transfers', label: t('transfers'), icon: '↔️' },
+  ], [t]);
 
   const styles = {
     container: {
@@ -62,23 +70,6 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
       gap: '16px',
       position: 'relative' as const,
     },
-    tabs: {
-      display: 'flex',
-      gap: '8px',
-      borderBottom: '1px solid var(--border-color)',
-      marginBottom: '16px',
-    },
-    tab: (isActive: boolean) => ({
-      padding: '8px 16px',
-      fontWeight: 500,
-      fontSize: '0.875rem',
-      transition: 'all 0.2s',
-      color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
-      cursor: 'pointer',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderBottom: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
-    }),
     content: {
       marginTop: '8px',
     },
@@ -87,26 +78,11 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   return (
     <div style={styles.container}>
       {/* Sub-tab navigation */}
-      <div style={styles.tabs}>
-        <button
-          onClick={() => setActiveView('cards')}
-          style={styles.tab(activeView === 'cards')}
-        >
-          💳 {t('cards')}
-        </button>
-        <button
-          onClick={() => setActiveView('ewallets')}
-          style={styles.tab(activeView === 'ewallets')}
-        >
-          📱 {t('eWallets')}
-        </button>
-        <button
-          onClick={() => setActiveView('banks')}
-          style={styles.tab(activeView === 'banks')}
-        >
-          🏦 {t('banks')}
-        </button>
-      </div>
+      <SubTabs
+        tabs={tabs}
+        activeTab={activeView}
+        onTabChange={(tabId) => setActiveView(tabId as PaymentMethodView)}
+      />
 
       {/* Content based on active view */}
       <div style={styles.content}>
@@ -148,6 +124,20 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
                 onDelete={onDeleteBank!}
               />
             </React.Suspense>
+          </div>
+        )}
+        {activeView === 'transfers' && (
+          <div>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('transferHistory')}
+            </h3>
+            <TransferList
+              transfers={transfers}
+              ewallets={ewallets}
+              banks={banks}
+              cards={cards}
+              onDelete={onDeleteTransfer}
+            />
           </div>
         )}
       </div>

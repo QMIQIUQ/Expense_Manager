@@ -16,6 +16,7 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
     name: initialData?.name || '',
     country: initialData?.country || '',
     code: initialData?.code || '',
+    balance: initialData?.balance?.toString() || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -34,7 +35,21 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
       return;
     }
     setErrors({});
-    onSubmit({ ...formData });
+    
+    // Build payload with optional balance
+    const payload: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
+      name: formData.name,
+      country: formData.country,
+      code: formData.code,
+    };
+    
+    // Include balance if provided
+    const balanceValue = parseFloat(formData.balance);
+    if (!isNaN(balanceValue)) {
+      payload.balance = balanceValue;
+    }
+    
+    onSubmit(payload);
     if (onCancel) onCancel();
   };
 
@@ -67,6 +82,23 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankCode')}</label>
           <input name="code" value={formData.code} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          {t('initialBalance')} ({t('optional')})
+        </label>
+        <input
+          type="number"
+          name="balance"
+          value={formData.balance}
+          onChange={handleChange}
+          placeholder="0.00"
+          step="0.01"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2"
+          style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
+        />
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('setInitialBalance')}</p>
       </div>
 
       {/* Footer removed - handled by BaseForm */}

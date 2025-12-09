@@ -15,12 +15,24 @@ import { Transfer } from '../types';
 
 const COLLECTION_NAME = 'transfers';
 
+// Helper function to remove undefined values from an object (Firebase doesn't accept undefined)
+const cleanUndefinedValues = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
+  const cleaned: Partial<T> = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+};
+
 export const transferService = {
   // Create a new transfer
   async create(transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = Timestamp.now();
+    const cleanedTransfer = cleanUndefinedValues(transfer);
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...transfer,
+      ...cleanedTransfer,
       createdAt: now,
       updatedAt: now,
     });

@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import {
   parseUploadedFile,
   matchCategories,
@@ -54,6 +56,7 @@ const ImportExportModal: React.FC<Props> = ({
   onImportError,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [step, setStep] = useState<'select' | 'preview' | 'importing' | 'complete'>('select');
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -304,7 +307,7 @@ const ImportExportModal: React.FC<Props> = ({
                   return (
                     <tr key={idx} style={styles.tr}>
                       <td style={styles.td}>{idx + 1}</td>
-                      <td style={styles.td}>{exp.date}</td>
+                      <td style={styles.td}>{formatDateWithUserFormat(exp.date, dateFormat)}</td>
                       <td style={styles.td}>{exp.description}</td>
                       <td style={{
                         ...styles.td,

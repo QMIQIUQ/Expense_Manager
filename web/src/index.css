@@ -321,6 +321,47 @@ button:not(:disabled):hover {
   color: var(--text-primary) !important;
 }
 
+/* Standard hamburger dropdown panel (apply this class to unify colors) */
+.hamburger-menu-panel {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow);
+  padding: 4px 0;
+}
+
+.dark .hamburger-menu-panel {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+/* Optional: section header buttons inside hamburger panel */
+.hamburger-menu-panel .section-toggle-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.hamburger-menu-panel .section-toggle-button:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.dark .hamburger-menu-panel .section-toggle-button:hover {
+  background: linear-gradient(90deg, rgba(124,58,237,0.12), rgba(167,139,250,0.18));
+}
+
 /* Ensure hamburger menu dropdown is always on top */
 .dark .z-\[9999\] {
   z-index: 9999 !important;
@@ -392,6 +433,21 @@ button:not(:disabled):hover {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
 }
 
 .pending {
@@ -961,6 +1017,7 @@ button:not(:disabled):hover {
 .recurring-card,
 .payment-card,
 .repayment-card,
+.scheduled-payment-card,
 .hover-card {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -972,11 +1029,13 @@ button:not(:disabled):hover {
 .recurring-card:hover,
 .payment-card:hover,
 .repayment-card:hover,
+.scheduled-payment-card:hover,
 .ewallet-card:hover,
 .credit-card:hover,
 .summary-card:hover,
 .tracked-expense-card:hover,
 .recent-expense-card:hover,
+.recent-expense-item:hover,
 .hover-card:hover {
   transform: translateY(-2px);
   border-color: var(--accent-primary);
@@ -990,15 +1049,39 @@ button:not(:disabled):hover {
 .dark .recurring-card:hover,
 .dark .payment-card:hover,
 .dark .repayment-card:hover,
+.dark .scheduled-payment-card:hover,
 .dark .ewallet-card:hover,
 .dark .credit-card:hover,
 .dark .summary-card:hover,
 .dark .tracked-expense-card:hover,
 .dark .recent-expense-card:hover,
+.dark .recent-expense-item:hover,
 .dark .hover-card:hover {
   border-color: var(--accent-primary);
   box-shadow: var(--purple-glow);
   transform: translateY(-2px);
+}
+
+/* Scheduled Payment Card Styles */
+.scheduled-payment-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.dark .scheduled-payment-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.scheduled-payment-card.selected {
+  border-color: var(--accent-primary);
+  background-color: var(--accent-light);
 }
 
 /* Dashboard Summary Specific Styles */
@@ -1386,23 +1469,176 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* ==================== Pending Payments Widget ==================== */
+.pending-payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pending-payment-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.pending-payment-card.clickable {
+  cursor: pointer;
+}
+
+.pending-payments-compact .pending-payment-card {
+  padding: 8px 10px;
+}
+
+.pending-payment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.pending-payment-card.clickable:hover {
+  border-color: var(--accent-primary);
+}
+
+.pending-payment-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-payment-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pending-payment-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.pending-payment-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-payments-compact .pending-payment-name {
+  font-size: 12px;
+}
+
+.pending-payment-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.pending-payment-category {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.pending-payment-due {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.pending-payment-due.overdue {
+  color: var(--error-text);
+  font-weight: 500;
+}
+
+.pending-payment-due.due-soon {
+  color: var(--warning-text);
+  font-weight: 500;
+}
+
+.pending-payment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pending-payment-amount {
+  font-weight: 600;
+  color: var(--error-text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pending-payments-compact .pending-payment-amount {
+  font-size: 12px;
+}
+
+.pending-payment-confirm-btn {
+  padding: 4px 8px;
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pending-payment-confirm-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.pending-payments-more {
+  text-align: center;
+  padding: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Dark mode styles */
+.dark .pending-payment-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.dark .pending-payment-card:hover {
+  box-shadow: 0 6px 16px var(--shadow-lg);
+}
+
 .tracked-expense-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-complete {
-  padding: 6px 12px;
+  padding: 4px 8px;
   border: none;
   background: var(--accent-primary);
   color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-complete:hover {
@@ -1413,50 +1649,65 @@ button:not(:disabled):hover {
 .tracked-expense-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
   flex: 1;
+  min-width: 0;
 }
 
 .tracked-expense-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracked-expense-card.clickable {
+  cursor: pointer;
+}
+
+.tracked-expense-card.clickable:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .tracked-expense-date {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
 .tracked-expense-amounts {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .tracked-amount-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
+  align-items: flex-end;
 }
 
 .tracked-amount-label {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 9px;
+  color: var(--text-tertiary);
 }
 
 .tracked-amount-value {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .progress-bar {
-  height: 8px;
+  height: 4px;
   background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
+  margin-top: 6px;
 }
 
 .progress-fill {
@@ -1475,6 +1726,10 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 12px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .category-info {
@@ -1522,8 +1777,44 @@ button:not(:disabled):hover {
   align-items: center;
   padding: 12px;
   background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   gap: 10px;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.recent-expense-item.clickable {
+  cursor: pointer;
+}
+
+.recent-expense-item:hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.recent-expense-item.clickable:hover {
+  border-color: var(--accent-primary);
+}
+
+/* Focused payment highlight animation */
+.focused-payment {
+  animation: focusPaymentPulse 1s ease-in-out 3;
+}
+
+@keyframes focusPaymentPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb, 59, 130, 246), 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb, 59, 130, 246), 0.3);
+  }
+}
+
+.focused-payment > div,
+.focused-payment .scheduled-payment-card {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 59, 130, 246), 0.2);
 }
 
 .recent-expense-info {
@@ -1544,16 +1835,17 @@ button:not(:disabled):hover {
 }
 
 .recent-expense-category {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  color: var(--chip-text);
   display: inline-block;
-  padding: 2px 8px;
-  background-color: var(--info-bg);
-  border-radius: 4px;
-  max-width: 100%;
+  padding: 2px 6px;
+  background-color: var(--chip-bg);
+  border-radius: 10px;
+  max-width: fit-content;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .recent-expense-right {
@@ -1670,6 +1962,42 @@ button:not(:disabled):hover {
   color: var(--text-tertiary);
 }
 
+.more-cards-button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.more-cards-button:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+}
+
+.more-cards-button:active {
+  transform: scale(0.98);
+}
+
+.dark .more-cards-button {
+  border-color: var(--border-color);
+  color: var(--accent-primary);
+}
+
+.dark .more-cards-button:hover {
+  background: var(--button-hover);
+  border-color: var(--accent-primary);
+}
+
 /* Placeholder text */
 .dark input::placeholder,
 .dark textarea::placeholder,
@@ -1706,11 +2034,67 @@ button:not(:disabled):hover {
 }
 
 /* Tooltips */
-.dark [class*="tooltip"] {
+.dark [class*="tooltip"]:not(.recharts-tooltip-wrapper):not(.recharts-tooltip-wrapper *) {
   background-color: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
+}
+
+/* Recharts Tooltip styling */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-tertiary) 100%) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  padding: 10px 14px !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: linear-gradient(135deg, #252338 0%, #1a1625 100%) !important;
+  border: 1px solid var(--accent-primary) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(167, 139, 250, 0.15) !important;
+}
+
+/* Remove all inner borders in tooltip */
+.recharts-tooltip-wrapper .recharts-default-tooltip * {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label {
+  display: none !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 2px 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-name {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-value {
+  color: var(--accent-primary) !important;
+  font-weight: 700 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-item-separator {
+  color: var(--text-tertiary) !important;
 }
 
 /* Code blocks (if any) */
@@ -1902,7 +2286,21 @@ button:not(:disabled):hover {
 .ewallet-card,
 .credit-card,
 .summary-card,
-.tracked-expense-card,
+.tracked-expense-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  position: relative;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all 0.2s ease;
+  overflow: visible;
+}
+
 .recent-expense-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -1930,7 +2328,8 @@ button:not(:disabled):hover {
 .dark .credit-card,
 .dark .summary-card,
 .dark .tracked-expense-card,
-.dark .recent-expense-card {
+.dark .recent-expense-card,
+.dark .recent-expense-item {
   background-color: var(--card-bg);
   border-color: var(--border-color);
   box-shadow: 0 4px 12px var(--shadow-md);
@@ -2118,6 +2517,19 @@ button:not(:disabled):hover {
   color: var(--text-secondary);
 }
 
+/* Utility text color classes for summary cards */
+.error-text {
+  color: var(--error-text) !important;
+}
+
+.success-text {
+  color: var(--success-text) !important;
+}
+
+.warning-text {
+  color: var(--warning-text) !important;
+}
+
 .btn-icon:hover {
   filter: brightness(0.95);
 }
@@ -2140,7 +2552,8 @@ button:not(:disabled):hover {
   padding: 8px 12px;
   background-color: var(--accent-light);
   color: var(--accent-primary);
-  border: none;
+  border: 1px solid transparent;
+  outline: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 20px;
@@ -2149,14 +2562,34 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-clip: padding-box;
 }
 
 .menu-trigger-button:hover {
   filter: brightness(0.95);
+  border-color: transparent;
 }
 
 .dark .menu-trigger-button:hover {
   filter: brightness(1.1);
+}
+
+/* Remove focus outlines specifically for the menu trigger to avoid square borders */
+.menu-trigger-button:focus,
+.menu-trigger-button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Ensure the header menu container has no border that could appear around the trigger */
+.header-menu-container {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Multi-select styles */
@@ -2198,6 +2631,18 @@ button:not(:disabled):hover {
   box-shadow: 0 2px 8px var(--shadow);
   transition: all 0.2s ease;
   border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  position: relative;
+  overflow: visible;
+}
+
+/* For compact widgets that don't need min-height */
+.widget-container:has(.quick-expense-compact),
+.widget-container:has(.widget-empty-state),
+.widget-container:has(.tracked-expenses-list) {
+  min-height: auto;
 }
 
 .dark .widget-container {
@@ -2215,11 +2660,12 @@ button:not(:disabled):hover {
 .widget-large { flex: 1 1 calc(66.666% - 8px); min-width: 360px; max-width: 100%; }
 .widget-full { flex: 0 0 100%; width: 100%; }
 
-/* When only one medium widget in a row, let it fill the space */
-.dashboard-widgets-grid .widget-medium:only-child,
-.dashboard-widgets-grid .widget-medium:last-child:nth-child(odd) {
-  flex: 0 0 100%;
-}
+/* Removed special-case that forced a lone medium widget to full width
+   so that size changes (small/medium/large/full) are visually consistent.
+   Previously:
+   .dashboard-widgets-grid .widget-medium:only-child,
+   .dashboard-widgets-grid .widget-medium:last-child:nth-child(odd) { flex: 0 0 100%; }
+*/
 
 @media (max-width: 768px) {
   .widget-small, .widget-medium, .widget-large, .widget-full {
@@ -2231,6 +2677,23 @@ button:not(:disabled):hover {
 .widget-disabled {
   opacity: 0.5;
   filter: grayscale(0.5);
+}
+
+/* Widget content area */
+.widget-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* For widgets that don't need to stretch */
+.widget-content:has(.quick-expense-widget),
+.widget-content:has(.recent-expenses-list),
+.widget-content:has(.category-list),
+.widget-content:has(.widget-empty-state) {
+  flex: 0 1 auto;
 }
 
 /* Widget header */
@@ -2293,27 +2756,27 @@ button:not(:disabled):hover {
   background: var(--accent-light);
 }
 
-/* Widget empty state */
+/* Widget empty state - compact single row */
 .widget-empty-state {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  gap: 6px;
+  padding: 8px 12px;
   color: var(--text-secondary);
-  text-align: center;
-  min-height: 80px;
 }
 
 .widget-empty-state span {
-  font-size: 28px;
-  margin-bottom: 6px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .widget-empty-state p {
   margin: 0;
   font-size: 13px;
   color: var(--text-tertiary);
+  line-height: 1;
 }
 
 /* Widget placeholder (when disabled in edit mode) */
@@ -2413,13 +2876,99 @@ button:not(:disabled):hover {
   padding: 20px 24px;
 }
 
+.customizer-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.customizer-hint-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.customizer-hint-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.customizer-btn-reset-inline {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.customizer-btn-reset-inline:hover {
+  background: var(--danger-color, #ef4444);
+  color: white;
+  border-color: var(--danger-color, #ef4444);
+}
+
 .customizer-hint {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 16px;
-  padding: 12px;
+  padding: 10px 14px;
   background: var(--bg-secondary);
   border-radius: 8px;
+  margin: 0;
+  flex: 1;
+  min-width: 150px;
+}
+
+.bulk-size-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bulk-size-control label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.bulk-size-select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.bulk-size-select:hover {
+  border-color: var(--accent-primary);
+}
+
+.bulk-size-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.dark .bulk-size-control label {
+  color: var(--text-primary);
 }
 
 /* Widget list in customizer */
@@ -2491,6 +3040,63 @@ button:not(:disabled):hover {
 .widget-controls {
   display: flex;
   gap: 4px;
+  align-items: center;
+}
+
+.widget-order-input {
+  width: 50px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+/* Hide native number input spinners for cleaner UI */
+.widget-order-input::-webkit-outer-spin-button,
+.widget-order-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.widget-order-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.widget-order-input:hover {
+  border-color: var(--accent-primary);
+}
+
+.widget-order-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.widget-size-select {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.widget-size-select:hover {
+  border-color: var(--accent-primary);
+}
+
+.widget-size-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .btn-move {
@@ -2604,10 +3210,74 @@ button:not(:disabled):hover {
 /* Customizer footer */
 .customizer-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
+}
+
+/* Customizer button base style */
+.customizer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+/* Reset button - full width, secondary style */
+.customizer-btn-reset {
+  width: 100%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.customizer-btn-reset:hover {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+}
+
+/* Button row: save + cancel */
+.customizer-btn-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Save button - accent light style per UI_BUTTON_STYLE_GUIDE */
+.customizer-btn-save {
+  flex: 1;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.customizer-btn-save:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.dark .customizer-btn-save:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* Cancel button - secondary style per UI_BUTTON_STYLE_GUIDE */
+.customizer-btn-cancel {
+  padding: 8px 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.customizer-btn-cancel:hover {
+  filter: brightness(0.95);
+}
+
+.dark .customizer-btn-cancel:hover {
+  filter: brightness(1.1);
 }
 
 .footer-actions {
@@ -2615,43 +3285,582 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* Mobile responsive styles for dashboard customizer widget list */
+@media (max-width: 480px) {
+  .customizer-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .customizer-header {
+    padding: 16px;
+  }
+
+  .customizer-header h2 {
+    font-size: 18px;
+  }
+
+  .customizer-content {
+    padding: 12px;
+  }
+
+  .customizer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .customizer-hint {
+    min-width: auto;
+  }
+
+  .bulk-size-control {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Widget item responsive layout */
+  .widget-item {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .widget-item .widget-drag-handle {
+    order: 1;
+  }
+
+  .widget-order-input {
+    order: 2;
+    width: 40px;
+    padding: 4px 6px;
+  }
+
+  .widget-info {
+    order: 3;
+    /* 80px accounts for drag handle (~30px) + order input (~40px) + gaps (~10px) */
+    flex: 1 1 calc(100% - 80px);
+    min-width: 0;
+  }
+
+  .widget-info .widget-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .widget-details {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .widget-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .widget-desc {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .widget-controls {
+    order: 4;
+    flex: 0 0 100%;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+  }
+
+  .widget-size-select {
+    font-size: 11px;
+    padding: 5px 6px;
+    min-width: 50px;
+  }
+
+  .customizer-footer {
+    padding: 12px;
+  }
+
+  .customizer-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .customizer-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .footer-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Additional responsive adjustments for very small mobile screens */
+@media (max-width: 360px) {
+  .widget-controls {
+    gap: 6px;
+  }
+
+  .widget-size-select {
+    min-width: 45px;
+  }
+}
+
 /* Budget progress widget */
 .budget-progress-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .budget-progress-item {
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 3px 10px var(--shadow);
+  transition: all 0.2s ease;
 }
 
-.budget-info {
+/* Row 1: Period chip and amounts */
+.budget-progress-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.budget-period-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.budget-period-chip {
+  padding: 5px 10px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.budget-period-range {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.budget-rollover-badge {
+  font-size: 12px;
+  padding: 2px 4px;
+  background-color: var(--accent-light);
+  border-radius: 4px;
+}
+
+.budget-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.budget-spent {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.budget-separator {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.budget-total {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Row 2: Category name + Status */
+.budget-progress-row-2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-category-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Daily budget info row */
+.budget-daily-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+/* Budget Suggestion Card Styles */
+.budget-suggestion-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.budget-suggestion-card:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.suggestion-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+  align-items: center;
 }
 
-.budget-category {
+.suggestion-category {
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.budget-amount {
-  font-weight: 500;
+.suggestion-confidence {
+  font-size: 14px;
 }
 
-.budget-status {
+.suggestion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggestion-main {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--accent-light);
+  border-radius: 8px;
+}
+
+.suggestion-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.suggestion-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.suggestion-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.suggestion-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 12px;
 }
 
-.budget-percentage {
+.detail-label {
+  color: var(--text-tertiary);
+}
+
+.detail-value {
   color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.suggestion-meta {
+  text-align: center;
+}
+
+.months-analyzed {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.suggestion-apply-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-apply-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.suggestion-apply-btn:active {
+  transform: translateY(0);
+}
+
+/* Budget History Styles */
+.budget-history {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.budget-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.budget-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.budget-history-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  padding-top: 8px;
+  position: relative;
+}
+
+.budget-history-chart::before {
+  content: '';
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-color);
+  opacity: 0.5;
+}
+
+.budget-history-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 4px;
+}
+
+.budget-history-bar {
+  width: 100%;
+  max-width: 24px;
+  height: 60px;
+  min-height: 4px;
+  border-radius: 3px 3px 0 0;
+  transition: all 0.3s ease;
+}
+
+.budget-history-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+.budget-history-legend {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.budget-history-100-line {
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+/* Budget History Advanced Chart */
+.budget-history-advanced {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.budget-history-view-toggle {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.budget-history-view-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.budget-history-chart-container {
+  width: 100%;
+  height: 180px;
+  margin-top: 8px;
+}
+
+.budget-chart-tooltip {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.budget-chart-tooltip .label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.budget-chart-tooltip .value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.budget-chart-tooltip .value .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.budget-history-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.budget-history-legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.budget-daily-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.budget-daily-label {
+  color: var(--text-tertiary);
+}
+
+.budget-daily-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.budget-daily-value.over-daily {
+  color: #dc2626;
+}
+
+.budget-pace-indicator {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.budget-pace-indicator.over {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.budget-pace-indicator.under {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Row 3: Progress bar and status */
+.budget-progress-row-3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.budget-progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.budget-percentage {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 45px;
+  text-align: right;
+  /* Reset styles from generic [class*="tag"] selector */
+  background: transparent !important;
+  border: none !important;
+  padding: 0;
+}
+
+.budget-status-text {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Cards summary widget */
@@ -2721,6 +3930,7 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: fit-content;
 }
 
 .quick-expense-grid {
@@ -2729,18 +3939,186 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+/* ========================================
+   Quick Expense Card - Simplified Structure
+   ======================================== */
+.quick-expense-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-expense-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  padding-right: 36px; /* Space for menu button */
+  min-height: 90px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+}
+
+.quick-expense-card-btn:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.quick-expense-card-btn.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.quick-expense-card-btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--accent-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.quick-expense-card-category {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-expense-card-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1.2;
+}
+
+.quick-expense-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Menu trigger button - positioned top-right */
+.quick-expense-card-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.quick-expense-card-menu-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Portal-based floating menu */
+.quick-expense-floating-menu {
+  min-width: 140px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.dark .quick-expense-floating-menu {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.quick-expense-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.quick-expense-menu-item:hover {
+  background: var(--hover-bg);
+}
+
+.dark .quick-expense-menu-item:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.15), rgba(167, 139, 250, 0.2));
+}
+
+.quick-expense-menu-item.danger {
+  color: var(--error-text);
+}
+
+.quick-expense-menu-item.danger:hover {
+  background: var(--error-bg);
+}
+
+/* Legacy classes - kept for backward compatibility */
 .quick-expense-item {
   position: relative;
+  opacity: 1 !important;
+}
+
+.quick-expense-item.menu-open {
+  z-index: 10001; /* ensure dropdown sits above neighboring cards */
+  opacity: 1 !important;
+}
+
+.quick-expense-item:hover {
+  opacity: 1 !important;
 }
 
 .quick-expense-btn {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  align-items: stretch;
+  gap: 4px;
   width: 100%;
-  padding: 16px 12px;
+  /* Reduce default vertical space; allow auto height */
+  padding: 8px 10px;
+  min-height: 72px; /* slightly smaller; can be tuned further */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
@@ -2753,6 +4131,17 @@ button:not(:disabled):hover {
   background: var(--accent-light);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--shadow-md);
+  opacity: 1 !important;
+}
+
+.quick-expense-item.menu-open .quick-expense-btn,
+.quick-expense-item.menu-open .quick-expense-btn:hover {
+  /* Prevent transform and hover effects while menu is open */
+  transform: none !important;
+  opacity: 1 !important;
+  background: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
 }
 
 .quick-expense-btn.loading {
@@ -2774,25 +4163,83 @@ button:not(:disabled):hover {
   animation: spin 0.8s linear infinite;
 }
 
-.quick-expense-icon {
-  font-size: 28px;
+/* Row 1: Category chip row */
+.quick-expense-row-category {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
 }
 
-.quick-expense-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: center;
+/* Row 2: Amount row (prominent) */
+.quick-expense-row-amount {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin: 4px 0;
+}
+
+.quick-expense-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Category chip inside quick expense */
+.quick-expense-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
+.dark .quick-expense-category-chip {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+/* Amount styling */
 .quick-expense-amount {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--accent-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Row 3: Name + Menu */
+.quick-expense-row-name {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+  min-height: 36px; /* Fixed height for 2 lines of text */
+}
+
+.quick-expense-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  /* Limit to 2 lines with ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .quick-expense-edit,
@@ -2805,13 +4252,15 @@ button:not(:disabled):hover {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  visibility: hidden;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, visibility 0.2s;
   box-shadow: 0 2px 4px var(--shadow);
 }
 
 .quick-expense-item:hover .quick-expense-edit,
 .quick-expense-item:hover .quick-expense-delete {
+  visibility: visible;
   opacity: 1;
 }
 
@@ -2826,6 +4275,7 @@ button:not(:disabled):hover {
 .quick-expense-edit:hover,
 .quick-expense-delete:hover {
   background: var(--bg-tertiary);
+  opacity: 1 !important;
 }
 
 .quick-expense-add-btn {
@@ -2833,8 +4283,8 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 16px 12px;
+  gap: 4px;
+  padding: 10px 12px;
   border: 2px dashed var(--border-color);
   background: transparent;
   border-radius: 12px;
@@ -2842,6 +4292,7 @@ button:not(:disabled):hover {
   color: var(--text-secondary);
   font-size: 13px;
   transition: all 0.2s;
+  min-height: 80px; /* Match quick-expense-btn height */
 }
 
 .quick-expense-add-btn:hover {
@@ -2879,12 +4330,36 @@ button:not(:disabled):hover {
 .quick-expense-inline-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   padding: 16px;
-  background: var(--bg-secondary);
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px dashed var(--border-color);
+  border: 1px solid var(--border-color);
   margin-top: 12px;
+}
+
+.inline-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inline-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.inline-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .inline-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .inline-form-row {
@@ -2958,10 +4433,11 @@ button:not(:disabled):hover {
 }
 
 .inline-input {
+  width: 100%;
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: var(--input-bg);
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-primary);
@@ -2981,10 +4457,11 @@ button:not(:disabled):hover {
 .inline-amount-wrapper {
   display: flex;
   align-items: center;
-  background: var(--card-bg);
+  width: 100%;
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding-left: 10px;
+  padding-left: 12px;
   transition: border-color 0.2s;
 }
 
@@ -2998,10 +4475,11 @@ button:not(:disabled):hover {
 }
 
 .inline-input-amount {
-  width: 80px;
+  flex: 1;
   border: none;
   background: transparent;
   padding-left: 4px;
+  height: 38px;
 }
 
 .inline-input-amount:focus {
@@ -3010,16 +4488,15 @@ button:not(:disabled):hover {
 }
 
 .inline-select {
+  width: 100%;
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: var(--input-bg);
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-primary);
   cursor: pointer;
-  min-width: 120px;
-  flex: 1;
 }
 
 .inline-select:focus {
@@ -3029,9 +4506,8 @@ button:not(:disabled):hover {
 
 .inline-form-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -3039,35 +4515,44 @@ button:not(:disabled):hover {
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.inline-btn-cancel {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-.inline-btn-cancel:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  border: none;
+  line-height: 1.2;
 }
 
 .inline-btn-save {
-  background: var(--accent-primary);
-  border: none;
-  color: white;
+  flex: 1;
+  background: var(--accent-light);
+  color: var(--accent-primary);
 }
 
 .inline-btn-save:hover:not(:disabled) {
-  background: var(--accent-secondary);
+  filter: brightness(0.95);
+}
+
+.dark .inline-btn-save:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
 .inline-btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.inline-btn-cancel {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px 20px;
+}
+
+.inline-btn-cancel:hover {
+  filter: brightness(0.95);
+}
+
+.dark .inline-btn-cancel:hover {
+  filter: brightness(1.1);
 }
 
 /* Quick Expense Item Actions */
@@ -3087,6 +4572,172 @@ button:not(:disabled):hover {
 
 .quick-expense-item:hover .quick-expense-item-actions {
   opacity: 1;
+}
+
+/* Touch devices: always show action buttons */
+@media (hover: none) {
+  .quick-expense-item-actions {
+    opacity: 1 !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .quick-expense-item-actions {
+    opacity: 1 !important;
+  }
+}
+
+/* Mobile screen fallback: always show on small screens */
+@media (max-width: 768px) {
+  .quick-expense-item-actions {
+    opacity: 1 !important;
+  }
+
+  /* Pending Payments mobile layout */
+  .pending-payment-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pending-payment-info {
+    width: 100%;
+  }
+
+  .pending-payment-actions {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .pending-payment-amount {
+    font-size: 16px;
+  }
+
+  .pending-payment-confirm-btn {
+    flex: 1;
+    max-width: 120px;
+  }
+
+  .pending-payment-meta {
+    flex-wrap: wrap;
+  }
+}
+
+/* Quick Expense Menu (hamburger style) */
+.quick-expense-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.quick-expense-menu-trigger {
+  padding: 4px 8px;
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+  border: none !important;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-menu-trigger:hover {
+  filter: brightness(0.95);
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-menu-trigger:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-trigger {
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .quick-expense-menu-trigger:hover {
+  filter: brightness(1.1);
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.quick-expense-dropdown {
+  position: absolute;
+  top: 32px; /* Position below the trigger button */
+  right: 0;
+  min-width: 160px;
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  overflow: visible;
+  z-index: 10000; /* Above card but below modals */
+  opacity: 1 !important;
+  /* Ensure solid background by removing any inherited transparency */
+  backdrop-filter: none;
+  isolation: isolate; /* Create new stacking context */
+}
+
+.quick-expense-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  opacity: 1 !important;
+}
+
+.quick-expense-dropdown-item:hover {
+  background-color: transparent;
+}
+
+.dark .quick-expense-dropdown-item:hover {
+  background-color: transparent;
+}
+
+.dark .quick-expense-dropdown {
+  background-color: #1a1625 !important; /* Force solid dark background */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+
+.quick-expense-dropdown-item.danger {
+  color: var(--error-text);
+}
+
+.quick-expense-dropdown-item.danger:hover {
+  background: var(--error-bg);
 }
 
 .quick-expense-action-btn {
@@ -3229,3 +4880,580 @@ button:not(:disabled):hover {
   font-size: 16px;
 }
 
+/* ==================== Quick Expense Scroll Bar (Expense List) ==================== */
+.quick-expense-scroll-container {
+  margin: 4px 0 8px;
+  padding: 0;
+}
+
+.quick-expense-scroll-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0; /* Restore small vertical padding to prevent hover translate clipping */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* Show scrollbar on hover or scroll for Firefox */
+.quick-expense-scroll-bar:hover,
+.quick-expense-scroll-bar:active {
+  scrollbar-color: var(--accent-primary) transparent;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quick-expense-scroll-bar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.quick-expense-scroll-bar:hover::-webkit-scrollbar-thumb,
+.quick-expense-scroll-bar:active::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+}
+
+.quick-expense-scroll-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px; /* Add minimal vertical padding to avoid top being cut off on hover */
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.quick-expense-scroll-btn:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px); /* Smaller lift to reduce chance of clipping */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quick-expense-scroll-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.quick-expense-scroll-btn.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.quick-expense-scroll-btn.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .quick-expense-scroll-btn.loading::after {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Category chip removed in compact mode; retain selector commented for potential future restoration */
+/* .quick-expense-scroll-category { */
+/*   display: none; */
+/* } */
+
+.quick-expense-scroll-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.quick-expense-scroll-amount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+/* Quick Expense Container - 80:20 Split Layout */
+.quick-expense-scroll-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.quick-expense-scroll-bar {
+  flex: 0 0 80%;
+  min-width: 0;
+}
+
+.quick-expense-add-container {
+  flex: 0 0 calc(20% - 8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Add Quick Expense Button in Scroll Container - Fixed on the right */
+.quick-expense-add-container .quick-expense-add-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 8px;
+  border: 1px dashed var(--accent-primary);
+  background: var(--accent-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--accent-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  min-height: auto;
+}
+
+.quick-expense-add-container .quick-expense-add-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.dark .quick-expense-add-container .quick-expense-add-btn {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.dark .quick-expense-add-container .quick-expense-add-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.4);
+}
+
+/* Quick Expense Form Dropdown */
+.quick-expense-add-container {
+  position: relative;
+}
+
+.quick-expense-form-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 320px;
+  max-height: 500px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow-lg);
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quick-expense-form-section {
+  padding: 16px;
+}
+
+.quick-expense-form-header h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.quick-expense-form-field {
+  margin-bottom: 12px;
+}
+
+.quick-expense-form-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.quick-expense-form-field input,
+.quick-expense-form-field select {
+  width: 100%;
+  padding: 8px;
+  font-size: 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.quick-expense-form-field input:focus,
+.quick-expense-form-field select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.amount-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.amount-input-wrapper .currency-symbol {
+  position: absolute;
+  left: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.amount-input-wrapper input {
+  padding-left: 24px;
+}
+
+.quick-expense-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.quick-expense-form-actions button {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-expense-form-actions .btn-save {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.quick-expense-form-actions .btn-save:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.quick-expense-form-actions .btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quick-expense-form-actions .btn-cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.quick-expense-form-actions .btn-cancel:hover {
+  background: var(--bg-quaternary);
+}
+
+.quick-expense-form-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0;
+}
+
+.quick-expense-presets-list {
+  padding: 16px;
+}
+
+.quick-expense-presets-list h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-expense-preset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quick-expense-preset-item:last-child {
+  border-bottom: none;
+}
+
+.preset-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preset-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.preset-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.preset-category {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preset-amount {
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-left: 8px;
+}
+
+.preset-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.preset-actions .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.preset-actions .btn-icon:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.preset-actions .btn-icon.btn-danger:hover {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.dark .quick-expense-form-dropdown {
+  background: var(--modal-bg);
+  box-shadow: 0 12px 32px var(--shadow-lg);
+}
+
+/* ==================== Widget Size Adaptations ==================== */
+
+/* Summary Cards Compact Mode */
+.summary-cards-grid.summary-cards-compact {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.summary-cards-compact .summary-card {
+  padding: 8px;
+}
+
+.summary-cards-compact .card-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.summary-cards-compact .card-label {
+  font-size: 10px;
+}
+
+.summary-cards-compact .card-value {
+  font-size: 14px;
+}
+
+/* Category List Compact Mode */
+.category-list.category-list-compact .category-item {
+  padding: 8px 10px;
+}
+
+.category-list-compact .category-info {
+  gap: 4px;
+}
+
+.category-list-compact .category-name {
+  font-size: 12px;
+}
+
+.category-list-compact .category-amount {
+  font-size: 11px;
+}
+
+.category-list-compact .progress-bar {
+  height: 4px;
+}
+
+/* Recent Expenses Compact Mode */
+.recent-expenses-list.recent-expenses-compact .recent-expense-item {
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.recent-expenses-compact .recent-expense-desc {
+  font-size: 12px;
+}
+
+.recent-expenses-compact .recent-expense-category {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.recent-expenses-compact .recent-expense-amount {
+  font-size: 12px;
+}
+
+.recent-expenses-compact .recent-expense-date {
+  font-size: 10px;
+}
+
+.recent-expenses-list.recent-expenses-compact {
+  gap: 8px;
+}
+
+/* Tracked Expenses Compact Mode */
+.tracked-expenses-list.tracked-expenses-compact .tracked-expense-card {
+  padding: 10px;
+}
+
+.tracked-expenses-compact .tracked-expense-title {
+  font-size: 12px;
+}
+
+.tracked-expenses-compact .tracked-expense-date {
+  font-size: 10px;
+}
+
+.tracked-expenses-compact .tracked-amount-label,
+.tracked-expenses-compact .tracked-amount-value {
+  font-size: 11px;
+}
+
+.tracked-expenses-compact .tracked-expense-amounts {
+  gap: 4px;
+}
+
+.tracked-expenses-compact .category-percentage {
+  font-size: 10px;
+}
+
+.tracked-expenses-compact .progress-bar {
+  height: 4px;
+}
+
+.tracked-more-text {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+/* Cards Summary Compact Mode */
+.cards-summary-widget.cards-summary-compact {
+  gap: 12px;
+}
+
+.cards-summary-compact .credit-card-summary-item {
+  padding: 12px;
+}
+
+.cards-summary-compact .card-name {
+  font-size: 14px;
+}
+
+.cards-summary-compact .utilization-info {
+  font-size: 11px;
+}
+
+/* Quick Expense Widget Compact Mode */
+.quick-expense-widget.quick-expense-compact .quick-expense-grid {
+  gap: 6px;
+}
+
+.quick-expense-compact .quick-expense-btn {
+  padding: 4px 6px; /* tighter vertical padding */
+  min-width: 78px;
+  min-height: auto; /* let content define height */
+}
+
+.quick-expense-compact .quick-expense-category-chip {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.quick-expense-compact .quick-expense-amount {
+  font-size: 12px;
+}
+
+.quick-expense-compact .quick-expense-name {
+  font-size: 9px;
+}
+
+.quick-expense-compact .quick-expense-add-btn {
+  min-width: 60px;
+  min-height: 55px;
+  padding: 6px;
+  font-size: 10px;
+}
+
+.quick-expense-compact .quick-expense-grid {
+  gap: 6px;
+}
+
+.quick-expense-compact .quick-expense-row-amount {
+  margin: 0; /* remove extra vertical margin */
+}
+
+.quick-expense-compact .quick-expense-row-name {
+  gap: 2px;
+  min-height: 20px; /* smaller for compact mode */
+}
+
+.quick-expense-compact .quick-expense-menu-trigger {
+  font-size: 14px;
+  padding: 2px 4px;
+}

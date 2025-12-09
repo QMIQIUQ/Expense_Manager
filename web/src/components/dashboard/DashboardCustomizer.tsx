@@ -17,6 +17,11 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   const { t } = useLanguage();
   const [localWidgets, setLocalWidgets] = useState<DashboardWidget[]>([...widgets]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // Track the input values for order fields - allow empty string while user is editing
+  const [orderInputValues, setOrderInputValues] = useState<{ [widgetId: string]: string }>({});
+  
+  // Regex pattern for numeric input validation
+  const NUMERIC_PATTERN = /^\d+$/;
 
   // Toggle widget visibility
   const handleToggle = (widgetId: string) => {
@@ -25,25 +30,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
     );
   };
 
-  // Move widget up
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    setLocalWidgets((prev) => {
-      const newWidgets = [...prev];
-      [newWidgets[index - 1], newWidgets[index]] = [newWidgets[index], newWidgets[index - 1]];
-      return newWidgets.map((w, i) => ({ ...w, order: i }));
-    });
-  };
-
-  // Move widget down
-  const handleMoveDown = (index: number) => {
-    if (index >= localWidgets.length - 1) return;
-    setLocalWidgets((prev) => {
-      const newWidgets = [...prev];
-      [newWidgets[index], newWidgets[index + 1]] = [newWidgets[index + 1], newWidgets[index]];
-      return newWidgets.map((w, i) => ({ ...w, order: i }));
-    });
-  };
+  // Arrow move controls removed; ordering is handled via drag-and-drop and numeric input.
 
   // Drag and drop handlers
   const handleDragStart = (index: number) => {
@@ -105,9 +92,36 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         </div>
 
         <div className="customizer-content">
-          <p className="customizer-hint">
-            {t('dragToReorder')}
-          </p>
+          <div className="customizer-toolbar">
+            <div className="customizer-hint-box">
+              <span className="customizer-hint-text">{t('dragToReorder')}</span>
+              <button onClick={handleReset} className="customizer-btn-reset-inline">
+                {t('resetToDefaults')}
+              </button>
+            </div>
+            <div className="bulk-size-control">
+              <label htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
+              <select
+                id="bulk-size-select"
+                onChange={(e) => {
+                  const newSize = e.target.value as import('../../types/dashboard').WidgetSize;
+                  if (newSize) {
+                    setLocalWidgets((prev) => prev.map((w) => ({ ...w, size: newSize })));
+                    // Reset select to placeholder
+                    e.target.value = '';
+                  }
+                }}
+                className="bulk-size-select"
+                defaultValue=""
+              >
+                <option value="" disabled>{t('selectSize')}</option>
+                <option value="small">{t('small')}</option>
+                <option value="medium">{t('medium')}</option>
+                <option value="large">{t('large')}</option>
+                <option value="full">{t('full')}</option>
+              </select>
+            </div>
+          </div>
 
           <div className="widget-list">
             {localWidgets.map((widget, index) => {
@@ -122,6 +136,67 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                   onDragEnd={handleDragEnd}
                 >
                   <div className="widget-drag-handle">⋮⋮</div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={orderInputValues[widget.id] !== undefined ? orderInputValues[widget.id] : String(index + 1)}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Allow empty string or numbers only
+                      if (inputValue === '' || NUMERIC_PATTERN.test(inputValue)) {
+                        // Limit to max value (number of widgets)
+                        const maxValue = localWidgets.length;
+                        const numValue = parseInt(inputValue);
+                        
+                        // If input exceeds max, clamp it
+                        let finalValue = inputValue;
+                        if (!Number.isNaN(numValue) && numValue > maxValue) {
+                          finalValue = String(maxValue);
+                        }
+                        // Don't allow 0
+                        if (numValue === 0) {
+                          finalValue = '1';
+                        }
+                        
+                        setOrderInputValues(prev => ({ ...prev, [widget.id]: finalValue }));
+                        
+                        // If valid number, immediately reorder
+                        const newOrder = parseInt(finalValue) - 1;
+                        if (!Number.isNaN(newOrder) && newOrder >= 0 && newOrder < localWidgets.length && newOrder !== index) {
+                          // Clear input value first
+                          setOrderInputValues(prev => {
+                            const newState = { ...prev };
+                            delete newState[widget.id];
+                            return newState;
+                          });
+                          // Reorder widgets
+                          setLocalWidgets((prev) => {
+                            const newWidgets = [...prev];
+                            const [movedWidget] = newWidgets.splice(index, 1);
+                            newWidgets.splice(newOrder, 0, movedWidget);
+                            return newWidgets.map((w, i) => ({ ...w, order: i }));
+                          });
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      // Clear temporary input value on blur
+                      setOrderInputValues(prev => {
+                        const newState = { ...prev };
+                        delete newState[widget.id];
+                        return newState;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    className="widget-order-input"
+                    title={t('order')}
+                    aria-label="order"
+                  />
                   
                   <div className="widget-info">
                     <span className="widget-icon">{metadata.icon}</span>
@@ -129,27 +204,26 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       <span className="widget-name">
                         {t(metadata.defaultTitle as TranslationKey) || metadata.defaultTitleFallback}
                       </span>
-                      <span className="widget-desc">{metadata.description}</span>
+                      <span className="widget-desc">{t(metadata.description as TranslationKey)}</span>
                     </div>
                   </div>
 
                   <div className="widget-controls">
-                    <button
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0}
-                      className="btn-move"
-                      title={t('moveUp')}
+                    <select
+                      value={widget.size}
+                      onChange={(e) => {
+                        const newSize = e.target.value as import('../../types/dashboard').WidgetSize;
+                        setLocalWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, size: newSize } : w)));
+                      }}
+                      className="widget-size-select"
+                      title={t('size')}
                     >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === localWidgets.length - 1}
-                      className="btn-move"
-                      title={t('moveDown')}
-                    >
-                      ↓
-                    </button>
+                      <option value="small">{t('small')}</option>
+                      <option value="medium">{t('medium')}</option>
+                      <option value="large">{t('large')}</option>
+                      <option value="full">{t('full')}</option>
+                    </select>
+                    {/* Up/Down arrow buttons removed per request */}
                     <button
                       onClick={() => handleToggle(widget.id)}
                       className="btn-visibility"
@@ -200,15 +274,12 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         </div>
 
         <div className="customizer-footer">
-          <button onClick={handleReset} className="btn btn-secondary">
-            {t('resetToDefaults')}
-          </button>
-          <div className="footer-actions">
-            <button onClick={onClose} className="btn btn-secondary">
-              {t('cancel')}
-            </button>
-            <button onClick={handleSave} className="btn btn-primary">
+          <div className="customizer-btn-row">
+            <button onClick={handleSave} className="customizer-btn customizer-btn-save">
               {t('save')}
+            </button>
+            <button onClick={onClose} className="customizer-btn customizer-btn-cancel">
+              {t('cancel')}
             </button>
           </div>
         </div>

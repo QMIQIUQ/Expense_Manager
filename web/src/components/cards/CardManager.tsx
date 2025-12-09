@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Bank, Category, Expense, CardStats } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import CardForm from './CardForm';
+import ConfirmModal from '../ConfirmModal';
 import { calculateCardStats } from '../../utils/cardUtils';
+import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { SearchBar } from '../common/SearchBar';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
@@ -28,11 +31,14 @@ const CardManager: React.FC<CardManagerProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; cardId: string | null }>({ isOpen: false, cardId: null });
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -65,9 +71,7 @@ const CardManager: React.FC<CardManagerProps> = ({
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(t('confirmDeleteCard'))) {
-      onDelete(id);
-    }
+    setDeleteConfirm({ isOpen: true, cardId: id });
   };
 
   const toggleExpand = (cardId: string) => {
@@ -161,6 +165,18 @@ const CardManager: React.FC<CardManagerProps> = ({
         style={{ marginBottom: 20 }}
       />
 
+      {isAdding && (
+        <div className="form-card">
+          <CardForm
+            onSubmit={handleAdd}
+            onCancel={() => setIsAdding(false)}
+            categories={categories}
+            // Provide banks for autocomplete in CardForm
+            banks={banks}
+          />
+        </div>
+      )}
+
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
@@ -175,27 +191,11 @@ const CardManager: React.FC<CardManagerProps> = ({
         onSelectAll={() => selectAll(filteredCards)}
         onDeleteSelected={() => {
           if (selectedIds.size > 0) {
-             if (confirm(t('confirmDeleteSelected'))) {
-                 selectedIds.forEach(id => onDelete(id));
-                 clearSelection();
-                 setIsSelectionMode(false);
-             }
+            setBulkDeleteConfirm(true);
           }
         }}
         style={{ marginBottom: 20 }}
       />
-
-      {isAdding && (
-        <div className="form-card">
-          <CardForm
-            onSubmit={handleAdd}
-            onCancel={() => setIsAdding(false)}
-            categories={categories}
-            // Provide banks for autocomplete in CardForm
-            banks={banks}
-          />
-        </div>
-      )}
 
       {filteredCards.length === 0 && !isAdding ? (
         <div className="empty-state">
@@ -309,7 +309,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                   </div>
                   <div className="stat-card warning">
                     <p className="stat-label">{t('nextBillingDate')}</p>
-                    <p className="stat-value warning-text">{stats.nextBillingDate}</p>
+                    <p className="stat-value warning-text">{formatDateWithUserFormat(stats.nextBillingDate, dateFormat)}</p>
                   </div>
                 </div>
 
@@ -350,6 +350,39 @@ const CardManager: React.FC<CardManagerProps> = ({
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title={t('delete')}
+        message={t('confirmDeleteCard')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        onConfirm={() => {
+          if (deleteConfirm.cardId) {
+            onDelete(deleteConfirm.cardId);
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ isOpen: false, cardId: null })}
+        danger={true}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={bulkDeleteConfirm}
+        title={t('deleteSelected')}
+        message={t('confirmDeleteSelected')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        onConfirm={() => {
+          selectedIds.forEach(id => onDelete(id));
+          clearSelection();
+          setIsSelectionMode(false);
+          setBulkDeleteConfirm(false);
+        }}
+        onCancel={() => setBulkDeleteConfirm(false)}
+        danger={true}
+      />
     </div>
     </>
   );

@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Repayment, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
+import { useToday } from '../../hooks/useToday';
 import { getTodayLocal } from '../../utils/dateUtils';
+import DatePicker from '../common/DatePicker';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -31,9 +34,11 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   title,
 }) => {
   const { t } = useLanguage();
+  const { dateFormat } = useUserSettings();
+  const today = useToday();
   const [formData, setFormData] = useState({
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    date: initialData?.date || getTodayLocal(),
+    date: initialData?.date || today,
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
     paymentMethod: initialData?.paymentMethod || ('cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank'),
@@ -183,29 +188,25 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="date" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('repaymentDate')} *
-          </label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.date ? 'border-red-500' : ''}`}
-            style={{
-              borderColor: errors.date ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
-          {errors.date && <span className="text-xs text-red-600">{errors.date}</span>}
-        </div>
+        <DatePicker
+          label={t('repaymentDate')}
+          value={formData.date}
+          onChange={(value) => setFormData({ ...formData, date: value })}
+          required
+          error={!!errors.date}
+          errorMessage={errors.date}
+          dateFormat={dateFormat}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: errors.date ? undefined : 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 sm:col-span-2">
           <label htmlFor="paymentMethod" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('paymentMethod')}
           </label>
@@ -234,26 +235,6 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
             <option value="e_wallet">📱 {t('eWallet')}</option>
             <option value="bank">🏦 {t('bankTransfer')}</option>
           </select>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="payerName" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('payerNameOptional')}
-          </label>
-          <input
-            type="text"
-            id="payerName"
-            name="payerName"
-            value={formData.payerName}
-            onChange={handleChange}
-            placeholder={t('payerNamePlaceholder')}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
         </div>
       </div>
 
@@ -337,6 +318,27 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           </select>
         </div>
       )}
+
+      {/* Moved payer name here to sit right above notes for better mobile flow */}
+      <div className="flex flex-col gap-1">
+        <label htmlFor="payerName" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          {t('payerNameOptional')}
+        </label>
+        <input
+          type="text"
+          id="payerName"
+          name="payerName"
+          value={formData.payerName}
+          onChange={handleChange}
+          placeholder={t('payerNamePlaceholder')}
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)'
+          }}
+        />
+      </div>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="note" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
