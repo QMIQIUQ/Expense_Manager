@@ -63,7 +63,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDueBills, setShowDueBills] = useState(true); // Collapsible section for due bills
-  const [markedAsViewed, setMarkedAsViewed] = useState(false); // Track if current bills have been marked
+  const [viewedBillIds, setViewedBillIds] = useState<Set<string>>(new Set()); // Track which bills have been marked as viewed
   
   // Calculate due bills
   const dueBills = useMemo(() => getDueRecurringExpenses(recurringExpenses), [recurringExpenses]);
@@ -144,28 +144,32 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     setShowDueBills(!showDueBills);
   };
   
-  // Reset markedAsViewed flag when due bills list changes (new bills appear)
-  useEffect(() => {
-    setMarkedAsViewed(false);
-  }, [dueBills.length]);
-  
   // Mark bills as viewed when section is opened (using useEffect)
   useEffect(() => {
-    if (showDueBills && dueBills.length > 0 && !markedAsViewed) {
+    // Determine if there are unviewed bills
+    const unviewedBills = dueBills.filter(bill => bill.id && !viewedBillIds.has(bill.id));
+    const hasUnviewedBills = unviewedBills.length > 0;
+    const shouldMarkAsViewed = showDueBills && hasUnviewedBills;
+    
+    if (shouldMarkAsViewed) {
       // Delay marking as viewed to ensure user actually sees the content
       const timer = setTimeout(() => {
         const today = new Date().toISOString();
-        dueBills.forEach((bill) => {
+        const newViewedIds = new Set(viewedBillIds);
+        
+        unviewedBills.forEach((bill) => {
           if (bill.id) {
             onUpdate(bill.id, { lastViewedDue: today });
+            newViewedIds.add(bill.id);
           }
         });
-        setMarkedAsViewed(true);
+        
+        setViewedBillIds(newViewedIds);
       }, 1000); // 1 second delay
       
       return () => clearTimeout(timer);
     }
-  }, [showDueBills, dueBills, onUpdate, markedAsViewed]);
+  }, [showDueBills, dueBills, onUpdate, viewedBillIds]);
 
 
 

@@ -42,7 +42,7 @@ export const getNextDueDate = (expense: RecurringExpense): Date | null => {
       if (expense.dayOfMonth !== undefined) {
         nextDue.setMonth(nextDue.getMonth() + 1);
         // Handle edge cases like Feb 31 -> Feb 28/29
-        // new Date(year, month+1, 0) gives the last day of 'month'
+        // new Date(year, month+1, 0) gives the last day of the current month (after increment)
         const lastDayOfMonth = new Date(nextDue.getFullYear(), nextDue.getMonth() + 1, 0).getDate();
         nextDue.setDate(Math.min(expense.dayOfMonth, lastDayOfMonth));
       } else {
