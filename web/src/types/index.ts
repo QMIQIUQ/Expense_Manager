@@ -97,6 +97,7 @@ export interface RecurringExpense {
   dayOfWeek?: number; // 0-6 for weekly
   dayOfMonth?: number; // 1-31 for monthly
   lastGenerated?: string;
+  lastViewedDue?: string; // Track when user last viewed/acknowledged the due notification
   isActive: boolean;
   cardId?: string; // Optional: credit card used for this recurring expense
   // Payment method information

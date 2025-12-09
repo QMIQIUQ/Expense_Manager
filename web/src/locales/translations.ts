@@ -139,6 +139,9 @@ export const translations = {
   // Recurring Expenses
   recurringExpense: { en: 'Recurring Expense', zh: '定期支出', 'zh-CN': '定期支出' },
   recurringExpenses: { en: 'Recurring Expenses', zh: '定期支出', 'zh-CN': '定期支出' },
+  upcomingDuePayments: { en: 'Upcoming Due Payments', zh: '即將到期的付款', 'zh-CN': '即将到期的付款' },
+  dueToday: { en: 'Due Today', zh: '今天到期', 'zh-CN': '今天到期' },
+  noDueBills: { en: 'No bills due soon', zh: '暫無即將到期的帳單', 'zh-CN': '暂无即将到期的账单' },
   frequency: { en: 'Frequency', zh: '頻率', 'zh-CN': '频率' },
   freqDaily: { en: 'Daily', zh: '每日', 'zh-CN': '每日' },
   freqWeekly: { en: 'Weekly', zh: '每週', 'zh-CN': '每周' },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RecurringExpense, Category, Card, Bank } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,6 +7,7 @@ import RecurringForm from './RecurringForm';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import { getDueRecurringExpenses } from '../../utils/recurringUtils';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -61,6 +62,10 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDueBills, setShowDueBills] = useState(true); // Collapsible section for due bills
+  
+  // Calculate due bills
+  const dueBills = useMemo(() => getDueRecurringExpenses(recurringExpenses), [recurringExpenses]);
 
 
   // Close menu when clicking outside
@@ -133,6 +138,27 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
     setEditingId(expense.id!);
   };
 
+  // Handler to mark all due bills as viewed
+  const handleMarkDueBillsAsViewed = () => {
+    const today = new Date().toISOString();
+    dueBills.forEach((bill) => {
+      if (bill.id) {
+        onUpdate(bill.id, { lastViewedDue: today });
+      }
+    });
+  };
+
+  // Handler to toggle due bills section
+  const handleToggleDueBills = () => {
+    const newShowState = !showDueBills;
+    setShowDueBills(newShowState);
+    
+    // When opening the section, mark all as viewed
+    if (newShowState && dueBills.length > 0) {
+      handleMarkDueBillsAsViewed();
+    }
+  };
+
 
 
 
@@ -203,6 +229,67 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               setEditingId(null);
             }}
           />
+        </div>
+      )}
+
+      {/* Upcoming Due Payments Section */}
+      {dueBills.length > 0 && (
+        <div style={styles.dueBillsContainer}>
+          <div 
+            style={styles.dueBillsHeader}
+            onClick={handleToggleDueBills}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '18px' }}>🔔</span>
+              <h3 style={styles.dueBillsTitle}>{t('upcomingDuePayments')}</h3>
+              {dueBills.length > 0 && (
+                <span style={styles.badge}>{dueBills.length}</span>
+              )}
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', transform: showDueBills ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+          </div>
+          
+          {showDueBills && (
+            <div style={styles.dueBillsList}>
+              {dueBills.map((bill) => (
+                <div key={bill.id} style={styles.dueBillCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    {/* Payment Method Icon */}
+                    {bill.paymentMethod === 'credit_card' && (
+                      <span style={{ fontSize: '16px' }}>💳</span>
+                    )}
+                    {bill.paymentMethod === 'e_wallet' && (
+                      <span style={{ fontSize: '16px' }}>📱</span>
+                    )}
+                    {(!bill.paymentMethod || bill.paymentMethod === 'cash') && (
+                      <span style={{ fontSize: '16px' }}>💵</span>
+                    )}
+                    
+                    {/* Category Badge */}
+                    <span 
+                      style={{
+                        ...styles.category,
+                        ...getCategoryColor(bill.category)
+                      }}
+                    >
+                      {bill.category}
+                    </span>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={styles.dueBillAmount}>${bill.amount.toFixed(2)}</div>
+                  </div>
+                  
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={styles.dueBillDescription}>{bill.description}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      {t('dueToday')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -600,6 +687,64 @@ const styles = {
   menuIcon: {
     display: 'flex',
     alignItems: 'center',
+  },
+  // Due Bills Section Styles
+  dueBillsContainer: {
+    backgroundColor: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+  },
+  dueBillsHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+  },
+  dueBillsTitle: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: 'var(--text-primary)',
+  },
+  badge: {
+    backgroundColor: '#ef4444',
+    color: 'white',
+    borderRadius: '12px',
+    padding: '2px 8px',
+    fontSize: '12px',
+    fontWeight: '600' as const,
+    minWidth: '20px',
+    textAlign: 'center' as const,
+  },
+  dueBillsList: {
+    marginTop: '16px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  dueBillCard: {
+    backgroundColor: 'var(--bg-secondary)',
+    padding: '14px',
+    borderRadius: '10px',
+    border: '1px solid rgba(239, 68, 68, 0.2)',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  dueBillDescription: {
+    fontSize: '14px',
+    fontWeight: '500' as const,
+    color: 'var(--text-primary)',
+  },
+  dueBillAmount: {
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    color: 'var(--error-text)',
   },
 };
 
