@@ -8,10 +8,25 @@ const PWAInstallButton: React.FC = () => {
 
   // In development (localhost), create a fake installable state for testing
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const canShowButton = isInstallable || (isDevelopment && !isInstalled);
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const canShowButton = isInstallable || isDevelopment;
 
   const handleInstallClick = async () => {
     console.log('PWAInstallButton: Install button clicked, deferredPrompt:', deferredPrompt);
+    
+    // If no deferredPrompt but on GitHub Pages (mobile), show instructions
+    if (!deferredPrompt && isGitHubPages) {
+      const browserInfo = /Android/.test(navigator.userAgent) 
+        ? 'Open Chrome/Edge menu (⋮) and select "Install app"'
+        : 'Open the menu and look for "Install app" option';
+      
+      alert(
+        'PWA Installation\n\n' +
+        browserInfo + '\n\n' +
+        'Or: Tap the browser address bar and select "Install"'
+      );
+      return;
+    }
     
     // In development, show a test dialog
     if (isDevelopment && !deferredPrompt) {

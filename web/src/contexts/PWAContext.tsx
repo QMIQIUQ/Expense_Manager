@@ -26,11 +26,20 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [showFloatingPrompt, setShowFloatingPrompt] = useState(() => {
     return localStorage.getItem('pwa-install-dismissed') !== 'true';
   });
+  const [isPWACapable, setIsPWACapable] = useState(false);
 
   useEffect(() => {
     console.log('PWAProvider: Initializing');
     console.log('PWAProvider: User Agent:', navigator.userAgent);
     console.log('PWAProvider: Protocol:', window.location.protocol);
+    
+    // Check if browser supports PWA installation prompts
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isPWABrowser = (isChrome || isEdge) && isAndroid;
+    
+    console.log('PWAProvider: Browser check:', { isChrome, isEdge, isAndroid, isPWABrowser });
     
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -50,6 +59,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.log('PWAProvider: Valid BeforeInstallPromptEvent - saving prompt');
       e.preventDefault();
       setDeferredPrompt(e);
+      setIsPWACapable(true);
       
       // Show floating prompt if not dismissed
       if (localStorage.getItem('pwa-install-dismissed') !== 'true') {
@@ -67,6 +77,13 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     console.log('PWAProvider: Adding event listeners');
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', installedHandler);
+    
+    // For browsers that don't support beforeinstallprompt, 
+    // still mark as PWA capable if it's HTTPS and has service worker
+    if (window.location.protocol === 'https:' && isPWABrowser) {
+      console.log('PWAProvider: HTTPS detected on PWA-capable browser, marking as PWA capable');
+      setIsPWACapable(true);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
@@ -111,25 +128,26 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Add useEffect to log context state changes
   useEffect(() => {
-    const isInstallable = !!deferredPrompt && !isInstalled;
-    const finalShowPrompt = showFloatingPrompt && !!deferredPrompt && !isInstalled;
+    const isInstallable = (!!deferredPrompt || isPWACapable) && !isInstalled;
+    const finalShowPrompt = showFloatingPrompt && (!!deferredPrompt || isPWACapable) && !isInstalled;
     
     console.log('PWAProvider: Context state updated:', {
       deferredPrompt: !!deferredPrompt,
+      isPWACapable,
       isInstalled,
       showFloatingPrompt,
       isInstallable,
       finalShowPrompt,
     });
-  }, [deferredPrompt, isInstalled, showFloatingPrompt]);
+  }, [deferredPrompt, isInstalled, showFloatingPrompt, isPWACapable]);
 
   const value: PWAContextType = {
     deferredPrompt,
-    isInstallable: !!deferredPrompt && !isInstalled,
+    isInstallable: (!!deferredPrompt || isPWACapable) && !isInstalled,
     isInstalled,
     triggerInstall,
     dismissPrompt,
-    showFloatingPrompt: showFloatingPrompt && !!deferredPrompt && !isInstalled,
+    showFloatingPrompt: showFloatingPrompt && (!!deferredPrompt || isPWACapable) && !isInstalled,
   };
 
   return <PWAContext.Provider value={value}>{children}</PWAContext.Provider>;
