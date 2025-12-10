@@ -21,6 +21,7 @@ export default defineConfig(({ command }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
+          id: '/Expense_Manager/',
           name: 'Expense Manager',
           short_name: 'Expense Manager',
           description: 'A comprehensive expense tracking application for managing your finances',
@@ -184,36 +185,53 @@ export default defineConfig(({ command }) => {
       target: 'es2015',
     },
     closeBundle: async () => {
-      // Add screenshots to manifest after build
+      // Fix manifest paths after build
       if (command === 'build') {
         const manifestPath = path.join(__dirname, 'dist', 'manifest.webmanifest')
         if (fs.existsSync(manifestPath)) {
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+          
+          // Ensure base path is correct
+          const deployBase = process.env.DEPLOY_BASE || base || '/'
+          
+          // Update all paths to use the deploy base
+          manifest.start_url = deployBase
+          manifest.scope = deployBase
+          manifest.id = deployBase
+          
+          // Update icon paths
+          manifest.icons = manifest.icons.map(icon => ({
+            ...icon,
+            src: deployBase + icon.src.replace(/^\//, ''),
+          }))
+          
+          // Add/update screenshots
           manifest.screenshots = [
             {
-              src: `${base}screenshots/desktop-1.png`,
+              src: deployBase + 'screenshots/desktop-1.png',
               sizes: '1280x720',
               type: 'image/png',
               form_factor: 'wide',
               label: 'Dashboard view on desktop',
             },
             {
-              src: `${base}screenshots/mobile-1.png`,
+              src: deployBase + 'screenshots/mobile-1.png',
               sizes: '750x1334',
               type: 'image/png',
               form_factor: 'narrow',
               label: 'Expense tracking on mobile',
             },
             {
-              src: `${base}screenshots/mobile-2.png`,
+              src: deployBase + 'screenshots/mobile-2.png',
               sizes: '750x1334',
               type: 'image/png',
               form_factor: 'narrow',
               label: 'Budget management on mobile',
             },
           ]
+          
           fs.writeFileSync(manifestPath, JSON.stringify(manifest))
-          console.log('✓ Added screenshots to manifest')
+          console.log(`✓ Updated manifest with base path: ${deployBase}`)
         }
       }
     },
