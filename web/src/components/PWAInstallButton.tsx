@@ -5,6 +5,8 @@ import { usePWA } from '../contexts/PWAContext';
 const PWAInstallButton: React.FC = () => {
   const { t } = useLanguage();
   const { isInstallable, isInstalled, triggerInstall, deferredPrompt } = usePWA();
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [modalContent, setModalContent] = React.useState('');
 
   // In development (localhost), create a fake installable state for testing
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -28,11 +30,13 @@ const PWAInstallButton: React.FC = () => {
         const success = await triggerInstall();
         console.log('PWAInstallButton: Install result:', success);
         if (success) {
-          alert('✅ App installed successfully!');
+          setModalContent('✅ App installed successfully!');
+          setModalOpen(true);
         }
       } catch (error) {
         console.error('PWAInstallButton: Install error:', error);
-        alert('❌ Installation failed. Please try again.');
+        setModalContent('❌ Installation failed. Please try again.');
+        setModalOpen(true);
       }
       return;
     }
@@ -96,7 +100,8 @@ The app will appear on your home screen and work offline!
 Tip: Use Safari for the best experience on iOS.
     `.trim();
     
-    alert(instructions);
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   const showIOSChromeInstructions = () => {
@@ -114,7 +119,8 @@ Unfortunately, Chrome and Firefox on iOS don't support app installation.
 Safari on iOS supports adding to home screen and offline functionality.
     `.trim();
     
-    alert(instructions);
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   const showDesktopSafariInstructions = () => {
@@ -134,7 +140,8 @@ Or:
 2. Select "Install app"
     `.trim();
     
-    alert(instructions);
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   const showDesktopInstallInstructions = () => {
@@ -161,7 +168,8 @@ You can install this app on your desktop:
 The app works offline and syncs when online!
     `.trim();
     
-    alert(instructions);
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   const showMobileInstallInstructions = () => {
@@ -190,7 +198,8 @@ The app works offline and syncs when online!
         'The app works offline and syncs when online!';
     }
     
-    alert(instructions);
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   if (isInstalled) {
@@ -255,6 +264,18 @@ The app works offline and syncs when online!
         </svg>
         {t('pwaInstallButton')}
       </button>
+      {modalOpen && (
+        <div className="pwa-modal-overlay" onClick={() => setModalOpen(false)}>
+          <div className="pwa-modal" onClick={e => e.stopPropagation()}>
+            <div className="pwa-modal-content">
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{modalContent}</pre>
+            </div>
+            <button className="pwa-modal-close" onClick={() => setModalOpen(false)}>
+              {t('close') || 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
       <style>{`
         .pwa-install-section {
           padding: 12px;
@@ -289,6 +310,45 @@ The app works offline and syncs when online!
         }
         .pwa-install-button:active {
           transform: translateY(0);
+        }
+        .pwa-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0,0,0,0.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        .pwa-modal {
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+          padding: 24px 20px 16px 20px;
+          min-width: 280px;
+          max-width: 90vw;
+          max-height: 80vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .pwa-modal-content {
+          margin-bottom: 16px;
+        }
+        .pwa-modal-close {
+          background: #667eea;
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          padding: 8px 18px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+        .pwa-modal-close:hover {
+          background: #764ba2;
         }
       `}</style>
     </div>
