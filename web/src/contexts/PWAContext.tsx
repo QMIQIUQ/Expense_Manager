@@ -29,9 +29,10 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isPWACapable, setIsPWACapable] = useState(false);
 
   useEffect(() => {
-    console.log('PWAProvider: Initializing');
-    console.log('PWAProvider: User Agent:', navigator.userAgent);
-    console.log('PWAProvider: Protocol:', window.location.protocol);
+    console.log('===== PWAProvider: Initializing =====');
+    console.log('User Agent:', navigator.userAgent);
+    console.log('Protocol:', window.location.protocol);
+    console.log('Hostname:', window.location.hostname);
     
     // Check if browser supports PWA installation prompts
     const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
@@ -39,50 +40,69 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const isAndroid = /Android/.test(navigator.userAgent);
     const isPWABrowser = (isChrome || isEdge) && isAndroid;
     
-    console.log('PWAProvider: Browser check:', { isChrome, isEdge, isAndroid, isPWABrowser });
+    console.log('Browser Check:', { isChrome, isEdge, isAndroid, isPWABrowser });
     
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('PWAProvider: App already installed (standalone mode)');
+      console.log('✓ App already installed (standalone mode)');
       setIsInstalled(true);
       return;
     }
 
+    // Check manifest
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    console.log('Manifest link found:', !!manifestLink, manifestLink?.getAttribute('href'));
+    
+    // Check service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        console.log('Service Workers registered:', registrations.length);
+        registrations.forEach(reg => {
+          console.log('  - Scope:', reg.scope, 'State:', reg.active ? 'active' : 'inactive');
+        });
+      }).catch(err => console.error('Error checking service workers:', err));
+    } else {
+      console.log('✗ Service Workers not supported');
+    }
+
     const handler = (e: Event) => {
-      console.log('PWAProvider: beforeinstallprompt event fired', e);
+      console.log('✓ beforeinstallprompt event fired!', e);
       
       if (!isBeforeInstallPromptEvent(e)) {
-        console.log('PWAProvider: Event is not BeforeInstallPromptEvent');
+        console.log('✗ Event is not BeforeInstallPromptEvent');
         return;
       }
       
-      console.log('PWAProvider: Valid BeforeInstallPromptEvent - saving prompt');
+      console.log('✓ Valid BeforeInstallPromptEvent - saving prompt');
       e.preventDefault();
       setDeferredPrompt(e);
       setIsPWACapable(true);
       
       // Show floating prompt if not dismissed
       if (localStorage.getItem('pwa-install-dismissed') !== 'true') {
+        console.log('✓ Showing floating prompt');
         setShowFloatingPrompt(true);
       }
     };
 
     const installedHandler = () => {
-      console.log('PWAProvider: appinstalled event fired');
+      console.log('✓ appinstalled event fired - PWA installed successfully!');
       setIsInstalled(true);
       setDeferredPrompt(null);
       setShowFloatingPrompt(false);
     };
 
-    console.log('PWAProvider: Adding event listeners');
+    console.log('Adding event listeners for beforeinstallprompt and appinstalled');
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', installedHandler);
     
     // For browsers that don't support beforeinstallprompt, 
     // still mark as PWA capable if it's HTTPS and has service worker
     if (window.location.protocol === 'https:' && isPWABrowser) {
-      console.log('PWAProvider: HTTPS detected on PWA-capable browser, marking as PWA capable');
+      console.log('✓ HTTPS detected on PWA-capable browser, marking as PWA capable');
       setIsPWACapable(true);
+    } else if (window.location.protocol !== 'https:') {
+      console.log('✗ Not HTTPS - PWA requires HTTPS');
     }
 
     return () => {

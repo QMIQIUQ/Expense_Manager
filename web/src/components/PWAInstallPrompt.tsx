@@ -5,10 +5,14 @@ export const PWAInstallPrompt: React.FC = () => {
   const { isInstallable, triggerInstall, dismissPrompt, showFloatingPrompt } = usePWA();
 
   useEffect(() => {
-    console.log('PWAInstallPrompt: Render state:', {
+    const reason = !showFloatingPrompt ? 'showFloatingPrompt is false' : 
+                   !isInstallable ? 'isInstallable is false' : 
+                   'unknown';
+    console.log('PWAInstallPrompt render state:', {
       showFloatingPrompt,
       isInstallable,
       shouldShow: showFloatingPrompt && isInstallable,
+      notRenderReason: showFloatingPrompt && isInstallable ? 'N/A' : reason,
     });
   }, [showFloatingPrompt, isInstallable]);
 
