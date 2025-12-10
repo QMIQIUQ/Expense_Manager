@@ -11,7 +11,8 @@ const __dirname = path.dirname(__filename)
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
-  const base = process.env.DEPLOY_BASE ?? '/'
+  // Always use /Expense_Manager/ for GitHub Pages deployment
+  const base = '/Expense_Manager/'
 
   return {
     base,
@@ -19,6 +20,7 @@ export default defineConfig(({ command }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
         includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
           id: '/Expense_Manager/',
@@ -188,11 +190,24 @@ export default defineConfig(({ command }) => {
       // Fix manifest paths after build
       if (command === 'build') {
         const manifestPath = path.join(__dirname, 'dist', 'manifest.webmanifest')
+        const htmlPath = path.join(__dirname, 'dist', 'index.html')
+        
+        if (fs.existsSync(htmlPath)) {
+          let html = fs.readFileSync(htmlPath, 'utf-8')
+          // Replace the manifest link with correct path
+          html = html.replace(
+            /<link rel="manifest" href="[^"]*">/,
+            '<link rel="manifest" href="/Expense_Manager/manifest.webmanifest">'
+          )
+          fs.writeFileSync(htmlPath, html)
+          console.log('✓ Fixed manifest link in HTML')
+        }
+        
         if (fs.existsSync(manifestPath)) {
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
           
-          // Ensure base path is correct
-          const deployBase = process.env.DEPLOY_BASE || base || '/'
+          // Use /Expense_Manager/ as the deploy base
+          const deployBase = '/Expense_Manager/'
           
           // Update all paths to use the deploy base
           manifest.start_url = deployBase
@@ -230,7 +245,7 @@ export default defineConfig(({ command }) => {
             },
           ]
           
-          fs.writeFileSync(manifestPath, JSON.stringify(manifest))
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
           console.log(`✓ Updated manifest with base path: ${deployBase}`)
         }
       }

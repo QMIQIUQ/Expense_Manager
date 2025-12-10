@@ -24,6 +24,40 @@ const updateSW = registerSW({
   },
 });
 
+// Development helper: Add PWA testing commands to window
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  (window as any).PWADebug = {
+    forcePWA: () => {
+      localStorage.setItem('pwa-force-show', 'true');
+      console.log('✓ PWA forced on! Reload page to see effect');
+      window.location.reload();
+    },
+    disablePWA: () => {
+      localStorage.removeItem('pwa-force-show');
+      console.log('✓ PWA force disabled! Reload page');
+      window.location.reload();
+    },
+    resetPWA: () => {
+      localStorage.removeItem('pwa-install-dismissed');
+      localStorage.removeItem('pwa-force-show');
+      console.log('✓ PWA state reset! Reload page');
+      window.location.reload();
+    },
+    status: () => {
+      console.log({
+        'PWA Capable': localStorage.getItem('pwa-force-show') === 'true',
+        'Dismissed': localStorage.getItem('pwa-install-dismissed') === 'true',
+        'Installed': window.matchMedia('(display-mode: standalone)').matches
+      });
+    }
+  };
+  console.log('💡 PWA Debug Commands Available:');
+  console.log('  - PWADebug.forcePWA() : Force show PWA prompt for testing');
+  console.log('  - PWADebug.disablePWA() : Disable forced PWA');
+  console.log('  - PWADebug.resetPWA() : Reset all PWA state');
+  console.log('  - PWADebug.status() : Check current PWA status');
+}
+
 // Centralize all top-level providers here to guarantee `useLanguage` and others
 // are available to every route/component, avoiding hook usage outside provider trees.
 ReactDOM.createRoot(document.getElementById('root')!).render(
