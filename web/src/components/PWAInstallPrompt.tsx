@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { usePWA } from '../contexts/PWAContext';
 
 export const PWAInstallPrompt: React.FC = () => {
-  const { isInstallable, triggerInstall, dismissPrompt, showFloatingPrompt } = usePWA();
+  const { isInstallable, triggerInstall, dismissPrompt, showFloatingPrompt, deferredPrompt } = usePWA();
 
   useEffect(() => {
     const reason = !showFloatingPrompt ? 'showFloatingPrompt is false' : 
@@ -11,10 +11,11 @@ export const PWAInstallPrompt: React.FC = () => {
     console.log('PWAInstallPrompt render state:', {
       showFloatingPrompt,
       isInstallable,
+      hasDeferredPrompt: !!deferredPrompt,
       shouldShow: showFloatingPrompt && isInstallable,
       notRenderReason: showFloatingPrompt && isInstallable ? 'N/A' : reason,
     });
-  }, [showFloatingPrompt, isInstallable]);
+  }, [showFloatingPrompt, isInstallable, deferredPrompt]);
 
   if (!showFloatingPrompt || !isInstallable) {
     console.log('PWAInstallPrompt: Not rendering - showFloatingPrompt:', showFloatingPrompt, 'isInstallable:', isInstallable);
@@ -23,13 +24,69 @@ export const PWAInstallPrompt: React.FC = () => {
 
   console.log('PWAInstallPrompt: Rendering floating prompt');
 
+  const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isGitHubPages = window.location.hostname.includes('github.io');
+
   const handleInstallClick = async () => {
-    console.log('PWAInstallPrompt: Install button clicked');
+    console.log('PWAInstallPrompt: Install button clicked, deferredPrompt:', !!deferredPrompt);
+    
+    // If no real deferredPrompt but on desktop, show instructions
+    if (!deferredPrompt && isDesktop && isGitHubPages) {
+      const instructions = `
+📱 Install Expense Manager - Desktop Instructions
+
+You can install this app on your desktop:
+
+**Chrome/Edge on Windows:**
+1. Click the ⊕ icon in the address bar
+2. Select "Install Expense Manager"
+
+**Chrome/Edge on Mac:**
+1. Open the menu (⋮)
+2. Select "Install app"
+
+**Alternative:**
+1. Open the menu (⋮)
+2. Select "Create shortcut"
+
+The app works offline too!
+      `.trim();
+      alert(instructions);
+      dismissPrompt();
+      return;
+    }
+    
+    // If no real deferredPrompt on mobile, show browser instructions
+    if (!deferredPrompt && !isDesktop && isGitHubPages) {
+      const instructions = `
+📱 Install Expense Manager
+
+1. Tap the address bar
+2. Look for "Install" button
+3. Confirm installation
+
+Or:
+1. Open menu
+2. Select "Install app"
+
+The app works offline!
+      `.trim();
+      alert(instructions);
+      dismissPrompt();
+      return;
+    }
+    
     try {
       const success = await triggerInstall();
       console.log('PWAInstallPrompt: Install result:', success);
+      if (success) {
+        alert('✅ App installed successfully!');
+      } else if (!deferredPrompt) {
+        alert('❌ Browser native installation not available. Check your browser menu for install options.');
+      }
     } catch (error) {
       console.error('PWAInstallPrompt: Install error:', error);
+      alert('❌ Installation failed. Please check your browser menu for install options.');
     }
   };
 

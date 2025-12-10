@@ -9,22 +9,21 @@ const PWAInstallButton: React.FC = () => {
   // In development (localhost), create a fake installable state for testing
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isGitHubPages = window.location.hostname.includes('github.io');
+  const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
   const canShowButton = isInstallable || isDevelopment;
 
   const handleInstallClick = async () => {
     console.log('PWAInstallButton: Install button clicked, deferredPrompt:', deferredPrompt);
     
-    // If no deferredPrompt but on GitHub Pages (mobile), show instructions
+    // Desktop Chrome/Edge: Show instructions for manual installation
+    if (isDesktop && isGitHubPages && !deferredPrompt) {
+      showDesktopInstallInstructions();
+      return;
+    }
+    
+    // Mobile on GitHub Pages: Show browser-specific instructions
     if (!deferredPrompt && isGitHubPages) {
-      const browserInfo = /Android/.test(navigator.userAgent) 
-        ? 'Open Chrome/Edge menu (⋮) and select "Install app"'
-        : 'Open the menu and look for "Install app" option';
-      
-      alert(
-        'PWA Installation\n\n' +
-        browserInfo + '\n\n' +
-        'Or: Tap the browser address bar and select "Install"'
-      );
+      showMobileInstallInstructions();
       return;
     }
     
@@ -42,12 +41,73 @@ const PWAInstallButton: React.FC = () => {
       return;
     }
     
+    // If we have a real deferredPrompt, use it
     try {
       const success = await triggerInstall();
       console.log('PWAInstallButton: Install result:', success);
+      if (success) {
+        alert('✅ App installed successfully!');
+      }
     } catch (error) {
       console.error('PWAInstallButton: Install error:', error);
+      alert('❌ Installation failed. Please try again.');
     }
+  };
+
+  const showDesktopInstallInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - Desktop Instructions
+
+You can install this app on your desktop:
+
+**Chrome/Edge on Windows:**
+1. Click the ⊕ icon in the address bar
+2. Select "Install Expense Manager"
+3. The app will appear in your Start Menu
+
+**Chrome/Edge on Mac:**
+1. Open the menu (⋮)
+2. Select "Install app"
+3. The app will appear in your Applications
+
+**Alternative Method:**
+1. Open the menu (⋮)
+2. Select "Create shortcut"
+3. Choose where to save it
+
+The app works offline and syncs when online!
+    `.trim();
+    
+    alert(instructions);
+  };
+
+  const showMobileInstallInstructions = () => {
+    const isChrome = /Chrome/.test(navigator.userAgent);
+    const isFirefox = /Firefox/.test(navigator.userAgent);
+    
+    let instructions = '📱 Install Expense Manager\n\n';
+    
+    if (isChrome) {
+      instructions += 'Chrome:\n' +
+        '1. Open Chrome menu (⋮)\n' +
+        '2. Tap "Install app"\n' +
+        '3. Confirm installation\n\n' +
+        'Or:\n' +
+        '1. Tap the address bar\n' +
+        '2. Select "Install"';
+    } else if (isFirefox) {
+      instructions += 'Firefox:\n' +
+        '1. Open menu (⋯)\n' +
+        '2. Tap "Install"\n' +
+        '3. Confirm';
+    } else {
+      instructions += 'Your Browser:\n' +
+        '1. Look for an "Install" button or option\n' +
+        '2. Confirm when prompted\n\n' +
+        'The app works offline and syncs when online!';
+    }
+    
+    alert(instructions);
   };
 
   if (isInstalled) {
