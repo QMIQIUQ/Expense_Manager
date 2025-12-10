@@ -52,7 +52,6 @@ jobs:
       - name: Output Preview URL
         run: |
           PREVIEW_URL="${{ steps.firebase-preview.outputs.details_url }}"
-          EXPIRE_TIME="${{ steps.firebase-preview.outputs.expire_time }}"
           echo "### Preview Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Preview URL**: $PREVIEW_URL" >> $GITHUB_STEP_SUMMARY
