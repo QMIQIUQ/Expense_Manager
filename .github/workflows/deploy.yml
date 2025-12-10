@@ -61,3 +61,18 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Output Deployment URL
+        run: |
+          DEPLOYMENT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "============================================"
+          echo "🎉 Deployment succeeded!"
+          echo "============================================"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "============================================"
