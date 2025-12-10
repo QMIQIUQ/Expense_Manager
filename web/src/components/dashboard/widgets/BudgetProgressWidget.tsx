@@ -34,10 +34,25 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
   }, [repayments]);
 
   // Helper to get net amount after repayments
-  const getNetAmount = (exp: { id?: string; amount: number }): number => {
+  const getNetAmount = React.useCallback((exp: { id?: string; amount: number }): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
     return Math.max(0, exp.amount - repaid);
-  };
+  }, [repaymentsByExpense]);
+
+  // Format period range for display
+  const formatPeriodRange = React.useCallback((budget: { period: string }, cycleStart: Date, cycleEnd: Date): string => {
+    // Convert dates to YYYY-MM-DD format for the utility function
+    const startStr = `${cycleStart.getFullYear()}-${String(cycleStart.getMonth() + 1).padStart(2, '0')}-${String(cycleStart.getDate()).padStart(2, '0')}`;
+    const endStr = `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, '0')}-${String(cycleEnd.getDate()).padStart(2, '0')}`;
+    
+    // For monthly budgets, show the billing cycle range
+    if (budget.period === 'monthly') {
+      return formatDateRangeShort(startStr, endStr, dateFormat);
+    }
+    
+    // For weekly/yearly, just return empty for now (can be extended)
+    return '';
+  }, [dateFormat]);
 
   // Calculate billing cycle
   const { cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining } = React.useMemo(() => {
@@ -63,21 +78,6 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
 
     return { cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining };
   }, [billingCycleDay]);
-
-  // Format period range for display
-  const formatPeriodRange = (budget: { period: string }, cycleStart: Date, cycleEnd: Date): string => {
-    // Convert dates to YYYY-MM-DD format for the utility function
-    const startStr = `${cycleStart.getFullYear()}-${String(cycleStart.getMonth() + 1).padStart(2, '0')}-${String(cycleStart.getDate()).padStart(2, '0')}`;
-    const endStr = `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, '0')}-${String(cycleEnd.getDate()).padStart(2, '0')}`;
-    
-    // For monthly budgets, show the billing cycle range
-    if (budget.period === 'monthly') {
-      return formatDateRangeShort(startStr, endStr, dateFormat);
-    }
-    
-    // For weekly/yearly, just return empty for now (can be extended)
-    return '';
-  };
 
   // Get progress color based on percentage (same as BudgetManager)
   const getProgressColor = (percentage: number, threshold: number = 80) => {
@@ -171,7 +171,7 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
         spendingPace,
       };
     });
-  }, [budgets, expenses, cycleStart, cycleEnd, repaymentsByExpense, daysInCycle, daysPassed, daysRemaining]);
+  }, [budgets, expenses, cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining, getNetAmount, formatPeriodRange]);
 
   if (budgetProgress.length === 0) {
     return (

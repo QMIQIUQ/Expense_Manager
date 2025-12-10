@@ -46,10 +46,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       <div className="flex flex-col gap-4">
         <div className="flex gap-3 flex-wrap items-center">
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <label htmlFor="categoryName" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
               {t('categoryName')}
             </label>
             <input
+              id="categoryName"
               type="text"
               value={formData.name}
               placeholder={t('categoryNamePlaceholder')}
@@ -64,10 +65,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
             />
           </div>
           <div className="w-[60px]">
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <label htmlFor="categoryColor" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
               {t('categoryColor')}
             </label>
             <input
+              id="categoryColor"
               type="color"
               value={formData.color}
               onChange={(e) => setFormData({ ...formData, color: e.target.value })}
@@ -81,10 +83,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+          <label htmlFor="categoryIconGroup" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
             {t('categoryIcon')}
           </label>
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2" id="categoryIconGroup">
             {commonIcons.map((icon) => (
               <button
                 key={icon}

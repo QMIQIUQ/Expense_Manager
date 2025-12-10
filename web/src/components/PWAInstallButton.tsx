@@ -1,53 +1,205 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-function isBeforeInstallPromptEvent(event: Event): event is BeforeInstallPromptEvent {
-  return 'prompt' in event && 'userChoice' in event;
-}
+import { usePWA } from '../contexts/PWAContext';
 
 const PWAInstallButton: React.FC = () => {
   const { t } = useLanguage();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const { isInstallable, isInstalled, triggerInstall, deferredPrompt } = usePWA();
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [modalContent, setModalContent] = React.useState('');
 
-  useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
+  // In development (localhost), create a fake installable state for testing
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome|Edg/.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const canShowButton = isInstallable || isDevelopment;
+
+  const handleInstallClick = async () => {
+    console.log('PWAInstallButton: Install button clicked', {
+      deferredPrompt: !!deferredPrompt,
+      isSafari,
+      isIOS,
+    });
+    
+    // If we have a real deferredPrompt, use it immediately
+    if (deferredPrompt) {
+      console.log('✓ Using captured beforeinstallprompt event');
+      try {
+        const success = await triggerInstall();
+        console.log('PWAInstallButton: Install result:', success);
+        if (success) {
+          setModalContent('✅ App installed successfully!');
+          setModalOpen(true);
+        }
+      } catch (error) {
+        console.error('PWAInstallButton: Install error:', error);
+        setModalContent('❌ Installation failed. Please try again.');
+        setModalOpen(true);
+      }
       return;
     }
-
-    const handler = (e: Event) => {
-      if (!isBeforeInstallPromptEvent(e)) return;
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
-  }, []);
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    console.log(`PWA install outcome: ${outcome}`);
-
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
+    
+    // iOS Safari: Special instructions for "Add to Home Screen"
+    if (isIOS && isSafari) {
+      showIOSSafariInstructions();
+      return;
     }
+    
+    // Other iOS browsers (Chrome, Firefox on iOS)
+    if (isIOS && !isSafari) {
+      showIOSChromeInstructions();
+      return;
+    }
+    
+    // Desktop Chrome/Edge: Show instructions for manual installation
+    if (isDesktop && isGitHubPages && !isSafari) {
+      showDesktopInstallInstructions();
+      return;
+    }
+    
+    // Desktop Safari: Limited support
+    if (isDesktop && isSafari) {
+      showDesktopSafariInstructions();
+      return;
+    }
+    
+    // Android and other mobile browsers
+    if (!isDesktop && !isIOS) {
+      showMobileInstallInstructions();
+      return;
+    }
+    
+    // In development, show a test dialog
+    if (isDevelopment) {
+      const confirmed = window.confirm(
+        'Development Mode: PWA installation would be triggered here in a real app.\n\n' +
+        'In production (HTTPS), the browser will show the native install prompt.\n\n' +
+        'Simulate install?'
+      );
+      if (confirmed) {
+        console.log('PWAInstallButton: Development mode - simulating install');
+        return;
+      }
+      return;
+    }
+  };
 
-    setDeferredPrompt(null);
+  const showIOSSafariInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - iOS Safari
+
+1. Tap the Share button (⬆️ in the bottom bar)
+2. Scroll down and tap "Add to Home Screen"
+3. Choose a name (or keep "Expense Manager")
+4. Tap "Add"
+
+The app will appear on your home screen and work offline!
+
+Tip: Use Safari for the best experience on iOS.
+    `.trim();
+    
+    setModalContent(instructions);
+    setModalOpen(true);
+  };
+
+  const showIOSChromeInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - iOS (Chrome/Firefox)
+
+Unfortunately, Chrome and Firefox on iOS don't support app installation.
+
+⭐ Best Option: Use Safari!
+1. Open this page in Safari
+2. Tap Share (⬆️)
+3. Tap "Add to Home Screen"
+4. Tap "Add"
+
+Safari on iOS supports adding to home screen and offline functionality.
+    `.trim();
+    
+    setModalContent(instructions);
+    setModalOpen(true);
+  };
+
+  const showDesktopSafariInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - macOS Safari
+
+Unfortunately, Safari on macOS has very limited PWA support.
+
+⭐ Best Option: Use Chrome or Edge instead!
+
+Chrome/Edge on Mac:
+1. Click the ⊕ icon in the address bar
+2. Select "Install Expense Manager"
+
+Or:
+1. Open menu (⋮)
+2. Select "Install app"
+    `.trim();
+    
+    setModalContent(instructions);
+    setModalOpen(true);
+  };
+
+  const showDesktopInstallInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - Desktop Instructions
+
+You can install this app on your desktop:
+
+**Chrome/Edge on Windows:**
+1. Click the ⊕ icon in the address bar
+2. Select "Install Expense Manager"
+3. The app will appear in your Start Menu
+
+**Chrome/Edge on Mac:**
+1. Open the menu (⋮)
+2. Select "Install app"
+3. The app will appear in your Applications
+
+**Alternative Method:**
+1. Open the menu (⋮)
+2. Select "Create shortcut"
+3. Choose where to save it
+
+The app works offline and syncs when online!
+    `.trim();
+    
+    setModalContent(instructions);
+    setModalOpen(true);
+  };
+
+  const showMobileInstallInstructions = () => {
+    const isChrome = /Chrome/.test(navigator.userAgent);
+    const isFirefox = /Firefox/.test(navigator.userAgent);
+    
+    let instructions = '📱 Install Expense Manager\n\n';
+    
+    if (isChrome) {
+      instructions += 'Chrome:\n' +
+        '1. Open Chrome menu (⋮)\n' +
+        '2. Tap "Install app"\n' +
+        '3. Confirm installation\n\n' +
+        'Or:\n' +
+        '1. Tap the address bar\n' +
+        '2. Select "Install"';
+    } else if (isFirefox) {
+      instructions += 'Firefox:\n' +
+        '1. Open menu (⋯)\n' +
+        '2. Tap "Install"\n' +
+        '3. Confirm';
+    } else {
+      instructions += 'Your Browser:\n' +
+        '1. Look for an "Install" button or option\n' +
+        '2. Confirm when prompted\n\n' +
+        'The app works offline and syncs when online!';
+    }
+    
+    setModalContent(instructions);
+    setModalOpen(true);
   };
 
   if (isInstalled) {
@@ -82,7 +234,7 @@ const PWAInstallButton: React.FC = () => {
     );
   }
 
-  if (!deferredPrompt) {
+  if (!canShowButton) {
     return (
       <div className="pwa-install-section">
         <p className="pwa-not-available">{t('pwaNotAvailable')}</p>
@@ -104,7 +256,7 @@ const PWAInstallButton: React.FC = () => {
   return (
     <div className="pwa-install-section">
       <p className="pwa-description">{t('pwaInstallDescription')}</p>
-      <button onClick={handleInstall} className="pwa-install-button">
+      <button onClick={handleInstallClick} className="pwa-install-button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -112,6 +264,18 @@ const PWAInstallButton: React.FC = () => {
         </svg>
         {t('pwaInstallButton')}
       </button>
+      {modalOpen && (
+        <div className="pwa-modal-overlay" onClick={() => setModalOpen(false)}>
+          <div className="pwa-modal" onClick={e => e.stopPropagation()}>
+            <div className="pwa-modal-content">
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{modalContent}</pre>
+            </div>
+            <button className="pwa-modal-close" onClick={() => setModalOpen(false)}>
+              {t('close') || 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
       <style>{`
         .pwa-install-section {
           padding: 12px;
@@ -146,6 +310,45 @@ const PWAInstallButton: React.FC = () => {
         }
         .pwa-install-button:active {
           transform: translateY(0);
+        }
+        .pwa-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0,0,0,0.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        .pwa-modal {
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+          padding: 24px 20px 16px 20px;
+          min-width: 280px;
+          max-width: 90vw;
+          max-height: 80vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .pwa-modal-content {
+          margin-bottom: 16px;
+        }
+        .pwa-modal-close {
+          background: #667eea;
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          padding: 8px 18px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+        .pwa-modal-close:hover {
+          background: #764ba2;
         }
       `}</style>
     </div>

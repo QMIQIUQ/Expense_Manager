@@ -2,7 +2,7 @@ name: Deploy web to GitHub Pages
 
 on:
   push:
-    branches: [ main1 ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -51,12 +51,28 @@ jobs:
           path: web/dist
 
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Output Deployment URL
+        run: |
+          DEPLOYMENT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "============================================"
+          echo "🎉 Deployment succeeded!"
+          echo "============================================"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "============================================"

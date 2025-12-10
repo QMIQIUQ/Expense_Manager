@@ -2855,9 +2855,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-      
-      {/* Network Status Indicator */}
-      <NetworkStatusIndicator />
     </>
   );
 };

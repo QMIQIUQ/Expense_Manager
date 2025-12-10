@@ -1,54 +1,87 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
+  // Always use /Expense_Manager/ for GitHub Pages deployment
+  const base = '/Expense_Manager/'
 
   return {
-    base: process.env.DEPLOY_BASE ?? '/',
+    base,
     plugins: [
       react(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
         includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
+          id: '/Expense_Manager/',
           name: 'Expense Manager',
           short_name: 'Expense Manager',
           description: 'A comprehensive expense tracking application for managing your finances',
           theme_color: '#10b981',
           background_color: '#ffffff',
           display: 'standalone',
-          scope: '/',
-          start_url: '/',
+          scope: base,
+          start_url: base,
           orientation: 'portrait-primary',
           icons: [
             {
-              src: 'pwa-64x64.png',
+              src: `${base}pwa-64x64.png`,
               sizes: '64x64',
               type: 'image/png',
             },
             {
-              src: 'pwa-192x192.png',
+              src: `${base}pwa-192x192.png`,
               sizes: '192x192',
               type: 'image/png',
             },
             {
-              src: 'pwa-512x512.png',
+              src: `${base}pwa-512x512.png`,
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: 'maskable-icon-512x512.png',
+              src: `${base}maskable-icon-512x512.png`,
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
             },
           ],
           categories: ['finance', 'productivity'],
-        },
+          screenshots: [
+            {
+              src: `${base}screenshots/desktop-1.png`,
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Dashboard view on desktop',
+            },
+            {
+              src: `${base}screenshots/mobile-1.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Expense tracking on mobile',
+            },
+            {
+              src: `${base}screenshots/mobile-2.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Budget management on mobile',
+            },
+          ],
+        } as any,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
@@ -152,6 +185,70 @@ export default defineConfig(({ command }) => {
       chunkSizeWarningLimit: 1000,
       minify: 'esbuild',
       target: 'es2015',
+    },
+    closeBundle: async () => {
+      // Fix manifest paths after build
+      if (command === 'build') {
+        const manifestPath = path.join(__dirname, 'dist', 'manifest.webmanifest')
+        const htmlPath = path.join(__dirname, 'dist', 'index.html')
+        
+        if (fs.existsSync(htmlPath)) {
+          let html = fs.readFileSync(htmlPath, 'utf-8')
+          // Replace the manifest link with correct path
+          html = html.replace(
+            /<link rel="manifest" href="[^"]*">/,
+            '<link rel="manifest" href="/Expense_Manager/manifest.webmanifest">'
+          )
+          fs.writeFileSync(htmlPath, html)
+          console.log('✓ Fixed manifest link in HTML')
+        }
+        
+        if (fs.existsSync(manifestPath)) {
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+          
+          // Use /Expense_Manager/ as the deploy base
+          const deployBase = '/Expense_Manager/'
+          
+          // Update all paths to use the deploy base
+          manifest.start_url = deployBase
+          manifest.scope = deployBase
+          manifest.id = deployBase
+          
+          // Update icon paths
+          manifest.icons = manifest.icons.map(icon => ({
+            ...icon,
+            src: deployBase + icon.src.replace(/^\//, ''),
+          }))
+          
+          // Add/update screenshots
+          manifest.screenshots = [
+            {
+              src: deployBase + 'screenshots/desktop-1.png',
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Dashboard view on desktop',
+            },
+            {
+              src: deployBase + 'screenshots/mobile-1.png',
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Expense tracking on mobile',
+            },
+            {
+              src: deployBase + 'screenshots/mobile-2.png',
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Budget management on mobile',
+            },
+          ]
+          
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+          console.log(`✓ Updated manifest with base path: ${deployBase}`)
+        }
+      }
     },
   }
 })

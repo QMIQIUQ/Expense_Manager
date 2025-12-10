@@ -100,6 +100,18 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
   const periods = getHistoricalPeriods();
 
+  // Calculate statistics for advanced view (before hasData check)
+  const stats = React.useMemo(() => {
+    const spentValues = periods.map((p) => p.spent);
+    const total = spentValues.reduce((a, b) => a + b, 0);
+    const avg = total / periods.length;
+    const max = Math.max(...spentValues);
+    const min = Math.min(...spentValues);
+    const overBudgetCount = periods.filter((p) => p.percentage > 100).length;
+    
+    return { total, avg, max, min, overBudgetCount };
+  }, [periods]);
+
   // Check if there's any data
   const hasData = periods.some((p) => p.spent > 0);
 
@@ -114,18 +126,6 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   };
 
   const maxPercentage = Math.max(...periods.map((p) => p.percentage), 100);
-
-  // Calculate statistics for advanced view
-  const stats = React.useMemo(() => {
-    const spentValues = periods.map((p) => p.spent);
-    const total = spentValues.reduce((a, b) => a + b, 0);
-    const avg = total / periods.length;
-    const max = Math.max(...spentValues);
-    const min = Math.min(...spentValues);
-    const overBudgetCount = periods.filter((p) => p.percentage > 100).length;
-    
-    return { total, avg, max, min, overBudgetCount };
-  }, [periods]);
 
   // Custom tooltip for Recharts
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
