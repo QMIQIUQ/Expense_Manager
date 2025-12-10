@@ -35,6 +35,7 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       - name: Deploy to Firebase Hosting
+        id: firebase-deploy
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
@@ -42,3 +43,23 @@ jobs:
           projectId: expense-manager-41afb
           channelId: live
           entryPoint: ./web
+
+      - name: Output Deployment URL
+        run: |
+          DEPLOYMENT_URL="${{ steps.firebase-deploy.outputs.details_url }}"
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            DEPLOYMENT_URL="https://expense-manager-41afb.web.app"
+          fi
+          echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Channel**: Live (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully deployed to Firebase Hosting!" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "============================================"
+          echo "🎉 Firebase Hosting deployment succeeded!"
+          echo "============================================"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Channel: Live (Production)"
+          echo "============================================"
