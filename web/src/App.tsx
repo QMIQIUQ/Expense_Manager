@@ -4,6 +4,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import { PWAProvider } from './contexts/PWAContext';
 
 const App: React.FC = () => {
   const router = createBrowserRouter(
@@ -27,10 +28,10 @@ const App: React.FC = () => {
   );
 
   return (
-    <>
+    <PWAProvider>
       <RouterProvider router={router} future={{ v7_startTransition: true }} />
       <PWAInstallPrompt />
-    </>
+    </PWAProvider>
   );
 };
 

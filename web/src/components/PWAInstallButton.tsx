@@ -1,53 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-function isBeforeInstallPromptEvent(event: Event): event is BeforeInstallPromptEvent {
-  return 'prompt' in event && 'userChoice' in event;
-}
+import { usePWA } from '../contexts/PWAContext';
 
 const PWAInstallButton: React.FC = () => {
   const { t } = useLanguage();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const { isInstallable, isInstalled, triggerInstall, deferredPrompt } = usePWA();
 
-  useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
+  // In development (localhost), create a fake installable state for testing
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const canShowButton = isInstallable || (isDevelopment && !isInstalled);
+
+  const handleInstallClick = async () => {
+    console.log('PWAInstallButton: Install button clicked, deferredPrompt:', deferredPrompt);
+    
+    // In development, show a test dialog
+    if (isDevelopment && !deferredPrompt) {
+      const confirmed = window.confirm(
+        'Development Mode: PWA installation would be triggered here in a real app.\n\n' +
+        'In production (HTTPS/Firebase Hosting), the browser will show the native install prompt.\n\n' +
+        'Simulate install?'
+      );
+      if (confirmed) {
+        console.log('PWAInstallButton: Development mode - simulating install');
+        return;
+      }
       return;
     }
-
-    const handler = (e: Event) => {
-      if (!isBeforeInstallPromptEvent(e)) return;
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
-  }, []);
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    console.log(`PWA install outcome: ${outcome}`);
-
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
+    
+    try {
+      const success = await triggerInstall();
+      console.log('PWAInstallButton: Install result:', success);
+    } catch (error) {
+      console.error('PWAInstallButton: Install error:', error);
     }
-
-    setDeferredPrompt(null);
   };
 
   if (isInstalled) {
@@ -82,7 +67,7 @@ const PWAInstallButton: React.FC = () => {
     );
   }
 
-  if (!deferredPrompt) {
+  if (!canShowButton) {
     return (
       <div className="pwa-install-section">
         <p className="pwa-not-available">{t('pwaNotAvailable')}</p>
@@ -104,7 +89,7 @@ const PWAInstallButton: React.FC = () => {
   return (
     <div className="pwa-install-section">
       <p className="pwa-description">{t('pwaInstallDescription')}</p>
-      <button onClick={handleInstall} className="pwa-install-button">
+      <button onClick={handleInstallClick} className="pwa-install-button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
