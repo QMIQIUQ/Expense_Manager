@@ -31,23 +31,20 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Development mode: Force PWA prompt for testing
   const isDev = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const forceShowPWA = isDev || (typeof window !== 'undefined' && localStorage.getItem('pwa-force-show') === 'true');
+  const forceShowPWA = typeof window !== 'undefined' && 
+    (isDev || localStorage.getItem('pwa-force-show') === 'true');
+  
+  // On desktop Chrome/Edge, show PWA prompt even without beforeinstallprompt event
+  const isDesktopChromium = typeof navigator !== 'undefined' && 
+    (/Chrome|Edg/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent));
 
   useEffect(() => {
     console.log('===== PWAProvider: Initializing =====');
     console.log('User Agent:', navigator.userAgent);
     console.log('Protocol:', window.location.protocol);
     console.log('Hostname:', window.location.hostname);
-    console.log('Force Show PWA (dev only):', forceShowPWA);
-    
-    // Check if browser supports PWA installation prompts
-    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    const isEdge = /Edg/.test(navigator.userAgent);
-    const isAndroid = /Android/.test(navigator.userAgent);
-    const isPWABrowser = (isChrome || isEdge) && isAndroid;
-    
-    console.log('Browser Check:', { isChrome, isEdge, isAndroid, isPWABrowser });
-    console.log('Tip: In desktop Chrome, PWA is usually not offered. Test on Android or use Chrome shortcuts.');
+    console.log('Force Show PWA:', forceShowPWA);
+    console.log('Is Desktop Chromium:', isDesktopChromium);
     
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -103,17 +100,31 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', installedHandler);
     
-    // For development mode, mark as PWA capable for testing
+    // Strategy 1: Force show PWA for development/testing
     if (forceShowPWA) {
-      console.log('✓ Development mode: Forcing PWA capable for testing');
+      console.log('✓ Force mode: Showing PWA prompt');
       setIsPWACapable(true);
       setShowFloatingPrompt(true);
     }
     
-    // For browsers that don't support beforeinstallprompt, 
-    // still mark as PWA capable if it's HTTPS and has service worker
+    // Strategy 2: On desktop Chrome/Edge, always show PWA prompt even without beforeinstallprompt
+    if (isDesktopChromium && !isInstalled) {
+      console.log('✓ Desktop Chromium detected: Enabling PWA install for desktop');
+      setIsPWACapable(true);
+      // Show prompt if not dismissed
+      if (localStorage.getItem('pwa-install-dismissed') !== 'true') {
+        setShowFloatingPrompt(true);
+      }
+    }
+    
+    // Strategy 3: On mobile PWA browsers, mark as capable if HTTPS + Service Worker
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isPWABrowser = (isChrome || isEdge) && isAndroid;
+    
     if (window.location.protocol === 'https:' && isPWABrowser) {
-      console.log('✓ HTTPS detected on PWA-capable browser, marking as PWA capable');
+      console.log('✓ Mobile PWA browser detected, marking as PWA capable');
       setIsPWACapable(true);
     } else if (window.location.protocol !== 'https:') {
       console.log('✗ Not HTTPS - PWA requires HTTPS');
@@ -123,7 +134,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('appinstalled', installedHandler);
     };
-  }, [forceShowPWA]);
+  }, [forceShowPWA, isDesktopChromium]);
 
   const triggerInstall = useCallback(async (): Promise<boolean> => {
     console.log('PWAProvider: triggerInstall called, deferredPrompt:', deferredPrompt);
