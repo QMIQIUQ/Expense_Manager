@@ -46,13 +46,13 @@ jobs:
 
       - name: Output Deployment URL
         run: |
-          DEPLOYMENT_URL="${{ steps.firebase-deploy.outputs.details_url }}"
-          if [ -z "$DEPLOYMENT_URL" ]; then
-            DEPLOYMENT_URL="https://expense-manager-41afb.web.app"
-          fi
+          # For live channel, construct URL from project ID
+          DEPLOYMENT_URL="https://expense-manager-41afb.web.app"
+          DETAILS_URL="${{ steps.firebase-deploy.outputs.details_url }}"
           echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Firebase Console**: $DETAILS_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: Live (Production)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Successfully deployed to Firebase Hosting!" >> $GITHUB_STEP_SUMMARY
@@ -61,5 +61,6 @@ jobs:
           echo "🎉 Firebase Hosting deployment succeeded!"
           echo "============================================"
           echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Firebase Console: $DETAILS_URL"
           echo "Channel: Live (Production)"
           echo "============================================"
