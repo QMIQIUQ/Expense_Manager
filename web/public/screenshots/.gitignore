@@ -1,0 +1,5 @@
+# Screenshot source files - not needed for deployment
+*.svg
+*.js
+*.ps1
+README.md

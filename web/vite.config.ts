@@ -49,6 +49,29 @@ export default defineConfig(({ command }) => {
             },
           ],
           categories: ['finance', 'productivity'],
+          screenshots: [
+            {
+              src: `${base}screenshots/desktop-1.png`,
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Dashboard view on desktop',
+            },
+            {
+              src: `${base}screenshots/mobile-1.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Expense tracking on mobile',
+            },
+            {
+              src: `${base}screenshots/mobile-2.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Budget management on mobile',
+            },
+          ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],

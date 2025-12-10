@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "screenshots": "node public/screenshots/convert-svg-to-png.js"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

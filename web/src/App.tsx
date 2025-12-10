@@ -20,6 +20,8 @@ const App: React.FC = () => {
           </PrivateRoute>
         ),
       },
+      // Catch-all route to handle unknown paths
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
     {
       basename: import.meta.env.BASE_URL,
