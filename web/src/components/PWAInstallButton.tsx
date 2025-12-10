@@ -13,25 +13,41 @@ const PWAInstallButton: React.FC = () => {
   const canShowButton = isInstallable || isDevelopment;
 
   const handleInstallClick = async () => {
-    console.log('PWAInstallButton: Install button clicked, deferredPrompt:', deferredPrompt);
+    console.log('PWAInstallButton: Install button clicked, deferredPrompt:', !!deferredPrompt);
+    
+    // If we have a real deferredPrompt, use it immediately
+    if (deferredPrompt) {
+      console.log('✓ Using captured beforeinstallprompt event');
+      try {
+        const success = await triggerInstall();
+        console.log('PWAInstallButton: Install result:', success);
+        if (success) {
+          alert('✅ App installed successfully!');
+        }
+      } catch (error) {
+        console.error('PWAInstallButton: Install error:', error);
+        alert('❌ Installation failed. Please try again.');
+      }
+      return;
+    }
     
     // Desktop Chrome/Edge: Show instructions for manual installation
-    if (isDesktop && isGitHubPages && !deferredPrompt) {
+    if (isDesktop && isGitHubPages) {
       showDesktopInstallInstructions();
       return;
     }
     
     // Mobile on GitHub Pages: Show browser-specific instructions
-    if (!deferredPrompt && isGitHubPages) {
+    if (!isDesktop && isGitHubPages) {
       showMobileInstallInstructions();
       return;
     }
     
     // In development, show a test dialog
-    if (isDevelopment && !deferredPrompt) {
+    if (isDevelopment) {
       const confirmed = window.confirm(
         'Development Mode: PWA installation would be triggered here in a real app.\n\n' +
-        'In production (HTTPS/Firebase Hosting), the browser will show the native install prompt.\n\n' +
+        'In production (HTTPS), the browser will show the native install prompt.\n\n' +
         'Simulate install?'
       );
       if (confirmed) {
@@ -39,18 +55,6 @@ const PWAInstallButton: React.FC = () => {
         return;
       }
       return;
-    }
-    
-    // If we have a real deferredPrompt, use it
-    try {
-      const success = await triggerInstall();
-      console.log('PWAInstallButton: Install result:', success);
-      if (success) {
-        alert('✅ App installed successfully!');
-      }
-    } catch (error) {
-      console.error('PWAInstallButton: Install error:', error);
-      alert('❌ Installation failed. Please try again.');
     }
   };
 

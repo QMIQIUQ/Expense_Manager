@@ -30,8 +30,28 @@ export const PWAInstallPrompt: React.FC = () => {
   const handleInstallClick = async () => {
     console.log('PWAInstallPrompt: Install button clicked, deferredPrompt:', !!deferredPrompt);
     
-    // If no real deferredPrompt but on desktop, show instructions
-    if (!deferredPrompt && isDesktop && isGitHubPages) {
+    // If we have a real deferredPrompt, use it immediately
+    if (deferredPrompt) {
+      console.log('✓ Using captured beforeinstallprompt event');
+      try {
+        const success = await triggerInstall();
+        console.log('PWAInstallPrompt: Install result:', success);
+        if (success) {
+          // Keep the prompt visible after successful install is shown
+          dismissPrompt();
+          alert('✅ App installed successfully!');
+        }
+      } catch (error) {
+        console.error('PWAInstallPrompt: Install error:', error);
+        alert('❌ Installation failed. Please try again.');
+      }
+      return;
+    }
+    
+    // If no real deferredPrompt, provide instructions based on platform
+    console.log('No deferredPrompt - showing instructions');
+    
+    if (isDesktop && isGitHubPages) {
       const instructions = `
 📱 Install Expense Manager - Desktop Instructions
 
@@ -56,8 +76,7 @@ The app works offline too!
       return;
     }
     
-    // If no real deferredPrompt on mobile, show browser instructions
-    if (!deferredPrompt && !isDesktop && isGitHubPages) {
+    if (!isDesktop && isGitHubPages) {
       const instructions = `
 📱 Install Expense Manager
 
@@ -74,19 +93,6 @@ The app works offline!
       alert(instructions);
       dismissPrompt();
       return;
-    }
-    
-    try {
-      const success = await triggerInstall();
-      console.log('PWAInstallPrompt: Install result:', success);
-      if (success) {
-        alert('✅ App installed successfully!');
-      } else if (!deferredPrompt) {
-        alert('❌ Browser native installation not available. Check your browser menu for install options.');
-      }
-    } catch (error) {
-      console.error('PWAInstallPrompt: Install error:', error);
-      alert('❌ Installation failed. Please check your browser menu for install options.');
     }
   };
 
