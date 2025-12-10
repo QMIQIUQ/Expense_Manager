@@ -1170,6 +1170,9 @@ const Dashboard: React.FC = () => {
               // Update balance for the payment method
               await balanceService.handleExpenseCreated(newExpense);
               
+              // Reload e-wallets and banks to reflect updated balances
+              loadData();
+              
               showNotification('success', t('expenseGenerated') || 'Expense record created');
             } catch (error) {
               console.error('Failed to auto-generate expense:', error);
