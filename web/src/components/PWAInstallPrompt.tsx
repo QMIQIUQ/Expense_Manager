@@ -26,9 +26,15 @@ export const PWAInstallPrompt: React.FC = () => {
 
   const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
   const isGitHubPages = window.location.hostname.includes('github.io');
+  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome|Edg/.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   const handleInstallClick = async () => {
-    console.log('PWAInstallPrompt: Install button clicked, deferredPrompt:', !!deferredPrompt);
+    console.log('PWAInstallPrompt: Install button clicked', {
+      deferredPrompt: !!deferredPrompt,
+      isSafari,
+      isIOS,
+    });
     
     // If we have a real deferredPrompt, use it immediately
     if (deferredPrompt) {
@@ -37,7 +43,6 @@ export const PWAInstallPrompt: React.FC = () => {
         const success = await triggerInstall();
         console.log('PWAInstallPrompt: Install result:', success);
         if (success) {
-          // Keep the prompt visible after successful install is shown
           dismissPrompt();
           alert('✅ App installed successfully!');
         }
@@ -48,47 +53,80 @@ export const PWAInstallPrompt: React.FC = () => {
       return;
     }
     
-    // If no real deferredPrompt, provide instructions based on platform
-    console.log('No deferredPrompt - showing instructions');
-    
-    if (isDesktop && isGitHubPages) {
+    // iOS Safari: Show "Add to Home Screen" instructions
+    if (isIOS && isSafari) {
       const instructions = `
-📱 Install Expense Manager - Desktop Instructions
+📱 Install Expense Manager - iOS Safari
 
-You can install this app on your desktop:
+1. Tap the Share button (⬆️ bottom bar)
+2. Scroll and tap "Add to Home Screen"
+3. Tap "Add"
 
-**Chrome/Edge on Windows:**
-1. Click the ⊕ icon in the address bar
-2. Select "Install Expense Manager"
-
-**Chrome/Edge on Mac:**
-1. Open the menu (⋮)
-2. Select "Install app"
-
-**Alternative:**
-1. Open the menu (⋮)
-2. Select "Create shortcut"
-
-The app works offline too!
+The app will appear on your home screen!
       `.trim();
       alert(instructions);
       dismissPrompt();
       return;
     }
     
-    if (!isDesktop && isGitHubPages) {
+    // Other iOS browsers
+    if (isIOS && !isSafari) {
+      const instructions = `
+📱 Best: Use Safari!
+
+Chrome/Firefox on iOS don't support installation.
+Use Safari instead:
+1. Tap Share (⬆️)
+2. Tap "Add to Home Screen"
+3. Tap "Add"
+      `.trim();
+      alert(instructions);
+      dismissPrompt();
+      return;
+    }
+
+    // Desktop Safari
+    if (isDesktop && isSafari) {
+      const instructions = `
+⚠️ Safari on macOS has limited PWA support.
+
+Try Chrome or Edge instead:
+1. Click ⊕ in address bar
+2. Select "Install Expense Manager"
+      `.trim();
+      alert(instructions);
+      dismissPrompt();
+      return;
+    }
+
+    // Desktop Chrome/Edge
+    if (isDesktop && !isSafari && isGitHubPages) {
+      const instructions = `
+📱 Install Expense Manager - Desktop
+
+Chrome/Edge on Windows:
+1. Click ⊕ in address bar
+2. Select "Install Expense Manager"
+
+Chrome/Edge on Mac:
+1. Click menu (⋮)
+2. Select "Install app"
+      `.trim();
+      alert(instructions);
+      dismissPrompt();
+      return;
+    }
+    
+    // Android and other mobile
+    if (!isDesktop && !isIOS) {
       const instructions = `
 📱 Install Expense Manager
 
-1. Tap the address bar
-2. Look for "Install" button
-3. Confirm installation
+1. Open menu (⋯)
+2. Tap "Install app"
+3. Confirm
 
-Or:
-1. Open menu
-2. Select "Install app"
-
-The app works offline!
+Or tap address bar and select "Install"
       `.trim();
       alert(instructions);
       dismissPrompt();

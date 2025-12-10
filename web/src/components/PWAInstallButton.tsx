@@ -10,10 +10,16 @@ const PWAInstallButton: React.FC = () => {
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isGitHubPages = window.location.hostname.includes('github.io');
   const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome|Edg/.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
   const canShowButton = isInstallable || isDevelopment;
 
   const handleInstallClick = async () => {
-    console.log('PWAInstallButton: Install button clicked, deferredPrompt:', !!deferredPrompt);
+    console.log('PWAInstallButton: Install button clicked', {
+      deferredPrompt: !!deferredPrompt,
+      isSafari,
+      isIOS,
+    });
     
     // If we have a real deferredPrompt, use it immediately
     if (deferredPrompt) {
@@ -31,14 +37,32 @@ const PWAInstallButton: React.FC = () => {
       return;
     }
     
+    // iOS Safari: Special instructions for "Add to Home Screen"
+    if (isIOS && isSafari) {
+      showIOSSafariInstructions();
+      return;
+    }
+    
+    // Other iOS browsers (Chrome, Firefox on iOS)
+    if (isIOS && !isSafari) {
+      showIOSChromeInstructions();
+      return;
+    }
+    
     // Desktop Chrome/Edge: Show instructions for manual installation
-    if (isDesktop && isGitHubPages) {
+    if (isDesktop && isGitHubPages && !isSafari) {
       showDesktopInstallInstructions();
       return;
     }
     
-    // Mobile on GitHub Pages: Show browser-specific instructions
-    if (!isDesktop && isGitHubPages) {
+    // Desktop Safari: Limited support
+    if (isDesktop && isSafari) {
+      showDesktopSafariInstructions();
+      return;
+    }
+    
+    // Android and other mobile browsers
+    if (!isDesktop && !isIOS) {
       showMobileInstallInstructions();
       return;
     }
@@ -56,6 +80,61 @@ const PWAInstallButton: React.FC = () => {
       }
       return;
     }
+  };
+
+  const showIOSSafariInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - iOS Safari
+
+1. Tap the Share button (⬆️ in the bottom bar)
+2. Scroll down and tap "Add to Home Screen"
+3. Choose a name (or keep "Expense Manager")
+4. Tap "Add"
+
+The app will appear on your home screen and work offline!
+
+Tip: Use Safari for the best experience on iOS.
+    `.trim();
+    
+    alert(instructions);
+  };
+
+  const showIOSChromeInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - iOS (Chrome/Firefox)
+
+Unfortunately, Chrome and Firefox on iOS don't support app installation.
+
+⭐ Best Option: Use Safari!
+1. Open this page in Safari
+2. Tap Share (⬆️)
+3. Tap "Add to Home Screen"
+4. Tap "Add"
+
+Safari on iOS supports adding to home screen and offline functionality.
+    `.trim();
+    
+    alert(instructions);
+  };
+
+  const showDesktopSafariInstructions = () => {
+    const instructions = `
+📱 Install Expense Manager - macOS Safari
+
+Unfortunately, Safari on macOS has very limited PWA support.
+
+⭐ Best Option: Use Chrome or Edge instead!
+
+Chrome/Edge on Mac:
+1. Click the ⊕ icon in the address bar
+2. Select "Install Expense Manager"
+
+Or:
+1. Open menu (⋮)
+2. Select "Install app"
+    `.trim();
+    
+    alert(instructions);
   };
 
   const showDesktopInstallInstructions = () => {
