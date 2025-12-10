@@ -894,6 +894,11 @@ export const translations = {
   pwaInstallButton: { en: 'Install App', zh: '安裝應用程式', 'zh-CN': '安装应用程序' },
   pwaInstalled: { en: 'App is already installed on your device', zh: '應用程式已安裝在您的裝置上', 'zh-CN': '应用程序已安装在您的设备上' },
   pwaNotAvailable: { en: 'PWA installation is not available in your browser', zh: '您的瀏覽器不支援 PWA 安裝', 'zh-CN': '您的浏览器不支持 PWA 安装' },
+
+  // Account Info
+  accountInfo: { en: 'Account Information', zh: '帳戶資訊', 'zh-CN': '账户信息' },
+  userId: { en: 'User ID', zh: '用戶 ID', 'zh-CN': '用户 ID' },
+  dayOfMonth: { en: 'of each month', zh: '每月', 'zh-CN': '每月' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

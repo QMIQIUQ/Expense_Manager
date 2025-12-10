@@ -183,7 +183,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   });
 
   // Calculate budget status for filtering and sorting
-  const getBudgetStatus = (budget: Budget): { percentage: number; status: 'over' | 'warning' | 'normal' } => {
+  const getBudgetStatus = React.useCallback((budget: Budget): { percentage: number; status: 'over' | 'warning' | 'normal' } => {
     const spent = spentByCategory[budget.categoryName] || 0;
     const effectiveAmount = getEffectiveBudgetAmount(budget);
     const percentage = effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : 0;
@@ -191,7 +191,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     if (percentage >= 100) return { percentage, status: 'over' };
     if (percentage >= budget.alertThreshold) return { percentage, status: 'warning' };
     return { percentage, status: 'normal' };
-  };
+  }, [spentByCategory]);
   
   // Filter and sort budgets
   const filteredAndSortedBudgets = React.useMemo(() => {
@@ -227,7 +227,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     });
 
     return result;
-  }, [budgets, searchTerm, filterBy, sortBy, spentByCategory]);
+  }, [budgets, searchTerm, filterBy, sortBy, getBudgetStatus]);
 
   const {
     isSelectionMode,

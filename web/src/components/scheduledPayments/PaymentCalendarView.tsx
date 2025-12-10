@@ -24,7 +24,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get payments for a specific day
-  const getPaymentsForDay = (day: number, month: number, _year: number) => {
+  const getPaymentsForDay = React.useCallback((day: number, month: number, _year: number) => {
     return scheduledPayments.filter(payment => {
       if (!payment.isActive || payment.isCompleted) return false;
       
@@ -36,7 +36,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
         return startDate.getMonth() === month && startDate.getDate() === day;
       }
     });
-  };
+  }, [scheduledPayments]);
 
   // Check if a payment has been made for a specific period
   const isPaymentMade = (paymentId: string, month: number, year: number) => {
@@ -86,7 +86,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
       selectedDate.getMonth(),
       selectedDate.getFullYear()
     );
-  }, [selectedDate, scheduledPayments]);
+  }, [selectedDate, getPaymentsForDay]);
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

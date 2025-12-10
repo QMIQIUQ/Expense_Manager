@@ -228,8 +228,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       submitLabel={initialData ? t('update') : t('add')}
     >
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
+        <label htmlFor="expenseDescription" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
         <input
+          id="expenseDescription"
           type="text"
           name="description"
           value={formData.description}
@@ -250,8 +251,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+          <label htmlFor="expenseAmount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
           <input
+            id="expenseAmount"
             type="text"
             inputMode="numeric"
             name="amount"
@@ -323,8 +325,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       {/* Payment Method Selection */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
+        <label htmlFor="expensePaymentMethod" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
         <select
+          id="expensePaymentMethod"
           name="paymentMethod"
           value={formData.paymentMethod}
           onChange={handleChange}
