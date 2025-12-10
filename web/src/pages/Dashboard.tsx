@@ -1153,18 +1153,27 @@ const Dashboard: React.FC = () => {
               
               const expenseId = await expenseService.create(expenseData);
               
-              // Create optimistic expense for immediate UI update
+              // Create expense with real ID from server
               const newExpense: Expense = {
                 ...expenseData,
                 id: expenseId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };
+              
+              // Update state
               setExpenses((prev) => [newExpense, ...prev]);
+              
+              // Update cache to ensure expense persists
+              dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [newExpense, ...data]);
+              
+              // Update balance for the payment method
+              await balanceService.handleExpenseCreated(newExpense);
               
               showNotification('success', t('expenseGenerated') || 'Expense record created');
             } catch (error) {
               console.error('Failed to auto-generate expense:', error);
+              showNotification('error', t('errorCreatingExpense') || 'Failed to create expense');
             }
           }
         },

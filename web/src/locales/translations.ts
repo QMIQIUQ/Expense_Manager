@@ -810,6 +810,7 @@ export const translations = {
   autoGenerateExpense: { en: 'Auto Generate Expense', zh: '自動產生支出', 'zh-CN': '自动生成支出' },
   autoGenerateExpenseHint: { en: 'Automatically create expense record when payment is confirmed', zh: '確認付款時自動建立支出記錄', 'zh-CN': '确认付款时自动创建支出记录' },
   expenseGenerated: { en: 'Expense record created', zh: '已建立支出記錄', 'zh-CN': '已创建支出记录' },
+  errorCreatingExpense: { en: 'Failed to create expense', zh: '建立支出失敗', 'zh-CN': '创建支出失败' },
   
   // Recurring End Date
   hasEndDate: { en: 'Has End Date', zh: '有結束日期', 'zh-CN': '有结束日期' },
