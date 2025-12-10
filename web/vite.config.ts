@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -72,7 +78,7 @@ export default defineConfig(({ command }) => {
               label: 'Budget management on mobile',
             },
           ],
-        },
+        } as any,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
@@ -176,6 +182,40 @@ export default defineConfig(({ command }) => {
       chunkSizeWarningLimit: 1000,
       minify: 'esbuild',
       target: 'es2015',
+    },
+    closeBundle: async () => {
+      // Add screenshots to manifest after build
+      if (command === 'build') {
+        const manifestPath = path.join(__dirname, 'dist', 'manifest.webmanifest')
+        if (fs.existsSync(manifestPath)) {
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+          manifest.screenshots = [
+            {
+              src: `${base}screenshots/desktop-1.png`,
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Dashboard view on desktop',
+            },
+            {
+              src: `${base}screenshots/mobile-1.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Expense tracking on mobile',
+            },
+            {
+              src: `${base}screenshots/mobile-2.png`,
+              sizes: '750x1334',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Budget management on mobile',
+            },
+          ]
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest))
+          console.log('✓ Added screenshots to manifest')
+        }
+      }
     },
   }
 })
