@@ -1,4 +1,0 @@
-
-> expense-manager-web@0.1.0 build
-> tsc && vite build --clearScreen false --logLevel info
-
