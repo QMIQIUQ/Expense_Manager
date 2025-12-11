@@ -61,7 +61,7 @@ export const translations = {
   paymentMethods: { en: 'Payment Methods', zh: '支付方式', 'zh-CN': '支付方式' },
   monthlyExpense: { en: 'Monthly Expense', zh: '本月支出', 'zh-CN': '本月支出' },
   disableFeature: { en: 'Disable feature', zh: '停用功能', 'zh-CN': '停用功能' },
-  profile: { en: '👤 Settings', zh: '👤 設定', 'zh-CN': '👤 设定' },
+  profile: { en: '⚙️ Settings', zh: '⚙️ 設定', 'zh-CN': '⚙️ 设定' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
   tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
   hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
@@ -212,6 +212,7 @@ export const translations = {
   // Recurring Expenses
   recurringExpense: { en: 'Recurring Expense', zh: '定期付款', 'zh-CN': '定期付款' },
   recurringExpenses: { en: 'Recurring Expenses', zh: '定期付款', 'zh-CN': '定期付款' },
+    upcomingDuePayments: { en: 'Upcoming Due Payments', zh: '即將到期的付款', 'zh-CN': '即将到期的付款' },
   frequency: { en: 'Frequency', zh: '頻率', 'zh-CN': '频率' },
   freqDaily: { en: 'Daily', zh: '每日', 'zh-CN': '每日' },
   freqWeekly: { en: 'Weekly', zh: '每週', 'zh-CN': '每周' },

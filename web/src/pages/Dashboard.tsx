@@ -418,6 +418,16 @@ const Dashboard: React.FC = () => {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [showHamburgerMenu]);
+
+  // Reset all hamburger submenu states when hamburger menu closes
+  useEffect(() => {
+    if (!showHamburgerMenu) {
+      setOpenLanguageSection(false);
+      setOpenAppearanceSection(false);
+      setOpenImportExportSection(false);
+      setOpenFeaturesSection(false);
+    }
+  }, [showHamburgerMenu]);
   //#endregion
 
   //#region UI State Flags
