@@ -30,8 +30,8 @@ const TimePicker: React.FC<TimePickerProps> = ({
   label,
   name,
 }) => {
-  // Note: timeFormat prop kept for API compatibility but component always uses 12h internally
-  void _timeFormat;
+  const timeFormat = _timeFormat;
+  const is24Hour = timeFormat === '24h';
   const parseTime = (timeStr: string): { hours: number; minutes: number } => {
     if (!timeStr) {
       const now = new Date();
@@ -72,6 +72,11 @@ const TimePicker: React.FC<TimePickerProps> = ({
     }
   }, [value]);
 
+  // Keep AM/PM state in sync when display mode changes
+  useEffect(() => {
+    setIsAM(hours < 12);
+  }, [_timeFormat, hours]);
+
   const to12Hour = (h: number): number => {
     if (h === 0) return 12;
     if (h > 12) return h - 12;
@@ -87,14 +92,20 @@ const TimePicker: React.FC<TimePickerProps> = ({
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  // Slider covers 12 hours (0-719 minutes = 0:00 to 11:59)
-  // User uses AM/PM button to select morning or afternoon
+  // Slider range depends on time format
+  // 12h: 0-719 minutes (0:00 to 11:59)
+  // 24h: 0-1439 minutes (0:00 to 23:59)
   const getSliderMinutes = (): number => {
-    // Get hours in 12-hour format (0-11)
-    const h12 = hours % 12;
-    return h12 * 60 + minutes;
+    if (is24Hour) {
+      return hours * 60 + minutes; // 0-1439
+    }
+    const h12 = hours % 12; // 0-11
+    return h12 * 60 + minutes; // 0-719
   };
-  const getSliderPosition = (): number => (getSliderMinutes() / 719) * 100;
+
+  const getSliderMaxMinutes = () => (is24Hour ? 1439 : 719);
+
+  const getSliderPosition = (): number => (getSliderMinutes() / getSliderMaxMinutes()) * 100;
 
   // Use ref to track current AM state for drag handler
   const isAMRef = useRef(isAM);
@@ -104,16 +115,25 @@ const TimePicker: React.FC<TimePickerProps> = ({
     if (!sliderTrackRef.current) return;
     const rect = sliderTrackRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    // Convert position to minutes within 12-hour range (0-719)
-    const sliderMinutes = Math.round(position * 719);
+    const sliderMinutes = Math.round(position * getSliderMaxMinutes());
+
+    if (is24Hour) {
+      const newHours = Math.floor(sliderMinutes / 60); // 0-23
+      const newMinutes = sliderMinutes % 60;
+      setHours(newHours);
+      setMinutes(newMinutes);
+      onChange(formatTime(newHours, newMinutes));
+      return;
+    }
+
+    // 12-hour mode
     const h12 = Math.floor(sliderMinutes / 60); // 0-11
     const newMinutes = sliderMinutes % 60;
-    // Convert to 24-hour based on current AM/PM setting
     const newHours = isAMRef.current ? h12 : (h12 + 12);
     setHours(newHours);
     setMinutes(newMinutes);
     onChange(formatTime(newHours, newMinutes));
-  }, [onChange]);
+  }, [onChange, is24Hour]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;
@@ -148,7 +168,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
   };
 
   const handleAMPMToggle = () => {
-    if (disabled) return;
+    if (disabled || is24Hour) return;
     const newIsAM = !isAM;
     setIsAM(newIsAM);
     const newHours = to24Hour(to12Hour(hours), newIsAM);
@@ -196,10 +216,17 @@ const TimePicker: React.FC<TimePickerProps> = ({
     // Only update state when we have a valid number
     if (inputVal !== '') {
       const parsed = parseInt(inputVal);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) {
-        const newHours = to24Hour(parsed, isAM);
-        setHours(newHours);
-        onChange(formatTime(newHours, minutes));
+      if (is24Hour) {
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 23) {
+          setHours(parsed);
+          onChange(formatTime(parsed, minutes));
+        }
+      } else {
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) {
+          const newHours = to24Hour(parsed, isAM);
+          setHours(newHours);
+          onChange(formatTime(newHours, minutes));
+        }
       }
     }
   };
@@ -208,11 +235,20 @@ const TimePicker: React.FC<TimePickerProps> = ({
     setIsEditingHours(false);
     // On blur, validate and reset display
     const parsed = parseInt(hoursInput);
+    if (is24Hour) {
+      if (hoursInput === '' || isNaN(parsed) || parsed < 0 || parsed > 23) {
+        setHoursInput('');
+      } else {
+        setHours(parsed);
+        onChange(formatTime(parsed, minutes));
+        setHoursInput('');
+      }
+      return;
+    }
+
     if (hoursInput === '' || isNaN(parsed) || parsed < 1 || parsed > 12) {
-      // Invalid input, keep current hours value
       setHoursInput('');
     } else {
-      // Valid input, update and clear temp input
       const newHours = to24Hour(parsed, isAM);
       setHours(newHours);
       onChange(formatTime(newHours, minutes));
@@ -227,20 +263,22 @@ const TimePicker: React.FC<TimePickerProps> = ({
       <div className={`tp-row ${disabled ? 'disabled' : ''}`}>
         {/* Time inputs */}
         <div className="tp-inputs">
-          {/* Always show AM/PM toggle for slider control */}
-          <span className="tp-period" onClick={handleAMPMToggle}>
-            {isAM ? 'AM' : 'PM'}
-          </span>
+          {/* Show AM/PM toggle only in 12-hour mode */}
+          {!is24Hour && (
+            <span className="tp-period" onClick={handleAMPMToggle}>
+              {isAM ? 'AM' : 'PM'}
+            </span>
+          )}
           <input
             type="text"
             inputMode="numeric"
             name={name ? `${name}-hours` : undefined}
-            value={isEditingHours ? hoursInput : String(to12Hour(hours)).padStart(2, '0')}
+            value={isEditingHours ? hoursInput : String(is24Hour ? hours : to12Hour(hours)).padStart(2, '0')}
             onChange={handleHoursChange}
             onBlur={handleHoursBlur}
             onFocus={(e) => {
               setIsEditingHours(true);
-              setHoursInput(String(to12Hour(hours)));
+              setHoursInput(String(is24Hour ? hours : to12Hour(hours)));
               setTimeout(() => e.target.select(), 0);
             }}
             disabled={disabled}
