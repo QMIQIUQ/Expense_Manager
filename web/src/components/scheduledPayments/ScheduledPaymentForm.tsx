@@ -118,7 +118,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
     // New fields
     enableReminders: initialData?.enableReminders !== undefined ? initialData.enableReminders : true,
     reminderDaysBefore: initialData?.reminderDaysBefore || 3,
-    autoGenerateExpense: initialData?.autoGenerateExpense || false,
+    autoGenerateExpense: initialData?.autoGenerateExpense ?? true,
     isShared: initialData?.isShared || false,
     splitParticipants: initialData?.splitParticipants || [],
   });
