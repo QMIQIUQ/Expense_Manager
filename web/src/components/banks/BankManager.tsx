@@ -7,6 +7,7 @@ import ConfirmModal from '../ConfirmModal';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import PopupModal from '../common/PopupModal';
 
 interface BankManagerProps {
   banks: Bank[];
@@ -22,7 +23,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingBank, setEditingBank] = useState<Bank | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; bankId: string | null }>({ isOpen: false, bankId: null });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -41,9 +42,9 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
   };
 
   const handleUpdate = async (data: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!editingId) return;
-    await onUpdate(editingId, data);
-    setEditingId(null);
+    if (!editingBank) return;
+    await onUpdate(editingBank.id!, data);
+    setEditingBank(null);
   };
 
   const confirmDelete = (id: string) => setDeleteConfirm({ isOpen: true, bankId: id });
@@ -174,11 +175,29 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         />
       </div>
 
-      {isAdding && (
-        <div className="form-card">
-          <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
-        </div>
-      )}
+      {/* Add Form - PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addBank')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        <BankForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addBank')} />
+      </PopupModal>
+
+      {/* Edit Form - PopupModal */}
+      <PopupModal
+        isOpen={editingBank !== null}
+        onClose={() => setEditingBank(null)}
+        title={t('editBank')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        {editingBank && (
+          <BankForm initialData={editingBank} onSubmit={handleUpdate} onCancel={() => setEditingBank(null)} title={t('editBank')} />
+        )}
+      </PopupModal>
 
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
@@ -221,14 +240,6 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
       <div className="bank-list">
         {filteredBanks.map((bank) => {
           const stats = getBankStats[bank.id!];
-          const isEditing = editingId === bank.id;
-          if (isEditing) {
-            return (
-              <div key={bank.id} className="form-card" style={{ width: '100%' }}>
-                <BankForm initialData={bank} onSubmit={handleUpdate} onCancel={() => setEditingId(null)} title={t('editBank')} />
-              </div>
-            );
-          }
           return (
             <div key={bank.id} className={`credit-card ${isSelectionMode && selectedIds.has(bank.id!) ? 'selected' : ''}`} style={openMenuId === bank.id ? { zIndex: 9999 } : {}}>
               {isSelectionMode && (
@@ -256,7 +267,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                     <div className="card-actions">
                       {/* Desktop: Show both buttons */}
                       <div className="desktop-actions">
-                        <button onClick={() => setEditingId(bank.id!)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                        <button onClick={() => setEditingBank(bank)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                           <EditIcon size={18} />
                         </button>
                         <button onClick={() => confirmDelete(bank.id!)} className="btn-icon btn-icon-danger" aria-label={t('delete')}>
@@ -281,7 +292,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  setEditingId(bank.id!);
+                                  setEditingBank(bank);
                                 }}
                               >
                                 <span style={styles.menuIcon}><EditIcon size={16} /></span>

@@ -56,10 +56,10 @@
 |---|---:|---:|---|---|---|---|
 | 支出 Expense | ⬜ | ✅（列表 Edit 已 pop-out） | Create：頁面內 inline（非 pop-out） | Create：改為 `PopupModal` pop-out（若搭配 BaseForm 則用 chromeless 模式） | Create：`web/src/pages/tabs/ExpensesTab.tsx`（`<ExpenseForm/>`）<br/>另外：Dashboard 也有 `<ExpenseForm/>` 使用點 | `ExpensesTab` 內標題目前硬字串（`Edit Expense` / `Add New Expense`）也建議 i18n 一起修 |
 | 收入 Income | ⬜ | ✅（列表 Edit 已 pop-out） | Create：inline（`<div className="form-card">`） | Create：改為 `PopupModal` pop-out | `web/src/pages/tabs/IncomesTab.tsx`（`isAdding` 區塊） | Create 應維持「點 + 才開表單」的 UX |
-| 定期付款 Scheduled Payments | ⬜ | ⬜ | Create/Edit：inline（form-card 或直接在 list item 內） | Create/Edit：改為 pop-out（建議 Create/Edit 都同一套） | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx`（Add Form / editingId 區塊） | 若編輯在卡片內 inline 也 OK，但你要求「使用 popout」→ 這裡列為待改 |
-| 定期支出 Recurring Expenses | ⬜ | ⬜ | Create/Edit：inline（`isAdding`、`editingId` 區塊） | Create/Edit：改為 pop-out | `web/src/components/recurring/RecurringExpenseManager.tsx` | 目前按鈕/樣式是自寫 inline style；導入 pop-out 可順便統一按鈕樣式 |
-| 電子錢包 EWallet | ⬜ | ⬜ | Create：inline（form-card）<br/>Edit：inline（form-card） | Create/Edit：改為 pop-out | `web/src/components/ewallet/EWalletManager.tsx`（`isAdding`、`editingId`） | `wallet.color` 目前直接當背景色（如為 hex）→ 若未來要嚴格暗黑模式 token，需要再規劃；本追蹤表先聚焦 pop-out |
-| 銀行 Bank | ⬜ | ⬜ | Create：inline（form-card）<br/>Edit：inline（form-card） | Create/Edit：改為 pop-out | `web/src/components/banks/BankManager.tsx`（`isAdding`、`editingId`） | 同上：先做 pop-out，再視情況統一表單容器 |
+| 定期付款 Scheduled Payments | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out（建議 Create/Edit 都同一套） | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx` | 已完成 pop-out 導入 |
+| 定期支出 Recurring Expenses | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/recurring/RecurringExpenseManager.tsx` | 已完成 pop-out 導入 |
+| 電子錢包 EWallet | ✅ | ✅ | ~~Create：inline / Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/ewallet/EWalletManager.tsx` | 已完成 pop-out 導入 |
+| 銀行 Bank | ✅ | ✅ | ~~Create：inline / Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/banks/BankManager.tsx` | 已完成 pop-out 導入 |
 
 ---
 
