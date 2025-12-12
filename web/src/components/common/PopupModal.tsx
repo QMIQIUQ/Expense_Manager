@@ -7,6 +7,13 @@ interface PopupModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  // Optional header control (useful when embedding a BaseForm that already has its own header)
+  hideHeader?: boolean;
+  // When true, PopupModal provides only the overlay + positioning, leaving the child as the visible container.
+  // Useful when rendering a BaseForm (avoids double borders/background/padding).
+  chromeless?: boolean;
+  // Control inner content padding. Defaults to 24px, or 0 when chromeless.
+  contentPadding?: string | number;
   // Footer buttons configuration
   primaryButtonLabel?: string;
   secondaryButtonLabel?: string;
@@ -41,6 +48,9 @@ const PopupModal: React.FC<PopupModalProps> = ({
   onClose,
   title,
   children,
+  hideHeader = false,
+  chromeless = false,
+  contentPadding,
   primaryButtonLabel,
   secondaryButtonLabel,
   onPrimaryAction,
@@ -53,8 +63,6 @@ const PopupModal: React.FC<PopupModalProps> = ({
   hideFooter = false,
 }) => {
   const { t } = useLanguage();
-
-  if (!isOpen) return null;
 
   // Default labels
   const primaryLabel = primaryButtonLabel || t('save') || 'Save';
@@ -95,6 +103,7 @@ const PopupModal: React.FC<PopupModalProps> = ({
 
   // Handle escape key
   React.useEffect(() => {
+    if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
@@ -106,34 +115,44 @@ const PopupModal: React.FC<PopupModalProps> = ({
 
   // Prevent body scroll when modal is open
   React.useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen]);
+
+  // IMPORTANT: do not early-return before hooks; otherwise React hook ordering breaks.
+  if (!isOpen) return null;
+
+  const resolvedContentPadding = contentPadding ?? (chromeless ? 0 : '24px');
+  const modalStyle = chromeless ? styles.chromelessModal : styles.modal;
 
   const content = (
     <>
       {/* Header */}
-      <div style={styles.header}>
-        <h3 style={styles.title}>{title}</h3>
-        <button
-          onClick={onClose}
-          style={styles.closeButton}
-          aria-label={t('close') || 'Close'}
-          type="button"
-        >
-          <CloseIcon size={20} />
-        </button>
-      </div>
+      {!hideHeader && (
+        <>
+          <div style={styles.header}>
+            <h3 style={styles.title}>{title}</h3>
+            <button
+              onClick={onClose}
+              style={styles.closeButton}
+              aria-label={t('close') || 'Close'}
+              type="button"
+            >
+              <CloseIcon size={20} />
+            </button>
+          </div>
 
-      {/* Divider after header */}
-      <div style={styles.divider} />
+          {/* Divider after header */}
+          <div style={styles.divider} />
+        </>
+      )}
 
       {/* Content */}
-      <div style={styles.content}>
+      <div style={{ ...styles.content, padding: resolvedContentPadding }}>
         {children}
       </div>
 
@@ -174,14 +193,14 @@ const PopupModal: React.FC<PopupModalProps> = ({
       {isForm ? (
         <form
           onSubmit={handleFormSubmit}
-          style={{ ...styles.modal, maxWidth }}
+          style={{ ...modalStyle, maxWidth }}
           onClick={(e) => e.stopPropagation()}
         >
           {content}
         </form>
       ) : (
         <div
-          style={{ ...styles.modal, maxWidth }}
+          style={{ ...modalStyle, maxWidth }}
           onClick={(e) => e.stopPropagation()}
         >
           {content}
@@ -216,6 +235,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
     boxShadow: '0 8px 32px var(--shadow-md)',
     border: '1px solid var(--border-color)',
+  },
+  chromelessModal: {
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    borderRadius: 0,
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: 'none',
+    border: 'none',
   },
   header: {
     display: 'flex',
@@ -260,7 +291,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'flex-end',
   },
   primaryButton: {
-    flex: '8',
+    flex: 8,
     padding: '12px 24px',
     backgroundColor: 'var(--accent-primary)',
     color: 'white',
@@ -273,7 +304,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     minHeight: '44px',
   },
   secondaryButton: {
-    flex: '2',
+    flex: 2,
     padding: '12px 16px',
     backgroundColor: 'var(--bg-secondary)',
     color: 'var(--text-primary)',

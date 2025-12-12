@@ -171,6 +171,8 @@ const CardManager: React.FC<CardManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addCard')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >
@@ -185,8 +187,10 @@ const CardManager: React.FC<CardManagerProps> = ({
       {/* Edit Card Popup Modal */}
       <PopupModal
         isOpen={editingCard !== null}
+        chromeless={true}
         onClose={() => setEditingCard(null)}
         title={t('editCard')}
+        hideHeader={true}
         hideFooter={true}
         maxWidth="600px"
       >

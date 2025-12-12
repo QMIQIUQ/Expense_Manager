@@ -401,6 +401,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addBudget') || 'Add Budget'}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >
@@ -425,6 +427,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         isOpen={editingBudget !== null}
         onClose={() => setEditingBudget(null)}
         title={t('editBudget') || 'Edit Budget'}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >

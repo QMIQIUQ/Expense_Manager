@@ -60,7 +60,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
       <div style={styles.divider} />
 
       {/* Form Body */}
-      <form onSubmit={onSubmit} style={styles.form}>
+      <form onSubmit={onSubmit} noValidate style={styles.form}>
         <div style={styles.content}>
           {children}
         </div>

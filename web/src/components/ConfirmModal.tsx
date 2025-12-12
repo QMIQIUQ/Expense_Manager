@@ -1,5 +1,6 @@
 import React from 'react';
 import { CloseIcon } from './icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -31,18 +32,17 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
   danger = false,
   variant = 'default',
 }) => {
+  const { t } = useLanguage();
   // Determine button style based on variant or danger prop
   const isDanger = danger || variant === 'danger';
   const isWarning = variant === 'warning';
-  
-  if (!isOpen) return null;
 
   const handleConfirm = () => {
     onCancel(); // Close modal immediately
@@ -51,6 +51,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   // Handle escape key
   React.useEffect(() => {
+    if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onCancel();
@@ -59,6 +60,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onCancel]);
+
+  if (!isOpen) return null;
 
   return (
     <div style={styles.overlay} onClick={onCancel}>
@@ -69,7 +72,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button 
             onClick={onCancel} 
             style={styles.closeButton}
-            aria-label="Close"
+            aria-label={t('close') || 'Close'}
             type="button"
           >
             <CloseIcon size={20} />
@@ -99,10 +102,10 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 : styles.confirmButton
             }
           >
-            {confirmText}
+            {confirmText || t('confirm') || 'Confirm'}
           </button>
           <button onClick={onCancel} style={styles.cancelButton}>
-            {cancelText}
+            {cancelText || t('cancel') || 'Cancel'}
           </button>
         </div>
       </div>

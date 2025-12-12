@@ -166,6 +166,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addCategory')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >
@@ -310,6 +312,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         isOpen={editingCategory !== null}
         onClose={cancelEdit}
         title={t('editCategory')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >

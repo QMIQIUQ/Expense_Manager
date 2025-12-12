@@ -1169,6 +1169,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         isOpen={editingExpense !== null}
         onClose={() => setEditingExpense(null)}
         title={t('editExpense')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="700px"
       >

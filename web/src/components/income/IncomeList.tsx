@@ -345,6 +345,8 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
         isOpen={editingIncome !== null}
         onClose={() => setEditingIncome(null)}
         title={t('editIncome')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >

@@ -70,6 +70,46 @@
 ————————————————————————————————
 ```
 
+#### Recommended pattern: `PopupModal` + `BaseForm` (single visible container)
+
+When a form uses `BaseForm` (which already renders its own card/header/footer styling), the modal should be **chromeless** so the UI does not look like “a modal inside another card”.
+
+Use this combo:
+
+- `hideHeader={true}`: avoid duplicate titles (PopupModal header + BaseForm header)
+- `hideFooter={true}`: avoid duplicate action rows (PopupModal footer + BaseForm footer)
+- `chromeless={true}`: remove PopupModal’s outer panel styling (background/border/shadow/padding), keeping only overlay/positioning/ESC/close logic
+
+Example:
+
+- `PopupModal` is responsible for overlay + close behavior.
+- `BaseForm` is the only visible “card”.
+
+```
+<PopupModal
+  isOpen={isEditing}
+  onClose={handleClose}
+  title={t('editSomething')}
+  hideHeader
+  hideFooter
+  chromeless
+  maxWidth="600px"
+>
+  <BaseForm
+    title={t('editSomething')}
+    onClose={handleClose}
+    onSubmit={handleSubmit}
+    submitLabel={t('save')}
+    cancelLabel={t('cancel')}
+  >
+    {/* fields */}
+  </BaseForm>
+</PopupModal>
+```
+
+Use the default (non-chromeless) `PopupModal` style when the dialog content is **not** a `BaseForm` (e.g., simple confirmations, informational dialogs, or cases where you want PopupModal’s own header/footer buttons).
+
+> Pop-out 導入進度追蹤：`docs/POPOUT_ROLLOUT_TRACKER.md`
 **使用方式**:
 ```tsx
 <PopupModal
