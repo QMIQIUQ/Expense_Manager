@@ -1,4 +1,5 @@
 import React from 'react';
+import { CloseIcon } from './icons';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -12,6 +13,20 @@ interface ConfirmModalProps {
   variant?: 'default' | 'danger' | 'warning'; // Added variant prop
 }
 
+/**
+ * ConfirmModal - A confirmation dialog using the standardized popup UI pattern
+ * 
+ * Layout structure:
+ * ————————————
+ * 標題                 x（關閉）
+ * ————————————
+ * 訊息内容
+ * ————————————
+ * [確認 80%] [取消 20%]
+ * ————————————
+ * 
+ * Button layout uses 80/20 ratio: confirm action button takes 80%, cancel takes 20%
+ */
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   title,
@@ -26,6 +41,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   // Determine button style based on variant or danger prop
   const isDanger = danger || variant === 'danger';
   const isWarning = variant === 'warning';
+  
   if (!isOpen) return null;
 
   const handleConfirm = () => {
@@ -33,15 +49,46 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     setTimeout(() => onConfirm(), 0); // Execute in background
   };
 
+  // Handle escape key
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onCancel();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onCancel]);
+
   return (
     <div style={styles.overlay} onClick={onCancel}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={styles.title}>{title}</h3>
-        <p style={styles.message}>{message}</p>
-        <div style={styles.actions}>
-          <button onClick={onCancel} style={styles.cancelButton}>
-            {cancelText}
+        {/* Header */}
+        <div style={styles.header}>
+          <h3 style={styles.title}>{title}</h3>
+          <button 
+            onClick={onCancel} 
+            style={styles.closeButton}
+            aria-label="Close"
+            type="button"
+          >
+            <CloseIcon size={20} />
           </button>
+        </div>
+
+        {/* Divider */}
+        <div style={styles.divider} />
+
+        {/* Content */}
+        <div style={styles.content}>
+          <p style={styles.message}>{message}</p>
+        </div>
+
+        {/* Divider */}
+        <div style={styles.divider} />
+
+        {/* Footer - 80/20 button split */}
+        <div style={styles.footer}>
           <button
             onClick={handleConfirm}
             style={
@@ -54,85 +101,119 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           >
             {confirmText}
           </button>
+          <button onClick={onCancel} style={styles.cancelButton}>
+            {cancelText}
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
   overlay: {
-    position: 'fixed' as const,
+    position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'var(--modal-overlay)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9998,
+    padding: '20px',
   },
   modal: {
-    backgroundColor: 'var(--card-bg)',
+    backgroundColor: 'var(--modal-bg)',
     borderRadius: '16px',
-    padding: '28px',
     maxWidth: '480px',
-    width: '90%',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+    width: '100%',
+    boxShadow: '0 8px 32px var(--shadow-md)',
     border: '1px solid var(--border-color)',
     maxHeight: '90vh',
-    overflowY: 'auto' as const,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px',
+    minHeight: '64px',
   },
   title: {
-    margin: '0 0 16px 0',
-    fontSize: '22px',
-    fontWeight: '600' as const,
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: 600,
     color: 'var(--text-primary)',
+    lineHeight: 1.3,
   },
-  message: {
-    margin: '0 0 20px 0',
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    lineHeight: '1.5',
-    whiteSpace: 'pre-wrap' as const,
-    maxHeight: '400px',
-    overflowY: 'auto' as const,
-  },
-  actions: {
+  closeButton: {
     display: 'flex',
-    gap: '12px',
-    justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    padding: '10px 24px',
-    backgroundColor: 'var(--secondary-bg)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px',
+    backgroundColor: 'transparent',
+    border: 'none',
     borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500' as const,
     cursor: 'pointer',
+    color: 'var(--text-secondary)',
     transition: 'all 0.2s ease',
   },
+  divider: {
+    height: '1px',
+    backgroundColor: 'var(--border-color)',
+  },
+  content: {
+    padding: '24px',
+  },
+  message: {
+    margin: 0,
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.6,
+    whiteSpace: 'pre-wrap',
+  },
+  footer: {
+    display: 'flex',
+    gap: '12px',
+    padding: '20px 24px',
+  },
   confirmButton: {
-    padding: '10px 24px',
+    flex: 8,
+    padding: '12px 24px',
     backgroundColor: 'var(--accent-primary)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: '500' as const,
+    fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    minHeight: '44px',
+  },
+  cancelButton: {
+    flex: 2,
+    padding: '12px 16px',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    minHeight: '44px',
   },
   dangerButton: {
-    backgroundColor: 'var(--error-bg)',
-    color: 'var(--error-text)',
+    backgroundColor: 'var(--error-text)',
+    color: 'white',
   },
   warningButton: {
-    backgroundColor: 'var(--warning-bg)',
-    color: 'var(--warning-text)',
+    backgroundColor: 'var(--warning-text)',
+    color: 'white',
   },
 };
 

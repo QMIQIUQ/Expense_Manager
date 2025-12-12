@@ -8,6 +8,7 @@ import CategoryForm from './CategoryForm';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import PopupModal from '../common/PopupModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -50,7 +51,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -117,14 +118,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     setIsSelectionMode
   } = useMultiSelect<Category>();
 
-  const startInlineEdit = (category: Category) => {
+  const startEdit = (category: Category) => {
     // Close the add form if it's open
     setIsAdding(false);
-    setEditingId(category.id!);
+    setEditingCategory(category);
   };
 
-  const cancelInlineEdit = () => {
-    setEditingId(null);
+  const cancelEdit = () => {
+    setEditingCategory(null);
   };
 
 
@@ -150,29 +151,32 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('categories')}</h2>
-        {!isAdding && (
-          <button onClick={() => {
-            setIsAdding(true);
-            // Cancel any inline editing when opening add form
-            setEditingId(null);
-          }} className="btn btn-accent-light">
-            <PlusIcon size={18} />
-            <span>{t('addCategory')}</span>
-          </button>
-        )}
+        <button onClick={() => {
+          setIsAdding(true);
+          // Cancel any editing when opening add form
+          setEditingCategory(null);
+        }} className="btn btn-accent-light">
+          <PlusIcon size={18} />
+          <span>{t('addCategory')}</span>
+        </button>
       </div>
 
-      {isAdding && (
-        <div className="mb-5">
-          <CategoryForm
-            onSubmit={(data) => {
-              onAdd({ ...data, isDefault: false });
-              setIsAdding(false);
-            }}
-            onCancel={() => setIsAdding(false)}
-          />
-        </div>
-      )}
+      {/* Add Category Popup Modal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addCategory')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        <CategoryForm
+          onSubmit={(data) => {
+            onAdd({ ...data, isDefault: false });
+            setIsAdding(false);
+          }}
+          onCancel={() => setIsAdding(false)}
+        />
+      </PopupModal>
 
       {/* Search Bar */}
       <div style={styles.searchContainer}>
@@ -220,7 +224,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   borderRadius: '8px',
                 }}
               >
-                {isSelectionMode && !editingId && (
+                {isSelectionMode && (
                   <div style={{ paddingRight: '12px', display: 'flex', alignItems: 'center' }}>
                     <input
                       type="checkbox"
@@ -230,30 +234,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     />
                   </div>
                 )}
-                {editingId === category.id ? (
-                  // Inline Edit Mode
-                  <div style={{ width: '100%' }}>
-                    <CategoryForm
-                      initialData={{
-                        name: category.name,
-                        icon: category.icon,
-                        color: category.color,
-                      }}
-                      isEditing={true}
-                      onSubmit={(data) => {
-                        onUpdate(category.id!, data);
-                        setEditingId(null);
-                      }}
-                      onCancel={cancelInlineEdit}
-                    />
-                  </div>
-                ) : (
-                  // View Mode
-                  <>
-                    <div style={styles.categoryInfo}>
-                      <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
-                        {category.icon}
-                      </span>
+                {/* View Mode - removed inline edit */}
+                <>
+                  <div style={styles.categoryInfo}>
+                    <span style={{ ...styles.categoryIcon, backgroundColor: category.color }}>
+                      {category.icon}
+                    </span>
                       <span style={styles.categoryName}>
                         {category.name}
                         {isDuplicate && <span style={{ color: 'var(--warning-text)', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
@@ -263,7 +249,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     
                     {/* Desktop: Show individual buttons */}
                     <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
-                      <button onClick={() => startInlineEdit(category)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                      <button onClick={() => startEdit(category)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
                       <button
@@ -292,7 +278,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                               style={styles.menuItem}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                startInlineEdit(category);
+                                startEdit(category);
                               }}
                             >
                               <span style={styles.menuIcon}><EditIcon size={16} /></span>
@@ -314,204 +300,187 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       </div>
                     </div>
                   </>
-                )}
               </div>
             );
           }))}
       </div>
-      
-      {/* Enhanced Delete Confirmation Dialog */}
-      {deleteConfirm.isOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <h3 style={styles.modalTitle}>{t('delete')} {t('category')}</h3>
-            
-            {deleteConfirm.expensesUsingCategory.length > 0 ? (
-              <>
-                <div style={styles.modalWarning}>
-                  ⚠️ {t('warning')}: {t('categoryInUse') || 'This category is being used by'} {deleteConfirm.expensesUsingCategory.length} {t('expenses') || 'expense(s)'}:
-                </div>
-                
-                <div style={styles.expenseList}>
-                  {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
-                    <div key={exp.id} style={styles.expenseItem}>
-                      • {exp.description} (${exp.amount.toFixed(2)} - {formatDateWithUserFormat(exp.date, dateFormat)})
-                    </div>
-                  ))}
-                  {deleteConfirm.expensesUsingCategory.length > 5 && (
-                    <div style={styles.expenseItem}>...{t('and') || 'and'} {deleteConfirm.expensesUsingCategory.length - 5} {t('more') || 'more'}</div>
-                  )}
-                </div>
-                
-                <div style={styles.modalQuestion}>
-                  {t('chooseDeletionAction') || 'What would you like to do with these expenses?'}
-                </div>
-                
-                <div style={styles.radioGroup}>
-                  <label style={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="deleteAction"
-                      value="reassign"
-                      checked={deleteAction === 'reassign'}
-                      onChange={(e) => setDeleteAction(e.target.value as 'reassign')}
-                      style={styles.radio}
-                    />
-                    <span>{t('reassignToCategory') || 'Reassign expenses to another category'}</span>
-                  </label>
-                  
-                  {deleteAction === 'reassign' && (
-                    <select
-                      value={reassignToCategoryId}
-                      onChange={(e) => setReassignToCategoryId(e.target.value)}
-                      style={styles.reassignSelect}
-                    >
-                      <option value="">{t('selectCategory') || 'Select a category...'}</option>
-                      {categories
-                        .filter(cat => cat.id !== deleteConfirm.categoryId)
-                        .map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                  
-                  <label style={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="deleteAction"
-                      value="deleteExpenses"
-                      checked={deleteAction === 'deleteExpenses'}
-                      onChange={(e) => setDeleteAction(e.target.value as 'deleteExpenses')}
-                      style={styles.radio}
-                    />
-                    <span style={{ color: 'var(--error-text)' }}>
-                      {t('deleteExpensesToo') || 'Delete all expenses in this category'}
-                    </span>
-                  </label>
-                </div>
-                
-                <div style={styles.modalActions}>
-                  <button
-                    onClick={() => {
-                      if (!deleteAction) {
-                        alert(t('pleaseSelectAction') || 'Please select an action');
-                        return;
-                      }
-                      
-                      if (deleteAction === 'reassign') {
-                        if (!reassignToCategoryId) {
-                          alert(t('pleaseSelectCategory') || 'Please select a category');
-                          return;
-                        }
-                        
-                        // Reassign all expenses to the selected category
-                        if (onUpdateExpense) {
-                          const targetCategory = categories.find(c => c.id === reassignToCategoryId);
-                          if (targetCategory) {
-                            deleteConfirm.expensesUsingCategory.forEach(exp => {
-                              onUpdateExpense(exp.id!, { category: targetCategory.name });
-                            });
-                          }
-                        }
-                      } else if (deleteAction === 'deleteExpenses') {
-                        // Delete all expenses
-                        if (onDeleteExpense) {
-                          deleteConfirm.expensesUsingCategory.forEach(exp => {
-                            onDeleteExpense(exp.id!);
-                          });
-                        }
-                      }
-                      
-                      // Delete the category
-                      if (deleteConfirm.categoryId) {
-                        onDelete(deleteConfirm.categoryId);
-                      }
-                      
-                      // Reset state
-                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
-                      setDeleteAction(null);
-                      setReassignToCategoryId('');
-                    }}
-                    style={styles.confirmButton}
-                    disabled={!deleteAction || (deleteAction === 'reassign' && !reassignToCategoryId)}
-                  >
-                    {t('delete')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
-                      setDeleteAction(null);
-                      setReassignToCategoryId('');
-                    }}
-                    style={styles.cancelButton}
-                  >
-                    {t('cancel')}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={styles.modalMessage}>
-                  {t('confirmDelete') || 'Are you sure you want to delete this category?'}
-                </div>
-                <div style={styles.modalActions}>
-                  <button
-                    onClick={() => {
-                      if (deleteConfirm.categoryId) {
-                        onDelete(deleteConfirm.categoryId);
-                      }
-                      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
-                    }}
-                    style={styles.confirmButton}
-                  >
-                    {t('delete')}
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] })}
-                    style={styles.cancelButton}
-                  >
-                    {t('cancel')}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Bulk Delete Confirmation Modal */}
-      {bulkDeleteConfirm && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <h3 style={styles.modalTitle}>{t('deleteSelected')}</h3>
-            <div style={styles.modalMessage}>
-              {t('confirmBulkDelete').replace('{count}', selectedIds.size.toString())}
+      {/* Edit Category Popup Modal */}
+      <PopupModal
+        isOpen={editingCategory !== null}
+        onClose={cancelEdit}
+        title={t('editCategory')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        {editingCategory && (
+          <CategoryForm
+            initialData={{
+              name: editingCategory.name,
+              icon: editingCategory.icon,
+              color: editingCategory.color,
+            }}
+            isEditing={true}
+            onSubmit={(data) => {
+              onUpdate(editingCategory.id!, data);
+              cancelEdit();
+            }}
+            onCancel={cancelEdit}
+          />
+        )}
+      </PopupModal>
+      
+      {/* Enhanced Delete Confirmation Dialog using PopupModal */}
+      <PopupModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => {
+          setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
+          setDeleteAction(null);
+          setReassignToCategoryId('');
+        }}
+        title={`${t('delete')} ${t('category')}`}
+        primaryButtonLabel={t('delete')}
+        secondaryButtonLabel={t('cancel')}
+        primaryButtonVariant="danger"
+        primaryButtonDisabled={deleteConfirm.expensesUsingCategory.length > 0 && (!deleteAction || (deleteAction === 'reassign' && !reassignToCategoryId))}
+        onPrimaryAction={() => {
+          if (deleteConfirm.expensesUsingCategory.length > 0) {
+            if (!deleteAction) {
+              alert(t('pleaseSelectAction') || 'Please select an action');
+              return;
+            }
+            
+            if (deleteAction === 'reassign') {
+              if (!reassignToCategoryId) {
+                alert(t('pleaseSelectCategory') || 'Please select a category');
+                return;
+              }
+              
+              // Reassign all expenses to the selected category
+              if (onUpdateExpense) {
+                const targetCategory = categories.find(c => c.id === reassignToCategoryId);
+                if (targetCategory) {
+                  deleteConfirm.expensesUsingCategory.forEach(exp => {
+                    onUpdateExpense(exp.id!, { category: targetCategory.name });
+                  });
+                }
+              }
+            } else if (deleteAction === 'deleteExpenses') {
+              // Delete all expenses
+              if (onDeleteExpense) {
+                deleteConfirm.expensesUsingCategory.forEach(exp => {
+                  onDeleteExpense(exp.id!);
+                });
+              }
+            }
+          }
+          
+          // Delete the category
+          if (deleteConfirm.categoryId) {
+            onDelete(deleteConfirm.categoryId);
+          }
+          
+          // Reset state
+          setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: '', expensesUsingCategory: [] });
+          setDeleteAction(null);
+          setReassignToCategoryId('');
+        }}
+        maxWidth="600px"
+      >
+        {deleteConfirm.expensesUsingCategory.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={styles.modalWarning}>
+              ⚠️ {t('warning')}: {t('categoryInUse') || 'This category is being used by'} {deleteConfirm.expensesUsingCategory.length} {t('expenses') || 'expense(s)'}:
             </div>
-            <div style={styles.modalActions}>
-              <button
-                onClick={() => {
-                  const ids = Array.from(selectedIds);
-                  ids.forEach(id => onDelete(id));
-                  clearSelection();
-                  setIsSelectionMode(false);
-                  setBulkDeleteConfirm(false);
-                }}
-                style={styles.confirmButton}
-              >
-                {t('delete')}
-              </button>
-              <button
-                onClick={() => setBulkDeleteConfirm(false)}
-                style={styles.cancelButton}
-              >
-                {t('cancel')}
-              </button>
+            
+            <div style={styles.expenseList}>
+              {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
+                <div key={exp.id} style={styles.expenseItem}>
+                  • {exp.description} (${exp.amount.toFixed(2)} - {formatDateWithUserFormat(exp.date, dateFormat)})
+                </div>
+              ))}
+              {deleteConfirm.expensesUsingCategory.length > 5 && (
+                <div style={styles.expenseItem}>...{t('and') || 'and'} {deleteConfirm.expensesUsingCategory.length - 5} {t('more') || 'more'}</div>
+              )}
+            </div>
+            
+            <div style={styles.modalQuestion}>
+              {t('chooseDeletionAction') || 'What would you like to do with these expenses?'}
+            </div>
+            
+            <div style={styles.radioGroup}>
+              <label style={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="reassign"
+                  checked={deleteAction === 'reassign'}
+                  onChange={(e) => setDeleteAction(e.target.value as 'reassign')}
+                  style={styles.radio}
+                />
+                <span>{t('reassignToCategory') || 'Reassign expenses to another category'}</span>
+              </label>
+              
+              {deleteAction === 'reassign' && (
+                <select
+                  value={reassignToCategoryId}
+                  onChange={(e) => setReassignToCategoryId(e.target.value)}
+                  style={styles.reassignSelect}
+                >
+                  <option value="">{t('selectCategory') || 'Select a category...'}</option>
+                  {categories
+                    .filter(cat => cat.id !== deleteConfirm.categoryId)
+                    .map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
+                      </option>
+                    ))}
+                </select>
+              )}
+              
+              <label style={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="deleteAction"
+                  value="deleteExpenses"
+                  checked={deleteAction === 'deleteExpenses'}
+                  onChange={(e) => setDeleteAction(e.target.value as 'deleteExpenses')}
+                  style={styles.radio}
+                />
+                <span style={{ color: 'var(--error-text)' }}>
+                  {t('deleteExpensesToo') || 'Delete all expenses in this category'}
+                </span>
+              </label>
             </div>
           </div>
+        ) : (
+          <div style={styles.modalMessage}>
+            {t('confirmDelete') || 'Are you sure you want to delete this category?'}
+          </div>
+        )}
+      </PopupModal>
+
+      {/* Bulk Delete Confirmation Modal using PopupModal */}
+      <PopupModal
+        isOpen={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        title={t('deleteSelected')}
+        primaryButtonLabel={t('delete')}
+        secondaryButtonLabel={t('cancel')}
+        primaryButtonVariant="danger"
+        onPrimaryAction={() => {
+          const ids = Array.from(selectedIds);
+          ids.forEach(id => onDelete(id));
+          clearSelection();
+          setIsSelectionMode(false);
+          setBulkDeleteConfirm(false);
+        }}
+        maxWidth="480px"
+      >
+        <div style={styles.modalMessage}>
+          {t('confirmBulkDelete').replace('{count}', selectedIds.size.toString())}
         </div>
-      )}
+      </PopupModal>
     </div>
   );
 };
