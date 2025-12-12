@@ -5,6 +5,7 @@ import { SearchBar } from '../../components/common/SearchBar';
 import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon } from '../../components/icons';
+import PopupModal from '../../components/common/PopupModal';
 
 interface Props {
   incomes: Income[];
@@ -52,12 +53,10 @@ const IncomesTab: React.FC<Props> = ({
     <div style={styles.container}>
       <div style={styles.header}>
         <h3 style={styles.title}>{t('incomeHistory')}</h3>
-        {!isAdding && (
-          <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
-            <PlusIcon size={18} />
-            <span>{t('addNewIncome')}</span>
-          </button>
-        )}
+        <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
+          <PlusIcon size={18} />
+          <span>{t('addNewIncome')}</span>
+        </button>
       </div>
 
       {/* Search by name */}
@@ -68,18 +67,23 @@ const IncomesTab: React.FC<Props> = ({
         style={{ marginBottom: 8 }}
       />
 
-      {isAdding && (
-        <div className="form-card">
-          <IncomeForm
-            onSubmit={handleSubmit}
-            onCancel={() => setIsAdding(false)}
-            expenses={expenses}
-            cards={cards}
-            ewallets={ewallets}
-            banks={banks}
-          />
-        </div>
-      )}
+      {/* Add Income Form - PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addNewIncome')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        <IncomeForm
+          onSubmit={handleSubmit}
+          onCancel={() => setIsAdding(false)}
+          expenses={expenses}
+          cards={cards}
+          ewallets={ewallets}
+          banks={banks}
+        />
+      </PopupModal>
 
       <IncomeList
         incomes={filteredIncomes}

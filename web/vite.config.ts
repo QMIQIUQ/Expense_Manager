@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import type { ManifestOptions } from 'vite-plugin-pwa'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -81,7 +82,7 @@ export default defineConfig(({ command }) => {
               label: 'Budget management on mobile',
             },
           ],
-        } as any,
+        } as unknown as ManifestOptions,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [

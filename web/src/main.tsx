@@ -9,6 +9,19 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { UserSettingsProvider } from './contexts/UserSettingsContext';
 import { registerSW } from 'virtual:pwa-register';
 
+type PWADebugAPI = {
+  forcePWA: () => void;
+  disablePWA: () => void;
+  resetPWA: () => void;
+  status: () => void;
+};
+
+declare global {
+  interface Window {
+    PWADebug?: PWADebugAPI;
+  }
+}
+
 // Register service worker for PWA functionality
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -29,7 +42,7 @@ const updateSW = registerSW({
 const setupPWADebug = () => {
   if (typeof window === 'undefined') return;
   
-  (window as any).PWADebug = {
+  window.PWADebug = {
     forcePWA: () => {
       localStorage.setItem('pwa-force-show', 'true');
       console.log('✓ PWA forced on! Reloading page...');

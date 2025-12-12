@@ -134,7 +134,7 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('appinstalled', installedHandler);
     };
-  }, [forceShowPWA, isDesktopChromium]);
+  }, [forceShowPWA, isDesktopChromium, isInstalled]);
 
   const triggerInstall = useCallback(async (): Promise<boolean> => {
     console.log('PWAProvider: triggerInstall called, deferredPrompt:', deferredPrompt);

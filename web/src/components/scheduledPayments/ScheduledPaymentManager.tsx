@@ -21,6 +21,7 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import SubTabs from '../common/SubTabs';
+import PopupModal from '../common/PopupModal';
 
 // Responsive styles
 const responsiveStyles = `
@@ -80,7 +81,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingPayment, setEditingPayment] = useState<ScheduledPayment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -174,9 +175,9 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
   };
 
   const handleEditSubmit = (data: Partial<ScheduledPayment>) => {
-    if (editingId) {
-      onUpdate(editingId, data);
-      setEditingId(null);
+    if (editingPayment) {
+      onUpdate(editingPayment.id!, data);
+      setEditingPayment(null);
     }
   };
 
@@ -293,16 +294,93 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
         onTabChange={(tabId) => setViewMode(tabId as ViewMode)}
       />
 
-      {/* Add Form */}
-      {isAdding && (
-        <div className="form-card">
+      {/* Add Form - PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addScheduledPayment')}
+        hideFooter={true}
+        maxWidth="700px"
+      >
+        <ScheduledPaymentForm
+          categories={categories}
+          cards={cards}
+          banks={banks}
+          ewallets={ewallets}
+          onSubmit={(data) => {
+            handleAddSubmit({
+              name: data.name,
+              description: data.description || undefined,
+              category: data.category,
+              type: data.type,
+              amount: data.amount,
+              totalAmount: data.totalAmount || undefined,
+              interestRate: data.interestRate || undefined,
+              currency: data.currency || undefined,
+              frequency: data.frequency,
+              dueDay: data.dueDay,
+              startDate: data.startDate,
+              endDate: data.endDate || undefined,
+              hasEndDate: data.hasEndDate || undefined,
+              totalInstallments: data.totalInstallments || undefined,
+              paymentMethod: data.paymentMethod || undefined,
+              cardId: data.cardId || undefined,
+              paymentMethodName: data.paymentMethodName || undefined,
+              bankId: data.bankId || undefined,
+              isActive: data.isActive,
+              enableReminders: data.enableReminders,
+              reminderDaysBefore: data.reminderDaysBefore,
+              autoGenerateExpense: data.autoGenerateExpense,
+              isShared: data.isShared,
+              splitParticipants: data.splitParticipants.length > 0 ? data.splitParticipants : undefined,
+            });
+          }}
+          onCancel={() => setIsAdding(false)}
+        />
+      </PopupModal>
+
+      {/* Edit Form - PopupModal */}
+      <PopupModal
+        isOpen={editingPayment !== null}
+        onClose={() => setEditingPayment(null)}
+        title={t('editScheduledPayment')}
+        hideFooter={true}
+        maxWidth="700px"
+      >
+        {editingPayment && (
           <ScheduledPaymentForm
+            initialData={{
+              name: editingPayment.name,
+              description: editingPayment.description || '',
+              category: editingPayment.category,
+              type: editingPayment.type,
+              amount: editingPayment.amount,
+              totalAmount: editingPayment.totalAmount || 0,
+              interestRate: editingPayment.interestRate || 0,
+              currency: editingPayment.currency || 'MYR',
+              frequency: editingPayment.frequency,
+              dueDay: editingPayment.dueDay,
+              startDate: editingPayment.startDate,
+              endDate: editingPayment.endDate || '',
+              hasEndDate: editingPayment.hasEndDate || false,
+              totalInstallments: editingPayment.totalInstallments || 12,
+              paymentMethod: editingPayment.paymentMethod || 'cash',
+              cardId: editingPayment.cardId || '',
+              paymentMethodName: editingPayment.paymentMethodName || '',
+              bankId: editingPayment.bankId || '',
+              isActive: editingPayment.isActive,
+              enableReminders: editingPayment.enableReminders ?? true,
+              reminderDaysBefore: editingPayment.reminderDaysBefore || 3,
+              autoGenerateExpense: editingPayment.autoGenerateExpense || false,
+              isShared: editingPayment.isShared || false,
+              splitParticipants: editingPayment.splitParticipants || [],
+            }}
             categories={categories}
             cards={cards}
             banks={banks}
             ewallets={ewallets}
             onSubmit={(data) => {
-              handleAddSubmit({
+              handleEditSubmit({
                 name: data.name,
                 description: data.description || undefined,
                 category: data.category,
@@ -329,10 +407,11 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                 splitParticipants: data.splitParticipants.length > 0 ? data.splitParticipants : undefined,
               });
             }}
-            onCancel={() => setIsAdding(false)}
+            onCancel={() => setEditingPayment(null)}
+            isEditing={true}
           />
-        </div>
-      )}
+        )}
+      </PopupModal>
 
       {/* Calendar View */}
       {viewMode === 'calendar' && !isAdding && (
@@ -432,86 +511,22 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                     </div>
                   )}
                   
-                  {editingId === payment.id ? (
-                    <ScheduledPaymentForm
-                      initialData={{
-                        name: payment.name,
-                        description: payment.description || '',
-                        category: payment.category,
-                        type: payment.type,
-                        amount: payment.amount,
-                        totalAmount: payment.totalAmount || 0,
-                        interestRate: payment.interestRate || 0,
-                        currency: payment.currency || 'MYR',
-                        frequency: payment.frequency,
-                        dueDay: payment.dueDay,
-                        startDate: payment.startDate,
-                        endDate: payment.endDate || '',
-                        hasEndDate: payment.hasEndDate || false,
-                        totalInstallments: payment.totalInstallments || 12,
-                        paymentMethod: payment.paymentMethod || 'cash',
-                        cardId: payment.cardId || '',
-                        paymentMethodName: payment.paymentMethodName || '',
-                        bankId: payment.bankId || '',
-                        isActive: payment.isActive,
-                        enableReminders: payment.enableReminders ?? true,
-                        reminderDaysBefore: payment.reminderDaysBefore || 3,
-                        autoGenerateExpense: payment.autoGenerateExpense || false,
-                        isShared: payment.isShared || false,
-                        splitParticipants: payment.splitParticipants || [],
-                      }}
-                      categories={categories}
-                      cards={cards}
-                      banks={banks}
-                      ewallets={ewallets}
-                      onSubmit={(data) => {
-                        handleEditSubmit({
-                          name: data.name,
-                          description: data.description || undefined,
-                          category: data.category,
-                          type: data.type,
-                          amount: data.amount,
-                          totalAmount: data.totalAmount || undefined,
-                          interestRate: data.interestRate || undefined,
-                          currency: data.currency || undefined,
-                          frequency: data.frequency,
-                          dueDay: data.dueDay,
-                          startDate: data.startDate,
-                          endDate: data.endDate || undefined,
-                          hasEndDate: data.hasEndDate || undefined,
-                          totalInstallments: data.totalInstallments || undefined,
-                          paymentMethod: data.paymentMethod || undefined,
-                          cardId: data.cardId || undefined,
-                          paymentMethodName: data.paymentMethodName || undefined,
-                          bankId: data.bankId || undefined,
-                          isActive: data.isActive,
-                          enableReminders: data.enableReminders,
-                          reminderDaysBefore: data.reminderDaysBefore,
-                          autoGenerateExpense: data.autoGenerateExpense,
-                          isShared: data.isShared,
-                          splitParticipants: data.splitParticipants.length > 0 ? data.splitParticipants : undefined,
-                        });
-                      }}
-                      onCancel={() => setEditingId(null)}
-                      isEditing={true}
-                    />
-                  ) : (
-                    <ScheduledPaymentCard
-                      payment={payment}
-                      summary={summaries[payment.id!]}
-                      records={getRecordsForPayment(payment.id!)}
-                      categories={categories}
-                      cards={cards}
-                      banks={banks}
-                      ewallets={ewallets}
-                      onEdit={() => setEditingId(payment.id!)}
-                      onDelete={() => setDeleteConfirm({ isOpen: true, paymentId: payment.id! })}
-                      onToggleActive={(isActive) => onToggleActive(payment.id!, isActive)}
-                      onConfirmPayment={(data) => handleConfirmPayment(payment.id!, data)}
-                      onDeletePaymentRecord={onDeletePaymentRecord}
-                      isPeriodPaid={periodPaidStatus[payment.id!] || false}
-                    />
-                  )}
+                  {/* View Mode - edit via PopupModal */}
+                  <ScheduledPaymentCard
+                    payment={payment}
+                    summary={summaries[payment.id!]}
+                    records={getRecordsForPayment(payment.id!)}
+                    categories={categories}
+                    cards={cards}
+                    banks={banks}
+                    ewallets={ewallets}
+                    onEdit={() => setEditingPayment(payment)}
+                    onDelete={() => setDeleteConfirm({ isOpen: true, paymentId: payment.id! })}
+                    onToggleActive={(isActive) => onToggleActive(payment.id!, isActive)}
+                    onConfirmPayment={(data) => handleConfirmPayment(payment.id!, data)}
+                    onDeletePaymentRecord={onDeletePaymentRecord}
+                    isPeriodPaid={periodPaidStatus[payment.id!] || false}
+                  />
                 </div>
               ))
             )}

@@ -103,9 +103,9 @@ const TimePicker: React.FC<TimePickerProps> = ({
     return h12 * 60 + minutes; // 0-719
   };
 
-  const getSliderMaxMinutes = () => (is24Hour ? 1439 : 719);
+  const sliderMaxMinutes = is24Hour ? 1439 : 719;
 
-  const getSliderPosition = (): number => (getSliderMinutes() / getSliderMaxMinutes()) * 100;
+  const getSliderPosition = (): number => (getSliderMinutes() / sliderMaxMinutes) * 100;
 
   // Use ref to track current AM state for drag handler
   const isAMRef = useRef(isAM);
@@ -115,7 +115,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
     if (!sliderTrackRef.current) return;
     const rect = sliderTrackRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const sliderMinutes = Math.round(position * getSliderMaxMinutes());
+    const sliderMinutes = Math.round(position * sliderMaxMinutes);
 
     if (is24Hour) {
       const newHours = Math.floor(sliderMinutes / 60); // 0-23
@@ -133,7 +133,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
     setHours(newHours);
     setMinutes(newMinutes);
     onChange(formatTime(newHours, newMinutes));
-  }, [onChange, is24Hour]);
+  }, [onChange, is24Hour, sliderMaxMinutes]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;

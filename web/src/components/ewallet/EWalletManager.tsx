@@ -7,6 +7,7 @@ import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { SearchBar } from '../common/SearchBar';
+import PopupModal from '../common/PopupModal';
 
 // (Inline icon/color picker moved into EWalletForm for consistency)
 
@@ -33,7 +34,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingWallet, setEditingWallet] = useState<EWallet | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   // Keep signature compatible; category data not used here directly
@@ -142,18 +143,18 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     setIsAdding(false);
   };
 
-  const startInlineEdit = (wallet: EWallet) => {
-    setEditingId(wallet.id!);
+  const startEdit = (wallet: EWallet) => {
+    setEditingWallet(wallet);
   };
 
-  const cancelInlineEdit = () => {
-    setEditingId(null);
+  const cancelEdit = () => {
+    setEditingWallet(null);
   };
 
-  const saveInlineEdit = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (!editingId) return;
-    await onUpdate(editingId, payload);
-    setEditingId(null);
+  const saveEdit = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingWallet) return;
+    await onUpdate(editingWallet.id!, payload);
+    setEditingWallet(null);
   };
 
   const styles = {
@@ -231,11 +232,34 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         />
       </div>
 
-      {isAdding && (
-        <div className="form-card">
-          <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
-        </div>
-      )}
+      {/* Add Form - PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addEWallet')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        <EWalletForm onSubmit={handleAdd} onCancel={() => setIsAdding(false)} title={t('addEWallet')} />
+      </PopupModal>
+
+      {/* Edit Form - PopupModal */}
+      <PopupModal
+        isOpen={editingWallet !== null}
+        onClose={cancelEdit}
+        title={t('editEWallet')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        {editingWallet && (
+          <EWalletForm
+            initialData={editingWallet}
+            onSubmit={saveEdit}
+            onCancel={cancelEdit}
+            title={t('editEWallet')}
+          />
+        )}
+      </PopupModal>
 
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
@@ -262,20 +286,6 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
           <div className="no-data">{searchTerm ? t('noResultsFound') : t('noEWalletsYet')}</div>
         ) : (
           filteredWallets.map((wallet) => {
-            const isEditing = editingId === wallet.id;
-            if (isEditing) {
-              // Render only form card (remove outer credit-card frame)
-              return (
-                <div key={wallet.id} className="form-card" style={{ width: '100%' }}>
-                  <EWalletForm
-                    initialData={wallet}
-                    onSubmit={saveInlineEdit}
-                    onCancel={cancelInlineEdit}
-                    title={t('editEWallet')}
-                  />
-                </div>
-              );
-            }
             return (
               <div key={wallet.id} className={`credit-card ${isSelectionMode && selectedIds.has(wallet.id!) ? 'selected' : ''}`} style={openMenuId === wallet.id ? { zIndex: 9999 } : {}}>
                 {isSelectionMode && (
@@ -327,7 +337,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                       {/* Desktop: Show both buttons */}
                       <div className="desktop-actions">
                         <button 
-                          onClick={() => startInlineEdit(wallet)} 
+                          onClick={() => startEdit(wallet)} 
                           className="btn-icon btn-icon-primary"
                           aria-label={t('edit')}
                         >
@@ -359,7 +369,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  startInlineEdit(wallet);
+                                  startEdit(wallet);
                                 }}
                               >
                                 <span style={styles.menuIcon}><EditIcon size={16} /></span>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CalendarIcon } from '../icons';
 import { DateFormat } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DatePickerProps {
   value: string; // Always YYYY-MM-DD format internally
@@ -33,6 +34,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
   name,
   dateFormat = 'YYYY-MM-DD',
 }) => {
+  const { t } = useLanguage();
+  const inputId = React.useId();
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
     if (value) {
@@ -428,7 +431,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   return (
     <div className="date-picker-wrapper">
       {label && (
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <label htmlFor={inputId} className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           {label}
           {required && ' *'}
         </label>
@@ -437,6 +440,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         <div className="date-picker-input-group" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             ref={inputRef}
+            id={inputId}
             type="text"
             name={name}
             value={inputValue}
@@ -470,7 +474,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
               borderRadius: '4px',
               zIndex: 2,
             }}
-            aria-label="Open calendar"
+            aria-label={t('openCalendar') || 'Open calendar'}
           >
             <CalendarIcon size={20} />
           </button>
