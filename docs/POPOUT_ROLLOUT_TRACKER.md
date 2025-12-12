@@ -54,8 +54,8 @@
 
 | 模組/功能 | Create form（新增） | Edit form（編輯） | 目前呈現方式 | 目標呈現方式 | 入口檔案/位置 | 備註 |
 |---|---:|---:|---|---|---|---|
-| 支出 Expense | ⬜ | ✅（列表 Edit 已 pop-out） | Create：頁面內 inline（非 pop-out） | Create：改為 `PopupModal` pop-out（若搭配 BaseForm 則用 chromeless 模式） | Create：`web/src/pages/tabs/ExpensesTab.tsx`（`<ExpenseForm/>`）<br/>另外：Dashboard 也有 `<ExpenseForm/>` 使用點 | `ExpensesTab` 內標題目前硬字串（`Edit Expense` / `Add New Expense`）也建議 i18n 一起修 |
-| 收入 Income | ⬜ | ✅（列表 Edit 已 pop-out） | Create：inline（`<div className="form-card">`） | Create：改為 `PopupModal` pop-out | `web/src/pages/tabs/IncomesTab.tsx`（`isAdding` 區塊） | Create 應維持「點 + 才開表單」的 UX |
+| 支出 Expense | 🟡 | ✅（列表 Edit 已 pop-out） | Create：Dashboard 使用 bottom sheet（已是 modal 形式） | 考慮統一用 PopupModal | Create：`web/src/pages/Dashboard.tsx`（bottom sheet）<br/>`web/src/pages/tabs/ExpensesTab.tsx` | Dashboard 的 bottom sheet 是行動端友好的設計，可保留 |
+| 收入 Income | ✅ | ✅（列表 Edit 已 pop-out） | ~~Create：inline~~ 已改為 PopupModal | Create：改為 `PopupModal` pop-out | `web/src/pages/tabs/IncomesTab.tsx` | 已完成 pop-out 導入 |
 | 定期付款 Scheduled Payments | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out（建議 Create/Edit 都同一套） | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx` | 已完成 pop-out 導入 |
 | 定期支出 Recurring Expenses | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/recurring/RecurringExpenseManager.tsx` | 已完成 pop-out 導入 |
 | 電子錢包 EWallet | ✅ | ✅ | ~~Create：inline / Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/ewallet/EWalletManager.tsx` | 已完成 pop-out 導入 |
