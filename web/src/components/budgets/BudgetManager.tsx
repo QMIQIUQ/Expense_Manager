@@ -17,6 +17,7 @@ import SubTabs from '../common/SubTabs';
 import { getTodayLocal, formatDateRangeShort } from '../../utils/dateUtils';
 import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
+import PopupModal from '../common/PopupModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -63,7 +64,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -242,8 +243,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
 
 
-  const startInlineEdit = (budget: Budget) => {
-    setEditingId(budget.id!);
+  const startEdit = (budget: Budget) => {
+    setEditingBudget(budget);
   };
 
 
@@ -395,26 +396,64 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       {/* Budget List (subtab) */}
       {activeSubTab === 'list' && (
       <>
-      {/* Add Budget Form */}
-      {isAdding && (
-        <div className="form-card">
+      {/* Add Budget Popup Modal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addBudget') || 'Add Budget'}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        <BudgetForm
+          categories={categories}
+          onSubmit={(data) => {
+            // Convert amount from cents to dollars
+            onAdd({
+              ...data,
+              amount: data.amount / 100,
+            });
+            setIsAdding(false);
+          }}
+          onCancel={() => {
+            setIsAdding(false);
+          }}
+        />
+      </PopupModal>
+
+      {/* Edit Budget Popup Modal */}
+      <PopupModal
+        isOpen={editingBudget !== null}
+        onClose={() => setEditingBudget(null)}
+        title={t('editBudget') || 'Edit Budget'}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        {editingBudget && (
           <BudgetForm
             categories={categories}
+            initialData={{
+              categoryId: editingBudget.categoryId,
+              categoryName: editingBudget.categoryName,
+              amount: editingBudget.amount * 100, // Convert to cents for form
+              period: editingBudget.period,
+              startDate: editingBudget.startDate,
+              alertThreshold: editingBudget.alertThreshold,
+              rolloverEnabled: editingBudget.rolloverEnabled,
+              rolloverPercentage: editingBudget.rolloverPercentage,
+              rolloverCap: editingBudget.rolloverCap,
+            }}
+            isEditing={true}
             onSubmit={(data) => {
-              // Convert amount from cents to dollars
-              onAdd({
+              onUpdate(editingBudget.id!, {
                 ...data,
-                amount: data.amount / 100,
+                amount: data.amount / 100, // Convert back to dollars
               });
-              setIsAdding(false);
+              setEditingBudget(null);
             }}
-            onCancel={() => {
-              setIsAdding(false);
-              setEditingId(null);
-            }}
+            onCancel={() => setEditingBudget(null)}
           />
-        </div>
-      )}
+        )}
+      </PopupModal>
 
       {/* Search Bar - placed after form */}
       <div style={styles.searchContainer}>
@@ -504,61 +543,22 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         />
                     </div>
                 )}
-                {editingId === budget.id ? (
-                  <BudgetForm
-                    initialData={{
-                      categoryId: budget.categoryId,
-                      categoryName: budget.categoryName,
-                      amount: Math.round(budget.amount * 100),
-                      period: budget.period,
-                      startDate: budget.startDate,
-                      alertThreshold: budget.alertThreshold,
-                      rolloverEnabled: budget.rolloverEnabled,
-                      rolloverPercentage: budget.rolloverPercentage,
-                      rolloverCap: budget.rolloverCap,
-                    }}
-                    categories={categories}
-                    onSubmit={(data) => {
-                      const updates: Partial<Budget> = {};
-                      if (budget.categoryId !== data.categoryId) {
-                        updates.categoryId = data.categoryId;
-                        updates.categoryName = data.categoryName;
-                      }
-                      const amountInDollars = data.amount / 100;
-                      if (budget.amount !== amountInDollars) updates.amount = amountInDollars;
-                      if (budget.period !== data.period) updates.period = data.period;
-                      if (budget.startDate !== data.startDate) updates.startDate = data.startDate;
-                      if (budget.alertThreshold !== data.alertThreshold) updates.alertThreshold = data.alertThreshold;
-                      // Rollover fields
-                      if (budget.rolloverEnabled !== data.rolloverEnabled) updates.rolloverEnabled = data.rolloverEnabled;
-                      if (budget.rolloverPercentage !== data.rolloverPercentage) updates.rolloverPercentage = data.rolloverPercentage;
-                      if (budget.rolloverCap !== data.rolloverCap) updates.rolloverCap = data.rolloverCap;
-
-                      if (Object.keys(updates).length > 0) {
-                        onUpdate(budget.id!, updates);
-                      }
-                      setEditingId(null);
-                    }}
-                    onCancel={() => setEditingId(null)}
-                    isEditing={true}
-                  />
-                ) : (
-                  // View Mode
-                  <>
-                    {/* First row: Period and Amount */}
-                    <div style={styles.budgetRow1}>
-                      <div style={styles.periodInfo}>
-                        <span style={styles.budgetPeriod}>{({ daily: t('periodDaily'), weekly: t('periodWeekly'), monthly: t('periodMonthly'), yearly: t('periodYearly') } as Record<string,string>)[budget.period]}</span>
-                        {budget.period === 'monthly' && (
-                          <span style={styles.periodRange}>{getPeriodRange(budget.period)}</span>
-                        )}
-                      </div>
-                      <div style={styles.budgetAmount}>
-                        <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
-                        <span style={styles.separator}> / </span>
-                        <span style={styles.total}>${effectiveAmount.toFixed(2)}</span>
-                      </div>
+                {/* View Mode - edit is now done via popup */}
+                <>
+                  {/* First row: Period and Amount */}
+                  <div style={styles.budgetRow1}>
+                    <div style={styles.periodInfo}>
+                      <span style={styles.budgetPeriod}>{({ daily: t('periodDaily'), weekly: t('periodWeekly'), monthly: t('periodMonthly'), yearly: t('periodYearly') } as Record<string,string>)[budget.period]}</span>
+                      {budget.period === 'monthly' && (
+                        <span style={styles.periodRange}>{getPeriodRange(budget.period)}</span>
+                      )}
                     </div>
+                    <div style={styles.budgetAmount}>
+                      <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
+                      <span style={styles.separator}> / </span>
+                      <span style={styles.total}>${effectiveAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
 
                     {/* Second row: Category name and rollover badge */}
                     <div style={styles.budgetRow2}>
@@ -588,7 +588,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       
                       {/* Desktop: Show individual buttons */}
                       <div className="desktop-actions" style={{ gap: '8px' }}>
-                        <button onClick={() => startInlineEdit(budget)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                        <button onClick={() => startEdit(budget)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                           <EditIcon size={18} />
                         </button>
                         <button
@@ -616,7 +616,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  startInlineEdit(budget);
+                                  startEdit(budget);
                                 }}
                               >
                                 <span style={styles.menuIcon}><EditIcon size={16} /></span>
@@ -673,7 +673,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       />
                     )}
                   </>
-                )}
               </div>
             );
           })

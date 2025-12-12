@@ -8,6 +8,7 @@ import IncomeForm from './IncomeForm';
 import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import PopupModal from '../common/PopupModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -42,7 +43,7 @@ interface IncomeListProps {
 const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; incomeId: string | null }>({ isOpen: false, incomeId: null });
@@ -103,8 +104,8 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
     }
   };
 
-  const startInlineEdit = (income: Income) => {
-    setEditingId(income.id!);
+  const startEdit = (income: Income) => {
+    setEditingIncome(income);
   };
 
   const toggleGroupCollapse = (date: string) => {
@@ -206,7 +207,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
           gap: '10px',
           ...(isSelectionMode && selectedIds.has(income.id!) ? { border: '1px solid var(--accent-primary)' } : {})
         }}>
-          {isSelectionMode && !editingId && (
+          {isSelectionMode && (
             <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
               <input
                 type="checkbox"
@@ -217,46 +218,30 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
             </div>
           )}
           <div style={{ flex: 1, position: 'relative' }}>
-          {editingId === income.id ? (
-            // Inline Edit Mode
-            <IncomeForm
-              initialData={income}
-              expenses={expenses}
-              cards={cards}
-              ewallets={ewallets}
-              banks={banks}
-              onSubmit={(data) => {
-                onInlineUpdate(income.id!, data);
-                setEditingId(null);
-              }}
-              onCancel={() => setEditingId(null)}
-              title={t('editIncome')}
-            />
-          ) : (
-            // Display Mode
-            <>
-              {/* Amount badge at top-right */}
-              <div style={styles.amountBadge}>
-                +${income.amount.toFixed(2)}
-              </div>
+          {/* Display Mode - edit is now done via popup */}
+          <>
+            {/* Amount badge at top-right */}
+            <div style={styles.amountBadge}>
+              +${income.amount.toFixed(2)}
+            </div>
 
-              {/* Header row with time, linked expense, date */}
-              <div style={styles.headerRow}>
-                <div style={styles.dateDisplay}>
-                  {formatDate(income.date)}
-                </div>
-                {income.linkedExpenseId && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenExpenseById && onOpenExpenseById(income.linkedExpenseId!)}
-                    title={t('expenses')}
-                    style={styles.linkedExpenseChip as React.CSSProperties}
-                    aria-label={t('expenses')}
-                  >
-                    🔗 {getExpenseDescription(income.linkedExpenseId)}
-                  </button>
-                )}
+            {/* Header row with time, linked expense, date */}
+            <div style={styles.headerRow}>
+              <div style={styles.dateDisplay}>
+                {formatDate(income.date)}
               </div>
+              {income.linkedExpenseId && (
+                <button
+                  type="button"
+                  onClick={() => onOpenExpenseById && onOpenExpenseById(income.linkedExpenseId!)}
+                  title={t('expenses')}
+                  style={styles.linkedExpenseChip as React.CSSProperties}
+                  aria-label={t('expenses')}
+                >
+                  🔗 {getExpenseDescription(income.linkedExpenseId)}
+                </button>
+              )}
+            </div>
 
               {/* Main content row */}
               <div style={styles.mainRow}>
@@ -291,7 +276,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                     {/* Desktop: Show individual buttons */}
                     <div className="desktop-actions" style={{ gap: '8px' }}>
                       <button
-                        onClick={() => startInlineEdit(income)}
+                        onClick={() => startEdit(income)}
                         className="btn-icon btn-icon-primary"
                         aria-label={t('edit')}
                       >
@@ -323,7 +308,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                               style={styles.menuItem}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                startInlineEdit(income);
+                                startEdit(income);
                               }}
                             >
                               <span style={styles.menuIcon}><EditIcon size={16} /></span>
@@ -348,13 +333,37 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                 </div>
               </div>
             </>
-          )}
           </div>
         </div>
       ))}
           </div>
         );
       })}
+
+      {/* Edit Income Popup Modal */}
+      <PopupModal
+        isOpen={editingIncome !== null}
+        onClose={() => setEditingIncome(null)}
+        title={t('editIncome')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        {editingIncome && (
+          <IncomeForm
+            initialData={editingIncome}
+            expenses={expenses}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onSubmit={(data) => {
+              onInlineUpdate(editingIncome.id!, data);
+              setEditingIncome(null);
+            }}
+            onCancel={() => setEditingIncome(null)}
+            title={t('editIncome')}
+          />
+        )}
+      </PopupModal>
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
