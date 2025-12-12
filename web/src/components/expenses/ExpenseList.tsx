@@ -16,6 +16,7 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
+import PopupModal from '../common/PopupModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -103,7 +104,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     expenseId: null,
   });
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showQuickExpenseForm, setShowQuickExpenseForm] = useState(false);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [quickExpenseFormData, setQuickExpenseFormData] = useState<{
@@ -386,8 +387,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   };
 
-  const startInlineEdit = (expense: Expense) => {
-    setEditingId(expense.id!);
+  const startEdit = (expense: Expense) => {
+    setEditingExpense(expense);
   };
 
 
@@ -895,31 +896,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     ...(multiSelectEnabled && selectedIds.has(expense.id!) ? styles.selectedCard : {}),
                   }}
                 >
-              {editingId === expense.id ? (
-                <ExpenseForm
-                  initialData={expense}
-                  initialTransfer={findRelatedTransfer(expense)}
-                  categories={categories}
-                  cards={cards}
-                  ewallets={ewallets}
-                  banks={banks}
-                  onSubmit={(data) => {
-                    onInlineUpdate(expense.id!, data);
-                    setEditingId(null);
-                  }}
-                  onCancel={() => setEditingId(null)}
-                  onCreateCard={onCreateCard}
-                  onCreateEWallet={onCreateEWallet}
-                  onAddTransfer={onAddTransfer}
-                  title={t('editExpense')}
-                  dateFormat={dateFormat}
-                />
-              ) : (
-
-
-
-
-
+              {/* View Mode - edit is now done via popup */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {/* First row: time, category, status on left; amount info on right */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
@@ -1078,7 +1055,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           </button>
                         )}
                         
-                        <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                        <button onClick={() => startEdit(expense)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                           <EditIcon size={18} />
                         </button>
                         <button
@@ -1107,7 +1084,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  startInlineEdit(expense);
+                                  startEdit(expense);
                                 }}
                               >
                                 <span style={styles.menuIcon}><EditIcon size={16} /></span>
@@ -1163,7 +1140,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
                   </div>
                 </div>
-              )}
               
               {/* Inline Repayment Manager */}
               {expandedRepaymentId === expense.id && (
@@ -1187,6 +1163,36 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           })}
         </div>
       )}
+
+      {/* Edit Expense Popup Modal */}
+      <PopupModal
+        isOpen={editingExpense !== null}
+        onClose={() => setEditingExpense(null)}
+        title={t('editExpense')}
+        hideFooter={true}
+        maxWidth="700px"
+      >
+        {editingExpense && (
+          <ExpenseForm
+            initialData={editingExpense}
+            initialTransfer={findRelatedTransfer(editingExpense)}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onSubmit={(data) => {
+              onInlineUpdate(editingExpense.id!, data);
+              setEditingExpense(null);
+            }}
+            onCancel={() => setEditingExpense(null)}
+            onCreateCard={onCreateCard}
+            onCreateEWallet={onCreateEWallet}
+            onAddTransfer={onAddTransfer}
+            title={t('editExpense')}
+            dateFormat={dateFormat}
+          />
+        )}
+      </PopupModal>
       
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
