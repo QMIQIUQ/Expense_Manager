@@ -54,7 +54,7 @@
 
 | 模組/功能 | Create form（新增） | Edit form（編輯） | 目前呈現方式 | 目標呈現方式 | 入口檔案/位置 | 備註 |
 |---|---:|---:|---|---|---|---|
-| 支出 Expense | 🟡 | ✅（列表 Edit 已 pop-out） | Create：Dashboard 使用 bottom sheet（已是 modal 形式） | 考慮統一用 PopupModal | Create：`web/src/pages/Dashboard.tsx`（bottom sheet）<br/>`web/src/pages/tabs/ExpensesTab.tsx` | Dashboard 的 bottom sheet 是行動端友好的設計，可保留 |
+| 支出 Expense | ✅ | ✅ | ~~Create：inline / Dashboard bottom sheet~~ 已改為 PopupModal | Create/Edit：改為 `PopupModal` pop-out | `web/src/pages/tabs/ExpensesTab.tsx`<br/>`web/src/pages/Dashboard.tsx`（bottom sheet 保留） | 已完成 pop-out 導入（ExpensesTab）<br/>Dashboard 的 bottom sheet 是行動端友好的設計，保留 |
 | 收入 Income | ✅ | ✅（列表 Edit 已 pop-out） | ~~Create：inline~~ 已改為 PopupModal | Create：改為 `PopupModal` pop-out | `web/src/pages/tabs/IncomesTab.tsx` | 已完成 pop-out 導入 |
 | 定期付款 Scheduled Payments | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out（建議 Create/Edit 都同一套） | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx` | 已完成 pop-out 導入 |
 | 定期支出 Recurring Expenses | ✅ | ✅ | ~~Create/Edit：inline~~ 已改為 pop-out | Create/Edit：改為 pop-out | `web/src/components/recurring/RecurringExpenseManager.tsx` | 已完成 pop-out 導入 |
