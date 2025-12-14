@@ -232,6 +232,8 @@ export const translations = {
   noRecurringYet: { en: 'No recurring expenses set. Add your first one! 🔄', zh: '尚未設定定期付款。新增您的第一筆！🔄', 'zh-CN': '尚未设定定期付款。添加您的第一笔！🔄' },
   pause: { en: 'Pause', zh: '暫停', 'zh-CN': '暂停' },
   resume: { en: 'Resume', zh: '繼續', 'zh-CN': '继续' },
+  addRecurringExpense: { en: 'Add Recurring Expense', zh: '新增定期付款', 'zh-CN': '新增定期付款' },
+  editRecurringExpense: { en: 'Edit Recurring Expense', zh: '編輯定期付款', 'zh-CN': '编辑定期付款' },
   updateRecurringExpense: { en: 'Update Recurring Expense', zh: '更新定期付款', 'zh-CN': '更新定期付款' },
   deleteRecurringExpense: { en: 'Delete Recurring Expense', zh: '刪除定期付款', 'zh-CN': '删除定期付款' },
   confirmDeleteRecurring: { en: 'Are you sure you want to delete this recurring expense?', zh: '您確定要刪除此定期付款嗎？', 'zh-CN': '您确定要删除此定期付款吗？' },
