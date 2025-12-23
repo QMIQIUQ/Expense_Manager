@@ -8,6 +8,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { login } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const Login: React.FC = () => {
     try {
       setError('');
       setLoading(true);
-      await login(email, password);
+      await login(email, password, rememberMe);
       navigate('/dashboard');
     } catch (err) {
       setError(t('loginFailed'));
@@ -243,6 +244,27 @@ const Login: React.FC = () => {
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                style={{
+                  accentColor: 'var(--accent-primary)',
+                }}
+              />
+              <label 
+                htmlFor="rememberMe" 
+                className="ml-2 block text-sm cursor-pointer"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {t('rememberMe')}
+              </label>
             </div>
 
             <button
