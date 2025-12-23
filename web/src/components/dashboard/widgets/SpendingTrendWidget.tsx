@@ -4,13 +4,26 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
+import { getBillingCycleRange } from './utils';
 
-const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
+const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
-  
+
+  const { cycleStart, cycleEnd } = React.useMemo(
+    () => getBillingCycleRange(billingCycleDay ?? 1),
+    [billingCycleDay]
+  );
+
+  const filteredExpenses = React.useMemo(() => {
+    return expenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return expDate >= cycleStart && expDate <= cycleEnd;
+    });
+  }, [expenses, cycleStart, cycleEnd]);
+
   // Determine chart dimensions based on widget size
   const chartConfig = React.useMemo(() => {
     switch (size) {
@@ -79,7 +92,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' 
     }
 
     // Accumulate expenses
-    expenses.forEach((exp) => {
+    filteredExpenses.forEach((exp) => {
       if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
         last7Days[exp.date] += exp.amount;
       }
@@ -89,7 +102,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' 
       date: formatDateShort(date, dateFormat),
       amount: parseFloat(amount.toFixed(2)),
     }));
-  }, [expenses, dateFormat]);
+  }, [filteredExpenses, dateFormat]);
 
   if (spendingTrend.length === 0) {
     return (
