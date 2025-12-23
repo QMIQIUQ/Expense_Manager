@@ -10,6 +10,9 @@ import {
   updateEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
@@ -19,7 +22,7 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   signup: (email: string, password: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -69,7 +72,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await ensureUserMetadata(result.user);
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe: boolean = false) => {
+    // Set persistence based on rememberMe option
+    const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, persistence);
+    
     const result = await signInWithEmailAndPassword(auth, email, password);
     await ensureUserMetadata(result.user);
   };
@@ -79,6 +86,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
+    // Note: Google login uses persistent storage by design because:
+    // 1. OAuth flow implies user trust and typically personal device usage
+    // 2. Provides consistent UX - users expect to stay logged in after OAuth
+    // 3. If Remember Me is needed for OAuth, it should be offered before OAuth redirect
+    await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, googleProvider);
     await ensureUserMetadata(result.user);
   };

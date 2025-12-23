@@ -74,6 +74,7 @@ export const translations = {
   login: { en: 'Login', zh: '登入', 'zh-CN': '登录' },
   email: { en: 'Email', zh: '電子郵件', 'zh-CN': '电子邮件' },
   password: { en: 'Password', zh: '密碼', 'zh-CN': '密码' },
+  rememberMe: { en: 'Remember me', zh: '記住我', 'zh-CN': '记住我' },
   loginFailed: { en: 'Failed to log in. Please check your credentials.', zh: '登入失敗。請檢查您的憑證。', 'zh-CN': '登录失败。请检查您的凭据。' },
 
   // Expense Form
