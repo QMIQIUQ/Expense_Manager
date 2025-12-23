@@ -4,6 +4,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
+import { getBillingCycleRange } from './utils';
 
 const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
@@ -11,22 +12,10 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay 
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
 
-  const { cycleStart, cycleEnd } = React.useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDate();
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
-
-    return { cycleStart, cycleEnd };
-  }, [billingCycleDay]);
+  const { cycleStart, cycleEnd } = React.useMemo(
+    () => getBillingCycleRange(billingCycleDay),
+    [billingCycleDay]
+  );
 
   const filteredExpenses = React.useMemo(() => {
     return expenses.filter((exp) => {

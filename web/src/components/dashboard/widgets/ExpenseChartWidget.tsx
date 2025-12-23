@@ -2,6 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
+import { getBillingCycleRange } from './utils';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -11,22 +12,10 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay =
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   const [containerHeight, setContainerHeight] = React.useState(300);
 
-  const { cycleStart, cycleEnd } = React.useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDate();
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
-
-    return { cycleStart, cycleEnd };
-  }, [billingCycleDay]);
+  const { cycleStart, cycleEnd } = React.useMemo(
+    () => getBillingCycleRange(billingCycleDay),
+    [billingCycleDay]
+  );
 
   const filteredExpenses = React.useMemo(() => {
     return expenses.filter((exp) => {
