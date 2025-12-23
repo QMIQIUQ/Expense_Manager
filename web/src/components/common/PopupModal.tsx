@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { CloseIcon } from '../icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -64,6 +65,10 @@ const PopupModal: React.FC<PopupModalProps> = ({
 }) => {
   const { t } = useLanguage();
 
+  // When using PopupModal as a pure overlay/container for a BaseForm, we want the
+  // BaseForm to own scrolling so its header/footer remain fixed.
+  const isEmbeddedFormContainer = chromeless && hideHeader && hideFooter;
+
   // Default labels
   const primaryLabel = primaryButtonLabel || t('save') || 'Save';
   const secondaryLabel = secondaryButtonLabel || t('cancel') || 'Cancel';
@@ -126,6 +131,18 @@ const PopupModal: React.FC<PopupModalProps> = ({
   // IMPORTANT: do not early-return before hooks; otherwise React hook ordering breaks.
   if (!isOpen) return null;
 
+  const getPortalRoot = (): HTMLElement | null => {
+    if (typeof document === 'undefined') return null;
+
+    const existing = document.getElementById('modal-root');
+    if (existing) return existing;
+
+    const el = document.createElement('div');
+    el.id = 'modal-root';
+    document.body.appendChild(el);
+    return el;
+  };
+
   const resolvedContentPadding = contentPadding ?? (chromeless ? 0 : '24px');
   const modalStyle = chromeless ? styles.chromelessModal : styles.modal;
 
@@ -152,7 +169,16 @@ const PopupModal: React.FC<PopupModalProps> = ({
       )}
 
       {/* Content */}
-      <div style={{ ...styles.content, padding: resolvedContentPadding }}>
+      <div
+        style={{
+          ...styles.content,
+          padding: resolvedContentPadding,
+          // In chromeless embedded mode, do not scroll the wrapper; let BaseForm scroll its body.
+          ...(isEmbeddedFormContainer
+            ? { overflowY: 'hidden', display: 'flex' as const }
+            : null),
+        }}
+      >
         {children}
       </div>
 
@@ -188,7 +214,7 @@ const PopupModal: React.FC<PopupModalProps> = ({
     </>
   );
 
-  return (
+  const modalNode = (
     <div style={styles.overlay} onClick={handleOverlayClick}>
       {isForm ? (
         <form
@@ -208,6 +234,9 @@ const PopupModal: React.FC<PopupModalProps> = ({
       )}
     </div>
   );
+
+  const portalRoot = getPortalRoot();
+  return portalRoot ? createPortal(modalNode, portalRoot) : modalNode;
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -221,7 +250,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    // Keep above other UI layers (menus/FAB often use ~9999).
+    zIndex: 10000,
     padding: '20px',
   },
   modal: {
@@ -229,7 +259,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'var(--text-primary)',
     borderRadius: '16px',
     width: '100%',
-    maxHeight: '90vh',
+    maxHeight: 'calc(100vh - 40px)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -241,7 +271,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'var(--text-primary)',
     borderRadius: 0,
     width: '100%',
-    maxHeight: '90vh',
+    maxHeight: 'calc(100vh - 40px)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -283,6 +313,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     overflowY: 'auto',
     padding: '24px',
+    minHeight: 0,
   },
   footer: {
     display: 'flex',

@@ -99,6 +99,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '12px',
     border: '1px solid var(--border-color)',
     overflow: 'hidden',
+    // Allow this form to fill and scroll correctly when placed inside a constrained container.
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
   },
   header: {
     display: 'flex',
@@ -106,6 +111,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     padding: '16px 20px',
     minHeight: '56px',
+    flexShrink: 0,
   },
   title: {
     margin: 0,
@@ -129,21 +135,29 @@ const styles: { [key: string]: React.CSSProperties } = {
   divider: {
     height: '1px',
     backgroundColor: 'var(--border-color)',
+    flexShrink: 0,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
   },
   content: {
     padding: '20px',
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
   },
   footer: {
     display: 'flex',
     gap: '12px',
     padding: '16px 20px',
+    flexShrink: 0,
   },
   primaryButton: {
     flex: 8,

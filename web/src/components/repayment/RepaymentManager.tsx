@@ -8,6 +8,7 @@ import RepaymentList from './RepaymentList';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { PlusIcon } from '../icons';
+import PopupModal from '../common/PopupModal';
 
 interface RepaymentManagerProps {
   expense: Expense;
@@ -499,22 +500,27 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         </button>
       )}
 
-      {showForm && (
-        <div className="form-container">
-          <h4 className="form-title">
-            {editingRepayment ? t('editRepayment') : t('addRepayment')}
-          </h4>
-          <RepaymentForm
-            expenseId={expense.id!}
-            onSubmit={editingRepayment ? handleUpdateRepayment : handleAddRepayment}
-            onCancel={handleCancelForm}
-            initialData={editingRepayment || undefined}
-            cards={cards}
-            ewallets={ewallets}
-            banks={banks}
-          />
-        </div>
-      )}
+      {/* Add/Edit Repayment - Pop-out */}
+      <PopupModal
+        isOpen={showForm}
+        onClose={handleCancelForm}
+        title={editingRepayment ? t('editRepayment') : t('addRepayment')}
+        hideHeader={true}
+        chromeless={true}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        <RepaymentForm
+          title={editingRepayment ? t('editRepayment') : t('addRepayment')}
+          expenseId={expense.id!}
+          onSubmit={editingRepayment ? handleUpdateRepayment : handleAddRepayment}
+          onCancel={handleCancelForm}
+          initialData={editingRepayment || undefined}
+          cards={cards}
+          ewallets={ewallets}
+          banks={banks}
+        />
+      </PopupModal>
 
       {loading ? (
         <div className="loading-state">{t('loading')}</div>

@@ -2050,6 +2050,46 @@ button:not(:disabled):hover {
   padding: 10px 14px !important;
 }
 
+/* Recharts Legend styling
+   - Prevent extremely narrow layouts from breaking legend labels letter-by-letter
+   - Keep legend inside its container and use ellipsis for long category names
+*/
+.recharts-legend-wrapper {
+  max-width: 100%;
+}
+
+.recharts-default-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 0;
+  margin: 0;
+}
+
+.recharts-default-legend .recharts-legend-item {
+  display: flex !important;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.recharts-default-legend .recharts-legend-item-text {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+@media (max-width: 360px) {
+  .recharts-default-legend .recharts-legend-item-text {
+    max-width: 60vw;
+  }
+}
+
 .dark .recharts-tooltip-wrapper .recharts-default-tooltip {
   background: linear-gradient(135deg, #252338 0%, #1a1625 100%) !important;
   border: 1px solid var(--accent-primary) !important;

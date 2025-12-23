@@ -6,7 +6,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { DeleteIcon, EditIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
-import RepaymentForm from './RepaymentForm';
 
 interface RepaymentListProps {
   repayments: Repayment[];
@@ -22,9 +21,9 @@ interface RepaymentListProps {
 const RepaymentList: React.FC<RepaymentListProps> = ({
   repayments,
   onDelete,
-  onEdit: _onEdit,
-  onUpdate,
-  cards = [],
+  onEdit,
+  onUpdate: _onUpdate,
+  cards: _cards = [],
   ewallets: _ewallets = [],
   banks: _banks = [],
   maxAmount: _maxAmount,
@@ -36,7 +35,6 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     isOpen: false,
     repaymentId: null,
   });
-  const [editingId, setEditingId] = useState<string | null>(null);
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm({ isOpen: true, repaymentId: id });
   };
@@ -52,9 +50,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     setDeleteConfirm({ isOpen: false, repaymentId: null });
   };
 
-  const startInlineEdit = (repayment: Repayment) => {
-    setEditingId(repayment.id!);
-  };
+  // Inline editing is handled by parent via pop-out.
 
   const formatDate = (dateString: string) => {
     return formatDateWithUserFormat(dateString, dateFormat);
@@ -131,84 +127,65 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
       <div style={styles.list}>
         {repayments.map((repayment) => (
           <div key={repayment.id} className="repayment-card" style={styles.repaymentCard}>
-            {editingId === repayment.id ? (
-              <RepaymentForm
-                expenseId={repayment.expenseId}
-                initialData={repayment}
-                cards={cards}
-                ewallets={_ewallets}
-                banks={_banks}
-                onSubmit={(data) => {
-                  if (onUpdate && repayment.id) {
-                    onUpdate(repayment.id, data);
-                  }
-                  setEditingId(null);
-                }}
-                onCancel={() => setEditingId(null)}
-              />
-
-
-            ) : (
-              <div style={styles.repaymentContent}>
-                {/* Left section: Main info */}
-                <div style={styles.leftSection}>
-                  {/* Row 1: Payer Name (if exists) or Payment Method */}
-                  <div style={styles.headerRow}>
-                    {repayment.payerName ? (
-                      <span style={getPayerNameStyle()}>{repayment.payerName}</span>
-                    ) : (
-                      <span style={getPaymentChipStyle()}>
-                        {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
-                        {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
-                        {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Row 2: Date and Payment Method (if payer exists) */}
-                  <div style={styles.metaRow}>
-                    <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
-                    {repayment.payerName && (
-                      <span style={{ ...getPaymentChipStyle(), fontSize: '11px', padding: '2px 8px' }}>
-                        {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
-                        {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
-                        {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Row 3: Note (if exists) */}
-                  {repayment.note && (
-                    <div style={styles.noteRow}>
-                      <span style={getNoteStyle()}>{repayment.note}</span>
-                    </div>
+            <div style={styles.repaymentContent}>
+              {/* Left section: Main info */}
+              <div style={styles.leftSection}>
+                {/* Row 1: Payer Name (if exists) or Payment Method */}
+                <div style={styles.headerRow}>
+                  {repayment.payerName ? (
+                    <span style={getPayerNameStyle()}>{repayment.payerName}</span>
+                  ) : (
+                    <span style={getPaymentChipStyle()}>
+                      {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                      {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
+                      {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
+                    </span>
                   )}
                 </div>
-                
-                {/* Right section: Amount and Actions */}
-                <div style={styles.rightSection}>
-                  <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
-                  <div style={styles.actions}>
-                    <button
-                      onClick={() => startInlineEdit(repayment)}
-                      className="btn-icon btn-icon-primary"
-                      aria-label="Edit repayment"
-                      title={t('edit')}
-                    >
-                      <EditIcon size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(repayment.id!)}
-                      className="btn-icon btn-icon-danger"
-                      aria-label="Delete repayment"
-                      title={t('delete')}
-                    >
-                      <DeleteIcon size={16} />
-                    </button>
+
+                {/* Row 2: Date and Payment Method (if payer exists) */}
+                <div style={styles.metaRow}>
+                  <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
+                  {repayment.payerName && (
+                    <span style={{ ...getPaymentChipStyle(), fontSize: '11px', padding: '2px 8px' }}>
+                      {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
+                      {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
+                      {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 3: Note (if exists) */}
+                {repayment.note && (
+                  <div style={styles.noteRow}>
+                    <span style={getNoteStyle()}>{repayment.note}</span>
                   </div>
+                )}
+              </div>
+
+              {/* Right section: Amount and actions */}
+              <div style={styles.rightSection}>
+                <div style={getAmountStyle()}>${repayment.amount.toFixed(2)}</div>
+                <div style={styles.actions}>
+                  <button
+                    onClick={() => onEdit(repayment)}
+                    className="btn-icon btn-icon-primary"
+                    aria-label={t('editRepayment')}
+                    title={t('edit')}
+                  >
+                    <EditIcon size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(repayment.id!)}
+                    className="btn-icon btn-icon-danger"
+                    aria-label={t('delete')}
+                    title={t('delete')}
+                  >
+                    <DeleteIcon size={16} />
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>

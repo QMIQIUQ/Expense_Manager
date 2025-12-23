@@ -237,6 +237,8 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addEWallet')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >
@@ -248,6 +250,8 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         isOpen={editingWallet !== null}
         onClose={cancelEdit}
         title={t('editEWallet')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >

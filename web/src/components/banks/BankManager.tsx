@@ -180,6 +180,8 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addBank')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >
@@ -191,6 +193,8 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         isOpen={editingBank !== null}
         onClose={() => setEditingBank(null)}
         title={t('editBank')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="500px"
       >
