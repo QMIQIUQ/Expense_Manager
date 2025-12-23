@@ -253,11 +253,12 @@ const Login: React.FC = () => {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                className="h-4 w-4 rounded cursor-pointer"
                 style={{
                   // Using inline style for accentColor as it's not available in Tailwind
                   // and provides native browser checkbox theming
                   accentColor: 'var(--accent-primary)',
+                  borderColor: 'var(--border-color)',
                 }}
               />
               <label 

@@ -86,10 +86,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
-    // Note: Google login always uses local persistence because:
-    // 1. It's only available on the Register page, not Login page
-    // 2. Users who sign up/login via Google typically use their personal devices
-    // 3. The OAuth flow implies a trusted environment
+    // Note: Google login uses persistent storage by design because:
+    // 1. OAuth flow implies user trust and typically personal device usage
+    // 2. Provides consistent UX - users expect to stay logged in after OAuth
+    // 3. If Remember Me is needed for OAuth, it should be offered before OAuth redirect
     await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, googleProvider);
     await ensureUserMetadata(result.user);
