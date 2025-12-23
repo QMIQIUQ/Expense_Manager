@@ -5,12 +5,36 @@ import { WidgetProps } from './types';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
+const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   const [containerHeight, setContainerHeight] = React.useState(300);
-  
+
+  const { cycleStart, cycleEnd } = React.useMemo(() => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
+    }
+
+    return { cycleStart, cycleEnd };
+  }, [billingCycleDay]);
+
+  const filteredExpenses = React.useMemo(() => {
+    return expenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return expDate >= cycleStart && expDate <= cycleEnd;
+    });
+  }, [expenses, cycleStart, cycleEnd]);
+
   // Determine chart dimensions based on widget size and container height
   const chartConfig = React.useMemo(() => {
     const isSmall = size === 'small' || isMobile;
@@ -83,7 +107,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }
     const byCategory: { [key: string]: number } = {};
     let total = 0;
 
-    expenses.forEach((exp) => {
+    filteredExpenses.forEach((exp) => {
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
@@ -100,7 +124,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }
       }));
 
     return pieData;
-  }, [expenses]);
+  }, [filteredExpenses]);
 
   if (pieData.length === 0) {
     return (

@@ -5,12 +5,36 @@ import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
 
-const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
+const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
-  
+
+  const { cycleStart, cycleEnd } = React.useMemo(() => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
+    }
+
+    return { cycleStart, cycleEnd };
+  }, [billingCycleDay]);
+
+  const filteredExpenses = React.useMemo(() => {
+    return expenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return expDate >= cycleStart && expDate <= cycleEnd;
+    });
+  }, [expenses, cycleStart, cycleEnd]);
+
   // Determine chart dimensions based on widget size
   const chartConfig = React.useMemo(() => {
     switch (size) {
@@ -79,7 +103,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' 
     }
 
     // Accumulate expenses
-    expenses.forEach((exp) => {
+    filteredExpenses.forEach((exp) => {
       if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
         last7Days[exp.date] += exp.amount;
       }
@@ -89,7 +113,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' 
       date: formatDateShort(date, dateFormat),
       amount: parseFloat(amount.toFixed(2)),
     }));
-  }, [expenses, dateFormat]);
+  }, [filteredExpenses, dateFormat]);
 
   if (spendingTrend.length === 0) {
     return (

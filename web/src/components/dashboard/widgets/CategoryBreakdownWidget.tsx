@@ -3,10 +3,34 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, size = 'medium' }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
+
+  const { cycleStart, cycleEnd } = React.useMemo(() => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    let cycleStart: Date;
+    let cycleEnd: Date;
+
+    if (currentDay >= billingCycleDay) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
+      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
+    }
+
+    return { cycleStart, cycleEnd };
+  }, [billingCycleDay]);
+
+  const filteredExpenses = React.useMemo(() => {
+    return expenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return expDate >= cycleStart && expDate <= cycleEnd;
+    });
+  }, [expenses, cycleStart, cycleEnd]);
 
   // Determine how many categories to show initially based on size
   const maxCategories = React.useMemo(() => {
@@ -26,7 +50,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, size = 'medi
     const byCategory: { [key: string]: number } = {};
     let total = 0;
 
-    expenses.forEach((exp) => {
+    filteredExpenses.forEach((exp) => {
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
@@ -37,7 +61,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, size = 'medi
     const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
 
     return { allCategories: sorted, total };
-  }, [expenses]);
+  }, [filteredExpenses]);
 
   // Determine which categories to display (respect showAll state)
   const categories = showAll ? allCategories : allCategories.slice(0, maxCategories);
