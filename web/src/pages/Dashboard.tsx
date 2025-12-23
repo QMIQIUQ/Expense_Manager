@@ -26,6 +26,7 @@ import { balanceService } from '../services/balanceService';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
+import PopupModal from '../components/common/PopupModal';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
@@ -2739,56 +2740,40 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Add Expense Bottom Sheet - for all tabs except expenses */}
-      {showAddExpenseForm && activeTab !== 'expenses' && (
-        <div
-          className="fixed inset-0 z-[9998]"
-          role="dialog"
-          aria-modal="true"
+      {activeTab !== 'expenses' && (
+        <PopupModal
+          isOpen={showAddExpenseForm}
+          onClose={() => setShowAddExpenseForm(false)}
+          title={t('addNewExpense')}
+          hideHeader={true}
+          chromeless={true}
+          hideFooter={true}
+          maxWidth="700px"
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowAddExpenseForm(false)}
+          <ExpenseForm
+            title={t('addNewExpense')}
+            onSubmit={(data) => {
+              handleAddExpense(data);
+              setShowAddExpenseForm(false);
+            }}
+            onCancel={() => setShowAddExpenseForm(false)}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onCreateEWallet={() => {
+              setShowAddExpenseForm(false);
+              setActiveTab('paymentMethods');
+            }}
+            onCreateCard={() => {
+              setShowAddExpenseForm(false);
+              setActiveTab('paymentMethods');
+            }}
+            onAddTransfer={handleAddTransfer}
+            dateFormat={dateFormat}
+            timeFormat={timeFormat}
           />
-          {/* Sheet */}
-          <div className="absolute inset-x-0 bottom-0">
-            <div className="mx-auto w-full max-w-7xl">
-              <div style={{ 
-                backgroundColor: 'var(--card-bg)', 
-                borderTopLeftRadius: '16px',
-                borderTopRightRadius: '16px',
-                borderTop: '1px solid var(--border-color)',
-                padding: '12px 16px',
-                maxHeight: '85vh',
-                overflowY: 'auto'
-              }}>
-
-                <ExpenseForm
-                  onSubmit={(data) => {
-                    handleAddExpense(data);
-                    setShowAddExpenseForm(false);
-                  }}
-                  onCancel={() => setShowAddExpenseForm(false)}
-                  categories={categories}
-                  cards={cards}
-                  ewallets={ewallets}
-                  banks={banks}
-                  onCreateEWallet={() => {
-                    setShowAddExpenseForm(false);
-                    setActiveTab('paymentMethods');
-                  }}
-                  onCreateCard={() => {
-                    setShowAddExpenseForm(false);
-                    setActiveTab('paymentMethods');
-                  }}
-                  onAddTransfer={handleAddTransfer}
-                  dateFormat={dateFormat}
-                  timeFormat={timeFormat}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        </PopupModal>
       )}
 
       {/* Import/Export Modal */}
@@ -2841,52 +2826,40 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Bottom Sheet for adding expense */}
-      {activeTab === 'expenses' && showAddSheet && (
-        <div
-          className="fixed inset-0 z-[9998]"
-          role="dialog"
-          aria-modal="true"
+      {activeTab === 'expenses' && (
+        <PopupModal
+          isOpen={showAddSheet}
+          onClose={() => setShowAddSheet(false)}
+          title={t('addNewExpense')}
+          hideHeader={true}
+          chromeless={true}
+          hideFooter={true}
+          maxWidth="700px"
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowAddSheet(false)}
+          <ExpenseForm
+            title={t('addNewExpense')}
+            onSubmit={(data) => {
+              handleAddExpense(data);
+              setShowAddSheet(false);
+            }}
+            onCancel={() => setShowAddSheet(false)}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onAddTransfer={handleAddTransfer}
+            onCreateEWallet={() => {
+              setShowAddSheet(false);
+              setActiveTab('paymentMethods');
+            }}
+            onCreateCard={() => {
+              setShowAddSheet(false);
+              setActiveTab('paymentMethods');
+            }}
+            dateFormat={dateFormat}
+            timeFormat={timeFormat}
           />
-          {/* Sheet */}
-          <div className="absolute inset-x-0 bottom-0">
-            <div className="mx-auto w-full max-w-7xl">
-              <div style={{ 
-                backgroundColor: 'var(--card-bg)', 
-                borderTopLeftRadius: '16px',
-                borderTopRightRadius: '16px',
-                borderTop: '1px solid var(--border-color)',
-                padding: '12px 16px',
-                maxHeight: '85vh',
-                overflowY: 'auto'
-              }}>
-                <ExpenseForm
-                  onSubmit={(data) => { handleAddExpense(data); setShowAddSheet(false); }}
-                  onCancel={() => setShowAddSheet(false)}
-                  categories={categories}
-                  cards={cards}
-                  ewallets={ewallets}
-                  banks={banks}
-                  onAddTransfer={handleAddTransfer}
-                  onCreateEWallet={() => {
-                    setShowAddSheet(false);
-                    setActiveTab('paymentMethods');
-                  }}
-                  onCreateCard={() => {
-                    setShowAddSheet(false);
-                    setActiveTab('paymentMethods');
-                  }}
-                  dateFormat={dateFormat}
-                  timeFormat={timeFormat}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        </PopupModal>
       )}
     </>
   );

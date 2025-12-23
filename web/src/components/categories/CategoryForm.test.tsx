@@ -24,7 +24,7 @@ describe('CategoryForm', () => {
     const submitButton = screen.getByRole('button', { name: /add/i });
     fireEvent.click(submitButton);
 
-    expect(await screen.findByText(/please fill/i)).toBeInTheDocument();
+    expect(await screen.findByText(/please fill|請填/i)).toBeInTheDocument();
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 

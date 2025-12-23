@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ExpenseForm from '../../components/expenses/ExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
+import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { PlusIcon } from '../../components/icons';
 
 interface Props {
   expenses: Expense[];
@@ -36,17 +39,41 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateCard,
 }) => {
   const { timeFormat, dateFormat } = useUserSettings();
+  const { t } = useLanguage();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onAddExpense(data);
+    setIsAdding(false);
+  };
+
+  const handleEditSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onUpdateExpense(data);
+    onEdit(null);
+  };
 
   return (
     <div style={styles.expensesTab}>
-      <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>
-          {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-        </h2>
+      {/* Header with Add Button */}
+      <div style={styles.header}>
+        <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
+        <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
+          <PlusIcon size={18} />
+          <span>{t('addNewExpense')}</span>
+        </button>
+      </div>
+
+      {/* Add Expense PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addNewExpense')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
         <ExpenseForm
-          onSubmit={editingExpense ? onUpdateExpense : onAddExpense}
-          onCancel={editingExpense ? () => onEdit(null) : undefined}
-          initialData={editingExpense || undefined}
+          onSubmit={handleAddSubmit}
+          onCancel={() => setIsAdding(false)}
           categories={categories}
           cards={cards}
           ewallets={ewallets}
@@ -57,10 +84,36 @@ const ExpensesTab: React.FC<Props> = ({
           timeFormat={timeFormat}
           dateFormat={dateFormat}
         />
-      </div>
+      </PopupModal>
 
+      {/* Edit Expense PopupModal */}
+      <PopupModal
+        isOpen={editingExpense !== null}
+        onClose={() => onEdit(null)}
+        title={t('editExpense')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        {editingExpense && (
+          <ExpenseForm
+            onSubmit={handleEditSubmit}
+            onCancel={() => onEdit(null)}
+            initialData={editingExpense}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onAddTransfer={onAddTransfer}
+            onCreateEWallet={onCreateEWallet}
+            onCreateCard={onCreateCard}
+            timeFormat={timeFormat}
+            dateFormat={dateFormat}
+          />
+        )}
+      </PopupModal>
+
+      {/* Expense List */}
       <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>Expense History</h2>
         <ExpenseList
           expenses={expenses}
           categories={categories}
@@ -89,6 +142,12 @@ const styles = {
     fontSize: '24px',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '15px',
   },
 };
 

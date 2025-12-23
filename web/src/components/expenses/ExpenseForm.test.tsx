@@ -72,7 +72,7 @@ describe('ExpenseForm', () => {
     );
 
     // Fill in description
-    const descriptionInput = screen.getByPlaceholderText(/description/i);
+    const descriptionInput = screen.getByLabelText(/description/i);
     fireEvent.change(descriptionInput, { target: { value: 'Lunch' } });
 
     // Fill in amount
@@ -80,8 +80,8 @@ describe('ExpenseForm', () => {
     fireEvent.change(amountInput, { target: { value: '1250' } });
 
     // Select category
-    const categoryButton = screen.getByRole('button', { name: /select category/i });
-    fireEvent.click(categoryButton);
+    const categoryCombo = screen.getByLabelText(/category/i);
+    fireEvent.click(categoryCombo);
     
     await waitFor(() => {
       const foodOption = screen.getByText('Food');
@@ -112,7 +112,7 @@ describe('ExpenseForm', () => {
       />
     );
 
-    const cancelButton = screen.getAllByRole('button', { name: /cancel/i })[1]; // Get the text button, not X icon
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
     fireEvent.click(cancelButton);
 
     expect(mockOnCancel).toHaveBeenCalled();
