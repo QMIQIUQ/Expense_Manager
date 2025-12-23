@@ -24,6 +24,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   isEditing = false
 }) => {
   const { t } = useLanguage();
+  const [errors, setErrors] = React.useState<{ name?: string }>({});
   const [formData, setFormData] = React.useState<CategoryFormData>(
     initialData || {
       name: '',
@@ -34,6 +35,12 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const nextErrors: { name?: string } = {};
+    if (!formData.name.trim()) {
+      nextErrors.name = t('pleaseFillField') || 'Please fill this field';
+    }
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     onSubmit(formData);
   };
 
@@ -42,6 +49,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       title={isEditing ? t('editCategory') : t('addCategory')}
       onSubmit={handleSubmit}
       onCancel={onCancel}
+      submitLabel={isEditing ? (t('update') || 'Update') : (t('add') || 'Add')}
     >
       <div className="flex flex-col gap-4">
         <div className="flex gap-3 flex-wrap items-center">
@@ -54,7 +62,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               type="text"
               value={formData.name}
               placeholder={t('categoryNamePlaceholder')}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+                setFormData({ ...formData, name: e.target.value });
+              }}
               required
               className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
               style={{
@@ -63,6 +74,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                 borderColor: 'var(--border-color)'
               }}
             />
+            {errors.name && (
+              <div className="text-xs mt-1" style={{ color: 'var(--error-text)' }}>
+                {errors.name}
+              </div>
+            )}
           </div>
           <div className="w-[60px]">
             <label htmlFor="categoryColor" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -83,15 +99,31 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
         </div>
 
         <div>
-          <label htmlFor="categoryIconGroup" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-            {t('categoryIcon')}
-          </label>
+            <div className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              {t('categoryIcon')}
+            </div>
+
+          <input
+            aria-label={t('categoryIcon') || 'Icon'}
+            type="text"
+            value={formData.icon}
+            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+            className="w-full mb-3 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border-color)'
+            }}
+          />
+
           <div className="grid grid-cols-4 sm:grid-cols-6 gap-2" id="categoryIconGroup">
             {commonIcons.map((icon) => (
               <button
                 key={icon}
                 type="button"
                 onClick={() => setFormData({ ...formData, icon })}
+                aria-label={`${t('select') || 'Select'} ${icon}`}
+                aria-pressed={formData.icon === icon}
                 className={`p-3 text-xl rounded-lg border-2 transition-all ${
                   formData.icon === icon 
                     ? 'border-indigo-500 bg-indigo-50' 

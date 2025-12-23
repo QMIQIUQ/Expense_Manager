@@ -10,6 +10,7 @@ import { SearchBar } from '../common/SearchBar';
 import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
+import PopupModal from '../common/PopupModal';
 
 interface CardManagerProps {
   cards: Card[];
@@ -34,7 +35,7 @@ const CardManager: React.FC<CardManagerProps> = ({
   const { dateFormat } = useUserSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; cardId: string | null }>({ isOpen: false, cardId: null });
@@ -64,9 +65,9 @@ const CardManager: React.FC<CardManagerProps> = ({
   };
 
   const handleUpdate = (cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (editingId) {
-      onUpdate(editingId, cardData);
-      setEditingId(null);
+    if (editingCard) {
+      onUpdate(editingCard.id!, cardData);
+      setEditingCard(null);
     }
   };
 
@@ -165,17 +166,44 @@ const CardManager: React.FC<CardManagerProps> = ({
         style={{ marginBottom: 20 }}
       />
 
-      {isAdding && (
-        <div className="form-card">
+      {/* Add Card Popup Modal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addCard')}
+        hideHeader={true}
+        chromeless={true}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        <CardForm
+          onSubmit={handleAdd}
+          onCancel={() => setIsAdding(false)}
+          categories={categories}
+          banks={banks}
+        />
+      </PopupModal>
+
+      {/* Edit Card Popup Modal */}
+      <PopupModal
+        isOpen={editingCard !== null}
+        chromeless={true}
+        onClose={() => setEditingCard(null)}
+        title={t('editCard')}
+        hideHeader={true}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        {editingCard && (
           <CardForm
-            onSubmit={handleAdd}
-            onCancel={() => setIsAdding(false)}
+            onSubmit={handleUpdate}
+            onCancel={() => setEditingCard(null)}
+            initialData={editingCard}
             categories={categories}
-            // Provide banks for autocomplete in CardForm
             banks={banks}
           />
-        </div>
-      )}
+        )}
+      </PopupModal>
 
       <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
@@ -204,23 +232,8 @@ const CardManager: React.FC<CardManagerProps> = ({
       ) : (
         <div className="card-list">
           {filteredCards.map((card) => {
-            const isEditing = editingId === card.id;
             const isExpanded = expandedCardId === card.id;
             const stats: CardStats = calculateCardStats(card, expenses, categories);
-
-            if (isEditing) {
-              return (
-                <div key={card.id} className="credit-card" style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
-                  <CardForm
-                    onSubmit={handleUpdate}
-                    onCancel={() => setEditingId(null)}
-                    initialData={card}
-                    categories={categories}
-                    banks={banks}
-                  />
-                </div>
-              );
-            }
 
             return (
               <div key={card.id} className={`credit-card ${isSelectionMode && selectedIds.has(card.id!) ? 'selected' : ''}`} style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
@@ -245,7 +258,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                   <div className="card-actions">
                     {/* Desktop: Show both buttons */}
                     <div className="desktop-actions">
-                      <button onClick={() => setEditingId(card.id!)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
+                      <button onClick={() => setEditingCard(card)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
                       <button onClick={() => handleDelete(card.id!)} className="btn-icon btn-icon-danger" aria-label={t('delete')}>
@@ -270,7 +283,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                               style={styles.menuItem}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                setEditingId(card.id!);
+                                setEditingCard(card);
                               }}
                             >
                               <span style={styles.menuIcon}><EditIcon size={16} /></span>

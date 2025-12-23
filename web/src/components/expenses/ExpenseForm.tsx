@@ -348,8 +348,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       {/* Card Selection - Shown when credit card is selected */}
       {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
+          <label htmlFor="expenseCardId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
           <select
+            id="expenseCardId"
             name="cardId"
             value={formData.cardId}
             onChange={handleChange}
@@ -395,8 +396,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       {/* Bank Selection - Shown when bank is selected */}
       {formData.paymentMethod === 'bank' && banks.length > 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
+          <label htmlFor="expenseBankId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
           <select
+            id="expenseBankId"
             name="bankId"
             value={formData.bankId}
             onChange={handleChange}

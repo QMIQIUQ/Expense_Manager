@@ -2050,6 +2050,46 @@ button:not(:disabled):hover {
   padding: 10px 14px !important;
 }
 
+/* Recharts Legend styling
+   - Prevent extremely narrow layouts from breaking legend labels letter-by-letter
+   - Keep legend inside its container and use ellipsis for long category names
+*/
+.recharts-legend-wrapper {
+  max-width: 100%;
+}
+
+.recharts-default-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 0;
+  margin: 0;
+}
+
+.recharts-default-legend .recharts-legend-item {
+  display: flex !important;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.recharts-default-legend .recharts-legend-item-text {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+@media (max-width: 360px) {
+  .recharts-default-legend .recharts-legend-item-text {
+    max-width: 60vw;
+  }
+}
+
 .dark .recharts-tooltip-wrapper .recharts-default-tooltip {
   background: linear-gradient(135deg, #252338 0%, #1a1625 100%) !important;
   border: 1px solid var(--accent-primary) !important;
@@ -5456,4 +5496,139 @@ button:not(:disabled):hover {
 .quick-expense-compact .quick-expense-menu-trigger {
   font-size: 14px;
   padding: 2px 4px;
+}
+
+/* ==================== PopupModal Component ==================== */
+
+/* PopupModal overlay animation */
+.popup-modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* PopupModal container animation */
+.popup-modal-container {
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* PopupModal close button hover */
+.popup-modal-close:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.dark .popup-modal-close:hover {
+  background-color: var(--button-hover);
+}
+
+/* PopupModal primary button hover */
+.popup-modal-btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.dark .popup-modal-btn-primary:hover:not(:disabled) {
+  box-shadow: var(--purple-glow);
+}
+
+/* PopupModal secondary button hover */
+.popup-modal-btn-secondary:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--border-hover);
+}
+
+.dark .popup-modal-btn-secondary:hover {
+  background-color: var(--button-hover);
+}
+
+/* PopupModal danger button hover */
+.popup-modal-btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Form-specific styling within PopupModal */
+.popup-modal-content .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.popup-modal-content .form-field:last-child {
+  margin-bottom: 0;
+}
+
+.popup-modal-content .form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.popup-modal-content .form-input,
+.popup-modal-content .form-select,
+.popup-modal-content .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.popup-modal-content .form-input:focus,
+.popup-modal-content .form-select:focus,
+.popup-modal-content .form-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.dark .popup-modal-content .form-input:focus,
+.dark .popup-modal-content .form-select:focus,
+.dark .popup-modal-content .form-textarea:focus {
+  box-shadow: var(--purple-glow);
+}
+
+/* Error state for form inputs */
+.popup-modal-content .form-input.error,
+.popup-modal-content .form-select.error {
+  border-color: var(--error-text);
+}
+
+.popup-modal-content .form-error {
+  font-size: 12px;
+  color: var(--error-text);
+  margin-top: 4px;
+}
+
+/* Form grid layout helpers */
+.popup-modal-content .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .popup-modal-content .form-grid {
+    grid-template-columns: 1fr;
+  }
 }

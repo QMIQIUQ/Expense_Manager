@@ -381,9 +381,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 wrapperStyle={{ 
                   fontSize: isMobile ? '11px' : '12px',
                   paddingTop: '10px',
-                  maxWidth: '100%',
-                  overflowWrap: 'break-word',
-                  wordBreak: 'break-word'
+                  maxWidth: '100%'
                 }}
                 formatter={(value: string) => {
                   const item = pieData.find(d => d.name === value);
