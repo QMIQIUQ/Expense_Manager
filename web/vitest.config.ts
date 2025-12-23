@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    environment: 'jsdom',
+    // Use happy-dom for broader Node compatibility in CI/dev environments.
+    // Some jsdom versions require newer Node and can lead to missing DOM globals.
+    environment: 'happy-dom',
     setupFiles: './src/test/setup.ts',
     css: true,
     coverage: {

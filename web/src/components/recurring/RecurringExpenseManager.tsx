@@ -8,6 +8,7 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { getDueRecurringExpenses } from '../../utils/recurringUtils';
+import PopupModal from '../common/PopupModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -59,7 +60,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 }) => {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingExpense, setEditingExpense] = useState<RecurringExpense | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDueBills, setShowDueBills] = useState(true); // Collapsible section for due bills
@@ -135,8 +136,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
 
 
-  const startInlineEdit = (expense: RecurringExpense) => {
-    setEditingId(expense.id!);
+  const startEdit = (expense: RecurringExpense) => {
+    setEditingExpense(expense);
   };
 
   // Handler to toggle due bills section
@@ -216,44 +217,102 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
         )}
       </div>
 
-      {isAdding && (
-        <div className="mb-5">
+      {/* Add Form - PopupModal */}
+      <PopupModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        title={t('addRecurringExpense')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        <RecurringForm
+          categories={categories}
+          cards={cards}
+          banks={banks}
+          onSubmit={(data) => {
+            // Create expense data without undefined values
+            const baseData = {
+              description: data.description,
+              amount: data.amount,
+              category: data.category,
+              frequency: data.frequency,
+              startDate: data.startDate,
+              dayOfWeek: data.dayOfWeek,
+              dayOfMonth: data.dayOfMonth,
+              isActive: data.isActive,
+            };
+            
+            // Only add optional fields if they have values
+            const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastGenerated'> & { endDate?: string } = {
+              ...baseData,
+              ...(data.endDate ? { endDate: data.endDate } : {}),
+              ...(data.paymentMethod ? { paymentMethod: data.paymentMethod } : {}),
+              ...(data.paymentMethod === 'credit_card' && data.cardId ? { cardId: data.cardId } : {}),
+              ...(data.paymentMethod === 'e_wallet' && data.paymentMethodName ? { paymentMethodName: data.paymentMethodName } : {}),
+            };
+
+            onAdd(expenseData);
+            setIsAdding(false);
+          }}
+          onCancel={() => {
+            setIsAdding(false);
+          }}
+        />
+      </PopupModal>
+
+      {/* Edit Form - PopupModal */}
+      <PopupModal
+        isOpen={editingExpense !== null}
+        onClose={() => setEditingExpense(null)}
+        title={t('editRecurringExpense')}
+        hideFooter={true}
+        maxWidth="600px"
+      >
+        {editingExpense && (
           <RecurringForm
+            initialData={{
+              description: editingExpense.description,
+              amount: editingExpense.amount,
+              category: editingExpense.category,
+              frequency: editingExpense.frequency,
+              startDate: editingExpense.startDate,
+              endDate: editingExpense.endDate || '',
+              dayOfWeek: editingExpense.dayOfWeek || 1,
+              dayOfMonth: editingExpense.dayOfMonth || 1,
+              isActive: editingExpense.isActive,
+              paymentMethod: editingExpense.paymentMethod || 'cash',
+              cardId: editingExpense.cardId || '',
+              paymentMethodName: editingExpense.paymentMethodName || '',
+              bankId: editingExpense.bankId || '',
+            }}
             categories={categories}
             cards={cards}
             banks={banks}
             onSubmit={(data) => {
-              // Create expense data without undefined values
-              const baseData = {
-                description: data.description,
-                amount: data.amount,
-                category: data.category,
-                frequency: data.frequency,
-                startDate: data.startDate,
-                dayOfWeek: data.dayOfWeek,
-                dayOfMonth: data.dayOfMonth,
-                isActive: data.isActive,
-              };
-              
-              // Only add optional fields if they have values
-              const expenseData: Omit<RecurringExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastGenerated'> & { endDate?: string } = {
-                ...baseData,
-                ...(data.endDate ? { endDate: data.endDate } : {}),
-                ...(data.paymentMethod ? { paymentMethod: data.paymentMethod } : {}),
-                ...(data.paymentMethod === 'credit_card' && data.cardId ? { cardId: data.cardId } : {}),
-                ...(data.paymentMethod === 'e_wallet' && data.paymentMethodName ? { paymentMethodName: data.paymentMethodName } : {}),
-              };
+              const updates: Partial<RecurringExpense> = {};
+              if (editingExpense.description !== data.description) updates.description = data.description;
+              if (editingExpense.amount !== data.amount) updates.amount = data.amount;
+              if (editingExpense.category !== data.category) updates.category = data.category;
+              if (editingExpense.frequency !== data.frequency) updates.frequency = data.frequency;
+              if (editingExpense.startDate !== data.startDate) updates.startDate = data.startDate;
+              if ((editingExpense.endDate || '') !== data.endDate) updates.endDate = data.endDate || undefined;
+              if (editingExpense.dayOfWeek !== data.dayOfWeek) updates.dayOfWeek = data.dayOfWeek;
+              if (editingExpense.dayOfMonth !== data.dayOfMonth) updates.dayOfMonth = data.dayOfMonth;
+              if (editingExpense.isActive !== data.isActive) updates.isActive = data.isActive;
+              if ((editingExpense.paymentMethod || 'cash') !== data.paymentMethod) updates.paymentMethod = data.paymentMethod;
+              if ((editingExpense.cardId || '') !== data.cardId) updates.cardId = data.cardId || undefined;
+              if ((editingExpense.paymentMethodName || '') !== data.paymentMethodName) updates.paymentMethodName = data.paymentMethodName || undefined;
 
-              onAdd(expenseData);
-              setIsAdding(false);
+              if (Object.keys(updates).length > 0) {
+                onUpdate(editingExpense.id!, updates);
+              }
+              setEditingExpense(null);
             }}
-            onCancel={() => {
-              setIsAdding(false);
-              setEditingId(null);
-            }}
+            onCancel={() => setEditingExpense(null)}
+            isEditing={true}
           />
-        </div>
-      )}
+        )}
+      </PopupModal>
 
       {/* Upcoming Due Payments Section */}
       {dueBills.length > 0 && (
@@ -366,180 +425,135 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       />
                   </div>
               )}
-              {editingId === expense.id ? (
-                <RecurringForm
-                  initialData={{
-                    description: expense.description,
-                    amount: expense.amount,
-                    category: expense.category,
-                    frequency: expense.frequency,
-                    startDate: expense.startDate,
-                    endDate: expense.endDate || '',
-                    dayOfWeek: expense.dayOfWeek || 1,
-                    dayOfMonth: expense.dayOfMonth || 1,
-                    isActive: expense.isActive,
-                    paymentMethod: expense.paymentMethod || 'cash',
-                    cardId: expense.cardId || '',
-                    paymentMethodName: expense.paymentMethodName || '',
-                    bankId: expense.bankId || '',
-                  }}
-                  categories={categories}
-                  cards={cards}
-                  banks={banks}
-                  onSubmit={(data) => {
-                    const updates: Partial<RecurringExpense> = {};
-                    if (expense.description !== data.description) updates.description = data.description;
-                    if (expense.amount !== data.amount) updates.amount = data.amount;
-                    if (expense.category !== data.category) updates.category = data.category;
-                    if (expense.frequency !== data.frequency) updates.frequency = data.frequency;
-                    if (expense.startDate !== data.startDate) updates.startDate = data.startDate;
-                    if ((expense.endDate || '') !== data.endDate) updates.endDate = data.endDate || undefined;
-                    if (expense.dayOfWeek !== data.dayOfWeek) updates.dayOfWeek = data.dayOfWeek;
-                    if (expense.dayOfMonth !== data.dayOfMonth) updates.dayOfMonth = data.dayOfMonth;
-                    if (expense.isActive !== data.isActive) updates.isActive = data.isActive;
-                    if ((expense.paymentMethod || 'cash') !== data.paymentMethod) updates.paymentMethod = data.paymentMethod;
-                    if ((expense.cardId || '') !== data.cardId) updates.cardId = data.cardId || undefined;
-                    if ((expense.paymentMethodName || '') !== data.paymentMethodName) updates.paymentMethodName = data.paymentMethodName || undefined;
+              {/* View Mode - edit via PopupModal */}
+              <>
+                {/* First row: Payment Icon, Category, Status, Amount */}
+                <div style={styles.expenseRow1}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Payment Method Icon */}
+                    {expense.paymentMethod === 'credit_card' && (
+                      <span style={{ fontSize: '16px' }}>💳</span>
+                    )}
+                    {expense.paymentMethod === 'e_wallet' && (
+                      <span style={{ fontSize: '16px' }}>📱</span>
+                    )}
+                    {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
+                      <span style={{ fontSize: '16px' }}>💵</span>
+                    )}
+                    {/* Category */}
+                    <span 
+                      className="category-chip"
+                      style={{
+                        ...styles.category,
+                        ...getCategoryColor(expense.category)
+                      }}
+                    >
+                      {expense.category}
+                    </span>
+                    {/* Active/Inactive Status */}
+                    {expense.isActive ? (
+                      <span style={styles.activeStatus}>● {t('active')}</span>
+                    ) : (
+                      <span style={styles.inactiveStatus}>● {t('inactive')}</span>
+                    )}
+                  </div>
+                  <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                </div>
 
-                    if (Object.keys(updates).length > 0) {
-                      onUpdate(expense.id!, updates);
-                    }
-                    setEditingId(null);
-                  }}
-                  onCancel={() => setEditingId(null)}
-                  isEditing={true}
-                />
-              ) : (
-                // View Mode
-                <>
-                  {/* First row: Payment Icon, Category, Status, Amount */}
-                  <div style={styles.expenseRow1}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {/* Payment Method Icon */}
-                      {expense.paymentMethod === 'credit_card' && (
-                        <span style={{ fontSize: '16px' }}>💳</span>
-                      )}
-                      {expense.paymentMethod === 'e_wallet' && (
-                        <span style={{ fontSize: '16px' }}>📱</span>
-                      )}
-                      {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
-                        <span style={{ fontSize: '16px' }}>💵</span>
-                      )}
-                      {/* Category */}
-                      <span 
-                        className="category-chip"
-                        style={{
-                          ...styles.category,
-                          ...getCategoryColor(expense.category)
-                        }}
-                      >
-                        {expense.category}
-                      </span>
-                      {/* Active/Inactive Status */}
-                      {expense.isActive ? (
-                        <span style={styles.activeStatus}>● {t('active')}</span>
-                      ) : (
-                        <span style={styles.inactiveStatus}>● {t('inactive')}</span>
-                      )}
-                    </div>
-                    <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                {/* Second row: Description */}
+                <div style={styles.expenseRow2}>
+                  <h4 style={styles.description}>{expense.description}</h4>
+                </div>
+
+                {/* Third row: Payment Details, Frequency, and Hamburger */}
+                <div style={styles.expenseRow3}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
+                    {expense.paymentMethod === 'credit_card' && (
+                      <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
+                    )}
+                    {expense.paymentMethod === 'e_wallet' && (
+                      <span>📱 {expense.paymentMethodName || t('eWallet')}</span>
+                    )}
+                    {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
+                      <span>💵 {t('cash')}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {({ daily: t('freqDaily'), weekly: t('freqWeekly'), monthly: t('freqMonthly'), yearly: t('freqYearly') } as Record<string,string>)[expense.frequency]}
                   </div>
 
-                  {/* Second row: Description */}
-                  <div style={styles.expenseRow2}>
-                    <h4 style={styles.description}>{expense.description}</h4>
+                  {/* Desktop: Show individual buttons */}
+                  <div className="desktop-actions" style={{ gap: '8px' }}>
+                    <button
+                      onClick={() => onToggleActive(expense.id!, !expense.isActive)}
+                      className={`btn-icon ${expense.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
+                      title={expense.isActive ? t('pause') : t('resume')}
+                    >
+                      {expense.isActive ? '⏸' : '▶'}
+                    </button>
+                    <button onClick={() => startEdit(expense)} className="btn-icon btn-icon-primary" title={t('edit')}>
+                      <EditIcon size={18} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
+                      className="btn-icon btn-icon-danger"
+                      title={t('delete')}
+                    >
+                      <DeleteIcon size={18} />
+                    </button>
                   </div>
 
-                  {/* Third row: Payment Details, Frequency, and Hamburger */}
-                  <div style={styles.expenseRow3}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
-                      {expense.paymentMethod === 'credit_card' && (
-                        <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
-                      )}
-                      {expense.paymentMethod === 'e_wallet' && (
-                        <span>📱 {expense.paymentMethodName || t('eWallet')}</span>
-                      )}
-                      {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
-                        <span>💵 {t('cash')}</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {({ daily: t('freqDaily'), weekly: t('freqWeekly'), monthly: t('freqMonthly'), yearly: t('freqYearly') } as Record<string,string>)[expense.frequency]}
-                    </div>
-
-                    {/* Desktop: Show individual buttons */}
-                    <div className="desktop-actions" style={{ gap: '8px' }}>
+                  {/* Mobile: Show hamburger menu */}
+                  <div className="mobile-actions">
+                    <div style={styles.menuContainer}>
                       <button
-                        onClick={() => onToggleActive(expense.id!, !expense.isActive)}
-                        className={`btn-icon ${expense.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
-                        title={expense.isActive ? t('pause') : t('resume')}
+                        className="menu-trigger-button"
+                        onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
+                        aria-label="More"
                       >
-                        {expense.isActive ? '⏸' : '▶'}
+                        ⋮
                       </button>
-                      <button onClick={() => startInlineEdit(expense)} className="btn-icon btn-icon-primary" title={t('edit')}>
-                        <EditIcon size={18} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm({ isOpen: true, recurringId: expense.id! })}
-                        className="btn-icon btn-icon-danger"
-                        title={t('delete')}
-                      >
-                        <DeleteIcon size={18} />
-                      </button>
-                    </div>
-
-                    {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions">
-                      <div style={styles.menuContainer}>
-                        <button
-                          className="menu-trigger-button"
-                          onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id!)}
-                          aria-label="More"
-                        >
-                          ⋮
-                        </button>
-                        {openMenuId === expense.id && (
-                          <div style={styles.menu}>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                onToggleActive(expense.id!, !expense.isActive);
-                              }}
-                            >
-                              <span style={styles.menuIcon}>{expense.isActive ? '⏸' : '▶'}</span>
-                              {expense.isActive ? t('pause') : t('resume')}
-                            </button>
-                            <button
-                              className="menu-item-hover"
-                              style={styles.menuItem}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                startInlineEdit(expense);
-                              }}
-                            >
-                              <span style={styles.menuIcon}><EditIcon size={16} /></span>
-                              {t('edit')}
-                            </button>
-                            <button
-                              className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
-                              onClick={() => {
-                                setOpenMenuId(null);
-                                setDeleteConfirm({ isOpen: true, recurringId: expense.id! });
-                              }}
-                            >
-                              <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
-                              {t('delete')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      {openMenuId === expense.id && (
+                        <div style={styles.menu}>
+                          <button
+                            className="menu-item-hover"
+                            style={styles.menuItem}
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              onToggleActive(expense.id!, !expense.isActive);
+                            }}
+                          >
+                            <span style={styles.menuIcon}>{expense.isActive ? '⏸' : '▶'}</span>
+                            {expense.isActive ? t('pause') : t('resume')}
+                          </button>
+                          <button
+                            className="menu-item-hover"
+                            style={styles.menuItem}
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              startEdit(expense);
+                            }}
+                          >
+                            <span style={styles.menuIcon}><EditIcon size={16} /></span>
+                            {t('edit')}
+                          </button>
+                          <button
+                            className="menu-item-hover"
+                            style={{ ...styles.menuItem, color: 'var(--error-text)' }}
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              setDeleteConfirm({ isOpen: true, recurringId: expense.id! });
+                            }}
+                          >
+                            <span style={styles.menuIcon}><DeleteIcon size={16} /></span>
+                            {t('delete')}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  </>
-                )}
+                </div>
+              </>
             </div>
           ))
         )}

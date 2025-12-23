@@ -46,6 +46,10 @@ function AutocompleteDropdown<T = unknown>({
   createNewLabel,
   onCreateNew,
 }: AutocompleteDropdownProps<T>) {
+  const reactId = React.useId();
+  const inputId = `ac-${reactId}`;
+  const listboxId = `ac-listbox-${reactId}`;
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -159,8 +163,8 @@ function AutocompleteDropdown<T = unknown>({
       const highlightedElement = dropdownRef.current.querySelector(
         `[data-index="${highlightedIndex}"]`
       );
-      if (highlightedElement) {
-        highlightedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (highlightedElement && typeof (highlightedElement as HTMLElement).scrollIntoView === 'function') {
+        (highlightedElement as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     }
   }, [highlightedIndex, isOpen]);
@@ -187,7 +191,7 @@ function AutocompleteDropdown<T = unknown>({
   return (
     <div ref={containerRef} className={`ac-select ${className}`}>
       {label && (
-        <label className="ac-select-label">
+        <label className="ac-select-label" htmlFor={inputId}>
           {label}
         </label>
       )}
@@ -209,6 +213,7 @@ function AutocompleteDropdown<T = unknown>({
           {/* Input field */}
           <input
             ref={inputRef}
+            id={inputId}
             type="text"
             value={isOpen ? searchTerm : selectedOption?.label || ''}
             onChange={handleInputChange}
@@ -220,7 +225,7 @@ function AutocompleteDropdown<T = unknown>({
             autoComplete="off"
             role="combobox"
             aria-expanded={isOpen}
-            aria-controls="ac-listbox"
+            aria-controls={listboxId}
             aria-autocomplete="list"
           />
           
@@ -253,7 +258,7 @@ function AutocompleteDropdown<T = unknown>({
         {isOpen && !disabled && (
           <div
             ref={dropdownRef}
-            id="ac-listbox"
+            id={listboxId}
             role="listbox"
             className="ac-select-list"
             style={{ zIndex: designTokens.zIndex.dropdown }}
