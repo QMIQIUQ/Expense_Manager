@@ -6,14 +6,14 @@ import { WidgetProps } from './types';
 import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
 import { getBillingCycleRange } from './utils';
 
-const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
+const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
 
   const { cycleStart, cycleEnd } = React.useMemo(
-    () => getBillingCycleRange(billingCycleDay),
+    () => getBillingCycleRange(billingCycleDay ?? 1),
     [billingCycleDay]
   );
 

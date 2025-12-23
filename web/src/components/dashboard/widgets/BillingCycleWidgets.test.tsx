@@ -6,6 +6,14 @@ import ExpenseChartWidget from './ExpenseChartWidget';
 import SpendingTrendWidget from './SpendingTrendWidget';
 import { WidgetProps } from './types';
 import { Expense } from '../../../types';
+import { getBillingCycleRange } from './utils';
+
+type TrendPoint = { date: string; amount: number };
+
+declare global {
+  // eslint-disable-next-line no-var
+  var ResizeObserver: typeof globalThis.ResizeObserver;
+}
 
 vi.mock('../../../contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (key: string) => key }),
@@ -70,7 +78,7 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
-  (global as any).ResizeObserver = ResizeObserverMock;
+  (globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
 });
 
 afterEach(() => {
@@ -135,12 +143,22 @@ describe('Dashboard widgets respect billing cycle day', () => {
     const lineDataRaw = screen.getByTestId('line-data').textContent || '[]';
     const lineData = JSON.parse(lineDataRaw);
 
-    const june28 = lineData.find((item: { date: string }) => item.date === '06/28');
-    const june30 = lineData.find((item: { date: string }) => item.date === '06/30');
-    const july01 = lineData.find((item: { date: string }) => item.date === '07/01');
+    const june28 = lineData.find((item: TrendPoint) => item.date === '06/28');
+    const june30 = lineData.find((item: TrendPoint) => item.date === '06/30');
+    const july01 = lineData.find((item: TrendPoint) => item.date === '07/01');
 
     expect(june28?.amount).toBe(0);
     expect(june30?.amount).toBe(10);
     expect(july01?.amount).toBe(20);
+  });
+
+  test('getBillingCycleRange handles billing days beyond the month length', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-02-28T12:00:00Z'));
+
+    const { cycleStart, cycleEnd } = getBillingCycleRange(31);
+
+    expect(cycleStart.toISOString().slice(0, 10)).toBe('2024-01-31');
+    expect(cycleEnd.toISOString().slice(0, 10)).toBe('2024-02-28');
   });
 });

@@ -4,13 +4,13 @@ import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getBillingCycleRange } from './utils';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
 
   const { cycleStart, cycleEnd } = React.useMemo(
-    () => getBillingCycleRange(billingCycleDay),
+    () => getBillingCycleRange(billingCycleDay ?? 1),
     [billingCycleDay]
   );
 

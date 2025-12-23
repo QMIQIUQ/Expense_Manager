@@ -6,14 +6,14 @@ import { getBillingCycleRange } from './utils';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay = 1, size = 'medium' }) => {
+const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   const [containerHeight, setContainerHeight] = React.useState(300);
 
   const { cycleStart, cycleEnd } = React.useMemo(
-    () => getBillingCycleRange(billingCycleDay),
+    () => getBillingCycleRange(billingCycleDay ?? 1),
     [billingCycleDay]
   );
 
