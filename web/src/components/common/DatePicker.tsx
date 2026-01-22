@@ -36,6 +36,24 @@ const DatePicker: React.FC<DatePickerProps> = ({
 }) => {
   const { t } = useLanguage();
   const inputId = React.useId();
+  
+  // Detect if we're on a mobile device
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // Check if device is mobile based on screen size and touch capability
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isTouchDevice && isSmallScreen);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
     if (value) {
@@ -428,6 +446,91 @@ const DatePicker: React.FC<DatePickerProps> = ({
     }
   };
 
+  // On mobile, use native date input for better UX
+  if (isMobile) {
+    return (
+      <div className="date-picker-wrapper">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {label}
+            {required && ' *'}
+          </label>
+        )}
+        <div className="date-picker-container">
+          <div className="date-picker-input-group" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              id={inputId}
+              type="date"
+              name={name}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              max={max}
+              min={min}
+              required={required}
+              disabled={disabled}
+              className={`date-picker-input ${error ? 'error' : ''} ${className}`}
+              style={{
+                ...style,
+                paddingRight: '12px',
+              }}
+            />
+          </div>
+        </div>
+        {errorMessage && <span className="text-xs text-red-600">{errorMessage}</span>}
+        
+        <style>{`
+          .date-picker-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .date-picker-container {
+            position: relative;
+          }
+
+          .date-picker-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+          }
+
+          .date-picker-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          }
+
+          .date-picker-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+          }
+
+          .date-picker-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+          }
+
+          .date-picker-input.error {
+            border-color: #ef4444;
+          }
+
+          .date-picker-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        `}</style>
+      </div>
+    );
+  }
+  
+  // Desktop: use custom calendar picker
   return (
     <div className="date-picker-wrapper">
       {label && (
@@ -842,13 +945,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
           background-color: var(--primary-color);
           color: white;
           font-weight: 600;
-        }
-
-        /* Mobile: Use native date picker but keep calendar icon visible */
-        @media (max-width: 768px) {
-          .date-picker-input {
-            padding: 8px 40px 8px 12px;
-          }
         }
       `}</style>
     </div>
