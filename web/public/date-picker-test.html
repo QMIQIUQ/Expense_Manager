@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Date Picker Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+    h2 {
+      color: #666;
+      font-size: 18px;
+      margin-top: 0;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2196f3;
+    }
+    .test-section {
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    input[type="date"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    input[type="date"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #2196f3;
+      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+    }
+    .device-info {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .device-info strong {
+      color: #2196f3;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 Date Picker - Mobile vs Desktop</h1>
+    
+    <div class="info">
+      <strong>✅ Implementation Complete!</strong><br>
+      The DatePicker component now automatically uses the native mobile date picker on touch devices with small screens (≤768px), while keeping the custom calendar for desktop users.
+    </div>
+
+    <div class="test-section">
+      <h2>🔍 Detection Status</h2>
+      <div class="device-info">
+        <strong>Your Device:</strong> <span id="deviceType"></span><br>
+        <strong>Touch Support:</strong> <span id="touchSupport"></span><br>
+        <strong>Screen Width:</strong> <span id="screenWidth"></span><br>
+        <strong>Date Picker Type:</strong> <span id="pickerType"></span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <label for="testDate">Select Date (Native HTML5 input type="date"):</label>
+      <input type="date" id="testDate" value="2026-01-07">
+      <div style="margin-top: 10px; font-size: 14px; color: #666;">
+        On mobile devices, this will show your phone's native date picker 📱
+      </div>
+    </div>
+
+    <div class="test-section" style="margin-top: 30px;">
+      <h2>📝 How It Works</h2>
+      <ul style="color: #666; line-height: 1.6;">
+        <li><strong>Mobile Devices</strong> (touch + screen ≤768px): Uses <code>&lt;input type="date"&gt;</code> for native OS date picker</li>
+        <li><strong>Desktop</strong>: Uses custom calendar component with month/year navigation</li>
+        <li><strong>Detection</strong>: Checks for touch support + screen size on mount and resize</li>
+        <li><strong>Benefits</strong>: Better UX on mobile, better control on desktop</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Detect device type
+    function detectDevice() {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      const isMobile = isTouchDevice && isSmallScreen;
+      
+      document.getElementById('deviceType').textContent = isMobile ? '📱 Mobile' : '🖥️ Desktop';
+      document.getElementById('touchSupport').textContent = isTouchDevice ? '✅ Yes' : '❌ No';
+      document.getElementById('screenWidth').textContent = window.innerWidth + 'px';
+      document.getElementById('pickerType').textContent = isMobile ? 'Native Mobile Picker' : 'Custom Calendar';
+      
+      return isMobile;
+    }
+    
+    // Update on load
+    detectDevice();
+    
+    // Update on resize
+    window.addEventListener('resize', detectDevice);
+    
+    // Show selected date
+    document.getElementById('testDate').addEventListener('change', function(e) {
+      console.log('Date selected:', e.target.value);
+    });
+  </script>
+</body>
+</html>

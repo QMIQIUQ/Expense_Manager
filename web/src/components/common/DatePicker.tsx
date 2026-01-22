@@ -48,10 +48,20 @@ const DatePicker: React.FC<DatePickerProps> = ({
       setIsMobile(isTouchDevice && isSmallScreen);
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    // Debounce resize handler to avoid excessive re-renders
+    let resizeTimeout: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(checkMobile, 150);
+    };
     
-    return () => window.removeEventListener('resize', checkMobile);
+    checkMobile();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
   
   const [showCalendar, setShowCalendar] = useState(false);
