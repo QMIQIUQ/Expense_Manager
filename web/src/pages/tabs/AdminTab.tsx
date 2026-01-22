@@ -6,80 +6,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import InlineLoading from '../../components/InlineLoading';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PlusIcon, CloseIcon, DeleteIcon } from '../../components/icons';
+import './AdminTab.css';
 // appConfig not needed after removing delete action
-
-// Inject responsive styles for admin tab
-const injectResponsiveStyles = () => {
-  const styleId = 'admin-tab-responsive-styles';
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      @media (max-width: 768px) {
-        .admin-user-list {
-          overflow-x: auto;
-        }
-        
-        .admin-user-header {
-          display: none !important;
-        }
-        
-        .admin-user-row {
-          display: block !important;
-          padding: 16px !important;
-          margin-bottom: 12px;
-          border: 1px solid var(--border-color) !important;
-          border-radius: 12px !important;
-          background: var(--card-bg) !important;
-        }
-        
-        .admin-user-row > div {
-          flex: none !important;
-          width: 100% !important;
-          margin-bottom: 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .admin-user-row > div:last-child {
-          margin-bottom: 0;
-        }
-        
-        .admin-user-row > div::before {
-          content: attr(data-label);
-          font-weight: 600;
-          font-size: 12px;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        
-        .admin-actions {
-          flex-wrap: wrap !important;
-          justify-content: flex-start !important;
-          gap: 8px !important;
-        }
-        
-        .admin-actions::before {
-          width: 100%;
-        }
-        
-        .admin-header {
-          flex-direction: column;
-          align-items: flex-start !important;
-          gap: 16px;
-        }
-        
-        .admin-header button {
-          width: 100%;
-          justify-content: center;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-};
 
 const AdminTab: React.FC = () => {
   const { currentUser } = useAuth();
@@ -90,19 +18,6 @@ const AdminTab: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   // Delete action removed: no confirm dialog or delete state
-  
-  // Inject responsive styles on mount
-  useEffect(() => {
-    injectResponsiveStyles();
-    
-    // Cleanup function to remove injected styles on unmount
-    return () => {
-      const styleElement = document.getElementById('admin-tab-responsive-styles');
-      if (styleElement) {
-        styleElement.remove();
-      }
-    };
-  }, []);
   
   // Form state
   const [newEmail, setNewEmail] = useState('');
