@@ -72,6 +72,8 @@ const IncomesTab: React.FC<Props> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addNewIncome')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >

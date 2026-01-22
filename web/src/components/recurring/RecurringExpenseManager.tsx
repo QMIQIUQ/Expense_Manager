@@ -222,6 +222,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addRecurringExpense')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >
@@ -265,6 +267,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
         isOpen={editingExpense !== null}
         onClose={() => setEditingExpense(null)}
         title={t('editRecurringExpense')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >

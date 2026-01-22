@@ -68,6 +68,8 @@ const ExpensesTab: React.FC<Props> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addNewExpense')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >
@@ -91,6 +93,8 @@ const ExpensesTab: React.FC<Props> = ({
         isOpen={editingExpense !== null}
         onClose={() => onEdit(null)}
         title={t('editExpense')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="600px"
       >
