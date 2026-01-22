@@ -14,7 +14,7 @@ interface DatePickerProps {
   label?: string;
   errorMessage?: string;
   name?: string;
-  dateFormat?: DateFormat; // Display format for the date (not used with native input)
+  dateFormat?: DateFormat; // Display format for the date (not used with native input, kept for backward compatibility)
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
