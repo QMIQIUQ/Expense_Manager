@@ -94,6 +94,14 @@ const AdminTab: React.FC = () => {
   // Inject responsive styles on mount
   useEffect(() => {
     injectResponsiveStyles();
+    
+    // Cleanup function to remove injected styles on unmount
+    return () => {
+      const styleElement = document.getElementById('admin-tab-responsive-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
+    };
   }, []);
   
   // Form state
@@ -415,7 +423,7 @@ const AdminTab: React.FC = () => {
       {/* Data-only delete confirmation */}
       <ConfirmModal
         isOpen={confirmDelete !== null}
-        title={t('deleteDataTitle')}
+        title={t('deleteData')}
         message={t('deleteDataConfirmMessage')}
         onConfirm={() => confirmDelete && handleDeleteUserData(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}

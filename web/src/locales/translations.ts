@@ -416,7 +416,6 @@ export const translations = {
   deleteDataFailed: { en: 'Failed to delete user data', zh: '刪除使用者資料失敗', 'zh-CN': '删除用户数据失败' },
   loadingUsers: { en: 'Loading users...', zh: '載入使用者中...', 'zh-CN': '载入用户中...' },
   createUser: { en: 'Create User', zh: '建立使用者', 'zh-CN': '创建用户' },
-  cancelCreateUser: { en: 'Cancel', zh: '取消', 'zh-CN': '取消' },
   deleteAccountNotice: { en: '🗑️ Delete Account Notice', zh: '🗑️ 刪除帳號說明', 'zh-CN': '🗑️ 删除账号说明' },
   deleteAccountDescription: { en: 'The "Delete Account" button has been removed from the system. To completely delete a user (including Firebase Authentication account), please use the command script tools/delete-user.js or go to Firebase Console → Authentication → Users to delete.', zh: '本系統已移除「刪除帳號」按鈕。若需完全刪除使用者（包含 Firebase Authentication 帳號），請使用指令腳本 tools/delete-user.js，或至 Firebase Console → Authentication → Users 進行刪除。', 'zh-CN': '本系统已移除「删除账号」按钮。若需完全删除用户（包含 Firebase Authentication 账号），请使用命令脚本 tools/delete-user.js，或至 Firebase Console → Authentication → Users 进行删除。' },
   createNewUserAccount: { en: 'Create New User Account', zh: '建立新使用者帳號', 'zh-CN': '创建新用户账号' },
@@ -443,7 +442,6 @@ export const translations = {
   makeAdmin: { en: 'Make admin', zh: '設為管理員', 'zh-CN': '设为管理员' },
   deleteData: { en: 'Delete Data', zh: '刪除資料', 'zh-CN': '删除数据' },
   deleteDataDescription: { en: 'Delete data (does not delete Auth account)', zh: '刪除資料（不會刪除 Auth 帳號）', 'zh-CN': '删除数据（不会删除 Auth 账号）' },
-  deleteDataTitle: { en: 'Delete Data', zh: '刪除資料', 'zh-CN': '删除数据' },
   deleteDataConfirmMessage: { en: 'This operation will only delete the user\'s data in this system (expenses, categories, budgets, and user profile), not the Firebase Authentication account. If the account has been removed in Console, this can be used to clean up residual data. Are you sure you want to delete?', zh: '此操作只會刪除該使用者在本系統的資料（費用、分類、預算與使用者檔案），不會刪除 Firebase Authentication 帳號。若帳號已在 Console 移除，這裡可用來清理殘留資料。確定要刪除嗎？', 'zh-CN': '此操作只会删除该用户在本系统的数据（费用、分类、预算与用户档案），不会删除 Firebase Authentication 账号。若账号已在 Console 移除，这里可用来清理残留数据。确定要删除吗？' },
   noUsersFound: { en: 'No users found', zh: '找不到使用者', 'zh-CN': '找不到用户' },
   
