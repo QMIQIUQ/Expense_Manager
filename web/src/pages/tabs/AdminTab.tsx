@@ -191,7 +191,7 @@ const AdminTab: React.FC = () => {
       </div>
 
       <div style={styles.notice}>
-        <p style={styles.noticeTitle}>{t('deleteAccountNotice')}</p>
+        <p style={styles.noticeTitle}>{t('deleteAccountNoticeIcon')} {t('deleteAccountNotice')}</p>
         <p style={styles.noticeText}>
           {t('deleteAccountDescription')}
         </p>
@@ -201,7 +201,7 @@ const AdminTab: React.FC = () => {
         <div style={styles.createForm}>
           <h3 style={styles.formTitle}>{t('createNewUserAccount')}</h3>
           <div style={styles.notice}>
-            <p style={styles.noticeTitle}>{t('directUserCreation')}</p>
+            <p style={styles.noticeTitle}>{t('directUserCreationIcon')} {t('directUserCreation')}</p>
             <p style={styles.noticeText}>
               {t('directUserCreationDescription')}
             </p>

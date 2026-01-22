@@ -91,10 +91,6 @@
     gap: 8px !important;
   }
   
-  .admin-actions::before {
-    width: 100%;
-  }
-  
   .admin-header {
     flex-direction: column;
     align-items: flex-start !important;
