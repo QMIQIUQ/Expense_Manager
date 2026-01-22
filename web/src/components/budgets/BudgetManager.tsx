@@ -76,6 +76,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'suggestions' | 'adjustments'>('list');
   const [dismissedAdjustments, setDismissedAdjustments] = useState<Set<string>>(new Set());
+  const shouldOpenAddModalRef = React.useRef(false);
+
 
   // Get budget adjustment suggestions
   const adjustmentSuggestions = React.useMemo(() => {
@@ -153,7 +155,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   useEffect(() => {
     setShowAdjustments(activeSubTab === 'adjustments');
     setShowSuggestions(activeSubTab === 'suggestions');
-    setIsAdding(false);
+    
+    // Only close the add modal if we're not intentionally switching to add a budget
+    if (!shouldOpenAddModalRef.current) {
+      setIsAdding(false);
+    } else if (activeSubTab === 'list') {
+      // We switched to list tab to add a budget, now open the modal
+      setIsAdding(true);
+      shouldOpenAddModalRef.current = false;
+    }
   }, [activeSubTab]);
 
 
@@ -302,7 +312,16 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
         <div style={styles.headerActions}>
           <button 
-            onClick={() => setIsAdding(true)} 
+            onClick={() => {
+              if (activeSubTab !== 'list') {
+                // Mark that we want to open the add modal after switching tabs
+                shouldOpenAddModalRef.current = true;
+                setActiveSubTab('list');
+              } else {
+                // Already on list tab, just open the modal
+                setIsAdding(true);
+              }
+            }} 
             style={styles.addButton}
             title={t('addBudget') || '新增預算'}
           >
