@@ -8,6 +8,79 @@ import ConfirmModal from '../../components/ConfirmModal';
 import { PlusIcon, CloseIcon, DeleteIcon } from '../../components/icons';
 // appConfig not needed after removing delete action
 
+// Inject responsive styles for admin tab
+const injectResponsiveStyles = () => {
+  const styleId = 'admin-tab-responsive-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @media (max-width: 768px) {
+        .admin-user-list {
+          overflow-x: auto;
+        }
+        
+        .admin-user-header {
+          display: none !important;
+        }
+        
+        .admin-user-row {
+          display: block !important;
+          padding: 16px !important;
+          margin-bottom: 12px;
+          border: 1px solid var(--border-color) !important;
+          border-radius: 12px !important;
+          background: var(--card-bg) !important;
+        }
+        
+        .admin-user-row > div {
+          flex: none !important;
+          width: 100% !important;
+          margin-bottom: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .admin-user-row > div:last-child {
+          margin-bottom: 0;
+        }
+        
+        .admin-user-row > div::before {
+          content: attr(data-label);
+          font-weight: 600;
+          font-size: 12px;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .admin-actions {
+          flex-wrap: wrap !important;
+          justify-content: flex-start !important;
+          gap: 8px !important;
+        }
+        
+        .admin-actions::before {
+          width: 100%;
+        }
+        
+        .admin-header {
+          flex-direction: column;
+          align-items: flex-start !important;
+          gap: 16px;
+        }
+        
+        .admin-header button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+};
+
 const AdminTab: React.FC = () => {
   const { currentUser } = useAuth();
   const { showNotification } = useNotification();
@@ -17,6 +90,11 @@ const AdminTab: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   // Delete action removed: no confirm dialog or delete state
+  
+  // Inject responsive styles on mount
+  useEffect(() => {
+    injectResponsiveStyles();
+  }, []);
   
   // Form state
   const [newEmail, setNewEmail] = useState('');
@@ -169,8 +247,8 @@ const AdminTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>User Management</h2>
+      <div style={styles.header} className="admin-header">
+        <h2 style={styles.title}>{t('userManagement')}</h2>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
           style={styles.createButton}
@@ -178,40 +256,39 @@ const AdminTab: React.FC = () => {
           {showCreateForm ? (
             <>
               <CloseIcon size={18} />
-              <span>Cancel</span>
+              <span>{t('cancel')}</span>
             </>
           ) : (
             <>
               <PlusIcon size={18} />
-              <span>Create User</span>
+              <span>{t('createUser')}</span>
             </>
           )}
         </button>
       </div>
 
       <div style={styles.notice}>
-        <p style={styles.noticeTitle}>ℹ️ 刪除帳號說明</p>
+        <p style={styles.noticeTitle}>{t('deleteAccountNotice')}</p>
         <p style={styles.noticeText}>
-          本系統已移除「刪除帳號」按鈕。若需完全刪除使用者（包含 Firebase Authentication 帳號），請使用指令腳本
-          <code> tools/delete-user.js </code>，或至 Firebase Console → Authentication → Users 進行刪除。
+          {t('deleteAccountDescription')}
         </p>
       </div>
 
       {showCreateForm && (
         <div style={styles.createForm}>
-          <h3 style={styles.formTitle}>Create New User Account</h3>
+          <h3 style={styles.formTitle}>{t('createNewUserAccount')}</h3>
           <div style={styles.notice}>
-            <p style={styles.noticeTitle}>✨ Direct User Creation</p>
+            <p style={styles.noticeTitle}>{t('directUserCreation')}</p>
             <p style={styles.noticeText}>
-              This form creates a complete Firebase Authentication account with user metadata.
+              {t('directUserCreationDescription')}
             </p>
             <p style={styles.noticeText}>
-              <strong>Note:</strong> After creating the user, you will remain logged in as admin.
+              <strong>{t('directUserCreationNote')}</strong>
             </p>
           </div>
           <form onSubmit={handleCreateUser}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Email *</label>
+              <label style={styles.label}>{t('emailRequired')}</label>
               <input
                 type="email"
                 value={newEmail}
@@ -219,11 +296,11 @@ const AdminTab: React.FC = () => {
                 onFocus={(e) => e.target.select()}
                 required
                 style={styles.input}
-                placeholder="user@example.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Password *</label>
+              <label style={styles.label}>{t('passwordRequired')}</label>
               <input
                 type="password"
                 value={newPassword}
@@ -232,19 +309,19 @@ const AdminTab: React.FC = () => {
                 required
                 minLength={6}
                 style={styles.input}
-                placeholder="Minimum 6 characters"
+                placeholder={t('passwordPlaceholder')}
               />
-              <small style={styles.helpText}>Password must be at least 6 characters long</small>
+              <small style={styles.helpText}>{t('passwordMinLengthHint')}</small>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Display Name (optional)</label>
+              <label style={styles.label}>{t('displayNameOptional')}</label>
               <input
                 type="text"
                 value={newDisplayName}
                 onChange={(e) => setNewDisplayName(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 style={styles.input}
-                placeholder="John Doe"
+                placeholder={t('displayNamePlaceholder')}
               />
             </div>
             <div style={styles.checkboxGroup}>
@@ -255,7 +332,7 @@ const AdminTab: React.FC = () => {
                   onChange={(e) => setNewIsAdmin(e.target.checked)}
                   style={styles.checkbox}
                 />
-                Grant admin privileges
+                {t('grantAdminPrivileges')}
               </label>
             </div>
             <button
@@ -263,43 +340,43 @@ const AdminTab: React.FC = () => {
               disabled={creating}
               style={styles.submitButton}
             >
-              {creating ? 'Creating User...' : 'Create User Account'}
+              {creating ? t('creatingUserEllipsis') : t('createUserAccount')}
             </button>
           </form>
         </div>
       )}
 
-      <div style={styles.userList}>
-        <div style={styles.userHeader}>
-          <div style={{ flex: 2 }}>Email</div>
-          <div style={{ flex: 1 }}>Status</div>
-          <div style={{ flex: 1 }}>Role</div>
-          <div style={{ flex: 2 }}>Actions</div>
+      <div style={styles.userList} className="admin-user-list">
+        <div style={styles.userHeader} className="admin-user-header">
+          <div style={{ flex: 2 }}>{t('email')}</div>
+          <div style={{ flex: 1 }}>{t('statusLabel')}</div>
+          <div style={{ flex: 1 }}>{t('roleLabel')}</div>
+          <div style={{ flex: 2 }}>{t('actionsLabel')}</div>
         </div>
         {users.map(user => (
-          <div key={user.id} style={styles.userRow}>
-            <div style={{ flex: 2, ...styles.userEmail }}>
+          <div key={user.id} style={styles.userRow} className="admin-user-row">
+            <div style={{ flex: 2, ...styles.userEmail }} data-label={t('email')}>
               {user.email}
               {user.id === currentUser?.uid && (
-                <span style={styles.youBadge}>(You)</span>
+                <span style={styles.youBadge}>({t('you')})</span>
               )}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1 }} data-label={t('statusLabel')}>
               <span style={user.isActive ? styles.activeBadge : styles.inactiveBadge}>
-                {user.isActive ? '✓ Active' : '✕ Inactive'}
+                {user.isActive ? `✓ ${t('active')}` : `✕ ${t('inactive')}`}
               </span>
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1 }} data-label={t('roleLabel')}>
               <span style={user.isAdmin ? styles.adminBadge : styles.userBadge}>
-                {user.isAdmin ? '👑 Admin' : '👤 User'}
+                {user.isAdmin ? `👑 ${t('admin')}` : `👤 ${t('user')}`}
               </span>
             </div>
-            <div style={{ flex: 2, ...styles.actions }}>
+            <div style={{ flex: 2, ...styles.actions }} className="admin-actions" data-label={t('actionsLabel')}>
               <button
                 onClick={() => handleToggleActive(user)}
                 disabled={user.id === currentUser?.uid}
                 style={styles.actionButton}
-                title={user.isActive ? 'Deactivate' : 'Activate'}
+                title={user.isActive ? t('deactivate') : t('activate')}
               >
                 {user.isActive ? '🔒' : '🔓'}
               </button>
@@ -307,7 +384,7 @@ const AdminTab: React.FC = () => {
                 onClick={() => handleToggleAdmin(user)}
                 disabled={user.id === currentUser?.uid}
                 style={styles.actionButton}
-                title={user.isAdmin ? 'Remove admin' : 'Make admin'}
+                title={user.isAdmin ? t('removeAdmin') : t('makeAdmin')}
               >
                 {user.isAdmin ? '👤' : '👑'}
               </button>
@@ -316,10 +393,10 @@ const AdminTab: React.FC = () => {
                 onClick={() => setConfirmDelete(user.id)}
                 disabled={user.id === currentUser?.uid}
                 style={styles.deleteButton}
-                title="刪除資料（不會刪除 Auth 帳號）"
+                title={t('deleteDataDescription')}
               >
                 <DeleteIcon size={16} />
-                <span>刪除資料</span>
+                <span>{t('deleteData')}</span>
               </button>
               {/* Delete action intentionally removed */}
             </div>
@@ -329,7 +406,7 @@ const AdminTab: React.FC = () => {
 
       {users.length === 0 && (
         <div style={styles.emptyState}>
-          <p>No users found</p>
+          <p>{t('noUsersFound')}</p>
         </div>
       )}
 
@@ -338,8 +415,8 @@ const AdminTab: React.FC = () => {
       {/* Data-only delete confirmation */}
       <ConfirmModal
         isOpen={confirmDelete !== null}
-        title="刪除資料"
-        message="此操作只會刪除該使用者在本系統的資料（費用、分類、預算與使用者檔案），不會刪除 Firebase Authentication 帳號。若帳號已在 Console 移除，這裡可用來清理殘留資料。確定要刪除嗎？"
+        title={t('deleteDataTitle')}
+        message={t('deleteDataConfirmMessage')}
         onConfirm={() => confirmDelete && handleDeleteUserData(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
         danger={true}
