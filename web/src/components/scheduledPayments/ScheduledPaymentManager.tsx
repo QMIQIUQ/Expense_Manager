@@ -299,6 +299,8 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title={t('addScheduledPayment')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="700px"
       >
@@ -344,6 +346,8 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
         isOpen={editingPayment !== null}
         onClose={() => setEditingPayment(null)}
         title={t('editScheduledPayment')}
+        hideHeader={true}
+        chromeless={true}
         hideFooter={true}
         maxWidth="700px"
       >
