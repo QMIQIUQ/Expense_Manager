@@ -9,12 +9,19 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { login } = useAuth();
+  const { login, currentUser, loading: authLoading } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const langMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-redirect to dashboard if user is already authenticated
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, authLoading, navigate]);
 
   // Close language menu on outside click
   useEffect(() => {
