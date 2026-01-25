@@ -64,7 +64,6 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   const { showNotification } = useNotification();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_DASHBOARD_LAYOUT);
   const [isCustomizing, setIsCustomizingState] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Wrapper to notify parent when customizing state changes
   const setIsCustomizing = useCallback((value: boolean) => {
@@ -73,7 +72,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   }, [onCustomizingChange]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
 
-  // Load user's dashboard layout
+  // Load user's dashboard layout (non-blocking, background update)
   useEffect(() => {
     const loadLayout = async () => {
       if (!currentUser) return;
@@ -83,9 +82,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
         setWidgets(layout.widgets.sort((a, b) => a.order - b.order));
       } catch (error) {
         console.error('Failed to load dashboard layout:', error);
-        setWidgets(DEFAULT_DASHBOARD_LAYOUT);
-      } finally {
-        setIsLoading(false);
+        // Keep using DEFAULT_DASHBOARD_LAYOUT which is already set
       }
     };
 
@@ -161,15 +158,6 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   const enabledWidgets = widgets
     .filter((w) => w.enabled)
     .sort((a, b) => a.order - b.order);
-
-  if (isLoading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner" />
-        <p>{t('loading')}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="customizable-dashboard">
