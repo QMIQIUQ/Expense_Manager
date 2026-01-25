@@ -173,7 +173,12 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
     });
   }, [budgets, expenses, cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining, getNetAmount, formatPeriodRange]);
 
-  if (budgetProgress.length === 0) {
+  // Sort budget progress by percentage (high to low)
+  const sortedBudgetProgress = React.useMemo(() => {
+    return [...budgetProgress].sort((a, b) => b.percentage - a.percentage);
+  }, [budgetProgress]);
+
+  if (sortedBudgetProgress.length === 0) {
     return (
       <div className="widget-empty-state">
         <span>🎯</span>
@@ -183,7 +188,7 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
   }
   
   // Determine how many to display
-  const displayBudgets = showAll ? budgetProgress : budgetProgress.slice(0, maxItems);
+  const displayBudgets = showAll ? sortedBudgetProgress : sortedBudgetProgress.slice(0, maxItems);
 
   return (
     <div className="budget-progress-list">
@@ -264,7 +269,7 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
       ))}
       
       <ShowMoreButton
-        totalCount={budgetProgress.length}
+        totalCount={sortedBudgetProgress.length}
         visibleCount={maxItems}
         isExpanded={showAll}
         onToggle={() => setShowAll(!showAll)}
