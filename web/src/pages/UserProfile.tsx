@@ -275,8 +275,8 @@ const UserProfile: React.FC = () => {
                   disabled={saving}
                   className={`toggle-option ${!useStepByStepForm ? 'active' : ''}`}
                 >
-                  <span className="toggle-text">📋 {t('traditionalForm') || 'Traditional Form'}</span>
-                  <span className="toggle-description">{t('traditionalFormDesc') || 'All fields on one page'}</span>
+                  <span className="toggle-text">📋 传统表单</span>
+                  <span className="toggle-description">所有字段在一页
                 </button>
                 <button
                   type="button"
@@ -284,8 +284,8 @@ const UserProfile: React.FC = () => {
                   disabled={saving}
                   className={`toggle-option ${useStepByStepForm ? 'active' : ''}`}
                 >
-                  <span className="toggle-text">🎯 {t('stepByStepForm') || 'Step-by-Step Form'}</span>
-                  <span className="toggle-description">{t('stepByStepFormDesc') || 'Guided multi-step experience'}</span>
+                  <span className="toggle-text">🎯 多步骤表单</span>
+                  <span className="toggle-description">引导式多步骤体验
                 </button>
               </div>
             </div>

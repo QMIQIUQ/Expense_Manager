@@ -45,7 +45,7 @@ const ExpensesTab: React.FC<Props> = ({
 
   // Derive last used payment method from recent expenses
   const lastUsedPaymentMethod = expenses.length > 0 
-    ? expenses[0].paymentMethodType 
+    ? expenses[0].paymentMethod 
     : undefined;
 
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
