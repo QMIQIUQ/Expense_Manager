@@ -182,7 +182,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
       {totalAmount !== undefined && (
         <div style={styles.summary}>
           <span style={styles.summaryLabel}>
-            {viewMode === 'day' ? (t('dailyExpense') || '今日支出') : (t('totalExpense') || '总支出')}
+            {viewMode === 'day' ? '今日支出' : '总支出'}
           </span>
           <span style={styles.summaryAmount}>{formatCurrency(totalAmount)}</span>
         </div>
