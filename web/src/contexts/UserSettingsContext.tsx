@@ -86,6 +86,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     try {
       await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
       setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
+      // Reload settings from Firebase to ensure consistency
+      await loadSettings();
     } catch (error) {
       console.error('Error updating step-by-step form setting:', error);
       throw error;
@@ -101,15 +103,12 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     loading,
     timeFormat: settings?.timeFormat || '24h',
     dateFormat: settings?.dateFormat || 'YYYY-MM-DD',
-    useStepByStepForm: settings?.useStepByStepForm || false,
+    useStepByStepForm: settings?.useStepByStepForm ?? false,
     setTimeFormat,
     setDateFormat,
     setUseStepByStepForm,
     refreshSettings,
   };
-
-  console.log('UserSettingsContext - settings:', settings);
-  console.log('UserSettingsContext - useStepByStepForm:', value.useStepByStepForm);
 
   return (
     <UserSettingsContext.Provider value={value}>
