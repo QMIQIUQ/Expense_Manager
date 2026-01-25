@@ -613,7 +613,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           disabled={
             (currentStep === 2 && formData.amount === 0) ||
             (currentStep === 3 && !formData.category) ||
-            (currentStep === 4 && !formData.description.trim())
+            (currentStep === 4 && !formData.description.trim()) ||
+            (currentStep === 5 &&
+              (
+                (formData.paymentMethodType === 'ewallet' && !formData.paymentMethodName?.trim()) ||
+                (formData.paymentMethodType === 'card' && !formData.cardId) ||
+                (formData.paymentMethodType === 'bank' && !formData.bankId)
+              )
+            )
           }
         >
           {currentStep === 5 ? `✓ ${t('save') || '保存'}` : `${t('next') || '下一步'} →`}
