@@ -276,7 +276,7 @@ const UserProfile: React.FC = () => {
                   className={`toggle-option ${!useStepByStepForm ? 'active' : ''}`}
                 >
                   <span className="toggle-text">📋 传统表单</span>
-                  <span className="toggle-description">所有字段在一页
+                  <span className="toggle-description">所有字段在一页</span>
                 </button>
                 <button
                   type="button"
@@ -285,7 +285,7 @@ const UserProfile: React.FC = () => {
                   className={`toggle-option ${useStepByStepForm ? 'active' : ''}`}
                 >
                   <span className="toggle-text">🎯 多步骤表单</span>
-                  <span className="toggle-description">引导式多步骤体验
+                  <span className="toggle-description">引导式多步骤体验</span>
                 </button>
               </div>
             </div>
