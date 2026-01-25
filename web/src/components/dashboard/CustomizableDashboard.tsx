@@ -72,7 +72,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   }, [onCustomizingChange]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
 
-  // Load user's dashboard layout (non-blocking, background update)
+  // Load user's dashboard layout asynchronously (non-blocking) to avoid UI spinner and improve perceived performance
   useEffect(() => {
     const loadLayout = async () => {
       if (!currentUser) return;
@@ -82,7 +82,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
         setWidgets(layout.widgets.sort((a, b) => a.order - b.order));
       } catch (error) {
         console.error('Failed to load dashboard layout:', error);
-        // Keep using DEFAULT_DASHBOARD_LAYOUT which is already set
+        // Keep using DEFAULT_DASHBOARD_LAYOUT to maintain functionality even if custom layout fails to load
       }
     };
 
