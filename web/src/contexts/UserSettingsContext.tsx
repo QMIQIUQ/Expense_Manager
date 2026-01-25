@@ -108,6 +108,9 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     refreshSettings,
   };
 
+  console.log('UserSettingsContext - settings:', settings);
+  console.log('UserSettingsContext - useStepByStepForm:', value.useStepByStepForm);
+
   return (
     <UserSettingsContext.Provider value={value}>
       {children}
