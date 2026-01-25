@@ -74,11 +74,19 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   // Auto-focus on amount and description fields
   useEffect(() => {
+    let timeoutId: number | undefined;
+
     if (currentStep === 2 && amountInputRef.current) {
-      setTimeout(() => amountInputRef.current?.focus(), 100);
+      timeoutId = window.setTimeout(() => amountInputRef.current?.focus(), 100);
     } else if (currentStep === 4 && descriptionInputRef.current) {
-      setTimeout(() => descriptionInputRef.current?.focus(), 100);
+      timeoutId = window.setTimeout(() => descriptionInputRef.current?.focus(), 100);
     }
+
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [currentStep]);
 
   // Auto-select first item when payment category changes
