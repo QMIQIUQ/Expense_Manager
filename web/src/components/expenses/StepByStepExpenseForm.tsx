@@ -209,16 +209,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     return category?.emoji || '📝';
   };
 
-  const getPaymentMethodLabel = (method: string): string => {
-    switch (method) {
-      case 'cash': return t('cash') || '现金';
-      case 'credit_card': return t('creditCard') || '信用卡';
-      case 'e_wallet': return t('eWallet') || '电子钱包';
-      case 'bank': return t('bank') || '银行';
-      default: return method;
-    }
-  };
-
   const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
     if (typeof formatDateDisplay === 'function') {
       return formatDateDisplay(date, format);
