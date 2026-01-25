@@ -256,17 +256,17 @@ const UserProfile: React.FC = () => {
               <polyline points="10 9 9 9 8 9"/>
             </svg>
           </div>
-          <h2 className="card-title">{t('expenseEntryPreferences') || 'Expense Entry Preferences'}</h2>
+          <h2 className="card-title">支出录入偏好设置</h2>
         </div>
         
         {!loading && (
           <div className="settings-content">
             <div className="setting-section">
               <div className="setting-label-row">
-                <span className="setting-label">{t('expenseFormType') || 'Expense Form Type'}</span>
+                <span className="setting-label">表单类型</span>
               </div>
               <p className="setting-description">
-                {t('expenseFormDescription') || 'Choose between the traditional single-page form or the new multi-step guided form experience.'}
+                在传统的单页表单和新的多步骤引导表单体验之间进行选择。
               </p>
               <div className="toggle-switch-container">
                 <button
