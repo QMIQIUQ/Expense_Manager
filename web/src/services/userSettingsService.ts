@@ -13,13 +13,16 @@ export const userSettingsService = {
     }
     
     const data = docSnap.data();
+    console.log('[userSettingsService.get] Raw Firebase data:', data);
+    console.log('[userSettingsService.get] useStepByStepForm from Firebase:', data.useStepByStepForm);
+    
     return {
       id: docSnap.id,
       userId: data.userId,
       billingCycleDay: data.billingCycleDay || 1,
       timeFormat: (data.timeFormat as TimeFormat) || '24h',
       dateFormat: (data.dateFormat as DateFormat) || 'YYYY-MM-DD',
-      useStepByStepForm: data.useStepByStepForm || false,
+      useStepByStepForm: data.useStepByStepForm ?? false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
