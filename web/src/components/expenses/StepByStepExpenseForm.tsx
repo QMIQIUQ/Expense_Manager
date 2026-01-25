@@ -600,7 +600,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     type="text"
                     value={transferToEWalletName}
                     onChange={(e) => setTransferToEWalletName(e.target.value)}
-                    placeholder=电子钱包名称
+                    placeholder="电子钱包名称"
                     style={styles.textInput}
                   />
                 )}
