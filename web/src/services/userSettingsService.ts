@@ -19,6 +19,7 @@ export const userSettingsService = {
       billingCycleDay: data.billingCycleDay || 1,
       timeFormat: (data.timeFormat as TimeFormat) || '24h',
       dateFormat: (data.dateFormat as DateFormat) || 'YYYY-MM-DD',
+      useStepByStepForm: data.useStepByStepForm || false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -54,6 +55,7 @@ export const userSettingsService = {
       billingCycleDay: 1, // Default to 1st of month
       timeFormat: '24h', // Default to 24-hour format
       dateFormat: 'YYYY-MM-DD', // Default date format
+      useStepByStepForm: false, // Default to traditional form
     };
     
     await this.create(defaultSettings);
