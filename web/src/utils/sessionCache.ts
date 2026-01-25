@@ -25,7 +25,8 @@ export type CacheableEntity =
   | 'scheduledPayments'
   | 'scheduledPaymentRecords'
   | 'featureSettings'
-  | 'userSettings';
+  | 'userSettings'
+  | 'dashboardLayout';
 
 export interface CacheMetadata {
   timestamp: number;
