@@ -21,7 +21,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 }) => {
   const { t } = useLanguage();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const todayRef = useRef<HTMLDivElement>(null);
+  const todayRef = useRef<HTMLButtonElement>(null);
   const [dates, setDates] = useState<Date[]>([]);
 
   // Generate array of dates (7 days before and after selected date)
@@ -103,7 +103,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
             ...(viewMode === 'all' ? styles.viewModeBtnActive : {}),
           }}
         >
-          {t('all') || '全部'}
+          全部
         </button>
         <button
           onClick={() => onViewModeChange('day')}
@@ -112,7 +112,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
             ...(viewMode === 'day' ? styles.viewModeBtnActive : {}),
           }}
         >
-          {t('day') || '日'}
+          日
         </button>
         <button
           onClick={() => onViewModeChange('month')}
@@ -142,7 +142,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         
         <div ref={scrollContainerRef} style={styles.dateScrollContainer}>
           <div style={styles.dateScroll}>
-            {dates.map((date, index) => {
+            {dates.map((date) => {
               const dateStr = formatDateLocal(date);
               const isTodayDate = isToday(date);
               const isSelectedDate = isSelected(date);
@@ -181,7 +181,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
       {/* Swipe Hint */}
       <div style={styles.swipeHint}>
-        👆 {t('clickDate') || '点击日期选择'} | 👈👉 {t('swipeForMore') || '滑动查看更多日期'}
+        👆 点击日期选择 | 👈👉 滑动查看更多日期
       </div>
 
       {/* Summary (if totalAmount provided) */}
