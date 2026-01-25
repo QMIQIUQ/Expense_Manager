@@ -43,6 +43,10 @@ const ExpensesTab: React.FC<Props> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
 
+  // Debug logging
+  console.log('[ExpensesTab] useStepByStepForm value:', useStepByStepForm);
+  console.log('[ExpensesTab] Form type will be:', useStepByStepForm ? 'StepByStepExpenseForm' : 'ExpenseForm');
+
   // Derive last used payment method from recent expenses
   const lastUsedPaymentMethod = expenses.length > 0 
     ? expenses[0].paymentMethod 
