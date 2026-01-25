@@ -12,8 +12,10 @@ const __dirname = path.dirname(__filename)
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
-  // Always use /Expense_Manager/ for GitHub Pages deployment
-  const base = '/Expense_Manager/'
+  // Use root path (/) for Firebase, /Expense_Manager/ for GitHub Pages
+  // Check environment variable to determine deployment target
+  const isFirebaseDeploy = process.env.FIREBASE_DEPLOY === 'true'
+  const base = isFirebaseDeploy ? '/' : '/Expense_Manager/'
 
   return {
     base,
@@ -190,6 +192,9 @@ export default defineConfig(({ command }) => {
     closeBundle: async () => {
       // Fix manifest paths after build
       if (command === 'build') {
+        const isFirebaseDeploy = process.env.FIREBASE_DEPLOY === 'true'
+        const deployBase = isFirebaseDeploy ? '/' : '/Expense_Manager/'
+        
         const manifestPath = path.join(__dirname, 'dist', 'manifest.webmanifest')
         const htmlPath = path.join(__dirname, 'dist', 'index.html')
         
@@ -198,17 +203,14 @@ export default defineConfig(({ command }) => {
           // Replace the manifest link with correct path
           html = html.replace(
             /<link rel="manifest" href="[^"]*">/,
-            '<link rel="manifest" href="/Expense_Manager/manifest.webmanifest">'
+            `<link rel="manifest" href="${deployBase}manifest.webmanifest">`
           )
           fs.writeFileSync(htmlPath, html)
-          console.log('✓ Fixed manifest link in HTML')
+          console.log(`✓ Fixed manifest link in HTML with base: ${deployBase}`)
         }
         
         if (fs.existsSync(manifestPath)) {
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
-          
-          // Use /Expense_Manager/ as the deploy base
-          const deployBase = '/Expense_Manager/'
           
           // Update all paths to use the deploy base
           manifest.start_url = deployBase
