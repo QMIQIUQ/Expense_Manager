@@ -148,21 +148,27 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
               const isSelectedDate = isSelected(date);
               
               return (
-                <div
+                <button
+                  type="button"
                   key={dateStr}
                   ref={isSelectedDate ? todayRef : null}
                   onClick={() => handleDateClick(date)}
                   style={{
                     ...styles.dateItem,
                     ...(isSelectedDate ? styles.dateItemToday : styles.dateItemInactive),
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
                   }}
+                  aria-label={`${isTodayDate ? t('today') + ' ' : ''}${dateStr}`}
+                  aria-pressed={isSelectedDate}
                 >
                   <div style={styles.dateDay}>{getWeekdayShort(date)}</div>
                   <div style={styles.dateNumber}>{date.getDate()}</div>
                   {isTodayDate && (
                     <div style={styles.todayLabel}>{t('today') || '今天'}</div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>

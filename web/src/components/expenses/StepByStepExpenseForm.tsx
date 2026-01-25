@@ -204,9 +204,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     return `$${(amount / 100).toFixed(2)}`;
   };
 
-  const getCategoryEmoji = (categoryName: string): string => {
+  const getCategoryIcon = (categoryName: string): string => {
     const category = categories.find(c => c.name === categoryName);
-    return category?.emoji || '📝';
+    return category?.icon || '📝';
   };
 
   const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
@@ -232,7 +232,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         )}
         {currentStep > 3 && formData.category && (
           <div style={styles.summaryChip} onClick={() => handleStepClick(3)}>
-            {getCategoryEmoji(formData.category)} {formData.category}
+            {getCategoryIcon(formData.category)} {formData.category}
           </div>
         )}
         {currentStep > 4 && formData.description && (

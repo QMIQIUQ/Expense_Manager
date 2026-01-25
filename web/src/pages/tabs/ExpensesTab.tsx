@@ -43,6 +43,11 @@ const ExpensesTab: React.FC<Props> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
 
+  // Derive last used payment method from recent expenses
+  const lastUsedPaymentMethod = expenses.length > 0 
+    ? expenses[0].paymentMethodType 
+    : undefined;
+
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
     setIsAdding(false);
@@ -87,6 +92,7 @@ const ExpensesTab: React.FC<Props> = ({
             onCreateCard={onCreateCard}
             timeFormat={timeFormat}
             dateFormat={dateFormat}
+            lastUsedPaymentMethod={lastUsedPaymentMethod}
           />
         ) : (
           <ExpenseForm
