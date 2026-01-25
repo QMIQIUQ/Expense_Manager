@@ -15,14 +15,17 @@ const UserProfile: React.FC = () => {
   const { 
     timeFormat: contextTimeFormat, 
     dateFormat: contextDateFormat,
+    useStepByStepForm: contextUseStepByStepForm,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
+    setUseStepByStepForm: setContextUseStepByStepForm,
     refreshSettings: _refreshSettings 
   } = useUserSettings();
   void _refreshSettings; // Keep for potential future use
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(contextTimeFormat);
   const [dateFormat, setDateFormat] = useState<DateFormat>(contextDateFormat);
+  const [useStepByStepForm, setUseStepByStepForm] = useState<boolean>(contextUseStepByStepForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +38,8 @@ const UserProfile: React.FC = () => {
   useEffect(() => {
     setTimeFormat(contextTimeFormat);
     setDateFormat(contextDateFormat);
-  }, [contextTimeFormat, contextDateFormat]);
+    setUseStepByStepForm(contextUseStepByStepForm);
+  }, [contextTimeFormat, contextDateFormat, contextUseStepByStepForm]);
 
   const loadSettings = async () => {
     if (!currentUser) return;
@@ -45,6 +49,7 @@ const UserProfile: React.FC = () => {
       setBillingCycleDay(settings.billingCycleDay);
       setTimeFormat(settings.timeFormat || '24h');
       setDateFormat(settings.dateFormat || 'YYYY-MM-DD');
+      setUseStepByStepForm(settings.useStepByStepForm || false);
     } catch (error) {
       console.error('Error loading user settings:', error);
       showNotification('error', t('errorLoadingSettings'));
@@ -99,6 +104,22 @@ const UserProfile: React.FC = () => {
       showNotification('success', t('settingsSaved'));
     } catch (error) {
       console.error('Error saving date format:', error);
+      showNotification('error', t('errorSavingSettings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStepByStepFormToggle = async (enabled: boolean) => {
+    if (!currentUser) return;
+    
+    setSaving(true);
+    try {
+      await setContextUseStepByStepForm(enabled);
+      setUseStepByStepForm(enabled);
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving expense form preference:', error);
       showNotification('error', t('errorSavingSettings'));
     } finally {
       setSaving(false);
@@ -217,6 +238,55 @@ const UserProfile: React.FC = () => {
                     <span className="date-format-label">{option.label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Expense Entry Preferences Card */}
+      <div className="profile-card">
+        <div className="card-header">
+          <div className="card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h2 className="card-title">{t('expenseEntryPreferences') || 'Expense Entry Preferences'}</h2>
+        </div>
+        
+        {!loading && (
+          <div className="settings-content">
+            <div className="setting-section">
+              <div className="setting-label-row">
+                <span className="setting-label">{t('expenseFormType') || 'Expense Form Type'}</span>
+              </div>
+              <p className="setting-description">
+                {t('expenseFormDescription') || 'Choose between the traditional single-page form or the new multi-step guided form experience.'}
+              </p>
+              <div className="toggle-switch-container">
+                <button
+                  type="button"
+                  onClick={() => handleStepByStepFormToggle(false)}
+                  disabled={saving}
+                  className={`toggle-option ${!useStepByStepForm ? 'active' : ''}`}
+                >
+                  <span className="toggle-text">📋 {t('traditionalForm') || 'Traditional Form'}</span>
+                  <span className="toggle-description">{t('traditionalFormDesc') || 'All fields on one page'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStepByStepFormToggle(true)}
+                  disabled={saving}
+                  className={`toggle-option ${useStepByStepForm ? 'active' : ''}`}
+                >
+                  <span className="toggle-text">🎯 {t('stepByStepForm') || 'Step-by-Step Form'}</span>
+                  <span className="toggle-description">{t('stepByStepFormDesc') || 'Guided multi-step experience'}</span>
+                </button>
               </div>
             </div>
           </div>

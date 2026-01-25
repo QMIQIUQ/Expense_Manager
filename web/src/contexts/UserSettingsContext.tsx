@@ -8,8 +8,10 @@ interface UserSettingsContextType {
   loading: boolean;
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
+  useStepByStepForm: boolean;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDateFormat: (format: DateFormat) => Promise<void>;
+  setUseStepByStepForm: (value: boolean) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -78,6 +80,18 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setUseStepByStepForm = async (value: boolean) => {
+    if (!currentUser || !settings) return;
+
+    try {
+      await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
+      setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
+    } catch (error) {
+      console.error('Error updating step-by-step form setting:', error);
+      throw error;
+    }
+  };
+
   const refreshSettings = async () => {
     await loadSettings();
   };
@@ -87,8 +101,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     loading,
     timeFormat: settings?.timeFormat || '24h',
     dateFormat: settings?.dateFormat || 'YYYY-MM-DD',
+    useStepByStepForm: settings?.useStepByStepForm || false,
     setTimeFormat,
     setDateFormat,
+    setUseStepByStepForm,
     refreshSettings,
   };
 

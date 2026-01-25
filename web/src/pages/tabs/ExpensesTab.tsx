@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ExpenseForm from '../../components/expenses/ExpenseForm';
+import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
@@ -38,7 +39,7 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateEWallet,
   onCreateCard,
 }) => {
-  const { timeFormat, dateFormat } = useUserSettings();
+  const { timeFormat, dateFormat, useStepByStepForm } = useUserSettings();
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
 
@@ -73,19 +74,31 @@ const ExpensesTab: React.FC<Props> = ({
         hideFooter={true}
         maxWidth="600px"
       >
-        <ExpenseForm
-          onSubmit={handleAddSubmit}
-          onCancel={() => setIsAdding(false)}
-          categories={categories}
-          cards={cards}
-          ewallets={ewallets}
-          banks={banks}
-          onAddTransfer={onAddTransfer}
-          onCreateEWallet={onCreateEWallet}
-          onCreateCard={onCreateCard}
-          timeFormat={timeFormat}
-          dateFormat={dateFormat}
-        />
+        {useStepByStepForm ? (
+          <StepByStepExpenseForm
+            onSubmit={handleAddSubmit}
+            onCancel={() => setIsAdding(false)}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onAddTransfer={onAddTransfer}
+          />
+        ) : (
+          <ExpenseForm
+            onSubmit={handleAddSubmit}
+            onCancel={() => setIsAdding(false)}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            onAddTransfer={onAddTransfer}
+            onCreateEWallet={onCreateEWallet}
+            onCreateCard={onCreateCard}
+            timeFormat={timeFormat}
+            dateFormat={dateFormat}
+          />
+        )}
       </PopupModal>
 
       {/* Edit Expense PopupModal */}
