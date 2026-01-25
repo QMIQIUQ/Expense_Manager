@@ -213,36 +213,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
     return date;
   };
-  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (date && format) {
-      return formatDateWithUserFormat(date, format);
-    }
-    return date;
-  };
-  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (date && format) {
-      return formatDateWithUserFormat(date, format);
-    }
-    return date;
-  };
-  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (date && format) {
-      return formatDateWithUserFormat(date, format);
-    }
-    return date;
-  };
-  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (date && format) {
-      return formatDateWithUserFormat(date, format);
-    }
-    return date;
-  };
-  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (date && format) {
-      return formatDateWithUserFormat(date, format);
-    }
-    return date;
-  };
 
   // Render progress summary bar
   const renderProgressSummary = () => {
@@ -356,7 +326,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     ...(formData.category === category.name ? styles.categoryCardActive : {}),
                   }}
                 >
-                  <div style={styles.categoryEmoji}>{getCategoryIcon(category)}</div>
+                  <div style={styles.categoryEmoji}>{getCategoryIcon(category.name)}</div>
                   <div style={styles.categoryName}>{category.name}</div>
                 </div>
               ))}
@@ -558,7 +528,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     }}
                   >
                     <div style={styles.paymentMethodIconSmall}>💳</div>
-                    <div style={styles.paymentMethodNameSmall}>{t('card')}</div>
+                    <div style={styles.paymentMethodNameSmall}>信用卡</div>
                   </div>
                   <div
                     onClick={() => setTransferToPaymentMethod('e_wallet')}
@@ -568,7 +538,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     }}
                   >
                     <div style={styles.paymentMethodIconSmall}>📱</div>
-                    <div style={styles.paymentMethodNameSmall}>{t('wallet') || '钱包'}</div>
+                    <div style={styles.paymentMethodNameSmall}>钱包</div>
                   </div>
                   <div
                     onClick={() => setTransferToPaymentMethod('bank')}
@@ -650,7 +620,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           onClick={currentStep === 1 ? onCancel : handlePrevious}
           style={styles.buttonSecondary}
         >
-          ← {currentStep === 1 ? (t('cancel') || '取消') : (t('previous') || '上一步')}
+          ← {currentStep === 1 ? (t('cancel') || '取消') : '上一步'}
         </button>
         <button
           onClick={currentStep === 5 ? handleSubmit : handleNext}
