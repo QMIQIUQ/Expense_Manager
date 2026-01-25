@@ -3,6 +3,7 @@ import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateForma
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateDisplay } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
+import TimePicker from '../common/TimePicker';
 
 // Step type definition
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -263,12 +264,23 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>📅</div>
             <h2 style={styles.stepTitle}>{t('selectDate') || '选择日期'}</h2>
-            <p style={styles.stepSubtitle}>{t('whenDidThisExpenseOccur') || '请选择支出发生的日期'}</p>
-            <DatePicker
-              value={formData.date}
-              onChange={(date) => setFormData(prev => ({ ...prev, date }))}
-              dateFormat={dateFormat}
-            />
+            <p style={styles.stepSubtitle}>{t('whenDidThisExpenseOccur') || '请选择支出发生的日期和时间'}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
+              <DatePicker
+                label={t('date')}
+                value={formData.date}
+                onChange={(date) => setFormData(prev => ({ ...prev, date }))}
+                dateFormat={dateFormat}
+                required
+              />
+              <TimePicker
+                label={t('time')}
+                value={formData.time}
+                onChange={(time) => setFormData(prev => ({ ...prev, time }))}
+                timeFormat={timeFormat}
+                name="time"
+              />
+            </div>
           </div>
         );
 
