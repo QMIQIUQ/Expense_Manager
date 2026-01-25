@@ -83,6 +83,10 @@ const ExpensesTab: React.FC<Props> = ({
             ewallets={ewallets}
             banks={banks}
             onAddTransfer={onAddTransfer}
+            onCreateEWallet={onCreateEWallet}
+            onCreateCard={onCreateCard}
+            timeFormat={timeFormat}
+            dateFormat={dateFormat}
           />
         ) : (
           <ExpenseForm
