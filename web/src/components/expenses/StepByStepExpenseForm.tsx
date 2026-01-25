@@ -219,13 +219,20 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (typeof formatDateDisplay === 'function') {
+      return formatDateDisplay(date, format);
+    }
+    return date;
+  };
+
   // Render progress summary bar
   const renderProgressSummary = () => {
     return (
       <div style={styles.progressSummary}>
         {currentStep > 1 && (
           <div style={styles.summaryChip} onClick={() => handleStepClick(1)}>
-            📅 {formatDateDisplay(formData.date, dateFormat)}
+            📅 {safeFormatDateDisplay(formData.date, dateFormat)}
           </div>
         )}
         {currentStep > 2 && formData.amount > 0 && (
