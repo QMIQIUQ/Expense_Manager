@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getTodayLocal, getCurrentTimeLocal, formatDateDisplay } from '../../utils/dateUtils';
+import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 
@@ -35,8 +35,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   cards = [],
   ewallets = [],
   banks = [],
-  onCreateEWallet,
-  onCreateCard,
   onAddTransfer,
   initialDate,
   timeFormat = '24h',
@@ -210,8 +208,38 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
-    if (typeof formatDateDisplay === 'function') {
-      return formatDateDisplay(date, format);
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
+    }
+    return date;
+  };
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
+    }
+    return date;
+  };
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
+    }
+    return date;
+  };
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
+    }
+    return date;
+  };
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
+    }
+    return date;
+  };
+  const safeFormatDateDisplay = (date: string, format?: DateFormat): string => {
+    if (date && format) {
+      return formatDateWithUserFormat(date, format);
     }
     return date;
   };
@@ -268,8 +296,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>📅</div>
-            <h2 style={styles.stepTitle}>{t('selectDate') || '选择日期'}</h2>
-            <p style={styles.stepSubtitle}>{t('whenDidThisExpenseOccur') || '请选择支出发生的日期和时间'}</p>
+            <h2 style={styles.stepTitle}>选择日期</h2>
+            <p style={styles.stepSubtitle}>请选择支出发生的日期和时间</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
               <DatePicker
                 label={t('date')}
@@ -293,8 +321,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>💰</div>
-            <h2 style={styles.stepTitle}>{t('enterAmount') || '输入金额'}</h2>
-            <p style={styles.stepSubtitle}>{t('howMuchDidYouSpend') || '这笔支出的金额是多少？'}</p>
+            <h2 style={styles.stepTitle}>输入金额</h2>
+            <p style={styles.stepSubtitle}>这笔支出的金额是多少？</p>
             <div style={styles.amountInputContainer}>
               <input
                 ref={amountInputRef}
@@ -306,7 +334,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 style={styles.amountInput}
               />
               <div style={styles.autoKeyboardHint}>
-                ⌨️ {t('keyboardWillAppear') || '键盘自动弹出'}
+                ⌨️ 键盘自动弹出
               </div>
             </div>
           </div>
@@ -316,8 +344,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>🏷️</div>
-            <h2 style={styles.stepTitle}>{t('selectCategory') || '选择类别'}</h2>
-            <p style={styles.stepSubtitle}>{t('whatTypeOfExpense') || '这是什么类型的支出？'}</p>
+            <h2 style={styles.stepTitle}>选择类别</h2>
+            <p style={styles.stepSubtitle}>这是什么类型的支出？</p>
             <div style={styles.categoryGrid}>
               {categories.map((category) => (
                 <div
@@ -328,7 +356,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     ...(formData.category === category.name ? styles.categoryCardActive : {}),
                   }}
                 >
-                  <div style={styles.categoryEmoji}>{category.emoji}</div>
+                  <div style={styles.categoryEmoji}>{getCategoryIcon(category)}</div>
                   <div style={styles.categoryName}>{category.name}</div>
                 </div>
               ))}
@@ -340,30 +368,30 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>📝</div>
-            <h2 style={styles.stepTitle}>{t('addDetails') || '添加描述'}</h2>
-            <p style={styles.stepSubtitle}>{t('describeYourExpense') || '简单描述这笔支出'}</p>
+            <h2 style={styles.stepTitle}>添加描述</h2>
+            <p style={styles.stepSubtitle}>简单描述这笔支出</p>
             <div style={styles.fieldContainer}>
-              <label style={styles.fieldLabel}>{t('description') || '描述'}</label>
+              <label style={styles.fieldLabel}>{t('description')}</label>
               <input
                 ref={descriptionInputRef}
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={t('descriptionPlaceholder') || '例如：午餐'}
+                placeholder="例如：午餐"
                 style={styles.textInput}
               />
             </div>
             <div style={styles.fieldContainer}>
-              <label style={styles.fieldLabel}>{t('notes') || '备注'} ({t('optional') || '可选'})</label>
+              <label style={styles.fieldLabel}>{t('notes')} (可选)</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder={t('notesPlaceholder') || '添加额外信息...'}
+                placeholder="添加额外信息..."
                 style={styles.textArea}
                 rows={3}
               />
               <div style={styles.autoKeyboardHint}>
-                ⌨️ {t('keyboardWillAppear') || '键盘自动弹出'}
+                ⌨️ 键盘自动弹出
               </div>
             </div>
           </div>
@@ -374,11 +402,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           <div style={styles.stepContent}>
             <div style={styles.stepIcon}>💳</div>
             <h2 style={styles.stepTitle}>{t('paymentMethod') || '支付方式'}</h2>
-            <p style={styles.stepSubtitle}>{t('howDidYouPay') || '您是如何支付的？'}</p>
+            <p style={styles.stepSubtitle}>您是如何支付的？</p>
             
             {lastUsedPaymentMethod && (
               <div style={styles.autoSelectHint}>
-                ✨ {t('autoSelectedLastUsed') || '已自动选择上次使用的支付方式'}
+                ✨ 已自动选择上次使用的支付方式
               </div>
             )}
 
@@ -411,7 +439,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 }}
               >
                 <div style={styles.paymentMethodIcon}>📱</div>
-                <div style={styles.paymentMethodName}>{t('eWallet') || '电子钱包'}</div>
+                <div style={styles.paymentMethodName}>电子钱包</div>
               </div>
               <div
                 onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'bank' }))}
@@ -428,7 +456,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {/* Payment method details */}
             {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
               <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('selectCard') || '选择信用卡'}</label>
+                <label style={styles.fieldLabel}>{t('selectCard')}</label>
                 <select
                   value={formData.cardId}
                   onChange={(e) => setFormData(prev => ({ ...prev, cardId: e.target.value }))}
@@ -443,7 +471,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
             {formData.paymentMethod === 'e_wallet' && (
               <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('eWalletName') || '电子钱包名称'}</label>
+                <label style={styles.fieldLabel}>电子钱包名称</label>
                 {ewallets.length > 0 ? (
                   <select
                     value={formData.paymentMethodName}
@@ -468,7 +496,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
             {formData.paymentMethod === 'bank' && banks.length > 0 && (
               <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('selectBank') || '选择银行'}</label>
+                <label style={styles.fieldLabel}>{t('selectBank')}</label>
                 <select
                   value={formData.bankId}
                   onChange={(e) => setFormData(prev => ({ ...prev, bankId: e.target.value }))}
@@ -490,9 +518,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   onChange={(e) => setFormData(prev => ({ ...prev, needsRepaymentTracking: e.target.checked }))}
                   style={styles.checkbox}
                 />
-                <span>{t('trackRepayment') || '追踪还款'}</span>
+                <span>追踪还款</span>
               </label>
-              <p style={styles.checkboxHint}>{t('trackRepaymentHint') || '在仪表板中追踪此笔支出的还款状态'}</p>
+              <p style={styles.checkboxHint}>在仪表板中追踪此笔支出的还款状态</p>
             </div>
 
             <div style={styles.checkboxContainer}>
@@ -503,14 +531,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   onChange={(e) => setEnableTransfer(e.target.checked)}
                   style={styles.checkbox}
                 />
-                <span>{t('recordTransfer') || '同时记录转账'}</span>
+                <span>同时记录转账</span>
               </label>
-              <p style={styles.checkboxHint}>{t('recordTransferHint') || '从此支付方式转账到另一个账户'}</p>
+              <p style={styles.checkboxHint}>从此支付方式转账到另一个账户</p>
             </div>
 
             {enableTransfer && (
               <div style={styles.transferOptions}>
-                <label style={styles.fieldLabel}>{t('transferTo') || '转账到：'}</label>
+                <label style={styles.fieldLabel}>转账到：</label>
                 <div style={styles.paymentMethodGrid}>
                   <div
                     onClick={() => setTransferToPaymentMethod('cash')}
@@ -530,7 +558,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     }}
                   >
                     <div style={styles.paymentMethodIconSmall}>💳</div>
-                    <div style={styles.paymentMethodNameSmall}>{t('card') || '卡'}</div>
+                    <div style={styles.paymentMethodNameSmall}>{t('card')}</div>
                   </div>
                   <div
                     onClick={() => setTransferToPaymentMethod('e_wallet')}
@@ -560,7 +588,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     onChange={(e) => setTransferToCardId(e.target.value)}
                     style={styles.select}
                   >
-                    <option value="">{t('selectCard') || '选择信用卡'}</option>
+                    <option value="">{t('selectCard')}</option>
                     {cards.map((card) => (
                       <option key={card.id} value={card.id}>{card.name}</option>
                     ))}
@@ -572,7 +600,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     type="text"
                     value={transferToEWalletName}
                     onChange={(e) => setTransferToEWalletName(e.target.value)}
-                    placeholder={t('eWalletName') || '电子钱包名称'}
+                    placeholder=电子钱包名称
                     style={styles.textInput}
                   />
                 )}
@@ -583,7 +611,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     onChange={(e) => setTransferToBankId(e.target.value)}
                     style={styles.select}
                   >
-                    <option value="">{t('selectBank') || '选择银行'}</option>
+                    <option value="">{t('selectBank')}</option>
                     {banks.map((bank) => (
                       <option key={bank.id} value={bank.id}>{bank.name}</option>
                     ))}
