@@ -13,6 +13,7 @@ export interface UserSettings {
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
   timeFormat?: TimeFormat; // 12-hour or 24-hour format
   dateFormat?: DateFormat; // Date display format
+  useStepByStepForm?: boolean; // Enable multi-step expense entry form
   createdAt: Date;
   updatedAt: Date;
 }
