@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ExpenseForm from '../../components/expenses/ExpenseForm';
+import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
@@ -41,6 +41,17 @@ const ExpensesTab: React.FC<Props> = ({
   const { timeFormat, dateFormat } = useUserSettings();
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
+
+  // Derive last used payment method from recent expenses
+  const lastUsedPaymentMethod = expenses.length > 0 
+    ? expenses[0].paymentMethod 
+    : undefined;
+
+  const handleAddClick = () => {
+    setModalKey(prev => prev + 1); // Force new modal instance
+    setIsAdding(true);
+  };
 
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
@@ -57,7 +68,7 @@ const ExpensesTab: React.FC<Props> = ({
       {/* Header with Add Button */}
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
-        <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
+        <button onClick={handleAddClick} className="btn btn-accent-light">
           <PlusIcon size={18} />
           <span>{t('addNewExpense')}</span>
         </button>
@@ -72,8 +83,9 @@ const ExpensesTab: React.FC<Props> = ({
         chromeless={true}
         hideFooter={true}
         maxWidth="600px"
+        key={modalKey}
       >
-        <ExpenseForm
+        <StepByStepExpenseForm
           onSubmit={handleAddSubmit}
           onCancel={() => setIsAdding(false)}
           categories={categories}
@@ -85,6 +97,7 @@ const ExpensesTab: React.FC<Props> = ({
           onCreateCard={onCreateCard}
           timeFormat={timeFormat}
           dateFormat={dateFormat}
+          lastUsedPaymentMethod={lastUsedPaymentMethod}
         />
       </PopupModal>
 
@@ -99,7 +112,7 @@ const ExpensesTab: React.FC<Props> = ({
         maxWidth="600px"
       >
         {editingExpense && (
-          <ExpenseForm
+          <StepByStepExpenseForm
             onSubmit={handleEditSubmit}
             onCancel={() => onEdit(null)}
             initialData={editingExpense}
@@ -112,6 +125,7 @@ const ExpensesTab: React.FC<Props> = ({
             onCreateCard={onCreateCard}
             timeFormat={timeFormat}
             dateFormat={dateFormat}
+            lastUsedPaymentMethod={lastUsedPaymentMethod}
           />
         )}
       </PopupModal>
