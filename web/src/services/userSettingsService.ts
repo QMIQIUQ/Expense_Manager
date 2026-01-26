@@ -4,9 +4,10 @@ import { UserSettings, TimeFormat, DateFormat } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 
 export const userSettingsService = {
-  async get(userId: string): Promise<UserSettings | null> {
+  async get(userId: string, forceRefresh: boolean = false): Promise<UserSettings | null> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
-    const docSnap = await getDoc(docRef);
+    // Force refresh from server to bypass Firestore cache
+    const docSnap = await getDoc(docRef, forceRefresh ? { source: 'server' } : {});
     
     if (!docSnap.exists()) {
       return null;
@@ -45,9 +46,10 @@ export const userSettingsService = {
     });
   },
 
-  async getOrCreate(userId: string): Promise<UserSettings> {
+  async getOrCreate(userId: string, forceRefresh: boolean = false): Promise<UserSettings> {
     console.log('[userSettingsService.getOrCreate] Called for userId:', userId);
-    const existing = await this.get(userId);
+    console.log('[userSettingsService.getOrCreate] Force refresh:', forceRefresh);
+    const existing = await this.get(userId, forceRefresh);
     
     if (existing) {
       console.log('[userSettingsService.getOrCreate] Found existing settings:', existing);

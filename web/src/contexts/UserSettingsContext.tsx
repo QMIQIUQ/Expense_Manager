@@ -34,7 +34,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadSettings = async () => {
+  const loadSettings = async (forceRefresh: boolean = false) => {
     if (!currentUser) {
       setSettings(null);
       setLoading(false);
@@ -42,7 +42,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
 
     try {
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
+      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, forceRefresh);
       setSettings(userSettings);
     } catch (error) {
       console.error('Error loading user settings:', error);
@@ -86,8 +86,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     try {
       await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
       setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
-      // Reload settings from Firebase to ensure consistency
-      await loadSettings();
+      // Force reload settings from server (bypass cache) to ensure consistency
+      await loadSettings(true);
     } catch (error) {
       console.error('Error updating step-by-step form setting:', error);
       throw error;
