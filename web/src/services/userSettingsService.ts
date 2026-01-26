@@ -1,5 +1,5 @@
 import { db } from '../config/firebase';
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { UserSettings, TimeFormat, DateFormat } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 
@@ -7,7 +7,9 @@ export const userSettingsService = {
   async get(userId: string, forceRefresh: boolean = false): Promise<UserSettings | null> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
     // Force refresh from server to bypass Firestore cache
-    const docSnap = await getDoc(docRef, forceRefresh ? { source: 'server' } : {});
+    const docSnap = forceRefresh 
+      ? await getDocFromServer(docRef)
+      : await getDoc(docRef);
     
     if (!docSnap.exists()) {
       return null;
