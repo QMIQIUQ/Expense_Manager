@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -24,6 +24,7 @@ import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { balanceService } from '../services/balanceService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
+import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
@@ -94,6 +95,9 @@ const Dashboard: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  // DateNavigator state for expenses tab
+  const [expenseSelectedDate, setExpenseSelectedDate] = useState(getTodayLocal());
+  const [expenseViewMode, setExpenseViewMode] = useState<ViewMode>('all');
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
@@ -125,6 +129,32 @@ const Dashboard: React.FC = () => {
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+
+  // Filter expenses based on DateNavigator selection
+  const filteredExpensesForDisplay = useMemo(() => {
+    if (expenseViewMode === 'all') {
+      return expenses;
+    }
+    return expenses.filter(expense => {
+      const expenseDate = expense.date;
+      const selected = expenseSelectedDate;
+      if (expenseViewMode === 'day') {
+        return expenseDate === selected;
+      }
+      if (expenseViewMode === 'month') {
+        return expenseDate.slice(0, 7) === selected.slice(0, 7);
+      }
+      if (expenseViewMode === 'year') {
+        return expenseDate.slice(0, 4) === selected.slice(0, 4);
+      }
+      return true;
+    });
+  }, [expenses, expenseViewMode, expenseSelectedDate]);
+
+  // Calculate total amount for DateNavigator
+  const expenseTotalAmount = useMemo(() => {
+    return Math.round(filteredExpensesForDisplay.reduce((sum, exp) => sum + exp.amount, 0) * 100);
+  }, [filteredExpensesForDisplay]);
   //#endregion
   
   //#region Effects
@@ -2554,9 +2584,17 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="flex flex-col gap-4">
+            {/* Date Navigator */}
+            <DateNavigator
+              selectedDate={expenseSelectedDate}
+              onDateChange={setExpenseSelectedDate}
+              viewMode={expenseViewMode}
+              onViewModeChange={setExpenseViewMode}
+              totalAmount={expenseTotalAmount}
+            />
             <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('expenseHistory')}</h2>
             <ExpenseList
-              expenses={expenses}
+              expenses={filteredExpensesForDisplay}
               categories={categories}
               cards={cards}
               ewallets={ewallets}

@@ -231,10 +231,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 1:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepIcon}>📅</div>
-            <h2 style={styles.stepTitle}>{t('date')}</h2>
-            <p style={styles.stepSubtitle}>{t('openCalendar')}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>📅</span>
+              <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
               <DatePicker
                 label={t('date')}
                 value={formData.date}
@@ -256,9 +257,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 2:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepIcon}>💰</div>
-            <h2 style={styles.stepTitle}>{t('amount')}</h2>
-            <p style={styles.stepSubtitle}>{t('pleaseFillField')}</p>
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>💰</span>
+              <h2 style={styles.stepHeaderTitle}>{t('amount')}</h2>
+            </div>
             <div style={styles.amountInputContainer}>
               <input
                 ref={amountInputRef}
@@ -276,23 +278,26 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 3:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepIcon}>🏷️</div>
-            <h2 style={styles.stepTitle}>{t('selectCategory')}</h2>
-            <p style={styles.stepSubtitle}>{t('pleaseSelectCategory')}</p>
-            <div style={styles.categoryGrid}>
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  onClick={() => setFormData(prev => ({ ...prev, category: category.name }))}
-                  style={{
-                    ...styles.categoryCard,
-                    ...(formData.category === category.name ? styles.categoryCardActive : {}),
-                  }}
-                >
-                  <div style={styles.categoryEmoji}>{getCategoryIcon(category.name)}</div>
-                  <div style={styles.categoryName}>{category.name}</div>
-                </div>
-              ))}
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>🏷️</span>
+              <h2 style={styles.stepHeaderTitle}>{t('selectCategory')}</h2>
+            </div>
+            <div style={styles.categoryScrollContainer}>
+              <div style={styles.categoryScroll}>
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    onClick={() => setFormData(prev => ({ ...prev, category: category.name }))}
+                    style={{
+                      ...styles.categoryCard,
+                      ...(formData.category === category.name ? styles.categoryCardActive : {}),
+                    }}
+                  >
+                    <div style={styles.categoryEmoji}>{getCategoryIcon(category.name)}</div>
+                    <div style={styles.categoryName}>{category.name}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -300,9 +305,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 4:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepIcon}>📝</div>
-            <h2 style={styles.stepTitle}>{t('description')}</h2>
-            <p style={styles.stepSubtitle}>{t('descriptionPlaceholder')}</p>
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>📝</span>
+              <h2 style={styles.stepHeaderTitle}>{t('description')}</h2>
+            </div>
             <div style={styles.fieldContainer}>
               <label style={styles.fieldLabel}>{t('description')}</label>
               <input
@@ -330,9 +336,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 5:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepIcon}>💳</div>
-            <h2 style={styles.stepTitle}>{t('paymentMethod')}</h2>
-            <p style={styles.stepSubtitle}>{t('selectPaymentMethod')}</p>
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>💳</span>
+              <h2 style={styles.stepHeaderTitle}>{t('paymentMethod')}</h2>
+            </div>
             
             {lastUsedPaymentMethod && (
               <div style={styles.autoSelectHint}>
@@ -676,26 +683,25 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
   },
   stepContent: {
-    padding: '32px 24px',
-    minHeight: '400px',
+    padding: '24px',
+    minHeight: '300px',
+    maxHeight: '60vh',
+    overflowY: 'auto',
   },
-  stepIcon: {
-    fontSize: '48px',
-    textAlign: 'center',
-    marginBottom: '16px',
+  stepHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px',
   },
-  stepTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: '8px',
+  stepHeaderIcon: {
+    fontSize: '28px',
+  },
+  stepHeaderTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
     color: 'var(--text-primary)',
-  },
-  stepSubtitle: {
-    fontSize: '14px',
-    textAlign: 'center',
-    marginBottom: '32px',
-    color: 'var(--text-secondary)',
+    margin: 0,
   },
   amountInputContainer: {
     textAlign: 'center',
@@ -713,30 +719,40 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     background: 'transparent',
   },
-  categoryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+  categoryScrollContainer: {
+    marginLeft: '-24px',
+    marginRight: '-24px',
+    paddingLeft: '24px',
+    paddingRight: '24px',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+  },
+  categoryScroll: {
+    display: 'flex',
     gap: '12px',
+    paddingBottom: '8px',
   },
   categoryCard: {
-    padding: '24px 16px',
+    minWidth: '100px',
+    padding: '16px 12px',
     background: 'var(--bg-secondary, #f8f9fa)',
     borderRadius: '12px',
     textAlign: 'center',
     cursor: 'pointer',
     border: '2px solid transparent',
     transition: 'all 0.2s',
+    flexShrink: 0,
   },
   categoryCardActive: {
     background: 'var(--accent-light)',
     border: '2px solid var(--accent-primary)',
   },
   categoryEmoji: {
-    fontSize: '32px',
-    marginBottom: '8px',
+    fontSize: '24px',
+    marginBottom: '6px',
   },
   categoryName: {
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
