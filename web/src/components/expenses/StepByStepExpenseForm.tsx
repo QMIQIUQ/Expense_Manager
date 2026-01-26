@@ -334,7 +334,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             
             {lastUsedPaymentMethod && (
               <div style={styles.autoSelectHint}>
-                ✨ {t('loading')}
+                ✨ Auto-selected
               </div>
             )}
 
@@ -446,7 +446,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 />
                 <span>{t('repayment')}</span>
               </label>
-              <p style={styles.checkboxHint}>{t('repayment')}</p>
             </div>
 
             <div style={styles.checkboxContainer}>
@@ -459,7 +458,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 />
                 <span>{t('transfer')}</span>
               </label>
-              <p style={styles.checkboxHint}>{t('transfer')}</p>
             </div>
 
             {enableTransfer && (
@@ -579,7 +577,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           onClick={currentStep === 1 ? onCancel : handlePrevious}
           style={styles.buttonSecondary}
         >
-          ← {currentStep === 1 ? t('cancel') : t('close')}
+          ← {currentStep === 1 ? t('cancel') : '←'}
         </button>
         <button
           onClick={currentStep === 5 ? handleSubmit : handleNext}

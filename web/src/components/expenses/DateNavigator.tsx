@@ -84,8 +84,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   };
 
   const getWeekdayShort = (date: Date): string => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days[date.getDay()];
+    return new Intl.DateTimeFormat('en', { weekday: 'short' }).format(date);
   };
 
   const formatCurrency = (amount: number): string => {

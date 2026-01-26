@@ -84,12 +84,14 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const setUseStepByStepForm = async (value: boolean) => {
     if (!currentUser || !settings) return;
 
+    // Optimistic update - set local state immediately
+    setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
+    
     try {
       await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
-      setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
-      // Force reload settings from server (bypass cache) to ensure consistency
-      await loadSettings(true);
     } catch (error) {
+      // Rollback on error
+      setSettings(prev => prev ? { ...prev, useStepByStepForm: !value } : null);
       console.error('Error updating step-by-step form setting:', error);
       throw error;
     }
