@@ -42,7 +42,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
 
     try {
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, forceRefresh);
+      // Always force refresh from server on initial load to avoid stale cache
+      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, true);
       setSettings(userSettings);
     } catch (error) {
       console.error('Error loading user settings:', error);
@@ -109,10 +110,6 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     setUseStepByStepForm,
     refreshSettings,
   };
-
-  // Debug logging
-  console.log('[UserSettingsContext] Current settings:', settings);
-  console.log('[UserSettingsContext] useStepByStepForm:', settings?.useStepByStepForm);
 
   return (
     <UserSettingsContext.Provider value={value}>

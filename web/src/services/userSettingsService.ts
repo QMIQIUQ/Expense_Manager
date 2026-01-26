@@ -16,8 +16,6 @@ export const userSettingsService = {
     }
     
     const data = docSnap.data();
-    console.log('[userSettingsService.get] Raw Firebase data:', data);
-    console.log('[userSettingsService.get] useStepByStepForm from Firebase:', data.useStepByStepForm);
     
     return {
       id: docSnap.id,
@@ -49,17 +47,12 @@ export const userSettingsService = {
   },
 
   async getOrCreate(userId: string, forceRefresh: boolean = false): Promise<UserSettings> {
-    console.log('[userSettingsService.getOrCreate] Called for userId:', userId);
-    console.log('[userSettingsService.getOrCreate] Force refresh:', forceRefresh);
     const existing = await this.get(userId, forceRefresh);
     
     if (existing) {
-      console.log('[userSettingsService.getOrCreate] Found existing settings:', existing);
-      console.log('[userSettingsService.getOrCreate] Returning useStepByStepForm:', existing.useStepByStepForm);
       return existing;
     }
     
-    console.log('[userSettingsService.getOrCreate] No existing settings, creating defaults');
     // Create default settings
     const defaultSettings: Omit<UserSettings, 'id' | 'createdAt' | 'updatedAt'> = {
       userId,
@@ -72,13 +65,11 @@ export const userSettingsService = {
     await this.create(defaultSettings);
     
     // Return the created settings
-    const created = {
+    return {
       id: userId,
       ...defaultSettings,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    console.log('[userSettingsService.getOrCreate] Created and returning:', created);
-    return created;
   },
 };
