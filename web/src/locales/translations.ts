@@ -119,6 +119,8 @@ export const translations = {
   sortByAmountDesc: { en: 'Amount (High to Low)', zh: '金額（高至低）', 'zh-CN': '金额（高至低）' },
   sortByAmountAsc: { en: 'Amount (Low to High)', zh: '金額（低至高）', 'zh-CN': '金额（低至高）' },
   noExpenses: { en: 'No expenses found', zh: '找不到支出記錄', 'zh-CN': '找不到支出记录' },
+  noExpensesToday: { en: 'Great job! No expenses today! 🎉', zh: '好樣的！今天沒有支出哦！🎉', 'zh-CN': '好样的！今天没有支出哦！🎉' },
+  notTodayHint: { en: 'Note: Selected date is not today', zh: '注意：選擇的日期不是今天', 'zh-CN': '注意：选择的日期不是今天' },
   noResults: { en: 'No results found', zh: '找不到結果', 'zh-CN': '找不到结果' },
   searchByName: { en: 'Search by name...', zh: '依名稱搜尋...', 'zh-CN': '按名称搜索...' },
   multiSelect: { en: 'Multi-select', zh: '多選', 'zh-CN': '多选' },

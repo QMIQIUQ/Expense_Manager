@@ -87,9 +87,8 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     return new Intl.DateTimeFormat('en', { weekday: 'short' }).format(date);
   };
 
-  const formatCurrency = (amount: number): string => {
-    return `$${(amount / 100).toFixed(2)}`;
-  };
+  // Note: totalAmount is kept for API compatibility but not displayed per user request
+  void totalAmount;
 
   return (
     <div style={styles.container}>
@@ -183,15 +182,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         👆 {t('select')} | 👈👉 Swipe
       </div>
 
-      {/* Summary (if totalAmount provided) */}
-      {totalAmount !== undefined && (
-        <div style={styles.summary}>
-          <span style={styles.summaryLabel}>
-            {viewMode === 'day' ? t('today') : t('expenses')}
-          </span>
-          <span style={styles.summaryAmount}>{formatCurrency(totalAmount)}</span>
-        </div>
-      )}
+      {/* Summary removed - user requested to not show expense total in date navigator */}
     </div>
   );
 };
@@ -235,7 +226,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navArrow: {
     background: 'var(--bg-secondary, #f8f9fa)',
-    border: 'none',
+    border: '1px solid var(--border-color, #e9ecef)',
     color: 'var(--text-secondary)',
     fontSize: '18px',
     fontWeight: 'bold',

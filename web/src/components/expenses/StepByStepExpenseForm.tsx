@@ -229,12 +229,18 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
+        const isNotToday = formData.date !== getTodayLocal();
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>📅</span>
               <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
             </div>
+            {isNotToday && (
+              <div style={styles.dateWarning}>
+                ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
               <DatePicker
                 label={t('date')}
@@ -684,22 +690,22 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
   },
   stepContent: {
-    padding: '24px',
-    minHeight: '300px',
-    maxHeight: '60vh',
+    padding: '20px',
+    minHeight: '280px',
+    maxHeight: '55vh',
     overflowY: 'auto',
   },
   stepHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    marginBottom: '24px',
+    gap: '10px',
+    marginBottom: '16px',
   },
   stepHeaderIcon: {
-    fontSize: '28px',
+    fontSize: '22px',
   },
   stepHeaderTitle: {
-    fontSize: '20px',
+    fontSize: '16px',
     fontWeight: '600',
     color: 'var(--text-primary)',
     margin: 0,
@@ -708,52 +714,46 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
   },
   amountInput: {
-    fontSize: '48px',
+    fontSize: '36px',
     fontWeight: '700',
     textAlign: 'center',
     border: 'none',
-    borderBottom: '3px solid var(--accent-primary)',
-    padding: '16px',
+    borderBottom: '2px solid var(--accent-primary)',
+    padding: '12px',
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '300px',
     outline: 'none',
     color: 'var(--text-primary)',
     background: 'transparent',
   },
   categoryScrollContainer: {
-    marginLeft: '-24px',
-    marginRight: '-24px',
-    paddingLeft: '24px',
-    paddingRight: '24px',
-    overflowX: 'auto',
-    WebkitOverflowScrolling: 'touch',
+    marginLeft: '0',
+    marginRight: '0',
   },
   categoryScroll: {
-    display: 'flex',
-    gap: '12px',
-    paddingBottom: '8px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '10px',
   },
   categoryCard: {
-    minWidth: '100px',
-    padding: '16px 12px',
+    padding: '12px 8px',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '12px',
+    borderRadius: '8px',
     textAlign: 'center',
     cursor: 'pointer',
-    border: '2px solid transparent',
+    border: '1px solid var(--border-color, #e9ecef)',
     transition: 'all 0.2s',
-    flexShrink: 0,
   },
   categoryCardActive: {
     background: 'var(--accent-light)',
-    border: '2px solid var(--accent-primary)',
+    border: '1px solid var(--accent-primary)',
   },
   categoryEmoji: {
-    fontSize: '24px',
-    marginBottom: '6px',
+    fontSize: '20px',
+    marginBottom: '4px',
   },
   categoryName: {
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
@@ -803,28 +803,28 @@ const styles: Record<string, React.CSSProperties> = {
   paymentMethodGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '12px',
-    marginBottom: '24px',
+    gap: '10px',
+    marginBottom: '16px',
   },
   paymentMethodCard: {
-    padding: '24px 16px',
+    padding: '12px 8px',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '12px',
+    borderRadius: '8px',
     textAlign: 'center',
     cursor: 'pointer',
-    border: '2px solid transparent',
+    border: '1px solid var(--border-color, #e9ecef)',
     transition: 'all 0.2s',
   },
   paymentMethodCardActive: {
     background: 'var(--accent-light)',
-    border: '2px solid var(--accent-primary)',
+    border: '1px solid var(--accent-primary)',
   },
   paymentMethodIcon: {
-    fontSize: '32px',
-    marginBottom: '8px',
+    fontSize: '20px',
+    marginBottom: '4px',
   },
   paymentMethodName: {
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
@@ -890,16 +890,16 @@ const styles: Record<string, React.CSSProperties> = {
   navigation: {
     display: 'flex',
     gap: '12px',
-    padding: '24px',
+    padding: '16px 24px',
     borderTop: '1px solid var(--border-color, #e9ecef)',
   },
   buttonSecondary: {
     flex: 1,
-    padding: '14px 24px',
-    fontSize: '16px',
-    fontWeight: '600',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '10px',
+    padding: '12px 20px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
     background: 'var(--card-bg, white)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
@@ -907,12 +907,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   buttonPrimary: {
     flex: 1,
-    padding: '14px 24px',
-    fontSize: '16px',
-    fontWeight: '600',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
+    padding: '12px 20px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '8px',
+    background: 'var(--accent-primary)',
     color: 'white',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -938,6 +938,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-primary)',
     cursor: 'pointer',
     transition: 'all 0.2s',
+  },
+  dateWarning: {
+    padding: '8px 12px',
+    background: 'var(--warning-light, #fff3cd)',
+    borderRadius: '6px',
+    fontSize: '12px',
+    color: 'var(--warning-text, #856404)',
+    marginBottom: '12px',
+    textAlign: 'center',
   },
 };
 

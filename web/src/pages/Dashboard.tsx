@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   // DateNavigator state for expenses tab
   const [expenseSelectedDate, setExpenseSelectedDate] = useState(getTodayLocal());
-  const [expenseViewMode, setExpenseViewMode] = useState<ViewMode>('all');
+  const [expenseViewMode, setExpenseViewMode] = useState<ViewMode>('day');
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
@@ -2892,6 +2892,7 @@ const Dashboard: React.FC = () => {
               setShowAddSheet(false);
               setActiveTab('paymentMethods');
             }}
+            initialDate={expenseViewMode === 'day' ? expenseSelectedDate : undefined}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
           />
