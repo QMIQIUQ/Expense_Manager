@@ -15,17 +15,14 @@ const UserProfile: React.FC = () => {
   const { 
     timeFormat: contextTimeFormat, 
     dateFormat: contextDateFormat,
-    useStepByStepForm: contextUseStepByStepForm,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
-    setUseStepByStepForm: setContextUseStepByStepForm,
     refreshSettings: _refreshSettings 
   } = useUserSettings();
   void _refreshSettings; // Keep for potential future use
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(contextTimeFormat);
   const [dateFormat, setDateFormat] = useState<DateFormat>(contextDateFormat);
-  const [useStepByStepForm, setUseStepByStepForm] = useState<boolean>(contextUseStepByStepForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -38,8 +35,7 @@ const UserProfile: React.FC = () => {
   useEffect(() => {
     setTimeFormat(contextTimeFormat);
     setDateFormat(contextDateFormat);
-    setUseStepByStepForm(contextUseStepByStepForm);
-  }, [contextTimeFormat, contextDateFormat, contextUseStepByStepForm]);
+  }, [contextTimeFormat, contextDateFormat]);
 
   const loadSettings = async () => {
     if (!currentUser) return;
@@ -49,7 +45,6 @@ const UserProfile: React.FC = () => {
       setBillingCycleDay(settings.billingCycleDay);
       setTimeFormat(settings.timeFormat || '24h');
       setDateFormat(settings.dateFormat || 'YYYY-MM-DD');
-      setUseStepByStepForm(settings.useStepByStepForm || false);
     } catch (error) {
       console.error('Error loading user settings:', error);
       showNotification('error', t('errorLoadingSettings'));
@@ -104,22 +99,6 @@ const UserProfile: React.FC = () => {
       showNotification('success', t('settingsSaved'));
     } catch (error) {
       console.error('Error saving date format:', error);
-      showNotification('error', t('errorSavingSettings'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleStepByStepFormToggle = async (enabled: boolean) => {
-    if (!currentUser) return;
-    
-    setSaving(true);
-    try {
-      await setContextUseStepByStepForm(enabled);
-      setUseStepByStepForm(enabled);
-      showNotification('success', t('settingsSaved'));
-    } catch (error) {
-      console.error('Error saving expense form preference:', error);
       showNotification('error', t('errorSavingSettings'));
     } finally {
       setSaving(false);
@@ -238,55 +217,6 @@ const UserProfile: React.FC = () => {
                     <span className="date-format-label">{option.label}</span>
                   </button>
                 ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Expense Entry Preferences Card */}
-      <div className="profile-card">
-        <div className="card-header">
-          <div className="card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
-            </svg>
-          </div>
-          <h2 className="card-title">支出录入偏好设置</h2>
-        </div>
-        
-        {!loading && (
-          <div className="settings-content">
-            <div className="setting-section">
-              <div className="setting-label-row">
-                <span className="setting-label">表单类型</span>
-              </div>
-              <p className="setting-description">
-                在传统的单页表单和新的多步骤引导表单体验之间进行选择。
-              </p>
-              <div className="toggle-switch-container">
-                <button
-                  type="button"
-                  onClick={() => handleStepByStepFormToggle(false)}
-                  disabled={saving}
-                  className={`toggle-option ${!useStepByStepForm ? 'active' : ''}`}
-                >
-                  <span className="toggle-text">📋 传统表单</span>
-                  <span className="toggle-description">所有字段在一页</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStepByStepFormToggle(true)}
-                  disabled={saving}
-                  className={`toggle-option ${useStepByStepForm ? 'active' : ''}`}
-                >
-                  <span className="toggle-text">🎯 多步骤表单</span>
-                  <span className="toggle-description">引导式多步骤体验</span>
-                </button>
               </div>
             </div>
           </div>

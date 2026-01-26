@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ExpenseForm from '../../components/expenses/ExpenseForm';
 import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import PopupModal from '../../components/common/PopupModal';
@@ -39,7 +38,7 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateEWallet,
   onCreateCard,
 }) => {
-  const { timeFormat, dateFormat, useStepByStepForm } = useUserSettings();
+  const { timeFormat, dateFormat } = useUserSettings();
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [modalKey, setModalKey] = useState(0);
@@ -84,40 +83,22 @@ const ExpensesTab: React.FC<Props> = ({
         chromeless={true}
         hideFooter={true}
         maxWidth="600px"
-        key={`${modalKey}-${useStepByStepForm ? 'step-by-step' : 'traditional'}`}
+        key={modalKey}
       >
-        {useStepByStepForm ? (
-          <StepByStepExpenseForm
-            key="step-by-step-form"
-            onSubmit={handleAddSubmit}
-            onCancel={() => setIsAdding(false)}
-            categories={categories}
-            cards={cards}
-            ewallets={ewallets}
-            banks={banks}
-            onAddTransfer={onAddTransfer}
-            onCreateEWallet={onCreateEWallet}
-            onCreateCard={onCreateCard}
-            timeFormat={timeFormat}
-            dateFormat={dateFormat}
-            lastUsedPaymentMethod={lastUsedPaymentMethod}
-          />
-        ) : (
-          <ExpenseForm
-            key="traditional-form"
-            onSubmit={handleAddSubmit}
-            onCancel={() => setIsAdding(false)}
-            categories={categories}
-            cards={cards}
-            ewallets={ewallets}
-            banks={banks}
-            onAddTransfer={onAddTransfer}
-            onCreateEWallet={onCreateEWallet}
-            onCreateCard={onCreateCard}
-            timeFormat={timeFormat}
-            dateFormat={dateFormat}
-          />
-        )}
+        <StepByStepExpenseForm
+          onSubmit={handleAddSubmit}
+          onCancel={() => setIsAdding(false)}
+          categories={categories}
+          cards={cards}
+          ewallets={ewallets}
+          banks={banks}
+          onAddTransfer={onAddTransfer}
+          onCreateEWallet={onCreateEWallet}
+          onCreateCard={onCreateCard}
+          timeFormat={timeFormat}
+          dateFormat={dateFormat}
+          lastUsedPaymentMethod={lastUsedPaymentMethod}
+        />
       </PopupModal>
 
       {/* Edit Expense PopupModal */}
@@ -131,7 +112,7 @@ const ExpensesTab: React.FC<Props> = ({
         maxWidth="600px"
       >
         {editingExpense && (
-          <ExpenseForm
+          <StepByStepExpenseForm
             onSubmit={handleEditSubmit}
             onCancel={() => onEdit(null)}
             initialData={editingExpense}
@@ -144,6 +125,7 @@ const ExpensesTab: React.FC<Props> = ({
             onCreateCard={onCreateCard}
             timeFormat={timeFormat}
             dateFormat={dateFormat}
+            lastUsedPaymentMethod={lastUsedPaymentMethod}
           />
         )}
       </PopupModal>
