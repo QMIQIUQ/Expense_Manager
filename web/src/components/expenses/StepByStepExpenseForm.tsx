@@ -36,6 +36,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   ewallets = [],
   banks = [],
   onAddTransfer,
+  onCreateEWallet,
+  onCreateCard,
   initialDate,
   timeFormat = '24h',
   dateFormat = 'YYYY-MM-DD',
@@ -396,6 +398,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             )}
 
+            {formData.paymentMethod === 'credit_card' && cards.length === 0 && (
+              <div style={styles.noItemsContainer}>
+                <p style={styles.noItemsText}>{t('noCardsYet')}</p>
+                {onCreateCard && (
+                  <button type="button" onClick={onCreateCard} style={styles.createButton}>
+                    + {t('addCard')}
+                  </button>
+                )}
+              </div>
+            )}
+
             {formData.paymentMethod === 'e_wallet' && (
               <div style={styles.fieldContainer}>
                 <label style={styles.fieldLabel}>{t('eWalletName')}</label>
@@ -410,13 +423,20 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     ))}
                   </select>
                 ) : (
-                  <input
-                    type="text"
-                    value={formData.paymentMethodName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethodName: e.target.value }))}
-                    placeholder={t('eWalletPlaceholder')}
-                    style={styles.textInput}
-                  />
+                  <>
+                    <input
+                      type="text"
+                      value={formData.paymentMethodName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethodName: e.target.value }))}
+                      placeholder={t('eWalletPlaceholder')}
+                      style={styles.textInput}
+                    />
+                    {onCreateEWallet && (
+                      <button type="button" onClick={onCreateEWallet} style={styles.createButton}>
+                        + {t('addEWallet')}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -877,6 +897,28 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '10px',
     background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
     color: 'white',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  noItemsContainer: {
+    padding: '16px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    textAlign: 'center',
+  },
+  noItemsText: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    margin: '0 0 12px 0',
+  },
+  createButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: 'none',
+    borderRadius: '6px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
