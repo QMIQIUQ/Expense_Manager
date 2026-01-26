@@ -46,12 +46,16 @@ export const userSettingsService = {
   },
 
   async getOrCreate(userId: string): Promise<UserSettings> {
+    console.log('[userSettingsService.getOrCreate] Called for userId:', userId);
     const existing = await this.get(userId);
     
     if (existing) {
+      console.log('[userSettingsService.getOrCreate] Found existing settings:', existing);
+      console.log('[userSettingsService.getOrCreate] Returning useStepByStepForm:', existing.useStepByStepForm);
       return existing;
     }
     
+    console.log('[userSettingsService.getOrCreate] No existing settings, creating defaults');
     // Create default settings
     const defaultSettings: Omit<UserSettings, 'id' | 'createdAt' | 'updatedAt'> = {
       userId,
@@ -64,11 +68,13 @@ export const userSettingsService = {
     await this.create(defaultSettings);
     
     // Return the created settings
-    return {
+    const created = {
       id: userId,
       ...defaultSettings,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    console.log('[userSettingsService.getOrCreate] Created and returning:', created);
+    return created;
   },
 };
