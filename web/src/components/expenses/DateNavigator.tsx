@@ -12,6 +12,12 @@ interface DateNavigatorProps {
   totalAmount?: number; // Optional: total amount for selected date/period
 }
 
+// Helper to format month/year for display
+const formatMonthYear = (dateStr: string): string => {
+  const date = new Date(dateStr + 'T00:00:00');
+  return new Intl.DateTimeFormat('default', { month: 'short', year: 'numeric' }).format(date);
+};
+
 const DateNavigator: React.FC<DateNavigatorProps> = ({
   selectedDate,
   onDateChange,
@@ -89,47 +95,61 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
   // Note: totalAmount is kept for API compatibility but not displayed per user request
   void totalAmount;
+  
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   return (
     <div style={styles.container}>
-      {/* View Mode Toggle */}
-      <div style={styles.viewModeContainer}>
-        <button
-          onClick={() => onViewModeChange('all')}
-          style={{
-            ...styles.viewModeBtn,
-            ...(viewMode === 'all' ? styles.viewModeBtnActive : {}),
-          }}
+      {/* Header Row: Month/Year display + View Mode Toggle */}
+      <div style={styles.headerRow}>
+        {/* Month/Year Display - Clickable to open date picker */}
+        <button 
+          onClick={() => setShowDatePicker(true)} 
+          style={styles.monthYearBtn}
+          aria-label="Select date"
         >
-          {t('allBudgets')}
+          {formatMonthYear(selectedDate)}
         </button>
-        <button
-          onClick={() => onViewModeChange('day')}
-          style={{
-            ...styles.viewModeBtn,
-            ...(viewMode === 'day' ? styles.viewModeBtnActive : {}),
-          }}
-        >
-          {t('date')}
-        </button>
-        <button
-          onClick={() => onViewModeChange('month')}
-          style={{
-            ...styles.viewModeBtn,
-            ...(viewMode === 'month' ? styles.viewModeBtnActive : {}),
-          }}
-        >
-          {t('month')}
-        </button>
-        <button
-          onClick={() => onViewModeChange('year')}
-          style={{
-            ...styles.viewModeBtn,
-            ...(viewMode === 'year' ? styles.viewModeBtnActive : {}),
-          }}
-        >
-          {t('year')}
-        </button>
+        
+        {/* View Mode Toggle */}
+        <div style={styles.viewModeContainer}>
+          <button
+            onClick={() => onViewModeChange('all')}
+            style={{
+              ...styles.viewModeBtn,
+              ...(viewMode === 'all' ? styles.viewModeBtnActive : {}),
+            }}
+          >
+            {t('allBudgets')}
+          </button>
+          <button
+            onClick={() => onViewModeChange('day')}
+            style={{
+              ...styles.viewModeBtn,
+              ...(viewMode === 'day' ? styles.viewModeBtnActive : {}),
+            }}
+          >
+            {t('date')}
+          </button>
+          <button
+            onClick={() => onViewModeChange('month')}
+            style={{
+              ...styles.viewModeBtn,
+              ...(viewMode === 'month' ? styles.viewModeBtnActive : {}),
+            }}
+          >
+            {t('month')}
+          </button>
+          <button
+            onClick={() => onViewModeChange('year')}
+            style={{
+              ...styles.viewModeBtn,
+              ...(viewMode === 'year' ? styles.viewModeBtnActive : {}),
+            }}
+          >
+            {t('year')}
+          </button>
+        </div>
       </div>
 
       {/* Horizontal Date Scroll */}
@@ -155,7 +175,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
                     ...styles.dateItem,
                     ...(isSelectedDate ? styles.dateItemToday : styles.dateItemInactive),
                     border: 'none',
-                    background: 'transparent',
+                    background: isSelectedDate ? 'var(--accent-light, #e8f0fe)' : 'transparent',
                     cursor: 'pointer',
                   }}
                   aria-label={`${isTodayDate ? t('today') + ' ' : ''}${dateStr}`}
@@ -177,7 +197,26 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         </button>
       </div>
 
-      {/* Summary removed - user requested to not show expense total in date navigator */}
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div style={styles.datePickerOverlay} onClick={() => setShowDatePicker(false)}>
+          <div style={styles.datePickerModal} onClick={(e) => e.stopPropagation()}>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                onDateChange(e.target.value);
+                setShowDatePicker(false);
+              }}
+              style={styles.datePickerInput}
+              autoFocus
+            />
+            <button onClick={() => setShowDatePicker(false)} style={styles.datePickerClose}>
+              {t('close') || 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -185,30 +224,48 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 const styles: Record<string, React.CSSProperties> = {
   container: {
     background: 'var(--card-bg, white)',
-    padding: '12px 16px',
+    padding: '10px 12px',
     borderRadius: '12px',
     border: '1px solid var(--border-color, #e9ecef)',
     position: 'sticky',
     top: 0,
     zIndex: 10,
   },
+  headerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '8px',
+    flexWrap: 'wrap',
+  },
+  monthYearBtn: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'var(--accent-primary)',
+    background: 'var(--accent-light, #e8f0fe)',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
   viewModeContainer: {
     display: 'flex',
-    gap: '4px',
-    marginBottom: '12px',
+    gap: '2px',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
-    padding: '3px',
+    borderRadius: '6px',
+    padding: '2px',
+    flex: 1,
   },
   viewModeBtn: {
     flex: 1,
-    padding: '6px 10px',
+    padding: '4px 6px',
     border: '1px solid var(--border-color, #e9ecef)',
     background: 'transparent',
     color: 'var(--text-secondary)',
-    borderRadius: '6px',
+    borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: '500',
     transition: 'all 0.2s',
   },
@@ -220,18 +277,19 @@ const styles: Record<string, React.CSSProperties> = {
   dateScrollWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '4px',
   },
   navArrow: {
     background: 'var(--bg-secondary, #f8f9fa)',
     border: '1px solid var(--border-color, #e9ecef)',
     color: 'var(--text-secondary)',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 'bold',
-    padding: '6px 10px',
+    padding: '4px 8px',
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.2s',
+    flexShrink: 0,
   },
   dateScrollContainer: {
     overflowX: 'auto',
@@ -239,11 +297,12 @@ const styles: Record<string, React.CSSProperties> = {
     scrollbarWidth: 'none',
     msOverflowStyle: 'none',
     flex: 1,
+    minWidth: 0,
   },
   dateScroll: {
     display: 'flex',
-    gap: '8px',
-    padding: '4px 0',
+    gap: '4px',
+    padding: '2px 0',
     justifyContent: 'center',
   },
   dateItem: {
@@ -251,11 +310,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '8px 12px',
-    borderRadius: '8px',
+    padding: '4px 8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    minWidth: '50px',
+    minWidth: '40px',
   },
   dateItemToday: {
     background: 'var(--accent-light, #e8f0fe)',
@@ -266,23 +325,62 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
   },
   dateDay: {
-    fontSize: '10px',
-    marginBottom: '2px',
+    fontSize: '9px',
+    marginBottom: '1px',
     fontWeight: '500',
     textTransform: 'uppercase',
   },
   dateNumber: {
-    fontSize: '18px',
+    fontSize: '14px',
     fontWeight: '600',
   },
   todayLabel: {
-    fontSize: '9px',
+    fontSize: '8px',
     fontWeight: '600',
-    padding: '2px 6px',
+    padding: '1px 4px',
     background: 'var(--accent-light, #e8f0fe)',
-    borderRadius: '4px',
-    marginTop: '2px',
+    borderRadius: '3px',
+    marginTop: '1px',
     color: 'var(--accent-primary)',
+  },
+  datePickerOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  datePickerModal: {
+    background: 'var(--card-bg, white)',
+    padding: '20px',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    minWidth: '280px',
+  },
+  datePickerInput: {
+    padding: '12px',
+    fontSize: '16px',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    background: 'var(--input-bg, white)',
+    color: 'var(--text-primary)',
+  },
+  datePickerClose: {
+    padding: '10px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
   },
   swipeHint: {
     display: 'none', // Hide swipe hint for cleaner design

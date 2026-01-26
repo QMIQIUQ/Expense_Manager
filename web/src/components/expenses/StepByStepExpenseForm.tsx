@@ -595,69 +595,112 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <div style={styles.headerTitle}>
-          <span style={styles.headerIcon}>🎯</span>
-          {initialData ? (t('editExpense') || '编辑支出') : (t('addExpense') || '新增支出')}
-        </div>
-        {renderProgressIndicator()}
-      </div>
-
-      {renderProgressSummary()}
-      {renderStepContent()}
-
-      <div style={styles.navigation}>
+        {/* Navigation buttons in header */}
         <button
           onClick={currentStep === 1 ? onCancel : handlePrevious}
-          style={styles.buttonSecondary}
+          style={styles.headerNavBtn}
+          aria-label={currentStep === 1 ? t('cancel') : t('back')}
         >
-          {currentStep === 1 ? t('cancel') : t('back')}
+          {currentStep === 1 ? '✕' : '‹'}
         </button>
+        
+        <div style={styles.headerCenter}>
+          <div style={styles.headerTitle}>
+            {initialData ? (t('editExpense') || '编辑支出') : (t('addExpense') || '新增支出')}
+          </div>
+          {renderProgressIndicator()}
+        </div>
+        
         <button
           onClick={currentStep === 5 ? handleSubmit : handleNext}
-          style={styles.buttonPrimary}
+          style={{
+            ...styles.headerNavBtn,
+            ...styles.headerNavBtnPrimary,
+            ...((currentStep === 2 && formData.amount === 0) ||
+                (currentStep === 3 && !formData.category) ||
+                (currentStep === 4 && !formData.description.trim()) ||
+                (currentStep === 5 && !isStep5Valid()) ? styles.headerNavBtnDisabled : {}),
+          }}
           disabled={
             (currentStep === 2 && formData.amount === 0) ||
             (currentStep === 3 && !formData.category) ||
             (currentStep === 4 && !formData.description.trim()) ||
             (currentStep === 5 && !isStep5Valid())
           }
+          aria-label={currentStep === 5 ? t('save') : t('next')}
         >
-          {currentStep === 5 ? t('save') : t('next')}
+          {currentStep === 5 ? '✓' : '›'}
         </button>
       </div>
+
+      {renderProgressSummary()}
+      {renderStepContent()}
     </div>
   );
 };
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    maxWidth: '600px',
+    maxWidth: '100%',
+    width: '100%',
     margin: '0 auto',
     background: 'var(--card-bg, white)',
     borderRadius: '16px',
     boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
     overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     background: 'var(--bg-secondary, #f8f9fa)',
-    padding: '16px 20px',
+    padding: '12px 16px',
     borderBottom: '1px solid var(--border-color, #e9ecef)',
-  },
-  headerTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  headerCenter: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
     color: 'var(--text-primary)',
-    marginBottom: '12px',
+    marginBottom: '8px',
+  },
+  headerNavBtn: {
+    width: '36px',
+    height: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    background: 'var(--card-bg, white)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    flexShrink: 0,
+  },
+  headerNavBtnPrimary: {
+    background: 'var(--accent-primary)',
+    border: '1px solid var(--accent-primary)',
+    color: 'white',
+  },
+  headerNavBtnDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
   },
   headerIcon: {
     fontSize: '20px',
   },
   progressContainer: {
     display: 'flex',
-    gap: '6px',
+    gap: '4px',
   },
   progressBar: {
     flex: 1,
@@ -671,17 +714,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   progressSummary: {
     display: 'flex',
-    gap: '8px',
-    padding: '12px 16px',
+    gap: '6px',
+    padding: '10px 12px',
     overflowX: 'auto',
     background: 'var(--card-bg, white)',
     borderBottom: '1px solid var(--border-color, #e9ecef)',
   },
   summaryChip: {
-    padding: '6px 12px',
+    padding: '4px 10px',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '16px',
-    fontSize: '13px',
+    borderRadius: '12px',
+    fontSize: '12px',
     fontWeight: '500',
     whiteSpace: 'nowrap',
     cursor: 'pointer',
@@ -690,23 +733,21 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
   },
   stepContent: {
-    padding: '20px',
-    minHeight: '320px',
-    height: '320px',
-    maxHeight: '320px',
+    padding: '16px',
+    flex: 1,
     overflowY: 'auto',
   },
   stepHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginBottom: '16px',
+    gap: '8px',
+    marginBottom: '12px',
   },
   stepHeaderIcon: {
-    fontSize: '22px',
+    fontSize: '18px',
   },
   stepHeaderTitle: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: '600',
     color: 'var(--text-primary)',
     margin: 0,
@@ -715,14 +756,14 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
   },
   amountInput: {
-    fontSize: '36px',
+    fontSize: '32px',
     fontWeight: '700',
     textAlign: 'center',
     border: 'none',
     borderBottom: '2px solid var(--accent-primary)',
-    padding: '12px',
+    padding: '10px',
     width: '100%',
-    maxWidth: '300px',
+    maxWidth: '280px',
     outline: 'none',
     color: 'var(--text-primary)',
     background: 'transparent',
@@ -734,7 +775,7 @@ const styles: Record<string, React.CSSProperties> = {
   categoryScroll: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '10px',
+    gap: '8px',
   },
   categoryCard: {
     padding: '12px 8px',
