@@ -82,9 +82,10 @@ const ExpensesTab: React.FC<Props> = ({
     });
   }, [expenses, viewMode, selectedDate]);
 
-  // Calculate total amount for the selected period
+  // Calculate total amount for the selected period (in cents for DateNavigator)
   const totalAmount = useMemo(() => {
-    return filteredExpenses.reduce((sum, exp) => sum + (exp.amount * 100), 0);
+    // exp.amount is in dollars, convert to cents for display
+    return Math.round(filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0) * 100);
   }, [filteredExpenses]);
 
   const handleAddClick = () => {

@@ -423,7 +423,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     ))}
                   </select>
                 ) : (
-                  <>
+                  <div>
                     <input
                       type="text"
                       value={formData.paymentMethodName}
@@ -432,11 +432,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                       style={styles.textInput}
                     />
                     {onCreateEWallet && (
-                      <button type="button" onClick={onCreateEWallet} style={styles.createButton}>
+                      <button type="button" onClick={onCreateEWallet} style={{...styles.createButton, marginTop: '8px'}}>
                         + {t('addEWallet')}
                       </button>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
