@@ -610,7 +610,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           onClick={currentStep === 1 ? onCancel : handlePrevious}
           style={styles.buttonSecondary}
         >
-          ← {currentStep === 1 ? t('cancel') : '←'}
+          {currentStep === 1 ? t('cancel') : t('back')}
         </button>
         <button
           onClick={currentStep === 5 ? handleSubmit : handleNext}
@@ -622,7 +622,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             (currentStep === 5 && !isStep5Valid())
           }
         >
-          {currentStep === 5 ? `✓ ${t('save')}` : `${t('confirm')} →`}
+          {currentStep === 5 ? t('save') : t('next')}
         </button>
       </div>
     </div>
@@ -691,8 +691,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepContent: {
     padding: '20px',
-    minHeight: '280px',
-    maxHeight: '55vh',
+    minHeight: '320px',
+    height: '320px',
+    maxHeight: '320px',
     overflowY: 'auto',
   },
   stepHeader: {
@@ -940,11 +941,8 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
   },
   dateWarning: {
-    padding: '8px 12px',
-    background: 'var(--warning-light, #fff3cd)',
-    borderRadius: '6px',
     fontSize: '12px',
-    color: 'var(--warning-text, #856404)',
+    color: 'var(--warning-text)',
     marginBottom: '12px',
     textAlign: 'center',
   },

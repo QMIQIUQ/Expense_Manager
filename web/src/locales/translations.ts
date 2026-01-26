@@ -6,6 +6,8 @@ export const translations = {
   saveSuccess: { en: 'Saved successfully', zh: '儲存成功', 'zh-CN': '保存成功' },
   saveFailed: { en: 'Failed to save, please try again', zh: '儲存失敗，請稍後重試', 'zh-CN': '保存失败，请稍后重试' },
   cancel: { en: 'Cancel', zh: '取消', 'zh-CN': '取消' },
+  back: { en: 'Back', zh: '返回', 'zh-CN': '返回' },
+  next: { en: 'Next', zh: '下一步', 'zh-CN': '下一步' },
   delete: { en: 'Delete', zh: '刪除', 'zh-CN': '删除' },
   edit: { en: 'Edit', zh: '編輯', 'zh-CN': '编辑' },
   add: { en: 'Add', zh: '新增', 'zh-CN': '添加' },

@@ -177,11 +177,6 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         </button>
       </div>
 
-      {/* Swipe Hint */}
-      <div style={styles.swipeHint}>
-        👆 {t('select')} | 👈👉 Swipe
-      </div>
-
       {/* Summary removed - user requested to not show expense total in date navigator */}
     </div>
   );
@@ -193,6 +188,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 16px',
     borderRadius: '12px',
     border: '1px solid var(--border-color, #e9ecef)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
   },
   viewModeContainer: {
     display: 'flex',
@@ -205,7 +203,7 @@ const styles: Record<string, React.CSSProperties> = {
   viewModeBtn: {
     flex: 1,
     padding: '6px 10px',
-    border: 'none',
+    border: '1px solid var(--border-color, #e9ecef)',
     background: 'transparent',
     color: 'var(--text-secondary)',
     borderRadius: '6px',
