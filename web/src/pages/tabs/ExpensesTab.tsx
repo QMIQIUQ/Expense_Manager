@@ -42,11 +42,17 @@ const ExpensesTab: React.FC<Props> = ({
   const { timeFormat, dateFormat, useStepByStepForm } = useUserSettings();
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
 
   // Derive last used payment method from recent expenses
   const lastUsedPaymentMethod = expenses.length > 0 
     ? expenses[0].paymentMethod 
     : undefined;
+
+  const handleAddClick = () => {
+    setModalKey(prev => prev + 1); // Force new modal instance
+    setIsAdding(true);
+  };
 
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
@@ -63,7 +69,7 @@ const ExpensesTab: React.FC<Props> = ({
       {/* Header with Add Button */}
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
-        <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
+        <button onClick={handleAddClick} className="btn btn-accent-light">
           <PlusIcon size={18} />
           <span>{t('addNewExpense')}</span>
         </button>
@@ -78,7 +84,7 @@ const ExpensesTab: React.FC<Props> = ({
         chromeless={true}
         hideFooter={true}
         maxWidth="600px"
-        key={useStepByStepForm ? 'step-by-step' : 'traditional'}
+        key={`${modalKey}-${useStepByStepForm ? 'step-by-step' : 'traditional'}`}
       >
         {useStepByStepForm ? (
           <StepByStepExpenseForm
