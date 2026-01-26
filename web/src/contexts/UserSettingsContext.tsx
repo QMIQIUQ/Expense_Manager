@@ -42,8 +42,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
 
     try {
-      // Always force refresh from server on initial load to avoid stale cache
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, true);
+      // Force refresh from server when requested to avoid stale cache
+      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, forceRefresh);
       setSettings(userSettings);
     } catch (error) {
       console.error('Error loading user settings:', error);
@@ -53,7 +53,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   };
 
   useEffect(() => {
-    loadSettings();
+    loadSettings(true); // Force refresh from server on initial load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
@@ -96,7 +96,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   };
 
   const refreshSettings = async () => {
-    await loadSettings();
+    await loadSettings(true); // Force refresh from server
   };
 
   const value: UserSettingsContextType = {
