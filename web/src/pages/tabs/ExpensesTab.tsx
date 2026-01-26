@@ -78,9 +78,11 @@ const ExpensesTab: React.FC<Props> = ({
         chromeless={true}
         hideFooter={true}
         maxWidth="600px"
+        key={useStepByStepForm ? 'step-by-step' : 'traditional'}
       >
         {useStepByStepForm ? (
           <StepByStepExpenseForm
+            key="step-by-step-form"
             onSubmit={handleAddSubmit}
             onCancel={() => setIsAdding(false)}
             categories={categories}
@@ -96,6 +98,7 @@ const ExpensesTab: React.FC<Props> = ({
           />
         ) : (
           <ExpenseForm
+            key="traditional-form"
             onSubmit={handleAddSubmit}
             onCancel={() => setIsAdding(false)}
             categories={categories}
