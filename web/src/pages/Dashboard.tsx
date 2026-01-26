@@ -23,7 +23,7 @@ import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { balanceService } from '../services/balanceService';
-import ExpenseForm from '../components/expenses/ExpenseForm';
+import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
@@ -2750,8 +2750,7 @@ const Dashboard: React.FC = () => {
           hideFooter={true}
           maxWidth="700px"
         >
-          <ExpenseForm
-            title={t('addNewExpense')}
+          <StepByStepExpenseForm
             onSubmit={(data) => {
               handleAddExpense(data);
               setShowAddExpenseForm(false);
@@ -2836,8 +2835,7 @@ const Dashboard: React.FC = () => {
           hideFooter={true}
           maxWidth="700px"
         >
-          <ExpenseForm
-            title={t('addNewExpense')}
+          <StepByStepExpenseForm
             onSubmit={(data) => {
               handleAddExpense(data);
               setShowAddSheet(false);
