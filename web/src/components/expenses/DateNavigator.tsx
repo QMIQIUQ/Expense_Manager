@@ -54,12 +54,16 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
       const container = scrollContainerRef.current;
       const todayElement = todayRef.current;
       
-      // Calculate position to center the selected date
-      const containerWidth = container.offsetWidth;
-      const todayLeft = todayElement.offsetLeft;
-      const todayWidth = todayElement.offsetWidth;
-      
-      container.scrollLeft = todayLeft - (containerWidth / 2) + (todayWidth / 2);
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        // Calculate position to center the selected date
+        const containerWidth = container.offsetWidth;
+        const todayLeft = todayElement.offsetLeft;
+        const todayWidth = todayElement.offsetWidth;
+        
+        const scrollPosition = todayLeft - (containerWidth / 2) + (todayWidth / 2);
+        container.scrollTo({ left: scrollPosition, behavior: 'auto' });
+      });
     }
   }, [dates, selectedDate]);
 
@@ -303,7 +307,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '4px',
     padding: '2px 0',
-    justifyContent: 'center',
+    // Removed justifyContent: 'center' - let scrollTo handle centering
   },
   dateItem: {
     flexShrink: 0,

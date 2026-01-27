@@ -48,6 +48,30 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
 
+  // Sort categories by recent usage (stored in localStorage)
+  const getSortedCategories = (): Category[] => {
+    try {
+      const recentUsage = JSON.parse(localStorage.getItem('categoryUsage') || '{}');
+      return [...categories].sort((a, b) => {
+        const aCount = recentUsage[a.name] || 0;
+        const bCount = recentUsage[b.name] || 0;
+        return bCount - aCount;
+      });
+    } catch {
+      return categories;
+    }
+  };
+
+  const updateCategoryUsage = (categoryName: string) => {
+    try {
+      const recentUsage = JSON.parse(localStorage.getItem('categoryUsage') || '{}');
+      recentUsage[categoryName] = (recentUsage[categoryName] || 0) + 1;
+      localStorage.setItem('categoryUsage', JSON.stringify(recentUsage));
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+
   const [formData, setFormData] = useState({
     date: initialDate || initialData?.date || getTodayLocal(),
     time: initialData?.time || getCurrentTimeLocal(),
@@ -102,11 +126,32 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     if (currentStep > 1) setCurrentStep((prev) => (prev - 1) as Step);
   };
 
+  // Handle Enter key to go to next step
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (currentStep === 5) {
+        if (isStep5Valid()) handleSubmit();
+      } else if (currentStep === 2 && formData.amount > 0) {
+        handleNext();
+      } else if (currentStep === 4 && formData.description.trim()) {
+        handleNext();
+      } else if (currentStep === 1) {
+        handleNext();
+      }
+    }
+  };
+
   const handleStepClick = (step: Step) => {
     setCurrentStep(step);
   };
 
   const handleSubmit = () => {
+    // Update category usage for sorting
+    if (formData.category) {
+      updateCategoryUsage(formData.category);
+    }
+
     const submitData: Record<string, unknown> = { 
       ...formData,
       amount: formData.amount / 100
@@ -282,6 +327,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         );
 
       case 3:
+        const sortedCategories = getSortedCategories();
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepHeader}>
@@ -290,10 +336,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             </div>
             <div style={styles.categoryScrollContainer}>
               <div style={styles.categoryScroll}>
-                {categories.map((category) => (
+                {sortedCategories.map((category) => (
                   <div
                     key={category.id}
-                    onClick={() => setFormData(prev => ({ ...prev, category: category.name }))}
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, category: category.name }));
+                      // Auto advance to next step when category is selected
+                      setTimeout(() => handleNext(), 150);
+                    }}
                     style={{
                       ...styles.categoryCard,
                       ...(formData.category === category.name ? styles.categoryCardActive : {}),
@@ -469,28 +519,31 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             )}
 
-            <div style={styles.checkboxContainer}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={formData.needsRepaymentTracking}
-                  onChange={(e) => setFormData(prev => ({ ...prev, needsRepaymentTracking: e.target.checked }))}
-                  style={styles.checkbox}
-                />
-                <span>{t('repayment')}</span>
-              </label>
-            </div>
-
-            <div style={styles.checkboxContainer}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={enableTransfer}
-                  onChange={(e) => setEnableTransfer(e.target.checked)}
-                  style={styles.checkbox}
-                />
-                <span>{t('transfer')}</span>
-              </label>
+            {/* Toggle options - tap to toggle like settings page */}
+            <div style={styles.toggleOptionsContainer}>
+              <div
+                onClick={() => setFormData(prev => ({ ...prev, needsRepaymentTracking: !prev.needsRepaymentTracking }))}
+                style={{
+                  ...styles.toggleOption,
+                  ...(formData.needsRepaymentTracking ? styles.toggleOptionActive : {}),
+                }}
+              >
+                <span style={styles.toggleOptionIcon}>🔄</span>
+                <span style={styles.toggleOptionText}>{t('repayment')}</span>
+                <span style={styles.toggleIndicator}>{formData.needsRepaymentTracking ? '✓' : ''}</span>
+              </div>
+              
+              <div
+                onClick={() => setEnableTransfer(!enableTransfer)}
+                style={{
+                  ...styles.toggleOption,
+                  ...(enableTransfer ? styles.toggleOptionActive : {}),
+                }}
+              >
+                <span style={styles.toggleOptionIcon}>↔️</span>
+                <span style={styles.toggleOptionText}>{t('transfer')}</span>
+                <span style={styles.toggleIndicator}>{enableTransfer ? '✓' : ''}</span>
+              </div>
             </div>
 
             {enableTransfer && (
@@ -593,7 +646,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onKeyDown={handleKeyDown}>
       <div style={styles.header}>
         {/* Navigation buttons in header */}
         <button
@@ -613,14 +666,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         
         <button
           onClick={currentStep === 5 ? handleSubmit : handleNext}
-          style={{
-            ...styles.headerNavBtn,
-            ...styles.headerNavBtnPrimary,
-            ...((currentStep === 2 && formData.amount === 0) ||
-                (currentStep === 3 && !formData.category) ||
-                (currentStep === 4 && !formData.description.trim()) ||
-                (currentStep === 5 && !isStep5Valid()) ? styles.headerNavBtnDisabled : {}),
-          }}
+          style={styles.headerNavBtn}
           disabled={
             (currentStep === 2 && formData.amount === 0) ||
             (currentStep === 3 && !formData.category) ||
@@ -734,7 +780,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepContent: {
     padding: '16px',
-    flex: 1,
+    height: '280px',
+    minHeight: '280px',
+    maxHeight: '280px',
     overflowY: 'auto',
   },
   stepHeader: {
@@ -769,13 +817,20 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
   },
   categoryScrollContainer: {
-    marginLeft: '0',
-    marginRight: '0',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
   },
   categoryScroll: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateRows: 'repeat(2, 1fr)',
+    gridAutoFlow: 'column',
+    gridAutoColumns: 'minmax(80px, 100px)',
     gap: '8px',
+    paddingBottom: '8px',
   },
   categoryCard: {
     padding: '12px 8px',
@@ -986,6 +1041,41 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--warning-text)',
     marginBottom: '12px',
     textAlign: 'center',
+  },
+  toggleOptionsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    marginTop: '8px',
+  },
+  toggleOption: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    border: '1px solid var(--border-color, #e9ecef)',
+    transition: 'all 0.2s',
+  },
+  toggleOptionActive: {
+    background: 'var(--accent-light)',
+    border: '1px solid var(--accent-primary)',
+  },
+  toggleOptionIcon: {
+    fontSize: '16px',
+  },
+  toggleOptionText: {
+    flex: 1,
+    fontSize: '14px',
+    fontWeight: '500',
+    color: 'var(--text-primary)',
+  },
+  toggleIndicator: {
+    fontSize: '14px',
+    color: 'var(--accent-primary)',
+    fontWeight: '600',
   },
 };
 
