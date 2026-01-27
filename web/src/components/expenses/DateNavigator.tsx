@@ -50,20 +50,15 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
   // Auto-scroll to center selected date
   useEffect(() => {
-    if (scrollContainerRef.current && todayRef.current) {
-      const container = scrollContainerRef.current;
-      const todayElement = todayRef.current;
-      
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        // Calculate position to center the selected date
-        const containerWidth = container.offsetWidth;
-        const todayLeft = todayElement.offsetLeft;
-        const todayWidth = todayElement.offsetWidth;
-        
-        const scrollPosition = todayLeft - (containerWidth / 2) + (todayWidth / 2);
-        container.scrollTo({ left: scrollPosition, behavior: 'auto' });
-      });
+    if (todayRef.current) {
+      // Use scrollIntoView with 'center' alignment for reliable centering
+      setTimeout(() => {
+        todayRef.current?.scrollIntoView({
+          behavior: 'auto',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }, 50);
     }
   }, [dates, selectedDate]);
 
@@ -100,15 +95,38 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   // Note: totalAmount is kept for API compatibility but not displayed per user request
   void totalAmount;
   
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Hidden date input ref for direct date picker
+  const hiddenDateInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleMonthYearClick = () => {
+    // Directly trigger the hidden date input to open native date picker
+    if (hiddenDateInputRef.current) {
+      hiddenDateInputRef.current.showPicker?.();
+      hiddenDateInputRef.current.click();
+    }
+  };
 
   return (
     <div style={styles.container}>
+      {/* Hidden date input for native date picker */}
+      <input
+        ref={hiddenDateInputRef}
+        type="date"
+        value={selectedDate}
+        onChange={(e) => {
+          if (e.target.value) {
+            onDateChange(e.target.value);
+          }
+        }}
+        style={styles.hiddenDateInput}
+        tabIndex={-1}
+      />
+      
       {/* Header Row: Month/Year display + View Mode Toggle */}
       <div style={styles.headerRow}>
         {/* Month/Year Display - Clickable to open date picker */}
         <button 
-          onClick={() => setShowDatePicker(true)} 
+          onClick={handleMonthYearClick} 
           style={styles.monthYearBtn}
           aria-label="Select date"
         >
@@ -200,27 +218,6 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
           ›
         </button>
       </div>
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <div style={styles.datePickerOverlay} onClick={() => setShowDatePicker(false)}>
-          <div style={styles.datePickerModal} onClick={(e) => e.stopPropagation()}>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                onDateChange(e.target.value);
-                setShowDatePicker(false);
-              }}
-              style={styles.datePickerInput}
-              autoFocus
-            />
-            <button onClick={() => setShowDatePicker(false)} style={styles.datePickerClose}>
-              {t('close') || 'Close'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -234,6 +231,14 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'sticky',
     top: 0,
     zIndex: 10,
+  },
+  hiddenDateInput: {
+    position: 'absolute',
+    opacity: 0,
+    width: 0,
+    height: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
   },
   headerRow: {
     display: 'flex',
@@ -346,66 +351,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '3px',
     marginTop: '1px',
     color: 'var(--accent-primary)',
-  },
-  datePickerOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
-  },
-  datePickerModal: {
-    background: 'var(--card-bg, white)',
-    padding: '20px',
-    borderRadius: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    minWidth: '280px',
-  },
-  datePickerInput: {
-    padding: '12px',
-    fontSize: '16px',
-    border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-  },
-  datePickerClose: {
-    padding: '10px',
-    fontSize: '14px',
-    fontWeight: '500',
-    border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
-    background: 'var(--bg-secondary, #f8f9fa)',
-    color: 'var(--text-primary)',
-    cursor: 'pointer',
-  },
-  swipeHint: {
-    display: 'none', // Hide swipe hint for cleaner design
-  },
-  summary: {
-    marginTop: '12px',
-    padding: '10px 12px',
-    background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-  },
-  summaryAmount: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: 'var(--text-primary)',
   },
 };
 
