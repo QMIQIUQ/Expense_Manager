@@ -418,14 +418,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   ...(currentAmountInput === 0 ? styles.addAmountBtnDisabled : {}),
                 }}
               >
-                + {t('add') || '新增'}
+                + {t('add')}
               </button>
             </div>
 
             {/* Amount items list */}
             {amountItems.length > 0 && (
               <div style={styles.amountItemsList}>
-                <div style={styles.amountItemsLabel}>{t('addedItems') || '已添加项目'}:</div>
+                <div style={styles.amountItemsLabel}>{t('addedItems')}:</div>
                 {amountItems.map((item, index) => (
                   <div key={index} style={styles.amountItem}>
                     <span>{formatCurrencyFromDollars(item.amount)}</span>
@@ -494,17 +494,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 {/* Summary */}
                 <div style={styles.amountSummary}>
                   <div style={styles.summaryRow}>
-                    <span>{t('subtotal') || '小计'}:</span>
+                    <span>{t('subtotal')}:</span>
                     <span>{formatCurrencyFromDollars(subtotal)}</span>
                   </div>
                   {enableTax && (
                     <div style={styles.summaryRow}>
-                      <span>{t('tax') || '税费'} ({taxRate}%):</span>
+                      <span>{t('tax')} ({taxRate}%):</span>
                       <span>{formatCurrencyFromDollars(taxAmount)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.summaryRow, ...styles.summaryRowTotal }}>
-                    <span>{t('total') || '总计'}:</span>
+                    <span>{t('total')}:</span>
                     <span style={styles.summaryTotal}>{formatCurrency(formData.amount)}</span>
                   </div>
                 </div>
@@ -514,7 +514,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {/* Simple amount display when no items added */}
             {amountItems.length === 0 && formData.amount > 0 && (
               <div style={styles.simpleAmountDisplay}>
-                <span style={styles.simpleAmountLabel}>{t('total') || '总计'}:</span>
+                <span style={styles.simpleAmountLabel}>{t('total')}:</span>
                 <span style={styles.simpleAmountValue}>{formatCurrency(formData.amount)}</span>
               </div>
             )}
@@ -567,6 +567,40 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 style={styles.textInput}
               />
             </div>
+
+            {/* Amount Items Description Section */}
+            {amountItems.length > 0 && (
+              <div style={styles.fieldContainer}>
+                <label style={styles.fieldLabel}>💰 {t('amountDetails')} ({t('optional')})</label>
+                <div style={styles.amountDescriptionList}>
+                  {amountItems.map((item, index) => (
+                    <div key={index} style={styles.amountDescriptionRow}>
+                      <span style={styles.amountDescriptionAmount}>
+                        {formatCurrencyFromDollars(item.amount)}:
+                      </span>
+                      <input
+                        type="text"
+                        value={item.description || ''}
+                        onChange={(e) => {
+                          const newItems = [...amountItems];
+                          newItems[index] = { ...item, description: e.target.value };
+                          setAmountItems(newItems);
+                        }}
+                        placeholder={t('itemDescription') || 'Item description...'}
+                        style={styles.amountDescriptionInput}
+                      />
+                    </div>
+                  ))}
+                  {enableTax && taxAmount > 0 && (
+                    <div style={styles.amountDescriptionRow}>
+                      <span style={styles.taxLabel}>{t('tax')} ({taxRate}%):</span>
+                      <span style={styles.taxValue}>{formatCurrencyFromDollars(taxAmount)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={styles.fieldContainer}>
               <label style={styles.fieldLabel}>{t('notes')} ({t('optional')})</label>
               <textarea
@@ -1434,6 +1468,47 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '18px',
     fontWeight: '700',
     color: 'var(--accent-primary)',
+  },
+  // Amount description styles for Step 4
+  amountDescriptionList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+    padding: '12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+  },
+  amountDescriptionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  amountDescriptionAmount: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    minWidth: '70px',
+    flexShrink: 0,
+  },
+  amountDescriptionInput: {
+    flex: 1,
+    padding: '8px 12px',
+    fontSize: '13px',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '6px',
+    background: 'var(--input-bg, white)',
+    color: 'var(--text-primary)',
+  },
+  taxLabel: {
+    fontSize: '13px',
+    fontStyle: 'italic' as const,
+    color: 'var(--text-secondary)',
+    minWidth: '70px',
+    flexShrink: 0,
+  },
+  taxValue: {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
   },
 };
 

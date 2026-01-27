@@ -951,6 +951,7 @@ export const translations = {
   showMore: { en: 'More', zh: '更多', 'zh-CN': '更多' },
   amountDetails: { en: 'Amount Details', zh: '金額明細', 'zh-CN': '金额明细' },
   repaymentStatus: { en: 'Repayment Status', zh: '還款狀態', 'zh-CN': '还款状态' },
+  itemDescription: { en: 'Item description...', zh: '項目說明...', 'zh-CN': '项目说明...' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
