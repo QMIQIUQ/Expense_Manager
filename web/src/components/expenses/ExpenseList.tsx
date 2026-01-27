@@ -139,6 +139,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
+  const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
 
@@ -1140,6 +1141,107 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* More Details Button - Only show if there are details to show */}
+                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense)) && (
+                  <div style={styles.moreDetailsRow}>
+                    <button
+                      onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
+                      style={styles.moreDetailsBtn}
+                    >
+                      <span style={{ flex: 1, textAlign: 'center' }}>
+                        ────── {t('showMore')} {expandedDetailsId === expense.id ? '▲' : '▼'} ──────
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Expanded Details Section */}
+                {expandedDetailsId === expense.id && (
+                  <div style={styles.detailsSection}>
+                    {/* Amount Items (if any) */}
+                    {expense.amountItems && expense.amountItems.length > 0 && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>💰 {t('amountDetails')}</div>
+                        <div style={styles.amountItemsDetail}>
+                          {expense.amountItems.map((item, index) => (
+                            <div key={index} style={styles.amountItemDetail}>
+                              <span>${item.amount.toFixed(2)}</span>
+                              {item.description && <span style={styles.amountItemDesc}>: {item.description}</span>}
+                            </div>
+                          ))}
+                          {expense.taxRate && expense.taxAmount && (
+                            <div style={styles.taxDetailRow}>
+                              <span>{t('tax')} ({expense.taxRate}%): ${expense.taxAmount.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes (if any and not already shown above) */}
+                    {expense.notes && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>📝 {t('notes')}</div>
+                        <div style={styles.detailsValue}>{expense.notes}</div>
+                      </div>
+                    )}
+
+                    {/* Transfer Info (if any) */}
+                    {(() => {
+                      const relatedTransfer = findRelatedTransfer(expense);
+                      if (relatedTransfer) {
+                        const getToLabel = () => {
+                          if (relatedTransfer.toPaymentMethod === 'cash') return `💵 ${t('cash')}`;
+                          if (relatedTransfer.toPaymentMethod === 'credit_card') {
+                            const card = cards.find(c => c.id === relatedTransfer.toCardId);
+                            return `💳 ${card?.name || t('creditCard')}`;
+                          }
+                          if (relatedTransfer.toPaymentMethod === 'e_wallet') return `📱 ${relatedTransfer.toPaymentMethodName || t('eWallet')}`;
+                          if (relatedTransfer.toPaymentMethod === 'bank') {
+                            const bank = banks.find(b => b.id === relatedTransfer.toBankId);
+                            return `🏦 ${bank?.name || t('bank')}`;
+                          }
+                          return '';
+                        };
+                        return (
+                          <div style={styles.detailsSubsection}>
+                            <div style={styles.detailsLabel}>➡️ {t('transfer')}</div>
+                            <div style={styles.detailsValue}>{t('to')}: {getToLabel()}</div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Repayment Progress (if tracking) */}
+                    {expense.needsRepaymentTracking && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>💳 {t('repaymentStatus')}</div>
+                        {(() => {
+                          const repaid = repaymentTotals[expense.id!] || 0;
+                          const percentage = expense.amount > 0 ? Math.min(100, (repaid / expense.amount) * 100) : 0;
+                          return (
+                            <div style={styles.repaymentProgress}>
+                              <div style={styles.progressBar}>
+                                <div 
+                                  style={{
+                                    ...styles.progressFill,
+                                    width: `${percentage}%`,
+                                    backgroundColor: percentage >= 100 ? 'var(--success-text)' : 'var(--accent-primary)',
+                                  }}
+                                />
+                              </div>
+                              <div style={styles.progressText}>
+                                {percentage.toFixed(0)}% {t('repaid')} (${repaid.toFixed(2)} / ${expense.amount.toFixed(2)})
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
               
               {/* Inline Repayment Manager */}
               {expandedRepaymentId === expense.id && (
@@ -1664,6 +1766,89 @@ const styles = {
   inlineRepaymentSection: {
     // Spacer wrapper only; visual card is handled inside RepaymentManager (inline mode)
     marginTop: '12px',
+  },
+  // More Details styles
+  moreDetailsRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '8px',
+  },
+  moreDetailsBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+    cursor: 'pointer',
+    padding: '4px 12px',
+    borderRadius: '4px',
+    transition: 'all 0.2s',
+    width: '100%',
+  },
+  detailsSection: {
+    marginTop: '12px',
+    padding: '12px',
+    background: 'var(--bg-secondary)',
+    borderRadius: '8px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  detailsSubsection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  detailsLabel: {
+    fontSize: '12px',
+    fontWeight: '600' as const,
+    color: 'var(--text-secondary)',
+  },
+  detailsValue: {
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+  },
+  amountItemsDetail: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '2px',
+  },
+  amountItemDetail: {
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+  },
+  amountItemDesc: {
+    color: 'var(--text-secondary)',
+  },
+  taxDetailRow: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontStyle: 'italic' as const,
+    marginTop: '4px',
+    paddingTop: '4px',
+    borderTop: '1px solid var(--border-color)',
+  },
+  repaymentProgress: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  progressBar: {
+    height: '8px',
+    background: 'var(--border-color)',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '4px',
+    transition: 'width 0.3s',
+  },
+  progressText: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
   },
 };
 
