@@ -286,7 +286,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '100px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '200px' }}>
               <DatePicker
                 label={t('date')}
                 value={formData.date}
@@ -824,6 +824,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridAutoColumns: 'minmax(80px, 100px)',
     gap: '8px',
     paddingBottom: '8px',
+    paddingRight: '16px',
   },
   categoryCard: {
     padding: '12px 8px',

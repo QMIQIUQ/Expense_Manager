@@ -231,8 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'sticky',
     top: 0,
     zIndex: 10,
-    maxWidth: '600px',
-    margin: '0 auto',
+    width: '100%',
   },
   hiddenDateInput: {
     position: 'absolute',
