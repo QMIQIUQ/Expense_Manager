@@ -21,6 +21,12 @@ export interface UserSettings {
 // Payment method types
 export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet' | 'bank';
 
+// Amount item for multi-amount expenses
+export interface AmountItem {
+  amount: number; // Amount in dollars
+  description?: string; // Optional description for this amount
+}
+
 export interface Expense {
   id?: string;
   userId: string;
@@ -31,6 +37,11 @@ export interface Expense {
   // Optional time in HH:mm (24h) format, for finer granularity
   time?: string;
   notes?: string;
+  // Multi-amount support (for itemized expenses)
+  amountItems?: AmountItem[]; // Individual amount items that sum to total amount
+  taxRate?: number; // Tax rate percentage (e.g., 6 for 6%)
+  taxAmount?: number; // Calculated tax amount
+  subtotal?: number; // Subtotal before tax
   // New fields for income linking
   originalReceiptAmount?: number; // Original receipt/invoice amount for tracking reimbursements
   payerName?: string; // Who paid (e.g., "Me", "Friend A")

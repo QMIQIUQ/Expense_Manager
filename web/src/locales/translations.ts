@@ -942,6 +942,14 @@ export const translations = {
   accountInfo: { en: 'Account Information', zh: '帳戶資訊', 'zh-CN': '账户信息' },
   userId: { en: 'User ID', zh: '用戶 ID', 'zh-CN': '用户 ID' },
   dayOfMonth: { en: 'of each month', zh: '每月', 'zh-CN': '每月' },
+
+  // Multi-amount and tax
+  addedItems: { en: 'Added items', zh: '已添加項目', 'zh-CN': '已添加项目' },
+  addTax: { en: 'Add tax', zh: '添加稅費', 'zh-CN': '添加税费' },
+  subtotal: { en: 'Subtotal', zh: '小計', 'zh-CN': '小计' },
+  tax: { en: 'Tax', zh: '稅費', 'zh-CN': '税费' },
+  showMore: { en: 'More', zh: '更多', 'zh-CN': '更多' },
+  amountDetails: { en: 'Amount Details', zh: '金額明細', 'zh-CN': '金额明细' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

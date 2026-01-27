@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, AmountItem } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
@@ -86,6 +86,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
 
+  // Multi-amount and tax state
+  const [amountItems, setAmountItems] = useState<AmountItem[]>(
+    initialData?.amountItems || []
+  );
+  const [currentAmountInput, setCurrentAmountInput] = useState<number>(0);
+  const [enableTax, setEnableTax] = useState(!!initialData?.taxRate);
+  const [taxRate, setTaxRate] = useState<number>(initialData?.taxRate || 6);
+
   const [enableTransfer, setEnableTransfer] = useState(!!initialTransfer);
   const [transferToPaymentMethod, setTransferToPaymentMethod] = useState<'cash' | 'credit_card' | 'e_wallet' | 'bank'>(
     initialTransfer?.toPaymentMethod || 'cash'
@@ -157,6 +165,16 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       amount: formData.amount / 100
     };
 
+    // Add multi-amount data if applicable
+    if (amountItems.length > 0) {
+      submitData.amountItems = amountItems;
+      submitData.subtotal = subtotal;
+      if (enableTax) {
+        submitData.taxRate = taxRate;
+        submitData.taxAmount = taxAmount;
+      }
+    }
+
     if (formData.paymentMethod === 'cash') {
       delete submitData.cardId;
       delete submitData.paymentMethodName;
@@ -213,14 +231,80 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Multi-amount handlers
+  const handleCurrentAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const digitsOnly = value.replace(/\D/g, '');
     const amountInCents = parseInt(digitsOnly) || 0;
-    setFormData((prev) => ({ ...prev, amount: amountInCents }));
+    setCurrentAmountInput(amountInCents);
+    // Also update formData amount for single item mode
+    if (amountItems.length === 0) {
+      setFormData((prev) => ({ ...prev, amount: amountInCents }));
+    }
+  };
+
+  const addAmountItem = () => {
+    if (currentAmountInput > 0) {
+      const newItem: AmountItem = { amount: currentAmountInput / 100 };
+      setAmountItems(prev => [...prev, newItem]);
+      setCurrentAmountInput(0);
+      // Update total amount
+      updateTotalAmount([...amountItems, newItem]);
+    }
+  };
+
+  const removeAmountItem = (index: number) => {
+    const newItems = amountItems.filter((_, i) => i !== index);
+    setAmountItems(newItems);
+    updateTotalAmount(newItems);
+  };
+
+  const updateTotalAmount = (items: AmountItem[]) => {
+    const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+    const taxAmount = enableTax ? subtotal * (taxRate / 100) : 0;
+    const total = subtotal + taxAmount;
+    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+  };
+
+  const handleTaxRateChange = (rate: number) => {
+    setTaxRate(rate);
+    // Recalculate total
+    const subtotal = amountItems.reduce((sum, item) => sum + item.amount, 0);
+    const taxAmount = subtotal * (rate / 100);
+    const total = subtotal + taxAmount;
+    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+  };
+
+  const handleEnableTaxChange = (enabled: boolean) => {
+    setEnableTax(enabled);
+    // Recalculate total
+    const subtotal = amountItems.reduce((sum, item) => sum + item.amount, 0);
+    const taxAmount = enabled ? subtotal * (taxRate / 100) : 0;
+    const total = subtotal + taxAmount;
+    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+  };
+
+  // Calculate subtotal and tax for display
+  const subtotal = amountItems.reduce((sum, item) => sum + item.amount, 0);
+  const taxAmount = enableTax ? subtotal * (taxRate / 100) : 0;
+
+  // Handle Tab key to add amount item
+  const handleAmountKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab' && currentAmountInput > 0) {
+      e.preventDefault();
+      addAmountItem();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (formData.amount > 0 || (amountItems.length === 0 && currentAmountInput === 0)) {
+        handleNext();
+      } else if (currentAmountInput > 0) {
+        addAmountItem();
+      }
+    }
   };
 
   const formatCurrency = (amount: number): string => `$${(amount / 100).toFixed(2)}`;
+  const formatCurrencyFromDollars = (amount: number): string => `$${amount.toFixed(2)}`;
 
   const getCategoryIcon = (categoryName: string): string => {
     const category = categories.find(c => c.name === categoryName);
@@ -308,18 +392,132 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 2:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.amountInputContainer}>
-              <label style={styles.fieldLabel}>💰 {t('amount')}</label>
+            <div style={styles.stepHeader}>
+              <span style={styles.stepHeaderIcon}>💰</span>
+              <h2 style={styles.stepHeaderTitle}>{t('amount')}</h2>
+            </div>
+            
+            {/* Amount input with add button */}
+            <div style={styles.amountInputRow}>
               <input
                 ref={amountInputRef}
                 type="text"
                 inputMode="decimal"
-                value={formData.amount === 0 ? '' : formatCurrency(formData.amount)}
-                onChange={handleAmountChange}
+                value={currentAmountInput === 0 ? '' : formatCurrency(currentAmountInput)}
+                onChange={handleCurrentAmountInputChange}
+                onKeyDown={handleAmountKeyDown}
                 placeholder="$0.00"
-                style={styles.amountInput}
+                style={styles.amountInputMulti}
               />
+              <button
+                type="button"
+                onClick={addAmountItem}
+                disabled={currentAmountInput === 0}
+                style={{
+                  ...styles.addAmountBtn,
+                  ...(currentAmountInput === 0 ? styles.addAmountBtnDisabled : {}),
+                }}
+              >
+                + {t('add') || '新增'}
+              </button>
             </div>
+
+            {/* Amount items list */}
+            {amountItems.length > 0 && (
+              <div style={styles.amountItemsList}>
+                <div style={styles.amountItemsLabel}>{t('addedItems') || '已添加项目'}:</div>
+                {amountItems.map((item, index) => (
+                  <div key={index} style={styles.amountItem}>
+                    <span>{formatCurrencyFromDollars(item.amount)}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAmountItem(index)}
+                      style={styles.removeAmountBtn}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tax section */}
+            {amountItems.length > 0 && (
+              <>
+                <div style={styles.taxCheckboxRow}>
+                  <label style={styles.taxCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={enableTax}
+                      onChange={(e) => handleEnableTaxChange(e.target.checked)}
+                      style={styles.taxCheckbox}
+                    />
+                    <span>{t('addTax')}</span>
+                  </label>
+                </div>
+
+                {enableTax && (
+                  <div style={styles.taxRateRow}>
+                    <input
+                      type="number"
+                      value={taxRate}
+                      onChange={(e) => handleTaxRateChange(parseFloat(e.target.value) || 0)}
+                      style={styles.taxRateInput}
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                    <span style={styles.taxRatePercent}>%</span>
+                    <button
+                      type="button"
+                      onClick={() => handleTaxRateChange(6)}
+                      style={{
+                        ...styles.taxPresetBtn,
+                        ...(taxRate === 6 ? styles.taxPresetBtnActive : {}),
+                      }}
+                    >
+                      6%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTaxRateChange(8)}
+                      style={{
+                        ...styles.taxPresetBtn,
+                        ...(taxRate === 8 ? styles.taxPresetBtnActive : {}),
+                      }}
+                    >
+                      8%
+                    </button>
+                  </div>
+                )}
+
+                {/* Summary */}
+                <div style={styles.amountSummary}>
+                  <div style={styles.summaryRow}>
+                    <span>{t('subtotal') || '小计'}:</span>
+                    <span>{formatCurrencyFromDollars(subtotal)}</span>
+                  </div>
+                  {enableTax && (
+                    <div style={styles.summaryRow}>
+                      <span>{t('tax') || '税费'} ({taxRate}%):</span>
+                      <span>{formatCurrencyFromDollars(taxAmount)}</span>
+                    </div>
+                  )}
+                  <div style={{ ...styles.summaryRow, ...styles.summaryRowTotal }}>
+                    <span>{t('total') || '总计'}:</span>
+                    <span style={styles.summaryTotal}>{formatCurrency(formData.amount)}</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Simple amount display when no items added */}
+            {amountItems.length === 0 && formData.amount > 0 && (
+              <div style={styles.simpleAmountDisplay}>
+                <span style={styles.simpleAmountLabel}>{t('total') || '总计'}:</span>
+                <span style={styles.simpleAmountValue}>{formatCurrency(formData.amount)}</span>
+              </div>
+            )}
           </div>
         );
 
@@ -1076,6 +1274,166 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     color: 'var(--accent-primary)',
     fontWeight: '600',
+  },
+  // Multi-amount styles
+  amountInputRow: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '12px',
+  },
+  amountInputMulti: {
+    flex: 1,
+    padding: '12px 16px',
+    fontSize: '18px',
+    fontWeight: '600',
+    border: '2px solid var(--border-color, #e9ecef)',
+    borderRadius: '12px',
+    outline: 'none',
+    background: 'var(--input-bg, white)',
+    color: 'var(--text-primary)',
+    transition: 'border-color 0.2s',
+  },
+  addAmountBtn: {
+    padding: '12px 16px',
+    fontSize: '14px',
+    fontWeight: '600',
+    background: 'var(--accent-primary)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    transition: 'all 0.2s',
+  },
+  addAmountBtnDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  amountItemsList: {
+    marginBottom: '12px',
+  },
+  amountItemsLabel: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: 'var(--text-secondary)',
+    marginBottom: '6px',
+  },
+  amountItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    marginBottom: '4px',
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+  },
+  removeAmountBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontSize: '14px',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    transition: 'all 0.2s',
+  },
+  taxCheckboxRow: {
+    marginBottom: '8px',
+  },
+  taxCheckboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+  },
+  taxCheckbox: {
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer',
+  },
+  taxRateRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '12px',
+  },
+  taxRateInput: {
+    width: '60px',
+    padding: '8px 12px',
+    fontSize: '14px',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    background: 'var(--input-bg, white)',
+    color: 'var(--text-primary)',
+    textAlign: 'center' as const,
+  },
+  taxRatePercent: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+  },
+  taxPresetBtn: {
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '500',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  taxPresetBtnActive: {
+    background: 'var(--accent-light)',
+    border: '1px solid var(--accent-primary)',
+    color: 'var(--accent-primary)',
+  },
+  amountSummary: {
+    padding: '12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    marginTop: '8px',
+  },
+  summaryRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+    marginBottom: '4px',
+  },
+  summaryRowTotal: {
+    marginTop: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid var(--border-color, #e9ecef)',
+    fontSize: '15px',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+  },
+  summaryTotal: {
+    color: 'var(--accent-primary)',
+    fontWeight: '700',
+  },
+  simpleAmountDisplay: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    marginTop: '12px',
+  },
+  simpleAmountLabel: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+  },
+  simpleAmountValue: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: 'var(--accent-primary)',
   },
 };
 
