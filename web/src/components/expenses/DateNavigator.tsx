@@ -1,6 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
+
+// Debounce helper function
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return ((...args: unknown[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  }) as T;
+}
 
 export type ViewMode = 'all' | 'day' | 'month' | 'year';
 
@@ -98,6 +107,79 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   // Hidden date input ref for direct date picker
   const hiddenDateInputRef = useRef<HTMLInputElement>(null);
   
+  // Track if scrolling is programmatic (from click) vs user-initiated
+  const isUserScrolling = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  
+  // Handle scroll end - auto-select the date closest to center
+  const handleScrollEnd = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !isUserScrolling.current) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const centerX = containerRect.left + containerRect.width / 2;
+    
+    // Find the date item closest to center
+    const dateItems = container.querySelectorAll('[data-date]');
+    let closestDate: string | null = null;
+    let minDistance = Infinity;
+    
+    dateItems.forEach((item) => {
+      const itemRect = item.getBoundingClientRect();
+      const itemCenterX = itemRect.left + itemRect.width / 2;
+      const distance = Math.abs(itemCenterX - centerX);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestDate = (item as HTMLElement).dataset.date || null;
+      }
+    });
+    
+    // Select the closest date if it's different from current
+    if (closestDate && closestDate !== selectedDate) {
+      onDateChange(closestDate);
+    }
+    
+    isUserScrolling.current = false;
+  }, [selectedDate, onDateChange]);
+  
+  // Debounced scroll handler
+  const debouncedScrollEnd = useCallback(
+    debounce(() => handleScrollEnd(), 150),
+    [handleScrollEnd]
+  );
+  
+  // Handle scroll events
+  const handleScroll = useCallback(() => {
+    // Clear any existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Mark as user scrolling after a short delay (to distinguish from programmatic scroll)
+    scrollTimeoutRef.current = setTimeout(() => {
+      isUserScrolling.current = true;
+    }, 50);
+    
+    // Call debounced scroll end
+    debouncedScrollEnd();
+  }, [debouncedScrollEnd]);
+  
+  // Add scroll event listener
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [handleScroll]);
+  
   const handleMonthYearClick = () => {
     // Directly trigger the hidden date input to open native date picker
     if (hiddenDateInputRef.current) {
@@ -192,6 +274,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
                   type="button"
                   key={dateStr}
                   ref={isSelectedDate ? todayRef : null}
+                  data-date={dateStr}
                   onClick={() => handleDateClick(date)}
                   style={{
                     ...styles.dateItem,
@@ -309,6 +392,7 @@ const styles: Record<string, React.CSSProperties> = {
     msOverflowStyle: 'none',
     flex: 1,
     minWidth: 0,
+    scrollSnapType: 'x mandatory',  // Enable scroll snapping
   },
   dateScroll: {
     display: 'flex',
@@ -326,6 +410,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     minWidth: '40px',
+    scrollSnapAlign: 'center',  // Snap to center of item
   },
   dateItemToday: {
     background: 'var(--accent-light, #e8f0fe)',
