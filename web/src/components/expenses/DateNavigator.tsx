@@ -231,6 +231,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'sticky',
     top: 0,
     zIndex: 10,
+    maxWidth: '600px',
+    margin: '0 auto',
   },
   hiddenDateInput: {
     position: 'absolute',
@@ -239,6 +241,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: 0,
     overflow: 'hidden',
     pointerEvents: 'none',
+    zIndex: 9999,
   },
   headerRow: {
     display: 'flex',

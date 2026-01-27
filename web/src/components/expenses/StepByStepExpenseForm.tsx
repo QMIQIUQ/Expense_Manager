@@ -286,7 +286,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '100px' }}>
               <DatePicker
                 label={t('date')}
                 value={formData.date}
@@ -308,11 +308,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 2:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepHeader}>
-              <span style={styles.stepHeaderIcon}>💰</span>
-              <h2 style={styles.stepHeaderTitle}>{t('amount')}</h2>
-            </div>
             <div style={styles.amountInputContainer}>
+              <label style={styles.fieldLabel}>💰 {t('amount')}</label>
               <input
                 ref={amountInputRef}
                 type="text"
@@ -361,12 +358,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 4:
         return (
           <div style={styles.stepContent}>
-            <div style={styles.stepHeader}>
-              <span style={styles.stepHeaderIcon}>📝</span>
-              <h2 style={styles.stepHeaderTitle}>{t('description')}</h2>
-            </div>
             <div style={styles.fieldContainer}>
-              <label style={styles.fieldLabel}>{t('description')}</label>
+              <label style={styles.fieldLabel}>📝 {t('description')}</label>
               <input
                 ref={descriptionInputRef}
                 type="text"
@@ -840,6 +833,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     border: '1px solid var(--border-color, #e9ecef)',
     transition: 'all 0.2s',
+    overflow: 'hidden',
+    minWidth: 0,
   },
   categoryCardActive: {
     background: 'var(--accent-light)',
@@ -853,6 +848,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     fontWeight: '500',
     color: 'var(--text-primary)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '100%',
   },
   fieldContainer: {
     marginBottom: '24px',
