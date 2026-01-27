@@ -309,12 +309,13 @@ const styles: Record<string, React.CSSProperties> = {
     msOverflowStyle: 'none',
     flex: 1,
     minWidth: 0,
+    textAlign: 'center',
   },
   dateScroll: {
-    display: 'flex',
+    display: 'inline-flex',
     gap: '4px',
     padding: '2px 0',
-    // Removed justifyContent: 'center' - let scrollTo handle centering
+    minWidth: 'min-content',
   },
   dateItem: {
     flexShrink: 0,
