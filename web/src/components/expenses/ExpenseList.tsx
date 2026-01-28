@@ -1146,7 +1146,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 </div>
 
                 {/* More Details Button - Only show if there are details to show */}
-                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || (repayments.filter(r => r.expenseId === expense.id).length > 0) || expense.needsRepaymentTracking) && (
+                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || expense.needsRepaymentTracking) && (
                   <div style={styles.moreDetailsRow}>
                     <button
                       onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
