@@ -1260,8 +1260,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                     return `💳 ${card?.name || t('creditCard')}`;
                                   }
                                   if (rep.paymentMethod === 'e_wallet') {
-                                    const ewallet = ewallets.find(e => e.id === rep.ewalletId);
-                                    return `📱 ${ewallet?.name || t('eWallet')}`;
+                                    return `📱 ${rep.paymentMethodName || t('eWallet')}`;
                                   }
                                   if (rep.paymentMethod === 'bank') {
                                     const bank = banks.find(b => b.id === rep.bankId);
