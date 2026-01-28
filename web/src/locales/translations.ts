@@ -104,6 +104,7 @@ export const translations = {
   addNewExpense: { en: 'Add New Expense', zh: '新增支出', 'zh-CN': '添加支出' },
   editExpense: { en: 'Edit Expense', zh: '編輯支出', 'zh-CN': '编辑支出' },
   addExpense: { en: 'Add Expense', zh: '新增支出', 'zh-CN': '添加支出' },
+  saveAndAddAnother: { en: 'Save & Add Another', zh: '儲存後新增', 'zh-CN': '储存后新增' },
   total: { en: 'total:', zh: '總計:', 'zh-CN': '总计:' },
   from: { en: 'from:', zh: '從:', 'zh-CN': '从:' },
   allDates: { en: 'All Dates', zh: '所有日期', 'zh-CN': '所有日期' },

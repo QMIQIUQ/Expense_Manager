@@ -11,6 +11,7 @@ type Step = 1 | 2 | 3 | 4 | 5;
 interface StepByStepExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onCancel?: () => void;
+  onSubmitAndAddAnother?: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   initialData?: Expense;
   initialTransfer?: Transfer;
   categories: Category[];
@@ -29,6 +30,7 @@ interface StepByStepExpenseFormProps {
 const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   onSubmit,
   onCancel,
+  onSubmitAndAddAnother,
   initialData,
   initialTransfer,
   categories,
@@ -154,12 +156,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setCurrentStep(step);
   };
 
-  const handleSubmit = () => {
-    // Update category usage for sorting
-    if (formData.category) {
-      updateCategoryUsage(formData.category);
-    }
-
+  // Helper to build submit data
+  const buildSubmitData = (): Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> => {
     const submitData: Record<string, unknown> = { 
       ...formData,
       amount: formData.amount / 100
@@ -190,6 +188,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       delete submitData.paymentMethodName;
     }
 
+    return submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>;
+  };
+
+  // Helper to handle transfer logic
+  const handleTransferIfNeeded = () => {
     if (enableTransfer && onAddTransfer) {
       const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
       const toPaymentMethod = transferToPaymentMethod;
@@ -227,8 +230,51 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         onAddTransfer(transferData, true).catch((err) => console.error('Failed to create transfer:', err));
       }
     }
+  };
 
-    onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+  // Reset form for adding another expense
+  const resetFormForNewExpense = () => {
+    setFormData({
+      date: initialDate || getTodayLocal(),
+      time: getCurrentTimeLocal(),
+      amount: 0,
+      category: '', // Keep category for quick re-entry
+      description: '',
+      notes: '',
+      paymentMethod: formData.paymentMethod, // Keep payment method
+      paymentMethodName: formData.paymentMethodName,
+      cardId: formData.cardId,
+      bankId: formData.bankId,
+      needsRepaymentTracking: false,
+    });
+    setAmountItems([]);
+    setCurrentAmountInput(0);
+    setEnableTax(false);
+    setEnableTransfer(false);
+    setCurrentStep(2); // Go back to amount step for quick entry
+  };
+
+  const handleSubmit = () => {
+    // Update category usage for sorting
+    if (formData.category) {
+      updateCategoryUsage(formData.category);
+    }
+
+    handleTransferIfNeeded();
+    onSubmit(buildSubmitData());
+  };
+
+  const handleSubmitAndAddAnother = () => {
+    if (!onSubmitAndAddAnother) return;
+    
+    // Update category usage for sorting
+    if (formData.category) {
+      updateCategoryUsage(formData.category);
+    }
+
+    handleTransferIfNeeded();
+    onSubmitAndAddAnother(buildSubmitData());
+    resetFormForNewExpense();
   };
 
   // Multi-amount handlers
@@ -859,6 +905,22 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   </select>
                 )}
               </div>
+            )}
+
+            {/* Save and Add Another button - only show when creating new expense */}
+            {!initialData && onSubmitAndAddAnother && (
+              <button
+                type="button"
+                onClick={handleSubmitAndAddAnother}
+                disabled={!isStep5Valid()}
+                style={{
+                  ...styles.saveAndAddAnotherBtn,
+                  opacity: isStep5Valid() ? 1 : 0.5,
+                  cursor: isStep5Valid() ? 'pointer' : 'not-allowed',
+                }}
+              >
+                ➕ {t('saveAndAddAnother') || '储存后新增'}
+              </button>
             )}
           </div>
         );
@@ -1521,6 +1583,23 @@ const styles: Record<string, React.CSSProperties> = {
   taxValue: {
     fontSize: '13px',
     color: 'var(--text-secondary)',
+  },
+  saveAndAddAnotherBtn: {
+    width: '100%',
+    marginTop: '20px',
+    padding: '14px 20px',
+    fontSize: '15px',
+    fontWeight: '600',
+    border: '2px dashed var(--accent-primary)',
+    borderRadius: '10px',
+    background: 'var(--accent-light, rgba(139, 92, 246, 0.1))',
+    color: 'var(--accent-primary)',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
   },
 };
 

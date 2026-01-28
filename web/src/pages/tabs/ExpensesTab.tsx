@@ -98,6 +98,11 @@ const ExpensesTab: React.FC<Props> = ({
     setIsAdding(false);
   };
 
+  const handleAddAndAnother = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onAddExpense(data);
+    // Don't close modal - form will reset itself
+  };
+
   const handleEditSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onUpdateExpense(data);
     onEdit(null);
@@ -136,6 +141,7 @@ const ExpensesTab: React.FC<Props> = ({
       >
         <StepByStepExpenseForm
           onSubmit={handleAddSubmit}
+          onSubmitAndAddAnother={handleAddAndAnother}
           onCancel={() => setIsAdding(false)}
           categories={categories}
           cards={cards}

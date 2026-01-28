@@ -550,7 +550,8 @@ const Dashboard: React.FC = () => {
   const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
     if (!currentUser) return;
     
-    const today = getTodayLocal();
+    // Use selected date from DateNavigator (if in day view mode), otherwise use today
+    const dateToUse = expenseViewMode === 'day' ? expenseSelectedDate : getTodayLocal();
     const now = new Date().toTimeString().slice(0, 5);
     
     // Find category name from categoryId
@@ -565,7 +566,7 @@ const Dashboard: React.FC = () => {
       description: preset.name,
       amount: preset.amount,
       category: categoryName,
-      date: today,
+      date: dateToUse,
       time: now,
       paymentMethod: preset.paymentMethod || 'cash',
       notes: preset.description || '',
@@ -2793,6 +2794,10 @@ const Dashboard: React.FC = () => {
               handleAddExpense(data);
               setShowAddExpenseForm(false);
             }}
+            onSubmitAndAddAnother={(data) => {
+              handleAddExpense(data);
+              // Don't close modal - form will reset itself
+            }}
             onCancel={() => setShowAddExpenseForm(false)}
             categories={categories}
             cards={cards}
@@ -2877,6 +2882,10 @@ const Dashboard: React.FC = () => {
             onSubmit={(data) => {
               handleAddExpense(data);
               setShowAddSheet(false);
+            }}
+            onSubmitAndAddAnother={(data) => {
+              handleAddExpense(data);
+              // Don't close modal - form will reset itself
             }}
             onCancel={() => setShowAddSheet(false)}
             categories={categories}
