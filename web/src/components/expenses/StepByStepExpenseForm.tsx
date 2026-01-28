@@ -395,6 +395,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>💰</span>
               <h2 style={styles.stepHeaderTitle}>{t('amount')}</h2>
+              {/* Display total in header when there are amount items */}
+              {(amountItems.length > 0 || formData.amount > 0) && (
+                <span style={styles.headerTotal}>
+                  {t('total')}: {formatCurrency(formData.amount)}
+                </span>
+              )}
             </div>
             
             {/* Amount input with add button */}
@@ -1024,6 +1030,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: '600',
     color: 'var(--text-primary)',
     margin: 0,
+  },
+  headerTotal: {
+    marginLeft: 'auto',
+    fontSize: '16px',
+    fontWeight: '700',
+    color: 'var(--success-text)',
   },
   amountInputContainer: {
     textAlign: 'center',

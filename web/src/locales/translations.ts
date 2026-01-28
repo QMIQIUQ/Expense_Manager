@@ -672,6 +672,8 @@ export const translations = {
   excessConvertedToIncome: { en: 'Excess amount converted to income', zh: '多還金額已轉為收入', 'zh-CN': '多还金额已转为收入' },
   viewRepayments: { en: 'View Repayments', zh: '查看還款', 'zh-CN': '查看还款' },
   hideRepayments: { en: 'Hide Repayments', zh: '隱藏還款', 'zh-CN': '隐藏还款' },
+  repaymentRecords: { en: 'Repayment Records', zh: '還款記錄', 'zh-CN': '还款记录' },
+  manageRepayments: { en: 'Manage Repayments', zh: '管理還款', 'zh-CN': '管理还款' },
   originalExpenseAmount: { en: 'Original Expense Amount', zh: '原始支出金額', 'zh-CN': '原始支出金额' },
   
   // Income Categories

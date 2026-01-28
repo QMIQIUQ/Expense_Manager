@@ -1033,12 +1033,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                               setExpandedRepaymentId(expense.id!);
                             }
                           }} 
-                          className="btn-icon btn-icon-success"
-                          style={expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}}
-                          aria-label={t('repayments')}
-                          title={t('repayments')}
+                          className="btn-text btn-text-success"
+                          style={{
+                            ...styles.addRepaymentBtn,
+                            ...(expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}),
+                          }}
+                          aria-label={t('addRepayment')}
+                          title={t('addRepayment')}
                         >
-                          <RepaymentIcon size={18} />
+                          + {t('addRepayment')}
                         </button>
                         
                         {expense.needsRepaymentTracking && (
@@ -1143,7 +1146,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 </div>
 
                 {/* More Details Button - Only show if there are details to show */}
-                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense)) && (
+                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || (repayments.filter(r => r.expenseId === expense.id).length > 0) || expense.needsRepaymentTracking) && (
                   <div style={styles.moreDetailsRow}>
                     <button
                       onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
@@ -1240,6 +1243,52 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         })()}
                       </div>
                     )}
+
+                    {/* Repayment Records List (if any) */}
+                    {(() => {
+                      const expenseRepayments = repayments.filter(r => r.expenseId === expense.id);
+                      if (expenseRepayments.length > 0) {
+                        return (
+                          <div style={styles.detailsSubsection}>
+                            <div style={styles.detailsLabel}>📋 {t('repaymentRecords')}</div>
+                            <div style={styles.repaymentRecordsList}>
+                              {expenseRepayments.map((rep) => {
+                                const getPaymentLabel = () => {
+                                  if (rep.paymentMethod === 'cash') return `💵 ${t('cash')}`;
+                                  if (rep.paymentMethod === 'credit_card') {
+                                    const card = cards.find(c => c.id === rep.cardId);
+                                    return `💳 ${card?.name || t('creditCard')}`;
+                                  }
+                                  if (rep.paymentMethod === 'e_wallet') {
+                                    const ewallet = ewallets.find(e => e.id === rep.ewalletId);
+                                    return `📱 ${ewallet?.name || t('eWallet')}`;
+                                  }
+                                  if (rep.paymentMethod === 'bank') {
+                                    const bank = banks.find(b => b.id === rep.bankId);
+                                    return `🏦 ${bank?.name || t('bank')}`;
+                                  }
+                                  return '';
+                                };
+                                return (
+                                  <div key={rep.id} style={styles.repaymentRecordItem}>
+                                    <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
+                                    <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
+                                    <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <button
+                              onClick={() => setExpandedRepaymentId(expense.id!)}
+                              style={styles.manageRepaymentsBtn}
+                            >
+                              {t('manageRepayments')}
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
               
@@ -1849,6 +1898,55 @@ const styles = {
   progressText: {
     fontSize: '12px',
     color: 'var(--text-secondary)',
+  },
+  addRepaymentBtn: {
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+    borderRadius: '6px',
+    border: '1px solid var(--success-text)',
+    background: 'transparent',
+    color: 'var(--success-text)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+  repaymentRecordsList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  repaymentRecordItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '6px 8px',
+    background: 'var(--card-bg)',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  repaymentRecordDate: {
+    color: 'var(--text-secondary)',
+    minWidth: '80px',
+  },
+  repaymentRecordAmount: {
+    fontWeight: '600' as const,
+    color: 'var(--success-text)',
+    minWidth: '60px',
+  },
+  repaymentRecordMethod: {
+    color: 'var(--text-secondary)',
+    flex: 1,
+  },
+  manageRepaymentsBtn: {
+    marginTop: '8px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
   },
 };
 
