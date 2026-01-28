@@ -1346,32 +1346,46 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                   return '';
                                 };
                                 return (
-                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
-                                      <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
-                                      <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
-                                      <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+                                    {/* First row: date, amount, payment method, action buttons */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
+                                        <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
+                                        <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
+                                        <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button
+                                          onClick={() => setEditingRepayment(rep)}
+                                          className="btn-icon btn-icon-primary"
+                                          style={{ width: '28px', height: '28px' }}
+                                          aria-label={t('edit')}
+                                          title={t('edit')}
+                                        >
+                                          <EditIcon size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => setDeleteRepaymentConfirm({ isOpen: true, repaymentId: rep.id! })}
+                                          className="btn-icon btn-icon-danger"
+                                          style={{ width: '28px', height: '28px' }}
+                                          aria-label={t('delete')}
+                                          title={t('delete')}
+                                        >
+                                          <DeleteIcon size={14} />
+                                        </button>
+                                      </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                      <button
-                                        onClick={() => setEditingRepayment(rep)}
-                                        className="btn-icon btn-icon-primary"
-                                        style={{ width: '28px', height: '28px' }}
-                                        aria-label={t('edit')}
-                                        title={t('edit')}
-                                      >
-                                        <EditIcon size={14} />
-                                      </button>
-                                      <button
-                                        onClick={() => setDeleteRepaymentConfirm({ isOpen: true, repaymentId: rep.id! })}
-                                        className="btn-icon btn-icon-danger"
-                                        style={{ width: '28px', height: '28px' }}
-                                        aria-label={t('delete')}
-                                        title={t('delete')}
-                                      >
-                                        <DeleteIcon size={14} />
-                                      </button>
-                                    </div>
+                                    {/* Second row: payerName and note (if any) */}
+                                    {(rep.payerName || rep.note) && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                                        {rep.payerName && (
+                                          <span>👤 {rep.payerName}</span>
+                                        )}
+                                        {rep.note && (
+                                          <span>📝 {rep.note}</span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1466,6 +1480,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onClose={() => setShowRepaymentFormForExpenseId(null)}
         title={t('addRepayment')}
         hideFooter={true}
+        hideHeader={true}
+        chromeless={true}
         maxWidth="500px"
       >
         {showRepaymentFormForExpenseId && (
@@ -1494,6 +1510,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onClose={() => setEditingRepayment(null)}
         title={t('editRepayment')}
         hideFooter={true}
+        hideHeader={true}
+        chromeless={true}
         maxWidth="500px"
       >
         {editingRepayment && (
