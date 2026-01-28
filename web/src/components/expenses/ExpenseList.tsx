@@ -7,8 +7,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getTodayLocal, formatDateLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import { quickExpenseService } from '../../services/quickExpenseService';
+import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
-import RepaymentManager from '../repayment/RepaymentManager';
+import RepaymentForm from '../repayment/RepaymentForm';
 import ExpenseForm from './ExpenseForm';
 import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
@@ -142,6 +143,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
+  
+  // Repayment editing states
+  const [editingRepayment, setEditingRepayment] = useState<Repayment | null>(null);
+  const [showRepaymentFormForExpenseId, setShowRepaymentFormForExpenseId] = useState<string | null>(null);
+  const [deleteRepaymentConfirm, setDeleteRepaymentConfirm] = useState<{ isOpen: boolean; repaymentId: string | null }>({
+    isOpen: false,
+    repaymentId: null,
+  });
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -247,6 +256,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     });
     return totals;
   }, [repayments]);
+
+  // Handle adding a repayment
+  const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    
+    try {
+      await repaymentService.create({
+        ...repaymentData,
+        userId: currentUser.uid,
+        expenseId: expenseId,
+      });
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
+      setShowRepaymentFormForExpenseId(null);
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to add repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment'), duration: 3000 });
+    }
+  };
+
+  // Handle updating a repayment
+  const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    
+    try {
+      await repaymentService.update(repaymentId, updates);
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
+      setEditingRepayment(null);
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to update repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment'), duration: 3000 });
+    }
+  };
+
+  // Handle deleting a repayment
+  const handleDeleteRepayment = async (repaymentId: string) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
+    
+    try {
+      await repaymentService.delete(repaymentId);
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentDeleted'), duration: 3000 });
+      setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to delete repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment'), duration: 3000 });
+    }
+  };
 
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
@@ -1244,13 +1320,33 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </div>
                     )}
 
-                    {/* Repayment Records List (if any) */}
+                    {/* Repayment Records List (if any) with edit/delete */}
                     {(() => {
                       const expenseRepayments = repayments.filter(r => r.expenseId === expense.id);
-                      if (expenseRepayments.length > 0) {
-                        return (
-                          <div style={styles.detailsSubsection}>
+                      return (
+                        <div style={styles.detailsSubsection}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <div style={styles.detailsLabel}>📋 {t('repaymentRecords')}</div>
+                            <button
+                              onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
+                              style={{
+                                padding: '4px 12px',
+                                backgroundColor: 'var(--accent-primary)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              + {t('addRepayment')}
+                            </button>
+                          </div>
+                          
+                          {expenseRepayments.length > 0 ? (
                             <div style={styles.repaymentRecordsList}>
                               {expenseRepayments.map((rep) => {
                                 const getPaymentLabel = () => {
@@ -1269,42 +1365,58 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                   return '';
                                 };
                                 return (
-                                  <div key={rep.id} style={styles.repaymentRecordItem}>
-                                    <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
-                                    <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
-                                    <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
+                                      <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
+                                      <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
+                                      <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                      <button
+                                        onClick={() => setEditingRepayment(rep)}
+                                        style={{
+                                          padding: '4px 8px',
+                                          backgroundColor: 'transparent',
+                                          border: '1px solid var(--border-primary)',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          color: 'var(--text-secondary)',
+                                          fontSize: '12px',
+                                        }}
+                                        title={t('edit')}
+                                      >
+                                        ✏️
+                                      </button>
+                                      <button
+                                        onClick={() => setDeleteRepaymentConfirm({ isOpen: true, repaymentId: rep.id! })}
+                                        style={{
+                                          padding: '4px 8px',
+                                          backgroundColor: 'transparent',
+                                          border: '1px solid var(--error-text)',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          color: 'var(--error-text)',
+                                          fontSize: '12px',
+                                        }}
+                                        title={t('delete')}
+                                      >
+                                        🗑️
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               })}
                             </div>
-                            <button
-                              onClick={() => setExpandedRepaymentId(expense.id!)}
-                              style={styles.manageRepaymentsBtn}
-                            >
-                              {t('manageRepayments')}
-                            </button>
-                          </div>
-                        );
-                      }
-                      return null;
+                          ) : (
+                            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', fontStyle: 'italic' }}>
+                              {t('noRepaymentRecords')}
+                            </div>
+                          )}
+                        </div>
+                      );
                     })()}
                   </div>
                 )}
-              
-              {/* Inline Repayment Manager */}
-              {expandedRepaymentId === expense.id && (
-                <div style={styles.inlineRepaymentSection}>
-                  <RepaymentManager
-                    expense={expense}
-                    onClose={() => setExpandedRepaymentId(null)}
-                    inline={true}
-                    onRepaymentChange={onReloadRepayments}
-                    cards={cards}
-                    ewallets={ewallets}
-                    banks={banks}
-                  />
-                </div>
-              )}
             </div>
               );
               })}
@@ -1377,6 +1489,80 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         }}
         onCancel={() => setBulkDeleteConfirm(false)}
         danger={true}
+      />
+
+      {/* Add Repayment Modal */}
+      <PopupModal
+        isOpen={showRepaymentFormForExpenseId !== null}
+        onClose={() => setShowRepaymentFormForExpenseId(null)}
+        title={t('addRepayment')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        {showRepaymentFormForExpenseId && (
+          <RepaymentForm
+            expenseId={showRepaymentFormForExpenseId}
+            maxAmount={
+              (() => {
+                const exp = expenses.find(e => e.id === showRepaymentFormForExpenseId);
+                if (!exp) return 0;
+                const repaid = repaymentTotals[exp.id!] || 0;
+                return Math.max(0, exp.amount - repaid);
+              })()
+            }
+            onSubmit={(data) => handleAddRepayment(showRepaymentFormForExpenseId, data)}
+            onCancel={() => setShowRepaymentFormForExpenseId(null)}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+          />
+        )}
+      </PopupModal>
+
+      {/* Edit Repayment Modal */}
+      <PopupModal
+        isOpen={editingRepayment !== null}
+        onClose={() => setEditingRepayment(null)}
+        title={t('editRepayment')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        {editingRepayment && (
+          <RepaymentForm
+            expenseId={editingRepayment.expenseId}
+            initialData={editingRepayment}
+            maxAmount={
+              (() => {
+                const exp = expenses.find(e => e.id === editingRepayment.expenseId);
+                if (!exp) return 0;
+                const repaid = repaymentTotals[exp.id!] || 0;
+                // Add back the current repayment amount since we're editing it
+                return Math.max(0, exp.amount - repaid + editingRepayment.amount);
+              })()
+            }
+            onSubmit={(data) => handleUpdateRepayment(editingRepayment.id!, data)}
+            onCancel={() => setEditingRepayment(null)}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+          />
+        )}
+      </PopupModal>
+
+      {/* Delete Repayment Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteRepaymentConfirm.isOpen}
+        title={t('deleteRepayment')}
+        message={t('confirmDeleteRepayment')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        danger={true}
+        onConfirm={() => {
+          if (deleteRepaymentConfirm.repaymentId) {
+            handleDeleteRepayment(deleteRepaymentConfirm.repaymentId);
+          }
+        }}
+        onCancel={() => setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null })}
       />
     </div>
     </>
