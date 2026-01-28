@@ -159,20 +159,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       if (openMenuId && !target.closest('.mobile-actions')) {
         setOpenMenuId(null);
       }
-      if (showQuickExpenseForm && !target.closest('.quick-expense-add-container')) {
-        setShowQuickExpenseForm(false);
-        setEditingPresetId(null);
-      }
+      // Removed click outside handling for quick expense form - PopupModal handles this
     };
 
-    if (openMenuId || showQuickExpenseForm) {
+    if (openMenuId) {
       document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [openMenuId, showQuickExpenseForm]);
+  }, [openMenuId]);
 
   // Helper function to get category with icon
   const getCategoryDisplay = (categoryName: string) => {
@@ -714,192 +711,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             <div className="quick-expense-add-container">
               <button
                 className="quick-expense-add-btn"
-                onClick={() => setShowQuickExpenseForm(!showQuickExpenseForm)}
+                onClick={() => setShowQuickExpenseForm(true)}
                 aria-label={t('addQuickExpense')}
               >
                 <span style={{ fontSize: '16px' }}>+</span>
                 <span>{t('add')}</span>
               </button>
-              {showQuickExpenseForm && (
-                <div className="quick-expense-form-dropdown">
-                  {/* Quick Expense Preset Form */}
-                  <div className="quick-expense-form-section">
-                    <div className="quick-expense-form-header">
-                      <h4>{editingPresetId ? t('editQuickExpense') : t('addQuickExpense')}</h4>
-                    </div>
-                    
-                    <div className="quick-expense-form-field">
-                      <label>{t('presetName')}</label>
-                      <input
-                        type="text"
-                        value={quickExpenseFormData.name}
-                        onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, name: e.target.value })}
-                        placeholder={t('quickExpenseNamePlaceholder')}
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <label>{t('amount')}</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={(quickExpenseFormData.amount / 100).toFixed(2)}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const digitsOnly = value.replace(/\D/g, '');
-                          const amountInCents = parseInt(digitsOnly) || 0;
-                          setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInCents });
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="0.00"
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <AutocompleteDropdown
-                        options={categories.map((cat): AutocompleteOption => ({
-                          id: cat.id || '',
-                          label: cat.name,
-                          icon: cat.icon,
-                          color: cat.color,
-                        }))}
-                        value={quickExpenseFormData.categoryId}
-                        onChange={(categoryId: string) => {
-                          const cat = categories.find(c => c.id === (categoryId || ''));
-                          setQuickExpenseFormData({ 
-                            ...quickExpenseFormData, 
-                            categoryId: categoryId || '', 
-                            icon: cat?.icon || quickExpenseFormData.icon || '💰'
-                          });
-                        }}
-                        label={t('category')}
-                        placeholder={t('selectCategory')}
-                        allowClear={false}
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <label>{t('paymentMethod')}</label>
-                      <select
-                        value={quickExpenseFormData.paymentMethod}
-                        onChange={(e) => setQuickExpenseFormData({ 
-                          ...quickExpenseFormData, 
-                          paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-                          cardId: undefined,
-                          ewalletId: undefined,
-                          bankId: undefined,
-                        })}
-                      >
-                        <option value="cash">{t('cash')}</option>
-                        <option value="credit_card">{t('creditCard')}</option>
-                        <option value="e_wallet">{t('eWallet')}</option>
-                        <option value="bank">{t('bankAccount')}</option>
-                      </select>
-                    </div>
-
-                    {quickExpenseFormData.paymentMethod === 'credit_card' && cards.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectCard')}</label>
-                        <select
-                          value={quickExpenseFormData.cardId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, cardId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectCard')}</option>
-                          {cards.map((card) => (
-                            <option key={card.id} value={card.id}>{card.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {quickExpenseFormData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectEWallet')}</label>
-                        <select
-                          value={quickExpenseFormData.ewalletId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, ewalletId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectEWallet')}</option>
-                          {ewallets.map((wallet) => (
-                            <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {quickExpenseFormData.paymentMethod === 'bank' && banks.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectBank')}</label>
-                        <select
-                          value={quickExpenseFormData.bankId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, bankId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectBank')}</option>
-                          {banks.map((bank) => (
-                            <option key={bank.id} value={bank.id}>{bank.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <div className="quick-expense-form-actions">
-                      <button 
-                        onClick={handleSaveQuickExpensePreset} 
-                        className="btn-save"
-                        disabled={!quickExpenseFormData.name || !quickExpenseFormData.categoryId || quickExpenseFormData.amount <= 0}
-                      >
-                        {editingPresetId ? t('update') : t('save')}
-                      </button>
-                      <button 
-                        onClick={resetQuickExpenseForm} 
-                        className="btn-cancel"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Existing Presets List */}
-                  {quickExpensePresets.length > 0 && (
-                    <>
-                      <div className="quick-expense-form-divider"></div>
-                      <div className="quick-expense-presets-list">
-                        <h4>{t('quickExpenses')}</h4>
-                        {quickExpensePresets.map((preset) => {
-                          const category = categories.find((c) => c.id === preset.categoryId);
-                          return (
-                            <div key={preset.id} className="quick-expense-preset-item">
-                              <div className="preset-info">
-                                <span className="preset-name">{preset.name}</span>
-                                <span className="preset-details">
-                                  <span className="preset-category">{category?.icon} {category?.name}</span>
-                                  <span className="preset-amount">${preset.amount.toFixed(2)}</span>
-                                </span>
-                              </div>
-                              <div className="preset-actions">
-                                <button 
-                                  onClick={() => handleEditQuickExpensePreset(preset)}
-                                  className="btn-icon"
-                                  aria-label={t('edit')}
-                                >
-                                  <EditIcon size={14} />
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteQuickExpensePreset(preset.id)}
-                                  className="btn-icon btn-danger"
-                                  aria-label={t('delete')}
-                                >
-                                  <DeleteIcon size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1551,6 +1368,190 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         }}
         onCancel={() => setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null })}
       />
+
+      {/* Quick Expense Preset Form Modal */}
+      <PopupModal
+        isOpen={showQuickExpenseForm}
+        onClose={resetQuickExpenseForm}
+        title={editingPresetId ? t('editQuickExpense') : t('addQuickExpense')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        <div className="quick-expense-form-modal">
+          {/* Quick Expense Preset Form */}
+          <div className="quick-expense-form-section">
+            <div className="quick-expense-form-field">
+              <label>{t('presetName')}</label>
+              <input
+                type="text"
+                value={quickExpenseFormData.name}
+                onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, name: e.target.value })}
+                placeholder={t('quickExpenseNamePlaceholder')}
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <label>{t('amount')}</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={(quickExpenseFormData.amount / 100).toFixed(2)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const digitsOnly = value.replace(/\D/g, '');
+                  const amountInCents = parseInt(digitsOnly) || 0;
+                  setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInCents });
+                }}
+                onFocus={(e) => e.target.select()}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <AutocompleteDropdown
+                options={categories.map((cat): AutocompleteOption => ({
+                  id: cat.id || '',
+                  label: cat.name,
+                  icon: cat.icon,
+                  color: cat.color,
+                }))}
+                value={quickExpenseFormData.categoryId}
+                onChange={(categoryId: string) => {
+                  const cat = categories.find(c => c.id === (categoryId || ''));
+                  setQuickExpenseFormData({ 
+                    ...quickExpenseFormData, 
+                    categoryId: categoryId || '', 
+                    icon: cat?.icon || quickExpenseFormData.icon || '💰'
+                  });
+                }}
+                label={t('category')}
+                placeholder={t('selectCategory')}
+                allowClear={false}
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <label>{t('paymentMethod')}</label>
+              <select
+                value={quickExpenseFormData.paymentMethod}
+                onChange={(e) => setQuickExpenseFormData({ 
+                  ...quickExpenseFormData, 
+                  paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+                  cardId: undefined,
+                  ewalletId: undefined,
+                  bankId: undefined,
+                })}
+              >
+                <option value="cash">{t('cash')}</option>
+                <option value="credit_card">{t('creditCard')}</option>
+                <option value="e_wallet">{t('eWallet')}</option>
+                <option value="bank">{t('bankAccount')}</option>
+              </select>
+            </div>
+
+            {quickExpenseFormData.paymentMethod === 'credit_card' && cards.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectCard')}</label>
+                <select
+                  value={quickExpenseFormData.cardId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, cardId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectCard')}</option>
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>{card.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {quickExpenseFormData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectEWallet')}</label>
+                <select
+                  value={quickExpenseFormData.ewalletId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, ewalletId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectEWallet')}</option>
+                  {ewallets.map((wallet) => (
+                    <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {quickExpenseFormData.paymentMethod === 'bank' && banks.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectBank')}</label>
+                <select
+                  value={quickExpenseFormData.bankId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, bankId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectBank')}</option>
+                  {banks.map((bank) => (
+                    <option key={bank.id} value={bank.id}>{bank.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="quick-expense-form-actions">
+              <button 
+                onClick={handleSaveQuickExpensePreset} 
+                className="btn-save"
+                disabled={!quickExpenseFormData.name || !quickExpenseFormData.categoryId || quickExpenseFormData.amount <= 0}
+              >
+                {editingPresetId ? t('update') : t('save')}
+              </button>
+              <button 
+                onClick={resetQuickExpenseForm} 
+                className="btn-cancel"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+
+          {/* Existing Presets List */}
+          {quickExpensePresets.length > 0 && (
+            <>
+              <div className="quick-expense-form-divider"></div>
+              <div className="quick-expense-presets-list">
+                <h4>{t('quickExpenses')}</h4>
+                {quickExpensePresets.map((preset) => {
+                  const category = categories.find((c) => c.id === preset.categoryId);
+                  return (
+                    <div key={preset.id} className="quick-expense-preset-item">
+                      <div className="preset-info">
+                        <span className="preset-name">{preset.name}</span>
+                        <span className="preset-details">
+                          <span className="preset-category">{category?.icon} {category?.name}</span>
+                          <span className="preset-amount">${preset.amount.toFixed(2)}</span>
+                        </span>
+                      </div>
+                      <div className="preset-actions">
+                        <button 
+                          onClick={() => handleEditQuickExpensePreset(preset)}
+                          className="btn-icon"
+                          aria-label={t('edit')}
+                        >
+                          <EditIcon size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuickExpensePreset(preset.id)}
+                          className="btn-icon btn-danger"
+                          aria-label={t('delete')}
+                        >
+                          <DeleteIcon size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </PopupModal>
     </div>
     </>
   );
