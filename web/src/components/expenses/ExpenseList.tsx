@@ -2017,6 +2017,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
+    maxHeight: '300px',
+    overflowY: 'auto' as const,
   },
   detailsSubsection: {
     display: 'flex',
