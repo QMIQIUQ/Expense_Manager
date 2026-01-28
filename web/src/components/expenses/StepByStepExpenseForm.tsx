@@ -1011,9 +1011,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepContent: {
     padding: '16px',
-    height: '280px',
-    minHeight: '280px',
-    maxHeight: '280px',
+    height: '400px',
+    minHeight: '400px',
+    maxHeight: '400px',
     overflowY: 'auto',
   },
   stepHeader: {
