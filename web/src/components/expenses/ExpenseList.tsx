@@ -11,7 +11,7 @@ import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentForm from '../repayment/RepaymentForm';
 import ExpenseForm from './ExpenseForm';
-import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../icons';
+import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon, PlusIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
@@ -1102,22 +1102,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       {/* Desktop: Show all buttons */}
                       <div className="desktop-actions" style={styles.actions}>
                         <button 
-                          onClick={() => {
-                            if (expandedRepaymentId === expense.id) {
-                              setExpandedRepaymentId(null);
-                            } else {
-                              setExpandedRepaymentId(expense.id!);
-                            }
-                          }} 
-                          className="btn-text btn-text-success"
-                          style={{
-                            ...styles.addRepaymentBtn,
-                            ...(expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}),
-                          }}
+                          onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
+                          className="btn-icon btn-icon-success"
                           aria-label={t('addRepayment')}
                           title={t('addRepayment')}
                         >
-                          + {t('addRepayment')}
+                          <PlusIcon size={18} />
                         </button>
                         
                         {expense.needsRepaymentTracking && (
@@ -1329,20 +1319,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             <div style={styles.detailsLabel}>📋 {t('repaymentRecords')}</div>
                             <button
                               onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
-                              style={{
-                                padding: '4px 12px',
-                                backgroundColor: 'var(--accent-primary)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
+                              className="btn-icon btn-icon-success"
+                              aria-label={t('addRepayment')}
+                              title={t('addRepayment')}
                             >
-                              + {t('addRepayment')}
+                              <PlusIcon size={16} />
                             </button>
                           </div>
                           
@@ -1374,33 +1355,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                     <div style={{ display: 'flex', gap: '4px' }}>
                                       <button
                                         onClick={() => setEditingRepayment(rep)}
-                                        style={{
-                                          padding: '4px 8px',
-                                          backgroundColor: 'transparent',
-                                          border: '1px solid var(--border-primary)',
-                                          borderRadius: '4px',
-                                          cursor: 'pointer',
-                                          color: 'var(--text-secondary)',
-                                          fontSize: '12px',
-                                        }}
+                                        className="btn-icon btn-icon-primary"
+                                        style={{ width: '28px', height: '28px' }}
+                                        aria-label={t('edit')}
                                         title={t('edit')}
                                       >
-                                        ✏️
+                                        <EditIcon size={14} />
                                       </button>
                                       <button
                                         onClick={() => setDeleteRepaymentConfirm({ isOpen: true, repaymentId: rep.id! })}
-                                        style={{
-                                          padding: '4px 8px',
-                                          backgroundColor: 'transparent',
-                                          border: '1px solid var(--error-text)',
-                                          borderRadius: '4px',
-                                          cursor: 'pointer',
-                                          color: 'var(--error-text)',
-                                          fontSize: '12px',
-                                        }}
+                                        className="btn-icon btn-icon-danger"
+                                        style={{ width: '28px', height: '28px' }}
+                                        aria-label={t('delete')}
                                         title={t('delete')}
                                       >
-                                        🗑️
+                                        <DeleteIcon size={14} />
                                       </button>
                                     </div>
                                   </div>
