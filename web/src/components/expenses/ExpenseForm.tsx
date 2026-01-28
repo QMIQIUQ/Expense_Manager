@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
@@ -7,6 +7,7 @@ import AutocompleteDropdown, { AutocompleteOption } from '../common/Autocomplete
 import { BaseForm } from '../common/BaseForm';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
+import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -324,161 +325,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       </div>
 
       {/* Payment Method Selection */}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="expensePaymentMethod" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
-        <select
-          id="expensePaymentMethod"
-          name="paymentMethod"
-          value={formData.paymentMethod}
-          onChange={handleChange}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-          style={{
-            borderColor: 'var(--border-color)',
-            backgroundColor: 'var(--input-bg)',
-            color: 'var(--text-primary)'
-          }}
-        >
-          <option value="cash">💵 {t('cash')}</option>
-          <option value="credit_card">💳 {t('creditCard')}</option>
-          <option value="e_wallet">📱 {t('eWallet')}</option>
-          <option value="bank">🏦 {t('bankTransfer')}</option>
-        </select>
-      </div>
-
-      {/* Card Selection - Shown when credit card is selected */}
-      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="expenseCardId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
-          <select
-            id="expenseCardId"
-            name="cardId"
-            value={formData.cardId}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectPaymentMethod')}</option>
-            {cards.map((card) => (
-              <option key={card.id} value={card.id}>
-                💳 {card.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Card Creation Prompt - Shown when credit card is selected but no cards available */}
-      {formData.paymentMethod === 'credit_card' && cards.length === 0 && (
-        <div className="flex flex-col gap-2 p-3 border rounded" style={{
-          borderColor: 'var(--border-color)',
-          backgroundColor: 'var(--input-bg)',
-        }}>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)', margin: 0 }}>
-            {t('noCardsYet')}
-          </p>
-          {onCreateCard && (
-            <button
-              type="button"
-              onClick={onCreateCard}
-              className="text-sm text-blue-600 hover:underline text-left"
-              style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
-            >
-              + {t('addCard')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Bank Selection - Shown when bank is selected */}
-      {formData.paymentMethod === 'bank' && banks.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="expenseBankId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
-          <select
-            id="expenseBankId"
-            name="bankId"
-            value={formData.bankId}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectBank')}</option>
-            {banks.map((bank) => (
-              <option key={bank.id} value={bank.id}>
-                🏦 {bank.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* E-Wallet Selection - Only shown when e-wallet is selected */}
-      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWallet')}</label>
-          <select
-            name="paymentMethodName"
-            value={formData.paymentMethodName}
-            onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.paymentMethodName ? 'border-red-500' : ''
-            }`}
-            style={{
-              borderColor: errors.paymentMethodName ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectPaymentMethod')}</option>
-            {ewallets.map((wallet) => (
-              <option key={wallet.name} value={wallet.name}>
-                {wallet.icon} {wallet.name}
-              </option>
-            ))}
-          </select>
-          {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
-        </div>
-      )}
-      
-      {/* E-Wallet Name Input - Fallback when no e-wallets available */}
-      {formData.paymentMethod === 'e_wallet' && ewallets.length === 0 && (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletName')}</label>
-          <input
-            type="text"
-            name="paymentMethodName"
-            value={formData.paymentMethodName}
-            onChange={handleChange}
-            onFocus={(e) => e.target.select()}
-            placeholder={t('eWalletPlaceholder')}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.paymentMethodName ? 'border-red-500' : ''
-            }`}
-            style={{
-              borderColor: errors.paymentMethodName ? undefined : 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          />
-          {errors.paymentMethodName && <span className="text-xs text-red-600">{errors.paymentMethodName}</span>}
-          {onCreateEWallet && (
-            <button
-              type="button"
-              onClick={onCreateEWallet}
-              className="text-sm text-blue-600 hover:underline mt-1 text-left"
-            >
-              + {t('addEWallet')}
-            </button>
-          )}
-        </div>
-      )}
+      <PaymentMethodSelector
+        paymentMethod={formData.paymentMethod as PaymentMethodType}
+        onPaymentMethodChange={(method) => setFormData({ ...formData, paymentMethod: method })}
+        cardId={formData.cardId}
+        onCardChange={(cardId) => setFormData({ ...formData, cardId })}
+        bankId={formData.bankId}
+        onBankChange={(bankId) => setFormData({ ...formData, bankId })}
+        paymentMethodName={formData.paymentMethodName}
+        onPaymentMethodNameChange={(name) => setFormData({ ...formData, paymentMethodName: name })}
+        cards={cards}
+        banks={banks}
+        ewallets={ewallets}
+        onCreateCard={onCreateCard}
+        onCreateEWallet={onCreateEWallet}
+      />
+      {errors.paymentMethodName && <span className="text-xs text-red-600" style={{ marginTop: '-12px' }}>{errors.paymentMethodName}</span>}
 
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')} ({t('optional')})</label>
