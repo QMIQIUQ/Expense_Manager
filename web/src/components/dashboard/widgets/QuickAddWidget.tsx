@@ -7,6 +7,8 @@ import { WidgetProps } from './types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../../types/quickExpense';
 import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
+import PaymentMethodSelector from '../../common/PaymentMethodSelector';
+import { PaymentMethodType } from '../../../types';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -378,75 +380,39 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
           </select>
         </div>
 
-        <div className="inline-form-field">
-          <label className="inline-form-label">{t('paymentMethod')}</label>
-          <select
-            value={formData.paymentMethod}
-            onChange={(e) => setFormData({ 
-              ...formData, 
-              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-              cardId: undefined,
-              ewalletId: undefined,
-              bankId: undefined,
-            })}
-            className="inline-select"
-          >
-            <option value="cash">{t('cash')}</option>
-            <option value="credit_card">{t('creditCard')}</option>
-            <option value="e_wallet">{t('eWallet')}</option>
-            <option value="bank">{t('bankAccount')}</option>
-          </select>
-        </div>
       </div>
 
-      {/* Row 4: Sub-payment selector (if needed) */}
-      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-        <div className="inline-form-field">
-          <label className="inline-form-label">{t('selectCard')}</label>
-          <select
-            value={formData.cardId || ''}
-            onChange={(e) => setFormData({ ...formData, cardId: e.target.value || undefined })}
-            className="inline-select"
-          >
-            <option value="">{t('selectCard')}</option>
-            {cards.map((card) => (
-              <option key={card.id} value={card.id}>{card.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <div className="inline-form-field">
-          <label className="inline-form-label">{t('selectEWallet')}</label>
-          <select
-            value={formData.ewalletId || ''}
-            onChange={(e) => setFormData({ ...formData, ewalletId: e.target.value || undefined })}
-            className="inline-select"
-          >
-            <option value="">{t('selectEWallet')}</option>
-            {ewallets.map((wallet) => (
-              <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {formData.paymentMethod === 'bank' && banks.length > 0 && (
-        <div className="inline-form-field">
-          <label className="inline-form-label">{t('selectBank')}</label>
-          <select
-            value={formData.bankId || ''}
-            onChange={(e) => setFormData({ ...formData, bankId: e.target.value || undefined })}
-            className="inline-select"
-          >
-            <option value="">{t('selectBank')}</option>
-            {banks.map((bank) => (
-              <option key={bank.id} value={bank.id}>{bank.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Row 4: Payment Method (button-based selector) */}
+      <div className="inline-form-field">
+        <PaymentMethodSelector
+          paymentMethod={formData.paymentMethod as PaymentMethodType}
+          onPaymentMethodChange={(method) => setFormData({
+            ...formData,
+            paymentMethod: method,
+            cardId: undefined,
+            ewalletId: undefined,
+            bankId: undefined,
+          })}
+          cardId={formData.cardId}
+          onCardChange={(id) => setFormData({ ...formData, cardId: id || undefined })}
+          bankId={formData.bankId}
+          onBankChange={(id) => setFormData({ ...formData, bankId: id || undefined })}
+          paymentMethodName={
+            formData.paymentMethod === 'e_wallet' 
+              ? ewallets.find(w => w.id === formData.ewalletId)?.name 
+              : undefined
+          }
+          onPaymentMethodNameChange={(name) => {
+            const wallet = ewallets.find(w => w.name === name);
+            setFormData({ ...formData, ewalletId: wallet?.id || undefined });
+          }}
+          cards={cards}
+          banks={banks}
+          ewallets={ewallets}
+          compact={true}
+          showLabels={true}
+        />
+      </div>
 
       {/* Actions */}
       <div className="inline-form-actions">

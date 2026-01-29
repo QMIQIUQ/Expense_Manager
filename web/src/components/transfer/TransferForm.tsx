@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transfer, Card, EWallet, Bank } from '../../types';
+import { Transfer, Card, EWallet, Bank, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { getTodayLocal } from '../../utils/dateUtils';
@@ -7,6 +7,7 @@ import { BaseForm } from '../common/BaseForm';
 import { getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
 import DatePicker from '../common/DatePicker';
+import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
 interface TransferFormProps {
   onSubmit: (transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -244,119 +245,23 @@ const TransferForm: React.FC<TransferFormProps> = ({
           {t('transferFrom')} ⬆️
         </h4>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('paymentMethod')} *
-          </label>
-          <select
-            name="fromPaymentMethod"
-            value={formData.fromPaymentMethod}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <option value="cash">💵 {t('cash')}</option>
-            <option value="credit_card">💳 {t('creditCard')}</option>
-            <option value="e_wallet">📱 {t('eWallet')}</option>
-            <option value="bank">🏦 {t('bankTransfer')}</option>
-          </select>
-        </div>
-
-        {/* From Card Selection */}
-        {formData.fromPaymentMethod === 'credit_card' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectCard')} *
-            </label>
-            <select
-              name="fromCardId"
-              value={formData.fromCardId}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.fromCardId ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.fromCardId ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectCard')}</option>
-              {cards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  💳 {card.name}
-                </option>
-              ))}
-            </select>
-            {errors.fromCardId && <span className="text-xs text-red-600">{errors.fromCardId}</span>}
-          </div>
-        )}
-
-        {/* From E-Wallet Selection */}
-        {formData.fromPaymentMethod === 'e_wallet' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectEWallet')} *
-            </label>
-            <select
-              name="fromPaymentMethodName"
-              value={formData.fromPaymentMethodName}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.fromPaymentMethodName ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.fromPaymentMethodName ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectEWallet')}</option>
-              {ewallets.map((wallet) => (
-                <option key={wallet.id} value={wallet.name}>
-                  {wallet.icon} {wallet.name}
-                </option>
-              ))}
-            </select>
-            {errors.fromPaymentMethodName && (
-              <span className="text-xs text-red-600">{errors.fromPaymentMethodName}</span>
-            )}
-          </div>
-        )}
-
-        {/* From Bank Selection */}
-        {formData.fromPaymentMethod === 'bank' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectBank')} *
-            </label>
-            <select
-              name="fromBankId"
-              value={formData.fromBankId}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.fromBankId ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.fromBankId ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectBank')}</option>
-              {banks.map((bank) => (
-                <option key={bank.id} value={bank.id}>
-                  🏦 {bank.name}
-                </option>
-              ))}
-            </select>
-            {errors.fromBankId && <span className="text-xs text-red-600">{errors.fromBankId}</span>}
-          </div>
-        )}
+        <PaymentMethodSelector
+          paymentMethod={formData.fromPaymentMethod as PaymentMethodType}
+          onPaymentMethodChange={(method) => setFormData(prev => ({ ...prev, fromPaymentMethod: method }))}
+          cardId={formData.fromCardId}
+          onCardChange={(cardId) => setFormData(prev => ({ ...prev, fromCardId: cardId }))}
+          bankId={formData.fromBankId}
+          onBankChange={(bankId) => setFormData(prev => ({ ...prev, fromBankId: bankId }))}
+          paymentMethodName={formData.fromPaymentMethodName}
+          onPaymentMethodNameChange={(name) => setFormData(prev => ({ ...prev, fromPaymentMethodName: name }))}
+          cards={cards}
+          banks={banks}
+          ewallets={ewallets}
+          showLabels={false}
+        />
+        {errors.fromCardId && <span className="text-xs text-red-600">{errors.fromCardId}</span>}
+        {errors.fromPaymentMethodName && <span className="text-xs text-red-600">{errors.fromPaymentMethodName}</span>}
+        {errors.fromBankId && <span className="text-xs text-red-600">{errors.fromBankId}</span>}
       </div>
 
       {/* To Payment Method */}
@@ -370,119 +275,23 @@ const TransferForm: React.FC<TransferFormProps> = ({
           {t('transferTo')} ⬇️
         </h4>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('paymentMethod')} *
-          </label>
-          <select
-            name="toPaymentMethod"
-            value={formData.toPaymentMethod}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <option value="cash">💵 {t('cash')}</option>
-            <option value="credit_card">💳 {t('creditCard')}</option>
-            <option value="e_wallet">📱 {t('eWallet')}</option>
-            <option value="bank">🏦 {t('bankTransfer')}</option>
-          </select>
-        </div>
-
-        {/* To Card Selection */}
-        {formData.toPaymentMethod === 'credit_card' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectCard')} *
-            </label>
-            <select
-              name="toCardId"
-              value={formData.toCardId}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.toCardId ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.toCardId ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectCard')}</option>
-              {cards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  💳 {card.name}
-                </option>
-              ))}
-            </select>
-            {errors.toCardId && <span className="text-xs text-red-600">{errors.toCardId}</span>}
-          </div>
-        )}
-
-        {/* To E-Wallet Selection */}
-        {formData.toPaymentMethod === 'e_wallet' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectEWallet')} *
-            </label>
-            <select
-              name="toPaymentMethodName"
-              value={formData.toPaymentMethodName}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.toPaymentMethodName ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.toPaymentMethodName ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectEWallet')}</option>
-              {ewallets.map((wallet) => (
-                <option key={wallet.id} value={wallet.name}>
-                  {wallet.icon} {wallet.name}
-                </option>
-              ))}
-            </select>
-            {errors.toPaymentMethodName && (
-              <span className="text-xs text-red-600">{errors.toPaymentMethodName}</span>
-            )}
-          </div>
-        )}
-
-        {/* To Bank Selection */}
-        {formData.toPaymentMethod === 'bank' && (
-          <div className="flex flex-col gap-1" style={{ marginTop: '12px' }}>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {t('selectBank')} *
-            </label>
-            <select
-              name="toBankId"
-              value={formData.toBankId}
-              onChange={handleChange}
-              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.toBankId ? 'border-red-500' : ''
-              }`}
-              style={{
-                borderColor: errors.toBankId ? undefined : 'var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">{t('selectBank')}</option>
-              {banks.map((bank) => (
-                <option key={bank.id} value={bank.id}>
-                  🏦 {bank.name}
-                </option>
-              ))}
-            </select>
-            {errors.toBankId && <span className="text-xs text-red-600">{errors.toBankId}</span>}
-          </div>
-        )}
+        <PaymentMethodSelector
+          paymentMethod={formData.toPaymentMethod as PaymentMethodType}
+          onPaymentMethodChange={(method) => setFormData(prev => ({ ...prev, toPaymentMethod: method }))}
+          cardId={formData.toCardId}
+          onCardChange={(cardId) => setFormData(prev => ({ ...prev, toCardId: cardId }))}
+          bankId={formData.toBankId}
+          onBankChange={(bankId) => setFormData(prev => ({ ...prev, toBankId: bankId }))}
+          paymentMethodName={formData.toPaymentMethodName}
+          onPaymentMethodNameChange={(name) => setFormData(prev => ({ ...prev, toPaymentMethodName: name }))}
+          cards={cards}
+          banks={banks}
+          ewallets={ewallets}
+          showLabels={false}
+        />
+        {errors.toCardId && <span className="text-xs text-red-600">{errors.toCardId}</span>}
+        {errors.toPaymentMethodName && <span className="text-xs text-red-600">{errors.toPaymentMethodName}</span>}
+        {errors.toBankId && <span className="text-xs text-red-600">{errors.toBankId}</span>}
       </div>
 
       <div className="flex flex-col gap-1">

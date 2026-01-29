@@ -6,6 +6,8 @@ export const translations = {
   saveSuccess: { en: 'Saved successfully', zh: '儲存成功', 'zh-CN': '保存成功' },
   saveFailed: { en: 'Failed to save, please try again', zh: '儲存失敗，請稍後重試', 'zh-CN': '保存失败，请稍后重试' },
   cancel: { en: 'Cancel', zh: '取消', 'zh-CN': '取消' },
+  back: { en: 'Back', zh: '返回', 'zh-CN': '返回' },
+  next: { en: 'Next', zh: '下一步', 'zh-CN': '下一步' },
   delete: { en: 'Delete', zh: '刪除', 'zh-CN': '删除' },
   edit: { en: 'Edit', zh: '編輯', 'zh-CN': '编辑' },
   add: { en: 'Add', zh: '新增', 'zh-CN': '添加' },
@@ -102,6 +104,7 @@ export const translations = {
   addNewExpense: { en: 'Add New Expense', zh: '新增支出', 'zh-CN': '添加支出' },
   editExpense: { en: 'Edit Expense', zh: '編輯支出', 'zh-CN': '编辑支出' },
   addExpense: { en: 'Add Expense', zh: '新增支出', 'zh-CN': '添加支出' },
+  saveAndAddAnother: { en: 'Save & Add Another', zh: '儲存後新增', 'zh-CN': '储存后新增' },
   total: { en: 'total:', zh: '總計:', 'zh-CN': '总计:' },
   from: { en: 'from:', zh: '從:', 'zh-CN': '从:' },
   allDates: { en: 'All Dates', zh: '所有日期', 'zh-CN': '所有日期' },
@@ -119,6 +122,8 @@ export const translations = {
   sortByAmountDesc: { en: 'Amount (High to Low)', zh: '金額（高至低）', 'zh-CN': '金额（高至低）' },
   sortByAmountAsc: { en: 'Amount (Low to High)', zh: '金額（低至高）', 'zh-CN': '金额（低至高）' },
   noExpenses: { en: 'No expenses found', zh: '找不到支出記錄', 'zh-CN': '找不到支出记录' },
+  noExpensesToday: { en: 'Great job! No expenses today! 🎉', zh: '好樣的！今天沒有支出哦！🎉', 'zh-CN': '好样的！今天没有支出哦！🎉' },
+  notTodayHint: { en: 'Note: Selected date is not today', zh: '注意：選擇的日期不是今天', 'zh-CN': '注意：选择的日期不是今天' },
   noResults: { en: 'No results found', zh: '找不到結果', 'zh-CN': '找不到结果' },
   searchByName: { en: 'Search by name...', zh: '依名稱搜尋...', 'zh-CN': '按名称搜索...' },
   multiSelect: { en: 'Multi-select', zh: '多選', 'zh-CN': '多选' },
@@ -664,10 +669,17 @@ export const translations = {
   repaymentUpdated: { en: 'Repayment updated successfully', zh: '還款已成功更新', 'zh-CN': '还款已成功更新' },
   repaymentDeleted: { en: 'Repayment deleted successfully', zh: '還款已成功刪除', 'zh-CN': '还款已成功删除' },
   confirmDeleteRepayment: { en: 'Are you sure you want to delete this repayment?', zh: '您確定要刪除此還款記錄嗎？', 'zh-CN': '您确定要删除此还款记录吗？' },
+  deleteRepayment: { en: 'Delete Repayment', zh: '刪除還款', 'zh-CN': '删除还款' },
+  noRepaymentRecords: { en: 'No repayment records yet', zh: '暫無還款記錄', 'zh-CN': '暂无还款记录' },
+  failedToAddRepayment: { en: 'Failed to add repayment', zh: '新增還款失敗', 'zh-CN': '添加还款失败' },
+  failedToUpdateRepayment: { en: 'Failed to update repayment', zh: '更新還款失敗', 'zh-CN': '更新还款失败' },
+  failedToDeleteRepayment: { en: 'Failed to delete repayment', zh: '刪除還款失敗', 'zh-CN': '删除还款失败' },
   confirmDeleteSelected: { en: 'Are you sure you want to delete the selected items?', zh: '您確定要刪除選取的項目嗎？', 'zh-CN': '您确定要删除选中的项目吗？' },
   excessConvertedToIncome: { en: 'Excess amount converted to income', zh: '多還金額已轉為收入', 'zh-CN': '多还金额已转为收入' },
   viewRepayments: { en: 'View Repayments', zh: '查看還款', 'zh-CN': '查看还款' },
   hideRepayments: { en: 'Hide Repayments', zh: '隱藏還款', 'zh-CN': '隐藏还款' },
+  repaymentRecords: { en: 'Repayment Records', zh: '還款記錄', 'zh-CN': '还款记录' },
+  manageRepayments: { en: 'Manage Repayments', zh: '管理還款', 'zh-CN': '管理还款' },
   originalExpenseAmount: { en: 'Original Expense Amount', zh: '原始支出金額', 'zh-CN': '原始支出金额' },
   
   // Income Categories
@@ -938,6 +950,16 @@ export const translations = {
   accountInfo: { en: 'Account Information', zh: '帳戶資訊', 'zh-CN': '账户信息' },
   userId: { en: 'User ID', zh: '用戶 ID', 'zh-CN': '用户 ID' },
   dayOfMonth: { en: 'of each month', zh: '每月', 'zh-CN': '每月' },
+
+  // Multi-amount and tax
+  addedItems: { en: 'Added items', zh: '已添加項目', 'zh-CN': '已添加项目' },
+  addTax: { en: 'Add tax', zh: '添加稅費', 'zh-CN': '添加税费' },
+  subtotal: { en: 'Subtotal', zh: '小計', 'zh-CN': '小计' },
+  tax: { en: 'Tax', zh: '稅費', 'zh-CN': '税费' },
+  showMore: { en: 'More', zh: '更多', 'zh-CN': '更多' },
+  amountDetails: { en: 'Amount Details', zh: '金額明細', 'zh-CN': '金额明细' },
+  repaymentStatus: { en: 'Repayment Status', zh: '還款狀態', 'zh-CN': '还款状态' },
+  itemDescription: { en: 'Item description...', zh: '項目說明...', 'zh-CN': '项目说明...' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
