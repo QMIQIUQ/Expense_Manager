@@ -204,7 +204,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         tabIndex={-1}
       />
       
-      {/* Header Row: Month/Year display + View Mode Toggle */}
+      {/* Header Row: Month/Year display + Today button + View Mode Toggle */}
       <div style={styles.headerRow}>
         {/* Month/Year Display - Clickable to open date picker */}
         <button 
@@ -213,6 +213,18 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
           aria-label="Select date"
         >
           {formatMonthYear(selectedDate)}
+        </button>
+        
+        {/* Today Button */}
+        <button
+          onClick={() => onDateChange(getTodayLocal())}
+          style={{
+            ...styles.todayBtn,
+            ...(selectedDate === getTodayLocal() ? styles.todayBtnActive : {}),
+          }}
+          aria-label={t('today')}
+        >
+          📅 {t('today')}
         </button>
         
         {/* View Mode Toggle */}
@@ -342,6 +354,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+  },
+  todayBtn: {
+    padding: '6px 10px',
+    fontSize: '12px',
+    fontWeight: '500',
+    color: 'var(--text-secondary)',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s',
+  },
+  todayBtnActive: {
+    color: 'var(--success-text, #28a745)',
+    background: 'var(--success-bg, #d4edda)',
+    border: '1px solid var(--success-text, #28a745)',
   },
   viewModeContainer: {
     display: 'flex',

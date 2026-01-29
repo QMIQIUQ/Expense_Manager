@@ -906,22 +906,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 )}
               </div>
             )}
-
-            {/* Save and Add Another button - only show when creating new expense */}
-            {!initialData && onSubmitAndAddAnother && (
-              <button
-                type="button"
-                onClick={handleSubmitAndAddAnother}
-                disabled={!isStep5Valid()}
-                style={{
-                  ...styles.saveAndAddAnotherBtn,
-                  opacity: isStep5Valid() ? 1 : 0.5,
-                  cursor: isStep5Valid() ? 'pointer' : 'not-allowed',
-                }}
-              >
-                ➕ {t('saveAndAddAnother') || '储存后新增'}
-              </button>
-            )}
           </div>
         );
 
@@ -957,19 +941,37 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           {renderProgressIndicator()}
         </div>
         
-        <button
-          onClick={currentStep === 5 ? handleSubmit : handleNext}
-          style={styles.headerNavBtn}
-          disabled={
-            (currentStep === 2 && formData.amount === 0) ||
-            (currentStep === 3 && !formData.category) ||
-            (currentStep === 4 && !formData.description.trim()) ||
-            (currentStep === 5 && !isStep5Valid())
-          }
-          aria-label={currentStep === 5 ? t('save') : t('next')}
-        >
-          {currentStep === 5 ? '✓' : '›'}
-        </button>
+        <div style={styles.headerRight}>
+          {/* Save & Add Another button - only show in Step 5 when creating new expense */}
+          {currentStep === 5 && !initialData && onSubmitAndAddAnother && (
+            <button
+              onClick={handleSubmitAndAddAnother}
+              disabled={!isStep5Valid()}
+              style={{
+                ...styles.headerNavBtn,
+                ...styles.headerNavBtnSecondary,
+                opacity: isStep5Valid() ? 1 : 0.5,
+              }}
+              aria-label={t('saveAndAddAnother') || '储存后新增'}
+              title={t('saveAndAddAnother') || '储存后新增'}
+            >
+              ➕
+            </button>
+          )}
+          <button
+            onClick={currentStep === 5 ? handleSubmit : handleNext}
+            style={styles.headerNavBtn}
+            disabled={
+              (currentStep === 2 && formData.amount === 0) ||
+              (currentStep === 3 && !formData.category) ||
+              (currentStep === 4 && !formData.description.trim()) ||
+              (currentStep === 5 && !isStep5Valid())
+            }
+            aria-label={currentStep === 5 ? t('save') : t('next')}
+          >
+            {currentStep === 5 ? '✓' : '›'}
+          </button>
+        </div>
       </div>
 
       {renderProgressSummary()}
@@ -1003,6 +1005,11 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     textAlign: 'center',
   },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
   headerTitle: {
     fontSize: '16px',
     fontWeight: '600',
@@ -1024,6 +1031,12 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     flexShrink: 0,
+  },
+  headerNavBtnSecondary: {
+    background: 'var(--success-bg, #d4edda)',
+    border: '1px solid var(--success-text, #28a745)',
+    color: 'var(--success-text, #28a745)',
+    fontSize: '14px',
   },
   headerNavBtnPrimary: {
     background: 'var(--accent-primary)',
@@ -1073,9 +1086,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepContent: {
     padding: '16px',
-    height: '400px',
-    minHeight: '400px',
-    maxHeight: '400px',
+    height: 'calc(100vh - 300px)', // Dynamic height based on viewport
+    minHeight: '350px',
+    maxHeight: 'calc(100vh - 250px)',
     overflowY: 'auto',
   },
   stepHeader: {
