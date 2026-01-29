@@ -93,12 +93,10 @@ const ExpensesTab: React.FC<Props> = ({
     setIsAdding(true);
   };
 
-  const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    onAddExpense(data);
-    setIsAdding(false);
-    // Auto-navigate to the expense date if different from current selection
-    if (data.date !== selectedDate) {
-      setSelectedDate(data.date);
+  // Helper function to auto-navigate to expense date
+  const navigateToExpenseDate = (date: string) => {
+    if (date !== selectedDate) {
+      setSelectedDate(date);
       // Switch to day view to show the new expense
       if (viewMode !== 'day') {
         setViewMode('day');
@@ -106,16 +104,15 @@ const ExpensesTab: React.FC<Props> = ({
     }
   };
 
+  const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onAddExpense(data);
+    setIsAdding(false);
+    navigateToExpenseDate(data.date);
+  };
+
   const handleAddAndAnother = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
-    // Auto-navigate to the expense date if different from current selection
-    if (data.date !== selectedDate) {
-      setSelectedDate(data.date);
-      // Switch to day view to show the new expense
-      if (viewMode !== 'day') {
-        setViewMode('day');
-      }
-    }
+    navigateToExpenseDate(data.date);
     // Don't close modal - form will reset itself
   };
 

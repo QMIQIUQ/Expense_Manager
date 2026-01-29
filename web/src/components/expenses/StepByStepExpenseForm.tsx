@@ -951,6 +951,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ...styles.headerNavBtn,
                 ...styles.headerNavBtnSecondary,
                 opacity: isStep5Valid() ? 1 : 0.5,
+                cursor: isStep5Valid() ? 'pointer' : 'not-allowed',
               }}
               aria-label={t('saveAndAddAnother') || '储存后新增'}
               title={t('saveAndAddAnother') || '储存后新增'}
@@ -1086,9 +1087,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stepContent: {
     padding: '16px',
-    height: 'calc(100vh - 300px)', // Dynamic height based on viewport
-    minHeight: '350px',
-    maxHeight: 'calc(100vh - 250px)',
+    flex: 1, // Take available space
+    minHeight: '300px',
+    maxHeight: 'calc(100vh - 250px)', // Constrain max height to viewport
     overflowY: 'auto',
   },
   stepHeader: {
