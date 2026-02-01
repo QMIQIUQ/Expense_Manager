@@ -60,6 +60,9 @@ interface ExpenseListProps {
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
   onQuickExpensePresetsChange?: () => void;
   onManageQuickExpenses?: () => void;
+  // DateNavigator integration - when not 'all', date filters are already applied by parent
+  viewMode?: 'all' | 'day' | 'month' | 'year';
+  selectedDate?: string;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -82,6 +85,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   onManageQuickExpenses,
+  viewMode = 'all',
+  selectedDate,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -328,7 +333,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         .includes(searchTerm.toLowerCase());
       const matchesCategory = !categoryFilter || expense.category === categoryFilter;
       
-      // Month filter logic
+      // Skip date filtering if parent already filtered by viewMode (day/month/year)
+      if (viewMode !== 'all') {
+        return matchesSearch && matchesCategory;
+      }
+      
+      // Month filter logic (only when viewMode is 'all')
       let matchesMonth = true;
       if (monthFilter) {
         const expenseDate = new Date(expense.date);
@@ -626,61 +636,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </option>
                 ))}
               </select>
-              <select
-                value={monthFilter}
-                onChange={(e) => {
-                  setMonthFilter(e.target.value);
-                  if (e.target.value) {
-                    setAllDates(false);
-                  }
-                }}
-                style={styles.filterSelect}
-                aria-label="Filter by month"
-              >
-                <option value="">{t('allMonths')}</option>
-                {availableMonths.map((monthKey) => (
-                  <option key={monthKey} value={monthKey}>
-                    {formatMonthDisplay(monthKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.filterRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  id="allDatesToggle"
-                  type="checkbox"
-                  checked={allDates}
+              {/* Only show month filter when viewMode is 'all' (date filtering not handled by parent) */}
+              {viewMode === 'all' && (
+                <select
+                  value={monthFilter}
                   onChange={(e) => {
-                    setAllDates(e.target.checked);
-                    if (e.target.checked) {
-                      setMonthFilter('');
+                    setMonthFilter(e.target.value);
+                    if (e.target.value) {
+                      setAllDates(false);
                     }
                   }}
-                  aria-label={t('allDates')}
-                />
-                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
-              </div>
-              {/* Use shared DatePicker for desktop calendar support */}
-              <div style={styles.dateFilterGroup}>
+                  style={styles.filterSelect}
+                  aria-label="Filter by month"
+                >
+                  <option value="">{t('allMonths')}</option>
+                  {availableMonths.map((monthKey) => (
+                    <option key={monthKey} value={monthKey}>
+                      {formatMonthDisplay(monthKey)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {/* Show current viewMode date context when not 'all' */}
+              {viewMode !== 'all' && selectedDate && (
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--background-secondary)', borderRadius: '6px' }}>
+                  📅 {viewMode === 'day' ? selectedDate : viewMode === 'month' ? selectedDate.slice(0, 7) : selectedDate.slice(0, 4)}
+                </div>
+              )}
+            </div>
+            {/* Only show date range filters when viewMode is 'all' */}
+            {viewMode === 'all' && (
+              <div style={styles.filterRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    id="allDatesToggle"
+                    type="checkbox"
+                    checked={allDates}
+                    onChange={(e) => {
+                      setAllDates(e.target.checked);
+                      if (e.target.checked) {
+                        setMonthFilter('');
+                      }
+                    }}
+                    aria-label={t('allDates')}
+                  />
+                  <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
+                </div>
+                {/* Use shared DatePicker for desktop calendar support */}
+                <div style={styles.dateFilterGroup}>
+                  <DatePicker
+                    label={t('from')}
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    disabled={allDates || !!monthFilter}
+                    dateFormat={dateFormat}
+                    style={{ ...styles.dateInput, width: '100%' }}
+                  />
+                </div>
                 <DatePicker
-                  label={t('from')}
-                  value={dateFrom}
-                  onChange={setDateFrom}
+                  label={t('to')}
+                  value={dateTo}
+                  onChange={setDateTo}
                   disabled={allDates || !!monthFilter}
                   dateFormat={dateFormat}
                   style={{ ...styles.dateInput, width: '100%' }}
                 />
               </div>
-              <DatePicker
-                label={t('to')}
-                value={dateTo}
-                onChange={setDateTo}
-                disabled={allDates || !!monthFilter}
-                dateFormat={dateFormat}
-                style={{ ...styles.dateInput, width: '100%' }}
-              />
-            </div>
+            )}
           </>
         )}
       </div>

@@ -207,6 +207,8 @@ const ExpensesTab: React.FC<Props> = ({
           onEdit={onEdit}
           onDelete={onDeleteExpense}
           onInlineUpdate={() => {}}
+          viewMode={viewMode}
+          selectedDate={selectedDate}
         />
       </div>
     </div>
