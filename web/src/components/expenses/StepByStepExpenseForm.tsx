@@ -296,6 +296,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       setCurrentAmountInput(0);
       // Update total amount
       updateTotalAmount([...amountItems, newItem]);
+      // Auto-focus back to input after adding
+      setTimeout(() => amountInputRef.current?.focus(), 50);
     }
   };
 
@@ -339,12 +341,19 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     if (e.key === 'Tab' && currentAmountInput > 0) {
       e.preventDefault();
       addAmountItem();
+      // Auto-focus back to input after adding
+      setTimeout(() => amountInputRef.current?.focus(), 50);
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (formData.amount > 0 || (amountItems.length === 0 && currentAmountInput === 0)) {
-        handleNext();
-      } else if (currentAmountInput > 0) {
+      // Only go to next step if there's a valid total amount AND no pending input
+      // If there's pending input, add it first instead of going to next step
+      if (currentAmountInput > 0) {
         addAmountItem();
+        // Auto-focus back to input after adding
+        setTimeout(() => amountInputRef.current?.focus(), 50);
+      } else if (formData.amount > 0) {
+        // Only proceed to next step (category) if we have a valid amount
+        handleNext();
       }
     }
   };

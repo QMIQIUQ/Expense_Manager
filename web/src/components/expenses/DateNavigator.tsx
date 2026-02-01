@@ -217,7 +217,10 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         
         {/* Today Button */}
         <button
-          onClick={() => onDateChange(getTodayLocal())}
+          onClick={() => {
+            onDateChange(getTodayLocal());
+            onViewModeChange('day');
+          }}
           style={{
             ...styles.todayBtn,
             ...(selectedDate === getTodayLocal() ? styles.todayBtnActive : {}),
