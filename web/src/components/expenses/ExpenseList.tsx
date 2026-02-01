@@ -383,6 +383,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return time ? `${formatted} ${time}` : formatted;
   };
 
+  // Helper to format date based on current viewMode
+  const formatDateByViewMode = (mode: 'all' | 'day' | 'month' | 'year', date: string): string => {
+    switch (mode) {
+      case 'day': return date;
+      case 'month': return date.slice(0, 7);
+      case 'year': return date.slice(0, 4);
+      default: return date;
+    }
+  };
+
   const toggleGroupCollapse = (date: string) => {
     setCollapsedGroups(prev => {
       const newSet = new Set(prev);
@@ -660,7 +670,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {/* Show current viewMode date context when not 'all' */}
               {viewMode !== 'all' && selectedDate && (
                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--background-secondary)', borderRadius: '6px' }}>
-                  📅 {viewMode === 'day' ? selectedDate : viewMode === 'month' ? selectedDate.slice(0, 7) : selectedDate.slice(0, 4)}
+                  📅 {formatDateByViewMode(viewMode, selectedDate)}
                 </div>
               )}
             </div>

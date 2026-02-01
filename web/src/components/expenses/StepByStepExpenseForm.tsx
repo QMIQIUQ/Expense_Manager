@@ -49,6 +49,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
+  
+  // Delay for focusing input after state updates
+  const FOCUS_DELAY_MS = 50;
 
   // Sort categories by recent usage (stored in localStorage)
   const getSortedCategories = (): Category[] => {
@@ -297,7 +300,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       // Update total amount
       updateTotalAmount([...amountItems, newItem]);
       // Auto-focus back to input after adding
-      setTimeout(() => amountInputRef.current?.focus(), 50);
+      setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
     }
   };
 
@@ -342,7 +345,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       e.preventDefault();
       addAmountItem();
       // Auto-focus back to input after adding
-      setTimeout(() => amountInputRef.current?.focus(), 50);
+      setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       // Only go to next step if there's a valid total amount AND no pending input
@@ -350,7 +353,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       if (currentAmountInput > 0) {
         addAmountItem();
         // Auto-focus back to input after adding
-        setTimeout(() => amountInputRef.current?.focus(), 50);
+        setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
       } else if (formData.amount > 0) {
         // Only proceed to next step (category) if we have a valid amount
         handleNext();
