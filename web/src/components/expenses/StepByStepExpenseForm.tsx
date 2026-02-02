@@ -292,15 +292,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const addAmountItem = () => {
+  const addAmountItem = (shouldFocusInput: boolean = false) => {
     if (currentAmountInput > 0) {
       const newItem: AmountItem = { amount: currentAmountInput / 100 };
       setAmountItems(prev => [...prev, newItem]);
       setCurrentAmountInput(0);
       // Update total amount
       updateTotalAmount([...amountItems, newItem]);
-      // Auto-focus back to input after adding
-      setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
+      // Only auto-focus back to input if explicitly requested (e.g., clicking + button)
+      if (shouldFocusInput) {
+        setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
+      }
     }
   };
 
@@ -343,19 +345,18 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const handleAmountKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Tab' && currentAmountInput > 0) {
       e.preventDefault();
-      addAmountItem();
-      // Auto-focus back to input after adding
-      setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
+      addAmountItem(false);
+      // After Tab, go to next step
+      setTimeout(() => handleNext(), FOCUS_DELAY_MS);
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // Only go to next step if there's a valid total amount AND no pending input
-      // If there's pending input, add it first instead of going to next step
+      // Keyboard Enter: add pending amount if any, then go to next step
       if (currentAmountInput > 0) {
-        addAmountItem();
-        // Auto-focus back to input after adding
-        setTimeout(() => amountInputRef.current?.focus(), FOCUS_DELAY_MS);
+        addAmountItem(false);
+        // Go to next step after adding
+        setTimeout(() => handleNext(), FOCUS_DELAY_MS);
       } else if (formData.amount > 0) {
-        // Only proceed to next step (category) if we have a valid amount
+        // No pending input, just proceed to next step (category)
         handleNext();
       }
     }
@@ -475,7 +476,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               />
               <button
                 type="button"
-                onClick={addAmountItem}
+                onClick={() => addAmountItem(true)}
                 disabled={currentAmountInput === 0}
                 style={{
                   ...styles.addAmountBtn,
