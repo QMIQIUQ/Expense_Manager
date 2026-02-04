@@ -687,7 +687,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <h2 style={styles.stepHeaderTitle}>{t('paymentMethod')}</h2>
             </div>
             
-            {lastUsedPaymentMethod && (
+            {lastUsedPaymentMethod && !initialData && (
               <div style={styles.autoSelectHint}>
                 ✨ Auto-selected
               </div>
