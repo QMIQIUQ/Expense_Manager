@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, AmountItem } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, AmountItem, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
+import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
 // Step type definition
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -693,121 +694,22 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             )}
 
-            <div style={styles.paymentMethodGrid}>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                style={{
-                  ...styles.paymentMethodCard,
-                  ...(formData.paymentMethod === 'cash' ? styles.paymentMethodCardActive : {}),
-                }}
-              >
-                <div style={styles.paymentMethodIcon}>💵</div>
-                <div style={styles.paymentMethodName}>{t('cash')}</div>
-              </div>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit_card' }))}
-                style={{
-                  ...styles.paymentMethodCard,
-                  ...(formData.paymentMethod === 'credit_card' ? styles.paymentMethodCardActive : {}),
-                }}
-              >
-                <div style={styles.paymentMethodIcon}>💳</div>
-                <div style={styles.paymentMethodName}>{t('creditCard')}</div>
-              </div>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'e_wallet' }))}
-                style={{
-                  ...styles.paymentMethodCard,
-                  ...(formData.paymentMethod === 'e_wallet' ? styles.paymentMethodCardActive : {}),
-                }}
-              >
-                <div style={styles.paymentMethodIcon}>📱</div>
-                <div style={styles.paymentMethodName}>{t('eWallet')}</div>
-              </div>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'bank' }))}
-                style={{
-                  ...styles.paymentMethodCard,
-                  ...(formData.paymentMethod === 'bank' ? styles.paymentMethodCardActive : {}),
-                }}
-              >
-                <div style={styles.paymentMethodIcon}>🏦</div>
-                <div style={styles.paymentMethodName}>{t('bankTransfer')}</div>
-              </div>
-            </div>
-
-            {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-              <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('selectCard')}</label>
-                <select
-                  value={formData.cardId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cardId: e.target.value }))}
-                  style={styles.select}
-                >
-                  {cards.map((card) => (
-                    <option key={card.id} value={card.id}>{card.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {formData.paymentMethod === 'credit_card' && cards.length === 0 && (
-              <div style={styles.noItemsContainer}>
-                <p style={styles.noItemsText}>{t('noCardsYet')}</p>
-                {onCreateCard && (
-                  <button type="button" onClick={onCreateCard} style={styles.createButton}>
-                    + {t('addCard')}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {formData.paymentMethod === 'e_wallet' && (
-              <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('eWalletName')}</label>
-                {ewallets.length > 0 ? (
-                  <select
-                    value={formData.paymentMethodName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethodName: e.target.value }))}
-                    style={styles.select}
-                  >
-                    {ewallets.map((wallet) => (
-                      <option key={wallet.id} value={wallet.name}>{wallet.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div>
-                    <input
-                      type="text"
-                      value={formData.paymentMethodName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethodName: e.target.value }))}
-                      placeholder={t('eWalletPlaceholder')}
-                      style={styles.textInput}
-                    />
-                    {onCreateEWallet && (
-                      <button type="button" onClick={onCreateEWallet} style={{...styles.createButton, marginTop: '8px'}}>
-                        + {t('addEWallet')}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {formData.paymentMethod === 'bank' && banks.length > 0 && (
-              <div style={styles.fieldContainer}>
-                <label style={styles.fieldLabel}>{t('selectBank')}</label>
-                <select
-                  value={formData.bankId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bankId: e.target.value }))}
-                  style={styles.select}
-                >
-                  {banks.map((bank) => (
-                    <option key={bank.id} value={bank.id}>{bank.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <PaymentMethodSelector
+              paymentMethod={formData.paymentMethod as PaymentMethodType}
+              onPaymentMethodChange={(method) => setFormData(prev => ({ ...prev, paymentMethod: method }))}
+              cardId={formData.cardId}
+              onCardChange={(cardId) => setFormData(prev => ({ ...prev, cardId }))}
+              bankId={formData.bankId}
+              onBankChange={(bankId) => setFormData(prev => ({ ...prev, bankId }))}
+              paymentMethodName={formData.paymentMethodName}
+              onPaymentMethodNameChange={(name) => setFormData(prev => ({ ...prev, paymentMethodName: name }))}
+              cards={cards}
+              banks={banks}
+              ewallets={ewallets}
+              onCreateCard={onCreateCard}
+              onCreateEWallet={onCreateEWallet}
+              showLabels={false}
+            />
 
             {/* Toggle options - tap to toggle like settings page */}
             <div style={styles.toggleOptionsContainer}>
