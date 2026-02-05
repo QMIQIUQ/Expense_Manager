@@ -7,9 +7,18 @@ export const userSettingsService = {
   async get(userId: string, forceRefresh: boolean = false): Promise<UserSettings | null> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
     // Force refresh from server to bypass Firestore cache
-    const docSnap = forceRefresh 
-      ? await getDocFromServer(docRef)
-      : await getDoc(docRef);
+    // Fall back to cached read if server fetch fails (e.g., offline)
+    let docSnap;
+    if (forceRefresh) {
+      try {
+        docSnap = await getDocFromServer(docRef);
+      } catch {
+        // Fallback to cached read if server fetch fails (offline, network error, etc.)
+        docSnap = await getDoc(docRef);
+      }
+    } else {
+      docSnap = await getDoc(docRef);
+    }
     
     if (!docSnap.exists()) {
       return null;
