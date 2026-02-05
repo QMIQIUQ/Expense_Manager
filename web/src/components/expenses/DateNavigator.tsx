@@ -98,7 +98,11 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   };
 
   const getWeekdayShort = (date: Date): string => {
-    return new Intl.DateTimeFormat('en', { weekday: 'short' }).format(date);
+    const locale =
+      typeof navigator !== 'undefined' && navigator.language
+        ? navigator.language
+        : undefined;
+    return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
   };
 
   // Note: totalAmount is kept for API compatibility but not displayed per user request

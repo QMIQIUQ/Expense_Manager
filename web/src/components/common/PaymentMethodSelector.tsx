@@ -73,50 +73,62 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       
       {/* Payment Method Grid */}
       <div style={styles.paymentMethodGrid}>
-        <div
+        <button
+          type="button"
           onClick={() => handlePaymentMethodClick('cash')}
           style={{
             ...cardStyle,
             ...(paymentMethod === 'cash' ? styles.paymentMethodCardActive : {}),
             ...(disabled ? styles.disabled : {}),
           }}
+          aria-pressed={paymentMethod === 'cash'}
+          disabled={disabled}
         >
           <div style={iconStyle}>💵</div>
           <div style={nameStyle}>{t('cash')}</div>
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           onClick={() => handlePaymentMethodClick('credit_card')}
           style={{
             ...cardStyle,
             ...(paymentMethod === 'credit_card' ? styles.paymentMethodCardActive : {}),
             ...(disabled ? styles.disabled : {}),
           }}
+          aria-pressed={paymentMethod === 'credit_card'}
+          disabled={disabled}
         >
           <div style={iconStyle}>💳</div>
           <div style={nameStyle}>{t('creditCard')}</div>
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           onClick={() => handlePaymentMethodClick('e_wallet')}
           style={{
             ...cardStyle,
             ...(paymentMethod === 'e_wallet' ? styles.paymentMethodCardActive : {}),
             ...(disabled ? styles.disabled : {}),
           }}
+          aria-pressed={paymentMethod === 'e_wallet'}
+          disabled={disabled}
         >
           <div style={iconStyle}>📱</div>
           <div style={nameStyle}>{t('eWallet')}</div>
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           onClick={() => handlePaymentMethodClick('bank')}
           style={{
             ...cardStyle,
             ...(paymentMethod === 'bank' ? styles.paymentMethodCardActive : {}),
             ...(disabled ? styles.disabled : {}),
           }}
+          aria-pressed={paymentMethod === 'bank'}
+          disabled={disabled}
         >
           <div style={iconStyle}>🏦</div>
           <div style={nameStyle}>{t('bankTransfer')}</div>
-        </div>
+        </button>
       </div>
 
       {/* Credit Card Selector */}

@@ -144,7 +144,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   } = useMultiSelect<Expense>();
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
@@ -1014,11 +1013,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  if (expandedRepaymentId === expense.id) {
-                                    setExpandedRepaymentId(null);
-                                  } else {
-                                    setExpandedRepaymentId(expense.id!);
-                                  }
+                                  setShowRepaymentFormForExpenseId(expense.id!);
                                 }}
                               >
                                 <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
@@ -1159,8 +1154,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </div>
                     )}
 
-                    {/* Repayment Records List (if any) with edit/delete */}
-                    {(() => {
+                    {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
+                    {expense.needsRepaymentTracking && (() => {
                       const expenseRepayments = repayments.filter(r => r.expenseId === expense.id);
                       return (
                         <div style={styles.detailsSubsection}>

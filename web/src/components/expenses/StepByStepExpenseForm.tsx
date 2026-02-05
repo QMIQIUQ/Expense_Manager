@@ -170,10 +170,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     // Add multi-amount data if applicable
     if (amountItems.length > 0) {
       submitData.amountItems = amountItems;
-      submitData.subtotal = subtotal;
+      submitData.subtotal = Math.round(subtotal * 100) / 100;
       if (enableTax) {
         submitData.taxRate = taxRate;
-        submitData.taxAmount = taxAmount;
+        submitData.taxAmount = Math.round(taxAmount * 100) / 100;
       }
     }
 
@@ -675,6 +675,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 placeholder={t('notesPlaceholder')}
                 style={styles.textArea}
                 rows={3}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </div>
           </div>
