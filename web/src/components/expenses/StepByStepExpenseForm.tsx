@@ -420,7 +420,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 1:
         const isNotToday = formData.date !== getTodayLocal();
         return (
-          <div style={styles.stepContent}>
+          <div style={{ ...styles.stepContent, overflow: 'visible' }}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>📅</span>
               <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
@@ -430,7 +430,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '200px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '400px' }}>
               <DatePicker
                 label={t('date')}
                 value={formData.date}
@@ -909,7 +909,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--card-bg, white)',
     borderRadius: '16px',
     boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -1011,6 +1010,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '300px',
     maxHeight: 'calc(100vh - 250px)', // Constrain max height to viewport
     overflowY: 'auto',
+    position: 'relative' as const, // Establish positioning context for absolute children
   },
   stepHeader: {
     display: 'flex',
