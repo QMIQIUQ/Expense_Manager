@@ -173,11 +173,13 @@ describe('ExpenseForm', () => {
       />
     );
 
-    const paymentMethodSelect = screen.getByLabelText(/payment method/i);
-    fireEvent.change(paymentMethodSelect, { target: { value: 'credit_card' } });
+    // Click the Credit Card button in the PaymentMethodSelector
+    const creditCardButton = screen.getByRole('button', { name: /credit.*card|💳/i });
+    fireEvent.click(creditCardButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/select card/i)).toBeInTheDocument();
+      // The card selector should show the card name in a dropdown
+      expect(screen.getByText('VISA')).toBeInTheDocument();
     });
   });
 
