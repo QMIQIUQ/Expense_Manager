@@ -1,11 +1,12 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
-import { Category, Card, Bank } from '../../types';
+import { Category, Card, Bank, PaymentMethodType } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
+import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
 interface RecurringFormData {
   description: string;
@@ -180,94 +181,26 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('paymentMethod')}</label>
-          <select
-            value={formData.paymentMethod}
-            onChange={(e) => setFormData({ 
-              ...formData, 
-              paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-              cardId: e.target.value !== 'credit_card' ? '' : formData.cardId,
-              paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
-              bankId: e.target.value !== 'bank' ? '' : formData.bankId,
-            })}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
-            }}
-          >
-            <option value="cash">💵 {t('cash')}</option>
-            <option value="credit_card">💳 {t('creditCard')}</option>
-            <option value="e_wallet">📱 {t('eWallet')}</option>
-            <option value="bank">🏦 {t('bankTransfer')}</option>
-          </select>
-        </div>
-
-        {formData.paymentMethod === 'bank' && banks && banks.length > 0 && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectBank')}</label>
-            <select
-              value={formData.bankId}
-              onChange={(e) => setFormData({ ...formData, bankId: e.target.value })}
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            >
-              <option value="">{t('selectBank')}</option>
-              {banks.map((bank) => (
-                <option key={bank.id} value={bank.id}>
-                  🏦 {bank.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {formData.paymentMethod === 'credit_card' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('selectCard')}</label>
-            <select
-              value={formData.cardId}
-              onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            >
-              <option value="">{t('selectCard')}</option>
-              {cards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  {card.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {formData.paymentMethod === 'e_wallet' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletName')}</label>
-            <input
-              type="text"
-              value={formData.paymentMethodName}
-              onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-              placeholder={t('eWalletPlaceholder')}
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)'
-              }}
-            />
-          </div>
-        )}
+        {/* Payment Method Selection */}
+        <PaymentMethodSelector
+          paymentMethod={formData.paymentMethod as PaymentMethodType}
+          onPaymentMethodChange={(method) => setFormData({ 
+            ...formData, 
+            paymentMethod: method,
+            cardId: method !== 'credit_card' ? '' : formData.cardId,
+            paymentMethodName: method !== 'e_wallet' ? '' : formData.paymentMethodName,
+            bankId: method !== 'bank' ? '' : formData.bankId,
+          })}
+          cardId={formData.cardId}
+          onCardChange={(cardId) => setFormData({ ...formData, cardId })}
+          bankId={formData.bankId}
+          onBankChange={(bankId) => setFormData({ ...formData, bankId })}
+          paymentMethodName={formData.paymentMethodName}
+          onPaymentMethodNameChange={(name) => setFormData({ ...formData, paymentMethodName: name })}
+          cards={cards}
+          banks={banks}
+          ewallets={[]}
+        />
       </div>
     </BaseForm>
   );

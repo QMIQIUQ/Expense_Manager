@@ -1,24 +1,38 @@
 import { db } from '../config/firebase';
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { UserSettings, TimeFormat, DateFormat } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 
 export const userSettingsService = {
-  async get(userId: string): Promise<UserSettings | null> {
+  async get(userId: string, forceRefresh: boolean = false): Promise<UserSettings | null> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
-    const docSnap = await getDoc(docRef);
+    // Force refresh from server to bypass Firestore cache
+    // Fall back to cached read if server fetch fails (e.g., offline)
+    let docSnap;
+    if (forceRefresh) {
+      try {
+        docSnap = await getDocFromServer(docRef);
+      } catch {
+        // Fallback to cached read if server fetch fails (offline, network error, etc.)
+        docSnap = await getDoc(docRef);
+      }
+    } else {
+      docSnap = await getDoc(docRef);
+    }
     
     if (!docSnap.exists()) {
       return null;
     }
     
     const data = docSnap.data();
+    
     return {
       id: docSnap.id,
       userId: data.userId,
       billingCycleDay: data.billingCycleDay || 1,
       timeFormat: (data.timeFormat as TimeFormat) || '24h',
       dateFormat: (data.dateFormat as DateFormat) || 'YYYY-MM-DD',
+      useStepByStepForm: data.useStepByStepForm ?? false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -41,8 +55,8 @@ export const userSettingsService = {
     });
   },
 
-  async getOrCreate(userId: string): Promise<UserSettings> {
-    const existing = await this.get(userId);
+  async getOrCreate(userId: string, forceRefresh: boolean = false): Promise<UserSettings> {
+    const existing = await this.get(userId, forceRefresh);
     
     if (existing) {
       return existing;
@@ -54,6 +68,7 @@ export const userSettingsService = {
       billingCycleDay: 1, // Default to 1st of month
       timeFormat: '24h', // Default to 24-hour format
       dateFormat: 'YYYY-MM-DD', // Default date format
+      useStepByStepForm: false, // Default to traditional form
     };
     
     await this.create(defaultSettings);

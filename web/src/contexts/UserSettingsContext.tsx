@@ -8,8 +8,10 @@ interface UserSettingsContextType {
   loading: boolean;
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
+  useStepByStepForm: boolean;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDateFormat: (format: DateFormat) => Promise<void>;
+  setUseStepByStepForm: (value: boolean) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -32,7 +34,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadSettings = async () => {
+  const loadSettings = async (forceRefresh: boolean = false) => {
     if (!currentUser) {
       setSettings(null);
       setLoading(false);
@@ -40,7 +42,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
 
     try {
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid);
+      // Force refresh from server when requested to avoid stale cache
+      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, forceRefresh);
       setSettings(userSettings);
     } catch (error) {
       console.error('Error loading user settings:', error);
@@ -50,7 +53,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   };
 
   useEffect(() => {
-    loadSettings();
+    loadSettings(true); // Force refresh from server on initial load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
@@ -78,8 +81,24 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setUseStepByStepForm = async (value: boolean) => {
+    if (!currentUser || !settings) return;
+
+    // Optimistic update - set local state immediately
+    setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
+    
+    try {
+      await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
+    } catch (error) {
+      // Rollback on error
+      setSettings(prev => prev ? { ...prev, useStepByStepForm: !value } : null);
+      console.error('Error updating step-by-step form setting:', error);
+      throw error;
+    }
+  };
+
   const refreshSettings = async () => {
-    await loadSettings();
+    await loadSettings(true); // Force refresh from server
   };
 
   const value: UserSettingsContextType = {
@@ -87,8 +106,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     loading,
     timeFormat: settings?.timeFormat || '24h',
     dateFormat: settings?.dateFormat || 'YYYY-MM-DD',
+    useStepByStepForm: settings?.useStepByStepForm ?? false,
     setTimeFormat,
     setDateFormat,
+    setUseStepByStepForm,
     refreshSettings,
   };
 

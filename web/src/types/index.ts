@@ -13,12 +13,19 @@ export interface UserSettings {
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
   timeFormat?: TimeFormat; // 12-hour or 24-hour format
   dateFormat?: DateFormat; // Date display format
+  useStepByStepForm?: boolean; // Enable multi-step expense entry form
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Payment method types
 export type PaymentMethodType = 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+
+// Amount item for multi-amount expenses
+export interface AmountItem {
+  amount: number; // Amount in dollars
+  description?: string; // Optional description for this amount
+}
 
 export interface Expense {
   id?: string;
@@ -30,6 +37,11 @@ export interface Expense {
   // Optional time in HH:mm (24h) format, for finer granularity
   time?: string;
   notes?: string;
+  // Multi-amount support (for itemized expenses)
+  amountItems?: AmountItem[]; // Individual amount items that sum to total amount
+  taxRate?: number; // Tax rate percentage (e.g., 6 for 6%)
+  taxAmount?: number; // Calculated tax amount
+  subtotal?: number; // Subtotal before tax
   // New fields for income linking
   originalReceiptAmount?: number; // Original receipt/invoice amount for tracking reimbursements
   payerName?: string; // Who paid (e.g., "Me", "Friend A")

@@ -7,10 +7,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getTodayLocal, formatDateLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import { quickExpenseService } from '../../services/quickExpenseService';
+import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
-import RepaymentManager from '../repayment/RepaymentManager';
+import RepaymentForm from '../repayment/RepaymentForm';
 import ExpenseForm from './ExpenseForm';
-import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon } from '../icons';
+import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon, PlusIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
@@ -59,6 +60,9 @@ interface ExpenseListProps {
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
   onQuickExpensePresetsChange?: () => void;
   onManageQuickExpenses?: () => void;
+  // DateNavigator integration - when not 'all', date filters are already applied by parent
+  viewMode?: 'all' | 'day' | 'month' | 'year';
+  selectedDate?: string;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -81,6 +85,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   onManageQuickExpenses,
+  viewMode = 'all',
+  selectedDate,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -138,9 +144,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   } = useMultiSelect<Expense>();
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [expandedRepaymentId, setExpandedRepaymentId] = useState<string | null>(null);
+  const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
+  
+  // Repayment editing states
+  const [editingRepayment, setEditingRepayment] = useState<Repayment | null>(null);
+  const [showRepaymentFormForExpenseId, setShowRepaymentFormForExpenseId] = useState<string | null>(null);
+  const [deleteRepaymentConfirm, setDeleteRepaymentConfirm] = useState<{ isOpen: boolean; repaymentId: string | null }>({
+    isOpen: false,
+    repaymentId: null,
+  });
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -149,20 +163,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       if (openMenuId && !target.closest('.mobile-actions')) {
         setOpenMenuId(null);
       }
-      if (showQuickExpenseForm && !target.closest('.quick-expense-add-container')) {
-        setShowQuickExpenseForm(false);
-        setEditingPresetId(null);
-      }
+      // Removed click outside handling for quick expense form - PopupModal handles this
     };
 
-    if (openMenuId || showQuickExpenseForm) {
+    if (openMenuId) {
       document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [openMenuId, showQuickExpenseForm]);
+  }, [openMenuId]);
 
   // Helper function to get category with icon
   const getCategoryDisplay = (categoryName: string) => {
@@ -247,6 +258,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return totals;
   }, [repayments]);
 
+  // Handle adding a repayment
+  const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    
+    try {
+      await repaymentService.create({
+        ...repaymentData,
+        userId: currentUser.uid,
+        expenseId: expenseId,
+      });
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
+      setShowRepaymentFormForExpenseId(null);
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to add repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment'), duration: 3000 });
+    }
+  };
+
+  // Handle updating a repayment
+  const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    
+    try {
+      await repaymentService.update(repaymentId, updates);
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
+      setEditingRepayment(null);
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to update repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment'), duration: 3000 });
+    }
+  };
+
+  // Handle deleting a repayment
+  const handleDeleteRepayment = async (repaymentId: string) => {
+    if (!currentUser) return;
+    
+    const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
+    
+    try {
+      await repaymentService.delete(repaymentId);
+      
+      updateNotification(notificationId, { type: 'success', message: t('repaymentDeleted'), duration: 3000 });
+      setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
+      
+      if (onReloadRepayments) {
+        onReloadRepayments();
+      }
+    } catch (error) {
+      console.error('Failed to delete repayment:', error);
+      updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment'), duration: 3000 });
+    }
+  };
+
   const filteredAndSortedExpenses = () => {
     const filtered = expenses.filter((expense) => {
       const matchesSearch = expense.description
@@ -254,7 +332,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         .includes(searchTerm.toLowerCase());
       const matchesCategory = !categoryFilter || expense.category === categoryFilter;
       
-      // Month filter logic
+      // Skip date filtering if parent already filtered by viewMode (day/month/year)
+      if (viewMode !== 'all') {
+        return matchesSearch && matchesCategory;
+      }
+      
+      // Month filter logic (only when viewMode is 'all')
       let matchesMonth = true;
       if (monthFilter) {
         const expenseDate = new Date(expense.date);
@@ -297,6 +380,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const formatDate = (dateString: string, time?: string) => {
     const formatted = formatDateWithUserFormat(dateString, dateFormat);
     return time ? `${formatted} ${time}` : formatted;
+  };
+
+  // Helper to format date based on current viewMode
+  const formatDateByViewMode = (mode: 'all' | 'day' | 'month' | 'year', date: string): string => {
+    switch (mode) {
+      case 'day': return date;
+      case 'month': return date.slice(0, 7);
+      case 'year': return date.slice(0, 4);
+      default: return date;
+    }
   };
 
   const toggleGroupCollapse = (date: string) => {
@@ -552,61 +645,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </option>
                 ))}
               </select>
-              <select
-                value={monthFilter}
-                onChange={(e) => {
-                  setMonthFilter(e.target.value);
-                  if (e.target.value) {
-                    setAllDates(false);
-                  }
-                }}
-                style={styles.filterSelect}
-                aria-label="Filter by month"
-              >
-                <option value="">{t('allMonths')}</option>
-                {availableMonths.map((monthKey) => (
-                  <option key={monthKey} value={monthKey}>
-                    {formatMonthDisplay(monthKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.filterRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  id="allDatesToggle"
-                  type="checkbox"
-                  checked={allDates}
+              {/* Only show month filter when viewMode is 'all' (date filtering not handled by parent) */}
+              {viewMode === 'all' && (
+                <select
+                  value={monthFilter}
                   onChange={(e) => {
-                    setAllDates(e.target.checked);
-                    if (e.target.checked) {
-                      setMonthFilter('');
+                    setMonthFilter(e.target.value);
+                    if (e.target.value) {
+                      setAllDates(false);
                     }
                   }}
-                  aria-label={t('allDates')}
-                />
-                <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
-              </div>
-              {/* Use shared DatePicker for desktop calendar support */}
-              <div style={styles.dateFilterGroup}>
+                  style={styles.filterSelect}
+                  aria-label="Filter by month"
+                >
+                  <option value="">{t('allMonths')}</option>
+                  {availableMonths.map((monthKey) => (
+                    <option key={monthKey} value={monthKey}>
+                      {formatMonthDisplay(monthKey)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {/* Show current viewMode date context when not 'all' */}
+              {viewMode !== 'all' && selectedDate && (
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--background-secondary)', borderRadius: '6px' }}>
+                  📅 {formatDateByViewMode(viewMode, selectedDate)}
+                </div>
+              )}
+            </div>
+            {/* Only show date range filters when viewMode is 'all' */}
+            {viewMode === 'all' && (
+              <div style={styles.filterRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    id="allDatesToggle"
+                    type="checkbox"
+                    checked={allDates}
+                    onChange={(e) => {
+                      setAllDates(e.target.checked);
+                      if (e.target.checked) {
+                        setMonthFilter('');
+                      }
+                    }}
+                    aria-label={t('allDates')}
+                  />
+                  <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
+                </div>
+                {/* Use shared DatePicker for desktop calendar support */}
+                <div style={styles.dateFilterGroup}>
+                  <DatePicker
+                    label={t('from')}
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    disabled={allDates || !!monthFilter}
+                    dateFormat={dateFormat}
+                    style={{ ...styles.dateInput, width: '100%' }}
+                  />
+                </div>
                 <DatePicker
-                  label={t('from')}
-                  value={dateFrom}
-                  onChange={setDateFrom}
+                  label={t('to')}
+                  value={dateTo}
+                  onChange={setDateTo}
                   disabled={allDates || !!monthFilter}
                   dateFormat={dateFormat}
                   style={{ ...styles.dateInput, width: '100%' }}
                 />
               </div>
-              <DatePicker
-                label={t('to')}
-                value={dateTo}
-                onChange={setDateTo}
-                disabled={allDates || !!monthFilter}
-                dateFormat={dateFormat}
-                style={{ ...styles.dateInput, width: '100%' }}
-              />
-            </div>
+            )}
           </>
         )}
       </div>
@@ -637,192 +742,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             <div className="quick-expense-add-container">
               <button
                 className="quick-expense-add-btn"
-                onClick={() => setShowQuickExpenseForm(!showQuickExpenseForm)}
+                onClick={() => setShowQuickExpenseForm(true)}
                 aria-label={t('addQuickExpense')}
               >
                 <span style={{ fontSize: '16px' }}>+</span>
                 <span>{t('add')}</span>
               </button>
-              {showQuickExpenseForm && (
-                <div className="quick-expense-form-dropdown">
-                  {/* Quick Expense Preset Form */}
-                  <div className="quick-expense-form-section">
-                    <div className="quick-expense-form-header">
-                      <h4>{editingPresetId ? t('editQuickExpense') : t('addQuickExpense')}</h4>
-                    </div>
-                    
-                    <div className="quick-expense-form-field">
-                      <label>{t('presetName')}</label>
-                      <input
-                        type="text"
-                        value={quickExpenseFormData.name}
-                        onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, name: e.target.value })}
-                        placeholder={t('quickExpenseNamePlaceholder')}
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <label>{t('amount')}</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={(quickExpenseFormData.amount / 100).toFixed(2)}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const digitsOnly = value.replace(/\D/g, '');
-                          const amountInCents = parseInt(digitsOnly) || 0;
-                          setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInCents });
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="0.00"
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <AutocompleteDropdown
-                        options={categories.map((cat): AutocompleteOption => ({
-                          id: cat.id || '',
-                          label: cat.name,
-                          icon: cat.icon,
-                          color: cat.color,
-                        }))}
-                        value={quickExpenseFormData.categoryId}
-                        onChange={(categoryId: string) => {
-                          const cat = categories.find(c => c.id === (categoryId || ''));
-                          setQuickExpenseFormData({ 
-                            ...quickExpenseFormData, 
-                            categoryId: categoryId || '', 
-                            icon: cat?.icon || quickExpenseFormData.icon || '💰'
-                          });
-                        }}
-                        label={t('category')}
-                        placeholder={t('selectCategory')}
-                        allowClear={false}
-                      />
-                    </div>
-
-                    <div className="quick-expense-form-field">
-                      <label>{t('paymentMethod')}</label>
-                      <select
-                        value={quickExpenseFormData.paymentMethod}
-                        onChange={(e) => setQuickExpenseFormData({ 
-                          ...quickExpenseFormData, 
-                          paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-                          cardId: undefined,
-                          ewalletId: undefined,
-                          bankId: undefined,
-                        })}
-                      >
-                        <option value="cash">{t('cash')}</option>
-                        <option value="credit_card">{t('creditCard')}</option>
-                        <option value="e_wallet">{t('eWallet')}</option>
-                        <option value="bank">{t('bankAccount')}</option>
-                      </select>
-                    </div>
-
-                    {quickExpenseFormData.paymentMethod === 'credit_card' && cards.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectCard')}</label>
-                        <select
-                          value={quickExpenseFormData.cardId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, cardId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectCard')}</option>
-                          {cards.map((card) => (
-                            <option key={card.id} value={card.id}>{card.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {quickExpenseFormData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectEWallet')}</label>
-                        <select
-                          value={quickExpenseFormData.ewalletId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, ewalletId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectEWallet')}</option>
-                          {ewallets.map((wallet) => (
-                            <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {quickExpenseFormData.paymentMethod === 'bank' && banks.length > 0 && (
-                      <div className="quick-expense-form-field">
-                        <label>{t('selectBank')}</label>
-                        <select
-                          value={quickExpenseFormData.bankId || ''}
-                          onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, bankId: e.target.value || undefined })}
-                        >
-                          <option value="">{t('selectBank')}</option>
-                          {banks.map((bank) => (
-                            <option key={bank.id} value={bank.id}>{bank.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <div className="quick-expense-form-actions">
-                      <button 
-                        onClick={handleSaveQuickExpensePreset} 
-                        className="btn-save"
-                        disabled={!quickExpenseFormData.name || !quickExpenseFormData.categoryId || quickExpenseFormData.amount <= 0}
-                      >
-                        {editingPresetId ? t('update') : t('save')}
-                      </button>
-                      <button 
-                        onClick={resetQuickExpenseForm} 
-                        className="btn-cancel"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Existing Presets List */}
-                  {quickExpensePresets.length > 0 && (
-                    <>
-                      <div className="quick-expense-form-divider"></div>
-                      <div className="quick-expense-presets-list">
-                        <h4>{t('quickExpenses')}</h4>
-                        {quickExpensePresets.map((preset) => {
-                          const category = categories.find((c) => c.id === preset.categoryId);
-                          return (
-                            <div key={preset.id} className="quick-expense-preset-item">
-                              <div className="preset-info">
-                                <span className="preset-name">{preset.name}</span>
-                                <span className="preset-details">
-                                  <span className="preset-category">{category?.icon} {category?.name}</span>
-                                  <span className="preset-amount">${preset.amount.toFixed(2)}</span>
-                                </span>
-                              </div>
-                              <div className="preset-actions">
-                                <button 
-                                  onClick={() => handleEditQuickExpensePreset(preset)}
-                                  className="btn-icon"
-                                  aria-label={t('edit')}
-                                >
-                                  <EditIcon size={14} />
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteQuickExpensePreset(preset.id)}
-                                  className="btn-icon btn-danger"
-                                  aria-label={t('delete')}
-                                >
-                                  <DeleteIcon size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1025,19 +950,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       {/* Desktop: Show all buttons */}
                       <div className="desktop-actions" style={styles.actions}>
                         <button 
-                          onClick={() => {
-                            if (expandedRepaymentId === expense.id) {
-                              setExpandedRepaymentId(null);
-                            } else {
-                              setExpandedRepaymentId(expense.id!);
-                            }
-                          }} 
+                          onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
                           className="btn-icon btn-icon-success"
-                          style={expandedRepaymentId === expense.id ? { backgroundColor: 'var(--success-text)', color: 'var(--bg-primary)' } : {}}
-                          aria-label={t('repayments')}
-                          title={t('repayments')}
+                          aria-label={t('addRepayment')}
+                          title={t('addRepayment')}
                         >
-                          <RepaymentIcon size={18} />
+                          <PlusIcon size={18} />
                         </button>
                         
                         {expense.needsRepaymentTracking && (
@@ -1095,11 +1013,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
-                                  if (expandedRepaymentId === expense.id) {
-                                    setExpandedRepaymentId(null);
-                                  } else {
-                                    setExpandedRepaymentId(expense.id!);
-                                  }
+                                  setShowRepaymentFormForExpenseId(expense.id!);
                                 }}
                               >
                                 <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
@@ -1140,21 +1054,196 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </div>
                   </div>
                 </div>
-              
-              {/* Inline Repayment Manager */}
-              {expandedRepaymentId === expense.id && (
-                <div style={styles.inlineRepaymentSection}>
-                  <RepaymentManager
-                    expense={expense}
-                    onClose={() => setExpandedRepaymentId(null)}
-                    inline={true}
-                    onRepaymentChange={onReloadRepayments}
-                    cards={cards}
-                    ewallets={ewallets}
-                    banks={banks}
-                  />
-                </div>
-              )}
+
+                {/* More Details Button - Only show if there are details to show */}
+                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || expense.needsRepaymentTracking) && (
+                  <div style={styles.moreDetailsRow}>
+                    <button
+                      onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
+                      style={styles.moreDetailsBtn}
+                    >
+                      <span style={{ flex: 1, textAlign: 'center' }}>
+                        ────── {t('showMore')} {expandedDetailsId === expense.id ? '▲' : '▼'} ──────
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Expanded Details Section */}
+                {expandedDetailsId === expense.id && (
+                  <div style={styles.detailsSection}>
+                    {/* Amount Items (if any) */}
+                    {expense.amountItems && expense.amountItems.length > 0 && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>💰 {t('amountDetails')}</div>
+                        <div style={styles.amountItemsDetail}>
+                          {expense.amountItems.map((item, index) => (
+                            <div key={index} style={styles.amountItemDetail}>
+                              <span>${item.amount.toFixed(2)}</span>
+                              {item.description && <span style={styles.amountItemDesc}>: {item.description}</span>}
+                            </div>
+                          ))}
+                          {expense.taxRate && expense.taxAmount && (
+                            <div style={styles.taxDetailRow}>
+                              <span>{t('tax')} ({expense.taxRate}%): ${expense.taxAmount.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes (if any and not already shown above) */}
+                    {expense.notes && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>📝 {t('notes')}</div>
+                        <div style={styles.detailsValue}>{expense.notes}</div>
+                      </div>
+                    )}
+
+                    {/* Transfer Info (if any) */}
+                    {(() => {
+                      const relatedTransfer = findRelatedTransfer(expense);
+                      if (relatedTransfer) {
+                        const getToLabel = () => {
+                          if (relatedTransfer.toPaymentMethod === 'cash') return `💵 ${t('cash')}`;
+                          if (relatedTransfer.toPaymentMethod === 'credit_card') {
+                            const card = cards.find(c => c.id === relatedTransfer.toCardId);
+                            return `💳 ${card?.name || t('creditCard')}`;
+                          }
+                          if (relatedTransfer.toPaymentMethod === 'e_wallet') return `📱 ${relatedTransfer.toPaymentMethodName || t('eWallet')}`;
+                          if (relatedTransfer.toPaymentMethod === 'bank') {
+                            const bank = banks.find(b => b.id === relatedTransfer.toBankId);
+                            return `🏦 ${bank?.name || t('bank')}`;
+                          }
+                          return '';
+                        };
+                        return (
+                          <div style={styles.detailsSubsection}>
+                            <div style={styles.detailsLabel}>➡️ {t('transfer')}</div>
+                            <div style={styles.detailsValue}>{t('to')}: {getToLabel()}</div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Repayment Progress (if tracking) */}
+                    {expense.needsRepaymentTracking && (
+                      <div style={styles.detailsSubsection}>
+                        <div style={styles.detailsLabel}>💳 {t('repaymentStatus')}</div>
+                        {(() => {
+                          const repaid = repaymentTotals[expense.id!] || 0;
+                          const percentage = expense.amount > 0 ? Math.min(100, (repaid / expense.amount) * 100) : 0;
+                          return (
+                            <div style={styles.repaymentProgress}>
+                              <div style={styles.progressBar}>
+                                <div 
+                                  style={{
+                                    ...styles.progressFill,
+                                    width: `${percentage}%`,
+                                    backgroundColor: percentage >= 100 ? 'var(--success-text)' : 'var(--accent-primary)',
+                                  }}
+                                />
+                              </div>
+                              <div style={styles.progressText}>
+                                {percentage.toFixed(0)}% {t('repaid')} (${repaid.toFixed(2)} / ${expense.amount.toFixed(2)})
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
+                    {expense.needsRepaymentTracking && (() => {
+                      const expenseRepayments = repayments.filter(r => r.expenseId === expense.id);
+                      return (
+                        <div style={styles.detailsSubsection}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div style={styles.detailsLabel}>📋 {t('repaymentRecords')}</div>
+                            <button
+                              onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
+                              className="btn-icon btn-icon-success"
+                              aria-label={t('addRepayment')}
+                              title={t('addRepayment')}
+                            >
+                              <PlusIcon size={16} />
+                            </button>
+                          </div>
+                          
+                          {expenseRepayments.length > 0 ? (
+                            <div style={styles.repaymentRecordsList}>
+                              {expenseRepayments.map((rep) => {
+                                const getPaymentLabel = () => {
+                                  if (rep.paymentMethod === 'cash') return `💵 ${t('cash')}`;
+                                  if (rep.paymentMethod === 'credit_card') {
+                                    const card = cards.find(c => c.id === rep.cardId);
+                                    return `💳 ${card?.name || t('creditCard')}`;
+                                  }
+                                  if (rep.paymentMethod === 'e_wallet') {
+                                    return `📱 ${rep.paymentMethodName || t('eWallet')}`;
+                                  }
+                                  if (rep.paymentMethod === 'bank') {
+                                    const bank = banks.find(b => b.id === rep.bankId);
+                                    return `🏦 ${bank?.name || t('bank')}`;
+                                  }
+                                  return '';
+                                };
+                                return (
+                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+                                    {/* First row: date, amount, payment method, action buttons */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
+                                        <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
+                                        <span style={styles.repaymentRecordAmount}>${rep.amount.toFixed(2)}</span>
+                                        <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button
+                                          onClick={() => setEditingRepayment(rep)}
+                                          className="btn-icon btn-icon-primary"
+                                          style={{ width: '28px', height: '28px' }}
+                                          aria-label={t('edit')}
+                                          title={t('edit')}
+                                        >
+                                          <EditIcon size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => setDeleteRepaymentConfirm({ isOpen: true, repaymentId: rep.id! })}
+                                          className="btn-icon btn-icon-danger"
+                                          style={{ width: '28px', height: '28px' }}
+                                          aria-label={t('delete')}
+                                          title={t('delete')}
+                                        >
+                                          <DeleteIcon size={14} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {/* Second row: payerName and note (if any) */}
+                                    {(rep.payerName || rep.note) && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                                        {rep.payerName && (
+                                          <span>👤 {rep.payerName}</span>
+                                        )}
+                                        {rep.note && (
+                                          <span>📝 {rep.note}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', fontStyle: 'italic' }}>
+                              {t('noRepaymentRecords')}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
             </div>
               );
               })}
@@ -1228,6 +1317,268 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         onCancel={() => setBulkDeleteConfirm(false)}
         danger={true}
       />
+
+      {/* Add Repayment Modal */}
+      <PopupModal
+        isOpen={showRepaymentFormForExpenseId !== null}
+        onClose={() => setShowRepaymentFormForExpenseId(null)}
+        title={t('addRepayment')}
+        hideFooter={true}
+        hideHeader={true}
+        chromeless={true}
+        maxWidth="500px"
+      >
+        {showRepaymentFormForExpenseId && (
+          <RepaymentForm
+            expenseId={showRepaymentFormForExpenseId}
+            maxAmount={
+              (() => {
+                const exp = expenses.find(e => e.id === showRepaymentFormForExpenseId);
+                if (!exp) return 0;
+                const repaid = repaymentTotals[exp.id!] || 0;
+                return Math.max(0, exp.amount - repaid);
+              })()
+            }
+            onSubmit={(data) => handleAddRepayment(showRepaymentFormForExpenseId, data)}
+            onCancel={() => setShowRepaymentFormForExpenseId(null)}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+          />
+        )}
+      </PopupModal>
+
+      {/* Edit Repayment Modal */}
+      <PopupModal
+        isOpen={editingRepayment !== null}
+        onClose={() => setEditingRepayment(null)}
+        title={t('editRepayment')}
+        hideFooter={true}
+        hideHeader={true}
+        chromeless={true}
+        maxWidth="500px"
+      >
+        {editingRepayment && (
+          <RepaymentForm
+            expenseId={editingRepayment.expenseId}
+            initialData={editingRepayment}
+            maxAmount={
+              (() => {
+                const exp = expenses.find(e => e.id === editingRepayment.expenseId);
+                if (!exp) return 0;
+                const repaid = repaymentTotals[exp.id!] || 0;
+                // Add back the current repayment amount since we're editing it
+                return Math.max(0, exp.amount - repaid + editingRepayment.amount);
+              })()
+            }
+            onSubmit={(data) => handleUpdateRepayment(editingRepayment.id!, data)}
+            onCancel={() => setEditingRepayment(null)}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+          />
+        )}
+      </PopupModal>
+
+      {/* Delete Repayment Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteRepaymentConfirm.isOpen}
+        title={t('deleteRepayment')}
+        message={t('confirmDeleteRepayment')}
+        confirmText={t('delete')}
+        cancelText={t('cancel')}
+        danger={true}
+        onConfirm={() => {
+          if (deleteRepaymentConfirm.repaymentId) {
+            handleDeleteRepayment(deleteRepaymentConfirm.repaymentId);
+          }
+        }}
+        onCancel={() => setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null })}
+      />
+
+      {/* Quick Expense Preset Form Modal */}
+      <PopupModal
+        isOpen={showQuickExpenseForm}
+        onClose={resetQuickExpenseForm}
+        title={editingPresetId ? t('editQuickExpense') : t('addQuickExpense')}
+        hideFooter={true}
+        maxWidth="500px"
+      >
+        <div className="quick-expense-form-modal">
+          {/* Quick Expense Preset Form */}
+          <div className="quick-expense-form-section">
+            <div className="quick-expense-form-field">
+              <label>{t('presetName')}</label>
+              <input
+                type="text"
+                value={quickExpenseFormData.name}
+                onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, name: e.target.value })}
+                placeholder={t('quickExpenseNamePlaceholder')}
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <label>{t('amount')}</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={(quickExpenseFormData.amount / 100).toFixed(2)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const digitsOnly = value.replace(/\D/g, '');
+                  const amountInCents = parseInt(digitsOnly) || 0;
+                  setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInCents });
+                }}
+                onFocus={(e) => e.target.select()}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <AutocompleteDropdown
+                options={categories.map((cat): AutocompleteOption => ({
+                  id: cat.id || '',
+                  label: cat.name,
+                  icon: cat.icon,
+                  color: cat.color,
+                }))}
+                value={quickExpenseFormData.categoryId}
+                onChange={(categoryId: string) => {
+                  const cat = categories.find(c => c.id === (categoryId || ''));
+                  setQuickExpenseFormData({ 
+                    ...quickExpenseFormData, 
+                    categoryId: categoryId || '', 
+                    icon: cat?.icon || quickExpenseFormData.icon || '💰'
+                  });
+                }}
+                label={t('category')}
+                placeholder={t('selectCategory')}
+                allowClear={false}
+              />
+            </div>
+
+            <div className="quick-expense-form-field">
+              <label>{t('paymentMethod')}</label>
+              <select
+                value={quickExpenseFormData.paymentMethod}
+                onChange={(e) => setQuickExpenseFormData({ 
+                  ...quickExpenseFormData, 
+                  paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+                  cardId: undefined,
+                  ewalletId: undefined,
+                  bankId: undefined,
+                })}
+              >
+                <option value="cash">{t('cash')}</option>
+                <option value="credit_card">{t('creditCard')}</option>
+                <option value="e_wallet">{t('eWallet')}</option>
+                <option value="bank">{t('bankAccount')}</option>
+              </select>
+            </div>
+
+            {quickExpenseFormData.paymentMethod === 'credit_card' && cards.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectCard')}</label>
+                <select
+                  value={quickExpenseFormData.cardId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, cardId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectCard')}</option>
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>{card.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {quickExpenseFormData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectEWallet')}</label>
+                <select
+                  value={quickExpenseFormData.ewalletId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, ewalletId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectEWallet')}</option>
+                  {ewallets.map((wallet) => (
+                    <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {quickExpenseFormData.paymentMethod === 'bank' && banks.length > 0 && (
+              <div className="quick-expense-form-field">
+                <label>{t('selectBank')}</label>
+                <select
+                  value={quickExpenseFormData.bankId || ''}
+                  onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, bankId: e.target.value || undefined })}
+                >
+                  <option value="">{t('selectBank')}</option>
+                  {banks.map((bank) => (
+                    <option key={bank.id} value={bank.id}>{bank.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="quick-expense-form-actions">
+              <button 
+                onClick={handleSaveQuickExpensePreset} 
+                className="btn-save"
+                disabled={!quickExpenseFormData.name || !quickExpenseFormData.categoryId || quickExpenseFormData.amount <= 0}
+              >
+                {editingPresetId ? t('update') : t('save')}
+              </button>
+              <button 
+                onClick={resetQuickExpenseForm} 
+                className="btn-cancel"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+
+          {/* Existing Presets List */}
+          {quickExpensePresets.length > 0 && (
+            <>
+              <div className="quick-expense-form-divider"></div>
+              <div className="quick-expense-presets-list">
+                <h4>{t('quickExpenses')}</h4>
+                {quickExpensePresets.map((preset) => {
+                  const category = categories.find((c) => c.id === preset.categoryId);
+                  return (
+                    <div key={preset.id} className="quick-expense-preset-item">
+                      <div className="preset-info">
+                        <span className="preset-name">{preset.name}</span>
+                        <span className="preset-details">
+                          <span className="preset-category">{category?.icon} {category?.name}</span>
+                          <span className="preset-amount">${preset.amount.toFixed(2)}</span>
+                        </span>
+                      </div>
+                      <div className="preset-actions">
+                        <button 
+                          onClick={() => handleEditQuickExpensePreset(preset)}
+                          className="btn-icon"
+                          aria-label={t('edit')}
+                        >
+                          <EditIcon size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuickExpensePreset(preset.id)}
+                          className="btn-icon btn-danger"
+                          aria-label={t('delete')}
+                        >
+                          <DeleteIcon size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </PopupModal>
     </div>
     </>
   );
@@ -1664,6 +2015,140 @@ const styles = {
   inlineRepaymentSection: {
     // Spacer wrapper only; visual card is handled inside RepaymentManager (inline mode)
     marginTop: '12px',
+  },
+  // More Details styles
+  moreDetailsRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '8px',
+  },
+  moreDetailsBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+    cursor: 'pointer',
+    padding: '4px 12px',
+    borderRadius: '4px',
+    transition: 'all 0.2s',
+    width: '100%',
+  },
+  detailsSection: {
+    marginTop: '12px',
+    padding: '12px',
+    background: 'var(--bg-secondary)',
+    borderRadius: '8px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    maxHeight: '300px',
+    overflowY: 'auto' as const,
+  },
+  detailsSubsection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  detailsLabel: {
+    fontSize: '12px',
+    fontWeight: '600' as const,
+    color: 'var(--text-secondary)',
+  },
+  detailsValue: {
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+  },
+  amountItemsDetail: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '2px',
+  },
+  amountItemDetail: {
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+  },
+  amountItemDesc: {
+    color: 'var(--text-secondary)',
+  },
+  taxDetailRow: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontStyle: 'italic' as const,
+    marginTop: '4px',
+    paddingTop: '4px',
+    borderTop: '1px solid var(--border-color)',
+  },
+  repaymentProgress: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  progressBar: {
+    height: '8px',
+    background: 'var(--border-color)',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '4px',
+    transition: 'width 0.3s',
+  },
+  progressText: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  },
+  addRepaymentBtn: {
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+    borderRadius: '6px',
+    border: '1px solid var(--success-text)',
+    background: 'transparent',
+    color: 'var(--success-text)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+  repaymentRecordsList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  repaymentRecordItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '6px 8px',
+    background: 'var(--card-bg)',
+    borderRadius: '4px',
+    fontSize: '12px',
+  },
+  repaymentRecordDate: {
+    color: 'var(--text-secondary)',
+    minWidth: '80px',
+  },
+  repaymentRecordAmount: {
+    fontWeight: '600' as const,
+    color: 'var(--success-text)',
+    minWidth: '60px',
+  },
+  repaymentRecordMethod: {
+    color: 'var(--text-secondary)',
+    flex: 1,
+  },
+  manageRepaymentsBtn: {
+    marginTop: '8px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
   },
 };
 

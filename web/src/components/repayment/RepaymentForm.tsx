@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Repayment, Card, EWallet, Bank } from '../../types';
+import { Repayment, Card, EWallet, Bank, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
+import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -205,119 +206,26 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1 sm:col-span-2">
-          <label htmlFor="paymentMethod" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('paymentMethod')}
-          </label>
-          <select
-            id="paymentMethod"
-            name="paymentMethod"
-            value={formData.paymentMethod}
-            onChange={(e) => {
-              setFormData(prev => ({
-                ...prev,
-                paymentMethod: e.target.value as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-                cardId: e.target.value !== 'credit_card' ? '' : prev.cardId,
-                paymentMethodName: e.target.value !== 'e_wallet' ? '' : prev.paymentMethodName,
-                bankId: e.target.value !== 'bank' ? '' : prev.bankId,
-              }));
-            }}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="cash">💵 {t('cash')}</option>
-            <option value="credit_card">💳 {t('creditCard')}</option>
-            <option value="e_wallet">📱 {t('eWallet')}</option>
-            <option value="bank">🏦 {t('bankTransfer')}</option>
-          </select>
-        </div>
-      </div>
-
-      {formData.paymentMethod === 'bank' && _banks.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="bankId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('selectBank')}
-          </label>
-          <select
-            id="bankId"
-            name="bankId"
-            value={formData.bankId}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectBank')}</option>
-            {_banks.map((bank) => (
-              <option key={bank.id} value={bank.id}>
-                🏦 {bank.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="cardId" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('selectCard')}
-          </label>
-          <select
-            id="cardId"
-            name="cardId"
-            value={formData.cardId}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectCard')}</option>
-            {cards.map((card) => (
-              <option key={card.id} value={card.id}>
-                {card.bankName ? `${card.bankName} - ${card.name}` : card.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {formData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="paymentMethodName" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('selectEWallet')}
-          </label>
-          <select
-            id="paymentMethodName"
-            name="paymentMethodName"
-            value={formData.paymentMethodName}
-            onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <option value="">{t('selectEWallet')}</option>
-            {ewallets.map((wallet) => (
-              <option key={wallet.id} value={wallet.name}>
-                {wallet.icon} {wallet.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Payment Method Selection */}
+      <PaymentMethodSelector
+        paymentMethod={formData.paymentMethod as PaymentMethodType}
+        onPaymentMethodChange={(method) => setFormData(prev => ({
+          ...prev,
+          paymentMethod: method,
+          cardId: method !== 'credit_card' ? '' : prev.cardId,
+          paymentMethodName: method !== 'e_wallet' ? '' : prev.paymentMethodName,
+          bankId: method !== 'bank' ? '' : prev.bankId,
+        }))}
+        cardId={formData.cardId}
+        onCardChange={(cardId) => setFormData(prev => ({ ...prev, cardId }))}
+        bankId={formData.bankId}
+        onBankChange={(bankId) => setFormData(prev => ({ ...prev, bankId }))}
+        paymentMethodName={formData.paymentMethodName}
+        onPaymentMethodNameChange={(name) => setFormData(prev => ({ ...prev, paymentMethodName: name }))}
+        cards={cards}
+        banks={_banks}
+        ewallets={ewallets}
+      />
 
       {/* Moved payer name here to sit right above notes for better mobile flow */}
       <div className="flex flex-col gap-1">

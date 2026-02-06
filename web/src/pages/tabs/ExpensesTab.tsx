@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import ExpenseForm from '../../components/expenses/ExpenseForm';
+import React, { useState, useMemo } from 'react';
+import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
+import DateNavigator, { ViewMode } from '../../components/expenses/DateNavigator';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon } from '../../components/icons';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface Props {
   expenses: Expense[];
@@ -41,10 +43,77 @@ const ExpensesTab: React.FC<Props> = ({
   const { timeFormat, dateFormat } = useUserSettings();
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
+  
+  // DateNavigator state
+  const [selectedDate, setSelectedDate] = useState(getTodayLocal());
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+
+  // Derive last used payment method from recent expenses
+  const lastUsedPaymentMethod = expenses.length > 0 
+    ? expenses[0].paymentMethod 
+    : undefined;
+
+  // Filter expenses based on viewMode and selectedDate
+  const filteredExpenses = useMemo(() => {
+    if (viewMode === 'all') {
+      return expenses;
+    }
+
+    return expenses.filter(expense => {
+      const expenseDate = expense.date;
+      const selected = selectedDate;
+
+      if (viewMode === 'day') {
+        return expenseDate === selected;
+      }
+      
+      if (viewMode === 'month') {
+        // Compare year and month
+        return expenseDate.slice(0, 7) === selected.slice(0, 7);
+      }
+      
+      if (viewMode === 'year') {
+        // Compare year only
+        return expenseDate.slice(0, 4) === selected.slice(0, 4);
+      }
+
+      return true;
+    });
+  }, [expenses, viewMode, selectedDate]);
+
+  // Calculate total amount for the selected period (in cents for DateNavigator)
+  const totalAmount = useMemo(() => {
+    // exp.amount is in dollars, convert to cents for display
+    return Math.round(filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0) * 100);
+  }, [filteredExpenses]);
+
+  const handleAddClick = () => {
+    setModalKey(prev => prev + 1); // Force new modal instance
+    setIsAdding(true);
+  };
+
+  // Helper function to auto-navigate to expense date
+  const navigateToExpenseDate = (date: string) => {
+    if (date !== selectedDate) {
+      setSelectedDate(date);
+      // Switch to day view to show the new expense
+      if (viewMode !== 'day') {
+        setViewMode('day');
+      }
+    }
+  };
 
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
     setIsAdding(false);
+    navigateToExpenseDate(data.date);
+  };
+
+  const handleAddAndAnother = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    onAddExpense(data);
+    navigateToExpenseDate(data.date);
+    // Don't close modal - form will reset itself
   };
 
   const handleEditSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
@@ -54,10 +123,19 @@ const ExpensesTab: React.FC<Props> = ({
 
   return (
     <div style={styles.expensesTab}>
+      {/* Date Navigator */}
+      <DateNavigator
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        totalAmount={totalAmount}
+      />
+
       {/* Header with Add Button */}
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
-        <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
+        <button onClick={handleAddClick} className="btn btn-accent-light">
           <PlusIcon size={18} />
           <span>{t('addNewExpense')}</span>
         </button>
@@ -72,9 +150,11 @@ const ExpensesTab: React.FC<Props> = ({
         chromeless={true}
         hideFooter={true}
         maxWidth="600px"
+        key={modalKey}
       >
-        <ExpenseForm
+        <StepByStepExpenseForm
           onSubmit={handleAddSubmit}
+          onSubmitAndAddAnother={handleAddAndAnother}
           onCancel={() => setIsAdding(false)}
           categories={categories}
           cards={cards}
@@ -85,6 +165,8 @@ const ExpensesTab: React.FC<Props> = ({
           onCreateCard={onCreateCard}
           timeFormat={timeFormat}
           dateFormat={dateFormat}
+          lastUsedPaymentMethod={lastUsedPaymentMethod}
+          initialDate={viewMode === 'day' ? selectedDate : undefined}
         />
       </PopupModal>
 
@@ -99,7 +181,7 @@ const ExpensesTab: React.FC<Props> = ({
         maxWidth="600px"
       >
         {editingExpense && (
-          <ExpenseForm
+          <StepByStepExpenseForm
             onSubmit={handleEditSubmit}
             onCancel={() => onEdit(null)}
             initialData={editingExpense}
@@ -112,6 +194,7 @@ const ExpensesTab: React.FC<Props> = ({
             onCreateCard={onCreateCard}
             timeFormat={timeFormat}
             dateFormat={dateFormat}
+            lastUsedPaymentMethod={lastUsedPaymentMethod}
           />
         )}
       </PopupModal>
@@ -119,11 +202,13 @@ const ExpensesTab: React.FC<Props> = ({
       {/* Expense List */}
       <div style={styles.section}>
         <ExpenseList
-          expenses={expenses}
+          expenses={filteredExpenses}
           categories={categories}
           onEdit={onEdit}
           onDelete={onDeleteExpense}
           onInlineUpdate={() => {}}
+          viewMode={viewMode}
+          selectedDate={selectedDate}
         />
       </div>
     </div>
