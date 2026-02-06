@@ -430,7 +430,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', minHeight: '400px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
               <DatePicker
                 label={t('date')}
                 value={formData.date}
