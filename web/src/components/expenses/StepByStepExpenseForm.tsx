@@ -420,7 +420,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 1:
         const isNotToday = formData.date !== getTodayLocal();
         return (
-          <div style={{ ...styles.stepContent, overflow: 'visible' }}>
+          <div style={{ ...styles.stepContent, overflow: 'visible', overflowY: 'visible' }}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>📅</span>
               <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
