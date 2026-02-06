@@ -487,7 +487,7 @@ const styles = {
   uploadButton: {
     padding: '12px 24px',
     backgroundColor: 'var(--accent-primary)',
-    color: '#fff',
+    color: 'white',
     border: 'none',
     borderRadius: '6px',
     fontSize: '16px',
@@ -671,7 +671,7 @@ const styles = {
   importButton: {
     padding: '10px 20px',
     backgroundColor: 'var(--accent-primary)',
-    color: '#fff',
+    color: 'white',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
@@ -740,7 +740,7 @@ const styles = {
   downloadErrorsButton: {
     padding: '10px 20px',
     backgroundColor: 'var(--error-text)',
-    color: '#fff',
+    color: 'white',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
@@ -750,7 +750,7 @@ const styles = {
   closeButton: {
     padding: '10px 20px',
     backgroundColor: 'var(--accent-primary)',
-    color: '#fff',
+    color: 'white',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',

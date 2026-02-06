@@ -472,7 +472,7 @@ const styles = {
   saveButton: {
     padding: '8px 16px',
     backgroundColor: 'var(--accent-primary)',
-    color: '#ffffff',
+    color: 'white',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

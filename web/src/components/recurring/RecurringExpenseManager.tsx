@@ -115,7 +115,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
       return { background: bg, color: text };
     }
     // Fallback color
-    return { background: '#e0e7ff', color: '#4338ca' };
+    return { background: 'var(--accent-light)', color: 'var(--accent-primary)' };
   };
   
   // Filter recurring expenses by search term

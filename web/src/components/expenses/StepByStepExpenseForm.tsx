@@ -1185,10 +1185,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   autoSelectHint: {
     padding: '12px 16px',
-    background: '#e7f5ff',
+    background: 'var(--info-bg)',
     borderRadius: '8px',
     fontSize: '14px',
-    color: '#1971c2',
+    color: 'var(--info-text)',
     marginBottom: '16px',
     textAlign: 'center',
   },

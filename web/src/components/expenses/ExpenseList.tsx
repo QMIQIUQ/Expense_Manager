@@ -206,7 +206,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       return { background: bg, color: text };
     }
     // Fallback color
-    return { background: '#e0e7ff', color: '#4338ca' };
+    return { background: 'var(--accent-light)', color: 'var(--accent-primary)' };
   };
 
   // Find related transfer for an expense (by matching date, amount, and payment method)
@@ -2010,7 +2010,7 @@ const styles = {
   dateGroupTotal: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#1976d2',
+    color: 'var(--info-text)',
   },
   inlineRepaymentSection: {
     // Spacer wrapper only; visual card is handled inside RepaymentManager (inline mode)

@@ -324,7 +324,7 @@ The app works offline and syncs when online!
           z-index: 9999;
         }
         .pwa-modal {
-          background: #fff;
+          background: var(--card-bg);
           border-radius: 8px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.18);
           padding: 24px 20px 16px 20px;
@@ -339,8 +339,8 @@ The app works offline and syncs when online!
           margin-bottom: 16px;
         }
         .pwa-modal-close {
-          background: #667eea;
-          color: #fff;
+          background: var(--accent-primary);
+          color: #ffffff;
           border: none;
           border-radius: 6px;
           padding: 8px 18px;
@@ -348,7 +348,7 @@ The app works offline and syncs when online!
           cursor: pointer;
         }
         .pwa-modal-close:hover {
-          background: #764ba2;
+          background: var(--accent-hover);
         }
       `}</style>
     </div>

@@ -122,7 +122,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
       
       return { background: bg, color: text };
     }
-    return { background: '#e0e7ff', color: '#4338ca' };
+    return { background: 'var(--accent-light)', color: 'var(--accent-primary)' };
   };
 
   // Type icon

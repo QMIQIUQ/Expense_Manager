@@ -86,7 +86,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
       color: category.color,
     } : {
       icon: '📋',
-      color: '#6366f1',
+      color: 'var(--accent-primary)',
     };
   };
 
