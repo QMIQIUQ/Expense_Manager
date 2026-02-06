@@ -74,6 +74,10 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   const handleDateClick = (date: Date) => {
     const dateStr = formatDateLocal(date);
     onDateChange(dateStr);
+    // Auto-switch to day view when clicking a specific date
+    if (viewMode !== 'day') {
+      onViewModeChange('day');
+    }
   };
 
   const handlePrevDay = () => {
@@ -142,10 +146,14 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     // Select the closest date if it's different from current
     if (closestDate && closestDate !== selectedDate) {
       onDateChange(closestDate);
+      // Auto-switch to day view when scrolling to select a date
+      if (viewMode !== 'day') {
+        onViewModeChange('day');
+      }
     }
     
     isUserScrolling.current = false;
-  }, [selectedDate, onDateChange]);
+  }, [selectedDate, onDateChange, viewMode, onViewModeChange]);
   
   // Debounced scroll handler
   const debouncedScrollEnd = useCallback(
