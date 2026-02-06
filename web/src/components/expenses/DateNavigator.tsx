@@ -441,11 +441,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     padding: '4px 8px',
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.2s',
     minWidth: '40px',
+    minHeight: '58px',  // Fixed height to ensure consistency with/without today label
     scrollSnapAlign: 'center',  // Snap to center of item
   },
   dateItemToday: {
