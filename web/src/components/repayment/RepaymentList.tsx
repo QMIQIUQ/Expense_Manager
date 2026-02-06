@@ -268,7 +268,6 @@ const styles = {
     fontWeight: '700' as const,
     color: 'var(--success-text)',
     whiteSpace: 'nowrap' as const,
-    textShadow: 'none',
   },
   date: {
     fontSize: '0.85rem',

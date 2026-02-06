@@ -340,7 +340,7 @@ The app works offline and syncs when online!
         }
         .pwa-modal-close {
           background: var(--accent-primary);
-          color: #ffffff;
+          color: white;
           border: none;
           border-radius: 6px;
           padding: 8px 18px;
