@@ -10,7 +10,7 @@ import { quickExpenseService } from '../../services/quickExpenseService';
 import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentForm from '../repayment/RepaymentForm';
-import ExpenseForm from './ExpenseForm';
+import StepByStepExpenseForm from './StepByStepExpenseForm';
 import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon, PlusIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
@@ -1264,7 +1264,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         maxWidth="700px"
       >
         {editingExpense && (
-          <ExpenseForm
+          <StepByStepExpenseForm
             initialData={editingExpense}
             initialTransfer={findRelatedTransfer(editingExpense)}
             categories={categories}
@@ -1279,7 +1279,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             onCreateCard={onCreateCard}
             onCreateEWallet={onCreateEWallet}
             onAddTransfer={onAddTransfer}
-            title={t('editExpense')}
             dateFormat={dateFormat}
           />
         )}
