@@ -9,6 +9,8 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   repayments,
   billingCycleDay = 1,
   size = 'full',
+  onNavigateToExpenses,
+  onNavigateToIncomes,
 }) => {
   const { t } = useLanguage();
   
@@ -100,7 +102,12 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
 
   return (
     <div className={`summary-cards-grid ${isCompact ? 'summary-cards-compact' : ''}`}>
-      <div className="summary-card">
+      <div
+        className={`summary-card ${onNavigateToExpenses ? 'clickable' : ''}`}
+        onClick={onNavigateToExpenses}
+        role={onNavigateToExpenses ? 'button' : undefined}
+        tabIndex={onNavigateToExpenses ? 0 : undefined}
+      >
         <div className="card-icon error-bg">💰</div>
         <div className="card-content">
           <div className="card-label">{t('monthlyExpense')}</div>
@@ -108,7 +115,12 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         </div>
       </div>
 
-      <div className="summary-card">
+      <div
+        className={`summary-card ${onNavigateToIncomes ? 'clickable' : ''}`}
+        onClick={onNavigateToIncomes}
+        role={onNavigateToIncomes ? 'button' : undefined}
+        tabIndex={onNavigateToIncomes ? 0 : undefined}
+      >
         <div className="card-icon success-bg">💵</div>
         <div className="card-content">
           <div className="card-label">{t('monthlyIncome')}</div>
@@ -128,7 +140,13 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         </div>
       </div>
 
-      <div className="summary-card" style={{ position: 'relative' }}>
+      <div
+        className={`summary-card ${onNavigateToExpenses ? 'clickable' : ''}`}
+        onClick={onNavigateToExpenses}
+        role={onNavigateToExpenses ? 'button' : undefined}
+        tabIndex={onNavigateToExpenses ? 0 : undefined}
+        style={{ position: 'relative' }}
+      >
         <div className="card-icon warning-bg">💸</div>
         <div className="card-content">
           <div className="card-label">{t('unrecovered')}</div>

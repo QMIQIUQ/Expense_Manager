@@ -6,7 +6,7 @@ import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 
-const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses, size = 'full' }) => {
+const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: () => void }> = ({ cards, categories, expenses, size = 'full', onNavigateToPaymentMethods }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
@@ -45,7 +45,13 @@ const CardsSummaryWidget: React.FC<WidgetProps> = ({ cards, categories, expenses
           : 0;
 
         return (
-          <div key={card.id} className="credit-card-summary-item">
+          <div
+            key={card.id}
+            className={`credit-card-summary-item ${onNavigateToPaymentMethods ? 'clickable' : ''}`}
+            onClick={onNavigateToPaymentMethods}
+            role={onNavigateToPaymentMethods ? 'button' : undefined}
+            tabIndex={onNavigateToPaymentMethods ? 0 : undefined}
+          >
             <div className="card-summary-header">
               <div>
                 <h4 className="card-name">{card.name}</h4>

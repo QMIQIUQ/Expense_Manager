@@ -4,7 +4,7 @@ import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getBillingCycleRange } from './utils';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenses }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
@@ -69,7 +69,13 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
       {categories.map(([category, amount]) => {
         const percentage = total > 0 ? (amount / total) * 100 : 0;
         return (
-          <div key={category} className="category-item">
+          <div
+            key={category}
+            className={`category-item ${onNavigateToExpenses ? 'clickable' : ''}`}
+            onClick={onNavigateToExpenses}
+            role={onNavigateToExpenses ? 'button' : undefined}
+            tabIndex={onNavigateToExpenses ? 0 : undefined}
+          >
             <div className="category-info">
               <span className="category-name">{category}</span>
               <span className="category-amount error-text">${amount.toFixed(2)}</span>

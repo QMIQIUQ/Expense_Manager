@@ -1784,6 +1784,22 @@ button:not(:disabled):hover {
   transition: all 0.2s ease;
 }
 
+/* Generic clickable style for widget items */
+.summary-card.clickable,
+.category-item.clickable,
+.budget-progress-item.clickable,
+.credit-card-summary-item.clickable {
+  cursor: pointer;
+}
+
+.summary-card.clickable:hover,
+.category-item.clickable:hover,
+.budget-progress-item.clickable:hover,
+.credit-card-summary-item.clickable:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
 .recent-expense-item.clickable {
   cursor: pointer;
 }

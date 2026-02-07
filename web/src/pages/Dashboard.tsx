@@ -2576,6 +2576,9 @@ const Dashboard: React.FC = () => {
               setFocusScheduledPaymentId(scheduledPaymentId);
               setActiveTab('recurring');
             }}
+            onNavigateToIncomes={() => setActiveTab('incomes')}
+            onNavigateToBudgets={() => setActiveTab('budgets')}
+            onNavigateToPaymentMethods={() => setActiveTab('paymentMethods')}
             onCustomizingChange={setIsDashboardCustomizing}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}

@@ -27,6 +27,9 @@ interface WidgetContainerProps {
   onNavigateToExpenses?: () => void;
   onNavigateToExpense?: (expenseId: string) => void;
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
+  onNavigateToIncomes?: () => void;
+  onNavigateToBudgets?: () => void;
+  onNavigateToPaymentMethods?: () => void;
 }
 
 // Get CSS class for widget size
@@ -52,26 +55,29 @@ const renderWidget = (
   size: WidgetSize,
   onNavigateToExpenses?: () => void,
   onNavigateToExpense?: (expenseId: string) => void,
-  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void
+  onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void,
+  onNavigateToIncomes?: () => void,
+  onNavigateToBudgets?: () => void,
+  onNavigateToPaymentMethods?: () => void
 ): React.ReactNode => {
   const propsWithSize = { ...data, size };
   switch (type) {
     case 'summary-cards':
-      return <SummaryCardsWidget {...propsWithSize} />;
+      return <SummaryCardsWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} onNavigateToIncomes={onNavigateToIncomes} />;
     case 'expense-chart':
       return <ExpenseChartWidget {...propsWithSize} />;
     case 'spending-trend':
       return <SpendingTrendWidget {...propsWithSize} />;
     case 'category-breakdown':
-      return <CategoryBreakdownWidget {...propsWithSize} />;
+      return <CategoryBreakdownWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} />;
     case 'recent-expenses':
       return <RecentExpensesWidget {...propsWithSize} onViewAll={onNavigateToExpenses} onNavigateToExpense={onNavigateToExpense} />;
     case 'budget-progress':
-      return <BudgetProgressWidget {...propsWithSize} />;
+      return <BudgetProgressWidget {...propsWithSize} onNavigateToBudgets={onNavigateToBudgets} />;
     case 'tracked-expenses':
       return <TrackedExpensesWidget {...propsWithSize} />;
     case 'cards-summary':
-      return <CardsSummaryWidget {...propsWithSize} />;
+      return <CardsSummaryWidget {...propsWithSize} onNavigateToPaymentMethods={onNavigateToPaymentMethods} />;
     case 'quick-add':
       return <QuickAddWidget {...propsWithSize} />;
     case 'pending-payments':
@@ -91,6 +97,9 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onNavigateToExpenses,
   onNavigateToExpense,
   onNavigateToScheduledPayment,
+  onNavigateToIncomes,
+  onNavigateToBudgets,
+  onNavigateToPaymentMethods,
 }) => {
   const { t } = useLanguage();
   const metadata = WIDGET_METADATA[widget.type];
@@ -158,7 +167,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
       <div className="widget-content">
         {widget.enabled ? (
-          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment)
+          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment, onNavigateToIncomes, onNavigateToBudgets, onNavigateToPaymentMethods)
         ) : (
           <div className="widget-placeholder">
             <span className="widget-placeholder-icon">{metadata.icon}</span>
