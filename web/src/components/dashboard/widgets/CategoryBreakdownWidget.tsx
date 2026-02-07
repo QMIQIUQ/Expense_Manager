@@ -9,6 +9,13 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
   
   const [showAll, setShowAll] = useState(false);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onNavigateToExpenses && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onNavigateToExpenses();
+    }
+  };
+
   const { cycleStart, cycleEnd } = React.useMemo(
     () => getBillingCycleRange(billingCycleDay ?? 1),
     [billingCycleDay]
@@ -73,6 +80,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
             key={category}
             className={`category-item ${onNavigateToExpenses ? 'clickable' : ''}`}
             onClick={onNavigateToExpenses}
+            onKeyDown={handleKeyDown}
             role={onNavigateToExpenses ? 'button' : undefined}
             tabIndex={onNavigateToExpenses ? 0 : undefined}
           >

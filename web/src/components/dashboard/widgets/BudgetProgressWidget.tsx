@@ -10,6 +10,13 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onNavigateToBudgets && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onNavigateToBudgets();
+    }
+  };
   
   // Determine max items based on size
   const maxItems = React.useMemo(() => {
@@ -197,6 +204,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
           key={budget.id}
           className={`budget-progress-item ${onNavigateToBudgets ? 'clickable' : ''}`}
           onClick={onNavigateToBudgets}
+          onKeyDown={handleKeyDown}
           role={onNavigateToBudgets ? 'button' : undefined}
           tabIndex={onNavigateToBudgets ? 0 : undefined}
         >

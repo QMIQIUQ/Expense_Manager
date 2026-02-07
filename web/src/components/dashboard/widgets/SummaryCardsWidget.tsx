@@ -13,6 +13,13 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   onNavigateToIncomes,
 }) => {
   const { t } = useLanguage();
+
+  const handleKeyDown = (callback?: () => void) => (e: React.KeyboardEvent) => {
+    if (callback && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      callback();
+    }
+  };
   
   // Determine layout based on size
   const isCompact = size === 'small' || size === 'medium';
@@ -105,6 +112,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       <div
         className={`summary-card ${onNavigateToExpenses ? 'clickable' : ''}`}
         onClick={onNavigateToExpenses}
+        onKeyDown={handleKeyDown(onNavigateToExpenses)}
         role={onNavigateToExpenses ? 'button' : undefined}
         tabIndex={onNavigateToExpenses ? 0 : undefined}
       >
@@ -118,6 +126,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       <div
         className={`summary-card ${onNavigateToIncomes ? 'clickable' : ''}`}
         onClick={onNavigateToIncomes}
+        onKeyDown={handleKeyDown(onNavigateToIncomes)}
         role={onNavigateToIncomes ? 'button' : undefined}
         tabIndex={onNavigateToIncomes ? 0 : undefined}
       >
@@ -143,6 +152,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       <div
         className={`summary-card ${onNavigateToExpenses ? 'clickable' : ''}`}
         onClick={onNavigateToExpenses}
+        onKeyDown={handleKeyDown(onNavigateToExpenses)}
         role={onNavigateToExpenses ? 'button' : undefined}
         tabIndex={onNavigateToExpenses ? 0 : undefined}
         style={{ position: 'relative' }}

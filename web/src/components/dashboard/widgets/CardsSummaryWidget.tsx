@@ -10,6 +10,13 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onNavigateToPaymentMethods && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onNavigateToPaymentMethods();
+    }
+  };
   
   // Determine display settings based on size - only 'small' uses compact mode
   const isCompact = size === 'small';
@@ -49,6 +56,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
             key={card.id}
             className={`credit-card-summary-item ${onNavigateToPaymentMethods ? 'clickable' : ''}`}
             onClick={onNavigateToPaymentMethods}
+            onKeyDown={handleKeyDown}
             role={onNavigateToPaymentMethods ? 'button' : undefined}
             tabIndex={onNavigateToPaymentMethods ? 0 : undefined}
           >
