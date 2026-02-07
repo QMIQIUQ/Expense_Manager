@@ -316,7 +316,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                             </button>
                             <button
                               className="menu-item-hover"
-                              style={{ ...styles.menuItem, color: '#b91c1c' }}
+                              style={{ ...styles.menuItem, color: 'var(--error-text)' }}
                               onClick={() => {
                                 setOpenMenuId(null);
                                 income.id && setDeleteConfirm({ isOpen: true, incomeId: income.id });
@@ -433,7 +433,7 @@ const styles = {
   },
   dateDisplay: {
     fontSize: '13px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     flexShrink: 0,
   },
   linkedExpenseChip: {
@@ -501,12 +501,12 @@ const styles = {
   },
   payerName: {
     fontSize: '13px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     marginTop: '2px',
   },
   incomeNote: {
     fontSize: '13px',
-    color: '#6b7280',
+    color: 'var(--text-secondary)',
     fontStyle: 'italic' as const,
     marginTop: '4px',
     flex: 1,
@@ -524,7 +524,7 @@ const styles = {
   iconButton: {
     padding: '8px',
     backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -535,7 +535,7 @@ const styles = {
   },
   deleteButton: {
     backgroundColor: 'rgba(244,63,94,0.12)',
-    color: '#b91c1c',
+    color: 'var(--error-text)',
   },
   menuContainer: {
     position: 'relative' as const,
@@ -543,7 +543,7 @@ const styles = {
   menuButton: {
     padding: '8px 12px',
     backgroundColor: 'rgba(99,102,241,0.12)',
-    color: '#4f46e5',
+    color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -557,7 +557,7 @@ const styles = {
     top: '100%',
     marginTop: '4px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
@@ -571,7 +571,7 @@ const styles = {
     padding: '12px 16px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#374151',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     cursor: 'pointer',
     textAlign: 'left' as const,
@@ -587,7 +587,7 @@ const styles = {
     justifyContent: 'center',
     padding: '60px 20px',
     backgroundColor: 'var(--card-bg)',
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
   },
   emptyIcon: {
@@ -598,12 +598,12 @@ const styles = {
   emptyText: {
     fontSize: '18px',
     fontWeight: '600' as const,
-    color: '#4b5563',
+    color: 'var(--text-primary)',
     marginBottom: '8px',
   },
   emptySubtext: {
     fontSize: '14px',
-    color: '#9ca3af',
+    color: 'var(--text-tertiary)',
   },
   dateGroup: {
     display: 'flex',
@@ -616,9 +616,9 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '10px 14px',
-    background: '#e8f5e9',
+    background: 'var(--success-bg)',
     borderRadius: '10px',
-    borderLeft: '5px solid #4caf50',
+    borderLeft: '5px solid var(--success-text)',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     userSelect: 'none' as const,
@@ -636,7 +636,7 @@ const styles = {
   },
   collapseIcon: {
     fontSize: '10px',
-    color: '#16a34a',
+    color: 'var(--success-text)',
     display: 'inline-block',
     width: '12px',
     transition: 'transform 0.2s',
@@ -644,7 +644,7 @@ const styles = {
   dateGroupTotal: {
     fontSize: '14px',
     fontWeight: '600' as const,
-    color: '#16a34a',
+    color: 'var(--success-text)',
   },
   inlineEditor: {
     display: 'flex',

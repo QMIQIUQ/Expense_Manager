@@ -200,7 +200,7 @@ button:disabled {
 }
 
 a {
-  color: #2196F3;
+  color: var(--accent-primary);
   text-decoration: none;
 }
 
@@ -629,9 +629,9 @@ button:not(:disabled):hover {
     position: absolute;
     right: 12px;
     top: 12px;
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 6px var(--shadow);
   }
 }
 
@@ -944,7 +944,7 @@ button:not(:disabled):hover {
 .dark .text-green-600,
 .dark .text-green-700,
 .dark .text-green-800 {
-  color: #86efac !important;
+  color: var(--success-text) !important;
 }
 
 .dark .text-yellow-600,
@@ -952,20 +952,20 @@ button:not(:disabled):hover {
 .dark .text-yellow-800,
 .dark .text-amber-600,
 .dark .text-orange-600 {
-  color: #fcd34d !important;
+  color: var(--warning-text) !important;
 }
 
 .dark .text-red-600,
 .dark .text-red-700,
 .dark .text-red-800 {
-  color: #fca5a5 !important;
+  color: var(--error-text) !important;
 }
 
 .dark .text-blue-600,
 .dark .text-blue-700,
 .dark .text-indigo-600,
 .dark .text-indigo-700 {
-  color: #93c5fd !important;
+  color: var(--info-text) !important;
 }
 
 /* Link colors */
@@ -1227,10 +1227,10 @@ button:not(:disabled):hover {
 }
 
 /* Soft color variants */
-.credit-card .stat-card.info { background-color: #e8f0fe; }
-.credit-card .stat-card.success { background-color: #e8f7ee; }
-.credit-card .stat-card.accent { background-color: #efe9ff; }
-.credit-card .stat-card.warning { background-color: #fff1e6; }
+.credit-card .stat-card.info { background-color: var(--info-bg); }
+.credit-card .stat-card.success { background-color: var(--success-bg); }
+.credit-card .stat-card.accent { background-color: var(--accent-light); }
+.credit-card .stat-card.warning { background-color: var(--warning-bg); }
 
 .dark .credit-card .stat-card.info { background-color: rgba(30, 136, 229, 0.15); }
 .dark .credit-card .stat-card.success { background-color: rgba(34, 197, 94, 0.15); }
@@ -1459,8 +1459,8 @@ button:not(:disabled):hover {
 }
 
 .dark .tracked-expenses-section {
-  background-color: rgba(255, 193, 7, 0.1);
-  border-color: rgba(255, 193, 7, 0.3);
+  background-color: var(--warning-bg);
+  border-color: var(--warning-border);
 }
 
 .tracked-expenses-list {
@@ -1712,7 +1712,7 @@ button:not(:disabled):hover {
 
 .progress-fill {
   height: 100%;
-  background-color: #6366f1;
+  background-color: var(--accent-primary);
   transition: width 0.3s ease;
 }
 
@@ -1782,6 +1782,22 @@ button:not(:disabled):hover {
   gap: 10px;
   box-shadow: 0 2px 6px var(--shadow);
   transition: all 0.2s ease;
+}
+
+/* Generic clickable style for widget items */
+.summary-card.clickable,
+.category-item.clickable,
+.budget-progress-item.clickable,
+.credit-card-summary-item.clickable {
+  cursor: pointer;
+}
+
+.summary-card.clickable:hover,
+.category-item.clickable:hover,
+.budget-progress-item.clickable:hover,
+.credit-card-summary-item.clickable:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .recent-expense-item.clickable {
@@ -2481,7 +2497,7 @@ button:not(:disabled):hover {
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #fee2e2;
+  background-color: var(--error-bg);
 }
 
 /* Light accent button variant (used for add actions) */
@@ -2496,7 +2512,7 @@ button:not(:disabled):hover {
 }
 
 .dark .btn-danger:hover:not(:disabled) {
-  background-color: #7f1d1d;
+  background-color: var(--error-bg);
 }
 
 .btn-success {
@@ -3185,25 +3201,25 @@ button:not(:disabled):hover {
 }
 
 .btn-toggle.hidden {
-  background: #fee2e2 !important;
-  color: #dc2626 !important;
-  border: 2px dashed #dc2626 !important;
+  background: var(--error-bg) !important;
+  color: var(--error-text) !important;
+  border: 2px dashed var(--error-text) !important;
 }
 
 .btn-toggle.hidden:hover {
-  background: #dc2626 !important;
+  background: var(--error-text) !important;
   color: white !important;
 }
 
 /* Dark mode overrides for hidden toggle button */
 .dark .btn-toggle.hidden {
   background: rgba(220, 38, 38, 0.2) !important;
-  color: #f87171 !important;
-  border: 2px dashed #f87171 !important;
+  color: var(--error-text) !important;
+  border: 2px dashed var(--error-text) !important;
 }
 
 .dark .btn-toggle.hidden:hover {
-  background: #dc2626 !important;
+  background: var(--error-text) !important;
   color: white !important;
 }
 
@@ -3846,7 +3862,7 @@ button:not(:disabled):hover {
 }
 
 .budget-daily-value.over-daily {
-  color: #dc2626;
+  color: var(--error-text);
 }
 
 .budget-pace-indicator {
@@ -3857,12 +3873,12 @@ button:not(:disabled):hover {
 
 .budget-pace-indicator.over {
   background: rgba(239, 68, 68, 0.15);
-  color: #dc2626;
+  color: var(--error-text);
 }
 
 .budget-pace-indicator.under {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  color: var(--success-text);
 }
 
 /* Row 3: Progress bar and status */
@@ -4768,7 +4784,7 @@ button:not(:disabled):hover {
 }
 
 .dark .quick-expense-dropdown {
-  background-color: #1a1625 !important; /* Force solid dark background */
+  background-color: var(--card-bg) !important; /* Force solid dark background */
   box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
 }
 
@@ -5559,7 +5575,7 @@ button:not(:disabled):hover {
 
 /* PopupModal danger button hover */
 .popup-modal-btn-danger:hover:not(:disabled) {
-  background-color: #dc2626;
+  background-color: var(--error-text);
   transform: translateY(-1px);
 }
 

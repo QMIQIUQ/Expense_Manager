@@ -528,7 +528,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           }
 
           .date-picker-input.error {
-            border-color: #ef4444;
+            border-color: var(--error-text);
           }
 
           .date-picker-input:disabled {
@@ -706,7 +706,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         }
 
         .date-picker-input.error {
-          border-color: #ef4444;
+          border-color: var(--error-text);
         }
 
         .date-picker-input:disabled {
