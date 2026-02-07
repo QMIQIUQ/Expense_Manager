@@ -160,6 +160,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
                   }}
                   className="pending-payment-confirm-btn"
                   title={t('confirmPayment')}
+                  aria-label={t('confirmPayment')}
                 >
                   ✓ {isCompact ? '' : t('confirm')}
                 </button>

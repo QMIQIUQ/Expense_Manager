@@ -97,6 +97,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
                   }}
                   className="btn-complete"
                   title={t('markAsCompleted')}
+                  aria-label={t('markAsCompleted')}
                 >
                   ✓
                 </button>
