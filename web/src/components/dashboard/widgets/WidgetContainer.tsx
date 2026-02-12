@@ -13,6 +13,11 @@ import TrackedExpensesWidget from './TrackedExpensesWidget';
 import CardsSummaryWidget from './CardsSummaryWidget';
 import QuickAddWidget from './QuickAddWidget';
 import PendingPaymentsWidget from './PendingPaymentsWidget';
+import SavingsGoalWidget from './SavingsGoalWidget';
+import MonthOverMonthWidget from './MonthOverMonthWidget';
+import TagCloudWidget from './TagCloudWidget';
+import UpcomingBillsWidget from './UpcomingBillsWidget';
+import InstallmentTrackerWidget from './InstallmentTrackerWidget';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -82,6 +87,16 @@ const renderWidget = (
       return <QuickAddWidget {...propsWithSize} />;
     case 'pending-payments':
       return <PendingPaymentsWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
+    case 'savings-goal':
+      return <SavingsGoalWidget {...propsWithSize} />;
+    case 'month-over-month':
+      return <MonthOverMonthWidget {...propsWithSize} />;
+    case 'tag-cloud':
+      return <TagCloudWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} />;
+    case 'upcoming-bills':
+      return <UpcomingBillsWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
+    case 'installment-tracker':
+      return <InstallmentTrackerWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
     default:
       return null;
   }

@@ -5648,3 +5648,143 @@ button:not(:disabled):hover {
     grid-template-columns: 1fr;
   }
 }
+/* ===== New Widget Styles ===== */
+
+/* Savings Goal Widget */
+.savings-goal-widget {
+  padding: 0;
+}
+
+.savings-goal-card {
+  padding: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.savings-goal-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.savings-goal-card .card-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.savings-goal-card .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.savings-amount {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.savings-rate-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.savings-rate-bar {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.savings-rate-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.daily-average {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.daily-average .label {
+  color: var(--text-secondary);
+}
+
+/* Month-over-Month Widget */
+.month-comparison-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comparison-row {
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.comparison-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.comparison-values {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.comparison-values .compact-value {
+  font-size: 11px;
+}
+
+/* Tag Cloud Widget */
+.tag-cloud-widget {
+  padding: 4px 0;
+}
+
+.tag-item.clickable:hover {
+  border-color: var(--accent-primary) !important;
+  transform: scale(1.05);
+}
+
+/* Upcoming Bills Widget */
+.upcoming-bills-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.upcoming-bill-item.clickable:hover {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+/* Installment Tracker Widget */
+.installment-tracker-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.installment-item.clickable:hover {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
