@@ -2569,6 +2569,7 @@ const Dashboard: React.FC = () => {
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
             onNavigateToExpense={(expenseId) => {
+              setExpenseViewMode('all');
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
             }}
@@ -2632,7 +2633,7 @@ const Dashboard: React.FC = () => {
               onAddIncome={handleAddIncome}
               onInlineUpdate={handleInlineUpdateIncome}
               onDeleteIncome={handleDeleteIncome}
-              onOpenExpenseById={(id) => { setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
+              onOpenExpenseById={(id) => { setExpenseViewMode('all'); setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
             />
           </Suspense>
         )}
