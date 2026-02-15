@@ -987,6 +987,11 @@ export const translations = {
   noInstallments: { en: 'No active installments', zh: '暫無進行中的分期付款', 'zh-CN': '暂无进行中的分期付款' },
   installmentsPaid: { en: 'paid', zh: '已付', 'zh-CN': '已付' },
   period: { en: 'period', zh: '期', 'zh-CN': '期' },
+
+  // Card sort options
+  defaultSort: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
+  sortBySpending: { en: 'By Spending', zh: '按消費排序', 'zh-CN': '按消费排序' },
+  sortByCashbackRemaining: { en: 'Cashback Available', zh: '按回扣排序', 'zh-CN': '按回扣排序' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';
