@@ -34,7 +34,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
     }
   }, [size]);
 
-  // Pre-compute stats for all cards (used for sorting)
+  // Pre-compute stats for all cards (used for sorting and display)
   const cardStatsMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof calculateCardStats>>();
     cards.forEach(card => {
@@ -43,21 +43,30 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
     return map;
   }, [cards, expenses, categories]);
 
+  // Pre-compute cashback remaining totals for sorting
+  const cashbackRemainingMap = useMemo(() => {
+    const map = new Map<string, number>();
+    cards.forEach(card => {
+      const stats = cardStatsMap.get(card.id || '');
+      const remaining = stats?.cashbackByRule.reduce((sum, r) => sum + r.requiredToReachCap, 0) || 0;
+      map.set(card.id || '', remaining);
+    });
+    return map;
+  }, [cards, cardStatsMap]);
+
   // Sort cards based on selected mode
   const sortedCards = useMemo(() => {
     const sorted = [...cards];
     if (sortMode === 'spending') {
       sorted.sort((a, b) => {
-        const statsA = cardStatsMap.get(a.id || '');
-        const statsB = cardStatsMap.get(b.id || '');
-        return (statsB?.currentCycleSpending || 0) - (statsA?.currentCycleSpending || 0);
+        const spendA = cardStatsMap.get(a.id || '')?.currentCycleSpending || 0;
+        const spendB = cardStatsMap.get(b.id || '')?.currentCycleSpending || 0;
+        return spendB - spendA;
       });
     } else if (sortMode === 'cashback-remaining') {
       sorted.sort((a, b) => {
-        const statsA = cardStatsMap.get(a.id || '');
-        const statsB = cardStatsMap.get(b.id || '');
-        const remainA = statsA?.cashbackByRule.reduce((sum, r) => sum + r.requiredToReachCap, 0) || 0;
-        const remainB = statsB?.cashbackByRule.reduce((sum, r) => sum + r.requiredToReachCap, 0) || 0;
+        const remainA = cashbackRemainingMap.get(a.id || '') || 0;
+        const remainB = cashbackRemainingMap.get(b.id || '') || 0;
         // Cards with remaining cashback first (descending), then cards without
         if (remainA > 0 && remainB === 0) return -1;
         if (remainA === 0 && remainB > 0) return 1;
@@ -65,7 +74,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
       });
     }
     return sorted;
-  }, [cards, sortMode, cardStatsMap]);
+  }, [cards, sortMode, cardStatsMap, cashbackRemainingMap]);
   
   // Determine how many cards to display
   const displayCards = showAll ? sortedCards : sortedCards.slice(0, maxItems);
@@ -114,7 +123,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
         </div>
       )}
       {displayCards.map((card) => {
-        const stats = cardStatsMap.get(card.id || '') || calculateCardStats(card, expenses, categories);
+        const stats = cardStatsMap.get(card.id || '')!;
         const utilizationPercent = card.cardLimit > 0 
           ? (stats.currentCycleSpending / card.cardLimit) * 100 
           : 0;
