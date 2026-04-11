@@ -28,7 +28,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   onSubmit,
   onCancel,
   initialData,
-  maxAmount,
+  maxAmount: _maxAmount, // kept for API compatibility but no longer enforced as a hard limit
   cards = [],
   ewallets = [],
   banks: _banks = [],
@@ -57,11 +57,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!formData.amount || formData.amount <= 0) {
       newErrors.amount = t('pleaseFillField') || 'Please enter a valid amount';
     }
-    // Convert amount from cents to dollars for validation
+    // Convert amount from cents to dollars
     const amountInDollars = formData.amount / 100;
-    if (maxAmount && amountInDollars > maxAmount) {
-      newErrors.amount = `Amount cannot exceed ${maxAmount.toFixed(2)}`;
-    }
     if (!formData.date) {
       newErrors.date = t('pleaseFillField') || 'Please select a date';
     }
