@@ -461,7 +461,7 @@ const styles = {
     justifyContent: 'flex-end',
     gap: '10px',
     padding: '20px 30px',
-    borderTop: '1px solid #e0e0e0',
+    borderTop: '1px solid var(--border-color)',
     backgroundColor: 'var(--card-bg)',
     flexShrink: 0,
   },
@@ -548,7 +548,7 @@ const styles = {
     gap: '8px',
     maxHeight: '200px',
     overflowY: 'auto' as const,
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
     padding: '10px',
   },
@@ -605,7 +605,7 @@ const styles = {
   },
   tableWrapper: {
     overflowX: 'auto' as const,
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
   },
   table: {

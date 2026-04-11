@@ -98,7 +98,7 @@ const Register: React.FC = () => {
           style={{
             width: '100%',
             padding: '10px',
-            backgroundColor: '#4CAF50',
+            backgroundColor: 'var(--success-text)',
             color: 'white',
             border: 'none',
             cursor: 'pointer',
@@ -114,7 +114,7 @@ const Register: React.FC = () => {
         style={{
           width: '100%',
           padding: '10px',
-          backgroundColor: '#4285F4',
+          backgroundColor: 'var(--info-text)',
           color: 'white',
           border: 'none',
           cursor: 'pointer',

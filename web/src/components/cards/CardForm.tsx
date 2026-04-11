@@ -268,7 +268,7 @@ const CardForm: React.FC<CardFormProps> = ({
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: errors.name ? '#ef4444' : 'var(--border-color)',
+              borderColor: errors.name ? 'var(--error-text)' : 'var(--border-color)',
             }}
           />
           {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
@@ -339,7 +339,7 @@ const CardForm: React.FC<CardFormProps> = ({
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: errors.cardLimit ? '#ef4444' : 'var(--border-color)',
+              borderColor: errors.cardLimit ? 'var(--error-text)' : 'var(--border-color)',
             }}
           />
           {errors.cardLimit && (
@@ -364,7 +364,7 @@ const CardForm: React.FC<CardFormProps> = ({
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
-              borderColor: errors.billingDay ? '#ef4444' : 'var(--border-color)',
+              borderColor: errors.billingDay ? 'var(--error-text)' : 'var(--border-color)',
             }}
           />
           {errors.billingDay && (

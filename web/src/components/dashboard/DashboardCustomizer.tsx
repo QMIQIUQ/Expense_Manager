@@ -230,10 +230,10 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       title={widget.enabled ? t('hide') : t('show')}
                       style={{
                         background: widget.enabled 
-                          ? 'linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.3))' 
-                          : 'rgba(100, 100, 120, 0.2)',
-                        color: widget.enabled ? '#a78bfa' : '#9ca3af',
-                        border: widget.enabled ? '1px solid rgba(139, 92, 246, 0.5)' : '1px dashed #6b7280',
+                          ? 'var(--accent-light)' 
+                          : 'var(--bg-tertiary)',
+                        color: widget.enabled ? 'var(--accent-primary)' : 'var(--text-tertiary)',
+                        border: widget.enabled ? '1px solid var(--accent-primary)' : '1px dashed var(--text-tertiary)',
                         borderRadius: '8px',
                         padding: '6px 12px',
                         cursor: 'pointer',

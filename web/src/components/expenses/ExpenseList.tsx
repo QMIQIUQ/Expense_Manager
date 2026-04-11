@@ -240,7 +240,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const original = (el as HTMLElement).style.boxShadow;
-      (el as HTMLElement).style.boxShadow = '0 0 0 3px rgba(99,102,241,0.35)';
+      (el as HTMLElement).style.boxShadow = '0 0 0 3px var(--accent-secondary)';
       setTimeout(() => {
         (el as HTMLElement).style.boxShadow = original;
       }, 2000);
@@ -862,7 +862,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         const netAmount = expense.amount - repaid;
                         const hasExcess = netAmount < 0;
                         const isRepaid = repaid > 0;
-                        const color = isRepaid ? (hasExcess ? '#2196F3' : '#ff9800') : '#f44336';
+                        const color = isRepaid ? (hasExcess ? 'var(--info-text)' : 'var(--warning-text)') : 'var(--error-text)';
                         return (
                           <div style={{
                             fontWeight: '700',
@@ -1609,7 +1609,7 @@ const styles = {
     minWidth: '150px',
     width: '100%',
     padding: '10px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
     fontSize: '14px',
   },
@@ -1672,7 +1672,7 @@ const styles = {
     flex: 1,
     minWidth: '200px',
     padding: '10px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '4px',
     fontSize: '14px',
   },
@@ -1690,7 +1690,7 @@ const styles = {
     paddingBottom: 0,
   },
   selectedCard: {
-    boxShadow: '0 0 0 3px rgba(124, 58, 237, 0.35)'
+    boxShadow: '0 0 0 3px var(--accent-secondary)'
   },
   timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
   mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', minWidth: 0 },
@@ -1941,7 +1941,7 @@ const styles = {
   },
   selectToggleButton: {
     borderRadius: '8px',
-    border: '1px solid rgba(0,0,0,0.08)',
+    border: '1px solid var(--border-color)',
     backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     fontWeight: 600,
@@ -1982,9 +1982,9 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 12px',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: 'var(--info-bg)',
     borderRadius: '8px',
-    borderLeft: '4px solid #1976d2',
+    borderLeft: '4px solid var(--info-text)',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     userSelect: 'none' as const,

@@ -1001,7 +1001,7 @@ const styles = {
     fontSize: '11px',
     fontWeight: '500' as const,
     color: 'var(--accent-primary)',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'var(--accent-light)',
     padding: '2px 6px',
     borderRadius: '4px',
   },

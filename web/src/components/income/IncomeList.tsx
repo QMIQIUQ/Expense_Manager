@@ -523,7 +523,7 @@ const styles = {
   },
   iconButton: {
     padding: '8px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
+    backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
@@ -534,7 +534,7 @@ const styles = {
     transition: 'background-color 0.2s',
   },
   deleteButton: {
-    backgroundColor: 'rgba(244,63,94,0.12)',
+    backgroundColor: 'var(--error-bg)',
     color: 'var(--error-text)',
   },
   menuContainer: {
@@ -542,7 +542,7 @@ const styles = {
   },
   menuButton: {
     padding: '8px 12px',
-    backgroundColor: 'rgba(99,102,241,0.12)',
+    backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
     borderRadius: '8px',
@@ -665,7 +665,7 @@ const styles = {
     padding: '8px',
     border: 'none',
     borderRadius: '8px',
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'var(--success-bg)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -675,7 +675,7 @@ const styles = {
     padding: '8px',
     border: 'none',
     borderRadius: '8px',
-    backgroundColor: 'rgba(148,163,184,0.2)',
+    backgroundColor: 'var(--bg-tertiary)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

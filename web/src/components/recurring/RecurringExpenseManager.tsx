@@ -610,7 +610,7 @@ const styles = {
   searchInput: {
     flex: 1,
     padding: '10px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
     fontSize: '14px',
   },
@@ -755,7 +755,7 @@ const styles = {
     color: 'var(--text-primary)',
   },
   badge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: 'var(--error-text)',
     color: 'white',
     borderRadius: '12px',
     padding: '2px 8px',
@@ -774,7 +774,7 @@ const styles = {
     backgroundColor: 'var(--bg-secondary)',
     padding: '14px',
     borderRadius: '10px',
-    border: '1px solid rgba(239, 68, 68, 0.2)',
+    border: '1px solid var(--error-border)',
     display: 'grid',
     gridTemplateColumns: '1fr auto',
     gap: '8px',
