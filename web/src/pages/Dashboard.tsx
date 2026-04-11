@@ -28,6 +28,8 @@ import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
+import RadialDateMenu from '../components/common/RadialDateMenu';
+import { useLongPress } from '../hooks/useLongPress';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
@@ -130,6 +132,9 @@ const Dashboard: React.FC = () => {
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  // Radial date menu state for long-press on FAB
+  const [showRadialDateMenu, setShowRadialDateMenu] = useState(false);
+  const [radialMenuPosition, setRadialMenuPosition] = useState({ x: 0, y: 0 });
 
   // Filter expenses based on DateNavigator selection
   const filteredExpensesForDisplay = useMemo(() => {
@@ -2004,6 +2009,41 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
+  //#region Long Press Handlers
+  // Handle long press on FAB to show radial date menu
+  const handleLongPress = (event: React.TouchEvent | React.MouseEvent) => {
+    // Get the position for the radial menu
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    setRadialMenuPosition({ x, y });
+    setShowRadialDateMenu(true);
+  };
+
+  // Handle regular click on FAB
+  const handleFabClick = () => {
+    setShowAddExpenseForm(true);
+  };
+
+  // Handle date selection from radial menu
+  const handleRadialDateSelect = (date: string) => {
+    setShowRadialDateMenu(false);
+    // Set the initial date for the expense form
+    setExpenseSelectedDate(date);
+    // Open the expense form with the selected date
+    setShowAddExpenseForm(true);
+  };
+
+  // Configure long press hook
+  const longPressHandlers = useLongPress({
+    onLongPress: handleLongPress,
+    onClick: handleFabClick,
+    delay: 500, // 500ms long press delay
+  });
+  //#endregion
+
   //#region Render
   return (
     <>
@@ -2754,7 +2794,7 @@ const Dashboard: React.FC = () => {
       {/* Floating Add Expense Button - unified: desktop shows expanded, mobile shows icon only */}
       {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
         <button
-          onClick={() => setShowAddExpenseForm(true)}
+          {...longPressHandlers}
           style={{
             ...styles.floatingButton,
             width: isMobile ? '56px' : 'auto',
@@ -2786,6 +2826,14 @@ const Dashboard: React.FC = () => {
           {!isMobile && <span style={{ lineHeight: 1 }}>{t('addNewExpense')}</span>}
         </button>
       )}
+
+      {/* Radial Date Menu - shown on long press of FAB */}
+      <RadialDateMenu
+        isOpen={showRadialDateMenu}
+        onClose={() => setShowRadialDateMenu(false)}
+        onSelectDate={handleRadialDateSelect}
+        position={radialMenuPosition}
+      />
 
       {/* Add Expense Bottom Sheet - for all tabs except expenses */}
       {activeTab !== 'expenses' && (
@@ -2821,6 +2869,7 @@ const Dashboard: React.FC = () => {
               setActiveTab('paymentMethods');
             }}
             onAddTransfer={handleAddTransfer}
+            initialDate={expenseSelectedDate}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
           />
