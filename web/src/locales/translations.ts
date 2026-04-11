@@ -846,6 +846,14 @@ export const translations = {
   
   // Notification Reminders
   notifications: { en: 'Notifications', zh: '通知', 'zh-CN': '通知' },
+  noNotifications: { en: 'No notifications', zh: '沒有通知', 'zh-CN': '没有通知' },
+  markAllRead: { en: 'Mark all read', zh: '全部標已讀', 'zh-CN': '全部标已读' },
+  clearAll: { en: 'Clear all', zh: '清除全部', 'zh-CN': '清除全部' },
+  unreadNotifications: { en: '{count} unread notifications', zh: '{count} 則未讀通知', 'zh-CN': '{count} 条未读通知' },
+  timeSecondsAgo: { en: '{n}s ago', zh: '{n}秒前', 'zh-CN': '{n}秒前' },
+  timeMinutesAgo: { en: '{n}m ago', zh: '{n}分前', 'zh-CN': '{n}分前' },
+  timeHoursAgo: { en: '{n}h ago', zh: '{n}小時前', 'zh-CN': '{n}小时前' },
+  timeDaysAgo: { en: '{n}d ago', zh: '{n}天前', 'zh-CN': '{n}天前' },
   enableReminders: { en: 'Enable Reminders', zh: '啟用提醒', 'zh-CN': '启用提醒' },
   reminderDaysBefore: { en: 'Days Before Due Date', zh: '到期日前幾天', 'zh-CN': '到期日前几天' },
   reminderDaysBeforeHint: { en: 'Get notified X days before due date', zh: '在到期日前X天收到通知', 'zh-CN': '在到期日前X天收到通知' },

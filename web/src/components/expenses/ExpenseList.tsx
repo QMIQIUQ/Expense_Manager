@@ -236,15 +236,28 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   // Scroll to and highlight an expense when focusExpenseId changes
   React.useEffect(() => {
     if (!focusExpenseId) return;
-    const el = document.getElementById(`expense-${focusExpenseId}`);
-    if (el) {
+    const highlightEl = (el: HTMLElement) => {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const original = (el as HTMLElement).style.boxShadow;
-      (el as HTMLElement).style.boxShadow = '0 0 0 3px var(--accent-secondary)';
+      const original = el.style.boxShadow;
+      el.style.boxShadow = '0 0 0 3px var(--accent-secondary)';
       setTimeout(() => {
-        (el as HTMLElement).style.boxShadow = original;
+        el.style.boxShadow = original;
       }, 2000);
+    };
+    const el = document.getElementById(`expense-${focusExpenseId}`);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (el) {
+      highlightEl(el);
+    } else {
+      // Element may not be rendered yet (e.g. right after tab switch) — retry after a short delay
+      timer = setTimeout(() => {
+        const delayed = document.getElementById(`expense-${focusExpenseId}`);
+        if (delayed) highlightEl(delayed);
+      }, 150);
     }
+    return () => {
+      if (timer !== undefined) clearTimeout(timer);
+    };
   }, [focusExpenseId]);
 
   // Calculate repayment totals per expense

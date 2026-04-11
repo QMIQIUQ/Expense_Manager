@@ -13,8 +13,18 @@ export interface Notification {
   }>;
 }
 
+export interface NotificationHistoryItem {
+  id: string;
+  type: NotificationType;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+}
+
 interface NotificationContextType {
   notifications: Notification[];
+  notificationHistory: NotificationHistoryItem[];
+  unreadCount: number;
   showNotification: (
     type: NotificationType,
     message: string,
@@ -26,6 +36,8 @@ interface NotificationContextType {
   ) => string;
   hideNotification: (id: string) => void;
   updateNotification: (id: string, updates: Partial<Notification>) => void;
+  markAllRead: () => void;
+  clearHistory: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -44,6 +56,7 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationHistory, setNotificationHistory] = useState<NotificationHistoryItem[]>([]);
 
   const showNotification = useCallback(
     (
@@ -74,6 +87,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         return [...prev, notification];
       });
 
+      // Add to history (skip pending updates — only log final states)
+      if (type !== 'pending') {
+        setNotificationHistory((prev) => {
+          // Avoid duplicating entries with the same id
+          if (prev.some((n) => n.id === id)) return prev;
+          const item: NotificationHistoryItem = {
+            id,
+            type,
+            message,
+            timestamp: new Date(),
+            read: false,
+          };
+          // Keep at most 50 history items
+          return [item, ...prev].slice(0, 50);
+        });
+      }
+
       // Auto-dismiss if duration > 0
       if (duration > 0) {
         setTimeout(() => {
@@ -101,6 +131,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               setNotifications((curr) => curr.filter((notif) => notif.id !== id));
             }, updates.duration);
           }
+          // If the updated notification has a meaningful type (not pending), add/update history
+          if (updates.type && updates.type !== 'pending' && updates.message) {
+            setNotificationHistory((prev) => {
+              const existing = prev.find((h) => h.id === id);
+              if (existing) {
+                return prev.map((h) =>
+                  h.id === id
+                    ? { ...h, type: updates.type!, message: updates.message!, timestamp: new Date(), read: false }
+                    : h
+                );
+              }
+              const item: NotificationHistoryItem = {
+                id,
+                type: updates.type!,
+                message: updates.message!,
+                timestamp: new Date(),
+                read: false,
+              };
+              return [item, ...prev].slice(0, 50);
+            });
+          }
           return updated;
         }
         return n;
@@ -108,11 +159,25 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     );
   }, []);
 
+  const markAllRead = useCallback(() => {
+    setNotificationHistory((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setNotificationHistory([]);
+  }, []);
+
+  const unreadCount = notificationHistory.filter((n) => !n.read).length;
+
   const value: NotificationContextType = {
     notifications,
+    notificationHistory,
+    unreadCount,
     showNotification,
     hideNotification,
     updateNotification,
+    markAllRead,
+    clearHistory,
   };
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

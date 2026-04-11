@@ -41,6 +41,7 @@ const PaymentMethodsTab = lazy(() => import('../components/payment/PaymentMethod
 import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import HeaderStatusBar from '../components/HeaderStatusBar';
+import NotificationBell from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
 import { offlineQueue } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
@@ -2019,6 +2020,8 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-actions">
+          {/* Notification Bell */}
+          <NotificationBell />
           {/* Hamburger Menu */}
           <div ref={hamburgerRef} style={{ position: 'relative' }}>
             <button
@@ -2572,6 +2575,8 @@ const Dashboard: React.FC = () => {
               setExpenseViewMode('all');
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
+              // Clear focus highlight after animation completes
+              setTimeout(() => setFocusExpenseId(null), 2500);
             }}
             onNavigateToScheduledPayment={(scheduledPaymentId) => {
               setFocusScheduledPaymentId(scheduledPaymentId);
