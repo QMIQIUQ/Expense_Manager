@@ -219,6 +219,12 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
   { id: 'widget-7', type: 'cards-summary', enabled: false, order: 6, size: 'full' },
   { id: 'widget-8', type: 'tracked-expenses', enabled: false, order: 7, size: 'medium' },
   { id: 'widget-9', type: 'pending-payments', enabled: false, order: 8, size: 'medium' },
+  { id: 'widget-10', type: 'quick-add', enabled: false, order: 9, size: 'small' },
+  { id: 'widget-11', type: 'savings-goal', enabled: false, order: 10, size: 'medium' },
+  { id: 'widget-12', type: 'month-over-month', enabled: false, order: 11, size: 'medium' },
+  { id: 'widget-13', type: 'tag-cloud', enabled: false, order: 12, size: 'medium' },
+  { id: 'widget-14', type: 'upcoming-bills', enabled: false, order: 13, size: 'medium' },
+  { id: 'widget-15', type: 'installment-tracker', enabled: false, order: 14, size: 'medium' },
 ];
 
 // Helper to generate unique widget ID

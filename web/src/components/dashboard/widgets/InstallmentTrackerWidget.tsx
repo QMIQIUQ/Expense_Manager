@@ -64,6 +64,7 @@ const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
           onKeyDown={onNavigateToScheduledPayment ? handleKeyDown(() => onNavigateToScheduledPayment(inst.id!)) : undefined}
           role={onNavigateToScheduledPayment ? 'button' : undefined}
           tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
+          aria-label={onNavigateToScheduledPayment ? `${inst.name} - ${inst.paidCount}/${inst.totalInstallments}` : undefined}
           style={{
             padding: '12px',
             background: 'var(--card-bg)',

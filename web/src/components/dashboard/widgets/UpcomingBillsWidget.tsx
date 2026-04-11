@@ -69,6 +69,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
             onKeyDown={onNavigateToScheduledPayment ? handleKeyDown(() => onNavigateToScheduledPayment(bill.id!)) : undefined}
             role={onNavigateToScheduledPayment ? 'button' : undefined}
             tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
+            aria-label={onNavigateToScheduledPayment ? `${bill.name} - $${bill.amount}` : undefined}
             style={{
               display: 'flex',
               justifyContent: 'space-between',

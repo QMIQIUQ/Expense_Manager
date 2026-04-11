@@ -71,6 +71,7 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
           onKeyDown={handleKeyDown}
           role={onNavigateToExpenses ? 'button' : undefined}
           tabIndex={onNavigateToExpenses ? 0 : undefined}
+          aria-label={onNavigateToExpenses ? `${tag.category} (${tag.count})` : undefined}
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)',
