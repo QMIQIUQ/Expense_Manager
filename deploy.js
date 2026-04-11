@@ -1,7 +1,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
-const projDir = 'c:\\個人文件\\Project\\Expense_Manager';
+const projDir = path.resolve(__dirname);
 
 try {
   console.log('Staging changes...');
