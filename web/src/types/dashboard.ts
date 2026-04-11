@@ -11,7 +11,12 @@ export type DashboardWidgetType =
   | 'budget-progress'    // Budget progress bars
   | 'tracked-expenses'   // Expenses needing repayment tracking
   | 'pending-payments'   // Scheduled payments due this month
-  | 'quick-add';         // Quick add expense button
+  | 'quick-add'          // Quick add expense button
+  | 'savings-goal'       // Savings goal progress
+  | 'month-over-month'   // Month-over-month comparison
+  | 'tag-cloud'          // Tag cloud of frequent expenses
+  | 'upcoming-bills'     // Bills due in next 7 days
+  | 'installment-tracker'; // Installment payment tracker
 
 // Widget size options
 export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
@@ -151,6 +156,56 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     minSize: 'small',
     maxSize: 'medium',
   },
+  'savings-goal': {
+    type: 'savings-goal',
+    defaultTitle: 'savingsGoal',
+    defaultTitleFallback: 'Savings Goal',
+    description: 'savingsGoalDesc',
+    icon: '💰',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'medium',
+  },
+  'month-over-month': {
+    type: 'month-over-month',
+    defaultTitle: 'monthOverMonth',
+    defaultTitleFallback: 'Month Comparison',
+    description: 'monthOverMonthDesc',
+    icon: '📊',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
+  'tag-cloud': {
+    type: 'tag-cloud',
+    defaultTitle: 'tagCloud',
+    defaultTitleFallback: 'Spending Tags',
+    description: 'tagCloudDesc',
+    icon: '🏷️',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
+  'upcoming-bills': {
+    type: 'upcoming-bills',
+    defaultTitle: 'upcomingBills',
+    defaultTitleFallback: 'Upcoming Bills',
+    description: 'upcomingBillsDesc',
+    icon: '📆',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
+  'installment-tracker': {
+    type: 'installment-tracker',
+    defaultTitle: 'installmentTracker',
+    defaultTitleFallback: 'Installment Tracker',
+    description: 'installmentTrackerDesc',
+    icon: '💳',
+    defaultSize: 'medium',
+    minSize: 'small',
+    maxSize: 'large',
+  },
 };
 
 // Default dashboard layout
@@ -164,6 +219,12 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
   { id: 'widget-7', type: 'cards-summary', enabled: false, order: 6, size: 'full' },
   { id: 'widget-8', type: 'tracked-expenses', enabled: false, order: 7, size: 'medium' },
   { id: 'widget-9', type: 'pending-payments', enabled: false, order: 8, size: 'medium' },
+  { id: 'widget-10', type: 'quick-add', enabled: false, order: 9, size: 'small' },
+  { id: 'widget-11', type: 'savings-goal', enabled: false, order: 10, size: 'medium' },
+  { id: 'widget-12', type: 'month-over-month', enabled: false, order: 11, size: 'medium' },
+  { id: 'widget-13', type: 'tag-cloud', enabled: false, order: 12, size: 'medium' },
+  { id: 'widget-14', type: 'upcoming-bills', enabled: false, order: 13, size: 'medium' },
+  { id: 'widget-15', type: 'installment-tracker', enabled: false, order: 14, size: 'medium' },
 ];
 
 // Helper to generate unique widget ID

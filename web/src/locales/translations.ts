@@ -960,6 +960,38 @@ export const translations = {
   amountDetails: { en: 'Amount Details', zh: '金額明細', 'zh-CN': '金额明细' },
   repaymentStatus: { en: 'Repayment Status', zh: '還款狀態', 'zh-CN': '还款状态' },
   itemDescription: { en: 'Item description...', zh: '項目說明...', 'zh-CN': '项目说明...' },
+  
+  // Month-over-month comparison
+  savings: { en: 'Savings', zh: '儲蓄', 'zh-CN': '储蓄' },
+  vs: { en: 'vs', zh: 'vs', 'zh-CN': 'vs' },
+  lastMonth: { en: 'Last Month', zh: '上個月', 'zh-CN': '上个月' },
+  noComparisonData: { en: 'No data for comparison', zh: '無比較資料', 'zh-CN': '无比较数据' },
+  noSavingsData: { en: 'No savings data available', zh: '無儲蓄資料', 'zh-CN': '无储蓄数据' },
+  savingsRate: { en: 'Savings Rate', zh: '儲蓄率', 'zh-CN': '储蓄率' },
+  dailyAverage: { en: 'Daily Average', zh: '每日平均', 'zh-CN': '每日平均' },
+  new: { en: 'New', zh: '新增', 'zh-CN': '新增' },
+
+  // New widget titles and descriptions
+  savingsGoal: { en: 'Savings Goal', zh: '儲蓄目標', 'zh-CN': '储蓄目标' },
+  savingsGoalDesc: { en: 'Track your savings progress', zh: '追蹤儲蓄進度', 'zh-CN': '追踪储蓄进度' },
+  monthOverMonth: { en: 'Month Comparison', zh: '月度對比', 'zh-CN': '月度对比' },
+  monthOverMonthDesc: { en: 'Compare this month vs last month', zh: '本月 vs 上月對比', 'zh-CN': '本月 vs 上月对比' },
+  tagCloud: { en: 'Spending Tags', zh: '消費標籤', 'zh-CN': '消费标签' },
+  tagCloudDesc: { en: 'Most frequent spending categories', zh: '最常見消費分類', 'zh-CN': '最常见消费分类' },
+  upcomingBills: { en: 'Upcoming Bills', zh: '即將到期帳單', 'zh-CN': '即将到期账单' },
+  upcomingBillsDesc: { en: 'Bills due in the next 7 days', zh: '未來 7 天到期帳單', 'zh-CN': '未来 7 天到期账单' },
+  installmentTracker: { en: 'Installment Tracker', zh: '分期付款追蹤', 'zh-CN': '分期付款追踪' },
+  installmentTrackerDesc: { en: 'Track installment payment progress', zh: '追蹤分期付款進度', 'zh-CN': '追踪分期付款进度' },
+  noTagData: { en: 'No spending tags yet', zh: '暫無消費標籤', 'zh-CN': '暂无消费标签' },
+  noUpcomingBills: { en: 'No bills due in next 7 days', zh: '未來 7 天無到期帳單', 'zh-CN': '未来 7 天无到期账单' },
+  noInstallments: { en: 'No active installments', zh: '暫無進行中的分期付款', 'zh-CN': '暂无进行中的分期付款' },
+  installmentsPaid: { en: 'paid', zh: '已付', 'zh-CN': '已付' },
+  period: { en: 'period', zh: '期', 'zh-CN': '期' },
+
+  // Card sort options
+  defaultSort: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
+  sortBySpending: { en: 'By Spending', zh: '按消費排序', 'zh-CN': '按消费排序' },
+  sortByCashbackRemaining: { en: 'Cashback Available', zh: '按回扣排序', 'zh-CN': '按回扣排序' },
 } as const;
 
 export type Language = 'en' | 'zh' | 'zh-CN';

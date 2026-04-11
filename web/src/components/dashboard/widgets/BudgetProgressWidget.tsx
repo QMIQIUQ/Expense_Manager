@@ -6,10 +6,17 @@ import ShowMoreButton from './ShowMoreButton';
 import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
 import { formatDateRangeShort } from '../../../utils/dateUtils';
 
-const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium' }) => {
+const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', onNavigateToBudgets }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [showAll, setShowAll] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onNavigateToBudgets && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onNavigateToBudgets();
+    }
+  };
   
   // Determine max items based on size
   const maxItems = React.useMemo(() => {
@@ -193,7 +200,14 @@ const BudgetProgressWidget: React.FC<WidgetProps> = ({ budgets, expenses, repaym
   return (
     <div className="budget-progress-list">
       {displayBudgets.map((budget) => (
-        <div key={budget.id} className="budget-progress-item">
+        <div
+          key={budget.id}
+          className={`budget-progress-item ${onNavigateToBudgets ? 'clickable' : ''}`}
+          onClick={onNavigateToBudgets}
+          onKeyDown={handleKeyDown}
+          role={onNavigateToBudgets ? 'button' : undefined}
+          tabIndex={onNavigateToBudgets ? 0 : undefined}
+        >
           {/* Row 1: Period chip and Amount */}
           <div className="budget-progress-row-1">
             <div className="budget-period-info">

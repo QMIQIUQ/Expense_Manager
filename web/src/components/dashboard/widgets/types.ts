@@ -17,6 +17,11 @@ export interface WidgetProps {
   onQuickAdd?: () => void;
   onNavigateToExpense?: (expenseId: string) => void;
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
+  // Tab navigation callbacks
+  onNavigateToExpenses?: () => void;
+  onNavigateToIncomes?: () => void;
+  onNavigateToBudgets?: () => void;
+  onNavigateToPaymentMethods?: () => void;
   // Quick expense related
   quickExpensePresets?: QuickExpensePreset[];
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;

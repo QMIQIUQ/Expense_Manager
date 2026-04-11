@@ -68,7 +68,7 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
           value={formData.name}
           onChange={handleChange}
           className="px-3 py-2 border rounded focus:outline-none focus:ring-2"
-          style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', borderColor: errors.name ? '#ef4444' : 'var(--border-color)' }}
+          style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', borderColor: errors.name ? 'var(--error-text)' : 'var(--border-color)' }}
         />
         {errors.name && (<span className="text-xs text-red-600">{errors.name}</span>)}
       </div>

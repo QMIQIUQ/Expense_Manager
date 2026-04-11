@@ -18,25 +18,25 @@ const HeaderNotification: React.FC = () => {
       case 'success':
         return { 
           ...baseStyle, 
-          backgroundColor: '#22c55e',
+          backgroundColor: 'var(--success-text)',
           color: '#ffffff',
         };
       case 'error':
         return { 
           ...baseStyle, 
-          backgroundColor: '#ef4444',
+          backgroundColor: 'var(--error-text)',
           color: '#ffffff',
         };
       case 'info':
         return { 
           ...baseStyle, 
-          backgroundColor: '#3b82f6',
+          backgroundColor: 'var(--info-text)',
           color: '#ffffff',
         };
       case 'pending':
         return { 
           ...baseStyle, 
-          backgroundColor: '#f97316',
+          backgroundColor: 'var(--warning-text)',
           color: '#ffffff',
         };
       default:

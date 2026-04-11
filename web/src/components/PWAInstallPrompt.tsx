@@ -146,11 +146,11 @@ Or tap address bar and select "Install"
       marginRight: 0,
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--card-bg)',
         borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 10px 25px var(--shadow)',
         padding: '16px',
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border-color)',
       }}>
         <div style={{
           display: 'flex',
@@ -160,7 +160,7 @@ Or tap address bar and select "Install"
           <div style={{
             width: '48px',
             height: '48px',
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            backgroundColor: 'var(--success-bg)',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
@@ -173,14 +173,14 @@ Or tap address bar and select "Install"
             <h3 style={{
               fontSize: '14px',
               fontWeight: 600,
-              color: '#111827',
+              color: 'var(--text-primary)',
               margin: '0 0 4px 0',
             }}>
               Install Expense Manager
             </h3>
             <p style={{
               fontSize: '12px',
-              color: '#6b7280',
+              color: 'var(--text-secondary)',
               margin: '0 0 12px 0',
               lineHeight: '1.5',
             }}>
@@ -195,7 +195,7 @@ Or tap address bar and select "Install"
                 style={{
                   flex: 1,
                   padding: '6px 12px',
-                  backgroundColor: '#22c55e',
+                  backgroundColor: 'var(--success-text)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
@@ -205,10 +205,10 @@ Or tap address bar and select "Install"
                   transition: 'background-color 0.2s',
                 }}
                 onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#16a34a';
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--success-border)';
                 }}
                 onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#22c55e';
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--success-text)';
                 }}
               >
                 Install
@@ -217,8 +217,8 @@ Or tap address bar and select "Install"
                 onClick={dismissPrompt}
                 style={{
                   padding: '6px 12px',
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                   border: 'none',
                   borderRadius: '4px',
                   fontSize: '12px',
@@ -227,10 +227,10 @@ Or tap address bar and select "Install"
                   transition: 'background-color 0.2s',
                 }}
                 onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e5e7eb';
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--bg-tertiary)';
                 }}
                 onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6';
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--bg-secondary)';
                 }}
               >
                 Not now

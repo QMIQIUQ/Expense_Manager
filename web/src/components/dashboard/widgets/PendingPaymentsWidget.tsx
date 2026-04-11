@@ -86,7 +86,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
       color: category.color,
     } : {
       icon: '📋',
-      color: '#6366f1',
+      color: 'var(--accent-primary)',
     };
   };
 
@@ -160,6 +160,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
                   }}
                   className="pending-payment-confirm-btn"
                   title={t('confirmPayment')}
+                  aria-label={t('confirmPayment')}
                 >
                   ✓ {isCompact ? '' : t('confirm')}
                 </button>

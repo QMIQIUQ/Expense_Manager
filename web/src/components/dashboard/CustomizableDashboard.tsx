@@ -27,6 +27,9 @@ interface CustomizableDashboardProps {
   onNavigateToExpenses?: () => void;
   onNavigateToExpense?: (expenseId: string) => void;
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
+  onNavigateToIncomes?: () => void;
+  onNavigateToBudgets?: () => void;
+  onNavigateToPaymentMethods?: () => void;
   onCustomizingChange?: (isCustomizing: boolean) => void;
   // Scheduled payments related
   scheduledPayments?: ScheduledPayment[];
@@ -54,6 +57,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   onNavigateToExpenses,
   onNavigateToExpense,
   onNavigateToScheduledPayment,
+  onNavigateToIncomes,
+  onNavigateToBudgets,
+  onNavigateToPaymentMethods,
   onCustomizingChange,
   scheduledPayments = [],
   scheduledPaymentRecords = [],
@@ -183,6 +189,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
             onNavigateToExpenses={onNavigateToExpenses}
             onNavigateToExpense={onNavigateToExpense}
             onNavigateToScheduledPayment={onNavigateToScheduledPayment}
+            onNavigateToIncomes={onNavigateToIncomes}
+            onNavigateToBudgets={onNavigateToBudgets}
+            onNavigateToPaymentMethods={onNavigateToPaymentMethods}
           />
         ))}
       </div>

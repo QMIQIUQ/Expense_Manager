@@ -62,7 +62,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
       return {
         ...styles.paymentChip,
         background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
-        color: '#86efac',
+        color: 'var(--success-text)',
         boxShadow: '0 1px 3px rgba(34, 197, 94, 0.2)',
       };
     }
@@ -74,7 +74,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     if (effectiveTheme === 'dark') {
       return {
         ...styles.amount,
-        color: '#86efac',
+        color: 'var(--success-text)',
         textShadow: '0 1px 2px rgba(134, 239, 172, 0.2)',
       };
     }
@@ -256,32 +256,31 @@ const styles = {
   },
   paymentChip: {
     padding: '4px 10px',
-    background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-    color: '#15803d',
+    background: 'var(--success-bg)',
+    color: 'var(--success-text)',
     borderRadius: '16px',
     fontSize: '12px',
     fontWeight: '600' as const,
-    boxShadow: '0 1px 3px rgba(22, 163, 74, 0.15)',
+    boxShadow: '0 1px 3px var(--shadow)',
   },
   amount: {
     fontSize: '18px',
     fontWeight: '700' as const,
-    color: '#16a34a',
+    color: 'var(--success-text)',
     whiteSpace: 'nowrap' as const,
-    textShadow: '0 1px 2px rgba(22, 163, 74, 0.1)',
   },
   date: {
     fontSize: '0.85rem',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   payerName: {
     fontSize: '0.95rem',
     fontWeight: '600',
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   noteText: {
     fontSize: '0.8rem',
-    color: '#888',
+    color: 'var(--text-tertiary)',
     fontStyle: 'italic',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -294,7 +293,7 @@ const styles = {
   noData: {
     textAlign: 'center' as const,
     padding: '20px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
   },
 };
 

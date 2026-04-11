@@ -10,6 +10,11 @@ export { default as TrackedExpensesWidget } from './TrackedExpensesWidget';
 export { default as CardsSummaryWidget } from './CardsSummaryWidget';
 export { default as QuickAddWidget } from './QuickAddWidget';
 export { default as PendingPaymentsWidget } from './PendingPaymentsWidget';
+export { default as SavingsGoalWidget } from './SavingsGoalWidget';
+export { default as MonthOverMonthWidget } from './MonthOverMonthWidget';
+export { default as TagCloudWidget } from './TagCloudWidget';
+export { default as UpcomingBillsWidget } from './UpcomingBillsWidget';
+export { default as InstallmentTrackerWidget } from './InstallmentTrackerWidget';
 export { default as ShowMoreButton } from './ShowMoreButton';
 
 // Export types

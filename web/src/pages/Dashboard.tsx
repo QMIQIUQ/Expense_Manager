@@ -2070,7 +2070,7 @@ const Dashboard: React.FC = () => {
                       width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"
                     >
-                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   {openLanguageSection && (
@@ -2133,7 +2133,7 @@ const Dashboard: React.FC = () => {
                       width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"
                     >
-                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   {openAppearanceSection && (
@@ -2225,7 +2225,7 @@ const Dashboard: React.FC = () => {
                       width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"
                     >
-                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   {openFeaturesSection && (
@@ -2307,7 +2307,7 @@ const Dashboard: React.FC = () => {
                       width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"
                     >
-                      <path d="M8 5l8 7-8 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   {openImportExportSection && (
@@ -2569,6 +2569,7 @@ const Dashboard: React.FC = () => {
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
             onNavigateToExpense={(expenseId) => {
+              setExpenseViewMode('all');
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
             }}
@@ -2576,6 +2577,9 @@ const Dashboard: React.FC = () => {
               setFocusScheduledPaymentId(scheduledPaymentId);
               setActiveTab('recurring');
             }}
+            onNavigateToIncomes={() => setActiveTab('incomes')}
+            onNavigateToBudgets={() => setActiveTab('budgets')}
+            onNavigateToPaymentMethods={() => setActiveTab('paymentMethods')}
             onCustomizingChange={setIsDashboardCustomizing}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}
@@ -2629,7 +2633,7 @@ const Dashboard: React.FC = () => {
               onAddIncome={handleAddIncome}
               onInlineUpdate={handleInlineUpdateIncome}
               onDeleteIncome={handleDeleteIncome}
-              onOpenExpenseById={(id) => { setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
+              onOpenExpenseById={(id) => { setExpenseViewMode('all'); setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
             />
           </Suspense>
         )}

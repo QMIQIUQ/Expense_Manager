@@ -13,7 +13,7 @@ const Home: React.FC = () => {
           to="/login"
           style={{
             padding: '15px 30px',
-            backgroundColor: '#4CAF50',
+            backgroundColor: 'var(--success-text)',
             color: 'white',
             textDecoration: 'none',
             borderRadius: '4px',
@@ -26,7 +26,7 @@ const Home: React.FC = () => {
           to="/register"
           style={{
             padding: '15px 30px',
-            backgroundColor: '#2196F3',
+            backgroundColor: 'var(--info-text)',
             color: 'white',
             textDecoration: 'none',
             borderRadius: '4px',
