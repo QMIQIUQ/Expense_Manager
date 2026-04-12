@@ -6,18 +6,21 @@ import { userSettingsService } from '../services/userSettingsService';
 import { useNotification } from '../contexts/NotificationContext';
 import { TimeFormat, DateFormat } from '../types';
 import PWAInstallButton from '../components/PWAInstallButton';
+import DateShortcutsSettings from '../components/settings/DateShortcutsSettings';
 import './UserProfile.css';
 
 const UserProfile: React.FC = () => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
   const { showNotification } = useNotification();
-  const { 
-    timeFormat: contextTimeFormat, 
+  const {
+    timeFormat: contextTimeFormat,
     dateFormat: contextDateFormat,
+    dateShortcuts,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
-    refreshSettings: _refreshSettings 
+    setDateShortcuts,
+    refreshSettings: _refreshSettings
   } = useUserSettings();
   void _refreshSettings; // Keep for potential future use
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
@@ -39,7 +42,7 @@ const UserProfile: React.FC = () => {
 
   const loadSettings = async () => {
     if (!currentUser) return;
-    
+
     try {
       const settings = await userSettingsService.getOrCreate(currentUser.uid);
       setBillingCycleDay(settings.billingCycleDay);
@@ -102,6 +105,17 @@ const UserProfile: React.FC = () => {
       showNotification('error', t('errorSavingSettings'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveDateShortcuts = async (shortcuts: typeof dateShortcuts) => {
+    try {
+      await setDateShortcuts(shortcuts);
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving date shortcuts:', error);
+      showNotification('error', t('errorSavingSettings'));
+      throw error; // Re-throw to let DateShortcutsSettings handle UI updates
     }
   };
 
@@ -289,6 +303,14 @@ const UserProfile: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Date Shortcuts Settings Card */}
+      {!loading && (
+        <DateShortcutsSettings
+          initialShortcuts={dateShortcuts}
+          onSave={handleSaveDateShortcuts}
+        />
+      )}
 
       {/* PWA Installation Card */}
       <div className="profile-card">

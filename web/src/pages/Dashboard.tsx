@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
-  const { dateFormat, timeFormat } = useUserSettings();
+  const { dateFormat, timeFormat, dateShortcuts } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -2841,6 +2841,7 @@ const Dashboard: React.FC = () => {
         onClose={() => setShowRadialDateMenu(false)}
         onSelectDate={handleRadialDateSelect}
         position={radialMenuPosition}
+        customShortcuts={dateShortcuts}
       />
 
       {/* Add Expense Bottom Sheet - for all tabs except expenses */}

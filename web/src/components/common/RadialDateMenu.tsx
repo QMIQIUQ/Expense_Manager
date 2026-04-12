@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { DateShortcut, DateShortcutType } from '../../types';
 
 interface RadialDateMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectDate: (date: string) => void;
   position: { x: number; y: number };
+  customShortcuts?: DateShortcut[]; // Optional custom shortcuts
 }
 
 interface DateOption {
@@ -13,7 +15,20 @@ interface DateOption {
   date: string;
   angle: number;
   icon: string;
+  type: DateShortcutType;
 }
+
+// Default shortcuts configuration
+const DEFAULT_SHORTCUTS: DateShortcut[] = [
+  { type: 'today', enabled: true, angle: 0 },
+  { type: 'yesterday', enabled: true, angle: 45 },
+  { type: '3days', enabled: true, angle: 90 },
+  { type: 'lastWeek', enabled: true, angle: 135 },
+  { type: 'lastMonth', enabled: true, angle: 180 },
+  { type: 'monthStart', enabled: true, angle: 225 },
+  { type: 'lastMonthStart', enabled: true, angle: 270 },
+  { type: 'yearStart', enabled: true, angle: 315 },
+];
 
 /**
  * RadialDateMenu - Joystick-like radial menu for quick date selection
@@ -24,11 +39,15 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
   onClose,
   onSelectDate,
   position,
+  customShortcuts,
 }) => {
   const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  // Generate date options
+  // Get shortcut configuration (use custom or default)
+  const shortcuts = customShortcuts || DEFAULT_SHORTCUTS;
+
+  // Generate date options based on configuration
   const getDateOptions = (): DateOption[] => {
     const today = new Date();
     const options: DateOption[] = [];
@@ -41,82 +60,74 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
       return `${year}-${month}-${day}`;
     };
 
-    // Today (top - 0°)
-    options.push({
-      label: t('today') || 'Today',
-      date: formatDate(today),
-      angle: 0,
-      icon: '📅',
-    });
+    // Filter enabled shortcuts and create date options
+    shortcuts
+      .filter(shortcut => shortcut.enabled)
+      .forEach((shortcut) => {
+        let date: Date;
+        let label: string;
+        let icon: string;
 
-    // Yesterday (right - 45°)
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    options.push({
-      label: t('yesterday') || 'Yesterday',
-      date: formatDate(yesterday),
-      angle: 45,
-      icon: '⏮️',
-    });
+        switch (shortcut.type) {
+          case 'today':
+            date = today;
+            label = t('today') || 'Today';
+            icon = '📅';
+            break;
+          case 'yesterday':
+            date = new Date(today);
+            date.setDate(today.getDate() - 1);
+            label = t('yesterday') || 'Yesterday';
+            icon = '⏮️';
+            break;
+          case '3days':
+            date = new Date(today);
+            date.setDate(today.getDate() - 3);
+            label = '3 ' + (t('daysAgo') || 'days ago');
+            icon = '📆';
+            break;
+          case 'lastWeek':
+            date = new Date(today);
+            date.setDate(today.getDate() - 7);
+            label = t('lastWeek') || 'Last week';
+            icon = '📋';
+            break;
+          case 'lastMonth':
+            date = new Date(today);
+            date.setMonth(today.getMonth() - 1);
+            label = t('lastMonth') || 'Last month';
+            icon = '📊';
+            break;
+          case 'monthStart':
+            date = new Date(today.getFullYear(), today.getMonth(), 1);
+            label = t('monthStart') || 'Month start';
+            icon = '🗓️';
+            break;
+          case 'lastMonthStart':
+            date = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            label = t('lastMonthStart') || 'Last month start';
+            icon = '📖';
+            break;
+          case 'yearStart':
+            date = new Date(today.getFullYear(), 0, 1);
+            label = t('yearStart') || 'Year start';
+            icon = '🎯';
+            break;
+          default:
+            return;
+        }
 
-    // 3 days ago (bottom-right - 90°)
-    const threeDaysAgo = new Date(today);
-    threeDaysAgo.setDate(today.getDate() - 3);
-    options.push({
-      label: '3 ' + (t('daysAgo') || 'days ago'),
-      date: formatDate(threeDaysAgo),
-      angle: 90,
-      icon: '📆',
-    });
+        options.push({
+          label,
+          date: formatDate(date),
+          angle: shortcut.angle ?? 0,
+          icon,
+          type: shortcut.type,
+        });
+      });
 
-    // Last week (bottom - 135°)
-    const lastWeek = new Date(today);
-    lastWeek.setDate(today.getDate() - 7);
-    options.push({
-      label: t('lastWeek') || 'Last week',
-      date: formatDate(lastWeek),
-      angle: 135,
-      icon: '📋',
-    });
-
-    // Last month (bottom-left - 180°)
-    const lastMonth = new Date(today);
-    lastMonth.setMonth(today.getMonth() - 1);
-    options.push({
-      label: t('lastMonth') || 'Last month',
-      date: formatDate(lastMonth),
-      angle: 180,
-      icon: '📊',
-    });
-
-    // First day of current month (left - 225°)
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    options.push({
-      label: t('monthStart') || 'Month start',
-      date: formatDate(firstDayOfMonth),
-      angle: 225,
-      icon: '🗓️',
-    });
-
-    // First day of last month (top-left - 270°)
-    const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    options.push({
-      label: t('lastMonthStart') || 'Last month start',
-      date: formatDate(firstDayLastMonth),
-      angle: 270,
-      icon: '📖',
-    });
-
-    // First day of year (top-right - 315°)
-    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
-    options.push({
-      label: t('yearStart') || 'Year start',
-      date: formatDate(firstDayOfYear),
-      angle: 315,
-      icon: '🎯',
-    });
-
-    return options;
+    // Sort by angle to maintain consistent visual ordering
+    return options.sort((a, b) => a.angle - b.angle);
   };
 
   const dateOptions = getDateOptions();
@@ -315,3 +326,4 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
 };
 
 export default RadialDateMenu;
+export { DEFAULT_SHORTCUTS };

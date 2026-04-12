@@ -6,6 +6,16 @@ export type TimeFormat = '12h' | '24h';
 // Date format type
 export type DateFormat = 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | 'MMM DD, YYYY' | 'DD MMM YYYY';
 
+// Date shortcut types for radial menu
+export type DateShortcutType = 'today' | 'yesterday' | '3days' | 'lastWeek' | 'lastMonth' | 'monthStart' | 'lastMonthStart' | 'yearStart';
+
+// Date shortcut configuration
+export interface DateShortcut {
+  type: DateShortcutType;
+  enabled: boolean;
+  angle?: number; // Optional custom angle position (0-315)
+}
+
 // User settings
 export interface UserSettings {
   id?: string;
@@ -14,6 +24,7 @@ export interface UserSettings {
   timeFormat?: TimeFormat; // 12-hour or 24-hour format
   dateFormat?: DateFormat; // Date display format
   useStepByStepForm?: boolean; // Enable multi-step expense entry form
+  dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
   createdAt: Date;
   updatedAt: Date;
 }
