@@ -2024,7 +2024,11 @@ const Dashboard: React.FC = () => {
 
   // Handle regular click on FAB
   const handleFabClick = () => {
-    setShowAddExpenseForm(true);
+    if (activeTab === 'expenses') {
+      setShowAddSheet(true);
+    } else {
+      setShowAddExpenseForm(true);
+    }
   };
 
   // Handle date selection from radial menu
@@ -2032,8 +2036,12 @@ const Dashboard: React.FC = () => {
     setShowRadialDateMenu(false);
     // Set the initial date for the expense form
     setExpenseSelectedDate(date);
-    // Open the expense form with the selected date
-    setShowAddExpenseForm(true);
+    // Open the appropriate expense form based on active tab
+    if (activeTab === 'expenses') {
+      setShowAddSheet(true);
+    } else {
+      setShowAddExpenseForm(true);
+    }
   };
 
   // Configure long press hook
@@ -2893,8 +2901,8 @@ const Dashboard: React.FC = () => {
       {/* Floating Add button visible on Expenses tab (responsive like others) */}
       {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
         <button
+          {...longPressHandlers}
           aria-label={t('addNewExpense')}
-          onClick={() => setShowAddSheet(true)}
           style={{
             ...styles.floatingButton,
             width: isMobile ? '56px' : 'auto',
