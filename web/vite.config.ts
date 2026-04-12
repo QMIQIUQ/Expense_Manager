@@ -24,6 +24,9 @@ export default defineConfig(({ command }) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
           id: '/Expense_Manager/',
@@ -86,6 +89,7 @@ export default defineConfig(({ command }) => {
           ],
         } as unknown as ManifestOptions,
         workbox: {
+          mode: 'production',
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {
