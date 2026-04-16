@@ -1,0 +1,53 @@
+version: 1
+repository: QMIQIUQ/Expense_Manager
+
+bridge:
+  default_label: copilot-ready
+  task_label: agent-task
+  cloud_label: cloud-agent
+  branch_prefix: copilot/
+  allowed_dispatch_events:
+    - workflow_dispatch
+    - repository_dispatch
+    - issue_comment
+
+agents:
+  my-agent:
+    file: .github/agents/my-agent.agent.md
+    role: backend-service implementation
+    aliases:
+      - backend
+      - service
+      - data
+    labels:
+      - agent:my-agent
+      - agent-task
+      - copilot-ready
+  uxui-agent:
+    file: .github/agents/UXUI.agent.md
+    role: ui-ux implementation
+    aliases:
+      - ui
+      - ux
+      - frontend
+    labels:
+      - agent:uxui-agent
+      - agent-task
+      - copilot-ready
+  expense-manager-i18n-agent:
+    file: .github/agents/DevAgent.agent.md
+    role: review-guardrail
+    aliases:
+      - guard
+      - review
+      - qa
+    labels:
+      - agent:expense-manager-i18n-agent
+      - agent-task
+      - copilot-ready
+
+reporting:
+  summary_comment: true
+  step_summary: true
+  issue_linking: true
+  preview_url_hint: true
