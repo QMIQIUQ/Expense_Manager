@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseLongPressOptions {
   onLongPress: (event: React.TouchEvent | React.MouseEvent) => void;
@@ -12,6 +12,8 @@ interface LongPressHandlers {
   onMouseLeave: (event: React.MouseEvent) => void;
   onTouchStart: (event: React.TouchEvent) => void;
   onTouchEnd: (event: React.TouchEvent) => void;
+  onTouchCancel: (event: React.TouchEvent) => void;
+  onTouchMove: (event: React.TouchEvent) => void;
 }
 
 /**
@@ -25,8 +27,17 @@ interface LongPressHandlers {
 export const useLongPress = (options: UseLongPressOptions): LongPressHandlers => {
   const { onLongPress, onClick, delay = 500 } = options;
   const [longPressTriggered, setLongPressTriggered] = useState(false);
-  const timeout = useRef<NodeJS.Timeout>();
+  const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const target = useRef<EventTarget>();
+
+  // Clear the timer on unmount to avoid setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (timeout.current) {
+        clearTimeout(timeout.current);
+      }
+    };
+  }, []);
 
   const start = useCallback(
     (event: React.TouchEvent | React.MouseEvent) => {
@@ -44,7 +55,10 @@ export const useLongPress = (options: UseLongPressOptions): LongPressHandlers =>
 
   const clear = useCallback(
     (event: React.TouchEvent | React.MouseEvent, shouldTriggerClick = true) => {
-      timeout.current && clearTimeout(timeout.current);
+      if (timeout.current) {
+        clearTimeout(timeout.current);
+        timeout.current = undefined;
+      }
 
       if (shouldTriggerClick && !longPressTriggered && onClick) {
         onClick(event);
@@ -56,11 +70,22 @@ export const useLongPress = (options: UseLongPressOptions): LongPressHandlers =>
     [onClick, longPressTriggered]
   );
 
+  const cancel = useCallback(() => {
+    if (timeout.current) {
+      clearTimeout(timeout.current);
+      timeout.current = undefined;
+    }
+    setLongPressTriggered(false);
+    target.current = undefined;
+  }, []);
+
   return {
     onMouseDown: (e) => start(e),
     onMouseUp: (e) => clear(e),
     onMouseLeave: (e) => clear(e, false),
     onTouchStart: (e) => start(e),
     onTouchEnd: (e) => clear(e),
+    onTouchCancel: () => cancel(),
+    onTouchMove: () => cancel(),
   };
 };

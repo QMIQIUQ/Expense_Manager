@@ -2849,6 +2849,7 @@ const Dashboard: React.FC = () => {
         <div style={styles.floatingButtonGroup}>
           <button
             {...longPressHandlers}
+            onClick={() => openExpenseEntry()}
             style={{
               ...styles.floatingButton,
               width: isMobile ? '56px' : 'auto',
@@ -2966,6 +2967,7 @@ const Dashboard: React.FC = () => {
         <div style={styles.floatingButtonGroup}>
           <button
             {...longPressHandlers}
+            onClick={() => openExpenseEntry()}
             aria-label={addExpenseLabel}
             style={{
               ...styles.floatingButton,

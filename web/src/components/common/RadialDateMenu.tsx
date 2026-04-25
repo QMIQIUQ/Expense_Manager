@@ -42,7 +42,7 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
   customShortcuts,
 }) => {
   const { t } = useLanguage();
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<DateShortcutType | null>(null);
 
   // Get shortcut configuration (use custom or default)
   const shortcuts = customShortcuts || DEFAULT_SHORTCUTS;
@@ -92,12 +92,19 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
             label = t('lastWeek') || 'Last week';
             icon = '📋';
             break;
-          case 'lastMonth':
-            date = new Date(today);
-            date.setMonth(today.getMonth() - 1);
+          case 'lastMonth': {
+            // Safely subtract one month: use the 1st of last month to avoid day-overflow
+            // (e.g., Mar 31 → subtracting a month naively gives Mar 2/3 due to Feb length)
+            const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            // Use the same day of month if it exists, otherwise clamp to last day of that month
+            const targetDay = today.getDate();
+            const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            lastMonthDate.setDate(Math.min(targetDay, lastDayOfLastMonth));
+            date = lastMonthDate;
             label = t('lastMonth') || 'Last month';
             icon = '📊';
             break;
+          }
           case 'monthStart':
             date = new Date(today.getFullYear(), today.getMonth(), 1);
             label = t('monthStart') || 'Month start';
@@ -203,20 +210,20 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
         </div>
 
         {/* Radial options */}
-        {dateOptions.map((option, index) => {
+        {dateOptions.map((option) => {
           const angleRad = (option.angle * Math.PI) / 180;
           const x = Math.sin(angleRad) * radius;
           const y = -Math.cos(angleRad) * radius;
 
           return (
             <button
-              key={index}
+              key={option.type}
               onClick={() => {
                 onSelectDate(option.date);
                 onClose();
               }}
-              onMouseEnter={() => setSelectedIndex(index)}
-              onMouseLeave={() => setSelectedIndex(null)}
+              onMouseEnter={() => setSelectedType(option.type)}
+              onMouseLeave={() => setSelectedType(null)}
               style={{
                 position: 'absolute',
                 left: '50%',
@@ -225,10 +232,10 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
                 width: '80px',
                 height: '80px',
                 borderRadius: '50%',
-                background: selectedIndex === index
+                background: selectedType === option.type
                   ? 'var(--tab-active-bg)'
                   : 'var(--card-bg)',
-                border: `2px solid ${selectedIndex === index ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                border: `2px solid ${selectedType === option.type ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 display: 'flex',
@@ -238,7 +245,7 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
                 fontSize: '10px',
                 fontWeight: 600,
                 gap: '4px',
-                boxShadow: selectedIndex === index
+                boxShadow: selectedType === option.type
                   ? '0 8px 20px rgba(124, 58, 237, 0.4)'
                   : '0 4px 12px rgba(0, 0, 0, 0.2)',
                 transition: 'all 0.2s ease',
@@ -276,7 +283,7 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
             zIndex: 0,
           }}
         >
-          {dateOptions.map((option, index) => {
+          {dateOptions.map((option) => {
             const angleRad = (option.angle * Math.PI) / 180;
             const x1 = radius * 1.25;
             const y1 = radius * 1.25;
@@ -287,13 +294,13 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
 
             return (
               <line
-                key={index}
+                key={option.type}
                 x1={x2}
                 y1={y2}
                 x2={x3}
                 y2={y3}
-                stroke={selectedIndex === index ? 'var(--accent-primary)' : 'var(--border-color)'}
-                strokeWidth={selectedIndex === index ? '2' : '1'}
+                stroke={selectedType === option.type ? 'var(--accent-primary)' : 'var(--border-color)'}
+                strokeWidth={selectedType === option.type ? '2' : '1'}
                 opacity={0.3}
               />
             );

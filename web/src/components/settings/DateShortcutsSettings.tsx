@@ -149,12 +149,14 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
               }}>
                 {label}
               </span>
-              <span style={{
-                color: 'var(--text-tertiary)',
-                fontSize: '12px',
-              }}>
-                {shortcut.angle}°
-              </span>
+              {shortcut.angle != null && (
+                <span style={{
+                  color: 'var(--text-tertiary)',
+                  fontSize: '12px',
+                }}>
+                  {shortcut.angle}°
+                </span>
+              )}
             </label>
           );
         })}

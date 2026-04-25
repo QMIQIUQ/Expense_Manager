@@ -102,14 +102,17 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const setDateShortcuts = async (shortcuts: DateShortcut[]) => {
     if (!currentUser || !settings) return;
 
+    // Capture previous value before optimistic update to allow accurate rollback
+    const previousShortcuts = settings.dateShortcuts;
+
     // Optimistic update
     setSettings(prev => prev ? { ...prev, dateShortcuts: shortcuts } : null);
 
     try {
       await userSettingsService.update(currentUser.uid, { dateShortcuts: shortcuts });
     } catch (error) {
-      // Rollback on error
-      setSettings(prev => prev ? { ...prev, dateShortcuts: settings.dateShortcuts } : null);
+      // Rollback to the captured previous value
+      setSettings(prev => prev ? { ...prev, dateShortcuts: previousShortcuts } : null);
       console.error('Error updating date shortcuts:', error);
       throw error;
     }

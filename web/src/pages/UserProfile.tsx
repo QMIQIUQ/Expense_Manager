@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { useNotification } from '../contexts/NotificationContext';
-import { TimeFormat, DateFormat } from '../types';
+import { TimeFormat, DateFormat, DateShortcut } from '../types';
 import PWAInstallButton from '../components/PWAInstallButton';
 import DateShortcutsSettings from '../components/settings/DateShortcutsSettings';
 import './UserProfile.css';
@@ -108,7 +108,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  const handleSaveDateShortcuts = async (shortcuts: typeof dateShortcuts) => {
+  const handleSaveDateShortcuts = async (shortcuts: DateShortcut[]) => {
     try {
       await setDateShortcuts(shortcuts);
       showNotification('success', t('settingsSaved'));
