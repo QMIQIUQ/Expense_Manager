@@ -74,7 +74,7 @@ const normalizeText = (value: string): string => value
   .split('')
   .map((char) => {
     const code = char.charCodeAt(0);
-    if (code >= 0xff10 && code <= 0xff19) return String(code - 0xff10);
+    if (code >= 0xff10 && code <= 0xff19) return String.fromCharCode(code - 0xff10 + 0x30);
     if (char === '，') return ',';
     if (char === '．' || char === '。') return '.';
     if (char === '：') return ':';
@@ -144,7 +144,7 @@ const extractAmount = (lines: string[]): number | undefined => {
 const extractDate = (lines: string[]): string | undefined => {
   const patterns = [
     /(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?/,
-    /(\d{2,3})[-/](\d{1,2})[-/](\d{1,2})/,
+    /(\d{3})[-/](\d{1,2})[-/](\d{1,2})/,
     /(\d{1,2})[-/](\d{1,2})[-/](\d{4})/,
   ];
 
@@ -160,7 +160,7 @@ const extractDate = (lines: string[]): string | undefined => {
 
       if (pattern === patterns[1]) {
         const [, rocYear, month, day] = match;
-        const year = Number(rocYear) + (rocYear.length <= 3 ? 1911 : 0);
+        const year = Number(rocYear) + 1911;
         const parsed = formatDateParts(year, Number(month), Number(day));
         if (parsed) return parsed;
         continue;

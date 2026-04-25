@@ -55,4 +55,26 @@ TOTAL NT$120
     expect(result.amount).toBe(120);
     expect(result.merchant).toBe('咖啡館');
   });
+
+  it('does not treat ambiguous 2-digit years as ROC dates', () => {
+    const result = parseReceiptText(`
+STORE NAME
+Date 26/04/25
+TOTAL 12.34
+`);
+
+    expect(result.date).toBeUndefined();
+    expect(result.amount).toBe(12.34);
+  });
+
+  it('normalizes full-width receipt digits before parsing', () => {
+    const result = parseReceiptText(`
+便利店
+日期：２０２６年４月２５日
+合計：＄１２０
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(120);
+  });
 });
