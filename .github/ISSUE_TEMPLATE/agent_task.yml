@@ -1,0 +1,69 @@
+name: Cloud agent task
+description: Standard task template for GitHub cloud agents and bridge-triggered work
+labels:
+  - agent-task
+  - copilot-ready
+body:
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Target agent
+      description: Which custom agent should handle this task?
+      options:
+        - my-agent
+        - uxui-agent
+        - expense-manager-i18n-agent
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Task title
+      placeholder: Add voice expense submission flow
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Describe what should be built or fixed
+      placeholder: Implement a voice-to-expense flow that parses text, confirms the expense, and writes to Firestore.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List the conditions that must pass before the task is done
+      placeholder: |
+        - Build passes
+        - Relevant tests pass
+        - PR includes a preview URL if UI changes
+        - No Firestore rules regressions
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / constraints
+      description: Extra repo, UX, security, or rollout constraints
+      placeholder: Use the existing expenseService, preserve optimistic updates, and keep user-visible copy localized.
+    validations:
+      required: false
+  - type: input
+    id: branch
+    attributes:
+      label: Suggested branch name
+      placeholder: copilot/voice-expense
+    validations:
+      required: false
+  - type: textarea
+    id: trigger_comment
+    attributes:
+      label: Optional trigger comment
+      description: If you want the bridge workflow to post a custom comment, put it here
+      placeholder: |
+        @copilot
+        Please implement this task using the custom agent instructions.
+    validations:
+      required: false

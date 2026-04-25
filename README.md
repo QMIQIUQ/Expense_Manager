@@ -122,6 +122,9 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 **[See DATE_HANDLING_REFACTORING.md for date/time utility documentation →](docs/DATE_HANDLING_REFACTORING.md)**
 
 **[See docs/PWA_GUIDE.md for Progressive Web App installation and features →](docs/PWA_GUIDE.md)**
+**[See docs/AGENT_OPERATIONS.md for the chat-driven GitHub cloud-agent workflow →](docs/AGENT_OPERATIONS.md)**
+
+**Workflow support:** manual dispatch, repository dispatch, new issue auto-routing, and report snapshots.
 
 ## 🚧 Future Enhancements
 

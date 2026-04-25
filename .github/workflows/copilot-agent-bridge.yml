@@ -1,0 +1,338 @@
+name: Copilot Cloud Agent Bridge
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "prepare = create/label an issue; report = post a progress summary"
+        required: true
+        default: prepare
+        type: choice
+        options:
+          - prepare
+          - report
+      agent:
+        description: "Target custom agent"
+        required: true
+        default: my-agent
+        type: choice
+        options:
+          - my-agent
+          - uxui-agent
+          - expense-manager-i18n-agent
+      title:
+        description: "Task or issue title"
+        required: false
+        type: string
+      body:
+        description: "Task description / acceptance criteria"
+        required: false
+        type: string
+      issue_number:
+        description: "Existing issue number to update"
+        required: false
+        type: string
+      pr_number:
+        description: "Existing PR number to update"
+        required: false
+        type: string
+      trigger_comment:
+        description: "Custom trigger comment"
+        required: false
+        type: string
+  repository_dispatch:
+    types:
+      - cloud_agent_request
+  issues:
+    types:
+      - opened
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update the task container
+        id: bridge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const agentFiles = {
+              'my-agent': '.github/agents/my-agent.agent.md',
+              'uxui-agent': '.github/agents/UXUI.agent.md',
+              'expense-manager-i18n-agent': '.github/agents/DevAgent.agent.md',
+            };
+            const agentLabels = {
+              'my-agent': 'agent:my-agent',
+              'uxui-agent': 'agent:uxui-agent',
+              'expense-manager-i18n-agent': 'agent:expense-manager-i18n-agent',
+            };
+            const labelMeta = {
+              'agent-task': { color: '6f42c1', description: 'Task tracked by the cloud-agent bridge' },
+              'copilot-ready': { color: '1d76db', description: 'Ready for a cloud agent trigger' },
+              'cloud-agent': { color: '0e8a16', description: 'Managed through the GitHub cloud-agent bridge' },
+              'agent:my-agent': { color: 'bfdadc', description: 'Backend/service implementation tasks' },
+              'agent:uxui-agent': { color: 'fbca04', description: 'UI/UX implementation tasks' },
+              'agent:expense-manager-i18n-agent': { color: 'd4c5f9', description: 'Review and guardrail tasks' },
+            };
+
+            const slugify = (value) => (value || 'task')
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+              .slice(0, 60) || 'task';
+
+            const safeText = (value) => (value || '').toString().trim();
+
+            async function ensureLabel(name) {
+              const meta = labelMeta[name] || { color: 'ededed', description: name };
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch {
+                await github.rest.issues.createLabel({ owner, repo, name, color: meta.color, description: meta.description });
+              }
+            }
+
+            for (const name of ['agent-task', 'copilot-ready', 'cloud-agent', ...Object.values(agentLabels)]) {
+              await ensureLabel(name);
+            }
+
+            const eventName = context.eventName;
+            const event = context.payload;
+
+            const inputs = eventName === 'workflow_dispatch' ? (event.inputs || {}) : {};
+            const dispatch = eventName === 'repository_dispatch' ? (event.client_payload || {}) : {};
+            const commentEvent = eventName === 'issue_comment' ? event.comment : null;
+            const issueEvent = eventName === 'issues' ? event.issue : null;
+
+            let action = 'prepare';
+            let agent = 'my-agent';
+            let title = '';
+            let body = '';
+            let issueNumber = '';
+            let prNumber = '';
+            let triggerComment = '';
+
+            if (eventName === 'workflow_dispatch') {
+              action = inputs.action || 'prepare';
+              agent = inputs.agent || 'my-agent';
+              title = inputs.title || '';
+              body = inputs.body || '';
+              issueNumber = inputs.issue_number || '';
+              prNumber = inputs.pr_number || '';
+              triggerComment = inputs.trigger_comment || '';
+            } else if (eventName === 'repository_dispatch') {
+              action = dispatch.action || 'prepare';
+              agent = dispatch.agent || 'my-agent';
+              title = dispatch.title || '';
+              body = dispatch.body || dispatch.goal || '';
+              issueNumber = String(dispatch.issue_number || '');
+              prNumber = String(dispatch.pr_number || '');
+              triggerComment = dispatch.trigger_comment || '';
+            } else if (eventName === 'issue_comment') {
+              const text = (commentEvent && commentEvent.body) ? commentEvent.body.trim() : '';
+              const match = text.match(/^\/agent(?:\s+([^\s]+))?(?:\s+([\s\S]*))?$/i);
+              if (!match) {
+                core.info('Comment does not start with /agent — skipping.');
+                return;
+              }
+              agent = match[1] || 'my-agent';
+              action = 'prepare';
+              issueNumber = String(event.issue?.number || '');
+              title = event.issue?.title || '';
+              body = match[2] || '';
+              triggerComment = '';
+            } else if (eventName === 'issues') {
+              action = 'prepare';
+              agent = issueEvent?.labels?.find((l) => agentLabels[l.name])?.name?.split(':')[1] || 'my-agent';
+              issueNumber = String(issueEvent?.number || '');
+              title = issueEvent?.title || '';
+              body = issueEvent?.body || '';
+              triggerComment = [
+                '@copilot',
+                '',
+                `Please use the custom agent instructions in \`${agentFiles[agent]}\` for this issue.`,
+                '',
+                '### Task',
+                title,
+                '',
+                '### Body',
+                body || 'No body provided.',
+                '',
+                '### Routing',
+                `- agent: \`${agent}\``,
+                `- label: \`${agentLabels[agent]}\``,
+                '- bridge label: `copilot-ready`',
+                '',
+                '### Expected output',
+                '- changed files',
+                '- tests run',
+                '- risk notes',
+                '- next step or PR link',
+              ].join('\n');
+            }
+
+            if (!agentFiles[agent]) {
+              throw new Error(`Unsupported agent: ${agent}`);
+            }
+
+            const agentFile = agentFiles[agent];
+            const agentLabel = agentLabels[agent];
+            const firstLine = safeText(body).split(/\r?\n/)[0] || 'new task';
+            const taskTitle = title || `[${agent}] ${slugify(firstLine).replace(/-/g, ' ')}`;
+            const taskBody = safeText(body) || [
+              '### Goal',
+              'Describe the change you want the cloud agent to make.',
+              '',
+              '### Acceptance Criteria',
+              '- Build passes',
+              '- Relevant tests pass',
+              '- No regressions in the touched area',
+              '',
+              '### Agent',
+              `Use the instructions in \`${agentFile}\``,
+            ].join('\n');
+
+            if (action === 'report') {
+              const target = Number(issueNumber || prNumber || 0);
+              if (!target) {
+                throw new Error('report mode requires issue_number or pr_number');
+              }
+
+              const issue = await github.rest.issues.get({ owner, repo, issue_number: target }).catch(() => null);
+              const isPR = Boolean(prNumber || issue?.data?.pull_request);
+              const comments = await github.rest.issues.listComments({ owner, repo, issue_number: target, per_page: 20 });
+              const latestComments = comments.data.slice(-5).map((c) => `- ${c.user?.login}: ${c.body?.slice(0, 220) || ''}`).join('\n') || '- none';
+              let extra = [];
+
+              if (isPR) {
+                const pr = await github.rest.pulls.get({ owner, repo, pull_number: target });
+                const files = await github.rest.pulls.listFiles({ owner, repo, pull_number: target, per_page: 20 });
+                extra = [
+                  `PR: #${target}`,
+                  `Title: ${pr.data.title}`,
+                  `State: ${pr.data.state}`,
+                  `Draft: ${pr.data.draft ? 'yes' : 'no'}`,
+                  `Head: ${pr.data.head.ref} @ ${pr.data.head.sha.slice(0, 7)}`,
+                  `Base: ${pr.data.base.ref}`,
+                  `Changed files: ${files.data.length}`,
+                  '',
+                  'Recent comments:',
+                  latestComments,
+                ];
+              } else {
+                extra = [
+                  `Issue: #${target}`,
+                  `Title: ${issue?.data?.title || 'unknown'}`,
+                  `State: ${issue?.data?.state || 'unknown'}`,
+                  `Comments: ${comments.data.length}`,
+                  '',
+                  'Recent comments:',
+                  latestComments,
+                ];
+              }
+
+              const report = [
+                `Action: report`,
+                `Agent: ${agent}`,
+                `Target: #${target}`,
+                `Agent file: ${agentFile}`,
+                '',
+                ...extra,
+                '',
+                'Use this summary in chat to continue work without opening GitHub.',
+              ].join('\n');
+
+              await core.summary.addHeading('Copilot Cloud Agent Bridge Report').addRaw(report).write();
+              core.setOutput('report', report);
+              core.setOutput('target_number', String(target));
+              return;
+            }
+
+            if (action === 'prepare' && !issueNumber && !prNumber) {
+              const issue = await github.rest.issues.create({
+                owner,
+                repo,
+                title: taskTitle,
+                body: [
+                  taskBody,
+                  '',
+                  '---',
+                  'This task was created by the chat-driven cloud-agent bridge.',
+                  `Target agent: \`${agent}\``,
+                  `Agent instructions: \`${agentFile}\``,
+                ].join('\n'),
+                labels: ['agent-task', 'copilot-ready', 'cloud-agent', agentLabel],
+              });
+              issueNumber = String(issue.data.number);
+            } else if (issueNumber || prNumber) {
+              issueNumber = issueNumber || prNumber;
+            }
+
+            const targetNumber = Number(issueNumber || prNumber || 0);
+            if (!targetNumber) {
+              throw new Error('No issue or PR number available for bridge comment.');
+            }
+
+            const commentBody = triggerComment || [
+              '@copilot',
+              '',
+              `Please use the custom agent instructions in \`${agentFile}\` for this task.`,
+              '',
+              '### Task',
+              taskTitle,
+              '',
+              '### Body',
+              taskBody,
+              '',
+              '### Routing',
+              `- agent: \`${agent}\``,
+              `- label: \`${agentLabel}\``,
+              '- bridge label: `copilot-ready`',
+              '',
+              '### Expected output',
+              '- changed files',
+              '- tests run',
+              '- risk notes',
+              '- next step or PR link',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: targetNumber,
+              body: commentBody,
+            });
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: targetNumber,
+              labels: ['agent-task', 'copilot-ready', 'cloud-agent', agentLabel],
+            }).catch(() => {});
+
+            const report = [
+              `Action: ${action}`,
+              `Agent: ${agent}`,
+              `Target: #${targetNumber}`,
+              `Agent file: ${agentFile}`,
+              `Title: ${taskTitle}`,
+              '',
+              'The bridge created the issue/comment and left the task in a cloud-agent-friendly format.',
+            ].join('\n');
+
+            core.setOutput('agent', agent);
+            core.setOutput('issue_number', String(targetNumber));
+            core.setOutput('agent_file', agentFile);
+            core.setOutput('comment_body', commentBody);
+            core.setOutput('report', report);
+            await core.summary.addHeading('Copilot Cloud Agent Bridge').addRaw(report).write();

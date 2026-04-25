@@ -30,6 +30,7 @@ import CustomizableDashboard from '../components/dashboard/CustomizableDashboard
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
 import { useLongPress } from '../hooks/useLongPress';
+import { PlusIcon, UploadIcon } from '../components/icons';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
@@ -93,6 +94,7 @@ const Dashboard: React.FC = () => {
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
+  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -135,6 +137,11 @@ const Dashboard: React.FC = () => {
   // Radial date menu state for long-press on FAB
   const [showRadialDateMenu, setShowRadialDateMenu] = useState(false);
   const [radialMenuPosition, setRadialMenuPosition] = useState({ x: 0, y: 0 });
+  const receiptInputRef = useRef<HTMLInputElement | null>(null);
+  const isEnglish = language === 'en';
+  const isSimplifiedChinese = language === 'zh-CN';
+  const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
+  const addExpenseLabel = t('addNewExpense');
 
   // Filter expenses based on DateNavigator selection
   const filteredExpensesForDisplay = useMemo(() => {
@@ -162,6 +169,40 @@ const Dashboard: React.FC = () => {
     return Math.round(filteredExpensesForDisplay.reduce((sum, exp) => sum + exp.amount, 0) * 100);
   }, [filteredExpensesForDisplay]);
   //#endregion
+
+  const openExpenseEntry = (options?: { withReceipt?: boolean }) => {
+    if (options?.withReceipt) {
+      receiptInputRef.current?.click();
+      return;
+    }
+
+    setPendingReceiptFile(null);
+    if (activeTab === 'expenses') {
+      setShowAddSheet(true);
+    } else {
+      setShowAddExpenseForm(true);
+    }
+  };
+
+  const closeExpenseEntry = () => {
+    setPendingReceiptFile(null);
+    setShowAddExpenseForm(false);
+    setShowAddSheet(false);
+  };
+
+  const handleReceiptEntrySelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+
+    setPendingReceiptFile(file);
+    if (activeTab === 'expenses') {
+      setShowAddSheet(true);
+    } else {
+      setShowAddExpenseForm(true);
+    }
+
+    event.target.value = '';
+  };
   
   //#region Effects
   // Track offline queue count
@@ -197,14 +238,14 @@ const Dashboard: React.FC = () => {
       // Phase 1: Load cached data first (instant display)
       console.log('Phase 1: Loading cached data...');
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
-        dataService.getDataWithRevalidate('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
-        dataService.getDataWithRevalidate('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
-        dataService.getDataWithRevalidate('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
-        dataService.getDataWithRevalidate('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
-        dataService.getDataWithRevalidate('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
-        dataService.getDataWithRevalidate('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
-        dataService.getDataWithRevalidate('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
-        dataService.getDataWithRevalidate('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), setScheduledPaymentRecords),
+        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
+        dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
+        dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
+        dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
+        dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
+        dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
+        dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
+        dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), setScheduledPaymentRecords),
       ]);
 
       // Set initial data (from cache or fresh)
@@ -2024,11 +2065,7 @@ const Dashboard: React.FC = () => {
 
   // Handle regular click on FAB
   const handleFabClick = () => {
-    if (activeTab === 'expenses') {
-      setShowAddSheet(true);
-    } else {
-      setShowAddExpenseForm(true);
-    }
+    openExpenseEntry();
   };
 
   // Handle date selection from radial menu
@@ -2055,7 +2092,15 @@ const Dashboard: React.FC = () => {
   //#region Render
   return (
     <>
-    <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
+      <input
+        ref={receiptInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptEntrySelected}
+        style={{ display: 'none' }}
+      />
+      <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
           <span className="header-logo">💰</span>
@@ -2615,7 +2660,7 @@ const Dashboard: React.FC = () => {
             banks={banks}
             billingCycleDay={billingCycleDay}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
-            onQuickAdd={() => setShowAddExpenseForm(true)}
+            onQuickAdd={() => openExpenseEntry()}
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
@@ -2801,38 +2846,53 @@ const Dashboard: React.FC = () => {
 
       {/* Floating Add Expense Button - unified: desktop shows expanded, mobile shows icon only */}
       {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
-        <button
-          {...longPressHandlers}
-          style={{
-            ...styles.floatingButton,
-            width: isMobile ? '56px' : 'auto',
-            height: '56px',
-            padding: isMobile ? '0' : '16px 24px',
-            borderRadius: isMobile ? '50%' : '50px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: isMobile ? '0' : '8px',
-            fontSize: isMobile ? '28px' : '16px',
-            fontWeight: isMobile ? 500 : 600,
-          }}
-          className="floating-btn-hover"
-          title={t('addNewExpense')}
-          aria-label={t('addNewExpense')}
-        >
-          {/* Plus icon unified */}
-          <svg
-            width={isMobile ? 28 : 20}
-            height={isMobile ? 28 : 20}
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            style={{ flexShrink: 0 }}
+        <div style={styles.floatingButtonGroup}>
+          <button
+            {...longPressHandlers}
+            style={{
+              ...styles.floatingButton,
+              width: isMobile ? '56px' : 'auto',
+              height: '56px',
+              padding: isMobile ? '0' : '16px 24px',
+              borderRadius: isMobile ? '50%' : '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0' : '8px',
+              fontSize: isMobile ? '28px' : '16px',
+              fontWeight: isMobile ? 500 : 600,
+            }}
+            className="floating-btn-hover"
+            title={addExpenseLabel}
+            aria-label={addExpenseLabel}
           >
-            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
-          </svg>
-          {!isMobile && <span style={{ lineHeight: 1 }}>{t('addNewExpense')}</span>}
-        </button>
+            <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
+            {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
+          </button>
+          <button
+            onClick={() => openExpenseEntry({ withReceipt: true })}
+            style={{
+              ...styles.floatingButton,
+              ...styles.secondaryFloatingButton,
+              width: isMobile ? '56px' : 'auto',
+              height: '56px',
+              padding: isMobile ? '0' : '16px 24px',
+              borderRadius: isMobile ? '50%' : '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0' : '8px',
+              fontSize: isMobile ? '24px' : '16px',
+              fontWeight: isMobile ? 500 : 600,
+            }}
+            className="floating-btn-hover"
+            title={receiptActionLabel}
+            aria-label={receiptActionLabel}
+          >
+            <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
+            {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}
+          </button>
+        </div>
       )}
 
       {/* Radial Date Menu - shown on long press of FAB */}
@@ -2848,7 +2908,7 @@ const Dashboard: React.FC = () => {
       {activeTab !== 'expenses' && (
         <PopupModal
           isOpen={showAddExpenseForm}
-          onClose={() => setShowAddExpenseForm(false)}
+          onClose={closeExpenseEntry}
           title={t('addNewExpense')}
           hideHeader={true}
           chromeless={true}
@@ -2858,23 +2918,25 @@ const Dashboard: React.FC = () => {
           <StepByStepExpenseForm
             onSubmit={(data) => {
               handleAddExpense(data);
-              setShowAddExpenseForm(false);
+              closeExpenseEntry();
             }}
             onSubmitAndAddAnother={(data) => {
               handleAddExpense(data);
+              setPendingReceiptFile(null);
               // Don't close modal - form will reset itself
             }}
-            onCancel={() => setShowAddExpenseForm(false)}
+            onCancel={closeExpenseEntry}
+            initialReceiptFile={pendingReceiptFile}
             categories={categories}
             cards={cards}
             ewallets={ewallets}
             banks={banks}
             onCreateEWallet={() => {
-              setShowAddExpenseForm(false);
+              closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
             onCreateCard={() => {
-              setShowAddExpenseForm(false);
+              closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
             onAddTransfer={handleAddTransfer}
@@ -2901,44 +2963,60 @@ const Dashboard: React.FC = () => {
     </div>
       {/* Floating Add button visible on Expenses tab (responsive like others) */}
       {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
-        <button
-          {...longPressHandlers}
-          aria-label={t('addNewExpense')}
-          style={{
-            ...styles.floatingButton,
-            width: isMobile ? '56px' : 'auto',
-            height: '56px',
-            padding: isMobile ? '0' : '16px 24px',
-            borderRadius: isMobile ? '50%' : '50px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: isMobile ? '0' : '8px',
-            fontSize: isMobile ? '28px' : '16px',
-            fontWeight: isMobile ? 500 : 600,
-          }}
-          className="floating-btn-hover"
-          title={t('addNewExpense')}
-        >
-          <svg
-            width={isMobile ? 28 : 20}
-            height={isMobile ? 28 : 20}
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            style={{ flexShrink: 0 }}
+        <div style={styles.floatingButtonGroup}>
+          <button
+            {...longPressHandlers}
+            aria-label={addExpenseLabel}
+            style={{
+              ...styles.floatingButton,
+              width: isMobile ? '56px' : 'auto',
+              height: '56px',
+              padding: isMobile ? '0' : '16px 24px',
+              borderRadius: isMobile ? '50%' : '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0' : '8px',
+              fontSize: isMobile ? '28px' : '16px',
+              fontWeight: isMobile ? 500 : 600,
+            }}
+            className="floating-btn-hover"
+            title={addExpenseLabel}
           >
-            <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
-          </svg>
-          {!isMobile && <span style={{ lineHeight: 1 }}>{t('addNewExpense')}</span>}
-        </button>
+            <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
+            {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
+          </button>
+          <button
+            aria-label={receiptActionLabel}
+            onClick={() => openExpenseEntry({ withReceipt: true })}
+            style={{
+              ...styles.floatingButton,
+              ...styles.secondaryFloatingButton,
+              width: isMobile ? '56px' : 'auto',
+              height: '56px',
+              padding: isMobile ? '0' : '16px 24px',
+              borderRadius: isMobile ? '50%' : '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0' : '8px',
+              fontSize: isMobile ? '24px' : '16px',
+              fontWeight: isMobile ? 500 : 600,
+            }}
+            className="floating-btn-hover"
+            title={receiptActionLabel}
+          >
+            <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
+            {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}
+          </button>
+        </div>
       )}
 
       {/* Bottom Sheet for adding expense */}
       {activeTab === 'expenses' && (
         <PopupModal
           isOpen={showAddSheet}
-          onClose={() => setShowAddSheet(false)}
+          onClose={closeExpenseEntry}
           title={t('addNewExpense')}
           hideHeader={true}
           chromeless={true}
@@ -2948,24 +3026,26 @@ const Dashboard: React.FC = () => {
           <StepByStepExpenseForm
             onSubmit={(data) => {
               handleAddExpense(data);
-              setShowAddSheet(false);
+              closeExpenseEntry();
             }}
             onSubmitAndAddAnother={(data) => {
               handleAddExpense(data);
+              setPendingReceiptFile(null);
               // Don't close modal - form will reset itself
             }}
-            onCancel={() => setShowAddSheet(false)}
+            onCancel={closeExpenseEntry}
+            initialReceiptFile={pendingReceiptFile}
             categories={categories}
             cards={cards}
             ewallets={ewallets}
             banks={banks}
             onAddTransfer={handleAddTransfer}
             onCreateEWallet={() => {
-              setShowAddSheet(false);
+              closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
             onCreateCard={() => {
-              setShowAddSheet(false);
+              closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
             initialDate={expenseViewMode === 'day' ? expenseSelectedDate : undefined}
@@ -2979,10 +3059,17 @@ const Dashboard: React.FC = () => {
 };
 
 const styles = {
-  floatingButton: {
+  floatingButtonGroup: {
     position: 'fixed' as const,
     bottom: '24px',
     left: '24px',
+    display: 'flex',
+    gap: '12px',
+    zIndex: 9999,
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
+  },
+  floatingButton: {
     padding: '16px 24px',
     background: 'var(--tab-active-bg)',
     color: 'var(--tab-active-text)',
@@ -2992,8 +3079,13 @@ const styles = {
     fontWeight: '600' as const,
     cursor: 'pointer',
     boxShadow: 'var(--purple-glow-strong)',
-    zIndex: 9999,
     transition: 'all 0.3s ease',
+  },
+  secondaryFloatingButton: {
+    background: 'var(--card-bg, white)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color, #e5e7eb)',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
   },
 };
 //#endregion

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
 import DateNavigator, { ViewMode } from '../../components/expenses/DateNavigator';
 import ExpenseList from '../../components/expenses/ExpenseList';
@@ -6,7 +6,7 @@ import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon } from '../../components/icons';
+import { PlusIcon, UploadIcon } from '../../components/icons';
 import { getTodayLocal } from '../../utils/dateUtils';
 
 interface Props {
@@ -41,9 +41,14 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateCard,
 }) => {
   const { timeFormat, dateFormat } = useUserSettings();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [modalKey, setModalKey] = useState(0);
+  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement | null>(null);
+  const isEnglish = language === 'en';
+  const isSimplifiedChinese = language === 'zh-CN';
+  const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   
   // DateNavigator state
   const [selectedDate, setSelectedDate] = useState(getTodayLocal());
@@ -89,8 +94,23 @@ const ExpensesTab: React.FC<Props> = ({
   }, [filteredExpenses]);
 
   const handleAddClick = () => {
+    setPendingReceiptFile(null);
     setModalKey(prev => prev + 1); // Force new modal instance
     setIsAdding(true);
+  };
+
+  const handleReceiptClick = () => {
+    receiptInputRef.current?.click();
+  };
+
+  const handleReceiptInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+
+    setPendingReceiptFile(file);
+    setModalKey(prev => prev + 1);
+    setIsAdding(true);
+    event.target.value = '';
   };
 
   // Helper function to auto-navigate to expense date
@@ -106,12 +126,14 @@ const ExpensesTab: React.FC<Props> = ({
 
   const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
+    setPendingReceiptFile(null);
     setIsAdding(false);
     navigateToExpenseDate(data.date);
   };
 
   const handleAddAndAnother = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddExpense(data);
+    setPendingReceiptFile(null);
     navigateToExpenseDate(data.date);
     // Don't close modal - form will reset itself
   };
@@ -123,6 +145,14 @@ const ExpensesTab: React.FC<Props> = ({
 
   return (
     <div style={styles.expensesTab}>
+      <input
+        ref={receiptInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptInputChange}
+        style={{ display: 'none' }}
+      />
       {/* Date Navigator */}
       <DateNavigator
         selectedDate={selectedDate}
@@ -132,13 +162,19 @@ const ExpensesTab: React.FC<Props> = ({
         totalAmount={totalAmount}
       />
 
-      {/* Header with Add Button */}
+      {/* Header with Add / Scan Receipt buttons */}
       <div style={styles.header}>
         <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
-        <button onClick={handleAddClick} className="btn btn-accent-light">
-          <PlusIcon size={18} />
-          <span>{t('addNewExpense')}</span>
-        </button>
+        <div style={styles.actions}>
+          <button type="button" onClick={handleReceiptClick} className="btn btn-secondary">
+            <UploadIcon size={18} />
+            <span>{receiptActionLabel}</span>
+          </button>
+          <button type="button" onClick={handleAddClick} className="btn btn-accent-light">
+            <PlusIcon size={18} />
+            <span>{t('addNewExpense')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Add Expense PopupModal */}
@@ -167,6 +203,7 @@ const ExpensesTab: React.FC<Props> = ({
           dateFormat={dateFormat}
           lastUsedPaymentMethod={lastUsedPaymentMethod}
           initialDate={viewMode === 'day' ? selectedDate : undefined}
+          initialReceiptFile={pendingReceiptFile}
         />
       </PopupModal>
 
@@ -236,7 +273,14 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '12px',
     marginBottom: '15px',
+  },
+  actions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap' as const,
   },
 };
 
