@@ -1169,40 +1169,42 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         </div>
       </div>
 
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #e9ecef)' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: receiptPreviewUrl ? '12px' : 0 }}>
-          <button type="button" onClick={handleOpenReceiptPicker} style={styles.buttonSecondary} disabled={receiptOcrBusy}>
-            {receiptOcrBusy ? receiptTexts.scanning : receiptTexts.scan}
-          </button>
-          <button type="button" onClick={handleSaveDraftOnly} style={styles.buttonSecondary}>
-            {receiptTexts.saveDraft}
-          </button>
-          <button type="button" onClick={handleClearDraft} style={styles.buttonSecondary}>
-            {receiptTexts.clearDraft}
-          </button>
-        </div>
-        <div style={styles.receiptHintText}>
-          {receiptDraftId ? receiptTexts.restoreHint : receiptTexts.entryHint}
-        </div>
-        {receiptPreviewUrl && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-            <img src={receiptPreviewUrl} alt="Receipt preview" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-color, #e9ecef)' }} />
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1, minWidth: 0 }}>
-              {receiptOcrStatus || receiptTexts.previewSaved}
-              {receiptOcrError ? ` · ${receiptOcrError}` : ''}
-            </div>
+      {!initialData && (
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #e9ecef)' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: receiptPreviewUrl ? '12px' : 0 }}>
+            <button type="button" onClick={handleOpenReceiptPicker} style={styles.buttonSecondary} disabled={receiptOcrBusy}>
+              {receiptOcrBusy ? receiptTexts.scanning : receiptTexts.scan}
+            </button>
+            <button type="button" onClick={handleSaveDraftOnly} style={styles.buttonSecondary}>
+              {receiptTexts.saveDraft}
+            </button>
+            <button type="button" onClick={handleClearDraft} style={styles.buttonSecondary}>
+              {receiptTexts.clearDraft}
+            </button>
           </div>
-        )}
-        {!receiptPreviewUrl && receiptOcrStatus && (
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{receiptOcrStatus}</div>
-        )}
-        {receiptOcrText && (
-          <details style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-            <summary style={{ cursor: 'pointer' }}>{receiptTexts.originalText}</summary>
-            <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{receiptOcrText}</pre>
-          </details>
-        )}
-      </div>
+          <div style={styles.receiptHintText}>
+            {receiptDraftId ? receiptTexts.restoreHint : receiptTexts.entryHint}
+          </div>
+          {receiptPreviewUrl && (
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+              <img src={receiptPreviewUrl} alt="Receipt preview" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-color, #e9ecef)' }} />
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1, minWidth: 0 }}>
+                {receiptOcrStatus || receiptTexts.previewSaved}
+                {receiptOcrError ? ` · ${receiptOcrError}` : ''}
+              </div>
+            </div>
+          )}
+          {!receiptPreviewUrl && receiptOcrStatus && (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{receiptOcrStatus}</div>
+          )}
+          {receiptOcrText && (
+            <details style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+              <summary style={{ cursor: 'pointer' }}>{receiptTexts.originalText}</summary>
+              <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{receiptOcrText}</pre>
+            </details>
+          )}
+        </div>
+      )}
       {renderProgressSummary()}
       {renderStepContent()}
     </div>

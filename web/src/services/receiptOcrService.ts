@@ -125,11 +125,11 @@ const extractMerchant = (lines: string[]): string | undefined => {
 };
 
 export const parseReceiptText = (text: string): ReceiptOcrResult => {
-  const normalized = normalizeText(text);
-  const lines = normalized
-    .split(/\n+/)
+  const lines = text
+    .split(/\r?\n+/)
     .map((line) => normalizeText(line))
     .filter(Boolean);
+  const normalized = lines.join('\n');
 
   return {
     text: normalized,
