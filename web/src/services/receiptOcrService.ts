@@ -108,7 +108,9 @@ const parseMoney = (raw: string): number | undefined => {
 };
 
 const amountValuePattern = /(?:[$¥€£]|NT\$?|HK\$?|RMB|CNY|USD|TWD)?\s*(\d{1,3}(?:[,.]\d{3})*(?:[,.]\d{1,2})?|\d+(?:[,.]\d{1,2})?)/gi;
-const labeledAmountPattern = /(?:grand\s*total|net\s*total|total|amount|balance|payable|subtotal|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|应\s*付|應\s*付|实\s*付|實\s*付|总\s*额|總\s*額|小\s*计|小\s*計|消费|消費|付款|收款)/i;
+const primaryAmountLabelPattern = /(?:\b(?:grand\s*total|net\s*total|total|amount|balance|payable)\b|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|应\s*付|應\s*付|实\s*付|實\s*付|总\s*额|總\s*額|付款|收款)/i;
+const secondaryAmountLabelPattern = /(?:\bsubtotal\b|小\s*计|小\s*計|消费|消費)/i;
+const labeledAmountPattern = new RegExp(`${primaryAmountLabelPattern.source}|${secondaryAmountLabelPattern.source}`, 'i');
 
 const extractAmountsFromLine = (line: string): number[] => {
   const values: number[] = [];
@@ -122,11 +124,13 @@ const extractAmountsFromLine = (line: string): number[] => {
 };
 
 const extractAmount = (lines: string[]): number | undefined => {
-  for (const line of lines) {
-    if (!labeledAmountPattern.test(line)) continue;
-    const values = extractAmountsFromLine(line);
-    if (values.length > 0) {
-      return values[values.length - 1];
+  for (const labelPattern of [primaryAmountLabelPattern, secondaryAmountLabelPattern]) {
+    for (const line of lines) {
+      if (!labelPattern.test(line)) continue;
+      const values = extractAmountsFromLine(line);
+      if (values.length > 0) {
+        return values[values.length - 1];
+      }
     }
   }
 
