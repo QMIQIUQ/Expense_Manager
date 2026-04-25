@@ -156,10 +156,11 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   }, [selectedDate, onDateChange, viewMode, onViewModeChange]);
   
   // Debounced scroll handler
-  const debouncedScrollEnd = useCallback(
-    debounce(() => handleScrollEnd(), 150),
-    [handleScrollEnd]
-  );
+  const debouncedScrollEndRef = useRef(debounce(() => handleScrollEnd(), 150));
+
+  useEffect(() => {
+    debouncedScrollEndRef.current = debounce(() => handleScrollEnd(), 150);
+  }, [handleScrollEnd]);
   
   // Handle scroll events
   const handleScroll = useCallback(() => {
@@ -174,8 +175,8 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     }, 50);
     
     // Call debounced scroll end
-    debouncedScrollEnd();
-  }, [debouncedScrollEnd]);
+    debouncedScrollEndRef.current();
+  }, []);
   
   // Add scroll event listener
   useEffect(() => {

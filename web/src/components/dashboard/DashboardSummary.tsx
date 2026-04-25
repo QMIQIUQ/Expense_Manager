@@ -364,7 +364,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 labelLine={false}
                 label={false}
                 outerRadius={isMobile ? 70 : 110}
-                fill="#8884d8"
+                fill={COLORS[0]}
                 dataKey="value"
               >
                 {pieData.map((_entry, index) => (
@@ -372,7 +372,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => `$${value.toFixed(2)}`}
+                formatter={(value: number) => value.toFixed(2)}
               />
               <Legend 
                 layout="horizontal"
@@ -407,8 +407,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 height={60}
               />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-              <Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={2} />
+              <Tooltip formatter={(value: number) => value.toFixed(2)} />
+              <Line type="monotone" dataKey="amount" stroke="var(--accent-primary)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>

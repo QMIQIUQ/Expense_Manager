@@ -1,28 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { usePWA } from '../contexts/PWAContext';
 
 export const PWAInstallPrompt: React.FC = () => {
   const { isInstallable, triggerInstall, dismissPrompt, showFloatingPrompt, deferredPrompt } = usePWA();
 
-  useEffect(() => {
-    const reason = !showFloatingPrompt ? 'showFloatingPrompt is false' : 
-                   !isInstallable ? 'isInstallable is false' : 
-                   'unknown';
-    console.log('PWAInstallPrompt render state:', {
-      showFloatingPrompt,
-      isInstallable,
-      hasDeferredPrompt: !!deferredPrompt,
-      shouldShow: showFloatingPrompt && isInstallable,
-      notRenderReason: showFloatingPrompt && isInstallable ? 'N/A' : reason,
-    });
-  }, [showFloatingPrompt, isInstallable, deferredPrompt]);
-
   if (!showFloatingPrompt || !isInstallable) {
-    console.log('PWAInstallPrompt: Not rendering - showFloatingPrompt:', showFloatingPrompt, 'isInstallable:', isInstallable);
     return null;
   }
-
-  console.log('PWAInstallPrompt: Rendering floating prompt');
 
   const isDesktop = !/Android|iPhone|iPad|iPod/.test(navigator.userAgent);
   const isGitHubPages = window.location.hostname.includes('github.io');
@@ -30,18 +14,10 @@ export const PWAInstallPrompt: React.FC = () => {
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   const handleInstallClick = async () => {
-    console.log('PWAInstallPrompt: Install button clicked', {
-      deferredPrompt: !!deferredPrompt,
-      isSafari,
-      isIOS,
-    });
-    
     // If we have a real deferredPrompt, use it immediately
     if (deferredPrompt) {
-      console.log('✓ Using captured beforeinstallprompt event');
       try {
         const success = await triggerInstall();
-        console.log('PWAInstallPrompt: Install result:', success);
         if (success) {
           dismissPrompt();
           alert('✅ App installed successfully!');

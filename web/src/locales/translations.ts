@@ -644,7 +644,6 @@ export const translations = {
   dragToReorder: { en: 'Drag to reorder', zh: '拖曳以重新排序', 'zh-CN': '拖动以重新排序' },
   setAllSizes: { en: 'Set All Sizes', zh: '批量設置大小', 'zh-CN': '批量设置大小' },
   selectSize: { en: 'Select size', zh: '選擇大小', 'zh-CN': '选择大小' },
-  resetToDefaults: { en: 'Reset to Defaults', zh: '重設為預設', 'zh-CN': '重置为默认' },
   saveSettings: { en: 'Save Settings', zh: '儲存設定', 'zh-CN': '保存设置' },
   featureVisibility: { en: 'Feature Visibility', zh: '功能顯示', 'zh-CN': '功能显示' },
   confirmResetFeatures: { en: 'Reset all features to default settings?', zh: '將所有功能重設為預設值？', 'zh-CN': '将所有功能重置为默认值？' },

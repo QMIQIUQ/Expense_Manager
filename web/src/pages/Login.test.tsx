@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Login from './Login';
 import { AuthContext } from '../contexts/AuthContext';
+import type { AuthContextType } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
 
 // Mock useNavigate
@@ -35,7 +36,7 @@ describe('Login Component - Auto-redirect functionality', () => {
 
     render(
       <BrowserRouter>
-        <AuthContext.Provider value={mockAuthValue as any}>
+        <AuthContext.Provider value={mockAuthValue as AuthContextType}>
           <LanguageProvider>
             <Login />
           </LanguageProvider>
@@ -64,7 +65,7 @@ describe('Login Component - Auto-redirect functionality', () => {
 
     render(
       <BrowserRouter>
-        <AuthContext.Provider value={mockAuthValue as any}>
+        <AuthContext.Provider value={mockAuthValue as AuthContextType}>
           <LanguageProvider>
             <Login />
           </LanguageProvider>
@@ -91,7 +92,7 @@ describe('Login Component - Auto-redirect functionality', () => {
 
     render(
       <BrowserRouter>
-        <AuthContext.Provider value={mockAuthValue as any}>
+        <AuthContext.Provider value={mockAuthValue as AuthContextType}>
           <LanguageProvider>
             <Login />
           </LanguageProvider>

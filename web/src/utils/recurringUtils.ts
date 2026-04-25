@@ -1,4 +1,5 @@
 import { RecurringExpense } from '../types';
+import { parseISO } from 'date-fns';
 
 /**
  * Calculate the next due date for a recurring expense based on its frequency
@@ -6,17 +7,17 @@ import { RecurringExpense } from '../types';
 export const getNextDueDate = (expense: RecurringExpense): Date | null => {
   if (!expense.isActive) return null;
   
-  const startDate = new Date(expense.startDate);
+  const startDate = parseISO(expense.startDate);
   const now = new Date();
   
   // If endDate exists and has passed, no more dues
   if (expense.endDate) {
-    const endDate = new Date(expense.endDate);
+    const endDate = parseISO(expense.endDate);
     if (now > endDate) return null;
   }
   
   // If we have a lastGenerated date, calculate from there; otherwise from startDate
-  const lastDate = expense.lastGenerated ? new Date(expense.lastGenerated) : startDate;
+  const lastDate = expense.lastGenerated ? parseISO(expense.lastGenerated) : startDate;
   
   // Calculate next due date based on frequency
   const nextDue = new Date(lastDate);
@@ -103,7 +104,7 @@ export const shouldShowDueNotification = (expense: RecurringExpense): boolean =>
   if (!expense.lastViewedDue) return true;
   
   // Check if lastViewedDue was today
-  const lastViewed = new Date(expense.lastViewedDue);
+  const lastViewed = parseISO(expense.lastViewedDue);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   lastViewed.setHours(0, 0, 0, 0);

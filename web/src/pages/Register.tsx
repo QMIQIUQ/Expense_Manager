@@ -48,7 +48,7 @@ const Register: React.FC = () => {
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
       <h2>Register</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error-text)', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
@@ -98,7 +98,7 @@ const Register: React.FC = () => {
           style={{
             width: '100%',
             padding: '10px',
-            backgroundColor: 'var(--success-text)',
+            backgroundColor: 'var(--accent-primary)',
             color: 'white',
             border: 'none',
             cursor: 'pointer',
@@ -114,9 +114,9 @@ const Register: React.FC = () => {
         style={{
           width: '100%',
           padding: '10px',
-          backgroundColor: 'var(--info-text)',
-          color: 'white',
-          border: 'none',
+          backgroundColor: 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-color)',
           cursor: 'pointer',
           marginBottom: '10px',
         }}

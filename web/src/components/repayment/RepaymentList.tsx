@@ -61,9 +61,9 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
     if (effectiveTheme === 'dark') {
       return {
         ...styles.paymentChip,
-        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+        background: 'var(--success-bg)',
         color: 'var(--success-text)',
-        boxShadow: '0 1px 3px rgba(34, 197, 94, 0.2)',
+        boxShadow: '0 1px 3px var(--shadow)',
       };
     }
     return styles.paymentChip;
@@ -75,7 +75,6 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
       return {
         ...styles.amount,
         color: 'var(--success-text)',
-        textShadow: '0 1px 2px rgba(134, 239, 172, 0.2)',
       };
     }
     return styles.amount;

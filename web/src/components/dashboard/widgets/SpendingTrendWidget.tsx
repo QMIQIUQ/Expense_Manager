@@ -135,7 +135,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
           height={chartConfig.xAxisHeight}
         />
         <YAxis tick={{ fontSize: chartConfig.fontSize }} />
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip formatter={(value: number) => value.toFixed(2)} />
         <Line
           type="monotone"
           dataKey="amount"

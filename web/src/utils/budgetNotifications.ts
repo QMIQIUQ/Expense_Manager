@@ -1,6 +1,7 @@
 import { Budget, Expense, Repayment } from '../types';
 import { NotificationType } from '../contexts/NotificationContext';
 import { getEffectiveBudgetAmount } from './budgetRollover';
+import { parseISO } from 'date-fns';
 
 interface BudgetAlert {
   budget: Budget;
@@ -18,7 +19,7 @@ export function calculateBudgetPeriod(
   billingCycleDay: number = 1
 ): { periodStart: Date; periodEnd: Date } {
   const now = new Date();
-  const startDate = new Date(budget.startDate);
+  const startDate = parseISO(budget.startDate);
 
   let periodStart: Date;
   let periodEnd: Date;
@@ -92,7 +93,7 @@ export function calculateBudgetSpending(
   // Calculate spending in this period for this category (with repayment deduction)
   const spent = expenses
     .filter(exp => {
-      const expDate = new Date(exp.date);
+      const expDate = parseISO(exp.date);
       return exp.category === budget.categoryName &&
              expDate >= periodStart &&
              expDate < periodEnd;
