@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, AmountItem, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import { compressReceiptImage, recognizeReceiptText, type ReceiptOcrResult } from '../../services/receiptOcrService';
+import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 
 // Step type definition
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -15,6 +18,7 @@ interface StepByStepExpenseFormProps {
   onSubmitAndAddAnother?: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   initialData?: Expense;
   initialTransfer?: Transfer;
+  initialReceiptFile?: File | null;
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
@@ -34,6 +38,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   onSubmitAndAddAnother,
   initialData,
   initialTransfer,
+  initialReceiptFile = null,
   categories,
   cards = [],
   ewallets = [],
@@ -46,13 +51,41 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   dateFormat = 'YYYY-MM-DD',
   lastUsedPaymentMethod,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { currentUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const [receiptDraftId, setReceiptDraftId] = useState<string | null>(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
+  const [receiptOcrBusy, setReceiptOcrBusy] = useState(false);
+  const [receiptOcrStatus, setReceiptOcrStatus] = useState<string>('');
+  const [receiptOcrError, setReceiptOcrError] = useState<string>('');
+  const [receiptOcrText, setReceiptOcrText] = useState<string>('');
   
   // Delay for focusing input after state updates
   const FOCUS_DELAY_MS = 50;
+  const RECEIPT_DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+  const isEnglish = language === 'en';
+  const isSimplifiedChinese = language === 'zh-CN';
+  const receiptTexts = {
+    scan: isEnglish ? 'Take photo / Upload receipt' : isSimplifiedChinese ? '拍照 / 上传收据' : '拍照 / 上傳收據',
+    scanning: isEnglish ? 'Scanning...' : isSimplifiedChinese ? '扫描中...' : '掃描中...',
+    saveDraft: isEnglish ? 'Save draft' : isSimplifiedChinese ? '保存草稿' : '儲存草稿',
+    clearDraft: isEnglish ? 'Clear draft' : isSimplifiedChinese ? '清除草稿' : '清除草稿',
+    preparing: isEnglish ? 'Preparing receipt image...' : isSimplifiedChinese ? '正在准备收据图片...' : '正在準備收據圖片...',
+    runningLocal: isEnglish ? 'Running OCR on this device...' : isSimplifiedChinese ? '正在本机进行 OCR...' : '正在本機進行 OCR...',
+    runningProgress: (progress: number) => isEnglish ? `Running OCR... ${progress}%` : isSimplifiedChinese ? `正在进行 OCR... ${progress}%` : `正在進行 OCR... ${progress}%`,
+    complete: isEnglish ? 'OCR complete. Review the prefilled fields.' : isSimplifiedChinese ? 'OCR 完成，请检查预填栏位。' : 'OCR 完成，請檢查預填欄位。',
+    savedOnly: isEnglish ? 'Saved as draft. You can finish it later.' : isSimplifiedChinese ? '已保存为草稿，稍后可继续完成。' : '已儲存為草稿，稍後可繼續完成。',
+    draftSaved: isEnglish ? 'Draft saved. You can come back later.' : isSimplifiedChinese ? '草稿已保存，之后可以继续。' : '草稿已儲存，之後可以繼續。',
+    draftRestored: isEnglish ? 'Draft restored' : isSimplifiedChinese ? '已恢复草稿' : '已恢復草稿',
+    previewSaved: isEnglish ? 'Receipt saved as draft' : isSimplifiedChinese ? '收据已保存为草稿' : '收據已儲存為草稿',
+    originalText: isEnglish ? 'OCR text' : isSimplifiedChinese ? 'OCR 原文' : 'OCR 原文',
+    restoreHint: isEnglish ? 'A saved receipt draft was restored automatically.' : isSimplifiedChinese ? '已自动恢复之前保存的收据草稿。' : '已自動恢復先前儲存的收據草稿。',
+    entryHint: isEnglish ? 'Scan a receipt here to prefill amount, date, and merchant, then finish later if needed.' : isSimplifiedChinese ? '可先扫描收据，自动预填金额、日期与商家，稍后再继续填写。' : '可先掃描收據，自動預填金額、日期與商家，稍後再繼續填寫。',
+  };
 
   // Sort categories by recent usage (stored in localStorage)
   const getSortedCategories = (): Category[] => {
@@ -78,14 +111,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ReceiptDraftFormState>({
     date: initialDate || initialData?.date || getTodayLocal(),
     time: initialData?.time || getCurrentTimeLocal(),
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
     category: initialData?.category || '',
     description: initialData?.description || '',
     notes: initialData?.notes || '',
-    paymentMethod: initialData?.paymentMethod || lastUsedPaymentMethod || 'cash',
+    paymentMethod: (initialData?.paymentMethod || lastUsedPaymentMethod || 'cash') as ReceiptPaymentMethod,
     paymentMethodName: initialData?.paymentMethodName || '',
     cardId: initialData?.cardId || '',
     bankId: initialData?.bankId || '',
@@ -132,8 +165,238 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   }, [formData.paymentMethod, formData.cardId, formData.paymentMethodName, formData.bankId, currentStep, cards, ewallets, banks]);
 
+  useEffect(() => {
+    if (initialReceiptFile) return;
+    if (!currentUser || initialData || receiptDraftId) return;
+    let cancelled = false;
+
+    const restore = async () => {
+      await cleanupReceiptDrafts(currentUser.uid);
+      const latest = await loadLatestReceiptDraft(currentUser.uid);
+      if (cancelled || !latest) return;
+      await restoreDraft(latest);
+    };
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, initialData, initialReceiptFile, receiptDraftId]);
+
+  useEffect(() => {
+    if (!initialReceiptFile) return;
+    void handleDraftedReceiptImage(initialReceiptFile);
+  }, [initialReceiptFile]);
+
+  useEffect(() => {
+    return () => {
+      if (receiptPreviewUrl) {
+        URL.revokeObjectURL(receiptPreviewUrl);
+      }
+    };
+  }, [receiptPreviewUrl]);
+
   const handleNext = () => {
     if (currentStep < 5) setCurrentStep((prev) => (prev + 1) as Step);
+  };
+
+  const buildDraftSnapshot = (overrides: Partial<ReceiptDraftSnapshot> = {}): ReceiptDraftSnapshot | null => {
+    if (!currentUser) return null;
+    if (!receiptDraftId) return null;
+
+    return {
+      draftId: receiptDraftId,
+      userId: currentUser.uid,
+      updatedAt: Date.now(),
+      expiresAt: Date.now() + RECEIPT_DRAFT_TTL_MS,
+      currentStep,
+      formData,
+      amountItems,
+      currentAmountInput,
+      enableTax,
+      taxRate,
+      enableTransfer,
+      transferToPaymentMethod,
+      transferToCardId,
+      transferToEWalletName,
+      transferToBankId,
+      receiptText: receiptOcrText,
+      imageName: undefined,
+      imageType: undefined,
+      imageSize: undefined,
+      ...overrides,
+    };
+  };
+
+  const applyReceiptResult = (result: ReceiptOcrResult) => {
+    if (result.date) {
+      setFormData((prev) => ({ ...prev, date: result.date || prev.date }));
+    }
+    if (typeof result.amount === 'number' && Number.isFinite(result.amount) && result.amount > 0) {
+      const amountInCents = Math.round(result.amount * 100);
+      setFormData((prev) => ({ ...prev, amount: amountInCents }));
+      setCurrentAmountInput(amountInCents);
+    }
+    if (result.merchant) {
+      setFormData((prev) => {
+        const nextDescription = prev.description.trim() ? prev.description : result.merchant || '';
+        return { ...prev, description: nextDescription };
+      });
+    }
+  };
+
+  const saveCurrentDraft = async (imageBlob?: Blob | null, receiptText = '') => {
+    if (!currentUser) return;
+    if (!receiptDraftId) return;
+
+    const snapshot = buildDraftSnapshot({ receiptText });
+    if (!snapshot) return;
+
+    const imageName = imageBlob ? `${receiptDraftId}.jpg` : undefined;
+    await saveReceiptDraft({
+      ...snapshot,
+      imageName,
+      imageType: imageBlob?.type,
+      imageSize: imageBlob?.size,
+    }, imageBlob || null);
+  };
+
+  const restoreDraft = async (loaded: LoadedReceiptDraft | null) => {
+    if (!loaded) return;
+    const { draft } = loaded;
+    setReceiptDraftId(draft.draftId);
+    setCurrentStep((draft.currentStep as Step) || 1);
+    setFormData(draft.formData);
+    setAmountItems(draft.amountItems || []);
+    setCurrentAmountInput(draft.currentAmountInput || 0);
+    setEnableTax(!!draft.enableTax);
+    setTaxRate(draft.taxRate || 6);
+    setEnableTransfer(!!draft.enableTransfer);
+    setTransferToPaymentMethod(draft.transferToPaymentMethod || 'cash');
+    setTransferToCardId(draft.transferToCardId || '');
+    setTransferToEWalletName(draft.transferToEWalletName || '');
+    setTransferToBankId(draft.transferToBankId || '');
+    setReceiptOcrText(draft.receiptText || '');
+    setReceiptOcrStatus(draft.receiptText ? receiptTexts.draftRestored : '');
+    if (loaded.imageBlob) {
+      const objectUrl = URL.createObjectURL(loaded.imageBlob);
+      setReceiptPreviewUrl(objectUrl);
+    }
+  };
+
+  const resetReceiptDraftState = async () => {
+    if (receiptDraftId) {
+      await deleteReceiptDraft(receiptDraftId, currentUser?.uid);
+    }
+    if (receiptPreviewUrl) {
+      URL.revokeObjectURL(receiptPreviewUrl);
+    }
+    setReceiptDraftId(null);
+    setReceiptPreviewUrl(null);
+    setReceiptOcrBusy(false);
+    setReceiptOcrStatus('');
+    setReceiptOcrError('');
+    setReceiptOcrText('');
+  };
+
+  const handleDraftedReceiptImage = async (file: File) => {
+    if (!currentUser) return;
+    setReceiptOcrError('');
+    setReceiptOcrBusy(true);
+    setReceiptOcrStatus(receiptTexts.preparing);
+
+    const draftId = receiptDraftId || createReceiptDraftId();
+    setReceiptDraftId(draftId);
+    const compressed = await compressReceiptImage(file, { maxWidth: 1600, quality: 0.78 });
+    const previewUrl = URL.createObjectURL(compressed);
+    if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+    setReceiptPreviewUrl(previewUrl);
+    setReceiptOcrStatus(receiptTexts.runningLocal);
+
+    try {
+      const ocr = await recognizeReceiptText(compressed, (progress) => {
+        setReceiptOcrStatus(receiptTexts.runningProgress(Math.round(progress * 100)));
+      });
+      setReceiptOcrText(ocr.text);
+      applyReceiptResult(ocr);
+      setReceiptOcrStatus(receiptTexts.complete);
+      await saveCurrentDraft(compressed, ocr.text);
+    } catch (error) {
+      console.warn('Receipt OCR failed, saving draft only:', error);
+      setReceiptOcrStatus(receiptTexts.savedOnly);
+      setReceiptOcrError(error instanceof Error ? error.message : 'OCR failed');
+      await saveCurrentDraft(compressed, '');
+    } finally {
+      setReceiptOcrBusy(false);
+    }
+  };
+
+  const handleReceiptInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await handleDraftedReceiptImage(file);
+    event.target.value = '';
+  };
+
+  const handleOpenReceiptPicker = () => {
+    receiptInputRef.current?.click();
+  };
+
+  const handleSaveDraftOnly = async () => {
+    if (!currentUser) return;
+
+    let nextDraftId = receiptDraftId;
+    if (!nextDraftId) {
+      nextDraftId = createReceiptDraftId();
+      setReceiptDraftId(nextDraftId);
+    }
+
+    const snapshot: ReceiptDraftSnapshot = {
+      draftId: nextDraftId,
+      userId: currentUser.uid,
+      updatedAt: Date.now(),
+      expiresAt: Date.now() + RECEIPT_DRAFT_TTL_MS,
+      currentStep,
+      formData,
+      amountItems,
+      currentAmountInput,
+      enableTax,
+      taxRate,
+      enableTransfer,
+      transferToPaymentMethod,
+      transferToCardId,
+      transferToEWalletName,
+      transferToBankId,
+      receiptText: receiptOcrText || receiptOcrStatus || receiptOcrError,
+      imageName: undefined,
+      imageType: undefined,
+      imageSize: undefined,
+    };
+
+    await saveReceiptDraft(snapshot, null);
+    setReceiptOcrStatus(receiptTexts.draftSaved);
+  };
+
+  const handleClearDraft = async () => {
+    await resetReceiptDraftState();
+    setFormData({
+      date: initialDate || getTodayLocal(),
+      time: getCurrentTimeLocal(),
+      amount: 0,
+      category: '',
+      description: '',
+      notes: '',
+      paymentMethod: (lastUsedPaymentMethod || 'cash') as ReceiptPaymentMethod,
+      paymentMethodName: '',
+      cardId: '',
+      bankId: '',
+      needsRepaymentTracking: false,
+    });
+    setAmountItems([]);
+    setCurrentAmountInput(0);
+    setEnableTax(false);
+    setEnableTransfer(false);
+    setCurrentStep(1);
   };
 
   const handlePrevious = () => {
@@ -258,7 +521,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setCurrentStep(2); // Go back to amount step for quick entry
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Update category usage for sorting
     if (formData.category) {
       updateCategoryUsage(formData.category);
@@ -266,9 +529,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
     handleTransferIfNeeded();
     onSubmit(buildSubmitData());
+    await resetReceiptDraftState();
   };
 
-  const handleSubmitAndAddAnother = () => {
+  const handleSubmitAndAddAnother = async () => {
     if (!onSubmitAndAddAnother) return;
     
     // Update category usage for sorting
@@ -278,6 +542,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
     handleTransferIfNeeded();
     onSubmitAndAddAnother(buildSubmitData());
+    await resetReceiptDraftState();
     resetFormForNewExpense();
   };
 
@@ -843,7 +1108,16 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   return (
-    <div style={styles.container} onKeyDown={handleKeyDown}>
+    <>
+      <input
+        ref={receiptInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptInputChange}
+        style={{ display: 'none' }}
+      />
+      <div style={styles.container} onKeyDown={handleKeyDown}>
       <div style={styles.header}>
         {/* Navigation buttons in header */}
         <button
@@ -895,9 +1169,44 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         </div>
       </div>
 
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #e9ecef)' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: receiptPreviewUrl ? '12px' : 0 }}>
+          <button type="button" onClick={handleOpenReceiptPicker} style={styles.buttonSecondary} disabled={receiptOcrBusy}>
+            {receiptOcrBusy ? receiptTexts.scanning : receiptTexts.scan}
+          </button>
+          <button type="button" onClick={handleSaveDraftOnly} style={styles.buttonSecondary}>
+            {receiptTexts.saveDraft}
+          </button>
+          <button type="button" onClick={handleClearDraft} style={styles.buttonSecondary}>
+            {receiptTexts.clearDraft}
+          </button>
+        </div>
+        <div style={styles.receiptHintText}>
+          {receiptDraftId ? receiptTexts.restoreHint : receiptTexts.entryHint}
+        </div>
+        {receiptPreviewUrl && (
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <img src={receiptPreviewUrl} alt="Receipt preview" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-color, #e9ecef)' }} />
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1, minWidth: 0 }}>
+              {receiptOcrStatus || receiptTexts.previewSaved}
+              {receiptOcrError ? ` · ${receiptOcrError}` : ''}
+            </div>
+          </div>
+        )}
+        {!receiptPreviewUrl && receiptOcrStatus && (
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{receiptOcrStatus}</div>
+        )}
+        {receiptOcrText && (
+          <details style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+            <summary style={{ cursor: 'pointer' }}>{receiptTexts.originalText}</summary>
+            <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{receiptOcrText}</pre>
+          </details>
+        )}
+      </div>
       {renderProgressSummary()}
       {renderStepContent()}
     </div>
+  </> 
   );
 };
 
@@ -1241,6 +1550,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     cursor: 'pointer',
     transition: 'all 0.2s',
+  },
+  receiptHintText: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    marginBottom: '8px',
+    lineHeight: 1.5,
   },
   buttonPrimary: {
     flex: 1,
