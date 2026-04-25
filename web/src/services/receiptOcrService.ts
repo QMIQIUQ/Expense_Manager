@@ -70,30 +70,78 @@ export const compressReceiptImage = async (
   return toBlobFromCanvas(canvas, 'image/jpeg', quality);
 };
 
-const normalizeText = (value: string): string => value.replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim();
+const normalizeText = (value: string): string => value
+  .split('')
+  .map((char) => {
+    const code = char.charCodeAt(0);
+    if (code >= 0xff10 && code <= 0xff19) return String(code - 0xff10);
+    if (char === '，') return ',';
+    if (char === '．' || char === '。') return '.';
+    if (char === '：') return ':';
+    if (char === '／') return '/';
+    if (char === '－' || char === '—' || char === '–') return '-';
+    if (code < 32) return ' ';
+    return char;
+  })
+  .join('')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const parseMoney = (raw: string): number | undefined => {
+  const cleaned = raw.replace(/[^\d.,]/g, '');
+  if (!cleaned) return undefined;
+
+  let normalized = cleaned;
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  if (lastComma > lastDot && /^\d{1,3}(?:\.\d{3})*,\d{1,2}$/.test(cleaned)) {
+    normalized = cleaned.replace(/\./g, '').replace(',', '.');
+  } else if (lastComma > -1 && lastDot === -1) {
+    const commaDecimal = cleaned.match(/^\d+,\d{1,2}$/);
+    normalized = commaDecimal ? cleaned.replace(',', '.') : cleaned.replace(/,/g, '');
+  } else {
+    normalized = cleaned.replace(/,/g, '');
+  }
+
+  const value = Number(normalized);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+};
+
+const amountValuePattern = /(?:[$¥€£]|NT\$?|HK\$?|RMB|CNY|USD|TWD)?\s*(\d{1,3}(?:[,.]\d{3})*(?:[,.]\d{1,2})?|\d+(?:[,.]\d{1,2})?)/gi;
+const labeledAmountPattern = /(?:grand\s*total|net\s*total|total|amount|balance|payable|subtotal|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|应\s*付|應\s*付|实\s*付|實\s*付|总\s*额|總\s*額|小\s*计|小\s*計|消费|消費|付款|收款)/i;
+
+const extractAmountsFromLine = (line: string): number[] => {
+  const values: number[] = [];
+  for (const match of line.matchAll(amountValuePattern)) {
+    const value = parseMoney(match[1]);
+    if (value !== undefined && value < 100000000) {
+      values.push(value);
+    }
+  }
+  return values;
+};
 
 const extractAmount = (lines: string[]): number | undefined => {
-  const amountPatterns = [
-    /(?:total|amount|grand total|balance|payable|subtotal|net total)[^\d]*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/i,
-    /(?:[$NTDHKD¥€£]|usd|twd|rmb|cny)?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+\.\d{2})/i,
-  ];
-
   for (const line of lines) {
-    for (const pattern of amountPatterns) {
-      const match = line.match(pattern);
-      if (!match?.[1]) continue;
-      const value = parseFloat(match[1].replace(/,/g, ''));
-      if (Number.isFinite(value) && value > 0) return value;
+    if (!labeledAmountPattern.test(line)) continue;
+    const values = extractAmountsFromLine(line);
+    if (values.length > 0) {
+      return values[values.length - 1];
     }
   }
 
-  return undefined;
+  const decimalOrCurrencyValues = lines
+    .filter((line) => /[$¥€£]|NT\$?|HK\$?|RMB|CNY|USD|TWD|\d+[,.]\d{1,2}/i.test(line))
+    .flatMap(extractAmountsFromLine);
+
+  return decimalOrCurrencyValues.length > 0 ? Math.max(...decimalOrCurrencyValues) : undefined;
 };
 
 const extractDate = (lines: string[]): string | undefined => {
   const patterns = [
-    /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/,
-    /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/,
+    /(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?/,
+    /(\d{2,3})[-/](\d{1,2})[-/](\d{1,2})/,
+    /(\d{1,2})[-/](\d{1,2})[-/](\d{4})/,
   ];
 
   for (const line of lines) {
@@ -103,7 +151,15 @@ const extractDate = (lines: string[]): string | undefined => {
 
       if (pattern === patterns[0]) {
         const [, year, month, day] = match;
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        return formatDateParts(Number(year), Number(month), Number(day));
+      }
+
+      if (pattern === patterns[1]) {
+        const [, rocYear, month, day] = match;
+        const year = Number(rocYear) + (rocYear.length <= 3 ? 1911 : 0);
+        const parsed = formatDateParts(year, Number(month), Number(day));
+        if (parsed) return parsed;
+        continue;
       }
 
       const [, first, second, year] = match;
@@ -111,16 +167,30 @@ const extractDate = (lines: string[]): string | undefined => {
       const secondNum = Number(second);
       const month = firstNum > 12 ? secondNum : firstNum;
       const day = firstNum > 12 ? firstNum : secondNum;
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const parsed = formatDateParts(Number(year), month, day);
+      if (parsed) return parsed;
     }
   }
 
   return undefined;
 };
 
+const formatDateParts = (year: number, month: number, day: number): string | undefined => {
+  if (year < 1900 || year > 2200 || month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
 const extractMerchant = (lines: string[]): string | undefined => {
-  const excluded = /(?:receipt|invoice|total|subtotal|tax|change|balance|thank you|cash|card|date|time)/i;
-  const candidates = lines.filter((line) => line && line.length >= 2 && line.length <= 60 && !excluded.test(line));
+  const excluded = /(?:receipt|invoice|total|subtotal|tax|change|balance|thank you|cash|card|date|time|收据|收據|发票|發票|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|找零|现金|現金|日期|时间|時間)/i;
+  const candidates = lines.filter((line) => {
+    if (!line || line.length < 2 || line.length > 60) return false;
+    if (excluded.test(line)) return false;
+    if (extractDate([line])) return false;
+    if (labeledAmountPattern.test(line)) return false;
+    return true;
+  });
   return candidates[0];
 };
 
@@ -152,7 +222,7 @@ export const recognizeReceiptText = async (
     reader.readAsDataURL(image);
   });
 
-  const result = await recognize(dataUrl, 'eng', {
+  const result = await recognize(dataUrl, 'eng+chi_sim+chi_tra', {
     logger: (message: { status?: string; progress?: number }) => {
       if (typeof message.progress === 'number' && onProgress) {
         onProgress(Math.max(0, Math.min(1, message.progress)));

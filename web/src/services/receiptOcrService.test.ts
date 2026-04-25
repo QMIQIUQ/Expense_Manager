@@ -16,4 +16,43 @@ Thank you
     expect(result.amount).toBe(12.34);
     expect(result.merchant).toBe('STORE NAME');
   });
+
+  it('extracts integer totals from English receipts', () => {
+    const result = parseReceiptText(`
+COFFEE SHOP
+Date: 04/25/2026
+Subtotal 10.00
+TOTAL NT$120
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(120);
+    expect(result.merchant).toBe('COFFEE SHOP');
+  });
+
+  it('extracts Simplified Chinese receipt fields', () => {
+    const result = parseReceiptText(`
+便利店
+日期：2026年4月25日
+商品 15.00
+合计：¥120
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(120);
+    expect(result.merchant).toBe('便利店');
+  });
+
+  it('extracts Traditional Chinese receipt fields with ROC dates', () => {
+    const result = parseReceiptText(`
+咖啡館
+日期 115/04/25
+小計 80
+總計 NT$120
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(120);
+    expect(result.merchant).toBe('咖啡館');
+  });
 });

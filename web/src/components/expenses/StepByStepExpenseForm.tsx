@@ -57,6 +57,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const initialReceiptProcessedRef = useRef<File | null>(null);
   const [receiptDraftId, setReceiptDraftId] = useState<string | null>(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [receiptOcrBusy, setReceiptOcrBusy] = useState(false);
@@ -184,11 +185,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   }, [currentUser, initialData, initialReceiptFile, receiptDraftId]);
 
   useEffect(() => {
-    if (!initialReceiptFile) return;
-    void handleDraftedReceiptImage(initialReceiptFile);
-  }, [initialReceiptFile]);
-
-  useEffect(() => {
     return () => {
       if (receiptPreviewUrl) {
         URL.revokeObjectURL(receiptPreviewUrl);
@@ -200,12 +196,15 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     if (currentStep < 5) setCurrentStep((prev) => (prev + 1) as Step);
   };
 
-  const buildDraftSnapshot = (overrides: Partial<ReceiptDraftSnapshot> = {}): ReceiptDraftSnapshot | null => {
+  const buildDraftSnapshot = (
+    overrides: Partial<ReceiptDraftSnapshot> = {},
+    draftIdOverride = receiptDraftId,
+  ): ReceiptDraftSnapshot | null => {
     if (!currentUser) return null;
-    if (!receiptDraftId) return null;
+    if (!draftIdOverride) return null;
 
     return {
-      draftId: receiptDraftId,
+      draftId: draftIdOverride,
       userId: currentUser.uid,
       updatedAt: Date.now(),
       expiresAt: Date.now() + RECEIPT_DRAFT_TTL_MS,
@@ -245,14 +244,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const saveCurrentDraft = async (imageBlob?: Blob | null, receiptText = '') => {
+  const saveCurrentDraft = async (imageBlob?: Blob | null, receiptText = '', draftIdOverride = receiptDraftId) => {
     if (!currentUser) return;
-    if (!receiptDraftId) return;
+    if (!draftIdOverride) return;
 
-    const snapshot = buildDraftSnapshot({ receiptText });
+    const snapshot = buildDraftSnapshot({ receiptText }, draftIdOverride);
     if (!snapshot) return;
 
-    const imageName = imageBlob ? `${receiptDraftId}.jpg` : undefined;
+    const imageName = imageBlob ? `${draftIdOverride}.jpg` : undefined;
     await saveReceiptDraft({
       ...snapshot,
       imageName,
@@ -320,16 +319,23 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       setReceiptOcrText(ocr.text);
       applyReceiptResult(ocr);
       setReceiptOcrStatus(receiptTexts.complete);
-      await saveCurrentDraft(compressed, ocr.text);
+      await saveCurrentDraft(compressed, ocr.text, draftId);
     } catch (error) {
       console.warn('Receipt OCR failed, saving draft only:', error);
       setReceiptOcrStatus(receiptTexts.savedOnly);
       setReceiptOcrError(error instanceof Error ? error.message : 'OCR failed');
-      await saveCurrentDraft(compressed, '');
+      await saveCurrentDraft(compressed, '', draftId);
     } finally {
       setReceiptOcrBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!initialReceiptFile || !currentUser) return;
+    if (initialReceiptProcessedRef.current === initialReceiptFile) return;
+    initialReceiptProcessedRef.current = initialReceiptFile;
+    void handleDraftedReceiptImage(initialReceiptFile);
+  }, [initialReceiptFile, currentUser, handleDraftedReceiptImage]);
 
   const handleReceiptInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
