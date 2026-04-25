@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
-import { UserSettings, TimeFormat, DateFormat } from '../types';
+import { UserSettings, TimeFormat, DateFormat, DateShortcut } from '../types';
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -9,9 +9,11 @@ interface UserSettingsContextType {
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
   useStepByStepForm: boolean;
+  dateShortcuts?: DateShortcut[];
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDateFormat: (format: DateFormat) => Promise<void>;
   setUseStepByStepForm: (value: boolean) => Promise<void>;
+  setDateShortcuts: (shortcuts: DateShortcut[]) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -97,6 +99,25 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setDateShortcuts = async (shortcuts: DateShortcut[]) => {
+    if (!currentUser || !settings) return;
+
+    // Capture previous value before optimistic update to allow accurate rollback
+    const previousShortcuts = settings.dateShortcuts;
+
+    // Optimistic update
+    setSettings(prev => prev ? { ...prev, dateShortcuts: shortcuts } : null);
+
+    try {
+      await userSettingsService.update(currentUser.uid, { dateShortcuts: shortcuts });
+    } catch (error) {
+      // Rollback to the captured previous value
+      setSettings(prev => prev ? { ...prev, dateShortcuts: previousShortcuts } : null);
+      console.error('Error updating date shortcuts:', error);
+      throw error;
+    }
+  };
+
   const refreshSettings = async () => {
     await loadSettings(true); // Force refresh from server
   };
@@ -107,9 +128,11 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     timeFormat: settings?.timeFormat || '24h',
     dateFormat: settings?.dateFormat || 'YYYY-MM-DD',
     useStepByStepForm: settings?.useStepByStepForm ?? false,
+    dateShortcuts: settings?.dateShortcuts,
     setTimeFormat,
     setDateFormat,
     setUseStepByStepForm,
+    setDateShortcuts,
     refreshSettings,
   };
 

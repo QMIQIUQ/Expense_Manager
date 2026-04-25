@@ -28,6 +28,8 @@ import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
 import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
+import RadialDateMenu from '../components/common/RadialDateMenu';
+import { useLongPress } from '../hooks/useLongPress';
 import { PlusIcon, UploadIcon } from '../components/icons';
 
 // Lazy load heavy components
@@ -71,7 +73,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
-  const { dateFormat, timeFormat } = useUserSettings();
+  const { dateFormat, timeFormat, dateShortcuts } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -132,6 +134,9 @@ const Dashboard: React.FC = () => {
   const importExportRef = useRef<HTMLDivElement | null>(null);
   // Reactive mobile breakpoint (updates on window resize)
   const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth <= 768);
+  // Radial date menu state for long-press on FAB
+  const [showRadialDateMenu, setShowRadialDateMenu] = useState(false);
+  const [radialMenuPosition, setRadialMenuPosition] = useState({ x: 0, y: 0 });
   const receiptInputRef = useRef<HTMLInputElement | null>(null);
   const isEnglish = language === 'en';
   const isSimplifiedChinese = language === 'zh-CN';
@@ -2045,6 +2050,45 @@ const Dashboard: React.FC = () => {
   };
   //#endregion
 
+  //#region Long Press Handlers
+  // Handle long press on FAB to show radial date menu
+  const handleLongPress = (event: React.TouchEvent | React.MouseEvent) => {
+    // Get the position for the radial menu
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    setRadialMenuPosition({ x, y });
+    setShowRadialDateMenu(true);
+  };
+
+  // Handle regular click on FAB
+  const handleFabClick = () => {
+    openExpenseEntry();
+  };
+
+  // Handle date selection from radial menu
+  const handleRadialDateSelect = (date: string) => {
+    setShowRadialDateMenu(false);
+    // Set the initial date for the expense form
+    setExpenseSelectedDate(date);
+    // Open the appropriate expense form based on active tab
+    if (activeTab === 'expenses') {
+      setShowAddSheet(true);
+    } else {
+      setShowAddExpenseForm(true);
+    }
+  };
+
+  // Configure long press hook
+  const longPressHandlers = useLongPress({
+    onLongPress: handleLongPress,
+    onClick: handleFabClick,
+    delay: 500, // 500ms long press delay
+  });
+  //#endregion
+
   //#region Render
   return (
     <>
@@ -2804,6 +2848,7 @@ const Dashboard: React.FC = () => {
       {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
         <div style={styles.floatingButtonGroup}>
           <button
+            {...longPressHandlers}
             onClick={() => openExpenseEntry()}
             style={{
               ...styles.floatingButton,
@@ -2851,6 +2896,15 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Radial Date Menu - shown on long press of FAB */}
+      <RadialDateMenu
+        isOpen={showRadialDateMenu}
+        onClose={() => setShowRadialDateMenu(false)}
+        onSelectDate={handleRadialDateSelect}
+        position={radialMenuPosition}
+        customShortcuts={dateShortcuts}
+      />
+
       {/* Add Expense Bottom Sheet - for all tabs except expenses */}
       {activeTab !== 'expenses' && (
         <PopupModal
@@ -2887,6 +2941,7 @@ const Dashboard: React.FC = () => {
               setActiveTab('paymentMethods');
             }}
             onAddTransfer={handleAddTransfer}
+            initialDate={expenseSelectedDate}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
           />
@@ -2911,8 +2966,9 @@ const Dashboard: React.FC = () => {
       {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
         <div style={styles.floatingButtonGroup}>
           <button
-            aria-label={addExpenseLabel}
+            {...longPressHandlers}
             onClick={() => openExpenseEntry()}
+            aria-label={addExpenseLabel}
             style={{
               ...styles.floatingButton,
               width: isMobile ? '56px' : 'auto',

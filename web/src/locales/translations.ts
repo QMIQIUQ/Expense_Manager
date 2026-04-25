@@ -250,6 +250,13 @@ export const translations = {
   thisMonth: { en: 'This Month', zh: '本月', 'zh-CN': '本月' },
   thisYear: { en: 'This Year', zh: '今年', 'zh-CN': '今年' },
   today: { en: 'Today', zh: '今日', 'zh-CN': '今日' },
+  yesterday: { en: 'Yesterday', zh: '昨日', 'zh-CN': '昨日' },
+  daysAgo: { en: 'days ago', zh: '天前', 'zh-CN': '天前' },
+  lastWeek: { en: 'Last week', zh: '上週', 'zh-CN': '上周' },
+  monthStart: { en: 'Month start', zh: '月初', 'zh-CN': '月初' },
+  lastMonthStart: { en: 'Last month start', zh: '上月初', 'zh-CN': '上月初' },
+  yearStart: { en: 'Year start', zh: '年初', 'zh-CN': '年初' },
+  selectDateOrTapOutside: { en: 'Select a date or tap outside to cancel', zh: '選擇日期或點擊外面取消', 'zh-CN': '选择日期或点击外面取消' },
   topCategories: { en: 'Top Categories', zh: '熱門類別', 'zh-CN': '热门分类' },
   recentExpenses: { en: 'Recent Expenses', zh: '最近支出', 'zh-CN': '最近支出' },
   spendingTrend: { en: 'Spending Trend', zh: '支出趨勢', 'zh-CN': '支出趋势' },
@@ -468,7 +475,12 @@ export const translations = {
   invalidBillingCycleDay: { en: 'Please enter a valid day between 1 and 31', zh: '請輸入 1 到 31 之間的有效日期', 'zh-CN': '请输入 1 到 31 之间的有效日期' },
   accountSettings: { en: 'Account Settings', zh: '帳號設定', 'zh-CN': '账号设定' },
   contactAdminForChanges: { en: 'To change password or email, please contact the system administrator.', zh: '如需更改密碼或 Email，請聯繫系統管理員協助處理。', 'zh-CN': '如需更改密码或 Email，请联系系统管理员协助处理。' },
-  
+  dateShortcutsSettings: { en: 'Date Shortcuts Settings', zh: '日期快捷鍵設定', 'zh-CN': '日期快捷键设定' },
+  dateShortcutsDesc: { en: 'Customize which date shortcuts appear in the long-press menu', zh: '自定義長按選單中顯示的日期快捷鍵', 'zh-CN': '自定义长按菜单中显示的日期快捷键' },
+  shortcutsEnabled: { en: 'shortcuts enabled', zh: '個快捷鍵已啟用', 'zh-CN': '个快捷键已启用' },
+  saveChanges: { en: 'Save Changes', zh: '儲存變更', 'zh-CN': '保存变更' },
+  resetToDefaults: { en: 'Reset to Defaults', zh: '重設為預設值', 'zh-CN': '重置为默认值' },
+
   // Appearance
   appearance: { en: 'Appearance', zh: '外觀', 'zh-CN': '外观' },
   fontFamily: { en: 'Font Family', zh: '字體', 'zh-CN': '字体' },
