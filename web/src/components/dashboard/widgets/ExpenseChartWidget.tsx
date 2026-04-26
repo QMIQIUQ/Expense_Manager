@@ -144,14 +144,14 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, 
           labelLine={false}
           label={false}
           outerRadius={chartConfig.outerRadius}
-          fill="#8884d8"
+          fill={COLORS[0]}
           dataKey="value"
         >
           {pieData.map((_entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip formatter={(value: number) => value.toFixed(2)} />
         <Legend
           layout="horizontal"
           verticalAlign="bottom"

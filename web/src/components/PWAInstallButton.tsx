@@ -295,7 +295,7 @@ The app works offline and syncs when online!
           gap: 8px;
           width: 100%;
           padding: 10px 16px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
           color: white;
           border: none;
           border-radius: 6px;
@@ -306,7 +306,7 @@ The app works offline and syncs when online!
         }
         .pwa-install-button:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          box-shadow: 0 4px 12px var(--shadow-md);
         }
         .pwa-install-button:active {
           transform: translateY(0);

@@ -18,7 +18,7 @@ import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
 import { COLLECTIONS } from '../constants/collections';
 
-interface AuthContextType {
+export interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   signup: (email: string, password: string) => Promise<void>;
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           alignItems: 'center', 
           height: '100vh',
           fontSize: '1.2rem',
-          color: '#666'
+          color: 'var(--text-secondary)'
         }}>
           Loading...
         </div>

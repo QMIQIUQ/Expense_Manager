@@ -236,7 +236,6 @@ const Dashboard: React.FC = () => {
 
     try {
       // Phase 1: Load cached data first (instant display)
-      console.log('Phase 1: Loading cached data...');
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
         dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
         dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
@@ -259,11 +258,9 @@ const Dashboard: React.FC = () => {
       setScheduledPaymentRecords(scheduledPaymentRecordsData);
       
       // Initial UI now rendered; no blocking loader needed
-      console.log('Phase 1 complete: UI ready with cached data');
       
       // Phase 2: Initialize and load additional data in background (only if online)
       if (networkStatus.isOnline) {
-        console.log('Phase 2: Background initialization and updates...');
         setIsRevalidating(true);
         
         // Batch all background tasks to complete together
@@ -353,7 +350,6 @@ const Dashboard: React.FC = () => {
           if (Array.isArray(quickPresets)) setQuickExpensePresets(quickPresets);
         }).finally(() => {
           setIsRevalidating(false);
-          console.log('Phase 2: Background initialization complete');
         });
       }
     } catch (error) {
@@ -1225,11 +1221,7 @@ const Dashboard: React.FC = () => {
           setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
           
           // Auto-generate expense if enabled
-          console.log('[Auto-Generate Expense] Scheduled Payment:', scheduledPayment);
-          console.log('[Auto-Generate Expense] autoGenerateExpense flag:', scheduledPayment?.autoGenerateExpense);
-          
           if (scheduledPayment?.autoGenerateExpense) {
-            console.log('[Auto-Generate Expense] Creating expense...');
             try {
               const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
                 userId: currentUser.uid,
@@ -1255,9 +1247,6 @@ const Dashboard: React.FC = () => {
                 updatedAt: new Date(),
               };
               
-              console.log('[Auto-Generate Expense] Expense created with ID:', expenseId);
-              console.log('[Auto-Generate Expense] New expense:', newExpense);
-              
               // Update state
               setExpenses((prev) => [newExpense, ...prev]);
               
@@ -1270,14 +1259,11 @@ const Dashboard: React.FC = () => {
               // Reload e-wallets and banks to reflect updated balances
               loadData();
               
-              console.log('[Auto-Generate Expense] Success! Expense added to state and cache.');
               showNotification('success', t('expenseGenerated') || 'Expense record created');
             } catch (error) {
               console.error('[Auto-Generate Expense] Failed to auto-generate expense:', error);
               showNotification('error', t('errorCreatingExpense') || 'Failed to create expense');
             }
-          } else {
-            console.log('[Auto-Generate Expense] Skipped - autoGenerateExpense is disabled');
           }
         },
         onError: () => {
@@ -3087,7 +3073,7 @@ const styles = {
     background: 'var(--card-bg, white)',
     color: 'var(--text-primary)',
     border: '1px solid var(--border-color, #e5e7eb)',
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
+    boxShadow: '0 8px 24px var(--shadow-md)',
   },
 };
 //#endregion

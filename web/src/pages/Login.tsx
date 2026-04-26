@@ -283,19 +283,19 @@ const Login: React.FC = () => {
               className="w-full inline-flex items-center justify-center gap-2 rounded-md text-white font-medium px-4 py-2.5 focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
               style={{
                 backgroundColor: 'var(--accent-primary)',
-                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)'
+                boxShadow: '0 4px 12px var(--shadow-md)'
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
                   e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(124, 58, 237, 0.35)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px var(--shadow-lg)';
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.25)';
+                e.currentTarget.style.boxShadow = '0 4px 12px var(--shadow-md)';
               }}
             >
               {loading && (

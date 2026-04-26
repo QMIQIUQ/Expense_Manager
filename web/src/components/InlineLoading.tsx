@@ -5,7 +5,7 @@ interface InlineLoadingProps {
   color?: string;
 }
 
-const InlineLoading: React.FC<InlineLoadingProps> = ({ size = 16, color = '#6366f1' }) => {
+const InlineLoading: React.FC<InlineLoadingProps> = ({ size = 16, color = 'var(--accent-primary)' }) => {
   return (
     <div style={{ ...styles.spinner, width: size, height: size, borderColor: `${color}30`, borderTopColor: color }}>
     </div>

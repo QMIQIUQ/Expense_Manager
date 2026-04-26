@@ -246,8 +246,8 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
                 fontWeight: 600,
                 gap: '4px',
                 boxShadow: selectedType === option.type
-                  ? '0 8px 20px rgba(124, 58, 237, 0.4)'
-                  : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                  ? '0 8px 20px var(--shadow-lg)'
+                  : '0 4px 12px var(--shadow-md)',
                 transition: 'all 0.2s ease',
                 zIndex: 1,
                 padding: '4px',

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../test/test-utils';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
+import type { Expense } from '../../types';
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ currentUser: { uid: 'test-user' } }),
@@ -27,7 +28,7 @@ describe('StepByStepExpenseForm draft controls', () => {
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
         categories={[]}
-        initialData={initialData as any}
+        initialData={initialData as Expense}
       />
     );
 

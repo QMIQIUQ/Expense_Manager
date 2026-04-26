@@ -182,6 +182,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, initialData, initialReceiptFile, receiptDraftId]);
 
   useEffect(() => {
@@ -711,7 +712,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1:
+      case 1: {
         const isNotToday = formData.date !== getTodayLocal();
         return (
           <div style={{ ...styles.stepContent, overflow: 'visible', overflowY: 'visible' }}>
@@ -742,6 +743,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             </div>
           </div>
         );
+      }
 
       case 2:
         return (
@@ -881,7 +883,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           </div>
         );
 
-      case 3:
+      case 3: {
         const sortedCategories = getSortedCategories();
         return (
           <div style={styles.stepContent}>
@@ -912,6 +914,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             </div>
           </div>
         );
+      }
 
       case 4:
         return (
