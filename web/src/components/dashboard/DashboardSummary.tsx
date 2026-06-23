@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getTodayLocal, formatDateLocal, formatDateShort, formatDateWithUserFormat } from '../../utils/dateUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -62,7 +63,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     // Helper to get net expense amount (expense - repayments, min 0)
     const getNetAmount = (exp: Expense) => {
       const repaid = repaymentsByExpense[exp.id || ''] || 0;
-      return Math.max(0, exp.amount - repaid);
+      return Math.max(0, getExpenseBaseAmount(exp) - repaid);
     };
 
     // Total expenses (deducting repayments)
@@ -159,7 +160,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     // Accumulate expenses
     expenses.forEach(exp => {
       if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
-        last7Days[exp.date] += exp.amount;
+        last7Days[exp.date] += getExpenseBaseAmount(exp);
       }
     });
     
@@ -188,7 +189,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div className="card-icon error-bg">💰</div>
           <div className="card-content">
             <div className="card-label">{t('monthlyExpense') || 'Monthly Expense'}</div>
-            <div className="card-value error-text">${stats.monthly.toFixed(2)}</div>
+            <div className="card-value error-text">{formatMoney(stats.monthly, DEFAULT_BASE_CURRENCY)}</div>
           </div>
         </div>
 
@@ -197,7 +198,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div className="card-content">
             <div className="card-label">{t('monthlyIncome')}</div>
             <div className="card-value success-text">
-              ${stats.monthlyIncome.toFixed(2)}
+              {formatMoney(stats.monthlyIncome, DEFAULT_BASE_CURRENCY)}
             </div>
           </div>
         </div>
@@ -209,7 +210,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div className="card-content">
             <div className="card-label">{t('netCashflow')}</div>
             <div className={`card-value ${stats.netCashflow >= 0 ? 'success-text' : 'error-text'}`}>
-              ${stats.netCashflow.toFixed(2)}
+              {formatMoney(stats.netCashflow, DEFAULT_BASE_CURRENCY)}
             </div>
           </div>
         </div>
@@ -219,7 +220,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
           <div className="card-content">
             <div className="card-label">{t('unrecovered')}</div>
             <div className="card-value warning-text">
-              ${stats.totalUnrecovered.toFixed(2)}
+              {formatMoney(stats.totalUnrecovered, DEFAULT_BASE_CURRENCY)}
             </div>
           </div>
           {(() => {
@@ -274,9 +275,10 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
             </h3>
             <div className="tracked-expenses-list">
               {trackedExpenses.map(expense => {
-                const repaid = repaymentTotals[expense.id!] || 0;
-                const remaining = expense.amount - repaid;
-                const percentage = (repaid / expense.amount) * 100;
+        const repaid = repaymentTotals[expense.id!] || 0;
+                const totalAmount = getExpenseBaseAmount(expense);
+                const remaining = totalAmount - repaid;
+                const percentage = totalAmount > 0 ? (repaid / totalAmount) * 100 : 0;
                 
                 return (
                   <div key={expense.id} className="tracked-expense-card">
@@ -298,15 +300,15 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                     <div className="tracked-expense-amounts">
                       <div className="tracked-amount-item">
                         <span className="tracked-amount-label">{t('totalAmount')}:</span>
-                        <span className="tracked-amount-value">${expense.amount.toFixed(2)}</span>
+                        <span className="tracked-amount-value">{formatMoney(totalAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                       </div>
                       <div className="tracked-amount-item">
                         <span className="tracked-amount-label">{t('repaid')}:</span>
-                        <span className="tracked-amount-value success-text">${repaid.toFixed(2)}</span>
+                        <span className="tracked-amount-value success-text">{formatMoney(repaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                       </div>
                       <div className="tracked-amount-item">
                         <span className="tracked-amount-label">{t('remaining')}:</span>
-                        <span className="tracked-amount-value warning-text">${remaining.toFixed(2)}</span>
+                        <span className="tracked-amount-value warning-text">{formatMoney(Math.max(0, remaining), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                       </div>
                     </div>
                     <div className="progress-bar">
@@ -336,7 +338,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 <div key={category} className="category-item">
                   <div className="category-info">
                     <span className="category-name">{category}</span>
-                    <span className="category-amount error-text">${amount.toFixed(2)}</span>
+                    <span className="category-amount error-text">{formatMoney(amount, DEFAULT_BASE_CURRENCY)}</span>
                   </div>
                   <div className="progress-bar">
                     <div
@@ -372,7 +374,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => value.toFixed(2)}
+                formatter={(value: number) => formatMoney(value, DEFAULT_BASE_CURRENCY)}
               />
               <Legend 
                 layout="horizontal"
@@ -407,7 +409,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                 height={60}
               />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value: number) => value.toFixed(2)} />
+              <Tooltip formatter={(value: number) => formatMoney(value, DEFAULT_BASE_CURRENCY)} />
               <Line type="monotone" dataKey="amount" stroke="var(--accent-primary)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
@@ -425,7 +427,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
                   <span className="recent-expense-category">{expense.category}</span>
                 </div>
                 <div className="recent-expense-right">
-                  <span className="recent-expense-amount error-text">${expense.amount.toFixed(2)}</span>
+                  <span className="recent-expense-amount error-text">{formatMoney(expense.amount, expense.currency)}</span>
                   <span className="recent-expense-date">
                     {formatDateShort(expense.date, dateFormat)}
                   </span>

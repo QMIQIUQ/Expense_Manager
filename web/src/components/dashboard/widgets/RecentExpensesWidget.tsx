@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
+import { formatMoney } from '../../../utils/currencyUtils';
 import { WidgetProps } from './types';
 
 interface RecentExpensesWidgetProps extends WidgetProps {
@@ -68,7 +69,7 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
           </div>
           <div className="recent-expense-right">
             <span className="recent-expense-amount error-text">
-              ${expense.amount.toFixed(2)}
+              {formatMoney(expense.amount, expense.currency)}
             </span>
             <span className="recent-expense-date">
               {formatDateWithUserFormat(expense.date, dateFormat)}

@@ -1,6 +1,7 @@
 import { Expense, Income, Transfer } from '../types';
 import { ewalletService } from './ewalletService';
 import { bankService } from './bankService';
+import { getExpenseBaseAmount } from '../utils/currencyUtils';
 
 /**
  * Balance Service
@@ -24,7 +25,7 @@ export const balanceService = {
    * Deducts the expense amount from the payment method
    */
   async handleExpenseCreated(expense: Expense): Promise<void> {
-    await this.updateBalanceForExpense(expense, -expense.amount);
+    await this.updateBalanceForExpense(expense, -getExpenseBaseAmount(expense));
   },
 
   /**
@@ -32,7 +33,7 @@ export const balanceService = {
    * Adds back the expense amount to the payment method
    */
   async handleExpenseDeleted(expense: Expense): Promise<void> {
-    await this.updateBalanceForExpense(expense, expense.amount);
+    await this.updateBalanceForExpense(expense, getExpenseBaseAmount(expense));
   },
 
   /**

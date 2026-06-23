@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { PlusIcon } from '../icons';
 import PopupModal from '../common/PopupModal';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
 
 interface RepaymentManagerProps {
   expense: Expense;
@@ -42,6 +43,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       }
     }, 500); // Wait 500ms after last change before notifying parent
   }, [onRepaymentChange]);
+  const expenseBaseAmount = getExpenseBaseAmount(expense);
 
   useEffect(() => {
     loadRepayments();
@@ -109,10 +111,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       // Handle excess income logic asynchronously
       const totalRepaid = [...repayments, optimisticRepayment].reduce((sum, r) => sum + r.amount, 0);
       
-      if (totalRepaid > expense.amount) {
+      if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
         const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
-        const excessAmount = totalRepaid - expense.amount;
+        const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
           await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
@@ -175,10 +177,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         .map(r => r.id === editingRepayment.id ? { ...r, ...repaymentData } : r)
         .reduce((sum, r) => sum + r.amount, 0);
       
-      if (totalRepaid > expense.amount) {
+      if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
         const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
-        const excessAmount = totalRepaid - expense.amount;
+        const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
           await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
@@ -245,10 +247,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
       for (const income of linkedIncomes) {
         if (income.type === 'repayment') {
-          if (totalRepaid <= expense.amount) {
+          if (totalRepaid <= expenseBaseAmount) {
             await incomeService.delete(income.id!);
           } else {
-            const newExcessAmount = totalRepaid - expense.amount;
+            const newExcessAmount = totalRepaid - expenseBaseAmount;
             await incomeService.update(income.id!, { amount: newExcessAmount });
           }
         }
@@ -299,10 +301,10 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       const updatedRepayments = repayments.map(r => r.id === id ? { ...r, ...updates } : r);
       const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
       
-      if (totalRepaid > expense.amount) {
+      if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
         const existingExcessIncome = linkedIncomes.find(inc => inc.type === 'repayment');
-        const excessAmount = totalRepaid - expense.amount;
+        const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
           await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
@@ -347,7 +349,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
   };
 
   const totalRepaid = repayments.reduce((sum, r) => sum + r.amount, 0);
-  const remainingAmount = expense.amount - totalRepaid;
+  const remainingAmount = expenseBaseAmount - totalRepaid;
   const isFullyRepaid = remainingAmount <= 0;
   const hasExcess = remainingAmount < 0;
 
@@ -471,16 +473,16 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       <div style={inline ? styles.summaryCard : undefined} className={inline ? undefined : 'expense-info'}>
         <div style={styles.summaryRow}>
           <span>{t('originalExpenseAmount')}</span>
-          <span style={styles.summaryValue}>${expense.amount.toFixed(2)}</span>
+          <span style={styles.summaryValue}>{formatMoney(expenseBaseAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
         </div>
         <div style={styles.summaryRow}>
           <span>{t('totalRepaid')}</span>
-          <span style={styles.successValue}>${totalRepaid.toFixed(2)}</span>
+          <span style={styles.successValue}>{formatMoney(totalRepaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
         </div>
         <div style={styles.summaryRow}>
           <span>{hasExcess ? t('excessAmount') : t('remainingAmount')}</span>
           <span style={hasExcess ? styles.infoValue : (isFullyRepaid ? styles.successValue : styles.warningValue)}>
-            ${Math.abs(remainingAmount).toFixed(2)}
+            {formatMoney(Math.abs(remainingAmount), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}
           </span>
         </div>
         {isFullyRepaid && !hasExcess && (
@@ -533,7 +535,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           cards={cards}
           ewallets={ewallets}
           banks={banks}
-          maxAmount={expense.amount}
+          maxAmount={expenseBaseAmount}
         />
       )}
     </div>

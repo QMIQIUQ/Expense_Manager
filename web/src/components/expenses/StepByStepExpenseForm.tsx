@@ -3,6 +3,13 @@ import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateForma
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
+import {
+  CURRENCIES,
+  DEFAULT_BASE_CURRENCY,
+  formatMoney,
+  normalizeCurrencyCode,
+} from '../../utils/currencyUtils';
+import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
@@ -116,6 +123,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     date: initialDate || initialData?.date || getTodayLocal(),
     time: initialData?.time || getCurrentTimeLocal(),
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    currency: initialData?.currency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     description: initialData?.description || '',
     notes: initialData?.notes || '',
@@ -125,6 +133,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     bankId: initialData?.bankId || '',
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currencyError, setCurrencyError] = useState('');
 
   // Multi-amount and tax state
   const [amountItems, setAmountItems] = useState<AmountItem[]>(
@@ -282,7 +292,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const { draft } = loaded;
     setReceiptDraftId(draft.draftId);
     setCurrentStep((draft.currentStep as Step) || 1);
-    setFormData(draft.formData);
+    setFormData({
+      ...draft.formData,
+      currency: draft.formData.currency || DEFAULT_BASE_CURRENCY,
+    });
     setAmountItems(draft.amountItems || []);
     setCurrentAmountInput(draft.currentAmountInput || 0);
     setEnableTax(!!draft.enableTax);
@@ -413,6 +426,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       date: initialDate || getTodayLocal(),
       time: getCurrentTimeLocal(),
       amount: 0,
+      currency: DEFAULT_BASE_CURRENCY,
       category: '',
       description: '',
       notes: '',
@@ -454,10 +468,23 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   // Helper to build submit data
-  const buildSubmitData = (): Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> => {
-    const submitData: Record<string, unknown> = { 
+  const buildSubmitData = async (): Promise<Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>> => {
+    const resolvedCurrency = await resolveExpenseCurrencyFields({
+      amount: formData.amount / 100,
+      currency: formData.currency,
+      baseCurrency: DEFAULT_BASE_CURRENCY,
+      date: formData.date,
+      existing: initialData,
+      forceRefresh: !!initialData && (
+        initialData.currency !== formData.currency ||
+        initialData.date !== formData.date
+      ),
+    });
+
+    const submitData: Record<string, unknown> = {
       ...formData,
-      amount: formData.amount / 100
+      amount: formData.amount / 100,
+      ...resolvedCurrency,
     };
 
     // Add multi-amount data if applicable
@@ -489,7 +516,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   // Helper to handle transfer logic
-  const handleTransferIfNeeded = () => {
+  const handleTransferIfNeeded = (transferAmount: number) => {
     if (enableTransfer && onAddTransfer) {
       const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
       const toPaymentMethod = transferToPaymentMethod;
@@ -506,10 +533,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           case 'bank': return transferToBankId === formData.bankId;
         }
       };
-      
+
       if (!isSamePaymentSource(fromPaymentMethod, toPaymentMethod)) {
         const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-          amount: formData.amount / 100,
+          amount: transferAmount,
           date: formData.date,
           time: formData.time,
           note: `${t('transfer')} - ${formData.description}`,
@@ -535,6 +562,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       date: initialDate || getTodayLocal(),
       time: getCurrentTimeLocal(),
       amount: 0,
+      currency: formData.currency,
       category: '', // Keep category for quick re-entry
       description: '',
       notes: '',
@@ -552,28 +580,50 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setCurrencyError('');
     // Update category usage for sorting
     if (formData.category) {
       updateCategoryUsage(formData.category);
     }
 
-    handleTransferIfNeeded();
-    onSubmit(buildSubmitData());
-    await resetReceiptDraftState();
+    try {
+      const submitData = await buildSubmitData();
+      handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount);
+      onSubmit(submitData);
+      await resetReceiptDraftState();
+    } catch (error) {
+      console.error('Failed to resolve expense currency:', error);
+      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSubmitAndAddAnother = async () => {
     if (!onSubmitAndAddAnother) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setCurrencyError('');
     
     // Update category usage for sorting
     if (formData.category) {
       updateCategoryUsage(formData.category);
     }
 
-    handleTransferIfNeeded();
-    onSubmitAndAddAnother(buildSubmitData());
-    await resetReceiptDraftState();
-    resetFormForNewExpense();
+    try {
+      const submitData = await buildSubmitData();
+      handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount);
+      onSubmitAndAddAnother(submitData);
+      await resetReceiptDraftState();
+      resetFormForNewExpense();
+    } catch (error) {
+      console.error('Failed to resolve expense currency:', error);
+      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Multi-amount handlers
@@ -658,8 +708,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const formatCurrency = (amount: number): string => `$${(amount / 100).toFixed(2)}`;
-  const formatCurrencyFromDollars = (amount: number): string => `$${amount.toFixed(2)}`;
+  const formatAmountFromCents = (amount: number): string => formatMoney(amount / 100, formData.currency);
+  const formatAmountFromDollars = (amount: number): string => formatMoney(amount, formData.currency);
 
   const getCategoryIcon = (categoryName: string): string => {
     const category = categories.find(c => c.name === categoryName);
@@ -680,7 +730,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       )}
       {currentStep > 2 && formData.amount > 0 && (
         <div style={styles.summaryChip} onClick={() => handleStepClick(2)}>
-          💰 {formatCurrency(formData.amount)}
+          💰 {formatAmountFromCents(formData.amount)}
         </div>
       )}
       {currentStep > 3 && formData.category && (
@@ -754,7 +804,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               {/* Display total in header when there are amount items */}
               {(amountItems.length > 0 || formData.amount > 0) && (
                 <span style={styles.headerTotal}>
-                  {t('total')}: {formatCurrency(formData.amount)}
+          {t('total')}: {formatAmountFromCents(formData.amount)}
                 </span>
               )}
             </div>
@@ -765,10 +815,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ref={amountInputRef}
                 type="text"
                 inputMode="decimal"
-                value={currentAmountInput === 0 ? '' : formatCurrency(currentAmountInput)}
+                value={currentAmountInput === 0 ? '' : formatAmountFromCents(currentAmountInput)}
                 onChange={handleCurrentAmountInputChange}
                 onKeyDown={handleAmountKeyDown}
-                placeholder="$0.00"
+                placeholder={formatMoney(0, formData.currency)}
                 style={styles.amountInputMulti}
               />
               <button
@@ -784,13 +834,34 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </button>
             </div>
 
+            <div style={styles.currencySelectBlock}>
+              <label style={styles.fieldLabel}>{t('currency')}</label>
+              <select
+                value={formData.currency}
+                onChange={(e) => setFormData(prev => ({ ...prev, currency: normalizeCurrencyCode(e.target.value) }))}
+                style={styles.currencySelect}
+              >
+                {CURRENCIES.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.symbol} {currency.code} - {currency.name}
+                  </option>
+                ))}
+              </select>
+              <div style={styles.currencyHelp}>
+                {formData.currency === DEFAULT_BASE_CURRENCY
+                  ? (t('baseCurrency') || 'Base currency')
+                  : (t('exchangeRate') || 'Exchange rate will be captured on save')}
+              </div>
+            </div>
+            {currencyError && <div style={styles.currencyError}>{currencyError}</div>}
+
             {/* Amount items list */}
             {amountItems.length > 0 && (
               <div style={styles.amountItemsList}>
                 <div style={styles.amountItemsLabel}>{t('addedItems')}:</div>
                 {amountItems.map((item, index) => (
                   <div key={index} style={styles.amountItem}>
-                    <span>{formatCurrencyFromDollars(item.amount)}</span>
+                    <span>{formatAmountFromDollars(item.amount)}</span>
                     <button
                       type="button"
                       onClick={() => removeAmountItem(index)}
@@ -857,17 +928,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 <div style={styles.amountSummary}>
                   <div style={styles.summaryRow}>
                     <span>{t('subtotal')}:</span>
-                    <span>{formatCurrencyFromDollars(subtotal)}</span>
+                    <span>{formatAmountFromDollars(subtotal)}</span>
                   </div>
                   {enableTax && (
                     <div style={styles.summaryRow}>
                       <span>{t('tax')} ({taxRate}%):</span>
-                      <span>{formatCurrencyFromDollars(taxAmount)}</span>
+                      <span>{formatAmountFromDollars(taxAmount)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.summaryRow, ...styles.summaryRowTotal }}>
                     <span>{t('total')}:</span>
-                    <span style={styles.summaryTotal}>{formatCurrency(formData.amount)}</span>
+                    <span style={styles.summaryTotal}>{formatAmountFromCents(formData.amount)}</span>
                   </div>
                 </div>
               </>
@@ -877,7 +948,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {amountItems.length === 0 && formData.amount > 0 && (
               <div style={styles.simpleAmountDisplay}>
                 <span style={styles.simpleAmountLabel}>{t('total')}:</span>
-                <span style={styles.simpleAmountValue}>{formatCurrency(formData.amount)}</span>
+                <span style={styles.simpleAmountValue}>{formatAmountFromCents(formData.amount)}</span>
               </div>
             )}
           </div>
@@ -939,7 +1010,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   {amountItems.map((item, index) => (
                     <div key={index} style={styles.amountDescriptionRow}>
                       <span style={styles.amountDescriptionAmount}>
-                        {formatCurrencyFromDollars(item.amount)}:
+                        {formatAmountFromDollars(item.amount)}:
                       </span>
                       <input
                         type="text"
@@ -957,7 +1028,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   {enableTax && taxAmount > 0 && (
                     <div style={styles.amountDescriptionRow}>
                       <span style={styles.taxLabel}>{t('tax')} ({taxRate}%):</span>
-                      <span style={styles.taxValue}>{formatCurrencyFromDollars(taxAmount)}</span>
+                      <span style={styles.taxValue}>{formatAmountFromDollars(taxAmount)}</span>
                     </div>
                   )}
                 </div>
@@ -1172,12 +1243,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           {currentStep === 5 && !initialData && onSubmitAndAddAnother && (
             <button
               onClick={handleSubmitAndAddAnother}
-              disabled={!isStep5Valid()}
+              disabled={!isStep5Valid() || isSubmitting}
               style={{
                 ...styles.headerNavBtn,
                 ...styles.headerNavBtnSecondary,
-                opacity: isStep5Valid() ? 1 : 0.5,
-                cursor: isStep5Valid() ? 'pointer' : 'not-allowed',
+                opacity: isStep5Valid() && !isSubmitting ? 1 : 0.5,
+                cursor: isStep5Valid() && !isSubmitting ? 'pointer' : 'not-allowed',
               }}
               aria-label={t('saveAndAddAnother') || '储存后新增'}
               title={t('saveAndAddAnother') || '储存后新增'}
@@ -1189,6 +1260,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             onClick={currentStep === 5 ? handleSubmit : handleNext}
             style={styles.headerNavBtn}
             disabled={
+              isSubmitting ||
               (currentStep === 2 && formData.amount === 0) ||
               (currentStep === 3 && !formData.category) ||
               (currentStep === 4 && !formData.description.trim()) ||
@@ -1479,6 +1551,32 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
     background: 'var(--input-bg, white)',
     color: 'var(--text-primary)',
+  },
+  currencySelectBlock: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    marginTop: '4px',
+    marginBottom: '4px',
+  },
+  currencySelect: {
+    width: '100%',
+    padding: '12px 16px',
+    fontSize: '16px',
+    border: '2px solid var(--border-color, #e9ecef)',
+    borderRadius: '8px',
+    outline: 'none',
+    background: 'var(--input-bg, white)',
+    color: 'var(--text-primary)',
+  },
+  currencyHelp: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  },
+  currencyError: {
+    fontSize: '12px',
+    color: 'var(--error-text)',
+    marginTop: '4px',
   },
   paymentMethodGrid: {
     display: 'grid',

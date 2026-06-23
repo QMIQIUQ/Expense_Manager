@@ -11,6 +11,7 @@ export interface ReceiptDraftFormState {
   date: string;
   time: string;
   amount: number;
+  currency: string;
   category: string;
   description: string;
   notes: string;

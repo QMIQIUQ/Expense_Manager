@@ -16,6 +16,24 @@ export interface DateShortcut {
   angle?: number; // Optional custom angle position (0-315)
 }
 
+// Currency types
+export type CurrencyCode = 'MYR' | 'USD' | 'TWD' | 'SGD' | 'CNY' | 'EUR' | 'GBP' | 'JPY';
+
+export interface CurrencyOption {
+  code: CurrencyCode;
+  name: string;
+  symbol: string;
+}
+
+export interface CurrencyRateSnapshot {
+  fromCurrency: CurrencyCode;
+  toCurrency: CurrencyCode;
+  rate: number;
+  rateDate: string;
+  provider: string;
+  fetchedAt: Date;
+}
+
 // User settings
 export interface UserSettings {
   id?: string;
@@ -43,6 +61,13 @@ export interface Expense {
   userId: string;
   description: string;
   amount: number;
+  currency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
+  baseAmount?: number;
   category: string;
   date: string;
   // Optional time in HH:mm (24h) format, for finer granularity
@@ -400,7 +425,7 @@ export interface ScheduledPayment {
   interestRate?: number; // Optional interest rate percentage (e.g., 5 for 5%)
   
   // Currency support
-  currency?: string; // Currency code (e.g., "USD", "MYR", "TWD")
+  currency?: CurrencyCode; // Currency code (e.g., "USD", "MYR", "TWD")
   
   // Schedule info
   frequency: ScheduledPaymentFrequency; // monthly or yearly

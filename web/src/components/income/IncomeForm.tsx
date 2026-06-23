@@ -5,6 +5,7 @@ import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { getTodayLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../utils/currencyUtils';
 import DatePicker from '../common/DatePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
@@ -193,7 +194,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)}) *</label>
           <input
             type="text"
             inputMode="numeric"
@@ -332,7 +333,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <option value="">-- {t('noLink')} --</option>
             {expenses.map((expense) => (
               <option key={expense.id} value={expense.id}>
-                {expense.description} - ${expense.amount.toFixed(2)} ({formatDateWithUserFormat(expense.date, dateFormat)})
+                {expense.description} - {formatMoney(expense.amount, expense.currency)} ({formatDateWithUserFormat(expense.date, dateFormat)})
               </option>
             ))}
           </select>
@@ -345,11 +346,11 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
               }}
             >
               <div>
-                <strong>{t('expense')}:</strong> ${selectedExpense.amount.toFixed(2)}
+                <strong>{t('expense')}:</strong> {formatMoney(selectedExpense.amount, selectedExpense.currency)}
               </div>
               {selectedExpense.originalReceiptAmount && (
                 <div>
-                  <strong>{t('receipt')}:</strong> ${selectedExpense.originalReceiptAmount.toFixed(2)}
+                  <strong>{t('receipt')}:</strong> {formatMoney(selectedExpense.originalReceiptAmount, selectedExpense.currency)}
                 </div>
               )}
             </div>

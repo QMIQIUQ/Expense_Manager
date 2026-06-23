@@ -14,34 +14,12 @@ import {
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
+import { CURRENCIES, getCurrencySymbol, formatMoney as formatCurrency } from '../../utils/currencyUtils';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
-// Common currencies - exported for use in other components
-export const CURRENCIES = [
-  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'TWD', name: 'New Taiwan Dollar', symbol: 'NT$' },
-  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'GBP', name: 'British Pound', symbol: '£' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-];
-
-// Helper to get currency symbol
-export const getCurrencySymbol = (currencyCode?: string): string => {
-  if (!currencyCode) return 'RM'; // Default to MYR
-  const currency = CURRENCIES.find(c => c.code === currencyCode);
-  return currency?.symbol || currencyCode;
-};
-
-// Helper to format amount with currency
-export const formatCurrency = (amount: number, currencyCode?: string): string => {
-  const symbol = getCurrencySymbol(currencyCode);
-  return `${symbol}${amount.toFixed(2)}`;
-};
+export { CURRENCIES, getCurrencySymbol, formatCurrency };
 
 interface ScheduledPaymentFormData {
   name: string;
@@ -268,7 +246,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           <>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {t('totalAmount')} ($) *
+                {t('totalAmount')} ({getCurrencySymbol(formData.currency)}) *
               </label>
               <input
                 type="text"
@@ -359,10 +337,10 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             {calculateFromTotal && totalAmountInCents > 0 && (
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>
                 <span className="text-sm">
-                  {t('calculatedMonthlyAmount')}: <strong>${(amountInCents / 100).toFixed(2)}</strong>
+                  {t('calculatedMonthlyAmount')}: <strong>{formatCurrency(amountInCents / 100, formData.currency)}</strong>
                   {formData.interestRate > 0 && (
                     <span className="ml-2">
-                      ({t('withInterest')}: ${((totalAmountInCents / 100) * (1 + formData.interestRate / 100)).toFixed(2)})
+                      ({t('withInterest')}: {formatCurrency((totalAmountInCents / 100) * (1 + formData.interestRate / 100), formData.currency)})
                     </span>
                   )}
                 </span>
@@ -374,7 +352,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
         {/* Amount per period (always shown but can be auto-calculated) */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {formData.frequency === 'monthly' ? t('monthlyAmount') : t('yearlyAmount')} ($) *
+            {formData.frequency === 'monthly' ? t('monthlyAmount') : t('yearlyAmount')} ({getCurrencySymbol(formData.currency)}) *
           </label>
           <input
             type="text"

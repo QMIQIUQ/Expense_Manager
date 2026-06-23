@@ -3,6 +3,12 @@ import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateForma
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
+import {
+  CURRENCIES,
+  DEFAULT_BASE_CURRENCY,
+  normalizeCurrencyCode,
+} from '../../utils/currencyUtils';
+import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { BaseForm } from '../common/BaseForm';
 import DatePicker from '../common/DatePicker';
@@ -47,6 +53,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    currency: initialData?.currency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     date: initialData?.date || today,
     time: initialData?.time || getCurrentTimeLocal(),
@@ -57,6 +64,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     paymentMethodName: initialData?.paymentMethodName || '',
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currencyError, setCurrencyError] = useState('');
   // Initialize transfer states from initialTransfer if provided
   // transferTo* = where the money goes TO (user selects this)
   const [enableTransfer, setEnableTransfer] = useState(!!initialTransfer);
@@ -70,125 +79,146 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
-    const newErrors: { [key: string]: string } = {};
-    if (!formData.description.trim()) newErrors.description = t('pleaseFillField');
-    if (!formData.amount || formData.amount <= 0) newErrors.amount = t('pleaseFillField');
-    if (!formData.category) newErrors.category = t('pleaseSelectCategory');
-    if (!formData.date) newErrors.date = t('pleaseFillField');
-    if (formData.paymentMethod === 'e_wallet' && !formData.paymentMethodName.trim()) {
-      newErrors.paymentMethodName = t('pleaseFillField');
-    }
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    
-    setErrors({});
-    
-    // Prepare data based on payment method
-    // Convert amount from cents to dollars
-    const submitData: Partial<typeof formData> = { 
-      ...formData,
-      amount: formData.amount / 100
-    };
-    if (formData.paymentMethod === 'cash') {
-      // Clear card, e-wallet and bank info for cash
-      delete submitData.cardId;
-      delete submitData.paymentMethodName;
-      delete submitData.bankId;
-    } else if (formData.paymentMethod === 'credit_card') {
-      // Clear e-wallet and bank info for credit card
-      delete submitData.paymentMethodName;
-      delete submitData.bankId;
-    } else if (formData.paymentMethod === 'e_wallet') {
-      // Clear card and bank info for e-wallet
-      delete submitData.cardId;
-      delete submitData.bankId;
-    } else if (formData.paymentMethod === 'bank') {
-      // Clear card and e-wallet info for bank
-      delete submitData.cardId;
-      delete submitData.paymentMethodName;
-    }
-    
-    // Handle transfer if enabled
-    if (enableTransfer && onAddTransfer) {
-      // fromPaymentMethod = expense's payment method (where money comes from)
-      // toPaymentMethod = user selected destination (where money goes to)
-      const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
-      const toPaymentMethod = transferToPaymentMethod;
-      
-      // Helper to check if transfer source and destination are the same
-      const isSamePaymentSource = (
-        fromMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank',
-        toMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank'
-      ): boolean => {
-        if (fromMethod !== toMethod) return false;
-        switch (toMethod) {
-          case 'cash': return true;
-          case 'credit_card': return transferToCardId === formData.cardId;
-          case 'e_wallet': return transferToEWalletName === formData.paymentMethodName;
-          case 'bank': return transferToBankId === formData.bankId;
-        }
-      };
-      
-      if (!isSamePaymentSource(fromPaymentMethod, toPaymentMethod)) {
-        // Build transfer data, only including defined fields
-        const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-          amount: formData.amount / 100,
-          date: formData.date,
-          time: formData.time,
-          note: `${t('transfer')} - ${formData.description}`,
-          fromPaymentMethod: fromPaymentMethod,
-          fromPaymentMethodName: fromPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
-          toPaymentMethod: toPaymentMethod,
-          toPaymentMethodName: toPaymentMethod === 'e_wallet' ? transferToEWalletName : '',
-        };
-        
-        // Only add optional fields if they have values (Firebase doesn't accept undefined)
-        if (fromPaymentMethod === 'credit_card' && formData.cardId) {
-          transferData.fromCardId = formData.cardId;
-        }
-        if (fromPaymentMethod === 'bank' && formData.bankId) {
-          transferData.fromBankId = formData.bankId;
-        }
-        if (toPaymentMethod === 'credit_card' && transferToCardId) {
-          transferData.toCardId = transferToCardId;
-        }
-        if (toPaymentMethod === 'bank' && transferToBankId) {
-          transferData.toBankId = transferToBankId;
-        }
-        
-        // Submit transfer asynchronously (silent mode - no separate notification)
-        onAddTransfer(transferData, true).catch((err) => {
-          console.error('Failed to create transfer:', err);
-        });
+
+    void (async () => {
+      const newErrors: { [key: string]: string } = {};
+      if (!formData.description.trim()) newErrors.description = t('pleaseFillField');
+      if (!formData.amount || formData.amount <= 0) newErrors.amount = t('pleaseFillField');
+      if (!formData.category) newErrors.category = t('pleaseSelectCategory');
+      if (!formData.date) newErrors.date = t('pleaseFillField');
+      if (formData.paymentMethod === 'e_wallet' && !formData.paymentMethodName.trim()) {
+        newErrors.paymentMethodName = t('pleaseFillField');
       }
-    }
-    
-    onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
-    if (!initialData) {
-      setFormData({
-        description: '',
-        amount: 0,
-        category: '',
-        date: getTodayLocal(),
-        time: getCurrentTimeLocal(), // Reset to current time
-        notes: '',
-        cardId: '',
-        bankId: '',
-        paymentMethod: 'cash',
-        paymentMethodName: '',
-        needsRepaymentTracking: false,
-      });
-      setEnableTransfer(false);
-      setTransferToPaymentMethod('cash');
-      setTransferToCardId('');
-      setTransferToEWalletName('');
-      setTransferToBankId('');
-    }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
+      setErrors({});
+      setIsSubmitting(true);
+      setCurrencyError('');
+
+      try {
+        const resolvedCurrency = await resolveExpenseCurrencyFields({
+          amount: formData.amount / 100,
+          currency: formData.currency,
+          baseCurrency: DEFAULT_BASE_CURRENCY,
+          date: formData.date,
+          existing: initialData,
+          forceRefresh: !!initialData && (
+            initialData.currency !== formData.currency ||
+            initialData.date !== formData.date
+          ),
+        });
+
+        const submitData: Partial<typeof formData> & {
+          amount: number;
+          currency: string;
+          baseCurrency: string;
+          exchangeRate: number;
+          exchangeRateDate: string;
+          exchangeRateFetchedAt: Date;
+          exchangeRateProvider: string;
+          baseAmount: number;
+        } = {
+          ...formData,
+          amount: formData.amount / 100,
+          ...resolvedCurrency,
+        };
+
+        if (formData.paymentMethod === 'cash') {
+          delete submitData.cardId;
+          delete submitData.paymentMethodName;
+          delete submitData.bankId;
+        } else if (formData.paymentMethod === 'credit_card') {
+          delete submitData.paymentMethodName;
+          delete submitData.bankId;
+        } else if (formData.paymentMethod === 'e_wallet') {
+          delete submitData.cardId;
+          delete submitData.bankId;
+        } else if (formData.paymentMethod === 'bank') {
+          delete submitData.cardId;
+          delete submitData.paymentMethodName;
+        }
+
+        if (enableTransfer && onAddTransfer) {
+          const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+          const toPaymentMethod = transferToPaymentMethod;
+
+          const isSamePaymentSource = (
+            fromMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank',
+            toMethod: 'cash' | 'credit_card' | 'e_wallet' | 'bank'
+          ): boolean => {
+            if (fromMethod !== toMethod) return false;
+            switch (toMethod) {
+              case 'cash': return true;
+              case 'credit_card': return transferToCardId === formData.cardId;
+              case 'e_wallet': return transferToEWalletName === formData.paymentMethodName;
+              case 'bank': return transferToBankId === formData.bankId;
+            }
+          };
+
+          if (!isSamePaymentSource(fromPaymentMethod, toPaymentMethod)) {
+            const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+              amount: resolvedCurrency.baseAmount,
+              date: formData.date,
+              time: formData.time,
+              note: `${t('transfer')} - ${formData.description}`,
+              fromPaymentMethod,
+              fromPaymentMethodName: fromPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
+              toPaymentMethod,
+              toPaymentMethodName: toPaymentMethod === 'e_wallet' ? transferToEWalletName : '',
+            };
+
+            if (fromPaymentMethod === 'credit_card' && formData.cardId) {
+              transferData.fromCardId = formData.cardId;
+            }
+            if (fromPaymentMethod === 'bank' && formData.bankId) {
+              transferData.fromBankId = formData.bankId;
+            }
+            if (toPaymentMethod === 'credit_card' && transferToCardId) {
+              transferData.toCardId = transferToCardId;
+            }
+            if (toPaymentMethod === 'bank' && transferToBankId) {
+              transferData.toBankId = transferToBankId;
+            }
+
+            onAddTransfer(transferData, true).catch((err) => {
+              console.error('Failed to create transfer:', err);
+            });
+          }
+        }
+
+        onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+        if (!initialData) {
+          setFormData({
+            description: '',
+            amount: 0,
+            currency: DEFAULT_BASE_CURRENCY,
+            category: '',
+            date: getTodayLocal(),
+            time: getCurrentTimeLocal(),
+            notes: '',
+            cardId: '',
+            bankId: '',
+            paymentMethod: 'cash',
+            paymentMethodName: '',
+            needsRepaymentTracking: false,
+          });
+          setEnableTransfer(false);
+          setTransferToPaymentMethod('cash');
+          setTransferToCardId('');
+          setTransferToEWalletName('');
+          setTransferToBankId('');
+        }
+      } catch (error) {
+        console.error('Failed to resolve expense currency:', error);
+        setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +257,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       onSubmit={handleSubmit}
       onCancel={onCancel || (() => {})}
       submitLabel={initialData ? t('update') : t('add')}
+      submitDisabled={isSubmitting}
     >
       <div className="flex flex-col gap-1">
         <label htmlFor="expenseDescription" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('description')} *</label>
@@ -250,9 +281,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         {errors.description && <span className="text-xs text-red-600">{errors.description}</span>}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="expenseAmount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+          <label htmlFor="expenseAmount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} *</label>
           <input
             id="expenseAmount"
             type="text"
@@ -272,6 +303,33 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             }}
           />
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="expenseCurrency" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('currency')}</label>
+          <select
+            id="expenseCurrency"
+            name="currency"
+            value={formData.currency}
+            onChange={(e) => setFormData((prev) => ({ ...prev, currency: normalizeCurrencyCode(e.target.value) }))}
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            {CURRENCIES.map((currency) => (
+              <option key={currency.code} value={currency.code}>
+                {currency.symbol} {currency.code} - {currency.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {formData.currency === DEFAULT_BASE_CURRENCY
+              ? (t('baseCurrency') || 'Base currency')
+              : t('exchangeRate') || 'Exchange rate will be captured on save'}
+          </span>
         </div>
 
         <div className="min-w-0">
@@ -297,6 +355,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           />
         </div>
       </div>
+
+      {currencyError && (
+        <div className="text-sm" style={{ color: 'var(--error-text)' }}>
+          {currencyError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <DatePicker

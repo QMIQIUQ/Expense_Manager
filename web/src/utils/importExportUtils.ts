@@ -5,6 +5,7 @@ import Papa from 'papaparse';
 import { Expense, Category } from '../types';
 import { categoryService } from '../services/categoryService';
 import { expenseService } from '../services/expenseService';
+import { DEFAULT_BASE_CURRENCY, buildExpenseCurrencyFields } from './currencyUtils';
 
 // Types for import operations
 export interface ImportOptions {
@@ -33,6 +34,13 @@ interface ExpenseRow {
   description: string;
   category: string;
   amount: number;
+  currency?: string;
+  baseCurrency?: string;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: string;
+  exchangeRateProvider?: string;
+  baseAmount?: number;
   notes?: string;
 }
 
@@ -49,9 +57,9 @@ export const downloadExpenseTemplate = async () => {
 
   // Expenses sheet
   const expensesWs = wb.addWorksheet('expenses');
-  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'notes']);
-  expensesWs.addRow(['', '2024-01-15', 'Sample expense', 'Food & Dining', '25.50', 'Lunch with team']);
-  expensesWs.addRow(['', '2024-01-16', 'Grocery shopping', 'Food & Dining', '120.00', '']);
+  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'currency', 'baseCurrency', 'exchangeRate', 'exchangeRateDate', 'exchangeRateFetchedAt', 'exchangeRateProvider', 'baseAmount', 'notes']);
+  expensesWs.addRow(['', '2024-01-15', 'Sample expense', 'Food & Dining', '25.50', 'MYR', 'MYR', '1', '2024-01-15', '2024-01-15T00:00:00.000Z', 'local', '25.50', 'Lunch with team']);
+  expensesWs.addRow(['', '2024-01-16', 'Grocery shopping', 'Food & Dining', '120.00', 'MYR', 'MYR', '1', '2024-01-16', '2024-01-16T00:00:00.000Z', 'local', '120.00', '']);
 
   // Categories sheet
   const categoriesWs = wb.addWorksheet('categories');
@@ -89,14 +97,21 @@ export const exportToExcel = async (expenses: Expense[], categories: Category[])
 
   // Expenses sheet
   const expensesWs = wb.addWorksheet('expenses');
-  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'notes']);
-  expenses.forEach(exp => {
+  expensesWs.addRow(['id', 'date', 'description', 'category', 'amount', 'currency', 'baseCurrency', 'exchangeRate', 'exchangeRateDate', 'exchangeRateFetchedAt', 'exchangeRateProvider', 'baseAmount', 'notes']);
+  expenses.forEach((exp) => {
     expensesWs.addRow([
       exp.id || '',
       exp.date,
       exp.description,
       exp.category,
       exp.amount,
+      exp.currency || DEFAULT_BASE_CURRENCY,
+      exp.baseCurrency || DEFAULT_BASE_CURRENCY,
+      exp.exchangeRate ?? '',
+      exp.exchangeRateDate || '',
+      exp.exchangeRateFetchedAt ? exp.exchangeRateFetchedAt.toISOString() : '',
+      exp.exchangeRateProvider || '',
+      exp.baseAmount ?? exp.amount,
       exp.notes || '',
     ]);
   });
@@ -146,12 +161,27 @@ export const parseUploadedFile = async (
             if (!row.date || !row.description || !row.category || !row.amount) {
               errors.push(`Row ${index + 2}: Missing required fields`);
             }
+            const currency = row.currency || DEFAULT_BASE_CURRENCY;
+            const baseCurrency = row.baseCurrency || DEFAULT_BASE_CURRENCY;
+            const exchangeRate = row.exchangeRate ? parseFloat(row.exchangeRate) : undefined;
+            const baseAmount = row.baseAmount ? parseFloat(row.baseAmount) : undefined;
+            const fetchedAtDate = row.exchangeRateFetchedAt ? new Date(row.exchangeRateFetchedAt) : null;
+            const exchangeRateFetchedAt = fetchedAtDate && !Number.isNaN(fetchedAtDate.getTime())
+              ? fetchedAtDate.toISOString()
+              : undefined;
             return {
               id: row.id || undefined,
               date: row.date,
               description: row.description,
               category: row.category,
               amount: parseFloat(row.amount) || 0,
+              currency,
+              baseCurrency,
+              exchangeRate: Number.isFinite(exchangeRate as number) ? exchangeRate : undefined,
+              exchangeRateDate: row.exchangeRateDate || undefined,
+              exchangeRateFetchedAt,
+              exchangeRateProvider: row.exchangeRateProvider || undefined,
+              baseAmount: Number.isFinite(baseAmount as number) ? baseAmount : undefined,
               notes: row.notes || undefined,
             };
           });
@@ -202,6 +232,13 @@ export const parseUploadedFile = async (
             const descIdx = colIndex('description');
             const catIdx = colIndex('category');
             const amtIdx = colIndex('amount');
+            const currencyIdx = colIndex('currency');
+            const baseCurrencyIdx = colIndex('basecurrency');
+            const exchangeRateIdx = colIndex('exchangerate');
+            const exchangeRateDateIdx = colIndex('exchangeratedate');
+            const exchangeRateFetchedAtIdx = colIndex('exchangeratefetchedat');
+            const exchangeRateProviderIdx = colIndex('exchangerateprovider');
+            const baseAmountIdx = colIndex('baseamount');
             const notesIdx = colIndex('notes');
 
             expenses = rows.map((vals, i) => {
@@ -222,12 +259,34 @@ export const parseUploadedFile = async (
                 errors.push(`Expenses row ${i + 2}: Missing required fields`);
               }
 
+              const currency = currencyIdx >= 0 && vals[currencyIdx] ? String(vals[currencyIdx]) : DEFAULT_BASE_CURRENCY;
+              const baseCurrency = baseCurrencyIdx >= 0 && vals[baseCurrencyIdx] ? String(vals[baseCurrencyIdx]) : DEFAULT_BASE_CURRENCY;
+              const exchangeRateValue = exchangeRateIdx >= 0 && vals[exchangeRateIdx] !== undefined
+                ? Number(vals[exchangeRateIdx])
+                : undefined;
+              const baseAmountValue = baseAmountIdx >= 0 && vals[baseAmountIdx] !== undefined
+                ? Number(vals[baseAmountIdx])
+                : undefined;
+              const fetchedAt = exchangeRateFetchedAtIdx >= 0 && vals[exchangeRateFetchedAtIdx]
+                ? new Date(String(vals[exchangeRateFetchedAtIdx]))
+                : null;
+              const exchangeRateFetchedAtValue = fetchedAt && !Number.isNaN(fetchedAt.getTime())
+                ? fetchedAt.toISOString()
+                : undefined;
+
               return {
                 id: vals[idIdx] ? String(vals[idIdx]) : undefined,
                 date: String(dateStr),
                 description: String(vals[descIdx] ?? ''),
                 category: String(vals[catIdx] ?? ''),
                 amount: parseFloat(String(vals[amtIdx] ?? '0')) || 0,
+                currency,
+                baseCurrency,
+                exchangeRate: Number.isFinite(exchangeRateValue) ? exchangeRateValue : undefined,
+                exchangeRateDate: exchangeRateDateIdx >= 0 && vals[exchangeRateDateIdx] ? String(vals[exchangeRateDateIdx]) : undefined,
+                exchangeRateFetchedAt: exchangeRateFetchedAtValue,
+                exchangeRateProvider: exchangeRateProviderIdx >= 0 && vals[exchangeRateProviderIdx] ? String(vals[exchangeRateProviderIdx]) : undefined,
+                baseAmount: Number.isFinite(baseAmountValue) ? baseAmountValue : undefined,
                 notes: vals[notesIdx] ? String(vals[notesIdx]) : undefined,
               } as ExpenseRow;
             });
@@ -456,6 +515,25 @@ export const importData = async (
             category: categoryDisplayName, // Use category NAME, not ID
             date: expRow.date,
           };
+
+          const currencyFields = buildExpenseCurrencyFields({
+            amount: Number(expRow.amount),
+            currency: expRow.currency || DEFAULT_BASE_CURRENCY,
+            baseCurrency: expRow.baseCurrency || DEFAULT_BASE_CURRENCY,
+            exchangeRate: expRow.exchangeRate,
+            exchangeRateDate: expRow.exchangeRateDate,
+            exchangeRateFetchedAt: expRow.exchangeRateFetchedAt ? new Date(expRow.exchangeRateFetchedAt) : undefined,
+            exchangeRateProvider: expRow.exchangeRateProvider,
+            baseAmount: expRow.baseAmount,
+          });
+
+          expenseData.currency = currencyFields.currency;
+          expenseData.baseCurrency = currencyFields.baseCurrency;
+          expenseData.exchangeRate = currencyFields.exchangeRate;
+          expenseData.exchangeRateDate = currencyFields.exchangeRateDate;
+          expenseData.exchangeRateFetchedAt = currencyFields.exchangeRateFetchedAt;
+          expenseData.exchangeRateProvider = currencyFields.exchangeRateProvider;
+          expenseData.baseAmount = currencyFields.baseAmount;
 
           if (expRow.notes !== undefined && expRow.notes !== null && String(expRow.notes).trim() !== '') {
             expenseData.notes = String(expRow.notes);

@@ -22,6 +22,7 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import SubTabs from '../common/SubTabs';
 import PopupModal from '../common/PopupModal';
+import { normalizeCurrencyCode } from '../../utils/currencyUtils';
 
 // Responsive styles
 const responsiveStyles = `
@@ -318,7 +319,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
               amount: data.amount,
               totalAmount: data.totalAmount || undefined,
               interestRate: data.interestRate || undefined,
-              currency: data.currency || undefined,
+              currency: data.currency ? normalizeCurrencyCode(data.currency) : undefined,
               frequency: data.frequency,
               dueDay: data.dueDay,
               startDate: data.startDate,
@@ -361,7 +362,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
               amount: editingPayment.amount,
               totalAmount: editingPayment.totalAmount || 0,
               interestRate: editingPayment.interestRate || 0,
-              currency: editingPayment.currency || 'MYR',
+              currency: normalizeCurrencyCode(editingPayment.currency),
               frequency: editingPayment.frequency,
               dueDay: editingPayment.dueDay,
               startDate: editingPayment.startDate,
@@ -392,7 +393,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                 amount: data.amount,
                 totalAmount: data.totalAmount || undefined,
                 interestRate: data.interestRate || undefined,
-                currency: data.currency || undefined,
+                currency: data.currency ? normalizeCurrencyCode(data.currency) : undefined,
                 frequency: data.frequency,
                 dueDay: data.dueDay,
                 startDate: data.startDate,

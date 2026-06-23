@@ -1,7 +1,13 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  setLogLevel,
+  type Firestore,
+} from 'firebase/firestore';
+import { getFunctions, type Functions } from 'firebase/functions';
 
 const firebaseEnv = {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,16 +19,11 @@ const firebaseEnv = {
   VITE_FIREBASE_MEASUREMENT_ID: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const missingEnvVars = Object.entries(firebaseEnv)
+export const missingFirebaseEnvVars = Object.entries(firebaseEnv)
   .filter(([key, value]) => key !== 'VITE_FIREBASE_MEASUREMENT_ID' && !value)
   .map(([key]) => key);
 
-if (missingEnvVars.length > 0) {
-  throw new Error(
-    `Missing required Firebase environment variables: ${missingEnvVars.join(', ')}. ` +
-    'Please copy .env.example to .env and fill in your Firebase configuration.'
-  );
-}
+export const isFirebaseConfigured = missingFirebaseEnvVars.length === 0;
 
 const firebaseConfig = {
   apiKey: firebaseEnv.VITE_FIREBASE_API_KEY,
@@ -34,24 +35,39 @@ const firebaseConfig = {
   measurementId: firebaseEnv.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let firebaseApp: FirebaseApp | null = null;
+let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
+let functionsClientInstance: Functions | null = null;
 
-// Initialize Firebase Authentication
-export const auth = getAuth(app);
+if (isFirebaseConfigured) {
+  firebaseApp = initializeApp(firebaseConfig);
+  authInstance = getAuth(firebaseApp);
 
-// Initialize Google Auth Provider
+  // Reduce Firestore log noise from non-fatal internals (e.g., BloomFilter fallback)
+  setLogLevel('error');
+
+  dbInstance = initializeFirestore(firebaseApp, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  });
+
+  functionsClientInstance = getFunctions(firebaseApp);
+} else {
+  console.warn(
+    `Missing required Firebase environment variables: ${missingFirebaseEnvVars.join(', ')}. ` +
+      'Please copy .env.example to .env and fill in your Firebase configuration.'
+  );
+}
+
+export const firebaseSetupMessage = isFirebaseConfigured
+  ? ''
+  : `Missing required Firebase environment variables: ${missingFirebaseEnvVars.join(', ')}. ` +
+    'Please copy .env.example to .env and fill in your Firebase configuration.';
+
+export const firebaseAppInstance = firebaseApp;
+export const auth = authInstance as Auth;
 export const googleProvider = new GoogleAuthProvider();
-
-// Reduce Firestore log noise from non-fatal internals (e.g., BloomFilter fallback)
-setLogLevel('error');
-
-// Initialize Firestore with a robust persistent cache across tabs
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
-
-// Initialize Cloud Functions client
-export const functionsClient = getFunctions(app);
+export const db = dbInstance as Firestore;
+export const functionsClient = functionsClientInstance as Functions;

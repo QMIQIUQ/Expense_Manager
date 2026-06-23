@@ -1,12 +1,17 @@
 import { Expense } from '../types';
+import { DEFAULT_BASE_CURRENCY } from './currencyUtils';
 
 export const exportToCSV = (expenses: Expense[], filename: string = 'expenses.csv') => {
-  const headers = ['Date', 'Description', 'Category', 'Amount', 'Notes'];
+  const headers = ['Date', 'Description', 'Category', 'Amount', 'Currency', 'Base Currency', 'Exchange Rate', 'Base Amount', 'Notes'];
   const rows = expenses.map((exp) => [
     exp.date,
     exp.description,
     exp.category,
     exp.amount.toFixed(2),
+    exp.currency || DEFAULT_BASE_CURRENCY,
+    exp.baseCurrency || DEFAULT_BASE_CURRENCY,
+    exp.exchangeRate != null ? exp.exchangeRate.toFixed(6) : '',
+    (exp.baseAmount ?? exp.amount).toFixed(2),
     exp.notes || '',
   ]);
 

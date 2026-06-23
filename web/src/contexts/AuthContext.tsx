@@ -15,7 +15,7 @@ import {
   browserSessionPersistence,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
-import { auth, googleProvider, db } from '../config/firebase';
+import { auth, googleProvider, db, isFirebaseConfigured, firebaseSetupMessage } from '../config/firebase';
 import { COLLECTIONS } from '../constants/collections';
 
 export interface AuthContextType {
@@ -29,7 +29,7 @@ export interface AuthContextType {
   changeEmail: (currentPassword: string, newEmail: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -43,6 +43,44 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+const setupContainerStyle: React.CSSProperties = {
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+  background: 'var(--bg-primary)',
+  color: 'var(--text-primary)',
+};
+
+const setupPanelStyle: React.CSSProperties = {
+  width: 'min(100%, 720px)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '12px',
+  padding: '24px',
+  background: 'var(--bg-secondary)',
+  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
+};
+
+const headingStyle: React.CSSProperties = {
+  margin: '0 0 12px',
+  fontSize: '1.5rem',
+  lineHeight: 1.2,
+};
+
+const textStyle: React.CSSProperties = {
+  margin: '0 0 12px',
+  lineHeight: 1.6,
+  color: 'var(--text-secondary)',
+};
+
+const hintStyle: React.CSSProperties = {
+  margin: 0,
+  lineHeight: 1.6,
+  color: 'var(--text-secondary)',
+  whiteSpace: 'pre-wrap',
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (!userDoc.exists()) {
         // Create user metadata document
         await setDoc(userDocRef, {
@@ -76,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Set persistence based on rememberMe option
     const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
     await setPersistence(auth, persistence);
-    
+
     const result = await signInWithEmailAndPassword(auth, email, password);
     await ensureUserMetadata(result.user);
   };
@@ -129,6 +167,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await ensureUserMetadata(user);
@@ -139,6 +182,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return unsubscribe;
   }, []);
+
+  if (!isFirebaseConfigured) {
+    return (
+      <div style={setupContainerStyle}>
+        <div style={setupPanelStyle}>
+          <h1 style={headingStyle}>Firebase 尚未設定</h1>
+          <p style={textStyle}>{firebaseSetupMessage}</p>
+          <p style={hintStyle}>
+            請建立 `web/.env`，把 `web/.env.example` 的值填完整，然後重新執行 `npm run dev`。
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const value: AuthContextType = {
     currentUser,
@@ -154,14 +211,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {loading ? (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          fontSize: '1.2rem',
-          color: 'var(--text-secondary)'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            fontSize: '1.2rem',
+            color: 'var(--text-secondary)',
+          }}
+        >
           Loading...
         </div>
       ) : (

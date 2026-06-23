@@ -1,12 +1,13 @@
 // Quick Expense Types - 快速支出预设
 
-import { PaymentMethodType } from './index';
+import { CurrencyCode, PaymentMethodType } from './index';
 
 export interface QuickExpensePreset {
   id: string;
   userId: string;
   name: string;           // 显示名称，如 "早餐"、"咖啡"
   amount: number;         // 金额
+  currency?: CurrencyCode;
   categoryId: string;     // 分类ID
   description?: string;   // 可选的描述
   paymentMethod?: PaymentMethodType;
@@ -23,6 +24,7 @@ export interface QuickExpensePreset {
 export interface QuickExpensePresetInput {
   name: string;
   amount: number;
+  currency?: CurrencyCode;
   categoryId: string;
   description?: string;
   paymentMethod?: PaymentMethodType;

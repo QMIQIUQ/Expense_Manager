@@ -1,4 +1,5 @@
 import { Card, BillingCycle, Expense, CashbackRule, CardStats, Category } from '../types';
+import { getExpenseBaseAmount } from './currencyUtils';
 
 /**
  * Get the billing day for a specific month, considering overrides
@@ -107,7 +108,7 @@ export function calculateCurrentCycleSpending(
       // Check if expense date is within the billing cycle
       return expense.date >= cycle.startDate && expense.date <= cycle.endDate;
     })
-    .reduce((sum, expense) => sum + expense.amount, 0);
+    .reduce((sum, expense) => sum + getExpenseBaseAmount(expense), 0);
 }
 
 /**
@@ -129,7 +130,7 @@ export function calculateCategorySpending(
       // We'll need to pass category mapping from the caller
       return expense.category === categoryId;
     })
-    .reduce((sum, expense) => sum + expense.amount, 0);
+    .reduce((sum, expense) => sum + getExpenseBaseAmount(expense), 0);
 }
 
 /**

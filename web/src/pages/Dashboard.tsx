@@ -23,6 +23,7 @@ import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { balanceService } from '../services/balanceService';
+import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
 import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
 import ExpenseList from '../components/expenses/ExpenseList';
@@ -603,11 +604,17 @@ const Dashboard: React.FC = () => {
     
     // Find e-wallet name if ewalletId is set
     const ewallet = preset.ewalletId ? ewallets.find(w => w.id === preset.ewalletId) : null;
+    const currencyFields = await resolveExpenseCurrencyFields({
+      amount: preset.amount,
+      currency: preset.currency,
+      date: dateToUse,
+    });
     
     // Build expense data, excluding undefined fields (Firebase doesn't accept undefined)
     const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
       description: preset.name,
       amount: preset.amount,
+      ...currencyFields,
       category: categoryName,
       date: dateToUse,
       time: now,
@@ -633,7 +640,8 @@ const Dashboard: React.FC = () => {
     // Transfer.fromPaymentMethod should match expense.paymentMethod
     const relatedTransfer = expenseToDelete ? transfers.find(t => {
       const dateMatch = t.date === expenseToDelete.date;
-      const amountMatch = Math.abs(t.amount - expenseToDelete.amount) < 0.01;
+      const expenseAmount = expenseToDelete.baseAmount ?? expenseToDelete.amount;
+      const amountMatch = Math.abs(t.amount - expenseAmount) < 0.01;
       
       // Match payment method as the source (fromPaymentMethod = expense's payment method)
       let paymentMethodMatch = false;
@@ -1223,10 +1231,17 @@ const Dashboard: React.FC = () => {
           // Auto-generate expense if enabled
           if (scheduledPayment?.autoGenerateExpense) {
             try {
+              const currencyFields = await resolveExpenseCurrencyFields({
+                amount: recordData.actualAmount,
+                currency: scheduledPayment.currency,
+                date: recordData.paidDate,
+              });
+
               const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
                 userId: currentUser.uid,
                 description: scheduledPayment.name,
                 amount: recordData.actualAmount,
+                ...currencyFields,
                 category: scheduledPayment.category,
                 date: recordData.paidDate,
                 time: getCurrentTimeLocal(),

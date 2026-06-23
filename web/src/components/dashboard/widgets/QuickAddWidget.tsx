@@ -9,6 +9,7 @@ import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
 import PaymentMethodSelector from '../../common/PaymentMethodSelector';
 import { PaymentMethodType } from '../../../types';
+import { CURRENCIES, DEFAULT_BASE_CURRENCY, formatMoney, normalizeCurrencyCode } from '../../../utils/currencyUtils';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -107,6 +108,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   const [formData, setFormData] = useState<QuickExpensePresetInput>({
     name: '',
     amount: 0,
+    currency: DEFAULT_BASE_CURRENCY,
     categoryId: '',
     description: '',
     paymentMethod: 'cash',
@@ -140,6 +142,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     setFormData({
       name: '',
       amount: 0,
+      currency: DEFAULT_BASE_CURRENCY,
       categoryId: '',
       description: '',
       paymentMethod: 'cash',
@@ -168,6 +171,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     const cleanedData: QuickExpensePresetInput = {
       name: formData.name,
       amount: formData.amount,
+      currency: formData.currency,
       categoryId: formData.categoryId,
       paymentMethod: formData.paymentMethod,
       icon: formData.icon,
@@ -292,6 +296,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     setFormData({
       name: preset.name,
       amount: preset.amount,
+      currency: preset.currency || DEFAULT_BASE_CURRENCY,
       categoryId: preset.categoryId,
       description: preset.description || '',
       paymentMethod: preset.paymentMethod || 'cash',
@@ -341,17 +346,33 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       <div className="inline-form-field">
         <label className="inline-form-label">{t('amount')}</label>
         <div className="inline-amount-wrapper">
-          <span className="currency-symbol">$</span>
+          <span className="currency-symbol">{formatMoney(0, formData.currency).replace('0.00', '')}</span>
           <input
             type="number"
             value={formData.amount || ''}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
-            placeholder="0.00"
+            placeholder={formatMoney(0, formData.currency)}
             className="inline-input inline-input-amount"
             step="0.01"
             min="0"
           />
         </div>
+      </div>
+
+      {/* Row 2b: Currency */}
+      <div className="inline-form-field">
+        <label className="inline-form-label">{t('currency')}</label>
+        <select
+          value={formData.currency || DEFAULT_BASE_CURRENCY}
+          onChange={(e) => setFormData({ ...formData, currency: normalizeCurrencyCode(e.target.value) })}
+          className="inline-select"
+        >
+          {CURRENCIES.map((currency) => (
+            <option key={currency.code} value={currency.code}>
+              {currency.symbol} {currency.code} - {currency.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Row 3: Category + Payment Method (2 columns on desktop) */}
@@ -456,7 +477,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                   {category?.name || t('uncategorized')}
                 </span>
                 <span className="quick-expense-card-amount">
-                  ${preset.amount.toFixed(2)}
+                  {formatMoney(preset.amount, preset.currency)}
                 </span>
                 <span className="quick-expense-card-name">
                   {preset.name}

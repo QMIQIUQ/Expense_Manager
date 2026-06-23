@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../../utils/currencyUtils';
 import { WidgetProps } from './types';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
@@ -57,8 +58,9 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     <div className={`tracked-expenses-list ${isCompact ? 'tracked-expenses-compact' : ''}`}>
       {trackedExpenses.slice(0, maxItems).map((expense) => {
         const repaid = repaymentTotals[expense.id!] || 0;
-        const remaining = expense.amount - repaid;
-        const percentage = (repaid / expense.amount) * 100;
+        const totalAmount = getExpenseBaseAmount(expense);
+        const remaining = totalAmount - repaid;
+        const percentage = totalAmount > 0 ? (repaid / totalAmount) * 100 : 0;
 
         return (
           <div 
@@ -78,15 +80,15 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
               <div className="tracked-expense-amounts">
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('totalAmount')}</span>
-                  <span className="tracked-amount-value">${expense.amount.toFixed(2)}</span>
+                  <span className="tracked-amount-value">{formatMoney(totalAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('repaid')}</span>
-                  <span className="tracked-amount-value success-text">${repaid.toFixed(2)}</span>
+                  <span className="tracked-amount-value success-text">{formatMoney(repaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('remaining')}</span>
-                  <span className="tracked-amount-value warning-text">${remaining.toFixed(2)}</span>
+                  <span className="tracked-amount-value warning-text">{formatMoney(Math.max(0, remaining), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
               </div>
               {onMarkTrackingCompleted && (

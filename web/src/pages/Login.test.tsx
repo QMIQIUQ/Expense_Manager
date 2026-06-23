@@ -103,6 +103,6 @@ describe('Login Component - Auto-redirect functionality', () => {
     // Should not redirect when no user
     expect(mockNavigate).not.toHaveBeenCalled();
     // Should show the login form
-    expect(screen.getByText(/登录|登錄|login/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();
   });
 });

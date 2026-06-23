@@ -7,6 +7,7 @@ import { useToday } from '../../hooks/useToday';
 import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUtils';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -165,7 +166,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('repaymentAmount')} ($) *
+            {t('repaymentAmount')} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)}) *
           </label>
           <input
             type="text"
