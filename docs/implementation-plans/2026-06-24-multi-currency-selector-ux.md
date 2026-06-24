@@ -1,7 +1,7 @@
 # 多幣別 UI 精簡與顯示切換
 
 Date: 2026-06-24
-Status: Implemented in progress
+Status: Implemented
 
 ## Goal
 
@@ -10,6 +10,7 @@ This change focuses on expense-related currency UX:
 - Make currency selection in add, edit, and quick-add flows more compact and easier to click.
 - Default new expense currency from the most recent expense when available.
 - Preserve the selected currency when the user chooses `Add another`.
+- Put the add-expense currency choice on its own step after date/time, then auto-advance to amount after selection.
 - Let read-only expense amounts on the dashboard switch display currency at the page level.
 - Keep the data schema unchanged and continue using the existing currency fields:
   `currency`, `baseCurrency`, `exchangeRate`, `exchangeRateDate`, `exchangeRateFetchedAt`, `exchangeRateProvider`, `baseAmount`.
@@ -23,7 +24,9 @@ Included:
 - `QuickAddWidget`
 - `ExpenseList`
 - `Dashboard` page currency display state
+- `ExpenseList` display currency control row next to multi-select actions
 - dashboard expense widgets that render read-only expense amounts
+- dashboard home keeps a compact page-level selector so read-only amounts can still be switched from the main dashboard
 
 Excluded for now:
 
@@ -39,8 +42,9 @@ Excluded for now:
 2. Keep the selector height low enough for mobile and desktop forms.
 3. Use the latest expense as the default currency source for new expense entry.
 4. Reuse the current selection when the user saves and immediately adds another expense.
-5. Treat display-currency switching as a presentation layer concern only.
-6. Convert mixed-currency expense totals entry-by-entry before summing, and reuse cached exchange rates through `currencyRateService`.
+5. Put the add-expense currency choice on its own step after date/time, and auto-advance to amount after the user picks a currency.
+6. Treat display-currency switching as a presentation layer concern only.
+7. Convert mixed-currency expense totals entry-by-entry before summing, and reuse cached exchange rates through `currencyRateService`.
 
 ## Component Boundaries
 
@@ -62,6 +66,7 @@ Excluded for now:
 Behavior:
 
 - new form defaults to `initialData.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY`
+- add-expense flow now steps `date/time -> currency -> amount -> category -> description -> payment`
 - `Add another` keeps the current currency instead of resetting to MYR
 - editing keeps the existing expense currency unless the user changes it
 
@@ -89,6 +94,7 @@ Behavior:
 Behavior:
 
 - dashboard page owns a `displayCurrency` state
+- expense list keeps the display-currency control next to the multi-select toolbar
 - expense-related read-only amounts follow the selected display currency
 - charts and exports remain unchanged
 
@@ -116,6 +122,8 @@ Automated checks added or expected:
 
 - `CurrencySelector` opens, selects, and closes correctly.
 - `StepByStepExpenseForm` uses `lastUsedCurrency` for new entries.
+- `StepByStepExpenseForm` advances from currency selection to amount automatically.
+- `ExpenseList` renders the display currency selector in the list controls row.
 - existing expense form tests still pass with the compact selector.
 - build passes with `noUnusedLocals` and `noUnusedParameters` enabled.
 
@@ -132,4 +140,6 @@ Manual verification:
 - 2026-06-24: threaded latest-expense currency into add/edit flows
 - 2026-06-24: added page-level display currency state for expense read views
 - 2026-06-24: added conversion helper hook and shared rate conversion helper
-
+- 2026-06-24: moved expense display currency control into the list toolbar row
+- 2026-06-24: split add-expense currency into its own step after date/time
+- 2026-06-24: kept a compact selector on the dashboard home tab for page-level switching

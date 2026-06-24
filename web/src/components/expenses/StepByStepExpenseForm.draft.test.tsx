@@ -36,7 +36,7 @@ describe('StepByStepExpenseForm draft controls', () => {
     expect(screen.queryByText(/ocr/i)).not.toBeInTheDocument();
   });
 
-  it('prefers the last used currency for a new expense', async () => {
+  it('prefers the last used currency for a new expense and advances after selection', async () => {
     render(
       <StepByStepExpenseForm
         onSubmit={vi.fn()}
@@ -49,7 +49,19 @@ describe('StepByStepExpenseForm draft controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /usd/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /currency/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /currency/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('option', { name: /myr/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rm/i)).toBeInTheDocument();
     });
   });
 });

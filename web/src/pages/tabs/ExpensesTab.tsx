@@ -25,6 +25,7 @@ interface Props {
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
   displayCurrency?: CurrencyCode;
+  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
 }
 
 const ExpensesTab: React.FC<Props> = ({
@@ -42,6 +43,7 @@ const ExpensesTab: React.FC<Props> = ({
   onCreateEWallet,
   onCreateCard,
   displayCurrency,
+  onDisplayCurrencyChange,
 }) => {
   const { timeFormat, dateFormat } = useUserSettings();
   const { t, language } = useLanguage();
@@ -250,6 +252,7 @@ const ExpensesTab: React.FC<Props> = ({
           expenses={filteredExpenses}
           categories={categories}
           displayCurrency={displayCurrency}
+          onDisplayCurrencyChange={onDisplayCurrencyChange}
           onEdit={onEdit}
           onDelete={onDeleteExpense}
           onInlineUpdate={() => {}}

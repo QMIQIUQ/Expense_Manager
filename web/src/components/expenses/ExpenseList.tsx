@@ -50,6 +50,7 @@ interface ExpenseListProps {
   repayments?: Repayment[];
   transfers?: Transfer[];
   displayCurrency?: CurrencyCode;
+  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
@@ -78,6 +79,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   repayments = [],
   transfers = [],
   displayCurrency,
+  onDisplayCurrencyChange,
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -826,18 +828,34 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         </div>
       )}
 
-      {/* Action buttons row - positioned at top-right of list */}
-      <MultiSelectToolbar
-        isSelectionMode={multiSelectEnabled}
-        selectedCount={selectedIds.size}
-        onToggleSelectionMode={toggleSelectionMode}
-        onSelectAll={() => selectAll(filteredAndSortedExpenses())}
-        onDeleteSelected={() => {
-          const ids = Array.from(selectedIds);
-          if (ids.length === 0) return;
-          setBulkDeleteConfirm(true);
-        }}
-      />
+      <div style={styles.listActionRow}>
+        <MultiSelectToolbar
+          isSelectionMode={multiSelectEnabled}
+          selectedCount={selectedIds.size}
+          onToggleSelectionMode={toggleSelectionMode}
+          onSelectAll={() => selectAll(filteredAndSortedExpenses())}
+          onDeleteSelected={() => {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            setBulkDeleteConfirm(true);
+          }}
+        />
+
+        {onDisplayCurrencyChange && displayCurrency && (
+          <div style={styles.displayCurrencyControl}>
+            <span style={styles.displayCurrencyLabel}>{t('displayCurrency')}</span>
+            <CurrencySelector
+              value={displayCurrency}
+              onChange={onDisplayCurrencyChange}
+              compact={true}
+              showLabel={false}
+              align="right"
+              ariaLabel={t('displayCurrency')}
+              className="expense-display-currency-selector"
+            />
+          </div>
+        )}
+      </div>
 
       {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
@@ -1690,6 +1708,26 @@ const styles = {
     gap: '10px',
     flexWrap: 'wrap' as const,
     alignItems: 'center',
+  },
+  listActionRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap' as const,
+  },
+  displayCurrencyControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginLeft: 'auto',
+    flexWrap: 'nowrap' as const,
+  },
+  displayCurrencyLabel: {
+    fontSize: '13px',
+    fontWeight: 600 as const,
+    color: 'var(--text-secondary)',
+    whiteSpace: 'nowrap' as const,
   },
   filterInput: {
     flex: 1,

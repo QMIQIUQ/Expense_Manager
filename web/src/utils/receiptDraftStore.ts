@@ -27,6 +27,7 @@ export interface ReceiptDraftSnapshot {
   userId: string;
   updatedAt: number;
   expiresAt: number;
+  flowVersion?: number;
   currentStep: number;
   formData: ReceiptDraftFormState;
   amountItems: Array<{ amount: number; description?: string }>;

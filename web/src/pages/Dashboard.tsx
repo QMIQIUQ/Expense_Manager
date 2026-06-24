@@ -2675,39 +2675,38 @@ const Dashboard: React.FC = () => {
           })}
       </div>
 
-      {(activeTab === 'dashboard' || activeTab === 'expenses') && (
-        <div className="dashboard-card" style={{
-          marginTop: '12px',
-          padding: '12px 16px',
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}>
-          <div style={{
-            width: 'min(320px, 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-          }}>
-            <span style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              whiteSpace: 'nowrap',
-            }}>
-              {t('displayCurrency')}
-            </span>
-            <CurrencySelector
-              value={displayCurrency}
-              onChange={setDisplayCurrency}
-              compact={true}
-              showLabel={false}
-              ariaLabel={t('displayCurrency')}
-            />
-          </div>
-        </div>
-      )}
-
       <div className="dashboard-card content-pad">
+        {activeTab === 'dashboard' && (
+          <div style={{
+            marginBottom: '12px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}>
+            <div style={{
+              width: 'min(320px, 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                whiteSpace: 'nowrap',
+              }}>
+                {t('displayCurrency')}
+              </span>
+              <CurrencySelector
+                value={displayCurrency}
+                onChange={setDisplayCurrency}
+                compact={true}
+                showLabel={false}
+                ariaLabel={t('displayCurrency')}
+              />
+            </div>
+          </div>
+        )}
+
         {activeTab === 'dashboard' && (
           <CustomizableDashboard
             expenses={expenses}
@@ -2766,6 +2765,7 @@ const Dashboard: React.FC = () => {
               repayments={repayments}
               transfers={transfers}
               displayCurrency={displayCurrency}
+              onDisplayCurrencyChange={setDisplayCurrency}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
