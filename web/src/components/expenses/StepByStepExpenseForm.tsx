@@ -870,8 +870,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
               <div style={styles.currencyHelp}>
                 {formData.currency === DEFAULT_BASE_CURRENCY
-                  ? (t('baseCurrency') || 'Base currency')
-                  : (t('exchangeRate') || 'Exchange rate will be captured on save')}
+                  ? (t('baseCurrencyHint') || 'MYR is the base currency, so no conversion is needed.')
+                  : (t('exchangeRateHint') || 'Will be converted to MYR when you save.')}
               </div>
             </div>
           </div>
@@ -1692,6 +1692,7 @@ const styles: Record<string, React.CSSProperties> = {
   currencyHelp: {
     fontSize: '12px',
     color: 'var(--text-secondary)',
+    lineHeight: 1.4,
   },
   currencyError: {
     fontSize: '12px',

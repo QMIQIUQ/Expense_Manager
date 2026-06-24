@@ -914,6 +914,16 @@ export const translations = {
   selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
   exchangeRate: { en: 'Exchange Rate', zh: '匯率', 'zh-CN': '汇率' },
   baseCurrency: { en: 'Base Currency', zh: '基礎貨幣', 'zh-CN': '基础货币' },
+  exchangeRateHint: {
+    en: 'Will be converted to MYR when you save.',
+    zh: '儲存時會換算成 MYR。',
+    'zh-CN': '保存时会换算成 MYR。',
+  },
+  baseCurrencyHint: {
+    en: 'MYR is the base currency, so no conversion is needed.',
+    zh: 'MYR 是基礎貨幣，不需要換算。',
+    'zh-CN': 'MYR 是基础货币，不需要换算。',
+  },
   convertedAmount: { en: 'Converted Amount', zh: '換算金額', 'zh-CN': '换算金额' },
   
   // Shared Payments
