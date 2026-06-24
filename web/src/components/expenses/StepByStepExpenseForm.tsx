@@ -1470,7 +1470,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         ref={receiptInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleReceiptInputChange}
         style={{ display: 'none' }}
       />
