@@ -95,6 +95,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [receiptOcrStatus, setReceiptOcrStatus] = useState<string>('');
   const [receiptOcrError, setReceiptOcrError] = useState<string>('');
   const [receiptOcrText, setReceiptOcrText] = useState<string>('');
+  const [receiptOcrResult, setReceiptOcrResult] = useState<ReceiptOcrResult | null>(null);
   const [receiptOcrSummary, setReceiptOcrSummary] = useState<string>('');
   const [receiptOcrMode, setReceiptOcrModeState] = useState<ReceiptOcrMode>(() => getReceiptOcrMode());
   
@@ -123,6 +124,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     draftRestored: isEnglish ? 'Draft restored' : isSimplifiedChinese ? '已恢复草稿' : '已恢復草稿',
     previewSaved: isEnglish ? 'Receipt saved as draft' : isSimplifiedChinese ? '收据已保存为草稿' : '收據已儲存為草稿',
     originalText: isEnglish ? 'OCR text' : isSimplifiedChinese ? 'OCR 原文' : 'OCR 原文',
+    createFromOcr: isEnglish ? 'Create from OCR' : isSimplifiedChinese ? '用 OCR 建立' : '用 OCR 建立',
+    missingCategory: isEnglish ? 'Select a category before creating this expense.' : isSimplifiedChinese ? '请先选择分类再建立支出。' : '請先選擇分類再建立支出。',
+    missingAmount: isEnglish ? 'OCR did not find a valid amount.' : isSimplifiedChinese ? 'OCR 没有识别到有效金额。' : 'OCR 沒有辨識到有效金額。',
+    receiptFallbackDescription: isEnglish ? 'Receipt' : isSimplifiedChinese ? '收据' : '收據',
     restoreHint: isEnglish ? 'A saved receipt draft was restored automatically.' : isSimplifiedChinese ? '已自动恢复之前保存的收据草稿。' : '已自動恢復先前儲存的收據草稿。',
     entryHint: isEnglish ? 'Scan a receipt here to prefill amount, date, and merchant, then finish later if needed.' : isSimplifiedChinese ? '可先扫描收据，自动预填金额、日期与商家，稍后再继续填写。' : '可先掃描收據，自動預填金額、日期與商家，稍後再繼續填寫。',
   }), [isEnglish, isSimplifiedChinese]);
@@ -314,11 +319,20 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   }, []);
 
-  const saveCurrentDraft = useCallback(async (imageBlob?: Blob | null, receiptText = '', draftIdOverride = receiptDraftId) => {
+  const saveCurrentDraft = useCallback(async (
+    imageBlob?: Blob | null,
+    receiptResult?: ReceiptOcrResult | null,
+    draftIdOverride = receiptDraftId,
+  ) => {
     if (!currentUser) return;
     if (!draftIdOverride) return;
 
-    const snapshot = buildDraftSnapshot({ receiptText }, draftIdOverride);
+    const snapshot = buildDraftSnapshot({
+      receiptText: receiptResult?.text || '',
+      receiptMerchant: receiptResult?.merchant,
+      receiptDate: receiptResult?.date,
+      receiptAmount: receiptResult?.amount,
+    }, draftIdOverride);
     if (!snapshot) return;
 
     const imageName = imageBlob ? `${draftIdOverride}.jpg` : undefined;
@@ -366,6 +380,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setTransferToEWalletName(draft.transferToEWalletName || '');
     setTransferToBankId(draft.transferToBankId || '');
     setReceiptOcrText(draft.receiptText || '');
+    setReceiptOcrResult(null);
     setReceiptOcrStatus(draft.receiptText ? receiptTexts.draftRestored : '');
     setReceiptOcrSummary('');
     if (loaded.imageBlob) {
@@ -387,12 +402,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setReceiptOcrStatus('');
     setReceiptOcrError('');
     setReceiptOcrText('');
+    setReceiptOcrResult(null);
     setReceiptOcrSummary('');
   };
 
   const handleDraftedReceiptImage = useCallback(async (file: File) => {
     if (!currentUser) return;
     setReceiptOcrError('');
+    setReceiptOcrResult(null);
     setReceiptOcrSummary('');
     setReceiptOcrBusy(true);
     setReceiptOcrStatus(receiptTexts.preparing);
@@ -426,16 +443,18 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       const ocr = await recognizeReceiptText(compressed, (progress) => {
         setReceiptOcrStatus(getProgressStatus(progress));
       }, { mode: receiptOcrMode });
+      setReceiptOcrResult(ocr);
       setReceiptOcrText(ocr.text);
       applyReceiptResult(ocr);
       setReceiptOcrStatus(receiptTexts.complete);
       setReceiptOcrSummary(buildReceiptOcrSummary(ocr));
-      await saveCurrentDraft(compressed, ocr.text, draftId);
+      await saveCurrentDraft(compressed, ocr, draftId);
     } catch (error) {
       console.warn('Receipt OCR failed, saving draft only:', error);
+      setReceiptOcrResult(null);
       setReceiptOcrStatus(receiptTexts.savedOnly);
       setReceiptOcrError(error instanceof Error ? error.message : 'OCR failed');
-      await saveCurrentDraft(compressed, '', draftId);
+      await saveCurrentDraft(compressed, null, draftId);
     } finally {
       setReceiptOcrBusy(false);
     }
@@ -494,6 +513,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       transferToEWalletName,
       transferToBankId,
       receiptText: receiptOcrText || receiptOcrStatus || receiptOcrError,
+      receiptMerchant: receiptOcrResult?.merchant,
+      receiptDate: receiptOcrResult?.date,
+      receiptAmount: receiptOcrResult?.amount,
       imageName: undefined,
       imageType: undefined,
       imageSize: undefined,
@@ -550,23 +572,34 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setCurrentStep(step);
   };
 
+  const resolveOcrExpenseCategory = (): string => {
+    if (formData.category) return formData.category;
+
+    const otherCategory = categories.find((category) => category.name.toLowerCase() === 'other');
+    if (otherCategory) return otherCategory.name;
+
+    return categories[0]?.name || '';
+  };
+
   // Helper to build submit data
-  const buildSubmitData = async (): Promise<Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>> => {
+  const buildSubmitData = async (
+    sourceFormData: ReceiptDraftFormState = formData,
+  ): Promise<Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>> => {
     const resolvedCurrency = await resolveExpenseCurrencyFields({
-      amount: formData.amount / 100,
-      currency: formData.currency,
+      amount: sourceFormData.amount / 100,
+      currency: sourceFormData.currency,
       baseCurrency: DEFAULT_BASE_CURRENCY,
-      date: formData.date,
+      date: sourceFormData.date,
       existing: initialData,
       forceRefresh: !!initialData && (
-        initialData.currency !== formData.currency ||
-        initialData.date !== formData.date
+        initialData.currency !== sourceFormData.currency ||
+        initialData.date !== sourceFormData.date
       ),
     });
 
     const submitData: Record<string, unknown> = {
-      ...formData,
-      amount: formData.amount / 100,
+      ...sourceFormData,
+      amount: sourceFormData.amount / 100,
       ...resolvedCurrency,
     };
 
@@ -580,17 +613,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       }
     }
 
-    if (formData.paymentMethod === 'cash') {
+    if (sourceFormData.paymentMethod === 'cash') {
       delete submitData.cardId;
       delete submitData.paymentMethodName;
       delete submitData.bankId;
-    } else if (formData.paymentMethod === 'credit_card') {
+    } else if (sourceFormData.paymentMethod === 'credit_card') {
       delete submitData.paymentMethodName;
       delete submitData.bankId;
-    } else if (formData.paymentMethod === 'e_wallet') {
+    } else if (sourceFormData.paymentMethod === 'e_wallet') {
       delete submitData.cardId;
       delete submitData.bankId;
-    } else if (formData.paymentMethod === 'bank') {
+    } else if (sourceFormData.paymentMethod === 'bank') {
       delete submitData.cardId;
       delete submitData.paymentMethodName;
     }
@@ -599,9 +632,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   // Helper to handle transfer logic
-  const handleTransferIfNeeded = (transferAmount: number) => {
+  const handleTransferIfNeeded = (
+    transferAmount: number,
+    sourceFormData: ReceiptDraftFormState = formData,
+  ) => {
     if (enableTransfer && onAddTransfer) {
-      const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
+      const fromPaymentMethod = sourceFormData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
       const toPaymentMethod = transferToPaymentMethod;
       
       const isSamePaymentSource = (
@@ -611,31 +647,80 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         if (fromMethod !== toMethod) return false;
         switch (toMethod) {
           case 'cash': return true;
-          case 'credit_card': return transferToCardId === formData.cardId;
-          case 'e_wallet': return transferToEWalletName === formData.paymentMethodName;
-          case 'bank': return transferToBankId === formData.bankId;
+          case 'credit_card': return transferToCardId === sourceFormData.cardId;
+          case 'e_wallet': return transferToEWalletName === sourceFormData.paymentMethodName;
+          case 'bank': return transferToBankId === sourceFormData.bankId;
         }
       };
 
       if (!isSamePaymentSource(fromPaymentMethod, toPaymentMethod)) {
         const transferData: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
           amount: transferAmount,
-          date: formData.date,
-          time: formData.time,
-          note: `${t('transfer')} - ${formData.description}`,
+          date: sourceFormData.date,
+          time: sourceFormData.time,
+          note: `${t('transfer')} - ${sourceFormData.description}`,
           fromPaymentMethod: fromPaymentMethod,
-          fromPaymentMethodName: fromPaymentMethod === 'e_wallet' ? formData.paymentMethodName : '',
+          fromPaymentMethodName: fromPaymentMethod === 'e_wallet' ? sourceFormData.paymentMethodName : '',
           toPaymentMethod: toPaymentMethod,
           toPaymentMethodName: toPaymentMethod === 'e_wallet' ? transferToEWalletName : '',
         };
         
-        if (fromPaymentMethod === 'credit_card' && formData.cardId) transferData.fromCardId = formData.cardId;
-        if (fromPaymentMethod === 'bank' && formData.bankId) transferData.fromBankId = formData.bankId;
+        if (fromPaymentMethod === 'credit_card' && sourceFormData.cardId) transferData.fromCardId = sourceFormData.cardId;
+        if (fromPaymentMethod === 'bank' && sourceFormData.bankId) transferData.fromBankId = sourceFormData.bankId;
         if (toPaymentMethod === 'credit_card' && transferToCardId) transferData.toCardId = transferToCardId;
         if (toPaymentMethod === 'bank' && transferToBankId) transferData.toBankId = transferToBankId;
         
         onAddTransfer(transferData, true).catch((err) => console.error('Failed to create transfer:', err));
       }
+    }
+  };
+
+  const handleCreateFromReceiptOcr = async () => {
+    if (!receiptOcrResult || isSubmitting) return;
+
+    const amountInCents = formData.amount > 0
+      ? formData.amount
+      : typeof receiptOcrResult.amount === 'number' && Number.isFinite(receiptOcrResult.amount)
+        ? Math.round(receiptOcrResult.amount * 100)
+        : 0;
+
+    if (amountInCents <= 0) {
+      setReceiptOcrError(receiptTexts.missingAmount);
+      setCurrentStep(STEP_AMOUNT);
+      return;
+    }
+
+    const category = resolveOcrExpenseCategory();
+    if (!category) {
+      setReceiptOcrError(receiptTexts.missingCategory);
+      setCurrentStep(STEP_CATEGORY);
+      return;
+    }
+
+    const nextFormData: ReceiptDraftFormState = {
+      ...formData,
+      amount: amountInCents,
+      date: formData.date || receiptOcrResult.date || getTodayLocal(),
+      category,
+      description: formData.description.trim() || receiptOcrResult.merchant?.trim() || receiptTexts.receiptFallbackDescription,
+    };
+
+    setFormData(nextFormData);
+    setIsSubmitting(true);
+    setCurrencyError('');
+    setReceiptOcrError('');
+    updateCategoryUsage(category);
+
+    try {
+      const submitData = await buildSubmitData(nextFormData);
+      handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount, nextFormData);
+      onSubmit(submitData);
+      await resetReceiptDraftState();
+    } catch (error) {
+      console.error('Failed to create expense from receipt OCR:', error);
+      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1452,6 +1537,23 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               {receiptOcrStatus}
               {receiptOcrSummary ? ` · ${receiptOcrSummary}` : ''}
               {receiptOcrError ? ` · ${receiptOcrError}` : ''}
+            </div>
+          )}
+          {receiptOcrResult && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={handleCreateFromReceiptOcr}
+                disabled={receiptOcrBusy || isSubmitting || !receiptOcrResult}
+                style={{
+                  ...styles.buttonPrimary,
+                  flex: '0 1 auto',
+                  opacity: receiptOcrBusy || isSubmitting ? 0.5 : 1,
+                  cursor: receiptOcrBusy || isSubmitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {receiptTexts.createFromOcr}
+              </button>
             </div>
           )}
           {receiptOcrText && (
