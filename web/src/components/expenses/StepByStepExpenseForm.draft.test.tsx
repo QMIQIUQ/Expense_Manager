@@ -163,6 +163,23 @@ describe('StepByStepExpenseForm draft controls', () => {
     expect(screen.queryByText(/compare/i)).not.toBeInTheDocument();
   });
 
+  it('shows receipt source choices before opening a receipt', async () => {
+    render(
+      <StepByStepExpenseForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        categories={[]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /take photo \/ upload receipt|拍照 \/ 上傳收據|拍照 \/ 上传收据/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /file \/ album|文件 \/ 相簿|檔案 \/ 相簿/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /camera|相机|相機/i })).toBeInTheDocument();
+    });
+  });
+
   it('shows the OCR review action after OCR succeeds and saves structured draft fields', async () => {
     render(
       <StepByStepExpenseForm

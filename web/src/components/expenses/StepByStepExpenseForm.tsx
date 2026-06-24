@@ -124,9 +124,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const receiptCameraInputRef = useRef<HTMLInputElement>(null);
   const initialReceiptProcessedRef = useRef<File | null>(null);
   const [receiptDraftId, setReceiptDraftId] = useState<string | null>(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
+  const [showReceiptSourcePicker, setShowReceiptSourcePicker] = useState(false);
   const [receiptOcrBusy, setReceiptOcrBusy] = useState(false);
   const [receiptOcrStatus, setReceiptOcrStatus] = useState<string>('');
   const [receiptOcrError, setReceiptOcrError] = useState<string>('');
@@ -517,11 +519,21 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const handleReceiptInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setShowReceiptSourcePicker(false);
     await handleDraftedReceiptImage(file);
     event.target.value = '';
   };
 
   const handleOpenReceiptPicker = () => {
+    setShowReceiptSourcePicker((prev) => !prev);
+  };
+
+  const handleChooseReceiptSource = (source: 'file' | 'camera') => {
+    setShowReceiptSourcePicker(false);
+    if (source === 'camera') {
+      receiptCameraInputRef.current?.click();
+      return;
+    }
     receiptInputRef.current?.click();
   };
 
@@ -1473,6 +1485,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         onChange={handleReceiptInputChange}
         style={{ display: 'none' }}
       />
+      <input
+        ref={receiptCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptInputChange}
+        style={{ display: 'none' }}
+      />
       <div style={styles.container} onKeyDown={handleKeyDown}>
       <div style={styles.header}>
         {/* Navigation buttons in header */}
@@ -1568,6 +1588,26 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           <div style={styles.receiptHintText}>
             {receiptDraftId ? receiptTexts.restoreHint : receiptTexts.entryHint}
           </div>
+          {showReceiptSourcePicker && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 8, marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={() => handleChooseReceiptSource('file')}
+                style={styles.buttonSecondary}
+                disabled={receiptOcrBusy}
+              >
+                {isEnglish ? 'File / album' : isSimplifiedChinese ? '文件 / 相簿' : '檔案 / 相簿'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChooseReceiptSource('camera')}
+                style={styles.buttonSecondary}
+                disabled={receiptOcrBusy}
+              >
+                {isEnglish ? 'Camera' : isSimplifiedChinese ? '相机' : '相機'}
+              </button>
+            </div>
+          )}
           {receiptPreviewUrl && (
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
               <img src={receiptPreviewUrl} alt="Receipt preview" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-color, #e9ecef)' }} />
