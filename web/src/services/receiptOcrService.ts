@@ -107,6 +107,8 @@ const parseMoney = (raw: string): number | undefined => {
   const lastDot = cleaned.lastIndexOf('.');
   if (lastComma > lastDot && /^\d{1,3}(?:\.\d{3})*,\d{1,2}$/.test(cleaned)) {
     normalized = cleaned.replace(/\./g, '').replace(',', '.');
+  } else if (lastDot > -1 && lastComma === -1 && /^\d{1,3}(?:\.\d{3})+$/.test(cleaned)) {
+    normalized = cleaned.replace(/\./g, '');
   } else if (lastComma > -1 && lastDot === -1) {
     const commaDecimal = cleaned.match(/^\d+,\d{1,2}$/);
     normalized = commaDecimal ? cleaned.replace(',', '.') : cleaned.replace(/,/g, '');
@@ -118,10 +120,12 @@ const parseMoney = (raw: string): number | undefined => {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 };
 
-const amountValuePattern = /(?:[$¥€£]|NT\$?|HK\$?|RMB|CNY|USD|TWD)?\s*(\d{1,3}(?:[,.]\d{3})*(?:[,.]\d{1,2})?|\d+(?:[,.]\d{1,2})?)/gi;
-const primaryAmountLabelPattern = /(?:\b(?:grand\s*total|net\s*total|total|amount|balance|payable)\b|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|应\s*付|應\s*付|实\s*付|實\s*付|总\s*额|總\s*額|付款|收款)/i;
-const secondaryAmountLabelPattern = /(?:\bsubtotal\b|小\s*计|小\s*計|消费|消費)/i;
+const currencyPattern = String.raw`(?:[$¥€£₩₫₹₱฿]|NT\$?|HK\$?|S\$|A\$|C\$|US\$|RM|MYR|SGD|RMB|CNY|USD|TWD|JPY|KRW|THB|VND|IDR|PHP|AUD|CAD|Rp|บาท)`;
+const amountValuePattern = new RegExp(`${currencyPattern}?\\s*(\\d{1,3}(?:[,.]\\d{3})*(?:[,.]\\d{1,2})?|\\d+(?:[,.]\\d{1,2})?)`, 'gi');
+const primaryAmountLabelPattern = /(?:\b(?:grand\s*total|net\s*total|invoice\s*total|final\s*total|total\s*(?:due|paid|payable)?|amount\s*(?:due|paid)?|balance\s*(?:due)?|payable|payment|paid|sum|importe|montant|betrag|summe|valor\s*total|valor|jumlah(?:\s*(?:besar|keseluruhan|bayar|perlu\s*dibayar))?|total\s*(?:bayar|belanja)?|amaun|bayaran|baki|harga|tong\s*cong|tổng\s*cộng|thanh\s*toán|thanh\s*toan|so\s*tien|số\s*tiền|phai\s*tra|phải\s*trả)\b|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|应\s*付|應\s*付|实\s*付|實\s*付|总\s*额|總\s*額|付款|收款|合計金額|総計|総額|お会計|ご請求額|お支払い|支払|税込合計|領収金額|합계|총액|총합계|결제\s*금액|결제금액|금액|지불|결제|청구금액|ยอด\s*รวม|รวม\s*ทั้ง\s*สิ้น|จำนวน\s*เงิน|ยอด\s*ชำระ|ชำระ|รวม|المجموع|الإجمالي)/i;
+const secondaryAmountLabelPattern = /(?:\b(?:subtotal|sub\s*total|before\s*tax|pre\s*tax|taxable\s*amount|jumlah\s*kecil|subjumlah|subtotal\s*barang)\b|小\s*计|小\s*計|消费|消費|小計|소계|小計金額|ยอด\s*ก่อน\s*ภาษี)/i;
 const labeledAmountPattern = new RegExp(`${primaryAmountLabelPattern.source}|${secondaryAmountLabelPattern.source}`, 'i');
+const currencyOrDecimalPattern = new RegExp(`${currencyPattern}|\\d+[,.]\\d{1,2}`, 'i');
 
 const extractAmountsFromLine = (line: string): number[] => {
   const values: number[] = [];
@@ -146,20 +150,91 @@ const extractAmount = (lines: string[]): number | undefined => {
   }
 
   const decimalOrCurrencyValues = lines
-    .filter((line) => /[$¥€£]|NT\$?|HK\$?|RMB|CNY|USD|TWD|\d+[,.]\d{1,2}/i.test(line))
+    .filter((line) => currencyOrDecimalPattern.test(line))
     .flatMap(extractAmountsFromLine);
 
   return decimalOrCurrencyValues.length > 0 ? Math.max(...decimalOrCurrencyValues) : undefined;
 };
 
+const monthNameToNumber = (value: string): number | undefined => {
+  const key = value.toLowerCase().replace(/\./g, '');
+  const monthMap: Record<string, number> = {
+    jan: 1,
+    january: 1,
+    januari: 1,
+    feb: 2,
+    february: 2,
+    februari: 2,
+    mar: 3,
+    march: 3,
+    mac: 3,
+    maret: 3,
+    apr: 4,
+    april: 4,
+    may: 5,
+    mei: 5,
+    jun: 6,
+    june: 6,
+    juni: 6,
+    jul: 7,
+    july: 7,
+    juli: 7,
+    aug: 8,
+    august: 8,
+    ogos: 8,
+    agustus: 8,
+    sep: 9,
+    sept: 9,
+    september: 9,
+    oct: 10,
+    october: 10,
+    okt: 10,
+    oktober: 10,
+    nov: 11,
+    november: 11,
+    dec: 12,
+    december: 12,
+    dis: 12,
+    des: 12,
+    desember: 12,
+  };
+  return monthMap[key];
+};
+
+const extractMonthNameDate = (line: string): string | undefined => {
+  const monthNamePattern = '(jan(?:uary|uari)?|feb(?:ruary|ruari)?|mar(?:ch|et)?|mac|apr(?:il)?|may|mei|jun(?:e|i)?|jul(?:y|i)?|aug(?:ust)?|ogos|agustus|sep(?:t|tember)?|oct(?:ober)?|okt(?:ober)?|nov(?:ember)?|dec(?:ember)?|dis|des(?:ember)?)';
+  const dayMonthYear = new RegExp(`\\b(\\d{1,2})\\s+${monthNamePattern}\\.?[,]?\\s+(\\d{4})\\b`, 'i');
+  const monthDayYear = new RegExp(`\\b${monthNamePattern}\\.?\\s+(\\d{1,2})[,]?\\s+(\\d{4})\\b`, 'i');
+
+  const dayMonthMatch = line.match(dayMonthYear);
+  if (dayMonthMatch) {
+    const [, day, monthName, year] = dayMonthMatch;
+    const month = monthNameToNumber(monthName);
+    return month ? formatDateParts(Number(year), month, Number(day)) : undefined;
+  }
+
+  const monthDayMatch = line.match(monthDayYear);
+  if (monthDayMatch) {
+    const [, monthName, day, year] = monthDayMatch;
+    const month = monthNameToNumber(monthName);
+    return month ? formatDateParts(Number(year), month, Number(day)) : undefined;
+  }
+
+  return undefined;
+};
+
 const extractDate = (lines: string[]): string | undefined => {
   const patterns = [
-    /(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?/,
-    /(\d{3})[-/](\d{1,2})[-/](\d{1,2})/,
+    /(\d{4})\s*[-/.年년]\s*(\d{1,2})\s*[-/.月월]\s*(\d{1,2})\s*(?:日|일)?/,
+    /(?:民國|民国)?\s*(\d{3})[-/年](\d{1,2})[-/月](\d{1,2})日?/,
     /(\d{1,2})[-/](\d{1,2})[-/](\d{4})/,
+    /(\d{1,2})\.(\d{1,2})\.(\d{4})/,
   ];
 
   for (const line of lines) {
+    const namedDate = extractMonthNameDate(line);
+    if (namedDate) return namedDate;
+
     for (const pattern of patterns) {
       const match = line.match(pattern);
       if (!match) continue;
@@ -198,7 +273,7 @@ const formatDateParts = (year: number, month: number, day: number): string | und
 };
 
 const extractMerchant = (lines: string[]): string | undefined => {
-  const excluded = /(?:receipt|invoice|total|subtotal|tax|change|balance|thank you|cash|card|date|time|收据|收據|发票|發票|合\s*计|合\s*計|总\s*计|總\s*計|金\s*额|金\s*額|找零|现金|現金|日期|时间|時間)/i;
+  const excluded = /(?:receipt|invoice|tax|vat|sst|gst|discount|change|balance|thank you|cash|card|visa|mastercard|date|time|resit|invois|faktur|struk|nota|pajak|ppn|terima\s*kasih|收据|收據|发票|發票|找零|现金|現金|日期|时间|時間|領収書|レシート|請求書|税|釣銭|現金|カード|日付|時間|영수증|세금|거스름돈|현금|카드|날짜|시간|ใบเสร็จ|ภาษี|เงินทอน|เงินสด|บัตร|วันที่|เวลา)/i;
   const candidates = lines.filter((line) => {
     if (!line || line.length < 2 || line.length > 60) return false;
     if (excluded.test(line)) return false;

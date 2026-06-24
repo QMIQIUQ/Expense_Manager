@@ -40,6 +40,32 @@ const STEP_CATEGORY: Step = 4;
 const STEP_DESCRIPTION: Step = 5;
 const STEP_PAYMENT: Step = 6;
 const CURRENT_DRAFT_FLOW_VERSION = 2;
+const OCR_CATEGORY_FALLBACK_NAMES = [
+  'other',
+  'others',
+  'uncategorized',
+  'uncategorised',
+  'misc',
+  'miscellaneous',
+  '其他',
+  '其它',
+  '未分類',
+  '未分类',
+  '其他類別',
+  '其他分类',
+  'lain-lain',
+  'lain lain',
+  'lainnya',
+  'lain',
+  'その他',
+  '기타',
+  'อื่นๆ',
+  'อื่น ๆ',
+];
+
+const normalizeCategoryFallbackName = (value: string): string => {
+  return value.toLowerCase().replace(/\s+/g, ' ').trim();
+};
 
 interface StepByStepExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -575,8 +601,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const resolveOcrExpenseCategory = (): string => {
     if (formData.category) return formData.category;
 
-    const otherCategory = categories.find((category) => category.name.toLowerCase() === 'other');
-    if (otherCategory) return otherCategory.name;
+    const fallbackNames = new Set(OCR_CATEGORY_FALLBACK_NAMES.map(normalizeCategoryFallbackName));
+    const fallbackCategory = categories.find((category) => fallbackNames.has(normalizeCategoryFallbackName(category.name)));
+    if (fallbackCategory) return fallbackCategory.name;
 
     return categories[0]?.name || '';
   };

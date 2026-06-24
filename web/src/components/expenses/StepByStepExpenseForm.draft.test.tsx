@@ -189,6 +189,31 @@ describe('StepByStepExpenseForm draft controls', () => {
     }));
   });
 
+  it('creates an OCR expense using a localized category fallback', async () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <StepByStepExpenseForm
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        categories={[makeCategory('Food'), makeCategory('其他')]}
+        initialReceiptFile={sampleReceiptFile()}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /create from ocr/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      category: '其他',
+      amount: 12.34,
+      description: 'COFFEE SHOP',
+    }));
+  });
+
   it('does not create an OCR expense when no category exists', async () => {
     const onSubmit = vi.fn();
 

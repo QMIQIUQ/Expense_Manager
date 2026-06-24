@@ -96,6 +96,43 @@ TOTAL 12.34
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(120);
   });
+
+  it('extracts Malay receipt fields with month names and RM currency', () => {
+    const result = parseReceiptText(`
+KEDAI RUNCIT
+Tarikh: 25 Apr 2026
+Jumlah: RM 123.45
+Terima kasih
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(123.45);
+    expect(result.merchant).toBe('KEDAI RUNCIT');
+  });
+
+  it('extracts Korean receipt fields with localized dates and currency', () => {
+    const result = parseReceiptText(`
+카페
+2026년 4월 25일
+총액 ₩12,300
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(12300);
+    expect(result.merchant).toBe('카페');
+  });
+
+  it('extracts Thai receipt fields with baht currency', () => {
+    const result = parseReceiptText(`
+ร้านกาแฟ
+วันที่ 25/04/2026
+ยอดรวม ฿120.00
+`);
+
+    expect(result.date).toBe('2026-04-25');
+    expect(result.amount).toBe(120);
+    expect(result.merchant).toBe('ร้านกาแฟ');
+  });
 });
 
 describe('receiptOcrService recognizeReceiptText', () => {
