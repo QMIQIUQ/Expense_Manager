@@ -28,6 +28,11 @@ export default defineConfig(({ command }) => {
         srcDir: 'src',
         filename: 'sw.ts',
         includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          globIgnores: ['**/*.wasm', '**/ort-wasm*'],
+          maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
+        },
         manifest: {
           id: '/Expense_Manager/',
           name: 'Expense Manager',
@@ -90,7 +95,6 @@ export default defineConfig(({ command }) => {
         } as unknown as ManifestOptions,
         workbox: {
           mode: 'production',
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

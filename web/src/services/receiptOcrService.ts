@@ -1,73 +1,84 @@
+import { compressReceiptImage } from './receiptOcrImage';
+import {
+  resetReceiptOcrPaddleService,
+  runPaddleReceiptOcr,
+  runTesseractReceiptOcr,
+} from './receiptOcrProviders';
+
+export type ReceiptOcrProvider = 'tesseract' | 'paddle';
+export type ReceiptOcrMode = ReceiptOcrProvider | 'compare';
+
+export interface ReceiptOcrEngineResult {
+  provider: ReceiptOcrProvider;
+  text: string;
+  confidence?: number;
+  elapsedMs: number;
+}
+
+export interface ReceiptOcrComparisonResult {
+  selectedProvider: ReceiptOcrProvider;
+  paddle?: ReceiptOcrResult;
+  tesseract?: ReceiptOcrResult;
+}
+
 export interface ReceiptOcrResult {
   text: string;
   amount?: number;
   date?: string;
   merchant?: string;
   confidence?: number;
+  provider?: ReceiptOcrProvider;
+  elapsedMs?: number;
+  fallbackReason?: string;
+  comparison?: ReceiptOcrComparisonResult;
 }
 
-const DEFAULT_MAX_WIDTH = 1600;
-const DEFAULT_JPEG_QUALITY = 0.78;
+export interface ReceiptOcrRecognitionOptions {
+  mode?: ReceiptOcrMode;
+}
 
-const toBlobFromCanvas = (canvas: HTMLCanvasElement, mimeType = 'image/jpeg', quality = DEFAULT_JPEG_QUALITY): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Failed to compress receipt image'));
-        return;
-      }
-      resolve(blob);
-    }, mimeType, quality);
-  });
+const RECEIPT_OCR_MODE_STORAGE_KEY = 'expense-manager.receipt-ocr-mode';
+const DEFAULT_RECEIPT_OCR_MODE: ReceiptOcrMode = 'tesseract';
+const VALID_RECEIPT_OCR_MODES: ReceiptOcrMode[] = ['tesseract', 'paddle', 'compare'];
+
+const isReceiptOcrMode = (value: unknown): value is ReceiptOcrMode => {
+  return typeof value === 'string' && VALID_RECEIPT_OCR_MODES.includes(value as ReceiptOcrMode);
 };
 
-const loadImageFromBlob = async (blob: Blob): Promise<HTMLImageElement> => {
-  const url = URL.createObjectURL(blob);
-  try {
-    const image = new Image();
-    image.decoding = 'async';
-    const loaded = new Promise<HTMLImageElement>((resolve, reject) => {
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('Failed to load receipt image'));
-    });
-    image.src = url;
-    return await loaded;
-  } finally {
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+export const getReceiptOcrMode = (): ReceiptOcrMode => {
+  if (typeof window !== 'undefined') {
+    const storedMode = window.localStorage.getItem(RECEIPT_OCR_MODE_STORAGE_KEY);
+    if (isReceiptOcrMode(storedMode)) {
+      return storedMode;
+    }
   }
+
+  const envMode = import.meta.env.VITE_RECEIPT_OCR_PROVIDER;
+  if (isReceiptOcrMode(envMode)) {
+    return envMode;
+  }
+
+  return DEFAULT_RECEIPT_OCR_MODE;
 };
 
-export const compressReceiptImage = async (
-  input: Blob,
-  options: { maxWidth?: number; quality?: number } = {},
-): Promise<Blob> => {
-  const maxWidth = options.maxWidth ?? DEFAULT_MAX_WIDTH;
-  const quality = options.quality ?? DEFAULT_JPEG_QUALITY;
+export const setReceiptOcrMode = (mode: ReceiptOcrMode): void => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(RECEIPT_OCR_MODE_STORAGE_KEY, mode);
+};
 
-  if (typeof document === 'undefined') {
-    return input;
+export const getReceiptOcrProviderLabel = (provider: ReceiptOcrProvider): string => {
+  return provider === 'paddle' ? 'PaddleOCR' : 'Tesseract';
+};
+
+export const getReceiptOcrModeLabel = (mode: ReceiptOcrMode): string => {
+  switch (mode) {
+    case 'paddle':
+      return 'PaddleOCR';
+    case 'compare':
+      return 'Compare';
+    default:
+      return 'Tesseract';
   }
-
-  const image = await loadImageFromBlob(input);
-  const ratio = Math.min(1, maxWidth / Math.max(image.width, image.height));
-  const width = Math.max(1, Math.round(image.width * ratio));
-  const height = Math.max(1, Math.round(image.height * ratio));
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return input;
-  }
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  if ('filter' in ctx) {
-    ctx.filter = 'contrast(1.08)';
-  }
-  ctx.drawImage(image, 0, 0, width, height);
-  return toBlobFromCanvas(canvas, 'image/jpeg', quality);
 };
 
 const normalizeText = (value: string): string => value
@@ -214,31 +225,167 @@ export const parseReceiptText = (text: string): ReceiptOcrResult => {
   };
 };
 
-export const recognizeReceiptText = async (
+const parseEngineResult = (result: ReceiptOcrEngineResult, fallbackReason?: string): ReceiptOcrResult => {
+  const parsed = parseReceiptText(result.text);
+  return {
+    ...parsed,
+    confidence: result.confidence,
+    provider: result.provider,
+    elapsedMs: result.elapsedMs,
+    fallbackReason,
+  };
+};
+
+const scoreReceiptResult = (result: ReceiptOcrResult): number => {
+  let score = 0;
+  if (typeof result.amount === 'number' && Number.isFinite(result.amount)) score += 4;
+  if (result.date) score += 3;
+  if (result.merchant) score += 2;
+  if (result.text.trim().length > 0) score += Math.min(result.text.trim().length / 80, 1);
+  if (typeof result.confidence === 'number' && Number.isFinite(result.confidence)) {
+    score += Math.min(result.confidence / 100, 1);
+  }
+  return score;
+};
+
+const shouldFallbackToTesseract = (result: ReceiptOcrResult): boolean => {
+  const text = result.text.trim();
+  if (!text) return true;
+  if (typeof result.amount !== 'number') return true;
+  if (result.date || result.merchant) return false;
+  if (typeof result.confidence === 'number' && result.confidence < 50) return true;
+  return text.length < 24;
+};
+
+const compareReceiptResults = (
+  paddle: ReceiptOcrResult | null,
+  tesseract: ReceiptOcrResult | null,
+): { selected: ReceiptOcrResult; comparison: ReceiptOcrComparisonResult } => {
+  if (!paddle && !tesseract) {
+    throw new Error('Receipt OCR failed in both PaddleOCR and Tesseract');
+  }
+
+  if (paddle && !tesseract) {
+    return {
+      selected: paddle,
+      comparison: { selectedProvider: 'paddle', paddle: paddle },
+    };
+  }
+
+  if (!paddle && tesseract) {
+    return {
+      selected: tesseract,
+      comparison: { selectedProvider: 'tesseract', tesseract: tesseract },
+    };
+  }
+
+  const paddleScore = scoreReceiptResult(paddle as ReceiptOcrResult);
+  const tesseractScore = scoreReceiptResult(tesseract as ReceiptOcrResult);
+  const selected = paddleScore >= tesseractScore ? (paddle as ReceiptOcrResult) : (tesseract as ReceiptOcrResult);
+
+  return {
+    selected,
+    comparison: {
+      selectedProvider: selected.provider as ReceiptOcrProvider,
+      paddle: paddle || undefined,
+      tesseract: tesseract || undefined,
+    },
+  };
+};
+
+const recognizeWithTesseractFallback = async (
   image: Blob,
   onProgress?: (progress: number) => void,
 ): Promise<ReceiptOcrResult> => {
-  const { recognize } = await import('tesseract.js');
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read receipt image'));
-    reader.readAsDataURL(image);
-  });
+  try {
+    const engineResult = await runPaddleReceiptOcr(image, onProgress);
+    const parsed = parseEngineResult(engineResult);
+    if (shouldFallbackToTesseract(parsed)) {
+      const tesseractResult = await runTesseractReceiptOcr(image, onProgress);
+      const parsedTesseract = parseEngineResult(tesseractResult, 'paddle_result_weak');
+      return {
+        ...parsedTesseract,
+        fallbackReason: 'paddle_result_weak',
+      };
+    }
 
-  const result = await recognize(dataUrl, 'eng+chi_sim+chi_tra', {
-    logger: (message: { status?: string; progress?: number }) => {
-      if (typeof message.progress === 'number' && onProgress) {
-        onProgress(Math.max(0, Math.min(1, message.progress)));
-      }
-    },
-  });
+    return parsed;
+  } catch (paddleError) {
+    const tesseractResult = await runTesseractReceiptOcr(image, onProgress);
+    return {
+      ...parseEngineResult(tesseractResult, 'paddle_error'),
+      fallbackReason: paddleError instanceof Error ? paddleError.message : 'paddle_error',
+    };
+  }
+};
 
-  const text = result.data.text || '';
-  const parsed = parseReceiptText(text);
+const recognizeWithCompare = async (
+  image: Blob,
+  onProgress?: (progress: number) => void,
+): Promise<ReceiptOcrResult> => {
+  let paddleParsed: ReceiptOcrResult | null = null;
+  let tesseractParsed: ReceiptOcrResult | null = null;
+  let paddleError: string | null = null;
+  let tesseractError: string | null = null;
+
+  try {
+    const paddleEngineResult = await runPaddleReceiptOcr(image, (progress) => {
+      if (onProgress) onProgress(Math.max(0, Math.min(1, progress * 0.5)));
+    });
+    paddleParsed = parseEngineResult(paddleEngineResult);
+  } catch (error) {
+    paddleError = error instanceof Error ? error.message : 'paddle_error';
+  }
+
+  try {
+    const tesseractEngineResult = await runTesseractReceiptOcr(image, (progress) => {
+      if (onProgress) onProgress(Math.max(0, Math.min(1, 0.5 + (progress * 0.5))));
+    });
+    tesseractParsed = parseEngineResult(tesseractEngineResult);
+  } catch (error) {
+    tesseractError = error instanceof Error ? error.message : 'tesseract_error';
+  }
+
+  if (!paddleParsed && !tesseractParsed) {
+    throw new Error([
+      paddleError ? `PaddleOCR: ${paddleError}` : 'PaddleOCR failed',
+      tesseractError ? `Tesseract: ${tesseractError}` : 'Tesseract failed',
+    ].join('; '));
+  }
+
+  const comparison = compareReceiptResults(paddleParsed, tesseractParsed);
+  const fallbackReason = comparison.selected.provider === 'paddle'
+    ? (tesseractParsed ? undefined : tesseractError || 'tesseract_error')
+    : (paddleParsed ? undefined : paddleError || 'paddle_error');
+
   return {
-    ...parsed,
-    text: parsed.text,
-    confidence: result.data.confidence,
+    ...comparison.selected,
+    fallbackReason,
+    comparison: comparison.comparison,
   };
 };
+
+export const recognizeReceiptText = async (
+  image: Blob,
+  onProgress?: (progress: number) => void,
+  options: ReceiptOcrRecognitionOptions = {},
+): Promise<ReceiptOcrResult> => {
+  const mode = options.mode || getReceiptOcrMode();
+
+  if (mode === 'compare') {
+    return await recognizeWithCompare(image, onProgress);
+  }
+
+  if (mode === 'paddle') {
+    return await recognizeWithTesseractFallback(image, onProgress);
+  }
+
+  const tesseractEngineResult = await runTesseractReceiptOcr(image, onProgress);
+  return parseEngineResult(tesseractEngineResult);
+};
+
+export const resetReceiptOcrServiceState = async (): Promise<void> => {
+  await resetReceiptOcrPaddleService();
+};
+
+export { compressReceiptImage };

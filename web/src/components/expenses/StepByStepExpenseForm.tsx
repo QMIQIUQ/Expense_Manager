@@ -13,8 +13,22 @@ import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import { CheckIcon } from '../icons';
-import { compressReceiptImage, recognizeReceiptText, type ReceiptOcrResult } from '../../services/receiptOcrService';
+import {
+  compressReceiptImage,
+  getReceiptOcrMode,
+  getReceiptOcrProviderLabel,
+  recognizeReceiptText,
+  setReceiptOcrMode,
+  type ReceiptOcrMode,
+  type ReceiptOcrResult,
+} from '../../services/receiptOcrService';
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
+
+const formatOcrDuration = (elapsedMs?: number): string => {
+  if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
+  if (elapsedMs < 1000) return `${Math.round(elapsedMs)}ms`;
+  return `${(elapsedMs / 1000).toFixed(1)}s`;
+};
 
 // Step type definition
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
@@ -81,6 +95,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [receiptOcrStatus, setReceiptOcrStatus] = useState<string>('');
   const [receiptOcrError, setReceiptOcrError] = useState<string>('');
   const [receiptOcrText, setReceiptOcrText] = useState<string>('');
+  const [receiptOcrSummary, setReceiptOcrSummary] = useState<string>('');
+  const [receiptOcrMode, setReceiptOcrModeState] = useState<ReceiptOcrMode>(() => getReceiptOcrMode());
   
   // Delay for focusing input after state updates
   const FOCUS_DELAY_MS = 50;
@@ -92,8 +108,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     scanning: isEnglish ? 'Scanning...' : isSimplifiedChinese ? '扫描中...' : '掃描中...',
     saveDraft: isEnglish ? 'Save draft' : isSimplifiedChinese ? '保存草稿' : '儲存草稿',
     clearDraft: isEnglish ? 'Clear draft' : isSimplifiedChinese ? '清除草稿' : '清除草稿',
+    modeLabel: isEnglish ? 'OCR mode' : isSimplifiedChinese ? 'OCR 模式' : 'OCR 模式',
+    modeTesseract: 'Tesseract',
+    modePaddle: 'PaddleOCR',
+    modeCompare: isEnglish ? 'Compare both' : isSimplifiedChinese ? '比较两个引擎' : '比較兩個引擎',
     preparing: isEnglish ? 'Preparing receipt image...' : isSimplifiedChinese ? '正在准备收据图片...' : '正在準備收據圖片...',
     runningLocal: isEnglish ? 'Running OCR on this device...' : isSimplifiedChinese ? '正在本机进行 OCR...' : '正在本機進行 OCR...',
+    runningPaddle: isEnglish ? 'Running PaddleOCR on this device...' : isSimplifiedChinese ? '正在本机进行 PaddleOCR...' : '正在本機進行 PaddleOCR...',
+    runningCompare: isEnglish ? 'Comparing PaddleOCR and Tesseract...' : isSimplifiedChinese ? '正在比较 PaddleOCR 和 Tesseract...' : '正在比較 PaddleOCR 和 Tesseract...',
     runningProgress: (progress: number) => isEnglish ? `Running OCR... ${progress}%` : isSimplifiedChinese ? `正在进行 OCR... ${progress}%` : `正在進行 OCR... ${progress}%`,
     complete: isEnglish ? 'OCR complete. Review the prefilled fields.' : isSimplifiedChinese ? 'OCR 完成，请检查预填栏位。' : 'OCR 完成，請檢查預填欄位。',
     savedOnly: isEnglish ? 'Saved as draft. You can finish it later.' : isSimplifiedChinese ? '已保存为草稿，稍后可继续完成。' : '已儲存為草稿，稍後可繼續完成。',
@@ -104,6 +126,16 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     restoreHint: isEnglish ? 'A saved receipt draft was restored automatically.' : isSimplifiedChinese ? '已自动恢复之前保存的收据草稿。' : '已自動恢復先前儲存的收據草稿。',
     entryHint: isEnglish ? 'Scan a receipt here to prefill amount, date, and merchant, then finish later if needed.' : isSimplifiedChinese ? '可先扫描收据，自动预填金额、日期与商家，稍后再继续填写。' : '可先掃描收據，自動預填金額、日期與商家，稍後再繼續填寫。',
   }), [isEnglish, isSimplifiedChinese]);
+
+  const buildReceiptOcrSummary = useCallback((result: ReceiptOcrResult): string => {
+    const parts = [
+      getReceiptOcrProviderLabel(result.provider || 'tesseract'),
+      formatOcrDuration(result.elapsedMs),
+      result.comparison ? (isEnglish ? 'compare mode' : isSimplifiedChinese ? '比较模式' : '比較模式') : '',
+    ].filter(Boolean);
+
+    return parts.join(' · ');
+  }, [isEnglish, isSimplifiedChinese]);
 
   // Sort categories by recent usage (stored in localStorage)
   const getSortedCategories = (): Category[] => {
@@ -335,6 +367,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setTransferToBankId(draft.transferToBankId || '');
     setReceiptOcrText(draft.receiptText || '');
     setReceiptOcrStatus(draft.receiptText ? receiptTexts.draftRestored : '');
+    setReceiptOcrSummary('');
     if (loaded.imageBlob) {
       const objectUrl = URL.createObjectURL(loaded.imageBlob);
       setReceiptPreviewUrl(objectUrl);
@@ -354,11 +387,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setReceiptOcrStatus('');
     setReceiptOcrError('');
     setReceiptOcrText('');
+    setReceiptOcrSummary('');
   };
 
   const handleDraftedReceiptImage = useCallback(async (file: File) => {
     if (!currentUser) return;
     setReceiptOcrError('');
+    setReceiptOcrSummary('');
     setReceiptOcrBusy(true);
     setReceiptOcrStatus(receiptTexts.preparing);
 
@@ -368,15 +403,33 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const previewUrl = URL.createObjectURL(compressed);
     if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
     setReceiptPreviewUrl(previewUrl);
-    setReceiptOcrStatus(receiptTexts.runningLocal);
+    setReceiptOcrStatus(
+      receiptOcrMode === 'compare'
+        ? receiptTexts.runningCompare
+        : receiptOcrMode === 'paddle'
+          ? receiptTexts.runningPaddle
+          : receiptTexts.runningLocal,
+    );
 
     try {
+      const getProgressStatus = (progress: number): string => {
+        const percent = Math.round(progress * 100);
+        if (receiptOcrMode === 'compare') {
+          return `${receiptTexts.runningCompare} ${percent}%`;
+        }
+        if (receiptOcrMode === 'paddle') {
+          return `${receiptTexts.runningPaddle} ${percent}%`;
+        }
+        return receiptTexts.runningProgress(percent);
+      };
+
       const ocr = await recognizeReceiptText(compressed, (progress) => {
-        setReceiptOcrStatus(receiptTexts.runningProgress(Math.round(progress * 100)));
-      });
+        setReceiptOcrStatus(getProgressStatus(progress));
+      }, { mode: receiptOcrMode });
       setReceiptOcrText(ocr.text);
       applyReceiptResult(ocr);
       setReceiptOcrStatus(receiptTexts.complete);
+      setReceiptOcrSummary(buildReceiptOcrSummary(ocr));
       await saveCurrentDraft(compressed, ocr.text, draftId);
     } catch (error) {
       console.warn('Receipt OCR failed, saving draft only:', error);
@@ -391,8 +444,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     currentUser,
     receiptDraftId,
     receiptPreviewUrl,
+    receiptOcrMode,
     receiptTexts,
     saveCurrentDraft,
+    buildReceiptOcrSummary,
   ]);
 
   useEffect(() => {
@@ -1342,6 +1397,32 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
       {!initialData && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #e9ecef)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{receiptTexts.modeLabel}</span>
+            <select
+              value={receiptOcrMode}
+              disabled={receiptOcrBusy}
+              onChange={(event) => {
+                const nextMode = event.target.value as ReceiptOcrMode;
+                setReceiptOcrMode(nextMode);
+                setReceiptOcrModeState(nextMode);
+              }}
+              style={{
+                minWidth: 160,
+                minHeight: 36,
+                borderRadius: 10,
+                border: '1px solid var(--border-color, #e9ecef)',
+                background: 'var(--bg-primary, #fff)',
+                color: 'var(--text-primary)',
+                padding: '0 12px',
+                fontSize: 13,
+              }}
+            >
+              <option value="tesseract">{receiptTexts.modeTesseract}</option>
+              <option value="paddle">{receiptTexts.modePaddle}</option>
+              <option value="compare">{receiptTexts.modeCompare}</option>
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: receiptPreviewUrl ? '12px' : 0 }}>
             <button type="button" onClick={handleOpenReceiptPicker} style={styles.buttonSecondary} disabled={receiptOcrBusy}>
               {receiptOcrBusy ? receiptTexts.scanning : receiptTexts.scan}
@@ -1361,12 +1442,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <img src={receiptPreviewUrl} alt="Receipt preview" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-color, #e9ecef)' }} />
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1, minWidth: 0 }}>
                 {receiptOcrStatus || receiptTexts.previewSaved}
+                {receiptOcrSummary ? ` · ${receiptOcrSummary}` : ''}
                 {receiptOcrError ? ` · ${receiptOcrError}` : ''}
               </div>
             </div>
           )}
           {!receiptPreviewUrl && receiptOcrStatus && (
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{receiptOcrStatus}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              {receiptOcrStatus}
+              {receiptOcrSummary ? ` · ${receiptOcrSummary}` : ''}
+              {receiptOcrError ? ` · ${receiptOcrError}` : ''}
+            </div>
           )}
           {receiptOcrText && (
             <details style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
