@@ -67,6 +67,16 @@ const normalizeCategoryFallbackName = (value: string): string => {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 };
 
+const mapReceiptLineItemsToAmountItems = (lineItems?: ReceiptOcrResult['lineItems']): AmountItem[] => {
+  if (!lineItems?.length) return [];
+  return lineItems
+    .filter((item) => typeof item.amount === 'number' && Number.isFinite(item.amount) && item.amount > 0)
+    .map((item) => ({
+      amount: Math.round(item.amount * 100) / 100,
+      description: item.description?.trim() || undefined,
+    }));
+};
+
 interface StepByStepExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onCancel?: () => void;
@@ -150,7 +160,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     draftRestored: isEnglish ? 'Draft restored' : isSimplifiedChinese ? '已恢复草稿' : '已恢復草稿',
     previewSaved: isEnglish ? 'Receipt saved as draft' : isSimplifiedChinese ? '收据已保存为草稿' : '收據已儲存為草稿',
     originalText: isEnglish ? 'OCR text' : isSimplifiedChinese ? 'OCR 原文' : 'OCR 原文',
-    createFromOcr: isEnglish ? 'Create from OCR' : isSimplifiedChinese ? '用 OCR 建立' : '用 OCR 建立',
+    reviewOcrResult: isEnglish ? 'Review OCR result' : isSimplifiedChinese ? '检查 OCR 结果' : '檢查 OCR 結果',
+    reviewReady: isEnglish ? 'OCR fields are ready to review.' : isSimplifiedChinese ? 'OCR 栏位已准备好检查。' : 'OCR 欄位已準備好檢查。',
     missingCategory: isEnglish ? 'Select a category before creating this expense.' : isSimplifiedChinese ? '请先选择分类再建立支出。' : '請先選擇分類再建立支出。',
     missingAmount: isEnglish ? 'OCR did not find a valid amount.' : isSimplifiedChinese ? 'OCR 没有识别到有效金额。' : 'OCR 沒有辨識到有效金額。',
     receiptFallbackDescription: isEnglish ? 'Receipt' : isSimplifiedChinese ? '收据' : '收據',
@@ -162,6 +173,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const parts = [
       getReceiptOcrProviderLabel(result.provider || 'tesseract'),
       formatOcrDuration(result.elapsedMs),
+      result.currency || '',
+      result.lineItems?.length
+        ? (isEnglish ? `${result.lineItems.length} items` : isSimplifiedChinese ? `${result.lineItems.length} 个项目` : `${result.lineItems.length} 個項目`)
+        : '',
       result.comparison ? (isEnglish ? 'compare mode' : isSimplifiedChinese ? '比较模式' : '比較模式') : '',
     ].filter(Boolean);
 
@@ -329,19 +344,27 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   ]);
 
   const applyReceiptResult = useCallback((result: ReceiptOcrResult) => {
-    if (result.date) {
-      setFormData((prev) => ({ ...prev, date: result.date || prev.date }));
+    const receiptAmountItems = mapReceiptLineItemsToAmountItems(result.lineItems);
+    const amountInCents = typeof result.amount === 'number' && Number.isFinite(result.amount) && result.amount > 0
+      ? Math.round(result.amount * 100)
+      : receiptAmountItems.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+
+    setFormData((prev) => ({
+      ...prev,
+      date: result.date || prev.date,
+      amount: amountInCents > 0 ? amountInCents : prev.amount,
+      currency: result.currency || prev.currency,
+      description: prev.description.trim() ? prev.description : result.merchant || prev.description,
+    }));
+
+    if (receiptAmountItems.length > 0) {
+      setAmountItems(receiptAmountItems);
+      setCurrentAmountInput(0);
+      return;
     }
-    if (typeof result.amount === 'number' && Number.isFinite(result.amount) && result.amount > 0) {
-      const amountInCents = Math.round(result.amount * 100);
-      setFormData((prev) => ({ ...prev, amount: amountInCents }));
+
+    if (amountInCents > 0) {
       setCurrentAmountInput(amountInCents);
-    }
-    if (result.merchant) {
-      setFormData((prev) => {
-        const nextDescription = prev.description.trim() ? prev.description : result.merchant || '';
-        return { ...prev, description: nextDescription };
-      });
     }
   }, []);
 
@@ -358,6 +381,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       receiptMerchant: receiptResult?.merchant,
       receiptDate: receiptResult?.date,
       receiptAmount: receiptResult?.amount,
+      receiptCurrency: receiptResult?.currency,
+      receiptLineItems: mapReceiptLineItemsToAmountItems(receiptResult?.lineItems),
     }, draftIdOverride);
     if (!snapshot) return;
 
@@ -542,6 +567,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       receiptMerchant: receiptOcrResult?.merchant,
       receiptDate: receiptOcrResult?.date,
       receiptAmount: receiptOcrResult?.amount,
+      receiptCurrency: receiptOcrResult?.currency,
+      receiptLineItems: mapReceiptLineItemsToAmountItems(receiptOcrResult?.lineItems),
       imageName: undefined,
       imageType: undefined,
       imageSize: undefined,
@@ -702,53 +729,42 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const handleCreateFromReceiptOcr = async () => {
-    if (!receiptOcrResult || isSubmitting) return;
+  const handleReviewReceiptOcrResult = () => {
+    if (!receiptOcrResult || receiptOcrBusy) return;
+
+    const receiptAmountItems = mapReceiptLineItemsToAmountItems(receiptOcrResult.lineItems);
+    const itemTotalInCents = receiptAmountItems.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+    const ocrAmountInCents = typeof receiptOcrResult.amount === 'number' && Number.isFinite(receiptOcrResult.amount)
+      ? Math.round(receiptOcrResult.amount * 100)
+      : 0;
 
     const amountInCents = formData.amount > 0
       ? formData.amount
-      : typeof receiptOcrResult.amount === 'number' && Number.isFinite(receiptOcrResult.amount)
-        ? Math.round(receiptOcrResult.amount * 100)
-        : 0;
-
-    if (amountInCents <= 0) {
-      setReceiptOcrError(receiptTexts.missingAmount);
-      setCurrentStep(STEP_AMOUNT);
-      return;
-    }
-
-    const category = resolveOcrExpenseCategory();
-    if (!category) {
-      setReceiptOcrError(receiptTexts.missingCategory);
-      setCurrentStep(STEP_CATEGORY);
-      return;
-    }
+      : ocrAmountInCents > 0
+        ? ocrAmountInCents
+        : itemTotalInCents;
 
     const nextFormData: ReceiptDraftFormState = {
       ...formData,
       amount: amountInCents,
       date: formData.date || receiptOcrResult.date || getTodayLocal(),
-      category,
+      currency: receiptOcrResult.currency || formData.currency,
+      category: formData.category || resolveOcrExpenseCategory(),
       description: formData.description.trim() || receiptOcrResult.merchant?.trim() || receiptTexts.receiptFallbackDescription,
     };
 
     setFormData(nextFormData);
-    setIsSubmitting(true);
-    setCurrencyError('');
-    setReceiptOcrError('');
-    updateCategoryUsage(category);
-
-    try {
-      const submitData = await buildSubmitData(nextFormData);
-      handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount, nextFormData);
-      onSubmit(submitData);
-      await resetReceiptDraftState();
-    } catch (error) {
-      console.error('Failed to create expense from receipt OCR:', error);
-      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
-    } finally {
-      setIsSubmitting(false);
+    if (receiptAmountItems.length > 0) {
+      setAmountItems(receiptAmountItems);
+      setCurrentAmountInput(0);
+    } else if (amountInCents > 0) {
+      setCurrentAmountInput(amountInCents);
     }
+
+    setReceiptOcrError(amountInCents > 0 ? '' : receiptTexts.missingAmount);
+    setReceiptOcrStatus(amountInCents > 0 ? receiptTexts.reviewReady : receiptTexts.missingAmount);
+    setCurrencyError('');
+    setCurrentStep(amountInCents > 0 ? STEP_DATE : STEP_AMOUNT);
   };
 
   // Reset form for adding another expense
@@ -1089,7 +1105,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 <div style={styles.amountItemsLabel}>{t('addedItems')}:</div>
                 {amountItems.map((item, index) => (
                   <div key={index} style={styles.amountItem}>
-                    <span>{formatAmountFromDollars(item.amount)}</span>
+                    <span>
+                      {item.description ? `${item.description}: ` : ''}
+                      {formatAmountFromDollars(item.amount)}
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeAmountItem(index)}
@@ -1570,7 +1589,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 8 }}>
               <button
                 type="button"
-                onClick={handleCreateFromReceiptOcr}
+                onClick={handleReviewReceiptOcrResult}
                 disabled={receiptOcrBusy || isSubmitting || !receiptOcrResult}
                 style={{
                   ...styles.buttonPrimary,
@@ -1579,7 +1598,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   cursor: receiptOcrBusy || isSubmitting ? 'not-allowed' : 'pointer',
                 }}
               >
-                {receiptTexts.createFromOcr}
+                {receiptTexts.reviewOcrResult}
               </button>
             </div>
           )}

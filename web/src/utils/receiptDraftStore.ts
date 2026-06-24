@@ -43,6 +43,8 @@ export interface ReceiptDraftSnapshot {
   receiptMerchant?: string;
   receiptDate?: string;
   receiptAmount?: number;
+  receiptCurrency?: string;
+  receiptLineItems?: Array<{ amount: number; description?: string }>;
   imageName?: string;
   imageType?: string;
   imageSize?: number;

@@ -46,6 +46,7 @@ TOTAL NT$120
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(120);
+    expect(result.currency).toBe('TWD');
     expect(result.merchant).toBe('COFFEE SHOP');
   });
 
@@ -59,6 +60,7 @@ TOTAL NT$120
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(120);
+    expect(result.currency).toBe('CNY');
     expect(result.merchant).toBe('便利店');
   });
 
@@ -72,6 +74,7 @@ TOTAL NT$120
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(120);
+    expect(result.currency).toBe('TWD');
     expect(result.merchant).toBe('咖啡館');
   });
 
@@ -107,6 +110,7 @@ Terima kasih
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(123.45);
+    expect(result.currency).toBe('MYR');
     expect(result.merchant).toBe('KEDAI RUNCIT');
   });
 
@@ -119,6 +123,7 @@ Terima kasih
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(12300);
+    expect(result.currency).toBeUndefined();
     expect(result.merchant).toBe('카페');
   });
 
@@ -131,7 +136,36 @@ Terima kasih
 
     expect(result.date).toBe('2026-04-25');
     expect(result.amount).toBe(120);
+    expect(result.currency).toBeUndefined();
     expect(result.merchant).toBe('ร้านกาแฟ');
+  });
+
+  it('extracts supported currency and receipt line items', () => {
+    const result = parseReceiptText(`
+BISTRO
+Date: 04/25/2026
+Latte S$4.50
+Sandwich S$7.84
+GST S$0.74
+TOTAL SGD 12.34
+`);
+
+    expect(result.amount).toBe(12.34);
+    expect(result.currency).toBe('SGD');
+    expect(result.lineItems).toEqual([
+      { description: 'Latte', amount: 4.5 },
+      { description: 'Sandwich', amount: 7.84 },
+    ]);
+  });
+
+  it('does not infer a currency from ambiguous dollar symbols', () => {
+    const result = parseReceiptText(`
+SHOP
+TOTAL $12.34
+`);
+
+    expect(result.amount).toBe(12.34);
+    expect(result.currency).toBeUndefined();
   });
 });
 

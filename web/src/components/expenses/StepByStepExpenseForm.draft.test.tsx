@@ -40,10 +40,15 @@ const mockedResolveExpenseCurrencyFields = vi.mocked(resolveExpenseCurrencyField
 const mockedSaveReceiptDraft = vi.mocked(saveReceiptDraft);
 
 const sampleOcrResult: ReceiptOcrResult = {
-  text: 'COFFEE SHOP\n2026-04-25\nTOTAL 12.34',
+  text: 'COFFEE SHOP\n2026-04-25\nLatte S$4.50\nSandwich S$7.84\nTOTAL SGD 12.34',
   amount: 12.34,
+  currency: 'SGD',
   date: '2026-04-25',
   merchant: 'COFFEE SHOP',
+  lineItems: [
+    { description: 'Latte', amount: 4.5 },
+    { description: 'Sandwich', amount: 7.84 },
+  ],
   provider: 'paddle',
   elapsedMs: 100,
 };
@@ -139,7 +144,7 @@ describe('StepByStepExpenseForm draft controls', () => {
     });
   });
 
-  it('shows the create from OCR action after OCR succeeds', async () => {
+  it('shows the OCR review action after OCR succeeds and saves structured draft fields', async () => {
     render(
       <StepByStepExpenseForm
         onSubmit={vi.fn()}
@@ -149,7 +154,7 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    expect(await screen.findByRole('button', { name: /create from ocr/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /review ocr result/i })).toBeInTheDocument();
     expect(mockedRecognizeReceiptText).toHaveBeenCalledTimes(1);
     expect(mockedSaveReceiptDraft).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -157,12 +162,17 @@ describe('StepByStepExpenseForm draft controls', () => {
         receiptMerchant: sampleOcrResult.merchant,
         receiptDate: sampleOcrResult.date,
         receiptAmount: sampleOcrResult.amount,
+        receiptCurrency: sampleOcrResult.currency,
+        receiptLineItems: [
+          { amount: 4.5, description: 'Latte' },
+          { amount: 7.84, description: 'Sandwich' },
+        ],
       }),
       expect.any(Blob),
     );
   });
 
-  it('creates an expense from OCR using the Other category fallback', async () => {
+  it('reviews OCR fields without directly creating an expense', async () => {
     const onSubmit = vi.fn();
 
     render(
@@ -174,22 +184,29 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create from ocr/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
 
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
     });
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 12.34,
-      date: '2026-04-25',
-      description: 'COFFEE SHOP',
-      category: 'Other',
-      paymentMethod: 'cash',
-    }));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sgd.*singapore dollar/i })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /sgd.*singapore dollar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/latte/i)).toBeInTheDocument();
+      expect(screen.getByText(/sandwich/i)).toBeInTheDocument();
+    });
   });
 
-  it('creates an OCR expense using a localized category fallback', async () => {
+  it('uses localized category fallback while reviewing OCR fields', async () => {
     const onSubmit = vi.fn();
 
     render(
@@ -201,20 +218,29 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create from ocr/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
 
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
     });
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      category: '其他',
-      amount: 12.34,
-      description: 'COFFEE SHOP',
-    }));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sgd.*singapore dollar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/latte/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('其他')).toBeInTheDocument();
+    });
   });
 
-  it('does not create an OCR expense when no category exists', async () => {
+  it('does not submit when reviewing OCR fields without any category', async () => {
     const onSubmit = vi.fn();
 
     render(
@@ -226,13 +252,25 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create from ocr/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/select a category before creating this expense/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: /select a category/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sgd.*singapore dollar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/latte/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /select a category/i })).toBeInTheDocument();
+    });
   });
 });

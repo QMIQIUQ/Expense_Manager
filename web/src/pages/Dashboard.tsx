@@ -99,6 +99,7 @@ const Dashboard: React.FC = () => {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
+  const [receiptEntryKey, setReceiptEntryKey] = useState(0);
   const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -205,6 +206,7 @@ const Dashboard: React.FC = () => {
     }
 
     setPendingReceiptFile(null);
+    setReceiptEntryKey((prev) => prev + 1);
     if (activeTab === 'expenses') {
       setShowAddSheet(true);
     } else {
@@ -223,6 +225,7 @@ const Dashboard: React.FC = () => {
     if (!file) return;
 
     setPendingReceiptFile(file);
+    setReceiptEntryKey((prev) => prev + 1);
     if (activeTab === 'expenses') {
       setShowAddSheet(true);
     } else {
@@ -2979,6 +2982,7 @@ const Dashboard: React.FC = () => {
           maxWidth="700px"
         >
           <StepByStepExpenseForm
+            key={receiptEntryKey}
             onSubmit={(data) => {
               handleAddExpense(data);
               closeExpenseEntry();
@@ -3089,6 +3093,7 @@ const Dashboard: React.FC = () => {
           maxWidth="700px"
         >
           <StepByStepExpenseForm
+            key={receiptEntryKey}
             onSubmit={(data) => {
               handleAddExpense(data);
               closeExpenseEntry();

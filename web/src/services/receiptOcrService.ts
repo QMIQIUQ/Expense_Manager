@@ -4,6 +4,7 @@ import {
   runPaddleReceiptOcr,
   runTesseractReceiptOcr,
 } from './receiptOcrProviders';
+import type { CurrencyCode } from '../types';
 
 export type ReceiptOcrProvider = 'tesseract' | 'paddle';
 export type ReceiptOcrMode = ReceiptOcrProvider | 'compare';
@@ -21,11 +22,18 @@ export interface ReceiptOcrComparisonResult {
   tesseract?: ReceiptOcrResult;
 }
 
+export interface ReceiptOcrLineItem {
+  description: string;
+  amount: number;
+}
+
 export interface ReceiptOcrResult {
   text: string;
   amount?: number;
+  currency?: CurrencyCode;
   date?: string;
   merchant?: string;
+  lineItems?: ReceiptOcrLineItem[];
   confidence?: number;
   provider?: ReceiptOcrProvider;
   elapsedMs?: number;
@@ -127,22 +135,70 @@ const secondaryAmountLabelPattern = /(?:\b(?:subtotal|sub\s*total|before\s*tax|p
 const labeledAmountPattern = new RegExp(`${primaryAmountLabelPattern.source}|${secondaryAmountLabelPattern.source}`, 'i');
 const currencyOrDecimalPattern = new RegExp(`${currencyPattern}|\\d+[,.]\\d{1,2}`, 'i');
 
-const extractAmountsFromLine = (line: string): number[] => {
-  const values: number[] = [];
-  for (const match of line.matchAll(amountValuePattern)) {
+interface ReceiptAmountCandidate {
+  amount: number;
+  currency?: CurrencyCode;
+  line: string;
+  lineIndex: number;
+  valueIndex: number;
+  matchIndex: number;
+}
+
+const detectCurrencyFromLine = (line: string): CurrencyCode | undefined => {
+  if (/\b(?:MYR|RM)\b/i.test(line) || /RM\s*\d/i.test(line)) return 'MYR';
+  if (/\bUSD\b|US\$/i.test(line)) return 'USD';
+  if (/\bTWD\b|NT\$/i.test(line)) return 'TWD';
+  if (/\bSGD\b|S\$/i.test(line)) return 'SGD';
+  if (/\b(?:CNY|RMB)\b/i.test(line)) return 'CNY';
+  if (/\bEUR\b|€/i.test(line)) return 'EUR';
+  if (/\bGBP\b|£/i.test(line)) return 'GBP';
+  if (/\bJPY\b|円/i.test(line)) return 'JPY';
+
+  if (/¥/.test(line)) {
+    if (/(?:人民币|人民幣|付款|合计|合計|总计|總計|实付|實付|应付|應付|元)/.test(line)) return 'CNY';
+    if (/(?:税込|税抜|お会計|ご請求額|支払|領収|レシート|円)/.test(line) || /[\u3040-\u30ff]/.test(line)) return 'JPY';
+  }
+
+  return undefined;
+};
+
+const extractCurrency = (lines: string[], preferredLine?: string): CurrencyCode | undefined => {
+  const preferredCurrency = preferredLine ? detectCurrencyFromLine(preferredLine) : undefined;
+  if (preferredCurrency) return preferredCurrency;
+
+  const counts = new Map<CurrencyCode, number>();
+  for (const line of lines) {
+    const currency = detectCurrencyFromLine(line);
+    if (!currency) continue;
+    counts.set(currency, (counts.get(currency) || 0) + 1);
+  }
+
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+};
+
+const extractAmountCandidatesFromLine = (line: string, lineIndex: number): ReceiptAmountCandidate[] => {
+  const values: ReceiptAmountCandidate[] = [];
+  const lineCurrency = detectCurrencyFromLine(line);
+  for (const [matchIndex, match] of Array.from(line.matchAll(amountValuePattern)).entries()) {
     const value = parseMoney(match[1]);
-    if (value !== undefined && value < 100000000) {
-      values.push(value);
-    }
+    if (value === undefined || value >= 100000000) continue;
+    values.push({
+      amount: value,
+      currency: detectCurrencyFromLine(match[0]) || lineCurrency,
+      line,
+      lineIndex,
+      valueIndex: values.length,
+      matchIndex,
+    });
   }
   return values;
 };
 
-const extractAmount = (lines: string[]): number | undefined => {
+const extractAmountCandidate = (lines: string[]): ReceiptAmountCandidate | undefined => {
   for (const labelPattern of [primaryAmountLabelPattern, secondaryAmountLabelPattern]) {
-    for (const line of lines) {
+    for (const [lineIndex, line] of lines.entries()) {
       if (!labelPattern.test(line)) continue;
-      const values = extractAmountsFromLine(line);
+      const values = extractAmountCandidatesFromLine(line, lineIndex);
       if (values.length > 0) {
         return values[values.length - 1];
       }
@@ -150,10 +206,13 @@ const extractAmount = (lines: string[]): number | undefined => {
   }
 
   const decimalOrCurrencyValues = lines
-    .filter((line) => currencyOrDecimalPattern.test(line))
-    .flatMap(extractAmountsFromLine);
+    .flatMap((line, lineIndex) => currencyOrDecimalPattern.test(line)
+      ? extractAmountCandidatesFromLine(line, lineIndex)
+      : []);
 
-  return decimalOrCurrencyValues.length > 0 ? Math.max(...decimalOrCurrencyValues) : undefined;
+  return decimalOrCurrencyValues.length > 0
+    ? decimalOrCurrencyValues.reduce((max, candidate) => candidate.amount > max.amount ? candidate : max)
+    : undefined;
 };
 
 const monthNameToNumber = (value: string): number | undefined => {
@@ -284,18 +343,68 @@ const extractMerchant = (lines: string[]): string | undefined => {
   return candidates[0];
 };
 
+const lineItemExclusionPattern = /(?:\b(?:total|subtotal|sub\s*total|tax|sst|gst|vat|service\s*charge|discount|change|balance|cash|card|visa|mastercard|amex|payment|paid|payable|tender|rounding|receipt|invoice|date|time|tel|phone|qty|quantity|item|price|amount|order|table|cashier|thank\s*you|terima\s*kasih)\b|合\s*计|合\s*計|总\s*计|總\s*計|小\s*计|小\s*計|税|稅|找零|现金|現金|日期|时间|時間|收据|收據|发票|發票|総計|総額|小計|税|現金|カード|日付|時間|합계|총액|소계|세금|현금|카드|날짜|시간|ยอด\s*รวม|ภาษี|เงินทอน|เงินสด|บัตร|วันที่|เวลา)/i;
+
+const cleanLineItemDescription = (value: string): string => value
+  .replace(new RegExp(currencyPattern, 'gi'), ' ')
+  .replace(/\b\d+\s*(?:x|×|\*)\s*/gi, '')
+  .replace(/\s{2,}/g, ' ')
+  .replace(/^[\s:;.,#\-*]+|[\s:;.,#\-*]+$/g, '')
+  .trim();
+
+const roundMoney = (value: number): number => Math.round(value * 100) / 100;
+
+const extractLineItems = (lines: string[]): ReceiptOcrLineItem[] | undefined => {
+  const items: ReceiptOcrLineItem[] = [];
+
+  for (const [lineIndex, line] of lines.entries()) {
+    if (!currencyOrDecimalPattern.test(line)) continue;
+    if (lineItemExclusionPattern.test(line)) continue;
+    if (extractDate([line])) continue;
+
+    const candidates = extractAmountCandidatesFromLine(line, lineIndex);
+    if (candidates.length === 0) continue;
+
+    const lastCandidate = candidates[candidates.length - 1];
+    const match = Array.from(line.matchAll(amountValuePattern))[lastCandidate.matchIndex];
+    if (!match || typeof match.index !== 'number') continue;
+
+    const description = cleanLineItemDescription(line.slice(0, match.index));
+    if (description.length < 2) continue;
+    if (/^[\d\sx×*./#-]+$/i.test(description)) continue;
+
+    items.push({
+      description,
+      amount: roundMoney(lastCandidate.amount),
+    });
+  }
+
+  const deduped = items.filter((item, index) => {
+    const key = `${item.description.toLowerCase()}|${item.amount}`;
+    return items.findIndex((candidate) => `${candidate.description.toLowerCase()}|${candidate.amount}` === key) === index;
+  });
+
+  return deduped.length > 0 ? deduped : undefined;
+};
+
 export const parseReceiptText = (text: string): ReceiptOcrResult => {
   const lines = text
     .split(/\r?\n+/)
     .map((line) => normalizeText(line))
     .filter(Boolean);
   const normalized = lines.join('\n');
+  const amountCandidate = extractAmountCandidate(lines);
+  const lineItems = extractLineItems(lines);
+  const lineItemsTotal = lineItems?.reduce((sum, item) => sum + item.amount, 0) || 0;
+  const amount = amountCandidate?.amount || (lineItemsTotal > 0 ? roundMoney(lineItemsTotal) : undefined);
 
   return {
     text: normalized,
-    amount: extractAmount(lines),
+    amount,
+    currency: extractCurrency(lines, amountCandidate?.line),
     date: extractDate(lines),
     merchant: extractMerchant(lines),
+    lineItems,
     confidence: undefined,
   };
 };
@@ -316,6 +425,8 @@ const scoreReceiptResult = (result: ReceiptOcrResult): number => {
   if (typeof result.amount === 'number' && Number.isFinite(result.amount)) score += 4;
   if (result.date) score += 3;
   if (result.merchant) score += 2;
+  if (result.currency) score += 1;
+  if (result.lineItems?.length) score += 1;
   if (result.text.trim().length > 0) score += Math.min(result.text.trim().length / 80, 1);
   if (typeof result.confidence === 'number' && Number.isFinite(result.confidence)) {
     score += Math.min(result.confidence / 100, 1);
