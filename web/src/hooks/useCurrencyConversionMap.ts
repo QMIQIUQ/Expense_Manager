@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { convertAmountToCurrency } from '../services/currencyRateService';
+import { normalizeCurrencyCode } from '../utils/currencyUtils';
 
 export interface CurrencyConversionEntry {
   key: string;
@@ -25,9 +26,15 @@ export const useCurrencyConversionMap = (
         return;
       }
 
+      const target = normalizeCurrencyCode(targetCurrency);
       const nextMap: Record<string, number> = {};
       await Promise.all(entries.map(async (entry) => {
         try {
+          if (normalizeCurrencyCode(entry.sourceCurrency) === target) {
+            nextMap[entry.key] = Math.round(entry.amount * 100) / 100;
+            return;
+          }
+
           nextMap[entry.key] = await convertAmountToCurrency(
             entry.amount,
             entry.sourceCurrency ?? undefined,

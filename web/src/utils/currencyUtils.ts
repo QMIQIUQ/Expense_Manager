@@ -74,6 +74,25 @@ export const getExpenseBaseAmount = (
   return expense.amount;
 };
 
+export const getExpenseDisplaySource = (
+  expense: Pick<Expense, 'amount' | 'currency' | 'baseAmount' | 'baseCurrency'>,
+  targetCurrency?: string | null
+): { amount: number; sourceCurrency: CurrencyCode } => {
+  const originalCurrency = getExpenseCurrency(expense);
+  const baseCurrency = getExpenseBaseCurrency(expense);
+  const target = targetCurrency ? normalizeCurrencyCode(targetCurrency) : baseCurrency;
+
+  if (target === originalCurrency) {
+    return { amount: expense.amount, sourceCurrency: originalCurrency };
+  }
+
+  if (target === baseCurrency) {
+    return { amount: getExpenseBaseAmount(expense), sourceCurrency: baseCurrency };
+  }
+
+  return { amount: getExpenseBaseAmount(expense), sourceCurrency: baseCurrency };
+};
+
 export const buildExpenseCurrencyFields = (params: {
   amount: number;
   currency?: string | null;

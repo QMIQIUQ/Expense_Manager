@@ -1,5 +1,7 @@
 const DEFAULT_MAX_WIDTH = 1600;
 const DEFAULT_JPEG_QUALITY = 0.78;
+const OCR_MAX_WIDTH = 2200;
+const OCR_JPEG_QUALITY = 0.92;
 
 const toBlobFromCanvas = (canvas: HTMLCanvasElement, mimeType = 'image/jpeg', quality = DEFAULT_JPEG_QUALITY): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -98,3 +100,37 @@ export const compressReceiptImage = async (
   return toBlobFromCanvas(canvas, 'image/jpeg', quality);
 };
 
+export const prepareReceiptImageForOcr = async (
+  input: Blob,
+  options: { maxWidth?: number; quality?: number } = {},
+): Promise<Blob> => {
+  const maxWidth = options.maxWidth ?? OCR_MAX_WIDTH;
+  const quality = options.quality ?? OCR_JPEG_QUALITY;
+
+  if (typeof document === 'undefined') {
+    return input;
+  }
+
+  const image = await loadImageFromBlob(input);
+  const ratio = Math.min(1, maxWidth / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * ratio));
+  const height = Math.max(1, Math.round(image.height * ratio));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return input;
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  if ('filter' in ctx) {
+    ctx.filter = 'grayscale(1) contrast(1.35) brightness(1.08)';
+  }
+  ctx.drawImage(image, 0, 0, width, height);
+  return toBlobFromCanvas(canvas, 'image/jpeg', quality);
+};

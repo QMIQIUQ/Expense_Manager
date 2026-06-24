@@ -55,7 +55,7 @@ import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount, getExpenseBaseCurrency } from '../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseDisplaySource } from '../utils/currencyUtils';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -176,13 +176,16 @@ const Dashboard: React.FC = () => {
   }, [expenses]);
 
   const filteredExpenseConversionEntries = useMemo(() => (
-    filteredExpensesForDisplay.map((expense) => ({
-      key: expense.id || `${expense.date}-${expense.description}`,
-      amount: getExpenseBaseAmount(expense),
-      sourceCurrency: getExpenseBaseCurrency(expense),
-      date: expense.date,
-    }))
-  ), [filteredExpensesForDisplay]);
+    filteredExpensesForDisplay.map((expense) => {
+      const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+      return {
+        key: expense.id || `${expense.date}-${expense.description}`,
+        amount: displaySource.amount,
+        sourceCurrency: displaySource.sourceCurrency,
+        date: expense.date,
+      };
+    })
+  ), [displayCurrency, filteredExpensesForDisplay]);
 
   const filteredExpenseDisplayAmounts = useCurrencyConversionMap(
     filteredExpenseConversionEntries,
@@ -193,10 +196,11 @@ const Dashboard: React.FC = () => {
     return Math.round(filteredExpensesForDisplay.reduce((sum, expense) => {
       const key = expense.id || `${expense.date}-${expense.description}`;
       const converted = filteredExpenseDisplayAmounts[key];
-      const amount = typeof converted === 'number' ? converted : getExpenseBaseAmount(expense);
+      const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+      const amount = typeof converted === 'number' ? converted : displaySource.amount;
       return sum + amount;
     }, 0) * 100);
-  }, [filteredExpenseDisplayAmounts, filteredExpensesForDisplay]);
+  }, [displayCurrency, filteredExpenseDisplayAmounts, filteredExpensesForDisplay]);
   //#endregion
 
   const openExpenseEntry = (options?: { withReceipt?: boolean }) => {

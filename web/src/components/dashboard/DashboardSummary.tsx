@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getTodayLocal, formatDateLocal, formatDateShort, formatDateWithUserFormat } from '../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import type { CurrencyCode } from '../../types';
 
@@ -58,12 +58,15 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     if (!displayCurrency) return [];
     return expenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, expenses]);
 
   const repaymentDisplayEntries = React.useMemo(() => {
@@ -86,7 +89,9 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
 
   const getDisplayExpenseAmount = React.useCallback((expense: Expense): number => {
     if (!displayCurrency) return getExpenseBaseAmount(expense);
-    return expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense);
+    const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+    if (displaySource.sourceCurrency === displayCurrency) return displaySource.amount;
+    return expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount;
   }, [displayCurrency, expenseDisplayAmountsById]);
 
   const getDisplayRepaymentTotal = React.useCallback((expenseId: string): number => {

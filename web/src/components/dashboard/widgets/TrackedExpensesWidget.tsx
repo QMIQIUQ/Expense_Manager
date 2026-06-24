@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 import { WidgetProps } from './types';
 
@@ -53,12 +53,15 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     if (!displayCurrency) return [];
     return trackedExpenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, trackedExpenses]);
 
   const repaymentDisplayEntries = React.useMemo(() => {
@@ -92,8 +95,11 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     <div className={`tracked-expenses-list ${isCompact ? 'tracked-expenses-compact' : ''}`}>
       {trackedExpenses.slice(0, maxItems).map((expense) => {
         const repaid = repaymentTotals[expense.id!] || 0;
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
         const totalAmount = displayCurrency
-          ? (expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense))
+          ? (displaySource.sourceCurrency === displayCurrency
+            ? displaySource.amount
+            : expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount)
           : getExpenseBaseAmount(expense);
         const repaidDisplay = displayCurrency
           ? repayments

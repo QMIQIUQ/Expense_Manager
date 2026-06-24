@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Expense } from '../../../types';
 import { WidgetProps } from './types';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 
 const SummaryCardsWidget: React.FC<WidgetProps> = ({
@@ -50,12 +50,15 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
     if (!displayCurrency) return [];
     return expenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, expenses]);
 
   const repaymentConversionEntries = React.useMemo(() => {
@@ -94,8 +97,11 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
     };
 
     const getMonthlyDisplayAmount = (exp: Expense) => {
+      const displaySource = getExpenseDisplaySource(exp, displayCurrency);
       const expenseAmount = displayCurrency
-        ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+        ? (displaySource.sourceCurrency === displayCurrency
+          ? displaySource.amount
+          : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
         : getExpenseBaseAmount(exp);
       const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
       return Math.max(0, expenseAmount - repaid);
@@ -133,8 +139,11 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
         const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
+        const displaySource = getExpenseDisplaySource(exp, displayCurrency);
         const amount = displayCurrency
-          ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+          ? (displaySource.sourceCurrency === displayCurrency
+            ? displaySource.amount
+            : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
           : getExpenseBaseAmount(exp);
         return sum + Math.max(0, amount - repaid);
       }, 0);

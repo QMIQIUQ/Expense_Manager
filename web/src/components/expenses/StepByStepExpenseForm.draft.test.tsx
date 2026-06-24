@@ -4,6 +4,7 @@ import StepByStepExpenseForm from './StepByStepExpenseForm';
 import type { Category, Expense } from '../../types';
 import {
   compressReceiptImage,
+  prepareReceiptImageForOcr,
   recognizeReceiptText,
   type ReceiptOcrResult,
 } from '../../services/receiptOcrService';
@@ -14,8 +15,8 @@ vi.mock('../../services/receiptOcrService', () => ({
   compressReceiptImage: vi.fn(),
   getReceiptOcrMode: vi.fn(() => 'paddle'),
   getReceiptOcrProviderLabel: vi.fn((provider: string) => provider === 'paddle' ? 'PaddleOCR' : 'Tesseract'),
+  prepareReceiptImageForOcr: vi.fn(),
   recognizeReceiptText: vi.fn(),
-  setReceiptOcrMode: vi.fn(),
 }));
 
 vi.mock('../../services/currencyRateService', () => ({
@@ -35,6 +36,7 @@ vi.mock('../../contexts/AuthContext', () => ({
 }));
 
 const mockedCompressReceiptImage = vi.mocked(compressReceiptImage);
+const mockedPrepareReceiptImageForOcr = vi.mocked(prepareReceiptImageForOcr);
 const mockedRecognizeReceiptText = vi.mocked(recognizeReceiptText);
 const mockedResolveExpenseCurrencyFields = vi.mocked(resolveExpenseCurrencyFields);
 const mockedSaveReceiptDraft = vi.mocked(saveReceiptDraft);
@@ -54,6 +56,8 @@ const sampleOcrResult: ReceiptOcrResult = {
 };
 
 const sampleReceiptFile = () => new File(['receipt'], 'receipt.jpg', { type: 'image/jpeg' });
+const compressedReceiptBlob = new Blob(['compressed'], { type: 'image/jpeg' });
+const ocrReceiptBlob = new Blob(['ocr-ready'], { type: 'image/jpeg' });
 
 const makeCategory = (name: string): Category => ({
   id: name,
@@ -79,7 +83,8 @@ describe('StepByStepExpenseForm draft controls', () => {
       value: vi.fn(),
     });
 
-    mockedCompressReceiptImage.mockResolvedValue(new Blob(['compressed'], { type: 'image/jpeg' }));
+    mockedCompressReceiptImage.mockResolvedValue(compressedReceiptBlob);
+    mockedPrepareReceiptImageForOcr.mockResolvedValue(ocrReceiptBlob);
     mockedRecognizeReceiptText.mockResolvedValue(sampleOcrResult);
     mockedSaveReceiptDraft.mockResolvedValue();
     mockedResolveExpenseCurrencyFields.mockImplementation(async ({ amount, currency, baseCurrency, date }) => ({
@@ -144,6 +149,20 @@ describe('StepByStepExpenseForm draft controls', () => {
     });
   });
 
+  it('shows PaddleOCR as the only normal OCR mode', () => {
+    render(
+      <StepByStepExpenseForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        categories={[]}
+      />
+    );
+
+    expect(screen.getByText('PaddleOCR')).toBeInTheDocument();
+    expect(screen.queryByText('Tesseract')).not.toBeInTheDocument();
+    expect(screen.queryByText(/compare/i)).not.toBeInTheDocument();
+  });
+
   it('shows the OCR review action after OCR succeeds and saves structured draft fields', async () => {
     render(
       <StepByStepExpenseForm
@@ -155,7 +174,10 @@ describe('StepByStepExpenseForm draft controls', () => {
     );
 
     expect(await screen.findByRole('button', { name: /review ocr result/i })).toBeInTheDocument();
+    expect(mockedCompressReceiptImage).toHaveBeenCalledWith(expect.any(File), { maxWidth: 1600, quality: 0.78 });
+    expect(mockedPrepareReceiptImageForOcr).toHaveBeenCalledWith(expect.any(File), { maxWidth: 2200, quality: 0.92 });
     expect(mockedRecognizeReceiptText).toHaveBeenCalledTimes(1);
+    expect(mockedRecognizeReceiptText).toHaveBeenCalledWith(ocrReceiptBlob, expect.any(Function), { mode: 'paddle' });
     expect(mockedSaveReceiptDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         receiptText: sampleOcrResult.text,

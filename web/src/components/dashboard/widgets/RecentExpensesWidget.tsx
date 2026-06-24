@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 import { WidgetProps } from './types';
 
@@ -46,12 +46,15 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
     if (!displayCurrency) return [];
     return recentExpenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, recentExpenses]);
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
@@ -69,33 +72,40 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
 
   return (
     <div className={`recent-expenses-list ${isCompact ? 'recent-expenses-compact' : ''}`}>
-      {recentExpenses.map((expense) => (
-        <div 
-          key={expense.id} 
-          className={`recent-expense-item ${onNavigateToExpense ? 'clickable' : ''}`}
-          onClick={() => onNavigateToExpense?.(expense.id!)}
-          role={onNavigateToExpense ? 'button' : undefined}
-          tabIndex={onNavigateToExpense ? 0 : undefined}
-        >
-          <div className="recent-expense-info">
-            <span className="recent-expense-category">{expense.category}</span>
-            <span className="recent-expense-desc">{expense.description}</span>
+      {recentExpenses.map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        const displayAmount = displayCurrency
+          ? (displaySource.sourceCurrency === displayCurrency
+            ? displaySource.amount
+            : expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount)
+          : getExpenseBaseAmount(expense);
+
+        return (
+          <div
+            key={expense.id}
+            className={`recent-expense-item ${onNavigateToExpense ? 'clickable' : ''}`}
+            onClick={() => onNavigateToExpense?.(expense.id!)}
+            role={onNavigateToExpense ? 'button' : undefined}
+            tabIndex={onNavigateToExpense ? 0 : undefined}
+          >
+            <div className="recent-expense-info">
+              <span className="recent-expense-category">{expense.category}</span>
+              <span className="recent-expense-desc">{expense.description}</span>
+            </div>
+            <div className="recent-expense-right">
+              <span className="recent-expense-amount error-text">
+                {formatMoney(
+                  displayAmount,
+                  displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY
+                )}
+              </span>
+              <span className="recent-expense-date">
+                {formatDateWithUserFormat(expense.date, dateFormat)}
+              </span>
+            </div>
           </div>
-          <div className="recent-expense-right">
-            <span className="recent-expense-amount error-text">
-              {formatMoney(
-                displayCurrency
-                  ? (expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense))
-                  : getExpenseBaseAmount(expense),
-                displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY
-              )}
-            </span>
-            <span className="recent-expense-date">
-              {formatDateWithUserFormat(expense.date, dateFormat)}
-            </span>
-          </div>
-        </div>
-      ))}
+        );
+      })}
       
       {hasMore && onViewAll && (
         <button 

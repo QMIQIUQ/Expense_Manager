@@ -6,7 +6,7 @@ import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getTodayLocal, formatDateLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource, normalizeCurrencyCode } from '../../utils/currencyUtils';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
@@ -289,12 +289,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     if (!displayCurrency) return [];
     return expenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, expenses]);
 
   const repaymentDisplayEntries = useMemo(() => {
@@ -322,7 +325,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const getDisplayExpenseAmount = (expense: Expense): number => {
     if (!displayCurrency) return getExpenseBaseAmount(expense);
-    return expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense);
+    const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+    if (displaySource.sourceCurrency === displayCurrency) return displaySource.amount;
+    return expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount;
   };
 
   const getDisplayRepaymentAmount = (repayment: Repayment): number => {

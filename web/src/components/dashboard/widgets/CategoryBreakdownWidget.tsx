@@ -3,7 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getBillingCycleRange } from './utils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 
 const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenses, displayCurrency }) => {
@@ -34,12 +34,15 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
     if (!displayCurrency) return [];
     return filteredExpenses
       .filter((expense) => !!expense.id)
-      .map((expense) => ({
-        key: expense.id as string,
-        amount: getExpenseBaseAmount(expense),
-        sourceCurrency: getExpenseBaseCurrency(expense),
-        date: expense.date,
-      }));
+      .map((expense) => {
+        const displaySource = getExpenseDisplaySource(expense, displayCurrency);
+        return {
+          key: expense.id as string,
+          amount: displaySource.amount,
+          sourceCurrency: displaySource.sourceCurrency,
+          date: expense.date,
+        };
+      });
   }, [displayCurrency, filteredExpenses]);
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
@@ -66,8 +69,11 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
+      const displaySource = getExpenseDisplaySource(exp, displayCurrency);
       const amount = displayCurrency
-        ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+        ? (displaySource.sourceCurrency === displayCurrency
+          ? displaySource.amount
+          : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
         : getExpenseBaseAmount(exp);
       byCategory[exp.category] += amount;
       total += amount;
