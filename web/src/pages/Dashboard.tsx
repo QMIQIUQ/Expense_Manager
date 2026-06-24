@@ -2917,8 +2917,8 @@ const Dashboard: React.FC = () => {
       {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
         <div style={styles.floatingButtonGroup}>
           <button
+            type="button"
             {...longPressHandlers}
-            onClick={() => openExpenseEntry()}
             style={{
               ...styles.floatingButton,
               width: isMobile ? '56px' : 'auto',
@@ -2931,15 +2931,19 @@ const Dashboard: React.FC = () => {
               gap: isMobile ? '0' : '8px',
               fontSize: isMobile ? '28px' : '16px',
               fontWeight: isMobile ? 500 : 600,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}
             className="floating-btn-hover"
             title={addExpenseLabel}
             aria-label={addExpenseLabel}
+            onContextMenu={(e) => e.preventDefault()}
           >
             <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
             {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
           </button>
           <button
+            type="button"
             onClick={() => openExpenseEntry({ withReceipt: true })}
             style={{
               ...styles.floatingButton,
@@ -2954,10 +2958,13 @@ const Dashboard: React.FC = () => {
               gap: isMobile ? '0' : '8px',
               fontSize: isMobile ? '24px' : '16px',
               fontWeight: isMobile ? 500 : 600,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}
             className="floating-btn-hover"
             title={receiptActionLabel}
             aria-label={receiptActionLabel}
+            onContextMenu={(e) => e.preventDefault()}
           >
             <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
             {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}
@@ -3037,8 +3044,8 @@ const Dashboard: React.FC = () => {
       {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
         <div style={styles.floatingButtonGroup}>
           <button
+            type="button"
             {...longPressHandlers}
-            onClick={() => openExpenseEntry()}
             aria-label={addExpenseLabel}
             style={{
               ...styles.floatingButton,
@@ -3052,14 +3059,18 @@ const Dashboard: React.FC = () => {
               gap: isMobile ? '0' : '8px',
               fontSize: isMobile ? '28px' : '16px',
               fontWeight: isMobile ? 500 : 600,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}
             className="floating-btn-hover"
             title={addExpenseLabel}
+            onContextMenu={(e) => e.preventDefault()}
           >
             <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
             {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
           </button>
           <button
+            type="button"
             aria-label={receiptActionLabel}
             onClick={() => openExpenseEntry({ withReceipt: true })}
             style={{
@@ -3075,9 +3086,12 @@ const Dashboard: React.FC = () => {
               gap: isMobile ? '0' : '8px',
               fontSize: isMobile ? '24px' : '16px',
               fontWeight: isMobile ? 500 : 600,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}
             className="floating-btn-hover"
             title={receiptActionLabel}
+            onContextMenu={(e) => e.preventDefault()}
           >
             <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
             {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}

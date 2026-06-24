@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface UseLongPressOptions {
   onLongPress: (event: React.TouchEvent | React.MouseEvent) => void;
@@ -14,6 +14,7 @@ interface LongPressHandlers {
   onTouchEnd: (event: React.TouchEvent) => void;
   onTouchCancel: (event: React.TouchEvent) => void;
   onTouchMove: (event: React.TouchEvent) => void;
+  onClick: (event: React.MouseEvent) => void;
 }
 
 /**
@@ -26,48 +27,70 @@ interface LongPressHandlers {
  */
 export const useLongPress = (options: UseLongPressOptions): LongPressHandlers => {
   const { onLongPress, onClick, delay = 500 } = options;
-  const [longPressTriggered, setLongPressTriggered] = useState(false);
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const target = useRef<EventTarget>();
+  const touchResetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const touchInteractionActive = useRef(false);
+  const longPressTriggered = useRef(false);
 
-  // Clear the timer on unmount to avoid setState on unmounted component
+  // Clear the timer on unmount to avoid stray callbacks after the component is gone
   useEffect(() => {
     return () => {
       if (timeout.current) {
         clearTimeout(timeout.current);
+      }
+      if (touchResetTimeout.current) {
+        clearTimeout(touchResetTimeout.current);
       }
     };
   }, []);
 
   const start = useCallback(
     (event: React.TouchEvent | React.MouseEvent) => {
-      // Prevent default to avoid text selection on long press
-      event.preventDefault();
+      if (event.type === 'mousedown' && touchInteractionActive.current) {
+        return;
+      }
 
-      target.current = event.target;
+      longPressTriggered.current = false;
+      if (timeout.current) {
+        clearTimeout(timeout.current);
+      }
       timeout.current = setTimeout(() => {
+        longPressTriggered.current = true;
         onLongPress(event);
-        setLongPressTriggered(true);
       }, delay);
     },
     [onLongPress, delay]
   );
 
   const clear = useCallback(
-    (event: React.TouchEvent | React.MouseEvent, shouldTriggerClick = true) => {
+    () => {
       if (timeout.current) {
         clearTimeout(timeout.current);
         timeout.current = undefined;
       }
+    },
+    []
+  );
 
-      if (shouldTriggerClick && !longPressTriggered && onClick) {
-        onClick(event);
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (touchResetTimeout.current) {
+        clearTimeout(touchResetTimeout.current);
+        touchResetTimeout.current = undefined;
       }
 
-      setLongPressTriggered(false);
-      target.current = undefined;
+      if (longPressTriggered.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        longPressTriggered.current = false;
+        touchInteractionActive.current = false;
+        return;
+      }
+
+      onClick?.(event);
+      touchInteractionActive.current = false;
     },
-    [onClick, longPressTriggered]
+    [onClick]
   );
 
   const cancel = useCallback(() => {
@@ -75,17 +98,38 @@ export const useLongPress = (options: UseLongPressOptions): LongPressHandlers =>
       clearTimeout(timeout.current);
       timeout.current = undefined;
     }
-    setLongPressTriggered(false);
-    target.current = undefined;
+    if (touchResetTimeout.current) {
+      clearTimeout(touchResetTimeout.current);
+      touchResetTimeout.current = undefined;
+    }
+    touchInteractionActive.current = false;
+    longPressTriggered.current = false;
   }, []);
 
   return {
     onMouseDown: (e) => start(e),
-    onMouseUp: (e) => clear(e),
-    onMouseLeave: (e) => clear(e, false),
-    onTouchStart: (e) => start(e),
-    onTouchEnd: (e) => clear(e),
+    onMouseUp: () => clear(),
+    onMouseLeave: () => cancel(),
+    onTouchStart: (e) => {
+      touchInteractionActive.current = true;
+      if (touchResetTimeout.current) {
+        clearTimeout(touchResetTimeout.current);
+        touchResetTimeout.current = undefined;
+      }
+      start(e);
+    },
+    onTouchEnd: () => {
+      clear();
+      if (touchResetTimeout.current) {
+        clearTimeout(touchResetTimeout.current);
+      }
+      touchResetTimeout.current = setTimeout(() => {
+        touchInteractionActive.current = false;
+        touchResetTimeout.current = undefined;
+      }, 1000);
+    },
     onTouchCancel: () => cancel(),
     onTouchMove: () => cancel(),
+    onClick: handleClick,
   };
 };
