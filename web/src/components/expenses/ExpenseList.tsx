@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer } from '../../types';
+import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer, CurrencyCode } from '../../types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../types/quickExpense';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getTodayLocal, formatDateLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
-import { CURRENCIES, DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, normalizeCurrencyCode } from '../../utils/currencyUtils';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
@@ -19,6 +19,8 @@ import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PopupModal from '../common/PopupModal';
+import CurrencySelector from '../common/CurrencySelector';
+import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -47,6 +49,7 @@ interface ExpenseListProps {
   banks?: Bank[];
   repayments?: Repayment[];
   transfers?: Transfer[];
+  displayCurrency?: CurrencyCode;
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
@@ -74,6 +77,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   banks = [],
   repayments = [],
   transfers = [],
+  displayCurrency,
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -275,6 +279,55 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return totals;
   }, [repayments]);
 
+  const expenseById = useMemo(() => {
+    return new Map(expenses.map((expense) => [expense.id || '', expense]));
+  }, [expenses]);
+
+  const expenseDisplayEntries = useMemo(() => {
+    if (!displayCurrency) return [];
+    return expenses
+      .filter((expense) => !!expense.id)
+      .map((expense) => ({
+        key: expense.id as string,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: getExpenseBaseCurrency(expense),
+        date: expense.date,
+      }));
+  }, [displayCurrency, expenses]);
+
+  const repaymentDisplayEntries = useMemo(() => {
+    if (!displayCurrency) return [];
+    return repayments
+      .filter((repayment) => !!repayment.id)
+      .map((repayment) => {
+        const linkedExpense = expenseById.get(repayment.expenseId || '');
+        return {
+          key: repayment.id as string,
+          amount: repayment.amount,
+          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          date: repayment.date,
+        };
+      });
+  }, [displayCurrency, expenseById, repayments]);
+
+  const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
+  const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
+
+  const getDisplayCurrencyForExpense = (expense: Expense): CurrencyCode => {
+    if (displayCurrency) return displayCurrency;
+    return expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY;
+  };
+
+  const getDisplayExpenseAmount = (expense: Expense): number => {
+    if (!displayCurrency) return getExpenseBaseAmount(expense);
+    return expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense);
+  };
+
+  const getDisplayRepaymentAmount = (repayment: Repayment): number => {
+    if (!displayCurrency) return repayment.amount;
+    return repaymentDisplayAmountsById[repayment.id || ''] ?? repayment.amount;
+  };
+
   // Handle adding a repayment
   const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
     if (!currentUser) return;
@@ -463,7 +516,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
     // Convert to array and sort by date
     return Object.entries(grouped).map(([date, exps]) => {
-      const dailyTotal = exps.reduce((sum, exp) => sum + getExpenseBaseAmount(exp), 0);
+      const dailyTotal = exps.reduce((sum, exp) => sum + getDisplayExpenseAmount(exp), 0);
       return { date, expenses: exps, dailyTotal };
     }).sort((a, b) => {
       // Sort descending by default (newest first)
@@ -825,11 +878,22 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     <span style={styles.expenseCount}>({dayExpenses.length})</span>
                   </div>
                 </div>
-                <span style={styles.dateGroupTotal}>{formatMoney(dailyTotal, DEFAULT_BASE_CURRENCY)}</span>
+                <span style={styles.dateGroupTotal}>{formatMoney(dailyTotal, displayCurrency || DEFAULT_BASE_CURRENCY)}</span>
               </div>
               
               {/* Expenses for this date - hidden when collapsed */}
               {!isCollapsed && dayExpenses.map((expense) => {
+                const expenseDisplayCurrency = getDisplayCurrencyForExpense(expense);
+                const expenseDisplayAmount = getDisplayExpenseAmount(expense);
+                const expenseRepayments = repayments.filter((repayment) => repayment.expenseId === expense.id);
+                const repaid = repaymentTotals[expense.id!] || 0;
+                const repaidDisplay = displayCurrency
+                  ? expenseRepayments.reduce((sum, repayment) => sum + getDisplayRepaymentAmount(repayment), 0)
+                  : repaid;
+                const netAmount = expenseDisplayAmount - repaidDisplay;
+                const hasExcess = netAmount < 0;
+                const isRepaid = repaid > 0;
+                const originalToDisplayRate = expense.amount > 0 ? expenseDisplayAmount / expense.amount : 1;
 
                 return (
                 <div
@@ -878,11 +942,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
                       {/* Amount Display */}
                       {(() => {
-                        const repaid = repaymentTotals[expense.id!] || 0;
-                        const expenseBaseAmount = getExpenseBaseAmount(expense);
-                        const netAmount = expenseBaseAmount - repaid;
-                        const hasExcess = netAmount < 0;
-                        const isRepaid = repaid > 0;
                         const color = isRepaid ? (hasExcess ? 'var(--info-text)' : 'var(--warning-text)') : 'var(--error-text)';
                         return (
                           <div style={{
@@ -892,7 +951,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             textAlign: 'right',
                             lineHeight: 1,
                           }}>
-                            {formatMoney(Math.abs(isRepaid ? netAmount : expenseBaseAmount), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}
+                            {formatMoney(Math.abs(isRepaid ? netAmount : expenseDisplayAmount), expenseDisplayCurrency)}
                             {isRepaid && hasExcess && (
                               <span style={styles.excessBadgeSmall}>({t('excess')})</span>
                             )}
@@ -902,12 +961,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                       {/* Amount meta (original/repaid) */}
                       {(() => {
-                        const repaid = repaymentTotals[expense.id!] || 0;
                         if (repaid > 0) {
                               return (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '11px', color: 'var(--text-secondary)', gap: '1px' }}>
-                              <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>{formatMoney(expense.amount, expense.currency)}</span></div>
-                              <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>{formatMoney(repaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span></div>
+                              <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>{formatMoney(expenseDisplayAmount, expenseDisplayCurrency)}</span></div>
+                              <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>{formatMoney(repaidDisplay, expenseDisplayCurrency)}</span></div>
                             </div>
                           );
                         }
@@ -1100,13 +1158,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <div style={styles.amountItemsDetail}>
                           {expense.amountItems.map((item, index) => (
                             <div key={index} style={styles.amountItemDetail}>
-                              <span>{formatMoney(item.amount, expense.currency)}</span>
+                              <span>{formatMoney(item.amount * originalToDisplayRate, expenseDisplayCurrency)}</span>
                               {item.description && <span style={styles.amountItemDesc}>: {item.description}</span>}
                             </div>
                           ))}
                           {expense.taxRate && expense.taxAmount && (
                             <div style={styles.taxDetailRow}>
-                              <span>{t('tax')} ({expense.taxRate}%): {formatMoney(expense.taxAmount, expense.currency)}</span>
+                              <span>{t('tax')} ({expense.taxRate}%): {formatMoney(expense.taxAmount * originalToDisplayRate, expenseDisplayCurrency)}</span>
                             </div>
                           )}
                         </div>
@@ -1153,9 +1211,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       <div style={styles.detailsSubsection}>
                         <div style={styles.detailsLabel}>💳 {t('repaymentStatus')}</div>
                         {(() => {
-                          const repaid = repaymentTotals[expense.id!] || 0;
-                          const totalExpenseAmount = getExpenseBaseAmount(expense);
-                          const percentage = totalExpenseAmount > 0 ? Math.min(100, (repaid / totalExpenseAmount) * 100) : 0;
+                          const percentage = expenseDisplayAmount > 0 ? Math.min(100, (repaidDisplay / expenseDisplayAmount) * 100) : 0;
                           return (
                             <div style={styles.repaymentProgress}>
                               <div style={styles.progressBar}>
@@ -1168,7 +1224,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 />
                               </div>
                               <div style={styles.progressText}>
-                                {percentage.toFixed(0)}% {t('repaid')} ({formatMoney(repaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)} / {formatMoney(totalExpenseAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)})
+                                {percentage.toFixed(0)}% {t('repaid')} ({formatMoney(repaidDisplay, expenseDisplayCurrency)} / {formatMoney(expenseDisplayAmount, expenseDisplayCurrency)})
                               </div>
                             </div>
                           );
@@ -1217,7 +1273,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
                                         <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
-                                        <span style={styles.repaymentRecordAmount}>{formatMoney(rep.amount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+                                        <span style={styles.repaymentRecordAmount}>{formatMoney(getDisplayRepaymentAmount(rep), expenseDisplayCurrency)}</span>
                                         <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
                                       </div>
                                       <div style={{ display: 'flex', gap: '4px' }}>
@@ -1456,17 +1512,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
 
             <div className="quick-expense-form-field">
-              <label>{t('currency')}</label>
-              <select
+              <CurrencySelector
                 value={quickExpenseFormData.currency || DEFAULT_BASE_CURRENCY}
-                onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, currency: e.target.value })}
-              >
-                {CURRENCIES.map((currency) => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.symbol} {currency.code} - {currency.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(currency) => setQuickExpenseFormData({ ...quickExpenseFormData, currency })}
+                label={t('currency')}
+                compact={true}
+              />
             </div>
 
             <div className="quick-expense-form-field">

@@ -910,6 +910,7 @@ export const translations = {
 
   // Currency Support
   currency: { en: 'Currency', zh: '貨幣', 'zh-CN': '货币' },
+  displayCurrency: { en: 'Display Currency', zh: '顯示貨幣', 'zh-CN': '显示货币' },
   selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
   exchangeRate: { en: 'Exchange Rate', zh: '匯率', 'zh-CN': '汇率' },
   baseCurrency: { en: 'Base Currency', zh: '基礎貨幣', 'zh-CN': '基础货币' },

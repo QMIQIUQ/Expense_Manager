@@ -3,8 +3,10 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getBillingCycleRange } from './utils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenses }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenses, displayCurrency }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
@@ -28,6 +30,20 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
     });
   }, [expenses, cycleStart, cycleEnd]);
 
+  const expenseDisplayEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return filteredExpenses
+      .filter((expense) => !!expense.id)
+      .map((expense) => ({
+        key: expense.id as string,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: getExpenseBaseCurrency(expense),
+        date: expense.date,
+      }));
+  }, [displayCurrency, filteredExpenses]);
+
+  const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
+
   // Determine how many categories to show initially based on size
   const maxCategories = React.useMemo(() => {
     switch (size) {
@@ -50,14 +66,17 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
-      byCategory[exp.category] += exp.amount;
-      total += exp.amount;
+      const amount = displayCurrency
+        ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+        : getExpenseBaseAmount(exp);
+      byCategory[exp.category] += amount;
+      total += amount;
     });
 
     const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
 
     return { allCategories: sorted, total };
-  }, [filteredExpenses]);
+  }, [displayCurrency, expenseDisplayAmountsById, filteredExpenses]);
 
   // Determine which categories to display (respect showAll state)
   const categories = showAll ? allCategories : allCategories.slice(0, maxCategories);
@@ -86,7 +105,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
           >
             <div className="category-info">
               <span className="category-name">{category}</span>
-              <span className="category-amount error-text">${amount.toFixed(2)}</span>
+              <span className="category-amount error-text">{formatMoney(amount, displayCurrency || DEFAULT_BASE_CURRENCY)}</span>
             </div>
             <div className="progress-bar">
               <div

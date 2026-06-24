@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord } from '../../types';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord, CurrencyCode } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
@@ -20,6 +20,7 @@ interface CustomizableDashboardProps {
   ewallets: EWallet[];
   banks: Bank[];
   billingCycleDay: number;
+  displayCurrency?: CurrencyCode;
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
@@ -50,6 +51,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   ewallets,
   banks,
   billingCycleDay,
+  displayCurrency,
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
@@ -148,6 +150,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     ewallets,
     banks,
     billingCycleDay,
+    displayCurrency,
     onMarkTrackingCompleted,
     onQuickAdd,
     onNavigateToExpense,

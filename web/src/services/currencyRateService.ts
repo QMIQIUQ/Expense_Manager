@@ -176,6 +176,18 @@ export const getHistoricalRate = async (
   return snapshot;
 };
 
+export const convertAmountToCurrency = async (
+  amount: number,
+  fromCurrencyInput: string | undefined,
+  toCurrencyInput: string | undefined,
+  date: string
+): Promise<number> => {
+  if (!Number.isFinite(amount)) return 0;
+
+  const snapshot = await getHistoricalRate(fromCurrencyInput, toCurrencyInput, date);
+  return Math.round(amount * snapshot.rate * 100) / 100;
+};
+
 export const resolveExpenseCurrencyFields = async (input: {
   amount: number;
   currency?: string;
@@ -231,5 +243,6 @@ export const resolveExpenseCurrencyFields = async (input: {
 
 export const currencyRateService = {
   getHistoricalRate,
+  convertAmountToCurrency,
   resolveExpenseCurrencyFields,
 };

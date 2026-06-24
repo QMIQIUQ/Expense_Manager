@@ -3,10 +3,11 @@ import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseFo
 import DateNavigator, { ViewMode } from '../../components/expenses/DateNavigator';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import PopupModal from '../../components/common/PopupModal';
-import { Expense, Category, Card, EWallet, Bank, Transfer } from '../../types';
+import { Expense, Category, Card, EWallet, Bank, Transfer, CurrencyCode } from '../../types';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PlusIcon, UploadIcon } from '../../components/icons';
+import { DEFAULT_BASE_CURRENCY } from '../../utils/currencyUtils';
 import { getTodayLocal } from '../../utils/dateUtils';
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
+  displayCurrency?: CurrencyCode;
 }
 
 const ExpensesTab: React.FC<Props> = ({
@@ -39,6 +41,7 @@ const ExpensesTab: React.FC<Props> = ({
   onAddTransfer,
   onCreateEWallet,
   onCreateCard,
+  displayCurrency,
 }) => {
   const { timeFormat, dateFormat } = useUserSettings();
   const { t, language } = useLanguage();
@@ -49,6 +52,9 @@ const ExpensesTab: React.FC<Props> = ({
   const isEnglish = language === 'en';
   const isSimplifiedChinese = language === 'zh-CN';
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
+  const lastUsedCurrency = expenses.length > 0
+    ? expenses[0].currency || expenses[0].baseCurrency || DEFAULT_BASE_CURRENCY
+    : undefined;
   
   // DateNavigator state
   const [selectedDate, setSelectedDate] = useState(getTodayLocal());
@@ -201,6 +207,7 @@ const ExpensesTab: React.FC<Props> = ({
           onCreateCard={onCreateCard}
           timeFormat={timeFormat}
           dateFormat={dateFormat}
+          lastUsedCurrency={lastUsedCurrency}
           lastUsedPaymentMethod={lastUsedPaymentMethod}
           initialDate={viewMode === 'day' ? selectedDate : undefined}
           initialReceiptFile={pendingReceiptFile}
@@ -231,6 +238,7 @@ const ExpensesTab: React.FC<Props> = ({
             onCreateCard={onCreateCard}
             timeFormat={timeFormat}
             dateFormat={dateFormat}
+            lastUsedCurrency={lastUsedCurrency}
             lastUsedPaymentMethod={lastUsedPaymentMethod}
           />
         )}
@@ -241,6 +249,7 @@ const ExpensesTab: React.FC<Props> = ({
         <ExpenseList
           expenses={filteredExpenses}
           categories={categories}
+          displayCurrency={displayCurrency}
           onEdit={onEdit}
           onDelete={onDeleteExpense}
           onInlineUpdate={() => {}}

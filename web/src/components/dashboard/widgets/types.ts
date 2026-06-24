@@ -4,6 +4,7 @@ import { QuickExpensePreset } from '../../../types/quickExpense';
 import { WidgetSize } from '../../../types/dashboard';
 
 export interface WidgetProps {
+  displayCurrency?: import('../../../types').CurrencyCode;
   expenses: Expense[];
   incomes: Income[];
   repayments: Repayment[];

@@ -74,6 +74,19 @@ describe('ExpenseForm - Basic Tests', () => {
     expect(screen.getByDisplayValue('Coffee')).toBeInTheDocument();
   });
 
+  it('defaults the currency selector to the last used currency', () => {
+    render(
+      <ExpenseForm
+        onSubmit={mockOnSubmit}
+        onCancel={mockOnCancel}
+        categories={mockCategories}
+        lastUsedCurrency="USD"
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /usd/i })).toBeInTheDocument();
+  });
+
   it('shows payment method options', () => {
     render(
       <ExpenseForm

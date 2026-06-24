@@ -2,7 +2,8 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 import { WidgetProps } from './types';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
@@ -11,6 +12,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   onMarkTrackingCompleted,
   onNavigateToExpense,
   size = 'medium',
+  displayCurrency,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -45,6 +47,38 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     return { trackedExpenses: tracked, repaymentTotals: totals };
   }, [expenses, repayments]);
 
+  const expenseById = React.useMemo(() => new Map(expenses.map((expense) => [expense.id || '', expense])), [expenses]);
+
+  const expenseDisplayEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return trackedExpenses
+      .filter((expense) => !!expense.id)
+      .map((expense) => ({
+        key: expense.id as string,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: getExpenseBaseCurrency(expense),
+        date: expense.date,
+      }));
+  }, [displayCurrency, trackedExpenses]);
+
+  const repaymentDisplayEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return repayments
+      .filter((repayment) => !!repayment.id)
+      .map((repayment) => {
+        const linkedExpense = expenseById.get(repayment.expenseId || '');
+        return {
+          key: repayment.id as string,
+          amount: repayment.amount,
+          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          date: linkedExpense?.date || repayment.date,
+        };
+      });
+  }, [displayCurrency, expenseById, repayments]);
+
+  const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
+  const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
+
   if (trackedExpenses.length === 0) {
     return (
       <div className="widget-empty-state">
@@ -58,9 +92,16 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     <div className={`tracked-expenses-list ${isCompact ? 'tracked-expenses-compact' : ''}`}>
       {trackedExpenses.slice(0, maxItems).map((expense) => {
         const repaid = repaymentTotals[expense.id!] || 0;
-        const totalAmount = getExpenseBaseAmount(expense);
-        const remaining = totalAmount - repaid;
-        const percentage = totalAmount > 0 ? (repaid / totalAmount) * 100 : 0;
+        const totalAmount = displayCurrency
+          ? (expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense))
+          : getExpenseBaseAmount(expense);
+        const repaidDisplay = displayCurrency
+          ? repayments
+              .filter((repayment) => repayment.expenseId === expense.id)
+              .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? repayment.amount), 0)
+          : repaid;
+        const remaining = totalAmount - repaidDisplay;
+        const percentage = totalAmount > 0 ? (repaidDisplay / totalAmount) * 100 : 0;
 
         return (
           <div 
@@ -80,15 +121,15 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
               <div className="tracked-expense-amounts">
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('totalAmount')}</span>
-                  <span className="tracked-amount-value">{formatMoney(totalAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+                  <span className="tracked-amount-value">{formatMoney(totalAmount, displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('repaid')}</span>
-                  <span className="tracked-amount-value success-text">{formatMoney(repaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+                  <span className="tracked-amount-value success-text">{formatMoney(repaidDisplay, displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
                 <div className="tracked-amount-item">
                   <span className="tracked-amount-label">{t('remaining')}</span>
-                  <span className="tracked-amount-value warning-text">{formatMoney(Math.max(0, remaining), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+                  <span className="tracked-amount-value warning-text">{formatMoney(Math.max(0, remaining), displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
               </div>
               {onMarkTrackingCompleted && (

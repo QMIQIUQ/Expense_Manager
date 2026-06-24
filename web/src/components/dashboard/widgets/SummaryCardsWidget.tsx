@@ -1,7 +1,9 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { Expense } from '../../../types';
 import { WidgetProps } from './types';
-import { getTodayLocal } from '../../../utils/dateUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 
 const SummaryCardsWidget: React.FC<WidgetProps> = ({
   expenses,
@@ -9,6 +11,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   repayments,
   billingCycleDay = 1,
   size = 'full',
+  displayCurrency,
   onNavigateToExpenses,
   onNavigateToIncomes,
 }) => {
@@ -20,11 +23,9 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       callback();
     }
   };
-  
-  // Determine layout based on size
+
   const isCompact = size === 'small' || size === 'medium';
 
-  // Calculate billing cycle dates
   const { cycleStart, cycleEnd } = React.useMemo(() => {
     const now = new Date();
     const currentDay = now.getDate();
@@ -43,30 +44,76 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
     return { cycleStart, cycleEnd };
   }, [billingCycleDay]);
 
-  // Calculate statistics
+  const expenseById = React.useMemo(() => new Map(expenses.map((expense) => [expense.id || '', expense])), [expenses]);
+
+  const expenseConversionEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return expenses
+      .filter((expense) => !!expense.id)
+      .map((expense) => ({
+        key: expense.id as string,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: getExpenseBaseCurrency(expense),
+        date: expense.date,
+      }));
+  }, [displayCurrency, expenses]);
+
+  const repaymentConversionEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return repayments
+      .filter((repayment) => !!repayment.id)
+      .map((repayment) => {
+        const linkedExpense = expenseById.get(repayment.expenseId || '');
+        return {
+          key: repayment.id as string,
+          amount: repayment.amount,
+          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          date: repayment.date,
+        };
+      });
+  }, [displayCurrency, expenseById, repayments]);
+
+  const expenseDisplayAmountsById = useCurrencyConversionMap(expenseConversionEntries, displayCurrency);
+  const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentConversionEntries, displayCurrency);
+
   const stats = React.useMemo(() => {
-    // Build repayment totals first (needed for net expense calculations)
-    const repaymentsByExpense: { [expenseId: string]: number } = {};
+    const repaymentsByExpenseBase: { [expenseId: string]: number } = {};
+    const repaymentsByExpenseDisplay: { [expenseId: string]: number } = {};
+
     repayments.forEach((rep) => {
-      if (rep.expenseId) {
-        repaymentsByExpense[rep.expenseId] =
-          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
-      }
+      if (!rep.expenseId) return;
+      repaymentsByExpenseBase[rep.expenseId] = (repaymentsByExpenseBase[rep.expenseId] || 0) + rep.amount;
+      repaymentsByExpenseDisplay[rep.expenseId] = (repaymentsByExpenseDisplay[rep.expenseId] || 0) + (
+        displayCurrency ? (repaymentDisplayAmountsById[rep.id || ''] ?? rep.amount) : rep.amount
+      );
     });
 
-    // Helper to get net expense amount (expense - repayments, min 0)
-    const getNetAmount = (exp: { id?: string; amount: number }) => {
-      const repaid = repaymentsByExpense[exp.id || ''] || 0;
-      return Math.max(0, exp.amount - repaid);
+    const getMonthlyBaseAmount = (exp: Expense) => {
+      const repaid = repaymentsByExpenseBase[exp.id || ''] || 0;
+      return Math.max(0, getExpenseBaseAmount(exp) - repaid);
     };
 
-    // Monthly expenses (deducting repayments)
-    const monthly = expenses
+    const getMonthlyDisplayAmount = (exp: Expense) => {
+      const expenseAmount = displayCurrency
+        ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+        : getExpenseBaseAmount(exp);
+      const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
+      return Math.max(0, expenseAmount - repaid);
+    };
+
+    const monthlyBase = expenses
       .filter((exp) => {
         const expDate = new Date(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
-      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
+      .reduce((sum, exp) => sum + getMonthlyBaseAmount(exp), 0);
+
+    const monthlyDisplay = expenses
+      .filter((exp) => {
+        const expDate = new Date(exp.date);
+        return expDate >= cycleStart && expDate <= cycleEnd;
+      })
+      .reduce((sum, exp) => sum + getMonthlyDisplayAmount(exp), 0);
 
     const monthlyIncome = incomes
       .filter((inc) => {
@@ -75,37 +122,41 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       })
       .reduce((sum, inc) => sum + inc.amount, 0);
 
-    const today = getTodayLocal();
-    // Daily expenses (deducting repayments)
-    const daily = expenses
-      .filter((exp) => exp.date === today)
-      .reduce((sum, exp) => sum + getNetAmount(exp), 0);
-
-    // Total unrecovered from tracked expenses only
-    const totalUnrecovered = expenses
-      .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+    const totalUnrecoveredBase = expenses
+      .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
-        const repaid = repaymentsByExpense[exp.id || ''] || 0;
-        const remaining = Math.max(0, exp.amount - repaid);
-        return sum + remaining;
+        const repaid = repaymentsByExpenseBase[exp.id || ''] || 0;
+        return sum + Math.max(0, getExpenseBaseAmount(exp) - repaid);
       }, 0);
 
-    // Net cashflow now reflects repayment-adjusted expenses
-    const netCashflow = monthlyIncome - monthly;
+    const totalUnrecoveredDisplay = expenses
+      .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .reduce((sum, exp) => {
+        const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
+        const amount = displayCurrency
+          ? (expenseDisplayAmountsById[exp.id || ''] ?? getExpenseBaseAmount(exp))
+          : getExpenseBaseAmount(exp);
+        return sum + Math.max(0, amount - repaid);
+      }, 0);
 
-    const trackedCount = expenses.filter(exp =>
+    const netCashflow = monthlyIncome - monthlyBase;
+
+    const trackedCount = expenses.filter((exp) =>
       exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
     ).length;
 
     return {
-      monthly,
+      monthlyBase,
+      monthlyDisplay,
       monthlyIncome,
-      daily,
-      totalUnrecovered,
+      totalUnrecoveredBase,
+      totalUnrecoveredDisplay,
       netCashflow,
       trackedCount,
     };
-  }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
+  }, [cycleEnd, cycleStart, displayCurrency, expenseDisplayAmountsById, incomes, repaymentDisplayAmountsById, repayments, expenses]);
+
+  const expenseCurrency = displayCurrency || DEFAULT_BASE_CURRENCY;
 
   return (
     <div className={`summary-cards-grid ${isCompact ? 'summary-cards-compact' : ''}`}>
@@ -119,7 +170,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         <div className="card-icon error-bg">💰</div>
         <div className="card-content">
           <div className="card-label">{t('monthlyExpense')}</div>
-          <div className="card-value error-text">${stats.monthly.toFixed(2)}</div>
+          <div className="card-value error-text">{formatMoney(stats.monthlyDisplay, expenseCurrency)}</div>
         </div>
       </div>
 
@@ -133,7 +184,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         <div className="card-icon success-bg">💵</div>
         <div className="card-content">
           <div className="card-label">{t('monthlyIncome')}</div>
-          <div className="card-value success-text">${stats.monthlyIncome.toFixed(2)}</div>
+          <div className="card-value success-text">{formatMoney(stats.monthlyIncome, DEFAULT_BASE_CURRENCY)}</div>
         </div>
       </div>
 
@@ -144,7 +195,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         <div className="card-content">
           <div className="card-label">{t('netCashflow')}</div>
           <div className={`card-value ${stats.netCashflow >= 0 ? 'success-text' : 'error-text'}`}>
-            ${stats.netCashflow.toFixed(2)}
+            {formatMoney(stats.netCashflow, DEFAULT_BASE_CURRENCY)}
           </div>
         </div>
       </div>
@@ -160,7 +211,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         <div className="card-icon warning-bg">💸</div>
         <div className="card-content">
           <div className="card-label">{t('unrecovered')}</div>
-          <div className="card-value warning-text">${stats.totalUnrecovered.toFixed(2)}</div>
+          <div className="card-value warning-text">{formatMoney(stats.totalUnrecoveredDisplay, expenseCurrency)}</div>
         </div>
         {stats.trackedCount > 0 && (
           <div

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../../test/test-utils';
+import { fireEvent, render, screen, waitFor } from '../../test/test-utils';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
 import type { Expense } from '../../types';
 
@@ -34,5 +34,22 @@ describe('StepByStepExpenseForm draft controls', () => {
 
     expect(screen.queryByRole('button', { name: /scan receipt|拍照|上傳|上传/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/ocr/i)).not.toBeInTheDocument();
+  });
+
+  it('prefers the last used currency for a new expense', async () => {
+    render(
+      <StepByStepExpenseForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        categories={[]}
+        lastUsedCurrency="USD"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /usd/i })).toBeInTheDocument();
+    });
   });
 });

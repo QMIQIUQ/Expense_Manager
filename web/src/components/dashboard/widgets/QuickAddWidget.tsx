@@ -8,8 +8,9 @@ import { QuickExpensePreset, QuickExpensePresetInput } from '../../../types/quic
 import { quickExpenseService } from '../../../services/quickExpenseService';
 import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
 import PaymentMethodSelector from '../../common/PaymentMethodSelector';
+import CurrencySelector from '../../common/CurrencySelector';
 import { PaymentMethodType } from '../../../types';
-import { CURRENCIES, DEFAULT_BASE_CURRENCY, formatMoney, normalizeCurrencyCode } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -361,18 +362,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
       {/* Row 2b: Currency */}
       <div className="inline-form-field">
-        <label className="inline-form-label">{t('currency')}</label>
-        <select
+        <CurrencySelector
           value={formData.currency || DEFAULT_BASE_CURRENCY}
-          onChange={(e) => setFormData({ ...formData, currency: normalizeCurrencyCode(e.target.value) })}
-          className="inline-select"
-        >
-          {CURRENCIES.map((currency) => (
-            <option key={currency.code} value={currency.code}>
-              {currency.symbol} {currency.code} - {currency.name}
-            </option>
-          ))}
-        </select>
+          onChange={(currency) => setFormData({ ...formData, currency })}
+          label={t('currency')}
+          compact={true}
+        />
       </div>
 
       {/* Row 3: Category + Payment Method (2 columns on desktop) */}

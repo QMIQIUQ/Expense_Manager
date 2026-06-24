@@ -4,15 +4,14 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import {
-  CURRENCIES,
   DEFAULT_BASE_CURRENCY,
   formatMoney,
-  normalizeCurrencyCode,
 } from '../../utils/currencyUtils';
 import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import CurrencySelector from '../common/CurrencySelector';
 import { compressReceiptImage, recognizeReceiptText, type ReceiptOcrResult } from '../../services/receiptOcrService';
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 
@@ -36,6 +35,7 @@ interface StepByStepExpenseFormProps {
   initialDate?: string;
   timeFormat?: TimeFormat;
   dateFormat?: DateFormat;
+  lastUsedCurrency?: string;
   lastUsedPaymentMethod?: string;
 }
 
@@ -56,6 +56,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   initialDate,
   timeFormat = '24h',
   dateFormat = 'YYYY-MM-DD',
+  lastUsedCurrency,
   lastUsedPaymentMethod,
 }) => {
   const { t, language } = useLanguage();
@@ -123,7 +124,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     date: initialDate || initialData?.date || getTodayLocal(),
     time: initialData?.time || getCurrentTimeLocal(),
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    currency: initialData?.currency || DEFAULT_BASE_CURRENCY,
+    currency: initialData?.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     description: initialData?.description || '',
     notes: initialData?.notes || '',
@@ -426,7 +427,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       date: initialDate || getTodayLocal(),
       time: getCurrentTimeLocal(),
       amount: 0,
-      currency: DEFAULT_BASE_CURRENCY,
+      currency: lastUsedCurrency || DEFAULT_BASE_CURRENCY,
       category: '',
       description: '',
       notes: '',
@@ -835,18 +836,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             </div>
 
             <div style={styles.currencySelectBlock}>
-              <label style={styles.fieldLabel}>{t('currency')}</label>
-              <select
+              <CurrencySelector
                 value={formData.currency}
-                onChange={(e) => setFormData(prev => ({ ...prev, currency: normalizeCurrencyCode(e.target.value) }))}
-                style={styles.currencySelect}
-              >
-                {CURRENCIES.map((currency) => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.symbol} {currency.code} - {currency.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(currency) => setFormData((prev) => ({ ...prev, currency }))}
+                label={t('currency')}
+                compact={true}
+              />
               <div style={styles.currencyHelp}>
                 {formData.currency === DEFAULT_BASE_CURRENCY
                   ? (t('baseCurrency') || 'Base currency')
@@ -1558,16 +1553,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
     marginTop: '4px',
     marginBottom: '4px',
-  },
-  currencySelect: {
-    width: '100%',
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
-    outline: 'none',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
   },
   currencyHelp: {
     fontSize: '12px',

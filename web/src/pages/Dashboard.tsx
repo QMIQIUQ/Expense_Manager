@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
+import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
@@ -30,7 +30,9 @@ import ExpenseList from '../components/expenses/ExpenseList';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
+import CurrencySelector from '../components/common/CurrencySelector';
 import { useLongPress } from '../hooks/useLongPress';
+import { useCurrencyConversionMap } from '../hooks/useCurrencyConversionMap';
 import { PlusIcon, UploadIcon } from '../components/icons';
 
 // Lazy load heavy components
@@ -53,6 +55,7 @@ import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount, getExpenseBaseCurrency } from '../utils/currencyUtils';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -113,6 +116,7 @@ const Dashboard: React.FC = () => {
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
   const [focusScheduledPaymentId, setFocusScheduledPaymentId] = useState<string | null>(null);
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(DEFAULT_BASE_CURRENCY);
   const [importProgress, setImportProgress] = useState<{
     id: string;
     current: number;
@@ -165,10 +169,33 @@ const Dashboard: React.FC = () => {
     });
   }, [expenses, expenseViewMode, expenseSelectedDate]);
 
-  // Calculate total amount for DateNavigator
+  const lastUsedCurrency = useMemo(() => {
+    const latestExpense = expenses[0];
+    return latestExpense?.currency || latestExpense?.baseCurrency || DEFAULT_BASE_CURRENCY;
+  }, [expenses]);
+
+  const filteredExpenseConversionEntries = useMemo(() => (
+    filteredExpensesForDisplay.map((expense) => ({
+      key: expense.id || `${expense.date}-${expense.description}`,
+      amount: getExpenseBaseAmount(expense),
+      sourceCurrency: getExpenseBaseCurrency(expense),
+      date: expense.date,
+    }))
+  ), [filteredExpensesForDisplay]);
+
+  const filteredExpenseDisplayAmounts = useCurrencyConversionMap(
+    filteredExpenseConversionEntries,
+    displayCurrency
+  );
+
   const expenseTotalAmount = useMemo(() => {
-    return Math.round(filteredExpensesForDisplay.reduce((sum, exp) => sum + exp.amount, 0) * 100);
-  }, [filteredExpensesForDisplay]);
+    return Math.round(filteredExpensesForDisplay.reduce((sum, expense) => {
+      const key = expense.id || `${expense.date}-${expense.description}`;
+      const converted = filteredExpenseDisplayAmounts[key];
+      const amount = typeof converted === 'number' ? converted : getExpenseBaseAmount(expense);
+      return sum + amount;
+    }, 0) * 100);
+  }, [filteredExpenseDisplayAmounts, filteredExpensesForDisplay]);
   //#endregion
 
   const openExpenseEntry = (options?: { withReceipt?: boolean }) => {
@@ -2648,6 +2675,38 @@ const Dashboard: React.FC = () => {
           })}
       </div>
 
+      {(activeTab === 'dashboard' || activeTab === 'expenses') && (
+        <div className="dashboard-card" style={{
+          marginTop: '12px',
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}>
+          <div style={{
+            width: 'min(320px, 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+          }}>
+            <span style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap',
+            }}>
+              {t('displayCurrency')}
+            </span>
+            <CurrencySelector
+              value={displayCurrency}
+              onChange={setDisplayCurrency}
+              compact={true}
+              showLabel={false}
+              ariaLabel={t('displayCurrency')}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
           <CustomizableDashboard
@@ -2660,6 +2719,7 @@ const Dashboard: React.FC = () => {
             ewallets={ewallets}
             banks={banks}
             billingCycleDay={billingCycleDay}
+            displayCurrency={displayCurrency}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => openExpenseEntry()}
             onQuickExpenseAdd={handleQuickExpenseAdd}
@@ -2705,6 +2765,7 @@ const Dashboard: React.FC = () => {
               banks={banks}
               repayments={repayments}
               transfers={transfers}
+              displayCurrency={displayCurrency}
               onDelete={handleDeleteExpense}
               onInlineUpdate={handleInlineUpdateExpense}
               onBulkDelete={handleBulkDeleteExpenses}
@@ -2945,6 +3006,7 @@ const Dashboard: React.FC = () => {
             initialDate={expenseSelectedDate}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
+            lastUsedCurrency={lastUsedCurrency}
           />
         </PopupModal>
       )}
@@ -3054,6 +3116,7 @@ const Dashboard: React.FC = () => {
             initialDate={expenseViewMode === 'day' ? expenseSelectedDate : undefined}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
+            lastUsedCurrency={lastUsedCurrency}
           />
         </PopupModal>
       )}

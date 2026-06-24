@@ -2,7 +2,8 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
-import { formatMoney } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 import { WidgetProps } from './types';
 
 interface RecentExpensesWidgetProps extends WidgetProps {
@@ -10,7 +11,7 @@ interface RecentExpensesWidgetProps extends WidgetProps {
   onNavigateToExpense?: (expenseId: string) => void;
 }
 
-const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, size = 'medium', onViewAll, onNavigateToExpense }) => {
+const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, size = 'medium', displayCurrency, onViewAll, onNavigateToExpense }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   
@@ -41,6 +42,19 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
   );
   
   const hasMore = expenses.length > maxItems;
+  const expenseDisplayEntries = React.useMemo(() => {
+    if (!displayCurrency) return [];
+    return recentExpenses
+      .filter((expense) => !!expense.id)
+      .map((expense) => ({
+        key: expense.id as string,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: getExpenseBaseCurrency(expense),
+        date: expense.date,
+      }));
+  }, [displayCurrency, recentExpenses]);
+
+  const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
 
   if (recentExpenses.length === 0) {
     return (
@@ -69,7 +83,12 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
           </div>
           <div className="recent-expense-right">
             <span className="recent-expense-amount error-text">
-              {formatMoney(expense.amount, expense.currency)}
+              {formatMoney(
+                displayCurrency
+                  ? (expenseDisplayAmountsById[expense.id || ''] ?? getExpenseBaseAmount(expense))
+                  : getExpenseBaseAmount(expense),
+                displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY
+              )}
             </span>
             <span className="recent-expense-date">
               {formatDateWithUserFormat(expense.date, dateFormat)}

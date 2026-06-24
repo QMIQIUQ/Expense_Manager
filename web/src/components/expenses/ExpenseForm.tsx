@@ -4,9 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
 import {
-  CURRENCIES,
   DEFAULT_BASE_CURRENCY,
-  normalizeCurrencyCode,
 } from '../../utils/currencyUtils';
 import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
@@ -14,6 +12,7 @@ import { BaseForm } from '../common/BaseForm';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import CurrencySelector from '../common/CurrencySelector';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -30,6 +29,7 @@ interface ExpenseFormProps {
   title?: string;
   timeFormat?: TimeFormat;
   dateFormat?: DateFormat;
+  lastUsedCurrency?: string;
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
@@ -47,13 +47,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   title,
   timeFormat = '24h',
   dateFormat = 'YYYY-MM-DD',
+  lastUsedCurrency,
 }) => {
   const { t } = useLanguage();
   const today = useToday();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
     amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
-    currency: initialData?.currency || DEFAULT_BASE_CURRENCY,
+    currency: initialData?.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     date: initialData?.date || today,
     time: initialData?.time || getCurrentTimeLocal(),
@@ -306,25 +307,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="expenseCurrency" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('currency')}</label>
-          <select
-            id="expenseCurrency"
-            name="currency"
+          <CurrencySelector
             value={formData.currency}
-            onChange={(e) => setFormData((prev) => ({ ...prev, currency: normalizeCurrencyCode(e.target.value) }))}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-            style={{
-              borderColor: 'var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)'
-            }}
-          >
-            {CURRENCIES.map((currency) => (
-              <option key={currency.code} value={currency.code}>
-                {currency.symbol} {currency.code} - {currency.name}
-              </option>
-            ))}
-          </select>
+            onChange={(currency) => setFormData((prev) => ({ ...prev, currency }))}
+            label={t('currency')}
+            compact={true}
+          />
           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             {formData.currency === DEFAULT_BASE_CURRENCY
               ? (t('baseCurrency') || 'Base currency')
