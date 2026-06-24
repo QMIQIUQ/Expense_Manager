@@ -163,6 +163,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     restoreHint: isEnglish ? 'A saved receipt draft was restored automatically.' : isSimplifiedChinese ? '已自动恢复之前保存的收据草稿。' : '已自動恢復先前儲存的收據草稿。',
     entryHint: isEnglish ? 'Scan a receipt here to prefill amount, date, and merchant, then finish later if needed.' : isSimplifiedChinese ? '可先扫描收据，自动预填金额、日期与商家，稍后再继续填写。' : '可先掃描收據，自動預填金額、日期與商家，稍後再繼續填寫。',
   }), [isEnglish, isSimplifiedChinese]);
+  const showReceiptOcrControls = !initialData && currentStep === STEP_DATE;
 
   const buildReceiptOcrSummary = useCallback((result: ReceiptOcrResult): string => {
     const parts = [
@@ -1532,7 +1533,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         </div>
       )}
 
-      {!initialData && (
+      {showReceiptOcrControls && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color, #e9ecef)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{receiptTexts.modeLabel}</span>
