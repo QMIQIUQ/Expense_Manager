@@ -45,6 +45,7 @@ Excluded for now:
 5. Put the add-expense currency choice on its own step after date/time, and auto-advance to amount after the user picks a currency.
 6. Treat display-currency switching as a presentation layer concern only.
 7. Convert mixed-currency expense totals entry-by-entry before summing, and reuse cached exchange rates through `currencyRateService`.
+8. Use a direct inline currency card grid in the add-expense currency step so the available currencies are visible immediately without opening another control.
 
 ## Component Boundaries
 
@@ -143,3 +144,4 @@ Manual verification:
 - 2026-06-24: moved expense display currency control into the list toolbar row
 - 2026-06-24: split add-expense currency into its own step after date/time
 - 2026-06-24: kept a compact selector on the dashboard home tab for page-level switching
+- 2026-06-24: replaced the add-expense currency dropdown with an inline currency card grid

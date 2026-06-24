@@ -49,19 +49,13 @@ describe('StepByStepExpenseForm draft controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /currency/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /usd.*us dollar/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /currency/i }));
+    fireEvent.click(screen.getByRole('button', { name: /usd.*us dollar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('listbox')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('option', { name: /myr/i }));
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/rm/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/\$0\.00/)).toBeInTheDocument();
     });
   });
 });

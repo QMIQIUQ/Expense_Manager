@@ -5,13 +5,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getTodayLocal, getCurrentTimeLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
 import {
   DEFAULT_BASE_CURRENCY,
+  CURRENCIES,
   formatMoney,
 } from '../../utils/currencyUtils';
 import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
 import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
-import CurrencySelector from '../common/CurrencySelector';
+import { CheckIcon } from '../icons';
 import { compressReceiptImage, recognizeReceiptText, type ReceiptOcrResult } from '../../services/receiptOcrService';
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 
@@ -835,16 +836,38 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <h2 style={styles.stepHeaderTitle}>{t('currency')}</h2>
             </div>
             <div style={styles.currencySelectBlock}>
-              <CurrencySelector
-                value={formData.currency}
-                onChange={(currency) => {
-                  setFormData((prev) => ({ ...prev, currency }));
-                  window.setTimeout(() => handleNext(), 150);
-                }}
-                showLabel={false}
-                compact={true}
-                ariaLabel={t('currency')}
-              />
+              <div style={styles.currencyGridHeader}>
+                <span style={styles.currencyGridHeaderTitle}>{t('currency')}</span>
+                <span style={styles.currencyGridHeaderHint}>{t('select')}</span>
+              </div>
+              <div style={styles.currencyGrid}>
+                {CURRENCIES.map((currency) => {
+                  const selected = currency.code === formData.currency;
+                  return (
+                    <button
+                      key={currency.code}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, currency: currency.code }));
+                        window.setTimeout(() => handleNext(), 150);
+                      }}
+                      aria-pressed={selected}
+                      aria-label={`${currency.symbol} ${currency.code} ${currency.name}`}
+                      style={{
+                        ...styles.currencyCard,
+                        ...(selected ? styles.currencyCardActive : {}),
+                      }}
+                    >
+                      <div style={styles.currencyCardTop}>
+                        <span style={styles.currencySymbol}>{currency.symbol}</span>
+                        <span style={styles.currencyCode}>{currency.code}</span>
+                        {selected && <CheckIcon size={14} style={styles.currencyCheckIcon} />}
+                      </div>
+                      <span style={styles.currencyName}>{currency.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <div style={styles.currencyHelp}>
                 {formData.currency === DEFAULT_BASE_CURRENCY
                   ? (t('baseCurrency') || 'Base currency')
@@ -1602,6 +1625,69 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
     marginTop: '4px',
     marginBottom: '4px',
+  },
+  currencyGridHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    marginBottom: '6px',
+  },
+  currencyGridHeaderTitle: {
+    fontSize: '14px',
+    fontWeight: 600 as const,
+    color: 'var(--text-primary)',
+  },
+  currencyGridHeaderHint: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  },
+  currencyGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '8px',
+  },
+  currencyCard: {
+    padding: '12px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+    borderRadius: '8px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    border: '1px solid var(--border-color, #e9ecef)',
+    transition: 'all 0.2s',
+    minHeight: '84px',
+  },
+  currencyCardActive: {
+    background: 'var(--accent-light)',
+    border: '1px solid var(--accent-primary)',
+    boxShadow: '0 0 0 1px var(--accent-primary) inset',
+  },
+  currencyCardTop: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '6px',
+  },
+  currencySymbol: {
+    fontSize: '18px',
+    fontWeight: 700 as const,
+    color: 'var(--text-primary)',
+  },
+  currencyCode: {
+    fontSize: '14px',
+    fontWeight: 700 as const,
+    color: 'var(--text-primary)',
+  },
+  currencyCheckIcon: {
+    marginLeft: 'auto',
+    color: 'var(--accent-primary)',
+    flexShrink: 0,
+  },
+  currencyName: {
+    fontSize: '12px',
+    fontWeight: 500 as const,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.35,
   },
   currencyHelp: {
     fontSize: '12px',
