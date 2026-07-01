@@ -149,16 +149,18 @@ describe('StepByStepExpenseForm draft controls', () => {
     });
   });
 
-  it('shows PaddleOCR as the only normal OCR mode', () => {
+  it('shows PaddleOCR as the only normal OCR mode', async () => {
     render(
       <StepByStepExpenseForm
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
         categories={[]}
+        initialReceiptFile={sampleReceiptFile()}
       />
     );
 
-    expect(screen.getByText('PaddleOCR')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /receipt review/i })).toBeInTheDocument();
+    expect(screen.getByText(/PaddleOCR/)).toBeInTheDocument();
     expect(screen.queryByText('Tesseract')).not.toBeInTheDocument();
     expect(screen.queryByText(/compare/i)).not.toBeInTheDocument();
   });
@@ -190,7 +192,8 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    expect(await screen.findByRole('button', { name: /review ocr result/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /receipt review/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /apply to expense/i }).length).toBeGreaterThan(0);
     expect(mockedCompressReceiptImage).toHaveBeenCalledWith(expect.any(File), { maxWidth: 1600, quality: 0.78 });
     expect(mockedPrepareReceiptImageForOcr).toHaveBeenCalledWith(expect.any(File), { maxWidth: 2200, quality: 0.92 });
     expect(mockedRecognizeReceiptText).toHaveBeenCalledTimes(1);
@@ -223,7 +226,11 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
+    await screen.findByRole('heading', { name: /receipt review/i });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /apply to expense/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
@@ -257,7 +264,9 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
+    await screen.findByRole('heading', { name: /receipt review/i });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /apply to expense/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
@@ -291,7 +300,9 @@ describe('StepByStepExpenseForm draft controls', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /review ocr result/i }));
+    await screen.findByRole('heading', { name: /receipt review/i });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /apply to expense/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /date/i })).toBeInTheDocument();
