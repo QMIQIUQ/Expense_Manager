@@ -1,131 +1,106 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { getTodayLocal } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
-import { getBillingCycleRange } from './utils';
+
+const getPreviousMonthKey = (monthKey: string): string => {
+  const date = new Date(`${monthKey}-01T00:00:00`);
+  date.setMonth(date.getMonth() - 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
 
 const MonthOverMonthWidget: React.FC<WidgetProps> = ({
   expenses,
-  incomes,
-  repayments,
-  billingCycleDay = 1,
   size = 'medium',
+  onNavigateToExpenseMonth,
 }) => {
   const { t } = useLanguage();
   const isCompact = size === 'small';
-
-  const { currentCycle, previousCycle } = React.useMemo(() => {
-    const { cycleStart, cycleEnd } = getBillingCycleRange(billingCycleDay);
-    const prevCycleStartDate = new Date(cycleStart);
-    prevCycleStartDate.setMonth(prevCycleStartDate.getMonth() - 1);
-    const prevCycleEndDate = new Date(cycleStart);
-    prevCycleEndDate.setDate(prevCycleEndDate.getDate() - 1);
-    return {
-      currentCycle: { start: cycleStart, end: cycleEnd },
-      previousCycle: { start: prevCycleStartDate, end: prevCycleEndDate },
-    };
-  }, [billingCycleDay]);
+  const currentMonth = getTodayLocal().slice(0, 7);
+  const previousMonth = getPreviousMonthKey(currentMonth);
 
   const stats = React.useMemo(() => {
-    const repaymentsByExpense: { [expenseId: string]: number } = {};
-    repayments.forEach((rep) => {
-      if (rep.expenseId) repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+    const currentExpenses = expenses.filter((expense) => expense.date.slice(0, 7) === currentMonth);
+    const previousExpenses = expenses.filter((expense) => expense.date.slice(0, 7) === previousMonth);
+    const currentTotal = currentExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const previousTotal = previousExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const categoryTotals: Record<string, number> = {};
+
+    currentExpenses.forEach((expense) => {
+      categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
     });
 
-    const getNetAmount = (exp: { id?: string; amount: number }) => {
-      const repaid = repaymentsByExpense[exp.id || ''] || 0;
-      return Math.max(0, exp.amount - repaid);
-    };
-
-    const filterExpenses = (start: Date, end: Date) =>
-      expenses.filter((exp) => new Date(exp.date) >= start && new Date(exp.date) <= end)
-        .reduce((sum, exp) => sum + getNetAmount(exp), 0);
-
-    const filterIncomes = (start: Date, end: Date) =>
-      incomes.filter((inc) => new Date(inc.date) >= start && new Date(inc.date) <= end)
-        .reduce((sum, inc) => sum + inc.amount, 0);
-
-    const currentExpenses = filterExpenses(currentCycle.start, currentCycle.end);
-    const currentIncomes = filterIncomes(currentCycle.start, currentCycle.end);
-    const previousExpenses = filterExpenses(previousCycle.start, previousCycle.end);
-    const previousIncomes = filterIncomes(previousCycle.start, previousCycle.end);
-
-    const currentSavings = currentIncomes - currentExpenses;
-    const previousSavings = previousIncomes - previousExpenses;
-
     return {
-      currentExpenses: Math.round(currentExpenses * 100) / 100,
-      previousExpenses: Math.round(previousExpenses * 100) / 100,
-      currentIncomes: Math.round(currentIncomes * 100) / 100,
-      previousIncomes: Math.round(previousIncomes * 100) / 100,
-      currentSavings: Math.round(currentSavings * 100) / 100,
-      previousSavings: Math.round(previousSavings * 100) / 100,
+      currentTotal: Math.round(currentTotal * 100) / 100,
+      previousTotal: Math.round(previousTotal * 100) / 100,
+      currentCount: currentExpenses.length,
+      topCategories: Object.entries(categoryTotals)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3),
     };
-  }, [expenses, incomes, repayments, currentCycle, previousCycle]);
+  }, [expenses, currentMonth, previousMonth]);
 
-  const calculateChange = (current: number, previous: number) => {
-    if (previous === 0) {
-      if (current === 0) return 0;
-      return null; // Undefined change when growing from zero
-    }
-    return Math.round(((current - previous) / previous) * 100 * 100) / 100;
+  const change = stats.previousTotal === 0
+    ? (stats.currentTotal === 0 ? 0 : null)
+    : ((stats.currentTotal - stats.previousTotal) / stats.previousTotal) * 100;
+  const isDecrease = change !== null && change < 0;
+
+  const openCurrentMonth = () => {
+    onNavigateToExpenseMonth?.(currentMonth);
   };
 
-  const expenseChange = calculateChange(stats.currentExpenses, stats.previousExpenses);
-  const incomeChange = calculateChange(stats.currentIncomes, stats.previousIncomes);
-  const savingsChange = calculateChange(stats.currentSavings, stats.previousSavings);
-
-  const renderChange = (change: number | null, isExpense: boolean = false) => {
-    if (change === null) {
-      return <span className="warning-text">{t('new')}</span>;
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openCurrentMonth();
     }
-    if (change === 0) {
-      return <span>→ 0.0%</span>;
-    }
-    const isGood = isExpense ? change < 0 : change > 0;
-    const arrow = change > 0 ? '↑' : '↓';
-    return (
-      <span className={isGood ? 'success-text' : 'error-text'}>
-        {arrow} {Math.abs(change).toFixed(1)}%
-      </span>
-    );
   };
 
-  if (stats.currentExpenses === 0 && stats.previousExpenses === 0 && 
-      stats.currentIncomes === 0 && stats.previousIncomes === 0) {
+  if (stats.currentTotal === 0 && stats.previousTotal === 0) {
     return <div className="widget-empty-state"><span>📊</span><p>{t('noComparisonData')}</p></div>;
   }
 
   return (
-    <div className="month-comparison-widget">
+    <div
+      className={`month-comparison-widget ${onNavigateToExpenseMonth ? 'clickable' : ''}`}
+      onClick={onNavigateToExpenseMonth ? openCurrentMonth : undefined}
+      onKeyDown={onNavigateToExpenseMonth ? handleKeyDown : undefined}
+      role={onNavigateToExpenseMonth ? 'button' : undefined}
+      tabIndex={onNavigateToExpenseMonth ? 0 : undefined}
+      title={onNavigateToExpenseMonth ? '查看本月支出' : undefined}
+    >
       <div className="comparison-row">
-        <div className="comparison-label">{t('expenses')}</div>
+        <div className="comparison-label">{t('thisMonth')}</div>
         <div className="comparison-values">
-          <span className={isCompact ? 'compact-value' : ''}>
-            ${stats.currentExpenses.toFixed(2)} {t('vs')} ${stats.previousExpenses.toFixed(2)}
-          </span>
-          {renderChange(expenseChange, true)}
+          <span className={isCompact ? 'compact-value' : ''}>${stats.currentTotal.toFixed(2)}</span>
+          {change === null ? (
+            <span className="warning-text">{t('new')}</span>
+          ) : (
+            <span className={isDecrease ? 'success-text' : change > 0 ? 'error-text' : ''}>
+              {change === 0 ? '→ 0.0%' : `${change > 0 ? '↑' : '↓'} ${Math.abs(change).toFixed(1)}%`}
+            </span>
+          )}
         </div>
       </div>
 
       <div className="comparison-row">
-        <div className="comparison-label">{t('incomes')}</div>
+        <div className="comparison-label">{t('lastMonth')}</div>
         <div className="comparison-values">
-          <span className={isCompact ? 'compact-value' : ''}>
-            ${stats.currentIncomes.toFixed(2)} {t('vs')} ${stats.previousIncomes.toFixed(2)}
-          </span>
-          {renderChange(incomeChange)}
+          <span className={isCompact ? 'compact-value' : ''}>${stats.previousTotal.toFixed(2)}</span>
+          <span>{stats.currentCount} {t('transactions')}</span>
         </div>
       </div>
 
-      <div className="comparison-row">
-        <div className="comparison-label">{t('savings')}</div>
-        <div className="comparison-values">
-          <span className={isCompact ? 'compact-value' : ''}>
-            ${stats.currentSavings.toFixed(2)} {t('vs')} ${stats.previousSavings.toFixed(2)}
-          </span>
-          {renderChange(savingsChange)}
+      {stats.topCategories.length > 0 && (
+        <div className="comparison-row month-top-categories">
+          <div className="comparison-label">{t('topCategories')}</div>
+          <div className="month-category-list">
+            {stats.topCategories.map(([category, amount]) => (
+              <span key={category}>{category}: ${amount.toFixed(2)}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

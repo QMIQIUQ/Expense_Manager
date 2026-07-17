@@ -46,6 +46,13 @@ export const dashboardLayoutService = {
     const existing = await this.get(userId);
     
     if (existing) {
+      const monthWidget = DEFAULT_DASHBOARD_LAYOUT.find((widget) => widget.type === 'month-over-month');
+      const hasMonthWidget = existing.widgets.some((widget) => widget.type === 'month-over-month');
+      if (monthWidget && !hasMonthWidget) {
+        const widgets = [...existing.widgets, { ...monthWidget, order: existing.widgets.length }];
+        await this.updateWidgets(userId, widgets);
+        return { ...existing, widgets };
+      }
       return existing;
     }
     

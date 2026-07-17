@@ -30,6 +30,7 @@ interface WidgetContainerProps {
   onMoveUp?: (widgetId: string) => void;
   onMoveDown?: (widgetId: string) => void;
   onNavigateToExpenses?: () => void;
+  onNavigateToExpenseMonth?: (month: string) => void;
   onNavigateToExpense?: (expenseId: string) => void;
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
   onNavigateToIncomes?: () => void;
@@ -63,7 +64,8 @@ const renderWidget = (
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void,
   onNavigateToIncomes?: () => void,
   onNavigateToBudgets?: () => void,
-  onNavigateToPaymentMethods?: () => void
+  onNavigateToPaymentMethods?: () => void,
+  onNavigateToExpenseMonth?: (month: string) => void
 ): React.ReactNode => {
   const propsWithSize = { ...data, size };
   switch (type) {
@@ -90,7 +92,7 @@ const renderWidget = (
     case 'savings-goal':
       return <SavingsGoalWidget {...propsWithSize} />;
     case 'month-over-month':
-      return <MonthOverMonthWidget {...propsWithSize} />;
+      return <MonthOverMonthWidget {...propsWithSize} onNavigateToExpenseMonth={onNavigateToExpenseMonth} />;
     case 'tag-cloud':
       return <TagCloudWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} />;
     case 'upcoming-bills':
@@ -110,6 +112,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onMoveUp,
   onMoveDown,
   onNavigateToExpenses,
+  onNavigateToExpenseMonth,
   onNavigateToExpense,
   onNavigateToScheduledPayment,
   onNavigateToIncomes,
@@ -182,7 +185,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
       <div className="widget-content">
         {widget.enabled ? (
-          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment, onNavigateToIncomes, onNavigateToBudgets, onNavigateToPaymentMethods)
+          renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment, onNavigateToIncomes, onNavigateToBudgets, onNavigateToPaymentMethods, onNavigateToExpenseMonth)
         ) : (
           <div className="widget-placeholder">
             <span className="widget-placeholder-icon">{metadata.icon}</span>

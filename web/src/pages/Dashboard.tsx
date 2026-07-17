@@ -2731,6 +2731,11 @@ const Dashboard: React.FC = () => {
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
+            onNavigateToExpenseMonth={(month) => {
+              setExpenseSelectedDate(`${month}-01`);
+              setExpenseViewMode('month');
+              setActiveTab('expenses');
+            }}
             onNavigateToExpense={(expenseId) => {
               setExpenseViewMode('all');
               setFocusExpenseId(expenseId);
