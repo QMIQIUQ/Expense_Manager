@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
 import DateNavigator, { ViewMode } from '../../components/expenses/DateNavigator';
 import ExpenseList from '../../components/expenses/ExpenseList';
+import ExpensePeriodSummary from '../../components/expenses/ExpensePeriodSummary';
 import PopupModal from '../../components/common/PopupModal';
 import { Expense, Category, Card, EWallet, Bank, Transfer, CurrencyCode } from '../../types';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -168,6 +169,14 @@ const ExpensesTab: React.FC<Props> = ({
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         totalAmount={totalAmount}
+      />
+
+      <ExpensePeriodSummary
+        expenses={filteredExpenses}
+        categories={categories}
+        viewMode={viewMode}
+        selectedDate={selectedDate}
+        displayCurrency={displayCurrency}
       />
 
       {/* Header with Add / Scan Receipt buttons */}
