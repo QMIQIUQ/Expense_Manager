@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { Category, CurrencyCode, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource, getExpenseBaseCurrency } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -50,22 +50,26 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
   const baseCurrency = getExpenseBaseCurrency(expenses[0] || { baseCurrency: DEFAULT_BASE_CURRENCY });
   const targetCurrency = displayCurrency || baseCurrency;
   const conversionEntries = useMemo(
-    () => expenses.map((expense, index) => ({
-      key: expense.id || `${expense.date}-${index}`,
-      amount: getExpenseBaseAmount(expense),
-      sourceCurrency: getExpenseBaseCurrency(expense),
-      date: expense.date,
-    })),
-    [expenses]
+    () => expenses.map((expense, index) => {
+      const displaySource = getExpenseDisplaySource(expense, targetCurrency);
+      return {
+        key: expense.id || `${expense.date}-${index}`,
+        amount: displaySource.amount,
+        sourceCurrency: displaySource.sourceCurrency,
+        date: expense.date,
+      };
+    }),
+    [expenses, targetCurrency]
   );
   const convertedAmounts = useCurrencyConversionMap(conversionEntries, targetCurrency);
-  const getConvertedAmount = (expense: Expense, index: number): number => {
+  const getConvertedAmount = useCallback((expense: Expense, index: number): number => {
     const key = expense.id || `${expense.date}-${index}`;
-    return convertedAmounts[key] ?? getExpenseBaseAmount(expense);
-  };
+    const displaySource = getExpenseDisplaySource(expense, targetCurrency);
+    return convertedAmounts[key] ?? displaySource.amount;
+  }, [convertedAmounts, targetCurrency]);
   const total = useMemo(
     () => expenses.reduce((sum, expense, index) => sum + getConvertedAmount(expense, index), 0),
-    [convertedAmounts, expenses]
+    [expenses, getConvertedAmount]
   );
   const averageDaily = total / getPeriodDays(viewMode, selectedDate);
 
@@ -87,7 +91,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
         };
       })
       .sort((a, b) => b.amount - a.amount);
-  }, [categories, convertedAmounts, expenses, total]);
+  }, [categories, expenses, getConvertedAmount, total]);
 
   const monthlyTotals = useMemo(() => {
     if (viewMode !== 'year') return [];
@@ -102,7 +106,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
           .reduce((sum, { expense, index }) => sum + getConvertedAmount(expense, index), 0),
       };
     });
-  }, [convertedAmounts, expenses, language, selectedDate, viewMode]);
+  }, [expenses, getConvertedAmount, language, selectedDate, viewMode]);
 
   return (
     <section style={styles.container} aria-label={t('totalExpenses')}>

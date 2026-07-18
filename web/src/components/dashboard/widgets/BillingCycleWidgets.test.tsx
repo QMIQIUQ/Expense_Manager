@@ -100,9 +100,9 @@ describe('Dashboard widgets respect billing cycle day', () => {
     render(<CategoryBreakdownWidget {...commonProps} expenses={expenses} billingCycleDay={15} />);
 
     expect(screen.getByText('Food')).toBeInTheDocument();
-    expect(screen.getByText('$100.00')).toBeInTheDocument();
+    expect(screen.getByText('RM100.00')).toBeInTheDocument();
     expect(screen.getByText('Travel')).toBeInTheDocument();
-    expect(screen.getByText('$30.00')).toBeInTheDocument();
+    expect(screen.getByText('RM30.00')).toBeInTheDocument();
     expect(screen.queryByText('Other')).not.toBeInTheDocument();
   });
 

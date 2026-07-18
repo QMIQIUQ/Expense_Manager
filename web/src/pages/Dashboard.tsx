@@ -27,6 +27,7 @@ import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
 import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
 import ExpenseList from '../components/expenses/ExpenseList';
+import ExpensePeriodSummary from '../components/expenses/ExpensePeriodSummary';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
@@ -2766,6 +2767,13 @@ const Dashboard: React.FC = () => {
               viewMode={expenseViewMode}
               onViewModeChange={setExpenseViewMode}
               totalAmount={expenseTotalAmount}
+            />
+            <ExpensePeriodSummary
+              expenses={filteredExpensesForDisplay}
+              categories={categories}
+              viewMode={expenseViewMode}
+              selectedDate={expenseSelectedDate}
+              displayCurrency={displayCurrency}
             />
             <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('expenseHistory')}</h2>
             <ExpenseList

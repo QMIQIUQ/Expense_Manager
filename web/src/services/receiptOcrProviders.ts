@@ -1,13 +1,14 @@
 import { blobToCanvas, blobToDataUrl } from './receiptOcrImage';
 import type { ReceiptOcrEngineResult } from './receiptOcrService';
+import type { PaddleOcrService as PaddleOcrServiceType } from 'ppu-paddle-ocr/web';
 
-let paddleServicePromise: Promise<any> | null = null;
+let paddleServicePromise: Promise<PaddleOcrServiceType> | null = null;
 
-const getPaddleService = async (): Promise<any> => {
+const getPaddleService = async (): Promise<PaddleOcrServiceType> => {
   if (!paddleServicePromise) {
     paddleServicePromise = (async () => {
       const paddleModule = await import('ppu-paddle-ocr/web');
-      const PaddleOcrService = (paddleModule as Record<string, any>).PaddleOcrService;
+      const PaddleOcrService = paddleModule.PaddleOcrService;
       if (typeof PaddleOcrService !== 'function') {
         throw new Error('PaddleOCR browser service is unavailable');
       }
@@ -69,15 +70,13 @@ export const runPaddleReceiptOcr = async (
   onProgress?: (progress: number) => void,
 ): Promise<ReceiptOcrEngineResult> => {
   return await runWithTiming('paddle', async () => {
+    onProgress?.(0);
     const service = await getPaddleService();
+    onProgress?.(0.2);
     const canvas = await blobToCanvas(image);
-    const result = await service.recognize(canvas, {
-      onProgress: (event: { type?: string; stage?: string; progress?: number }) => {
-        if (typeof event.progress === 'number' && onProgress) {
-          onProgress(Math.max(0, Math.min(1, event.progress)));
-        }
-      },
-    });
+    onProgress?.(0.4);
+    const result = await service.recognize(canvas);
+    onProgress?.(1);
 
     return {
       text: result?.text || '',
