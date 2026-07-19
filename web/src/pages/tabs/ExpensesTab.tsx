@@ -1,308 +1,140 @@
-import React, { useState, useMemo, useRef } from 'react';
-import StepByStepExpenseForm from '../../components/expenses/StepByStepExpenseForm';
-import DateNavigator, { ViewMode } from '../../components/expenses/DateNavigator';
+import React, { useMemo, useState } from 'react';
+import DateNavigator from '../../components/expenses/DateNavigator';
+import ExpenseFiltersBar from '../../components/expenses/ExpenseFiltersBar';
 import ExpenseList from '../../components/expenses/ExpenseList';
 import ExpensePeriodSummary from '../../components/expenses/ExpensePeriodSummary';
-import PopupModal from '../../components/common/PopupModal';
-import { Expense, Category, Card, EWallet, Bank, Transfer, CurrencyCode } from '../../types';
-import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PlusIcon, UploadIcon } from '../../components/icons';
-import { DEFAULT_BASE_CURRENCY } from '../../utils/currencyUtils';
-import { getTodayLocal } from '../../utils/dateUtils';
+import type {
+  Bank,
+  Card,
+  Category,
+  CurrencyCode,
+  EWallet,
+  Expense,
+  Repayment,
+  Transfer,
+} from '../../types';
+import type { QuickExpensePreset } from '../../types/quickExpense';
+import { DEFAULT_EXPENSE_FILTERS, type ExpenseFilterState, type ExpensePeriodSelection } from '../../types/expensePeriod';
+import { filterAndSortExpenses, filterExpensesByPeriod } from '../../utils/expensePeriodUtils';
 
-interface Props {
+interface ExpensesTabProps {
   expenses: Expense[];
   categories: Category[];
-  cards?: Card[];
-  ewallets?: EWallet[];
-  banks?: Bank[];
-  editingExpense: Expense | null;
-  onAddExpense: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onUpdateExpense: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
-  onEdit: (exp: Expense | null) => void;
-  onDeleteExpense: (id: string) => void;
-  onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  onCreateEWallet?: () => void;
-  onCreateCard?: () => void;
-  displayCurrency?: CurrencyCode;
-  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
+  cards: Card[];
+  ewallets: EWallet[];
+  banks: Bank[];
+  repayments: Repayment[];
+  transfers: Transfer[];
+  period: ExpensePeriodSelection;
+  onPeriodChange: (period: ExpensePeriodSelection) => void;
+  displayCurrency: CurrencyCode;
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
+  onDelete: (id: string) => void;
+  onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
+  onBulkDelete: (ids: string[]) => void;
+  onReloadRepayments: () => void;
+  onCreateCard: () => void;
+  onCreateEWallet: () => void;
+  onAddTransfer: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
+  focusExpenseId?: string;
+  quickExpensePresets: QuickExpensePreset[];
+  onQuickExpenseAdd: (preset: QuickExpensePreset) => Promise<void>;
+  onQuickExpensePresetsChange: () => void;
+  onManageQuickExpenses: () => void;
 }
 
-const ExpensesTab: React.FC<Props> = ({
+const ExpensesTab: React.FC<ExpensesTabProps> = ({
   expenses,
   categories,
-  cards = [],
-  ewallets = [],
-  banks = [],
-  editingExpense,
-  onAddExpense,
-  onUpdateExpense,
-  onEdit,
-  onDeleteExpense,
-  onAddTransfer,
-  onCreateEWallet,
-  onCreateCard,
+  cards,
+  ewallets,
+  banks,
+  repayments,
+  transfers,
+  period,
+  onPeriodChange,
   displayCurrency,
   onDisplayCurrencyChange,
+  onDelete,
+  onInlineUpdate,
+  onBulkDelete,
+  onReloadRepayments,
+  onCreateCard,
+  onCreateEWallet,
+  onAddTransfer,
+  focusExpenseId,
+  quickExpensePresets,
+  onQuickExpenseAdd,
+  onQuickExpensePresetsChange,
+  onManageQuickExpenses,
 }) => {
-  const { timeFormat, dateFormat } = useUserSettings();
-  const { t, language } = useLanguage();
-  const [isAdding, setIsAdding] = useState(false);
-  const [modalKey, setModalKey] = useState(0);
-  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
-  const receiptInputRef = useRef<HTMLInputElement | null>(null);
-  const isEnglish = language === 'en';
-  const isSimplifiedChinese = language === 'zh-CN';
-  const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
-  const lastUsedCurrency = expenses.length > 0
-    ? expenses[0].currency || expenses[0].baseCurrency || DEFAULT_BASE_CURRENCY
-    : undefined;
-  
-  // DateNavigator state
-  const [selectedDate, setSelectedDate] = useState(getTodayLocal());
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const { t } = useLanguage();
+  const [filters, setFilters] = useState<ExpenseFilterState>(DEFAULT_EXPENSE_FILTERS);
 
-  // Derive last used payment method from recent expenses
-  const lastUsedPaymentMethod = expenses.length > 0 
-    ? expenses[0].paymentMethod 
-    : undefined;
-
-  // Filter expenses based on viewMode and selectedDate
-  const filteredExpenses = useMemo(() => {
-    if (viewMode === 'all') {
-      return expenses;
-    }
-
-    return expenses.filter(expense => {
-      const expenseDate = expense.date;
-      const selected = selectedDate;
-
-      if (viewMode === 'day') {
-        return expenseDate === selected;
-      }
-      
-      if (viewMode === 'month') {
-        // Compare year and month
-        return expenseDate.slice(0, 7) === selected.slice(0, 7);
-      }
-      
-      if (viewMode === 'year') {
-        // Compare year only
-        return expenseDate.slice(0, 4) === selected.slice(0, 4);
-      }
-
-      return true;
-    });
-  }, [expenses, viewMode, selectedDate]);
-
-  // Calculate total amount for the selected period (in cents for DateNavigator)
-  const totalAmount = useMemo(() => {
-    // exp.amount is in dollars, convert to cents for display
-    return Math.round(filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0) * 100);
-  }, [filteredExpenses]);
-
-  const handleAddClick = () => {
-    setPendingReceiptFile(null);
-    setModalKey(prev => prev + 1); // Force new modal instance
-    setIsAdding(true);
-  };
-
-  const handleReceiptClick = () => {
-    receiptInputRef.current?.click();
-  };
-
-  const handleReceiptInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    if (!file) return;
-
-    setPendingReceiptFile(file);
-    setModalKey(prev => prev + 1);
-    setIsAdding(true);
-    event.target.value = '';
-  };
-
-  // Helper function to auto-navigate to expense date
-  const navigateToExpenseDate = (date: string) => {
-    if (date !== selectedDate) {
-      setSelectedDate(date);
-      // Switch to day view to show the new expense
-      if (viewMode !== 'day') {
-        setViewMode('day');
-      }
-    }
-  };
-
-  const handleAddSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    onAddExpense(data);
-    setPendingReceiptFile(null);
-    setIsAdding(false);
-    navigateToExpenseDate(data.date);
-  };
-
-  const handleAddAndAnother = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    onAddExpense(data);
-    setPendingReceiptFile(null);
-    navigateToExpenseDate(data.date);
-    // Don't close modal - form will reset itself
-  };
-
-  const handleEditSubmit = (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    onUpdateExpense(data);
-    onEdit(null);
-  };
+  const periodExpenses = useMemo(
+    () => filterExpensesByPeriod(expenses, period),
+    [expenses, period],
+  );
+  const visibleExpenses = useMemo(
+    () => filterAndSortExpenses(periodExpenses, filters, { cards, ewallets, banks }),
+    [banks, cards, ewallets, filters, periodExpenses],
+  );
+  const hasActiveFilters = !!filters.query
+    || !!filters.category
+    || filters.paymentMethod !== 'all';
 
   return (
-    <div style={styles.expensesTab}>
-      <input
-        ref={receiptInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleReceiptInputChange}
-        style={{ display: 'none' }}
-      />
-      {/* Date Navigator */}
-      <DateNavigator
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        totalAmount={totalAmount}
-      />
-
+    <div className="expense-page-workspace">
+      <DateNavigator value={period} onChange={onPeriodChange} />
       <ExpensePeriodSummary
-        expenses={filteredExpenses}
+        expenses={visibleExpenses}
         categories={categories}
-        viewMode={viewMode}
-        selectedDate={selectedDate}
+        period={period}
         displayCurrency={displayCurrency}
       />
 
-      {/* Header with Add / Scan Receipt buttons */}
-      <div style={styles.header}>
-        <h2 style={styles.sectionTitle}>{t('expenseHistory')}</h2>
-        <div style={styles.actions}>
-          <button type="button" onClick={handleReceiptClick} className="btn btn-secondary">
-            <UploadIcon size={18} />
-            <span>{receiptActionLabel}</span>
-          </button>
-          <button type="button" onClick={handleAddClick} className="btn btn-accent-light">
-            <PlusIcon size={18} />
-            <span>{t('addNewExpense')}</span>
-          </button>
-        </div>
+      <div className="expense-page-heading">
+        <h2>{t('expenseHistory')}</h2>
       </div>
 
-      {/* Add Expense PopupModal */}
-      <PopupModal
-        isOpen={isAdding}
-        onClose={() => setIsAdding(false)}
-        title={t('addNewExpense')}
-        hideHeader={true}
-        chromeless={true}
-        hideFooter={true}
-        maxWidth="600px"
-        key={modalKey}
-      >
-        <StepByStepExpenseForm
-          onSubmit={handleAddSubmit}
-          onSubmitAndAddAnother={handleAddAndAnother}
-          onCancel={() => setIsAdding(false)}
-          categories={categories}
-          cards={cards}
-          ewallets={ewallets}
-          banks={banks}
-          onAddTransfer={onAddTransfer}
-          onCreateEWallet={onCreateEWallet}
-          onCreateCard={onCreateCard}
-          timeFormat={timeFormat}
-          dateFormat={dateFormat}
-          lastUsedCurrency={lastUsedCurrency}
-          lastUsedPaymentMethod={lastUsedPaymentMethod}
-          initialDate={viewMode === 'day' ? selectedDate : undefined}
-          initialReceiptFile={pendingReceiptFile}
-        />
-      </PopupModal>
+      <ExpenseFiltersBar
+        value={filters}
+        onChange={setFilters}
+        categories={categories}
+        resultCount={visibleExpenses.length}
+      />
 
-      {/* Edit Expense PopupModal */}
-      <PopupModal
-        isOpen={editingExpense !== null}
-        onClose={() => onEdit(null)}
-        title={t('editExpense')}
-        hideHeader={true}
-        chromeless={true}
-        hideFooter={true}
-        maxWidth="600px"
-      >
-        {editingExpense && (
-          <StepByStepExpenseForm
-            onSubmit={handleEditSubmit}
-            onCancel={() => onEdit(null)}
-            initialData={editingExpense}
-            categories={categories}
-            cards={cards}
-            ewallets={ewallets}
-            banks={banks}
-            onAddTransfer={onAddTransfer}
-            onCreateEWallet={onCreateEWallet}
-            onCreateCard={onCreateCard}
-            timeFormat={timeFormat}
-            dateFormat={dateFormat}
-            lastUsedCurrency={lastUsedCurrency}
-            lastUsedPaymentMethod={lastUsedPaymentMethod}
-          />
-        )}
-      </PopupModal>
-
-      {/* Expense List */}
-      <div style={styles.section}>
-        <ExpenseList
-          expenses={filteredExpenses}
-          categories={categories}
-          displayCurrency={displayCurrency}
-          onDisplayCurrencyChange={onDisplayCurrencyChange}
-          onEdit={onEdit}
-          onDelete={onDeleteExpense}
-          onInlineUpdate={() => {}}
-          viewMode={viewMode}
-          selectedDate={selectedDate}
-        />
-      </div>
+      <ExpenseList
+        expenses={visibleExpenses}
+        categories={categories}
+        cards={cards}
+        ewallets={ewallets}
+        banks={banks}
+        repayments={repayments}
+        transfers={transfers}
+        displayCurrency={displayCurrency}
+        onDisplayCurrencyChange={onDisplayCurrencyChange}
+        onDelete={onDelete}
+        onInlineUpdate={onInlineUpdate}
+        onBulkDelete={onBulkDelete}
+        onReloadRepayments={onReloadRepayments}
+        onCreateCard={onCreateCard}
+        onCreateEWallet={onCreateEWallet}
+        onAddTransfer={onAddTransfer}
+        focusExpenseId={focusExpenseId}
+        quickExpensePresets={quickExpensePresets}
+        onQuickExpenseAdd={onQuickExpenseAdd}
+        onQuickExpensePresetsChange={onQuickExpensePresetsChange}
+        onManageQuickExpenses={onManageQuickExpenses}
+        viewMode={period.mode}
+        selectedDate={period.anchorDate}
+        prefiltered
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={() => setFilters(DEFAULT_EXPENSE_FILTERS)}
+      />
     </div>
   );
-};
-
-const styles = {
-  expensesTab: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '30px',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '15px',
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: 600 as const,
-    color: 'var(--text-primary)',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '15px',
-  },
-  actions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    flexWrap: 'wrap' as const,
-  },
 };
 
 export default ExpensesTab;

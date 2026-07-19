@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../icons';
-import type { ViewMode } from './DateNavigator';
+import type { ExpensePeriodMode, ExpensePeriodSelection } from '../../types/expensePeriod';
 
-export type PeriodPickerMode = Exclude<ViewMode, 'all'>;
+export type PeriodPickerMode = Exclude<ExpensePeriodMode, 'all'>;
+const DEFAULT_ALLOWED_MODES: PeriodPickerMode[] = ['day', 'month', 'year', 'range'];
 
 interface PeriodPickerModalProps {
   isOpen: boolean;
-  value: string;
-  initialMode: ViewMode;
+  value: ExpensePeriodSelection;
   onClose: () => void;
-  onSelect: (date: string, mode: PeriodPickerMode) => void;
+  onSelect: (value: ExpensePeriodSelection) => void;
+  allowedModes?: PeriodPickerMode[];
+  min?: string;
+  max?: string;
 }
 
 const getLocale = (language: string): string => {
@@ -32,30 +35,37 @@ const parseDateValue = (value: string): Date => {
 const PeriodPickerModal: React.FC<PeriodPickerModalProps> = ({
   isOpen,
   value,
-  initialMode,
   onClose,
   onSelect,
+  allowedModes = DEFAULT_ALLOWED_MODES,
+  min,
+  max,
 }) => {
   const { t, language } = useLanguage();
-  const selectedDate = useMemo(() => parseDateValue(value), [value]);
+  const selectedDate = useMemo(() => parseDateValue(value.anchorDate), [value.anchorDate]);
   const [activeMode, setActiveMode] = useState<PeriodPickerMode>('day');
   const [calendarYear, setCalendarYear] = useState(selectedDate.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(selectedDate.getMonth());
   const [monthYear, setMonthYear] = useState(selectedDate.getFullYear());
   const [yearPageStart, setYearPageStart] = useState(Math.floor(selectedDate.getFullYear() / 12) * 12);
+  const [rangeStart, setRangeStart] = useState(value.startDate || value.anchorDate);
+  const [rangeEnd, setRangeEnd] = useState(value.endDate || '');
   const dialogRef = useRef<HTMLDivElement>(null);
   const locale = getLocale(language);
 
   useEffect(() => {
     if (!isOpen) return;
-    const mode = initialMode === 'all' ? 'day' : initialMode;
+    const requestedMode = value.mode === 'all' ? 'day' : value.mode;
+    const mode = allowedModes.includes(requestedMode) ? requestedMode : allowedModes[0];
     const year = selectedDate.getFullYear();
     setActiveMode(mode);
     setCalendarYear(year);
     setCalendarMonth(selectedDate.getMonth());
     setMonthYear(year);
     setYearPageStart(Math.floor(year / 12) * 12);
-  }, [initialMode, isOpen, selectedDate]);
+    setRangeStart(value.startDate || value.anchorDate);
+    setRangeEnd(value.endDate || '');
+  }, [allowedModes, isOpen, selectedDate, value.anchorDate, value.endDate, value.mode, value.startDate]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -129,8 +139,23 @@ const PeriodPickerModal: React.FC<PeriodPickerModalProps> = ({
     setCalendarMonth(next.getMonth());
   };
 
-  const selectValue = (date: string, mode: PeriodPickerMode) => {
-    onSelect(date, mode);
+  const selectValue = (date: string, mode: Exclude<PeriodPickerMode, 'range'>) => {
+    onSelect({ mode, anchorDate: date });
+    onClose();
+  };
+
+  const handleRangeDateClick = (date: string) => {
+    if (!rangeStart || rangeEnd || date < rangeStart) {
+      setRangeStart(date);
+      setRangeEnd('');
+      return;
+    }
+    setRangeEnd(date);
+  };
+
+  const confirmRange = () => {
+    if (!rangeStart || !rangeEnd) return;
+    onSelect({ mode: 'range', anchorDate: rangeEnd, startDate: rangeStart, endDate: rangeEnd });
     onClose();
   };
 
@@ -165,7 +190,7 @@ const PeriodPickerModal: React.FC<PeriodPickerModalProps> = ({
         </div>
 
         <div className="period-picker-tabs" role="tablist" aria-label={t('selectPeriod')}>
-          {(['day', 'month', 'year'] as PeriodPickerMode[]).map((mode) => (
+          {allowedModes.map((mode) => (
             <button
               key={mode}
               type="button"
@@ -174,13 +199,13 @@ const PeriodPickerModal: React.FC<PeriodPickerModalProps> = ({
               className={activeMode === mode ? 'active' : ''}
               onClick={() => setActiveMode(mode)}
             >
-              {t(mode === 'day' ? 'date' : mode)}
+              {t(mode === 'day' ? 'date' : mode === 'range' ? 'customRange' : mode)}
             </button>
           ))}
         </div>
 
         <div className="period-picker-content">
-          {activeMode === 'day' && (
+          {(activeMode === 'day' || activeMode === 'range') && (
             <>
               <div className="period-picker-navigation">
                 <button type="button" onClick={() => changeCalendarMonth(-1)} aria-label={t('previousMonth')}>
@@ -199,21 +224,33 @@ const PeriodPickerModal: React.FC<PeriodPickerModalProps> = ({
                   if (day === null) return <span key={`empty-${index}`} className="period-picker-empty" />;
                   const isSelected = calendarYear === selectedYear && calendarMonth === selectedMonth && day === selectedDay;
                   const dateValue = formatDateValue(calendarYear, calendarMonth, day);
+                  const isDisabled = (!!min && dateValue < min) || (!!max && dateValue > max);
+                  const isRangeBoundary = activeMode === 'range' && (dateValue === rangeStart || dateValue === rangeEnd);
+                  const isInRange = activeMode === 'range' && !!rangeStart && !!rangeEnd && dateValue > rangeStart && dateValue < rangeEnd;
                   return (
                     <button
                       key={dateValue}
                       type="button"
-                      className={isSelected ? 'selected' : ''}
-                      aria-pressed={isSelected}
+                      className={`${activeMode === 'day' && isSelected ? 'selected' : ''} ${isRangeBoundary ? 'selected' : ''} ${isInRange ? 'in-range' : ''}`}
+                      aria-pressed={activeMode === 'day' ? isSelected : isRangeBoundary}
+                      disabled={isDisabled}
                       aria-label={new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(calendarYear, calendarMonth, day))}
                       data-period-picker-autofocus={isSelected ? 'true' : undefined}
-                      onClick={() => selectValue(dateValue, 'day')}
+                      onClick={() => activeMode === 'range' ? handleRangeDateClick(dateValue) : selectValue(dateValue, 'day')}
                     >
                       {day}
                     </button>
                   );
                 })}
               </div>
+              {activeMode === 'range' && (
+                <div className="period-picker-range-footer">
+                  <span>{rangeStart || '—'} → {rangeEnd || t('selectEndDate')}</span>
+                  <button type="button" className="period-picker-confirm" onClick={confirmRange} disabled={!rangeStart || !rangeEnd}>
+                    {t('confirm')}
+                  </button>
+                </div>
+              )}
             </>
           )}
 

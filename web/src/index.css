@@ -5851,7 +5851,7 @@ button:not(:disabled):hover {
 
 .period-picker-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 4px;
   padding: 10px 16px 0;
 }
@@ -5877,6 +5877,183 @@ button:not(:disabled):hover {
   color: var(--accent-primary);
   border-color: var(--accent-primary);
   background: var(--accent-light);
+}
+
+.period-picker-calendar button.in-range {
+  color: var(--accent-primary);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent-light) 80%, transparent);
+}
+
+.period-picker-range-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.period-picker-confirm {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.period-picker-confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.expense-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+
+.expense-filter-primary-row,
+.expense-filter-controls,
+.expense-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.expense-filter-toggle,
+.expense-filter-controls select,
+.expense-filter-chips button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.expense-filter-toggle,
+.expense-filter-chips button {
+  cursor: pointer;
+}
+
+.expense-filter-controls select {
+  flex: 1 1 150px;
+}
+
+.expense-filter-chips button {
+  min-height: 34px;
+  padding: 5px 9px;
+  color: var(--accent-primary);
+  background: var(--accent-light);
+}
+
+.expense-filter-chips .expense-filter-clear {
+  margin-left: auto;
+  color: var(--error-text);
+  background: var(--error-bg);
+}
+
+@media (max-width: 640px) {
+  .expense-filter-primary-row > *:first-child {
+    flex-basis: 100%;
+  }
+
+  .expense-filter-toggle {
+    width: 100%;
+  }
+}
+
+.expense-page-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.expense-page-heading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.date-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.date-picker-wrapper label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.date-picker-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.date-picker-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 44px 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.date-picker-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.date-picker-input.error {
+  border-color: var(--error-text);
+}
+
+.date-picker-icon-btn {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.date-picker-icon-btn:disabled,
+.date-picker-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.date-picker-error {
+  color: var(--error-text);
+  font-size: 12px;
 }
 
 .period-picker-content {

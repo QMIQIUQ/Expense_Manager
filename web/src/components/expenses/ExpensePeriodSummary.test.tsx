@@ -43,8 +43,7 @@ describe('ExpensePeriodSummary', () => {
       <ExpensePeriodSummary
         expenses={[expense]}
         categories={[]}
-        viewMode="month"
-        selectedDate="2024-07-01"
+        period={{ mode: 'month', anchorDate: '2024-07-01' }}
         displayCurrency="USD"
       />
     );

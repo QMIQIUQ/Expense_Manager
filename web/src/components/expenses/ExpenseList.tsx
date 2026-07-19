@@ -21,6 +21,7 @@ import AutocompleteDropdown, { AutocompleteOption } from '../common/Autocomplete
 import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import type { ExpensePeriodMode } from '../../types/expensePeriod';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -66,8 +67,12 @@ interface ExpenseListProps {
   onQuickExpensePresetsChange?: () => void;
   onManageQuickExpenses?: () => void;
   // DateNavigator integration - when not 'all', date filters are already applied by parent
-  viewMode?: 'all' | 'day' | 'month' | 'year';
+  viewMode?: ExpensePeriodMode;
   selectedDate?: string;
+  /** Parent has already applied period, search, category, payment and sort rules. */
+  prefiltered?: boolean;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -94,6 +99,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onManageQuickExpenses,
   viewMode = 'all',
   selectedDate,
+  prefiltered = false,
+  hasActiveFilters = false,
+  onClearFilters,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -403,6 +411,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   const filteredAndSortedExpenses = () => {
+    if (prefiltered) return expenses;
     const filtered = expenses.filter((expense) => {
       const matchesSearch = expense.description
         .toLowerCase()
@@ -460,7 +469,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   // Helper to format date based on current viewMode
-  const formatDateByViewMode = (mode: 'all' | 'day' | 'month' | 'year', date: string): string => {
+  const formatDateByViewMode = (mode: ExpensePeriodMode, date: string): string => {
     switch (mode) {
       case 'day': return date;
       case 'month': return date.slice(0, 7);
@@ -690,7 +699,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       <style>{responsiveStyles}</style>
       <div style={styles.container}>
       {/* Filter Section */}
-      <div style={styles.filterSection}>
+      {!prefiltered && <div style={styles.filterSection}>
         {/* Simplified filter - always visible */}
         <div style={styles.filterRow}>
           <SearchBar
@@ -794,7 +803,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             )}
           </>
         )}
-      </div>
+      </div>}
 
       {/* Quick Expense Scroll Bar: below filter section, above multi-select */}
       {onQuickExpenseAdd && (
@@ -864,7 +873,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
       {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
-          <p>{t('noExpenses')}</p>
+          <p>{hasActiveFilters ? t('noFilteredExpenses') : t('noExpenses')}</p>
+          {hasActiveFilters && onClearFilters && (
+            <button type="button" className="btn btn-secondary" onClick={onClearFilters}>
+              {t('clearFilters')}
+            </button>
+          )}
         </div>
       ) : (
         <div style={styles.list}>
@@ -892,14 +906,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       aria-label={`Select all expenses for ${formatDate(date)}`}
                     />
                   )}
-                  <div 
+                  <button
+                    type="button"
                     onClick={() => toggleGroupCollapse(date)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer', border: 0, background: 'transparent', padding: 0, color: 'inherit', textAlign: 'left' }}
+                    aria-expanded={!isCollapsed}
+                    aria-label={`${isCollapsed ? t('expandGroup') : t('collapseGroup')} ${formatDate(date)}`}
                   >
                     <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
                     <span style={styles.dateGroupDate}>{formatDate(date)}</span>
                     <span style={styles.expenseCount}>({dayExpenses.length})</span>
-                  </div>
+                  </button>
                 </div>
                 <span style={styles.dateGroupTotal}>{formatMoney(dailyTotal, displayCurrency || DEFAULT_BASE_CURRENCY)}</span>
               </div>

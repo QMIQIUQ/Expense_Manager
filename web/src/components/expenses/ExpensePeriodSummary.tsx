@@ -5,12 +5,14 @@ import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource, getExpense
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChevronDownIcon, ChevronUpIcon } from '../icons';
+import type { ExpensePeriodSelection } from '../../types/expensePeriod';
+import { countInclusiveDays, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 interface ExpensePeriodSummaryProps {
   expenses: Expense[];
   categories: Category[];
-  viewMode: 'all' | 'day' | 'month' | 'year';
-  selectedDate: string;
+  period: ExpensePeriodSelection;
   displayCurrency?: CurrencyCode;
 }
 
@@ -22,28 +24,41 @@ interface CategoryTotal {
   color: string;
 }
 
-const getPeriodLabel = (viewMode: ExpensePeriodSummaryProps['viewMode'], selectedDate: string, language: string): string => {
+const getPeriodLabel = (period: ExpensePeriodSelection, language: string): string => {
+  const viewMode = period.mode;
+  const selectedDate = period.anchorDate;
   const date = new Date(`${selectedDate}T00:00:00`);
   const locale = language === 'zh-CN' ? 'zh-CN' : language === 'zh' ? 'zh-TW' : 'en';
 
   if (viewMode === 'year') return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(date);
   if (viewMode === 'month') return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }).format(date);
   if (viewMode === 'day') return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
+  if (viewMode === 'range' && period.startDate && period.endDate) {
+    const formatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+    return `${formatter.format(new Date(`${period.startDate}T00:00:00`))} – ${formatter.format(new Date(`${period.endDate}T00:00:00`))}`;
+  }
   return language === 'en' ? 'All expenses' : language === 'zh-CN' ? '全部支出' : '全部支出';
 };
 
-const getPeriodDays = (viewMode: ExpensePeriodSummaryProps['viewMode'], selectedDate: string): number => {
-  const date = new Date(`${selectedDate}T00:00:00`);
-  if (viewMode === 'month') return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  if (viewMode === 'year') return (new Date(date.getFullYear(), 1, 29).getMonth() === 1) ? 366 : 365;
-  return 1;
+const getPeriodDays = (period: ExpensePeriodSelection, expenses: Expense[]): number => {
+  const configuredBounds = getExpensePeriodBounds(period);
+  if (!configuredBounds) {
+    if (expenses.length === 0) return 1;
+    const dates = expenses.map((expense) => expense.date).sort();
+    return countInclusiveDays(dates[0], dates[dates.length - 1]);
+  }
+
+  const today = getTodayLocal();
+  const endDate = configuredBounds.startDate <= today && configuredBounds.endDate > today
+    ? today
+    : configuredBounds.endDate;
+  return countInclusiveDays(configuredBounds.startDate, endDate);
 };
 
 const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
   expenses,
   categories,
-  viewMode,
-  selectedDate,
+  period,
   displayCurrency,
 }) => {
   const { t, language } = useLanguage();
@@ -74,7 +89,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
     () => expenses.reduce((sum, expense, index) => sum + getConvertedAmount(expense, index), 0),
     [expenses, getConvertedAmount]
   );
-  const averageDaily = total / getPeriodDays(viewMode, selectedDate);
+  const averageDaily = total / getPeriodDays(period, expenses);
 
   const categoryTotals = useMemo<CategoryTotal[]>(() => {
     const totals = new Map<string, number>();
@@ -97,8 +112,8 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
   }, [categories, expenses, getConvertedAmount, total]);
 
   const monthlyTotals = useMemo(() => {
-    if (viewMode !== 'year') return [];
-    const year = selectedDate.slice(0, 4);
+    if (period.mode !== 'year') return [];
+    const year = period.anchorDate.slice(0, 4);
     return Array.from({ length: 12 }, (_, month) => {
       const key = `${year}-${String(month + 1).padStart(2, '0')}`;
       return {
@@ -109,13 +124,13 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
           .reduce((sum, { expense, index }) => sum + getConvertedAmount(expense, index), 0),
       };
     });
-  }, [expenses, getConvertedAmount, language, selectedDate, viewMode]);
+  }, [expenses, getConvertedAmount, language, period.anchorDate, period.mode]);
 
   return (
     <section style={styles.container} aria-label={t('totalExpenses')}>
       <div style={styles.titleRow}>
         <div>
-          <h3 style={styles.title}>{getPeriodLabel(viewMode, selectedDate, language)}</h3>
+          <h3 style={styles.title}>{getPeriodLabel(period, language)}</h3>
           <span style={styles.subtitle}>{t('totalExpenses')}</span>
         </div>
         <div style={styles.summaryActions}>
@@ -166,7 +181,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
             </div>
           )}
 
-          {viewMode === 'year' && (
+          {period.mode === 'year' && (
             <div style={styles.chartSection}>
               <h4 style={styles.sectionTitle}>{t('monthlyTrend')}</h4>
               <div style={styles.chart}>

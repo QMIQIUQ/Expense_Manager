@@ -8,6 +8,7 @@ import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
+import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { budgetService } from '../services/budgetService';
@@ -25,15 +26,12 @@ import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { balanceService } from '../services/balanceService';
 import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
-import DateNavigator, { ViewMode } from '../components/expenses/DateNavigator';
-import ExpenseList from '../components/expenses/ExpenseList';
-import ExpensePeriodSummary from '../components/expenses/ExpensePeriodSummary';
+import ExpensesTab from './tabs/ExpensesTab';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
 import CurrencySelector from '../components/common/CurrencySelector';
 import { useLongPress } from '../hooks/useLongPress';
-import { useCurrencyConversionMap } from '../hooks/useCurrencyConversionMap';
 import { PlusIcon, UploadIcon } from '../components/icons';
 
 // Lazy load heavy components
@@ -56,7 +54,7 @@ import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, getExpenseDisplaySource } from '../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY } from '../utils/currencyUtils';
 
 //#region Helper Functions
 // Helper function to get display name
@@ -106,9 +104,11 @@ const Dashboard: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  // DateNavigator state for expenses tab
-  const [expenseSelectedDate, setExpenseSelectedDate] = useState(getTodayLocal());
-  const [expenseViewMode, setExpenseViewMode] = useState<ViewMode>('day');
+  // Controlled period state is shared with dashboard deep-links and the Expenses tab.
+  const [expensePeriod, setExpensePeriod] = useState<ExpensePeriodSelection>({
+    mode: 'day',
+    anchorDate: getTodayLocal(),
+  });
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
@@ -150,58 +150,11 @@ const Dashboard: React.FC = () => {
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   const addExpenseLabel = t('addNewExpense');
 
-  // Filter expenses based on DateNavigator selection
-  const filteredExpensesForDisplay = useMemo(() => {
-    if (expenseViewMode === 'all') {
-      return expenses;
-    }
-    return expenses.filter(expense => {
-      const expenseDate = expense.date;
-      const selected = expenseSelectedDate;
-      if (expenseViewMode === 'day') {
-        return expenseDate === selected;
-      }
-      if (expenseViewMode === 'month') {
-        return expenseDate.slice(0, 7) === selected.slice(0, 7);
-      }
-      if (expenseViewMode === 'year') {
-        return expenseDate.slice(0, 4) === selected.slice(0, 4);
-      }
-      return true;
-    });
-  }, [expenses, expenseViewMode, expenseSelectedDate]);
-
   const lastUsedCurrency = useMemo(() => {
     const latestExpense = expenses[0];
     return latestExpense?.currency || latestExpense?.baseCurrency || DEFAULT_BASE_CURRENCY;
   }, [expenses]);
 
-  const filteredExpenseConversionEntries = useMemo(() => (
-    filteredExpensesForDisplay.map((expense) => {
-      const displaySource = getExpenseDisplaySource(expense, displayCurrency);
-      return {
-        key: expense.id || `${expense.date}-${expense.description}`,
-        amount: displaySource.amount,
-        sourceCurrency: displaySource.sourceCurrency,
-        date: expense.date,
-      };
-    })
-  ), [displayCurrency, filteredExpensesForDisplay]);
-
-  const filteredExpenseDisplayAmounts = useCurrencyConversionMap(
-    filteredExpenseConversionEntries,
-    displayCurrency
-  );
-
-  const expenseTotalAmount = useMemo(() => {
-    return Math.round(filteredExpensesForDisplay.reduce((sum, expense) => {
-      const key = expense.id || `${expense.date}-${expense.description}`;
-      const converted = filteredExpenseDisplayAmounts[key];
-      const displaySource = getExpenseDisplaySource(expense, displayCurrency);
-      const amount = typeof converted === 'number' ? converted : displaySource.amount;
-      return sum + amount;
-    }, 0) * 100);
-  }, [displayCurrency, filteredExpenseDisplayAmounts, filteredExpensesForDisplay]);
   //#endregion
 
   const openExpenseEntry = (options?: { withReceipt?: boolean }) => {
@@ -630,7 +583,7 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
     
     // Use selected date from DateNavigator (if in day view mode), otherwise use today
-    const dateToUse = expenseViewMode === 'day' ? expenseSelectedDate : getTodayLocal();
+    const dateToUse = expensePeriod.mode === 'day' ? expensePeriod.anchorDate : getTodayLocal();
     const now = new Date().toTimeString().slice(0, 5);
     
     // Find category name from categoryId
@@ -2108,7 +2061,7 @@ const Dashboard: React.FC = () => {
   const handleRadialDateSelect = (date: string) => {
     setShowRadialDateMenu(false);
     // Set the initial date for the expense form
-    setExpenseSelectedDate(date);
+    setExpensePeriod({ mode: 'day', anchorDate: date });
     // Open the appropriate expense form based on active tab
     if (activeTab === 'expenses') {
       setShowAddSheet(true);
@@ -2733,12 +2686,11 @@ const Dashboard: React.FC = () => {
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
             onNavigateToExpenseMonth={(month) => {
-              setExpenseSelectedDate(`${month}-01`);
-              setExpenseViewMode('month');
+              setExpensePeriod({ mode: 'month', anchorDate: `${month}-01` });
               setActiveTab('expenses');
             }}
             onNavigateToExpense={(expenseId) => {
-              setExpenseViewMode('all');
+              setExpensePeriod((current) => ({ mode: 'all', anchorDate: current.anchorDate }));
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
               // Clear focus highlight after animation completes
@@ -2759,47 +2711,31 @@ const Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'expenses' && (
-          <div className="flex flex-col gap-4">
-            {/* Date Navigator */}
-            <DateNavigator
-              selectedDate={expenseSelectedDate}
-              onDateChange={setExpenseSelectedDate}
-              viewMode={expenseViewMode}
-              onViewModeChange={setExpenseViewMode}
-              totalAmount={expenseTotalAmount}
-            />
-            <ExpensePeriodSummary
-              expenses={filteredExpensesForDisplay}
-              categories={categories}
-              viewMode={expenseViewMode}
-              selectedDate={expenseSelectedDate}
-              displayCurrency={displayCurrency}
-            />
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('expenseHistory')}</h2>
-            <ExpenseList
-              expenses={filteredExpensesForDisplay}
-              categories={categories}
-              cards={cards}
-              ewallets={ewallets}
-              banks={banks}
-              repayments={repayments}
-              transfers={transfers}
-              displayCurrency={displayCurrency}
-              onDisplayCurrencyChange={setDisplayCurrency}
-              onDelete={handleDeleteExpense}
-              onInlineUpdate={handleInlineUpdateExpense}
-              onBulkDelete={handleBulkDeleteExpenses}
-              onReloadRepayments={reloadRepayments}
-              onCreateCard={() => setActiveTab('paymentMethods')}
-              onCreateEWallet={() => setActiveTab('paymentMethods')}
-              onAddTransfer={handleAddTransfer}
-              focusExpenseId={focusExpenseId || undefined}
-              quickExpensePresets={quickExpensePresets}
-              onQuickExpenseAdd={handleQuickExpenseAdd}
-              onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
-              onManageQuickExpenses={() => setActiveTab('dashboard')}
-            />
-          </div>
+          <ExpensesTab
+            expenses={expenses}
+            categories={categories}
+            cards={cards}
+            ewallets={ewallets}
+            banks={banks}
+            repayments={repayments}
+            transfers={transfers}
+            period={expensePeriod}
+            onPeriodChange={setExpensePeriod}
+            displayCurrency={displayCurrency}
+            onDisplayCurrencyChange={setDisplayCurrency}
+            onDelete={handleDeleteExpense}
+            onInlineUpdate={handleInlineUpdateExpense}
+            onBulkDelete={handleBulkDeleteExpenses}
+            onReloadRepayments={reloadRepayments}
+            onCreateCard={() => setActiveTab('paymentMethods')}
+            onCreateEWallet={() => setActiveTab('paymentMethods')}
+            onAddTransfer={handleAddTransfer}
+            focusExpenseId={focusExpenseId || undefined}
+            quickExpensePresets={quickExpensePresets}
+            onQuickExpenseAdd={handleQuickExpenseAdd}
+            onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
+            onManageQuickExpenses={() => setActiveTab('dashboard')}
+          />
         )}
 
         {activeTab === 'incomes' && (
@@ -2813,7 +2749,7 @@ const Dashboard: React.FC = () => {
               onAddIncome={handleAddIncome}
               onInlineUpdate={handleInlineUpdateIncome}
               onDeleteIncome={handleDeleteIncome}
-              onOpenExpenseById={(id) => { setExpenseViewMode('all'); setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
+              onOpenExpenseById={(id) => { setExpensePeriod((current) => ({ mode: 'all', anchorDate: current.anchorDate })); setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
             />
           </Suspense>
         )}
@@ -3031,7 +2967,7 @@ const Dashboard: React.FC = () => {
               setActiveTab('paymentMethods');
             }}
             onAddTransfer={handleAddTransfer}
-            initialDate={expenseSelectedDate}
+            initialDate={expensePeriod.anchorDate}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
             lastUsedCurrency={lastUsedCurrency}
@@ -3149,7 +3085,7 @@ const Dashboard: React.FC = () => {
               closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
-            initialDate={expenseViewMode === 'day' ? expenseSelectedDate : undefined}
+            initialDate={expensePeriod.mode === 'day' ? expensePeriod.anchorDate : undefined}
             dateFormat={dateFormat}
             timeFormat={timeFormat}
             lastUsedCurrency={lastUsedCurrency}

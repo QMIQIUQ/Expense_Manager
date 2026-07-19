@@ -1,7 +1,8 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import DateNavigator, { ViewMode } from './DateNavigator';
+import DateNavigator from './DateNavigator';
+import type { ExpensePeriodSelection } from '../../types/expensePeriod';
 
 vi.mock('../../contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (key: string) => key, language: 'en' }),
@@ -14,58 +15,40 @@ beforeAll(() => {
   });
 });
 
-const renderNavigator = (
-  viewMode: ViewMode,
-  selectedDate: string,
-  onDateChange = vi.fn(),
-  onViewModeChange = vi.fn()
-) => render(
-  <DateNavigator
-    selectedDate={selectedDate}
-    onDateChange={onDateChange}
-    viewMode={viewMode}
-    onViewModeChange={onViewModeChange}
-  />
+const renderNavigator = (value: ExpensePeriodSelection, onChange = vi.fn()) => render(
+  <DateNavigator value={value} onChange={onChange} />
 );
 
 describe('DateNavigator', () => {
   test('opens the in-app date picker without relying on a native date input', () => {
-    const onDateChange = vi.fn();
-    const onViewModeChange = vi.fn();
-    renderNavigator('day', '2024-07-19', onDateChange, onViewModeChange);
+    const onChange = vi.fn();
+    renderNavigator({ mode: 'day', anchorDate: '2024-07-19' }, onChange);
 
     expect(document.querySelector('input[type="date"]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'selectPeriod' }));
-
     expect(screen.getByRole('dialog', { name: 'selectPeriod' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'July 8, 2024' }));
 
-    expect(onDateChange).toHaveBeenCalledWith('2024-07-08');
-    expect(onViewModeChange).toHaveBeenCalledWith('day');
+    expect(onChange).toHaveBeenCalledWith({ mode: 'day', anchorDate: '2024-07-08' });
     expect(screen.queryByRole('dialog', { name: 'selectPeriod' })).not.toBeInTheDocument();
   });
 
   test('selects a specific month and year from the month picker', () => {
-    const onDateChange = vi.fn();
-    const onViewModeChange = vi.fn();
-    renderNavigator('month', '2024-07-19', onDateChange, onViewModeChange);
+    const onChange = vi.fn();
+    renderNavigator({ mode: 'month', anchorDate: '2024-07-19' }, onChange);
 
     fireEvent.click(screen.getByRole('button', { name: 'selectPeriod' }));
     fireEvent.click(screen.getByRole('button', { name: 'previousYear' }));
     fireEvent.click(screen.getByRole('button', { name: 'Jan' }));
-
-    expect(onDateChange).toHaveBeenCalledWith('2023-01-01');
-    expect(onViewModeChange).toHaveBeenCalledWith('month');
+    expect(onChange).toHaveBeenCalledWith({ mode: 'month', anchorDate: '2023-01-01' });
   });
 
   test('closes with Escape and restores focus to the period button', async () => {
-    renderNavigator('day', '2024-07-19');
+    renderNavigator({ mode: 'day', anchorDate: '2024-07-19' });
     const trigger = screen.getByRole('button', { name: 'selectPeriod' });
 
     fireEvent.click(trigger);
-    expect(screen.getByRole('dialog', { name: 'selectPeriod' })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
-
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'selectPeriod' })).not.toBeInTheDocument();
       expect(trigger).toHaveFocus();
@@ -73,39 +56,48 @@ describe('DateNavigator', () => {
   });
 
   test('selects a year from the year grid', () => {
-    const onDateChange = vi.fn();
-    const onViewModeChange = vi.fn();
-    renderNavigator('year', '2024-07-19', onDateChange, onViewModeChange);
-
+    const onChange = vi.fn();
+    renderNavigator({ mode: 'year', anchorDate: '2024-07-19' }, onChange);
     fireEvent.click(screen.getByRole('button', { name: 'selectPeriod' }));
     fireEvent.click(screen.getByRole('button', { name: '2023' }));
-
-    expect(onDateChange).toHaveBeenCalledWith('2023-01-01');
-    expect(onViewModeChange).toHaveBeenCalledWith('year');
+    expect(onChange).toHaveBeenCalledWith({ mode: 'year', anchorDate: '2023-01-01' });
   });
 
   test('moves by the active period and clamps leap-day boundaries', () => {
-    const onDateChange = vi.fn();
-    const { rerender } = renderNavigator('month', '2024-01-31', onDateChange);
-
+    const onChange = vi.fn();
+    const { rerender } = renderNavigator({ mode: 'month', anchorDate: '2024-01-31' }, onChange);
     fireEvent.click(screen.getByRole('button', { name: 'nextPeriod' }));
-    expect(onDateChange).toHaveBeenLastCalledWith('2024-02-29');
+    expect(onChange).toHaveBeenLastCalledWith({ mode: 'month', anchorDate: '2024-02-29' });
 
-    rerender(
-      <DateNavigator
-        selectedDate="2024-02-29"
-        onDateChange={onDateChange}
-        viewMode="year"
-        onViewModeChange={vi.fn()}
-      />
-    );
+    rerender(<DateNavigator value={{ mode: 'year', anchorDate: '2024-02-29' }} onChange={onChange} />);
     fireEvent.click(screen.getByRole('button', { name: 'nextPeriod' }));
-    expect(onDateChange).toHaveBeenLastCalledWith('2025-02-28');
+    expect(onChange).toHaveBeenLastCalledWith({ mode: 'year', anchorDate: '2025-02-28' });
+  });
+
+  test('selects and confirms an inclusive custom range', () => {
+    const onChange = vi.fn();
+    renderNavigator({
+      mode: 'range',
+      anchorDate: '2024-07-19',
+      startDate: '2024-07-01',
+      endDate: '2024-07-19',
+    }, onChange);
+
+    fireEvent.click(screen.getByRole('button', { name: 'selectPeriod' }));
+    fireEvent.click(screen.getByRole('button', { name: 'July 10, 2024' }));
+    fireEvent.click(screen.getByRole('button', { name: 'July 15, 2024' }));
+    fireEvent.click(screen.getByRole('button', { name: 'confirm' }));
+
+    expect(onChange).toHaveBeenCalledWith({
+      mode: 'range',
+      anchorDate: '2024-07-15',
+      startDate: '2024-07-10',
+      endDate: '2024-07-15',
+    });
   });
 
   test('hides period arrows and the daily strip in all mode', () => {
-    renderNavigator('all', '2024-07-19');
-
+    renderNavigator({ mode: 'all', anchorDate: '2024-07-19' });
     expect(screen.queryByRole('button', { name: 'previousPeriod' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'nextPeriod' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '2024-07-19' })).not.toBeInTheDocument();

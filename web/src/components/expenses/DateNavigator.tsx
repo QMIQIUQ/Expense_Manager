@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
-import PeriodPickerModal, { type PeriodPickerMode } from './PeriodPickerModal';
+import PeriodPickerModal from './PeriodPickerModal';
+import type { ExpensePeriodMode, ExpensePeriodSelection } from '../../types/expensePeriod';
 
 // Debounce helper function
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
@@ -13,13 +14,12 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number):
   }) as T;
 }
 
-export type ViewMode = 'all' | 'day' | 'month' | 'year';
+export type ViewMode = ExpensePeriodMode;
+export type { ExpensePeriodSelection };
 
 interface DateNavigatorProps {
-  selectedDate: string; // YYYY-MM-DD format
-  onDateChange: (date: string) => void;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
+  value: ExpensePeriodSelection;
+  onChange: (value: ExpensePeriodSelection) => void;
   totalAmount?: number; // Optional: total amount for selected date/period
 }
 
@@ -29,8 +29,19 @@ const getLocale = (language: string): string => {
   return 'en';
 };
 
-const formatPeriodLabel = (dateStr: string, viewMode: ViewMode, language: string, allDatesLabel: string): string => {
+const formatPeriodLabel = (
+  dateStr: string,
+  viewMode: ViewMode,
+  language: string,
+  allDatesLabel: string,
+  range?: { startDate?: string; endDate?: string },
+): string => {
   if (viewMode === 'all') return allDatesLabel;
+  if (viewMode === 'range' && range?.startDate && range.endDate) {
+    const locale = getLocale(language);
+    const formatter = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+    return `${formatter.format(new Date(`${range.startDate}T00:00:00`))} – ${formatter.format(new Date(`${range.endDate}T00:00:00`))}`;
+  }
   const date = new Date(dateStr + 'T00:00:00');
   const locale = getLocale(language);
   if (viewMode === 'year') return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(date);
@@ -60,12 +71,12 @@ const shiftYearClamped = (date: Date, offset: number): Date => {
 };
 
 const DateNavigator: React.FC<DateNavigatorProps> = ({
-  selectedDate,
-  onDateChange,
-  viewMode,
-  onViewModeChange,
+  value,
+  onChange,
   totalAmount,
 }) => {
+  const selectedDate = value.anchorDate;
+  const viewMode = value.mode;
   const { t, language } = useLanguage();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLButtonElement>(null);
@@ -107,26 +118,36 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
   const handleDateClick = (date: Date) => {
     const dateStr = formatDateLocal(date);
-    onDateChange(dateStr);
-    // Auto-switch to day view when clicking a specific date
-    if (viewMode !== 'day') {
-      onViewModeChange('day');
-    }
+    onChange({ mode: 'day', anchorDate: dateStr });
   };
 
   const handlePeriodShift = (direction: -1 | 1) => {
     if (viewMode === 'all') return;
+    if (viewMode === 'range') {
+      const start = new Date(`${value.startDate || selectedDate}T00:00:00`);
+      const end = new Date(`${value.endDate || value.startDate || selectedDate}T00:00:00`);
+      const dayCount = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+      start.setDate(start.getDate() + direction * dayCount);
+      end.setDate(end.getDate() + direction * dayCount);
+      onChange({
+        mode: 'range',
+        anchorDate: formatDateLocal(end),
+        startDate: formatDateLocal(start),
+        endDate: formatDateLocal(end),
+      });
+      return;
+    }
     const current = new Date(selectedDate + 'T00:00:00');
     if (viewMode === 'day') {
       current.setDate(current.getDate() + direction);
-      onDateChange(formatDateLocal(current));
+      onChange({ mode: 'day', anchorDate: formatDateLocal(current) });
       return;
     }
-    onDateChange(formatDateLocal(
+    onChange({ mode: viewMode, anchorDate: formatDateLocal(
       viewMode === 'month'
         ? shiftMonthClamped(current, direction)
         : shiftYearClamped(current, direction)
-    ));
+    ) });
   };
 
   const isToday = (date: Date): boolean => {
@@ -179,15 +200,11 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     
     // Select the closest date if it's different from current
     if (closestDate && closestDate !== selectedDate) {
-      onDateChange(closestDate);
-      // Auto-switch to day view when scrolling to select a date
-      if (viewMode !== 'day') {
-        onViewModeChange('day');
-      }
+      onChange({ mode: 'day', anchorDate: closestDate });
     }
     
     isUserScrolling.current = false;
-  }, [selectedDate, onDateChange, viewMode, onViewModeChange]);
+  }, [selectedDate, onChange]);
   
   // Debounced scroll handler
   const debouncedScrollEndRef = useRef(debounce(() => handleScrollEnd(), 150));
@@ -233,9 +250,20 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     window.setTimeout(() => periodButtonRef.current?.focus(), 0);
   };
 
-  const handlePeriodSelect = (date: string, mode: PeriodPickerMode) => {
-    onDateChange(date);
-    onViewModeChange(mode);
+  const handleModeChange = (mode: ViewMode) => {
+    if (mode === 'range') {
+      const end = new Date(`${selectedDate}T00:00:00`);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6);
+      onChange({
+        mode,
+        anchorDate: selectedDate,
+        startDate: value.startDate || formatDateLocal(start),
+        endDate: value.endDate || selectedDate,
+      });
+      return;
+    }
+    onChange({ mode, anchorDate: selectedDate });
   };
 
   return (
@@ -262,7 +290,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
               aria-haspopup="dialog"
               aria-expanded={isPeriodPickerOpen}
             >
-              {formatPeriodLabel(selectedDate, viewMode, language, t('allDates'))}
+              {formatPeriodLabel(selectedDate, viewMode, language, t('allDates'), value)}
             </button>
             {viewMode !== 'all' && (
               <button
@@ -279,8 +307,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
           <button
             type="button"
             onClick={() => {
-              onDateChange(getTodayLocal());
-              onViewModeChange('day');
+              onChange({ mode: 'day', anchorDate: getTodayLocal() });
             }}
             style={{
               ...styles.todayBtn,
@@ -292,18 +319,18 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
           </button>
 
           <div style={styles.viewModeContainer}>
-            {(['all', 'day', 'month', 'year'] as ViewMode[]).map((mode) => (
+            {(['all', 'day', 'month', 'year', 'range'] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 type="button"
-                onClick={() => onViewModeChange(mode)}
+                onClick={() => handleModeChange(mode)}
                 style={{
                   ...styles.viewModeBtn,
                   ...(viewMode === mode ? styles.viewModeBtnActive : {}),
                 }}
                 aria-pressed={viewMode === mode}
               >
-                {t(mode === 'all' ? 'allBudgets' : mode === 'day' ? 'date' : mode)}
+                {t(mode === 'all' ? 'allBudgets' : mode === 'day' ? 'date' : mode === 'range' ? 'customRange' : mode)}
               </button>
             ))}
           </div>
@@ -349,10 +376,9 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
       <PeriodPickerModal
         isOpen={isPeriodPickerOpen}
-        value={selectedDate}
-        initialMode={viewMode}
+        value={value}
         onClose={closePeriodPicker}
-        onSelect={handlePeriodSelect}
+        onSelect={onChange}
       />
     </>
   );
