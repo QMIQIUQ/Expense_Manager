@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTodayLocal, formatDateLocal } from '../../utils/dateUtils';
+import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
+import PeriodPickerModal, { type PeriodPickerMode } from './PeriodPickerModal';
 
 // Debounce helper function
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
@@ -21,10 +23,40 @@ interface DateNavigatorProps {
   totalAmount?: number; // Optional: total amount for selected date/period
 }
 
-// Helper to format month/year for display
-const formatMonthYear = (dateStr: string): string => {
+const getLocale = (language: string): string => {
+  if (language === 'zh-CN') return 'zh-CN';
+  if (language === 'zh') return 'zh-TW';
+  return 'en';
+};
+
+const formatPeriodLabel = (dateStr: string, viewMode: ViewMode, language: string, allDatesLabel: string): string => {
+  if (viewMode === 'all') return allDatesLabel;
   const date = new Date(dateStr + 'T00:00:00');
-  return new Intl.DateTimeFormat('default', { month: 'short', year: 'numeric' }).format(date);
+  const locale = getLocale(language);
+  if (viewMode === 'year') return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(date);
+};
+
+const shiftMonthClamped = (date: Date, offset: number): Date => {
+  const day = date.getDate();
+  const shifted = new Date(date);
+  shifted.setDate(1);
+  shifted.setMonth(shifted.getMonth() + offset);
+  const lastDay = new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate();
+  shifted.setDate(Math.min(day, lastDay));
+  return shifted;
+};
+
+const shiftYearClamped = (date: Date, offset: number): Date => {
+  const month = date.getMonth();
+  const day = date.getDate();
+  const shifted = new Date(date);
+  shifted.setDate(1);
+  shifted.setFullYear(shifted.getFullYear() + offset);
+  shifted.setMonth(month);
+  const lastDay = new Date(shifted.getFullYear(), month + 1, 0).getDate();
+  shifted.setDate(Math.min(day, lastDay));
+  return shifted;
 };
 
 const DateNavigator: React.FC<DateNavigatorProps> = ({
@@ -34,10 +66,12 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   onViewModeChange,
   totalAmount,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLButtonElement>(null);
+  const periodButtonRef = useRef<HTMLButtonElement>(null);
   const [dates, setDates] = useState<Date[]>([]);
+  const [isPeriodPickerOpen, setIsPeriodPickerOpen] = useState(false);
 
   // Generate array of dates (7 days before and after selected date)
   useEffect(() => {
@@ -80,16 +114,19 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
     }
   };
 
-  const handlePrevDay = () => {
+  const handlePeriodShift = (direction: -1 | 1) => {
+    if (viewMode === 'all') return;
     const current = new Date(selectedDate + 'T00:00:00');
-    current.setDate(current.getDate() - 1);
-    onDateChange(formatDateLocal(current));
-  };
-
-  const handleNextDay = () => {
-    const current = new Date(selectedDate + 'T00:00:00');
-    current.setDate(current.getDate() + 1);
-    onDateChange(formatDateLocal(current));
+    if (viewMode === 'day') {
+      current.setDate(current.getDate() + direction);
+      onDateChange(formatDateLocal(current));
+      return;
+    }
+    onDateChange(formatDateLocal(
+      viewMode === 'month'
+        ? shiftMonthClamped(current, direction)
+        : shiftYearClamped(current, direction)
+    ));
   };
 
   const isToday = (date: Date): boolean => {
@@ -111,9 +148,6 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
 
   // Note: totalAmount is kept for API compatibility but not displayed per user request
   void totalAmount;
-  
-  // Hidden date input ref for direct date picker
-  const hiddenDateInputRef = useRef<HTMLInputElement>(null);
   
   // Track if scrolling is programmatic (from click) vs user-initiated
   const isUserScrolling = useRef(false);
@@ -180,6 +214,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
   
   // Add scroll event listener
   useEffect(() => {
+    if (viewMode !== 'day') return;
     const container = scrollContainerRef.current;
     if (!container) return;
     
@@ -191,145 +226,135 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [handleScroll]);
+  }, [handleScroll, viewMode]);
   
-  const handleMonthYearClick = () => {
-    // Directly trigger the hidden date input to open native date picker
-    if (hiddenDateInputRef.current) {
-      hiddenDateInputRef.current.showPicker?.();
-      hiddenDateInputRef.current.click();
-    }
+  const closePeriodPicker = () => {
+    setIsPeriodPickerOpen(false);
+    window.setTimeout(() => periodButtonRef.current?.focus(), 0);
+  };
+
+  const handlePeriodSelect = (date: string, mode: PeriodPickerMode) => {
+    onDateChange(date);
+    onViewModeChange(mode);
   };
 
   return (
-    <div style={styles.container}>
-      {/* Hidden date input for native date picker */}
-      <input
-        ref={hiddenDateInputRef}
-        type="date"
-        value={selectedDate}
-        onChange={(e) => {
-          if (e.target.value) {
-            onDateChange(e.target.value);
-          }
-        }}
-        style={styles.hiddenDateInput}
-        tabIndex={-1}
-      />
-      
-      {/* Header Row: Month/Year display + Today button + View Mode Toggle */}
-      <div style={styles.headerRow}>
-        {/* Month/Year Display - Clickable to open date picker */}
-        <button 
-          onClick={handleMonthYearClick} 
-          style={styles.monthYearBtn}
-          aria-label="Select date"
-        >
-          {formatMonthYear(selectedDate)}
-        </button>
-        
-        {/* Today Button */}
-        <button
-          onClick={() => {
-            onDateChange(getTodayLocal());
-            onViewModeChange('day');
-          }}
-          style={{
-            ...styles.todayBtn,
-            ...(selectedDate === getTodayLocal() ? styles.todayBtnActive : {}),
-          }}
-          aria-label={t('today')}
-        >
-          📅 {t('today')}
-        </button>
-        
-        {/* View Mode Toggle */}
-        <div style={styles.viewModeContainer}>
-          <button
-            onClick={() => onViewModeChange('all')}
-            style={{
-              ...styles.viewModeBtn,
-              ...(viewMode === 'all' ? styles.viewModeBtnActive : {}),
-            }}
-          >
-            {t('allBudgets')}
-          </button>
-          <button
-            onClick={() => onViewModeChange('day')}
-            style={{
-              ...styles.viewModeBtn,
-              ...(viewMode === 'day' ? styles.viewModeBtnActive : {}),
-            }}
-          >
-            {t('date')}
-          </button>
-          <button
-            onClick={() => onViewModeChange('month')}
-            style={{
-              ...styles.viewModeBtn,
-              ...(viewMode === 'month' ? styles.viewModeBtnActive : {}),
-            }}
-          >
-            {t('month')}
-          </button>
-          <button
-            onClick={() => onViewModeChange('year')}
-            style={{
-              ...styles.viewModeBtn,
-              ...(viewMode === 'year' ? styles.viewModeBtnActive : {}),
-            }}
-          >
-            {t('year')}
-          </button>
-        </div>
-      </div>
+    <>
+      <div style={styles.container}>
+        <div style={styles.headerRow}>
+          <div style={styles.periodNavigation}>
+            {viewMode !== 'all' && (
+              <button
+                type="button"
+                onClick={() => handlePeriodShift(-1)}
+                style={styles.navArrow}
+                aria-label={t('previousPeriod')}
+              >
+                <ChevronLeftIcon size={18} />
+              </button>
+            )}
+            <button
+              ref={periodButtonRef}
+              type="button"
+              onClick={() => setIsPeriodPickerOpen(true)}
+              style={styles.monthYearBtn}
+              aria-label={t('selectPeriod')}
+              aria-haspopup="dialog"
+              aria-expanded={isPeriodPickerOpen}
+            >
+              {formatPeriodLabel(selectedDate, viewMode, language, t('allDates'))}
+            </button>
+            {viewMode !== 'all' && (
+              <button
+                type="button"
+                onClick={() => handlePeriodShift(1)}
+                style={styles.navArrow}
+                aria-label={t('nextPeriod')}
+              >
+                <ChevronRightIcon size={18} />
+              </button>
+            )}
+          </div>
 
-      {/* Horizontal Date Scroll */}
-      <div style={styles.dateScrollWrapper}>
-        <button onClick={handlePrevDay} style={styles.navArrow} aria-label="Previous day">
-          ‹
-        </button>
-        
-        <div ref={scrollContainerRef} style={styles.dateScrollContainer}>
-          <div style={styles.dateScroll}>
-            {dates.map((date) => {
-              const dateStr = formatDateLocal(date);
-              const isTodayDate = isToday(date);
-              const isSelectedDate = isSelected(date);
-              
-              return (
-                <button
-                  type="button"
-                  key={dateStr}
-                  ref={isSelectedDate ? todayRef : null}
-                  data-date={dateStr}
-                  onClick={() => handleDateClick(date)}
-                  style={{
-                    ...styles.dateItem,
-                    ...(isSelectedDate ? styles.dateItemToday : styles.dateItemInactive),
-                    border: 'none',
-                    background: isSelectedDate ? 'var(--accent-light, #e8f0fe)' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                  aria-label={`${isTodayDate ? t('today') + ' ' : ''}${dateStr}`}
-                  aria-pressed={isSelectedDate}
-                >
-                  <div style={styles.dateDay}>{getWeekdayShort(date)}</div>
-                  <div style={styles.dateNumber}>{date.getDate()}</div>
-                  {isTodayDate && (
-                    <div style={styles.todayLabel}>{t('today')}</div>
-                  )}
-                </button>
-              );
-            })}
+          <button
+            type="button"
+            onClick={() => {
+              onDateChange(getTodayLocal());
+              onViewModeChange('day');
+            }}
+            style={{
+              ...styles.todayBtn,
+              ...(selectedDate === getTodayLocal() && viewMode === 'day' ? styles.todayBtnActive : {}),
+            }}
+            aria-label={t('today')}
+          >
+            📅 {t('today')}
+          </button>
+
+          <div style={styles.viewModeContainer}>
+            {(['all', 'day', 'month', 'year'] as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => onViewModeChange(mode)}
+                style={{
+                  ...styles.viewModeBtn,
+                  ...(viewMode === mode ? styles.viewModeBtnActive : {}),
+                }}
+                aria-pressed={viewMode === mode}
+              >
+                {t(mode === 'all' ? 'allBudgets' : mode === 'day' ? 'date' : mode)}
+              </button>
+            ))}
           </div>
         </div>
-        
-        <button onClick={handleNextDay} style={styles.navArrow} aria-label="Next day">
-          ›
-        </button>
+
+        {viewMode === 'day' && (
+          <div style={styles.dateScrollWrapper}>
+            <div ref={scrollContainerRef} style={styles.dateScrollContainer}>
+              <div style={styles.dateScroll}>
+                {dates.map((date) => {
+                  const dateStr = formatDateLocal(date);
+                  const isTodayDate = isToday(date);
+                  const isSelectedDate = isSelected(date);
+
+                  return (
+                    <button
+                      type="button"
+                      key={dateStr}
+                      ref={isSelectedDate ? todayRef : null}
+                      data-date={dateStr}
+                      onClick={() => handleDateClick(date)}
+                      style={{
+                        ...styles.dateItem,
+                        ...(isSelectedDate ? styles.dateItemToday : styles.dateItemInactive),
+                        border: 'none',
+                        background: isSelectedDate ? 'var(--accent-light, #e8f0fe)' : 'transparent',
+                        cursor: 'pointer',
+                      }}
+                      aria-label={`${isTodayDate ? t('today') + ' ' : ''}${dateStr}`}
+                      aria-pressed={isSelectedDate}
+                    >
+                      <div style={styles.dateDay}>{getWeekdayShort(date)}</div>
+                      <div style={styles.dateNumber}>{date.getDate()}</div>
+                      {isTodayDate && <div style={styles.todayLabel}>{t('today')}</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      <PeriodPickerModal
+        isOpen={isPeriodPickerOpen}
+        value={selectedDate}
+        initialMode={viewMode}
+        onClose={closePeriodPicker}
+        onSelect={handlePeriodSelect}
+      />
+    </>
   );
 };
 
@@ -344,24 +369,22 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 10,
     width: '100%',
   },
-  hiddenDateInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: 0,
-    height: 0,
-    overflow: 'hidden',
-    pointerEvents: 'none',
-    zIndex: 9999,
-  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '8px',
     flexWrap: 'wrap',
   },
+  periodNavigation: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    flex: 1,
+    minWidth: 0,
+  },
   monthYearBtn: {
-    padding: '6px 12px',
+    minHeight: '44px',
+    padding: '6px 10px',
     fontSize: '13px',
     fontWeight: '600',
     color: 'var(--accent-primary)',
@@ -370,8 +393,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+    flex: 1,
   },
   todayBtn: {
+    minHeight: '44px',
     padding: '6px 10px',
     fontSize: '12px',
     fontWeight: '500',
@@ -394,10 +419,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-secondary, #f8f9fa)',
     borderRadius: '6px',
     padding: '2px',
-    flex: 1,
+    flexBasis: '100%',
   },
   viewModeBtn: {
     flex: 1,
+    minHeight: '38px',
     padding: '4px 6px',
     border: '1px solid var(--border-color, #e9ecef)',
     background: 'transparent',
@@ -417,8 +443,14 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
+    marginTop: '8px',
   },
   navArrow: {
+    minWidth: '44px',
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     background: 'var(--bg-secondary, #f8f9fa)',
     border: '1px solid var(--border-color, #e9ecef)',
     color: 'var(--text-secondary)',

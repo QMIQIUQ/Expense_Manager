@@ -1,9 +1,10 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useId, useMemo, useState } from 'react';
 import type { Category, CurrencyCode, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource, getExpenseBaseCurrency } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ChevronDownIcon, ChevronUpIcon } from '../icons';
 
 interface ExpensePeriodSummaryProps {
   expenses: Expense[];
@@ -46,6 +47,8 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
   displayCurrency,
 }) => {
   const { t, language } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const detailsId = useId();
 
   const baseCurrency = getExpenseBaseCurrency(expenses[0] || { baseCurrency: DEFAULT_BASE_CURRENCY });
   const targetCurrency = displayCurrency || baseCurrency;
@@ -115,57 +118,74 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
           <h3 style={styles.title}>{getPeriodLabel(viewMode, selectedDate, language)}</h3>
           <span style={styles.subtitle}>{t('totalExpenses')}</span>
         </div>
-        <strong style={styles.total}>{formatMoney(total, targetCurrency)}</strong>
+        <div style={styles.summaryActions}>
+          <strong style={styles.total}>{formatMoney(total, targetCurrency)}</strong>
+          <button
+            type="button"
+            style={styles.toggleButton}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            aria-expanded={isExpanded}
+            aria-controls={detailsId}
+            aria-label={isExpanded ? t('collapseSummary') : t('expandSummary')}
+            title={isExpanded ? t('collapseSummary') : t('expandSummary')}
+          >
+            {isExpanded ? <ChevronUpIcon size={20} /> : <ChevronDownIcon size={20} />}
+          </button>
+        </div>
       </div>
 
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <span style={styles.statLabel}>{t('totalExpensesCount')}</span>
-          <strong style={styles.statValue}>{expenses.length}</strong>
-        </div>
-        <div style={styles.statCard}>
-          <span style={styles.statLabel}>{t('dailyAverage')}</span>
-          <strong style={styles.statValue}>{formatMoney(averageDaily, targetCurrency)}</strong>
-        </div>
-      </div>
+      {isExpanded && (
+        <div id={detailsId}>
+          <div style={styles.statsGrid}>
+            <div style={styles.statCard}>
+              <span style={styles.statLabel}>{t('totalExpensesCount')}</span>
+              <strong style={styles.statValue}>{expenses.length}</strong>
+            </div>
+            <div style={styles.statCard}>
+              <span style={styles.statLabel}>{t('dailyAverage')}</span>
+              <strong style={styles.statValue}>{formatMoney(averageDaily, targetCurrency)}</strong>
+            </div>
+          </div>
 
-      {categoryTotals.length > 0 && (
-        <div style={styles.categorySection}>
-          <h4 style={styles.sectionTitle}>{t('categoryDistribution')}</h4>
-          <div style={styles.categoryList}>
-            {categoryTotals.slice(0, 6).map((category) => (
-              <div key={category.name} style={styles.categoryRow}>
-                <span style={styles.categoryName}>
-                  <span>{category.icon}</span>
-                  <span>{category.name}</span>
-                </span>
-                <span style={styles.categoryAmount}>
-                  {formatMoney(category.amount, targetCurrency)} · {category.percentage.toFixed(1)}%
-                </span>
+          {categoryTotals.length > 0 && (
+            <div style={styles.categorySection}>
+              <h4 style={styles.sectionTitle}>{t('categoryDistribution')}</h4>
+              <div style={styles.categoryList}>
+                {categoryTotals.slice(0, 6).map((category) => (
+                  <div key={category.name} style={styles.categoryRow}>
+                    <span style={styles.categoryName}>
+                      <span>{category.icon}</span>
+                      <span>{category.name}</span>
+                    </span>
+                    <span style={styles.categoryAmount}>
+                      {formatMoney(category.amount, targetCurrency)} · {category.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {viewMode === 'year' && (
+            <div style={styles.chartSection}>
+              <h4 style={styles.sectionTitle}>{t('monthlyTrend')}</h4>
+              <div style={styles.chart}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyTotals} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 10 }} width={48} />
+                    <Tooltip formatter={(value: number) => formatMoney(value, targetCurrency)} />
+                    <Bar dataKey="amount" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {expenses.length === 0 && <p style={styles.empty}>{t('noExpenses')}</p>}
         </div>
       )}
-
-      {viewMode === 'year' && (
-        <div style={styles.chartSection}>
-          <h4 style={styles.sectionTitle}>{t('monthlyTrend')}</h4>
-          <div style={styles.chart}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyTotals} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 10 }} width={48} />
-                <Tooltip formatter={(value: number) => formatMoney(value, targetCurrency)} />
-                <Bar dataKey="amount" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {expenses.length === 0 && <p style={styles.empty}>{t('noExpenses')}</p>}
     </section>
   );
 };
@@ -180,7 +200,21 @@ const styles: Record<string, React.CSSProperties> = {
   titleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' },
   title: { margin: 0, color: 'var(--text-primary)', fontSize: '18px' },
   subtitle: { color: 'var(--text-secondary)', fontSize: '12px' },
+  summaryActions: { display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' },
   total: { color: 'var(--error-text, #dc3545)', fontSize: '24px' },
+  toggleButton: {
+    minWidth: '44px',
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'var(--accent-primary)',
+    background: 'var(--accent-light, #e8f0fe)',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '9px',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+  },
   statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: '14px' },
   statCard: { background: 'var(--bg-secondary, #f8f9fa)', borderRadius: '8px', padding: '10px 12px' },
   statLabel: { display: 'block', color: 'var(--text-secondary)', fontSize: '12px' },

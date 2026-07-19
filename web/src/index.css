@@ -5788,3 +5788,161 @@ button:not(:disabled):hover {
   border-color: var(--accent-primary) !important;
   box-shadow: 0 4px 12px var(--shadow-md);
 }
+
+/* Cross-platform expense period picker */
+.period-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.period-picker-modal {
+  width: min(100%, 390px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--modal-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px var(--shadow-md);
+}
+
+.period-picker-header,
+.period-picker-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.period-picker-header {
+  min-height: 60px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.period-picker-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.period-picker-icon-button,
+.period-picker-navigation button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  touch-action: manipulation;
+}
+
+.period-picker-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 10px 16px 0;
+}
+
+.period-picker-tabs button,
+.period-picker-month-grid button,
+.period-picker-year-grid button,
+.period-picker-calendar button {
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.period-picker-tabs button.active,
+.period-picker-month-grid button.selected,
+.period-picker-year-grid button.selected,
+.period-picker-calendar button.selected {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+}
+
+.period-picker-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.period-picker-navigation {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.period-picker-navigation strong {
+  flex: 1;
+  text-align: center;
+}
+
+.period-picker-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.period-picker-calendar button {
+  min-width: 0;
+  padding: 0;
+}
+
+.period-picker-weekday,
+.period-picker-empty {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.period-picker-weekday {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.period-picker-month-grid,
+.period-picker-year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .period-picker-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .period-picker-modal {
+    width: 100%;
+    max-height: 92vh;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+  }
+
+  .period-picker-content {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}

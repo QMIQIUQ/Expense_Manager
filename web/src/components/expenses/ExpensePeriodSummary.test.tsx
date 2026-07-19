@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { Expense } from '../../types';
 import ExpensePeriodSummary from './ExpensePeriodSummary';
@@ -38,7 +38,7 @@ const expense: Expense = {
 };
 
 describe('ExpensePeriodSummary', () => {
-  test('preserves the original amount when the selected display currency matches it', () => {
+  test('starts collapsed and expands the detailed overview on demand', () => {
     render(
       <ExpensePeriodSummary
         expenses={[expense]}
@@ -51,6 +51,14 @@ describe('ExpensePeriodSummary', () => {
 
     expect(screen.getByText('$75.00')).toBeInTheDocument();
     expect(screen.queryByText('$74.98')).not.toBeInTheDocument();
+    expect(screen.queryByText('$2.42')).not.toBeInTheDocument();
+    expect(screen.queryByText('Food')).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole('button', { name: 'expandSummary' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'collapseSummary' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('$2.42')).toBeInTheDocument();
     expect(screen.getByText('Food')).toBeInTheDocument();
   });
