@@ -8,6 +8,7 @@ import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBas
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import type { CurrencyCode } from '../../types';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
+import { chartColors } from '../../styles/chartPalette';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -31,7 +32,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
   }, []);
   
   // Color palette for pie chart
-  const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+  const COLORS = chartColors;
   
   // Memoize billing cycle calculation (only recalculates when billingCycleDay changes)
   const { cycleStart, cycleEnd } = React.useMemo(() => {

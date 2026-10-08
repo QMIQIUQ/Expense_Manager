@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import CatIllustration from '../components/CatIllustration';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -154,6 +155,7 @@ const Login: React.FC = () => {
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
+            <CatIllustration variant="peek" className="login-cat-illustration" />
             <div>
               <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {t('appTitle')}

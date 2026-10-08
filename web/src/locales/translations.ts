@@ -511,6 +511,11 @@ export const translations = {
 
   // Appearance
   appearance: { en: 'Appearance', zh: '外觀', 'zh-CN': '外观' },
+  themeLabel: { en: 'Theme', zh: '主題', 'zh-CN': '主题' },
+  themeLight: { en: 'Light', zh: '淺色', 'zh-CN': '浅色' },
+  themeDark: { en: 'Dark', zh: '深色', 'zh-CN': '深色' },
+  themeSystem: { en: 'Follow system', zh: '跟隨系統', 'zh-CN': '跟随系统' },
+  themeCat: { en: 'Warm Kitty', zh: '暖心小貓', 'zh-CN': '暖心小猫' },
   fontFamily: { en: 'Font Family', zh: '字體', 'zh-CN': '字体' },
   fontSize: { en: 'Font Size', zh: '字體大小', 'zh-CN': '字体大小' },
   system: { en: 'System', zh: '系統預設', 'zh-CN': '系统默认' },

@@ -49,6 +49,7 @@ import ImportExportModal from '../components/importexport/ImportExportModal';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import NotificationBell from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
+import CatIllustration from '../components/CatIllustration';
 import { offlineQueue } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
@@ -2121,7 +2122,10 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
-          <span className="header-logo">💰</span>
+          <span className="header-logo">
+            <span className="default-header-logo">💰</span>
+            <CatIllustration variant="peek" className="cat-header-illustration" />
+          </span>
           <div className="header-text">
             <h1 className="header-title">{t('appTitleShort')}</h1>
             <p className="header-subtitle">
@@ -2155,7 +2159,7 @@ const Dashboard: React.FC = () => {
             </button>
             {showHamburgerMenu && (
               <div
-                className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
+                className="dashboard-menu-panel absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg shadow-xl border py-2 z-[9999]"
                 style={{
                   top: '100%',
                   minWidth: '240px',
@@ -2252,6 +2256,7 @@ const Dashboard: React.FC = () => {
                   </button>
                   {openAppearanceSection && (
                     <div id="hamburger-appearance-section" className="mt-2 space-y-3">
+                      <ThemeToggle />
                       {/* Font Family */}
                       <div>
                         <div className="text-xs text-gray-500 mb-1 px-1">{t('fontFamily')}</div>
@@ -2580,11 +2585,6 @@ const Dashboard: React.FC = () => {
                       </button>
                     )}
                   </div>
-                </div>
-
-                {/* Theme Toggle */}
-                <div className="px-4 py-2 border-t border-gray-200">
-                  <ThemeToggle />
                 </div>
 
                 {/* Logout */}
