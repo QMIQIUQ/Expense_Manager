@@ -73,4 +73,42 @@ describe('ExpensesTab shared result model', () => {
     expect(screen.getByTestId('expense-list')).toHaveTextContent('Old receipt');
     expect(screen.getByTestId('expense-list')).not.toHaveTextContent('New receipt');
   });
+
+  test('applies a dashboard category with its selected date range', () => {
+    render(
+      <ExpensesTab
+        expenses={[
+          makeExpense('food-in-cycle', '2024-07-15', 'Food in cycle'),
+          { ...makeExpense('travel-in-cycle', '2024-07-16', 'Travel in cycle'), category: 'Travel' },
+          makeExpense('food-outside-cycle', '2024-08-15', 'Food outside cycle'),
+        ]}
+        categories={[]}
+        cards={[]}
+        ewallets={[]}
+        banks={[]}
+        repayments={[]}
+        transfers={[]}
+        period={{ mode: 'range', anchorDate: '2024-08-14', startDate: '2024-07-15', endDate: '2024-08-14' }}
+        onPeriodChange={vi.fn()}
+        initialCategory="Food"
+        displayCurrency="MYR"
+        onDisplayCurrencyChange={vi.fn()}
+        onDelete={vi.fn()}
+        onInlineUpdate={vi.fn()}
+        onBulkDelete={vi.fn()}
+        onReloadRepayments={vi.fn()}
+        onCreateCard={vi.fn()}
+        onCreateEWallet={vi.fn()}
+        onAddTransfer={vi.fn()}
+        quickExpensePresets={[]}
+        onQuickExpenseAdd={vi.fn()}
+        onQuickExpensePresetsChange={vi.fn()}
+        onManageQuickExpenses={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('summary-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('expense-list')).toHaveTextContent('Food in cycle');
+    expect(screen.getByText('Food ×')).toBeInTheDocument();
+  });
 });

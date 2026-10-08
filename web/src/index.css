@@ -1727,6 +1727,9 @@ button:not(:disabled):hover {
   flex-direction: column;
   gap: 6px;
   padding: 12px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
   background: var(--card-bg);
   border-radius: 8px;
   border: 1px solid var(--border-color);

@@ -76,7 +76,7 @@ const renderWidget = (
     case 'spending-trend':
       return <SpendingTrendWidget {...propsWithSize} />;
     case 'category-breakdown':
-      return <CategoryBreakdownWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} />;
+      return <CategoryBreakdownWidget {...propsWithSize} />;
     case 'recent-expenses':
       return <RecentExpensesWidget {...propsWithSize} onViewAll={onNavigateToExpenses} onNavigateToExpense={onNavigateToExpense} />;
     case 'budget-progress':

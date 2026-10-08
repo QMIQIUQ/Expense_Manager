@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import CategoryBreakdownWidget from './CategoryBreakdownWidget';
 import ExpenseChartWidget from './ExpenseChartWidget';
@@ -104,6 +104,24 @@ describe('Dashboard widgets respect billing cycle day', () => {
     expect(screen.getByText('Travel')).toBeInTheDocument();
     expect(screen.getByText('RM30.00')).toBeInTheDocument();
     expect(screen.queryByText('Other')).not.toBeInTheDocument();
+  });
+
+  test('CategoryBreakdownWidget passes the selected category and billing-cycle dates', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-07-20T12:00:00Z'));
+    const onNavigateToExpenseCategory = vi.fn();
+
+    render(
+      <CategoryBreakdownWidget
+        {...commonProps}
+        expenses={[createExpense({ category: 'Food', amount: 100, date: '2024-07-16' })]}
+        billingCycleDay={15}
+        onNavigateToExpenseCategory={onNavigateToExpenseCategory}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Food/ }));
+    expect(onNavigateToExpenseCategory).toHaveBeenCalledWith('Food', '2024-07-15', '2024-08-14');
   });
 
   test('ExpenseChartWidget aggregates only in-cycle expenses', () => {

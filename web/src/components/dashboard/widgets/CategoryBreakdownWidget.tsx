@@ -6,22 +6,23 @@ import { getBillingCycleRange } from './utils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenses, displayCurrency }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenseCategory, displayCurrency }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (onNavigateToExpenses && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onNavigateToExpenses();
-    }
-  };
 
   const { cycleStart, cycleEnd } = React.useMemo(
     () => getBillingCycleRange(billingCycleDay ?? 1),
     [billingCycleDay]
   );
+
+  const openCategory = (category: string) => {
+    onNavigateToExpenseCategory?.(
+      category,
+      cycleStart.toISOString().slice(0, 10),
+      cycleEnd.toISOString().slice(0, 10),
+    );
+  };
 
   const filteredExpenses = React.useMemo(() => {
     return expenses.filter((exp) => {
@@ -101,13 +102,12 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
       {categories.map(([category, amount]) => {
         const percentage = total > 0 ? (amount / total) * 100 : 0;
         return (
-          <div
+          <button
+            type="button"
             key={category}
-            className={`category-item ${onNavigateToExpenses ? 'clickable' : ''}`}
-            onClick={onNavigateToExpenses}
-            onKeyDown={handleKeyDown}
-            role={onNavigateToExpenses ? 'button' : undefined}
-            tabIndex={onNavigateToExpenses ? 0 : undefined}
+            className={`category-item ${onNavigateToExpenseCategory ? 'clickable' : ''}`}
+            onClick={() => openCategory(category)}
+            disabled={!onNavigateToExpenseCategory}
           >
             <div className="category-info">
               <span className="category-name">{category}</span>
@@ -122,7 +122,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
             {size !== 'small' && (
               <span className="category-percentage">{percentage.toFixed(1)}%</span>
             )}
-          </div>
+          </button>
         );
       })}
 

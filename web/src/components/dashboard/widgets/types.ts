@@ -20,6 +20,7 @@ export interface WidgetProps {
   onNavigateToScheduledPayment?: (scheduledPaymentId: string) => void;
   // Tab navigation callbacks
   onNavigateToExpenses?: () => void;
+  onNavigateToExpenseCategory?: (category: string, startDate: string, endDate: string) => void;
   onNavigateToExpenseMonth?: (month: string) => void;
   onNavigateToIncomes?: () => void;
   onNavigateToBudgets?: () => void;

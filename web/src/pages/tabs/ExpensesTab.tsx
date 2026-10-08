@@ -28,6 +28,7 @@ interface ExpensesTabProps {
   transfers: Transfer[];
   period: ExpensePeriodSelection;
   onPeriodChange: (period: ExpensePeriodSelection) => void;
+  initialCategory?: string;
   displayCurrency: CurrencyCode;
   onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   onDelete: (id: string) => void;
@@ -54,6 +55,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   transfers,
   period,
   onPeriodChange,
+  initialCategory = '',
   displayCurrency,
   onDisplayCurrencyChange,
   onDelete,
@@ -70,7 +72,10 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   onManageQuickExpenses,
 }) => {
   const { t } = useLanguage();
-  const [filters, setFilters] = useState<ExpenseFilterState>(DEFAULT_EXPENSE_FILTERS);
+  const [filters, setFilters] = useState<ExpenseFilterState>(() => ({
+    ...DEFAULT_EXPENSE_FILTERS,
+    category: initialCategory,
+  }));
 
   const periodExpenses = useMemo(
     () => filterExpensesByPeriod(expenses, period),

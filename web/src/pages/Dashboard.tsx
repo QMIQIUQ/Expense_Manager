@@ -110,6 +110,7 @@ const Dashboard: React.FC = () => {
     mode: 'day',
     anchorDate: getTodayLocal(),
   });
+  const [expenseCategory, setExpenseCategory] = useState('');
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
@@ -195,6 +196,10 @@ const Dashboard: React.FC = () => {
   };
   
   //#region Effects
+  useEffect(() => {
+    if (activeTab !== 'expenses') setExpenseCategory('');
+  }, [activeTab]);
+
   // Track offline queue count
   useEffect(() => {
     const updateQueueCount = () => {
@@ -2708,6 +2713,11 @@ const Dashboard: React.FC = () => {
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
             onNavigateToExpenses={() => setActiveTab('expenses')}
+            onNavigateToExpenseCategory={(category, startDate, endDate) => {
+              setExpenseCategory(category);
+              setExpensePeriod({ mode: 'range', anchorDate: endDate, startDate, endDate });
+              setActiveTab('expenses');
+            }}
             onNavigateToExpenseMonth={(month) => {
               setExpensePeriod({ mode: 'month', anchorDate: `${month}-01` });
               setActiveTab('expenses');
@@ -2744,6 +2754,7 @@ const Dashboard: React.FC = () => {
             transfers={transfers}
             period={expensePeriod}
             onPeriodChange={setExpensePeriod}
+            initialCategory={expenseCategory}
             displayCurrency={displayCurrency}
             onDisplayCurrencyChange={setDisplayCurrency}
             onDelete={handleDeleteExpense}
