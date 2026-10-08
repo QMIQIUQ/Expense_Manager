@@ -54,6 +54,14 @@
   /* Chip colors - keep original colors in light mode */
   --chip-bg: #e0e7ff;
   --chip-text: #4338ca;
+  --chart-1: #6366f1;
+  --chart-2: #f43f5e;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #8b5cf6;
+  --chart-6: #ec4899;
+  --chart-7: #14b8a6;
+  --chart-8: #f97316;
 }
 
 .dark {

@@ -4,11 +4,12 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getBillingCycleRange } from './utils';
 import { sortCategoryEntries } from '../../../utils/categoryOrder';
-
-const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+import { chartColors } from '../../../styles/chartPalette';
+import CatIllustration from '../../CatIllustration';
 
 const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
+  const COLORS = chartColors;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
   const [containerHeight, setContainerHeight] = React.useState(300);
@@ -118,7 +119,8 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
   if (pieData.length === 0) {
     return (
       <div className="widget-empty-state">
-        <span>📊</span>
+        <CatIllustration variant="sleep" className="cat-widget-illustration" />
+        <span className="default-widget-empty-icon">📊</span>
         <p>{t('noExpenseData')}</p>
       </div>
     );

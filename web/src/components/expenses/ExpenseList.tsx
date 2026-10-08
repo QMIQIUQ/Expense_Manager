@@ -23,6 +23,7 @@ import CurrencySelector from '../common/CurrencySelector';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
+import CatIllustration from '../CatIllustration';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -876,6 +877,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
       {groupedExpenses.length === 0 ? (
         <div style={styles.noData}>
+          <CatIllustration variant="sleep" className="cat-empty-illustration" />
           <p>{hasActiveFilters ? t('noFilteredExpenses') : t('noExpenses')}</p>
           {hasActiveFilters && onClearFilters && (
             <button type="button" className="btn btn-secondary" onClick={onClearFilters}>

@@ -1,0 +1,286 @@
+.cat-illustration {
+  display: none;
+}
+
+.theme-cat .cat-illustration {
+  display: block;
+}
+
+.theme-cat .default-widget-empty-icon {
+  display: none;
+}
+
+.theme-cat {
+  color-scheme: light;
+  --bg-primary: #fff9f4;
+  --bg-secondary: #fff6f2;
+  --bg-tertiary: #f7e8e6;
+  --bg-quaternary: #f4dde1;
+  --text-primary: #3e3340;
+  --text-secondary: #6b5b62;
+  --text-tertiary: #76656d;
+  --border-color: #e8d5d9;
+  --border-hover: #d8b9c1;
+  --divider-color: #e8d5d9;
+  --shadow: rgba(116, 65, 76, 0.08);
+  --shadow-sm: rgba(116, 65, 76, 0.08);
+  --shadow-md: rgba(116, 65, 76, 0.13);
+  --shadow-lg: rgba(116, 65, 76, 0.18);
+  --card-bg: #fffefc;
+  --input-bg: #fffdfa;
+  --select-bg: #fffdfa;
+  --modal-bg: #fffefc;
+  --icon-bg: #f9e2e9;
+  --button-hover: rgba(162, 69, 98, 0.09);
+  --hover-bg: rgba(162, 69, 98, 0.07);
+  --disabled-bg: #f4edeb;
+  --accent-primary: #a24562;
+  --accent-secondary: #c46f87;
+  --accent-hover: #81314c;
+  --accent-light: #f9e2e9;
+  --tab-active-bg: linear-gradient(135deg, #a24562, #b96178);
+  --tab-inactive-bg: #fff8f5;
+  --tab-inactive-text: #6b5b62;
+  --tab-active-text: #fff;
+  --tab-hover-bg: #f9e2e9;
+  --chip-bg: #f9e2e9;
+  --chip-text: #81314c;
+  --chart-1: #a24562;
+  --chart-2: #7c9776;
+  --chart-3: #d59472;
+  --chart-4: #8b739d;
+  --chart-5: #c46f87;
+  --chart-6: #6e9a9a;
+  --chart-7: #c28b53;
+  --chart-8: #927f8e;
+}
+
+.theme-cat body {
+  background-color: var(--bg-secondary);
+}
+
+.theme-cat ::selection {
+  background: #f1cbd5;
+  color: var(--text-primary);
+}
+
+.theme-cat .dashboard-header-modern {
+  background: linear-gradient(110deg, #fffefc 55%, #fff0eb);
+  border-radius: 20px;
+  box-shadow: 0 6px 22px var(--shadow);
+  position: relative;
+}
+
+.theme-cat .dashboard-header-modern::after {
+  background: url('./assets/paw.svg') center / contain no-repeat;
+  content: '';
+  height: 36px;
+  opacity: .32;
+  pointer-events: none;
+  position: absolute;
+  right: 100px;
+  top: 12px;
+  transform: rotate(18deg);
+  width: 36px;
+}
+
+.theme-cat .default-header-logo {
+  display: none;
+}
+
+.theme-cat .cat-header-illustration {
+  display: block;
+  height: 48px;
+  width: 64px;
+}
+
+.theme-cat .header-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-cat .login-cat-illustration {
+  flex: 0 0 auto;
+  height: 64px;
+  width: 84px;
+}
+
+.theme-cat .dashboard-card,
+.theme-cat .widget-container,
+.theme-cat .card,
+.theme-cat .expense-card,
+.theme-cat .income-card,
+.theme-cat .category-card,
+.theme-cat .budget-card,
+.theme-cat .recurring-card,
+.theme-cat .repayment-card,
+.theme-cat .ewallet-card,
+.theme-cat .credit-card,
+.theme-cat .summary-card,
+.theme-cat .recent-expense-card,
+.theme-cat .profile-card,
+.theme-cat .popup-modal-container {
+  border-color: var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 5px 18px var(--shadow);
+}
+
+.theme-cat .user-icon {
+  background: #a24562;
+}
+
+.theme-cat .display-icon {
+  background: #55775b;
+}
+
+.theme-cat .billing-icon {
+  background: #a95b6d;
+}
+
+.theme-cat .settings-icon {
+  background: #776083;
+}
+
+.theme-cat .dashboard-tabs {
+  border-radius: 16px;
+}
+
+.theme-cat .dashboard-tab {
+  border-radius: 12px;
+}
+
+.theme-cat .dashboard-tab.bg-primary {
+  box-shadow: 0 5px 13px rgba(162, 69, 98, .22);
+}
+
+.theme-cat .dashboard-tab.bg-transparent:hover {
+  box-shadow: 0 3px 9px var(--shadow);
+}
+
+.theme-cat .header-menu-btn,
+.theme-cat .btn,
+.theme-cat .form-input,
+.theme-cat .form-select,
+.theme-cat .form-textarea,
+.theme-cat .popup-modal-content .form-input,
+.theme-cat .popup-modal-content .form-select,
+.theme-cat .popup-modal-content .form-textarea {
+  border-radius: 12px;
+}
+
+.theme-cat .form-input:focus,
+.theme-cat .form-select:focus,
+.theme-cat .form-textarea:focus,
+.theme-cat input:focus,
+.theme-cat select:focus,
+.theme-cat textarea:focus {
+  box-shadow: 0 0 0 3px rgba(162, 69, 98, .15);
+}
+
+.theme-cat .btn-primary:hover:not(:disabled),
+.theme-cat .btn-accent-light:hover:not(:disabled),
+.theme-cat .header-menu-btn:hover,
+.theme-cat .popup-modal-btn-primary:hover:not(:disabled),
+.theme-cat .quick-expense-add-container .quick-expense-add-btn:hover {
+  box-shadow: 0 4px 12px rgba(162, 69, 98, .22);
+}
+
+.theme-cat .credit-card.selected,
+.theme-cat .budget-card.selected,
+.theme-cat .recurring-card.selected,
+.theme-cat .scheduled-payment-card.selected,
+.theme-cat [data-payment-id].selected {
+  background-color: rgba(162, 69, 98, .07) !important;
+}
+
+.theme-cat .autocomplete-option.selected,
+.theme-cat .icon-option.selected,
+.theme-cat .icon-option-small.selected,
+.theme-cat .period-picker-month-grid button.selected,
+.theme-cat .period-picker-year-grid button.selected,
+.theme-cat .period-picker-calendar button.selected {
+  background-color: var(--accent-light) !important;
+}
+
+.theme-cat .action-dropdown button:hover:not(:disabled) {
+  background: linear-gradient(90deg, rgba(162, 69, 98, .08), rgba(196, 111, 135, .13)) !important;
+}
+
+.theme-cat .floating-btn-hover {
+  background: var(--accent-primary) !important;
+  box-shadow: 0 8px 20px rgba(162, 69, 98, .25) !important;
+}
+
+.theme-cat .bg-primary {
+  background-color: var(--accent-primary) !important;
+}
+
+.theme-cat .bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.theme-cat .bg-gray-50,
+.theme-cat .bg-gray-100 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.theme-cat .text-gray-900,
+.theme-cat .text-gray-800 {
+  color: var(--text-primary) !important;
+}
+
+.theme-cat .text-gray-700,
+.theme-cat .text-gray-600,
+.theme-cat .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.theme-cat .border-gray-200,
+.theme-cat .border-gray-300 {
+  border-color: var(--border-color) !important;
+}
+
+.theme-cat .dashboard-menu-panel .bg-blue-50,
+.theme-cat .dashboard-menu-panel .bg-indigo-50 {
+  background-color: var(--accent-light) !important;
+}
+
+.theme-cat .dashboard-menu-panel .text-blue-700,
+.theme-cat .dashboard-menu-panel .text-indigo-700 {
+  color: var(--accent-primary) !important;
+}
+
+.theme-cat .cat-empty-illustration {
+  display: block;
+  height: 110px;
+  margin: 0 auto 14px;
+  max-width: 100%;
+  width: 160px;
+}
+
+.theme-cat .cat-widget-illustration {
+  height: 42px;
+  width: 60px;
+}
+
+.theme-cat .widget-empty-state p {
+  color: var(--text-secondary);
+}
+
+.theme-cat .recharts-default-tooltip {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .theme-cat .dashboard-header-modern::after {
+    display: none;
+  }
+
+  .theme-cat .cat-header-illustration {
+    height: 40px;
+    width: 46px;
+  }
+}
