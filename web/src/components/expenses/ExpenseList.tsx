@@ -21,6 +21,7 @@ import AutocompleteDropdown, { AutocompleteOption } from '../common/Autocomplete
 import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
 
 // Add responsive styles for action buttons
@@ -44,6 +45,7 @@ const responsiveStyles = `
 
 interface ExpenseListProps {
   expenses: Expense[];
+  allExpenses?: Expense[];
   categories: Category[];
   cards?: Card[];
   ewallets?: EWallet[];
@@ -77,6 +79,7 @@ interface ExpenseListProps {
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
   expenses,
+  allExpenses = expenses,
   categories,
   cards = [],
   ewallets = [],
@@ -544,7 +547,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   // Use unique category names to avoid duplicate option keys
-  const categoryNames = Array.from(new Set(categories.map((c) => c.name))).filter((n) => n);
+  const categoryNames = Array.from(new Set(sortCategories(categories).map((c) => c.name))).filter((n) => n);
 
   // Generate available months from expenses
   const getAvailableMonths = () => {
@@ -1386,6 +1389,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             initialData={editingExpense}
             initialTransfer={findRelatedTransfer(editingExpense)}
             categories={categories}
+            recentExpenses={allExpenses}
             cards={cards}
             ewallets={ewallets}
             banks={banks}
@@ -1562,7 +1566,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
             <div className="quick-expense-form-field">
               <AutocompleteDropdown
-                options={categories.map((cat): AutocompleteOption => ({
+                options={sortCategories(categories).map((cat): AutocompleteOption => ({
                   id: cat.id || '',
                   label: cat.name,
                   icon: cat.icon,

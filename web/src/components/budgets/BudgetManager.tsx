@@ -18,6 +18,7 @@ import { getTodayLocal, formatDateRangeShort } from '../../utils/dateUtils';
 import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
+import { sortCategoryEntries } from '../../utils/categoryOrder';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -68,7 +69,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'usage-high' | 'usage-low' | 'name' | 'amount'>('usage-high');
+  const [sortBy, setSortBy] = useState<'category-order' | 'usage-high' | 'usage-low' | 'name' | 'amount'>('category-order');
   const [filterBy, setFilterBy] = useState<'all' | 'over' | 'warning' | 'normal'>('all');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [expandedHistoryIds, setExpandedHistoryIds] = useState<Set<string>>(new Set());
@@ -84,8 +85,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     if (!showAdjustments || expenses.length === 0 || budgets.length === 0) return [];
     
     const suggestions = getAdjustmentSuggestions(budgets, expenses, repayments, billingCycleDay);
-    return suggestions.filter((s) => !dismissedAdjustments.has(s.budgetId));
-  }, [showAdjustments, budgets, expenses, repayments, billingCycleDay, dismissedAdjustments]);
+    return sortCategoryEntries(
+      suggestions.filter((suggestion) => !dismissedAdjustments.has(suggestion.budgetId))
+        .map((suggestion): [string, typeof suggestion] => [suggestion.categoryName, suggestion]),
+      categories,
+    ).map(([, suggestion]) => suggestion);
+  }, [showAdjustments, budgets, categories, expenses, repayments, billingCycleDay, dismissedAdjustments]);
 
   // Handle applying adjustment suggestion
   const handleApplyAdjustment = (budgetId: string, newAmount: number) => {
@@ -126,8 +131,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     const existingBudgetCategories = new Set(budgets.map((b) => b.categoryName));
     const allSuggestions = getAllBudgetSuggestions(expenses, repayments, billingCycleDay, 3);
     
-    return allSuggestions.filter((s) => !existingBudgetCategories.has(s.categoryName));
-  }, [showSuggestions, expenses, repayments, budgets, billingCycleDay]);
+    return sortCategoryEntries(
+      allSuggestions.filter((suggestion) => !existingBudgetCategories.has(suggestion.categoryName))
+        .map((suggestion): [string, typeof suggestion] => [suggestion.categoryName, suggestion]),
+      categories,
+    ).map(([, suggestion]) => suggestion);
+  }, [showSuggestions, expenses, repayments, budgets, categories, billingCycleDay]);
 
   const handleApplySuggestion = (categoryName: string, amount: number) => {
     const category = categories.find((c) => c.name === categoryName);
@@ -218,6 +227,13 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       });
     }
 
+    if (sortBy === 'category-order') {
+      return sortCategoryEntries(
+        result.map((budget): [string, Budget] => [budget.categoryName, budget]),
+        categories,
+      ).map(([, budget]) => budget);
+    }
+
     // Apply sort
     result.sort((a, b) => {
       const statusA = getBudgetStatus(a);
@@ -238,7 +254,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     });
 
     return result;
-  }, [budgets, searchTerm, filterBy, sortBy, getBudgetStatus]);
+  }, [budgets, categories, searchTerm, filterBy, sortBy, getBudgetStatus]);
 
   const {
     isSelectionMode,
@@ -496,6 +512,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             style={styles.controlSelect}
           >
+            <option value="category-order">{t('categoryOrder')}</option>
             <option value="usage-high">{t('usageHighToLow') || 'Usage: High → Low'}</option>
             <option value="usage-low">{t('usageLowToHigh') || 'Usage: Low → High'}</option>
             <option value="name">{t('categoryName') || 'Category Name'}</option>

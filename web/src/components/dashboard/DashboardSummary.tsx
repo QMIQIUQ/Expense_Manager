@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Expense, Income, Repayment } from '../../types';
+import type { Category, Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -7,9 +7,11 @@ import { getTodayLocal, formatDateLocal, formatDateShort, formatDateWithUserForm
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import type { CurrencyCode } from '../../types';
+import { sortCategoryEntries } from '../../utils/categoryOrder';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
+  categories: Category[];
   incomes?: Income[];
   repayments?: Repayment[];
   onMarkTrackingCompleted?: (expenseId: string) => void;
@@ -17,7 +19,7 @@ interface DashboardSummaryProps {
   displayCurrency?: CurrencyCode;
 }
 
-const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes = [], repayments = [], onMarkTrackingCompleted, billingCycleDay = 1, displayCurrency }) => {
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categories: configuredCategories, incomes = [], repayments = [], onMarkTrackingCompleted, billingCycleDay = 1, displayCurrency }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
@@ -215,23 +217,20 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
     return byCategory;
   }, [displayCurrency, expenses, getDisplayExpenseAmount, getDisplayRepaymentTotal, stats.byCategory]);
   // Memoize category calculations
-  const categories = React.useMemo(() => 
-    Object.entries(displayByCategory)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5),
-    [displayByCategory]
-  );
+  const topCategories = React.useMemo(() => {
+    const top = Object.entries(displayByCategory).sort(([, a], [, b]) => b - a).slice(0, 5);
+    return sortCategoryEntries(top, configuredCategories);
+  }, [configuredCategories, displayByCategory]);
 
   // Memoize pie chart data preparation
   const pieData = React.useMemo(() => 
-    Object.entries(stats.byCategory)
-      .sort(([, a], [, b]) => b - a)
+    sortCategoryEntries(Object.entries(stats.byCategory), configuredCategories)
       .map(([name, value]) => ({
         name,
         value,
         percentage: ((value / stats.total) * 100).toFixed(1)
       })),
-    [stats.byCategory, stats.total]
+    [configuredCategories, stats.byCategory, stats.total]
   );
 
   // Memoize spending trend data (last 7 days)
@@ -413,11 +412,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, incomes =
         );
       })()}
 
-      {categories.length > 0 && (
+      {topCategories.length > 0 && (
         <div className="category-breakdown card">
           <h3 className="section-title">{t('topCategories')}</h3>
           <div className="category-list">
-            {categories.map(([category, amount]) => {
+            {topCategories.map(([category, amount]) => {
               const percentage = (amount / stats.total) * 100;
               return (
                 <div key={category} className="category-item">

@@ -4,6 +4,7 @@ import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMa
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { getTodayLocal } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
+import { sortCategoryEntries } from '../../../utils/categoryOrder';
 
 const getPreviousMonthKey = (monthKey: string): string => {
   const date = new Date(`${monthKey}-01T00:00:00`);
@@ -13,6 +14,7 @@ const getPreviousMonthKey = (monthKey: string): string => {
 
 const MonthOverMonthWidget: React.FC<WidgetProps> = ({
   expenses,
+  categories,
   size = 'medium',
   displayCurrency,
   onNavigateToExpenseMonth,
@@ -63,11 +65,12 @@ const MonthOverMonthWidget: React.FC<WidgetProps> = ({
       currentTotal: Math.round(currentTotal * 100) / 100,
       previousTotal: Math.round(previousTotal * 100) / 100,
       previousCount: previousExpenses.length,
-      topCategories: Object.entries(categoryTotals)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3),
+      topCategories: sortCategoryEntries(
+        Object.entries(categoryTotals).sort(([, a], [, b]) => b - a).slice(0, 3),
+        categories,
+      ),
     };
-  }, [convertedAmounts, currentMonth, expenses, previousMonth, targetCurrency]);
+  }, [categories, convertedAmounts, currentMonth, expenses, previousMonth, targetCurrency]);
 
   const change = stats.previousTotal === 0
     ? (stats.currentTotal === 0 ? 0 : null)

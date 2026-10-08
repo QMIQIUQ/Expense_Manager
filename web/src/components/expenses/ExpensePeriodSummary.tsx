@@ -8,6 +8,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '../icons';
 import type { ExpensePeriodSelection } from '../../types/expensePeriod';
 import { countInclusiveDays, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
 import { getTodayLocal } from '../../utils/dateUtils';
+import { sortCategoryEntries } from '../../utils/categoryOrder';
 
 interface ExpensePeriodSummaryProps {
   expenses: Expense[];
@@ -111,6 +112,13 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
       .sort((a, b) => b.amount - a.amount);
   }, [categories, expenses, getConvertedAmount, total]);
 
+  const orderedTopCategories = useMemo(() =>
+    sortCategoryEntries(
+      categoryTotals.slice(0, 6).map((category): [string, CategoryTotal] => [category.name, category]),
+      categories,
+    ).map(([, category]) => category),
+  [categories, categoryTotals]);
+
   const monthlyTotals = useMemo(() => {
     if (period.mode !== 'year') return [];
     const year = period.anchorDate.slice(0, 4);
@@ -166,7 +174,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
             <div style={styles.categorySection}>
               <h4 style={styles.sectionTitle}>{t('categoryDistribution')}</h4>
               <div style={styles.categoryList}>
-                {categoryTotals.slice(0, 6).map((category) => (
+                {orderedTopCategories.map((category) => (
                   <div key={category.name} style={styles.categoryRow}>
                     <span style={styles.categoryName}>
                       <span>{category.icon}</span>

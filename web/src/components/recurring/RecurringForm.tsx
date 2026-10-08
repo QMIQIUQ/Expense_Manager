@@ -7,6 +7,7 @@ import { useToday } from '../../hooks/useToday';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import { sortCategories } from '../../utils/categoryOrder';
 
 interface RecurringFormData {
   description: string;
@@ -126,7 +127,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
 
           <div className="flex flex-col gap-1">
             <AutocompleteDropdown
-              options={categories.map((cat): AutocompleteOption => ({
+              options={sortCategories(categories).map((cat): AutocompleteOption => ({
                 id: cat.name,
                 label: cat.name,
                 icon: cat.icon,

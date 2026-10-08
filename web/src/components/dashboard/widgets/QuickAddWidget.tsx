@@ -11,6 +11,7 @@ import PaymentMethodSelector from '../../common/PaymentMethodSelector';
 import CurrencySelector from '../../common/CurrencySelector';
 import { PaymentMethodType } from '../../../types';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
+import { sortCategories } from '../../../utils/categoryOrder';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -388,7 +389,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
             className="inline-select"
           >
             <option value="">{t('selectCategory')}</option>
-            {categories.map((cat) => (
+            {sortCategories(categories).map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.icon} {cat.name}
               </option>

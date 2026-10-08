@@ -13,6 +13,7 @@ import DatePicker from '../common/DatePicker';
 import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import CurrencySelector from '../common/CurrencySelector';
+import { sortCategories } from '../../utils/categoryOrder';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -322,7 +323,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         <div className="min-w-0">
           <AutocompleteDropdown
-            options={categories.map((cat): AutocompleteOption => ({
+            options={sortCategories(categories).map((cat): AutocompleteOption => ({
               id: cat.name,
               label: cat.name,
               icon: cat.icon,

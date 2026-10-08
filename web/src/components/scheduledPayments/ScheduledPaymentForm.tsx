@@ -18,6 +18,7 @@ import { CURRENCIES, getCurrencySymbol, formatMoney as formatCurrency } from '..
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import { sortCategories } from '../../utils/categoryOrder';
 
 export { CURRENCIES, getCurrencySymbol, formatCurrency };
 
@@ -227,7 +228,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
         {/* Category */}
         <div className="flex flex-col gap-1">
           <AutocompleteDropdown
-            options={categories.map((cat): AutocompleteOption => ({
+            options={sortCategories(categories).map((cat): AutocompleteOption => ({
               id: cat.name,
               label: cat.name,
               icon: cat.icon,

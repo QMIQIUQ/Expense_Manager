@@ -6,6 +6,7 @@ import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
+import { sortCategories } from '../../utils/categoryOrder';
 
 interface BudgetFormData {
   categoryId: string;
@@ -73,7 +74,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <AutocompleteDropdown
-              options={categories.map((cat): AutocompleteOption => ({
+              options={sortCategories(categories).map((cat): AutocompleteOption => ({
                 id: cat.id || '',
                 label: cat.name,
                 icon: cat.icon,

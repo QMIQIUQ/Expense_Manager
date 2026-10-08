@@ -5,8 +5,9 @@ import ShowMoreButton from './ShowMoreButton';
 import { getBillingCycleRange } from './utils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
+import { sortCategoryEntries } from '../../../utils/categoryOrder';
 
-const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium', onNavigateToExpenseCategory, displayCurrency }) => {
+const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, categories: configuredCategories, billingCycleDay, size = 'medium', onNavigateToExpenseCategory, displayCurrency }) => {
   const { t } = useLanguage();
   
   const [showAll, setShowAll] = useState(false);
@@ -62,7 +63,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
   }, [size]);
 
   // Calculate category totals
-  const { allCategories, total } = React.useMemo(() => {
+  const { allCategories, rankedCategories, total } = React.useMemo(() => {
     const byCategory: { [key: string]: number } = {};
     let total = 0;
 
@@ -80,13 +81,13 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, billingCycle
       total += amount;
     });
 
-    const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
+    const ranked = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
 
-    return { allCategories: sorted, total };
-  }, [displayCurrency, expenseDisplayAmountsById, filteredExpenses]);
+    return { allCategories: sortCategoryEntries(ranked, configuredCategories), rankedCategories: ranked, total };
+  }, [configuredCategories, displayCurrency, expenseDisplayAmountsById, filteredExpenses]);
 
-  // Determine which categories to display (respect showAll state)
-  const categories = showAll ? allCategories : allCategories.slice(0, maxCategories);
+  // Keep the highest spending categories in the compact view, then display them in the user's order.
+  const categories = showAll ? allCategories : sortCategoryEntries(rankedCategories.slice(0, maxCategories), configuredCategories);
 
   if (categories.length === 0) {
     return (

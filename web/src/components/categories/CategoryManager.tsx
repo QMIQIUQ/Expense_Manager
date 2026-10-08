@@ -526,7 +526,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   style={styles.reassignSelect}
                 >
                   <option value="">{t('selectCategory') || 'Select a category...'}</option>
-                  {categories
+                  {sortedCategories
                     .filter(cat => cat.id !== deleteConfirm.categoryId)
                     .map(cat => (
                       <option key={cat.id} value={cat.id}>

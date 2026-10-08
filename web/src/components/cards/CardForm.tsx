@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardType, CashbackRule, Category, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
+import { sortCategories } from '../../utils/categoryOrder';
 
 interface CardFormProps {
   onSubmit: (card: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
@@ -473,7 +474,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     }}
                   >
                     <option value="">{t('selectCategory')}</option>
-                    {categories.map((cat) => (
+                    {sortCategories(categories).map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.icon} {cat.name}
                       </option>

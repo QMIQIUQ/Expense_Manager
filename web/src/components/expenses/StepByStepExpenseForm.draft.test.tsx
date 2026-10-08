@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '../../test/test-utils';
+import { fireEvent, render, screen, waitFor, within } from '../../test/test-utils';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
 import type { Category, Expense } from '../../types';
 import {
@@ -322,5 +322,32 @@ describe('StepByStepExpenseForm draft controls', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /select a category/i })).toBeInTheDocument();
     });
+  });
+
+  it('shows recently used categories above the remaining manual order', async () => {
+    const categories = [
+      { ...makeCategory('Apple'), order: 2 },
+      { ...makeCategory('Zebra'), order: 1 },
+      { ...makeCategory('Banana'), order: 0 },
+    ];
+    const recentExpenses = [
+      { category: 'Zebra', createdAt: new Date('2026-10-01'), date: '2026-10-01' } as Expense,
+    ];
+
+    render(<StepByStepExpenseForm onSubmit={vi.fn()} onCancel={vi.fn()}
+      categories={categories} recentExpenses={recentExpenses} initialReceiptFile={sampleReceiptFile()} />);
+
+    await screen.findByRole('heading', { name: /receipt review/i });
+    fireEvent.click(screen.getAllByRole('button', { name: /apply to expense/i })[0]);
+    fireEvent.click(await screen.findByRole('button', { name: /next/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sgd.*singapore dollar/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /next/i }));
+
+    const recent = await screen.findByRole('region', { name: 'Recently used' });
+    const other = screen.getByRole('region', { name: 'Other categories' });
+    const names = (region: HTMLElement) => within(region).getAllByRole('button')
+      .map((button) => button.lastElementChild?.textContent);
+    expect(names(recent)).toEqual(['Zebra']);
+    expect(names(other)).toEqual(['Banana', 'Apple']);
   });
 });

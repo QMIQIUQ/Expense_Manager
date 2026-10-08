@@ -1,16 +1,17 @@
 import React from 'react';
 import DashboardSummary from '../../components/dashboard/DashboardSummary';
-import { CurrencyCode, Expense } from '../../types';
+import { Category, CurrencyCode, Expense } from '../../types';
 
 interface Props {
   expenses: Expense[];
+  categories: Category[];
   displayCurrency?: CurrencyCode;
 }
 
-const DashboardHomeTab: React.FC<Props> = ({ expenses, displayCurrency }) => {
+const DashboardHomeTab: React.FC<Props> = ({ expenses, categories, displayCurrency }) => {
   return (
     <div>
-      <DashboardSummary expenses={expenses} displayCurrency={displayCurrency} />
+      <DashboardSummary expenses={expenses} categories={categories} displayCurrency={displayCurrency} />
     </div>
   );
 };

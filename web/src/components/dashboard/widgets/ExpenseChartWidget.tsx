@@ -3,10 +3,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getBillingCycleRange } from './utils';
+import { sortCategoryEntries } from '../../../utils/categoryOrder';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
+const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billingCycleDay, size = 'medium' }) => {
   const { t } = useLanguage();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
@@ -104,8 +105,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, 
       total += exp.amount;
     });
 
-    const pieData = Object.entries(byCategory)
-      .sort(([, a], [, b]) => b - a)
+    const pieData = sortCategoryEntries(Object.entries(byCategory), categories)
       .map(([name, value]) => ({
         name,
         value,
@@ -113,7 +113,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, 
       }));
 
     return pieData;
-  }, [filteredExpenses]);
+  }, [categories, filteredExpenses]);
 
   if (pieData.length === 0) {
     return (

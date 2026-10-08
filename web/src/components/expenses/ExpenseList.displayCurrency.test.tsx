@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '../../test/test-utils';
 import type { Category, Expense } from '../../types';
 import ExpenseList from './ExpenseList';
+import { getTodayLocal } from '../../utils/dateUtils';
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ currentUser: { uid: 'test-user' } }),
@@ -91,7 +92,7 @@ describe('ExpenseList display currency controls', () => {
       exchangeRateFetchedAt: new Date('2026-06-24T00:00:00Z'),
       exchangeRateProvider: 'fawazahmed0/exchange-api',
       category: 'Food & Dining',
-      date: '2026-06-24',
+      date: getTodayLocal(),
       time: '20:33',
       paymentMethod: 'cash',
       createdAt: new Date('2026-06-24T12:33:00Z'),

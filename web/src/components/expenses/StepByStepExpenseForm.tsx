@@ -23,6 +23,7 @@ import {
   type ReceiptOcrResult,
 } from '../../services/receiptOcrService';
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
+import { getRecentlyUsedCategories, sortCategories } from '../../utils/categoryOrder';
 
 const formatOcrDuration = (elapsedMs?: number): string => {
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
@@ -41,6 +42,7 @@ const STEP_CATEGORY: Step = 4;
 const STEP_DESCRIPTION: Step = 5;
 const STEP_PAYMENT: Step = 6;
 const CURRENT_DRAFT_FLOW_VERSION = 3;
+const EMPTY_RECENT_EXPENSES: Expense[] = [];
 
 const mapReceiptLineItemsToAmountItems = (lineItems?: ReceiptOcrResult['lineItems']): AmountItem[] => {
   if (!lineItems?.length) return [];
@@ -97,6 +99,7 @@ interface StepByStepExpenseFormProps {
   initialTransfer?: Transfer;
   initialReceiptFile?: File | null;
   categories: Category[];
+  recentExpenses?: Expense[];
   cards?: Card[];
   ewallets?: EWallet[];
   banks?: Bank[];
@@ -118,6 +121,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   initialTransfer,
   initialReceiptFile = null,
   categories,
+  recentExpenses = EMPTY_RECENT_EXPENSES,
   cards = [],
   ewallets = [],
   banks = [],
@@ -206,29 +210,15 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     return parts.join(' · ');
   }, [isEnglish, isSimplifiedChinese]);
 
-  // Sort categories by recent usage (stored in localStorage)
-  const getSortedCategories = (): Category[] => {
-    try {
-      const recentUsage = JSON.parse(localStorage.getItem('categoryUsage') || '{}');
-      return [...categories].sort((a, b) => {
-        const aCount = recentUsage[a.name] || 0;
-        const bCount = recentUsage[b.name] || 0;
-        return bCount - aCount;
-      });
-    } catch {
-      return categories;
-    }
-  };
-
-  const updateCategoryUsage = (categoryName: string) => {
-    try {
-      const recentUsage = JSON.parse(localStorage.getItem('categoryUsage') || '{}');
-      recentUsage[categoryName] = (recentUsage[categoryName] || 0) + 1;
-      localStorage.setItem('categoryUsage', JSON.stringify(recentUsage));
-    } catch {
-      // Ignore localStorage errors
-    }
-  };
+  const sortedCategories = useMemo(() => sortCategories(categories), [categories]);
+  const recentCategories = useMemo(
+    () => getRecentlyUsedCategories(sortedCategories, recentExpenses),
+    [recentExpenses, sortedCategories],
+  );
+  const otherCategories = useMemo(
+    () => sortedCategories.filter((category) => !recentCategories.includes(category)),
+    [recentCategories, sortedCategories],
+  );
 
   const [formData, setFormData] = useState<ReceiptDraftFormState>({
     date: initialDate || initialData?.date || getTodayLocal(),
@@ -920,11 +910,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     if (isSubmitting) return;
     setIsSubmitting(true);
     setCurrencyError('');
-    // Update category usage for sorting
-    if (formData.category) {
-      updateCategoryUsage(formData.category);
-    }
-
     try {
       const submitData = await buildSubmitData();
       handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount);
@@ -944,11 +929,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setIsSubmitting(true);
     setCurrencyError('');
     
-    // Update category usage for sorting
-    if (formData.category) {
-      updateCategoryUsage(formData.category);
-    }
-
     try {
       const submitData = await buildSubmitData();
       handleTransferIfNeeded((submitData.baseAmount as number) || submitData.amount);
@@ -1254,7 +1234,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 style={styles.select}
               >
                 <option value="">{t('selectCategory')}</option>
-                {getSortedCategories().map((category) => (
+                {sortedCategories.map((category) => (
                   <option key={category.id} value={category.name}>{category.name}</option>
                 ))}
               </select>
@@ -1691,34 +1671,51 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         );
 
       case 4: {
-        const sortedCategories = getSortedCategories();
+        const renderCategory = (category: Category) => (
+          <button
+            type="button"
+            key={category.id}
+            onClick={() => {
+              setFormData(prev => ({ ...prev, category: category.name }));
+              setTimeout(() => handleNext(), 150);
+            }}
+            aria-pressed={formData.category === category.name}
+            style={{
+              ...styles.categoryCard,
+              ...(formData.category === category.name ? styles.categoryCardActive : {}),
+            }}
+          >
+            <div style={styles.categoryEmoji}>{category.icon}</div>
+            <div style={styles.categoryName}>{category.name}</div>
+          </button>
+        );
+
         return (
           <div style={styles.stepContent}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>🏷️</span>
               <h2 style={styles.stepHeaderTitle}>{t('selectCategory')}</h2>
             </div>
-            <div style={styles.categoryScrollContainer}>
-              <div style={styles.categoryScroll}>
-                {sortedCategories.map((category) => (
-                  <div
-                    key={category.id}
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, category: category.name }));
-                      // Auto advance to next step when category is selected
-                      setTimeout(() => handleNext(), 150);
-                    }}
-                    style={{
-                      ...styles.categoryCard,
-                      ...(formData.category === category.name ? styles.categoryCardActive : {}),
-                    }}
-                  >
-                    <div style={styles.categoryEmoji}>{getCategoryIcon(category.name)}</div>
-                    <div style={styles.categoryName}>{category.name}</div>
+            {recentCategories.length > 0 && (
+              <section aria-label={t('recentlyUsedCategories')} style={styles.recentCategorySection}>
+                <h3 style={styles.categorySectionTitle}>{t('recentlyUsedCategories')}</h3>
+                <div style={styles.categoryScrollContainer}>
+                  <div style={{ ...styles.categoryScroll, gridTemplateRows: '1fr' }}>
+                    {recentCategories.map(renderCategory)}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </section>
+            )}
+            {otherCategories.length > 0 && (
+              <section aria-label={recentCategories.length > 0 ? t('otherCategories') : t('selectCategory')}>
+                {recentCategories.length > 0 && <h3 style={styles.categorySectionTitle}>{t('otherCategories')}</h3>}
+                <div style={styles.categoryScrollContainer}>
+                  <div style={styles.categoryScroll}>
+                    {otherCategories.map(renderCategory)}
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         );
       }
@@ -2459,6 +2456,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     marginBottom: '8px',
     lineHeight: 1.5,
+  },
+  categorySectionTitle: {
+    margin: '0 0 8px',
+    fontSize: '14px',
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+  },
+  recentCategorySection: {
+    marginBottom: '16px',
   },
   receiptEntryStrip: {
     display: 'flex',

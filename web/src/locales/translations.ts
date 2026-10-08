@@ -29,6 +29,9 @@ export const translations = {
   moveCategoryDown: { en: 'Move category down', zh: '類別下移', 'zh-CN': '分类下移' },
   savingOrder: { en: 'Saving...', zh: '儲存中…', 'zh-CN': '保存中…' },
   saveOrderFailed: { en: 'Could not save category order. Please try again.', zh: '無法儲存類別順序，請再試一次。', 'zh-CN': '无法保存分类顺序，请重试。' },
+  recentlyUsedCategories: { en: 'Recently used', zh: '最近使用', 'zh-CN': '最近使用' },
+  otherCategories: { en: 'Other categories', zh: '其他類別', 'zh-CN': '其他分类' },
+  categoryOrder: { en: 'Category order', zh: '類別順序', 'zh-CN': '分类顺序' },
   
   // CRUD notifications
   successfullyCreated: { en: 'Successfully created!', zh: '新增成功！', 'zh-CN': '添加成功！' },

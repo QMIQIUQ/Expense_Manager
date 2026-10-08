@@ -4,6 +4,7 @@ import type { Category } from '../../types';
 import type { ExpenseFilterState, ExpensePaymentFilter, ExpenseSort } from '../../types/expensePeriod';
 import { DEFAULT_EXPENSE_FILTERS } from '../../types/expensePeriod';
 import { SearchBar } from '../common/SearchBar';
+import { sortCategories } from '../../utils/categoryOrder';
 
 interface ExpenseFiltersBarProps {
   value: ExpenseFilterState;
@@ -19,7 +20,7 @@ const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, 
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const categoryNames = useMemo(
-    () => Array.from(new Set(categories.map((category) => category.name))).sort((a, b) => a.localeCompare(b)),
+    () => Array.from(new Set(sortCategories(categories).map((category) => category.name))),
     [categories],
   );
   const hasActiveFilters = !!value.query || !!value.category || value.paymentMethod !== 'all' || value.sort !== 'date-desc';

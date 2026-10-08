@@ -86,6 +86,7 @@ const Dashboard: React.FC = () => {
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const orderedCategories = React.useMemo(() => sortCategories(categories), [categories]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [scheduledPaymentRecords, setScheduledPaymentRecords] = useState<ScheduledPaymentRecord[]>([]);
@@ -2703,7 +2704,7 @@ const Dashboard: React.FC = () => {
             repayments={repayments}
             budgets={budgets}
             cards={cards}
-            categories={categories}
+            categories={orderedCategories}
             ewallets={ewallets}
             banks={banks}
             billingCycleDay={billingCycleDay}
@@ -2746,7 +2747,7 @@ const Dashboard: React.FC = () => {
         {activeTab === 'expenses' && (
           <ExpensesTab
             expenses={expenses}
-            categories={categories}
+            categories={orderedCategories}
             cards={cards}
             ewallets={ewallets}
             banks={banks}
@@ -2792,7 +2793,7 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col gap-4">
             <Suspense fallback={<></>}>
               <CategoryManager
-                categories={categories}
+                categories={orderedCategories}
                 expenses={expenses}
                 onAdd={handleAddCategory}
                 onUpdate={handleUpdateCategory}
@@ -2810,7 +2811,7 @@ const Dashboard: React.FC = () => {
             <Suspense fallback={<></>}>
               <BudgetManager
                 budgets={budgets}
-                categories={categories}
+                categories={orderedCategories}
                 expenses={expenses}
                 repayments={repayments}
                 onAdd={handleAddBudget}
@@ -2828,7 +2829,7 @@ const Dashboard: React.FC = () => {
             <ScheduledPaymentManager
               scheduledPayments={scheduledPayments}
               paymentRecords={scheduledPaymentRecords}
-              categories={categories}
+              categories={orderedCategories}
               banks={banks}
               cards={cards}
               ewallets={ewallets}
@@ -2850,7 +2851,7 @@ const Dashboard: React.FC = () => {
             <PaymentMethodsTab
               cards={cards}
               ewallets={ewallets}
-              categories={categories}
+              categories={orderedCategories}
               expenses={expenses}
               incomes={incomes}
               transfers={transfers}
@@ -2989,7 +2990,8 @@ const Dashboard: React.FC = () => {
             }}
             onCancel={closeExpenseEntry}
             initialReceiptFile={pendingReceiptFile}
-            categories={categories}
+            categories={orderedCategories}
+            recentExpenses={expenses}
             cards={cards}
             ewallets={ewallets}
             banks={banks}
@@ -3016,7 +3018,7 @@ const Dashboard: React.FC = () => {
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
           userId={currentUser.uid}
-          existingCategories={categories}
+          existingCategories={orderedCategories}
           onImportComplete={handleImportComplete}
           onStartBackgroundImport={handleStartBackgroundImport}
           onUpdateProgress={handleUpdateImportProgress}
@@ -3107,7 +3109,8 @@ const Dashboard: React.FC = () => {
             }}
             onCancel={closeExpenseEntry}
             initialReceiptFile={pendingReceiptFile}
-            categories={categories}
+            categories={orderedCategories}
+            recentExpenses={expenses}
             cards={cards}
             ewallets={ewallets}
             banks={banks}

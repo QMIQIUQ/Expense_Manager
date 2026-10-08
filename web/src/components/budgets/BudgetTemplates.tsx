@@ -12,6 +12,7 @@ import {
   getTemplateTranslationKey,
   getTemplateDescriptionKey,
 } from '../../utils/budgetTemplates';
+import { sortCategoryEntries } from '../../utils/categoryOrder';
 
 interface BudgetTemplatesProps {
   categories: Category[];
@@ -127,7 +128,13 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
           <div style={styles.previewSection}>
             <h3 style={styles.previewTitle}>{t('budgetPreview') || 'Budget Preview'}</h3>
             <div style={styles.previewList}>
-              {previewBudgets.map((budget, index) => {
+              {sortCategoryEntries(
+                previewBudgets.map((budget): [string, typeof budget] => [
+                  categories.find((category) => category.name.toLowerCase() === budget.categoryName.toLowerCase())?.name || budget.categoryName,
+                  budget,
+                ]),
+                categories,
+              ).map(([, budget], index) => {
                 const hasCategory = categories.some(
                   (c) => c.name.toLowerCase() === budget.categoryName.toLowerCase()
                 );

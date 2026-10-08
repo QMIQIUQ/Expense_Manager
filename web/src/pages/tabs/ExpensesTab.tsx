@@ -112,6 +112,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
 
       <ExpenseList
         expenses={visibleExpenses}
+        allExpenses={expenses}
         categories={categories}
         cards={cards}
         ewallets={ewallets}

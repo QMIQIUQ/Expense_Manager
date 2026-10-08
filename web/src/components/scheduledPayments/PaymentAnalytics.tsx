@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ScheduledPayment, ScheduledPaymentRecord, Category } from '../../types';
 import { getCurrencySymbol } from './ScheduledPaymentForm';
+import { sortCategoryEntries } from '../../utils/categoryOrder';
 
 interface PaymentAnalyticsProps {
   scheduledPayments: ScheduledPayment[];
@@ -255,7 +256,7 @@ const PaymentAnalytics: React.FC<PaymentAnalyticsProps> = ({
             📊 {t('categoryBreakdown')}
           </h3>
           <div className="flex flex-col gap-3">
-            {Object.entries(analytics.byCategory).map(([category, data]) => {
+            {sortCategoryEntries(Object.entries(analytics.byCategory), categories).map(([category, data]) => {
               const percentage = (data.amount / analytics.totalScheduledMonthly) * 100;
               return (
                 <div key={category}>
