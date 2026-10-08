@@ -185,8 +185,21 @@
   box-shadow: 0 4px 12px rgba(162, 69, 98, .22);
 }
 
-.theme-cat .selected {
+.theme-cat .credit-card.selected,
+.theme-cat .budget-card.selected,
+.theme-cat .recurring-card.selected,
+.theme-cat .scheduled-payment-card.selected,
+.theme-cat [data-payment-id].selected {
   background-color: rgba(162, 69, 98, .07) !important;
+}
+
+.theme-cat .autocomplete-option.selected,
+.theme-cat .icon-option.selected,
+.theme-cat .icon-option-small.selected,
+.theme-cat .period-picker-month-grid button.selected,
+.theme-cat .period-picker-year-grid button.selected,
+.theme-cat .period-picker-calendar button.selected {
+  background-color: var(--accent-light) !important;
 }
 
 .theme-cat .action-dropdown button:hover:not(:disabled) {

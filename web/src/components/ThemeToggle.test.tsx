@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import ThemeToggle from './ThemeToggle';
 import { ThemeProvider } from '../contexts/ThemeContext';
@@ -16,10 +16,14 @@ const renderPicker = () => render(
 beforeEach(() => {
   localStorage.clear();
   document.documentElement.classList.remove('dark', 'theme-cat');
+  document.documentElement.style.removeProperty('--font-family-base');
+  document.documentElement.style.fontSize = '';
 });
 
 afterEach(() => {
   document.documentElement.classList.remove('dark', 'theme-cat');
+  document.documentElement.style.removeProperty('--font-family-base');
+  document.documentElement.style.fontSize = '';
   vi.restoreAllMocks();
 });
 
@@ -61,5 +65,62 @@ describe('theme picker', () => {
     expect(screen.getByRole('button', { name: 'Follow system' })).toHaveAttribute('aria-pressed', 'true');
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
     expect(document.documentElement).not.toHaveClass('theme-cat');
+  });
+
+  test('responds to system preference changes while keeping Warm Kitty light', async () => {
+    let prefersDark = false;
+    const listeners = new Set<() => void>();
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query === '(prefers-color-scheme: dark)' && prefersDark,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn((_type, listener) => {
+        if (typeof listener === 'function') listeners.add(listener);
+      }),
+      removeEventListener: vi.fn((_type, listener) => {
+        if (typeof listener === 'function') listeners.delete(listener);
+      }),
+      dispatchEvent: vi.fn(),
+    }));
+
+    renderPicker();
+    expect(document.documentElement).not.toHaveClass('dark');
+
+    prefersDark = true;
+    act(() => listeners.forEach((listener) => listener()));
+    await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Warm Kitty' }));
+    await waitFor(() => expect(document.documentElement).toHaveClass('theme-cat'));
+    expect(document.documentElement).not.toHaveClass('dark');
+
+    prefersDark = false;
+    act(() => listeners.forEach((listener) => listener()));
+    expect(document.documentElement).not.toHaveClass('dark');
+  });
+
+  test('ignores an invalid saved theme and preserves font settings', () => {
+    localStorage.setItem('theme', 'invalid');
+    localStorage.setItem('fontFamily', 'mono');
+    localStorage.setItem('fontScale', 'large');
+
+    renderPicker();
+    expect(screen.getByRole('button', { name: 'Follow system' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Warm Kitty' }));
+    expect(document.documentElement.style.getPropertyValue('--font-family-base')).toContain('ui-monospace');
+    expect(document.documentElement.style.fontSize).toBe('18px');
+  });
+
+  test('shows the Warm Kitty option in both Chinese locales', () => {
+    localStorage.setItem('language', 'zh');
+    const view = renderPicker();
+    expect(screen.getByRole('button', { name: '暖心小貓' })).toBeInTheDocument();
+
+    view.unmount();
+    localStorage.setItem('language', 'zh-CN');
+    renderPicker();
+    expect(screen.getByRole('button', { name: '暖心小猫' })).toBeInTheDocument();
   });
 });
