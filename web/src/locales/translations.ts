@@ -516,6 +516,7 @@ export const translations = {
   themeDark: { en: 'Dark', zh: '深色', 'zh-CN': '深色' },
   themeSystem: { en: 'Follow system', zh: '跟隨系統', 'zh-CN': '跟随系统' },
   themeCat: { en: 'Warm Kitty', zh: '暖心小貓', 'zh-CN': '暖心小猫' },
+  themeCatDark: { en: 'Dark Warm Kitty', zh: '暗黑暖心小貓', 'zh-CN': '暗黑暖心小猫' },
   fontFamily: { en: 'Font Family', zh: '字體', 'zh-CN': '字体' },
   fontSize: { en: 'Font Size', zh: '字體大小', 'zh-CN': '字体大小' },
   system: { en: 'System', zh: '系統預設', 'zh-CN': '系统默认' },
