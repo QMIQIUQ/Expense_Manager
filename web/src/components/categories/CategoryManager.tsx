@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Category, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -10,6 +10,7 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
 import { sortCategories } from '../../utils/categoryOrder';
+import { useTouchReorder } from '../../hooks/useTouchReorder';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -62,6 +63,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const [orderError, setOrderError] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const categoryListRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -144,6 +146,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       setIsSavingOrder(false);
     }
   };
+  const touchReorder = useTouchReorder({
+    listRef: categoryListRef,
+    disabled: !isSorting || isSavingOrder,
+    onReorder: (fromId, toId) => { void reorderCategories(fromId, toId); },
+  });
 
   const startEdit = (category: Category) => {
     // Close the add form if it's open
@@ -245,7 +252,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         style={{ marginBottom: '16px' }}
       />}
 
-      <div style={styles.categoryList}>
+      <div style={styles.categoryList} ref={categoryListRef}>
         {filteredCategories.length === 0 ? (
           <div style={styles.noData}>
             <p>{categories.length === 0 ? t('noCategories') || 'No categories yet' : t('noResults') || 'No results found'}</p>
@@ -257,6 +264,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               <div 
                 key={category.id} 
                 className={`category-card ${isDuplicate ? 'warning-border' : ''}`} 
+                data-touch-reorder-item={category.id}
                 onDragOver={(event) => {
                   if (!isSorting || isSavingOrder || !draggedId) return;
                   event.preventDefault();
@@ -270,7 +278,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 }}
                 style={{
                   ...(openMenuId === category.id ? { zIndex: 9999 } : {}),
-                  ...(isSorting && dragOverId === category.id ? { outline: '2px solid var(--accent-primary)' } : {}),
+                  ...(isSorting && (dragOverId === category.id || touchReorder.overId === category.id) ? { outline: '2px solid var(--accent-primary)' } : {}),
                   display: 'flex',
                   flexDirection: 'row',
                   justifyContent: 'space-between',
@@ -284,14 +292,20 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 {isSorting && (
                   <div style={styles.sortControls}>
                     <span
-                      draggable={!isSavingOrder}
+                      className="touch-drag-handle"
+                      draggable={!isSavingOrder && !touchReorder.activeId}
                       onDragStart={(event) => {
+                        if (touchReorder.isActive()) { event.preventDefault(); return; }
                         if (!category.id) return;
                         event.dataTransfer.effectAllowed = 'move';
                         setDraggedId(category.id);
                       }}
                       onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-                      style={styles.dragHandle}
+                      onPointerDown={touchReorder.onPointerDown(category.id!)}
+                      onPointerMove={touchReorder.onPointerMove}
+                      onPointerUp={touchReorder.onPointerUp}
+                      onPointerCancel={touchReorder.onPointerCancel}
+                      style={{ ...styles.dragHandle, ...(touchReorder.activeId === category.id ? { opacity: 0.5 } : {}) }}
                       aria-hidden="true"
                     >⋮⋮</span>
                     <div style={styles.moveButtons}>

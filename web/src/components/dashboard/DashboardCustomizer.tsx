@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTouchReorder } from '../../hooks/useTouchReorder';
 import { DashboardWidget, WIDGET_METADATA, DashboardWidgetType, DEFAULT_DASHBOARD_LAYOUT, generateWidgetId } from '../../types/dashboard';
 import { TranslationKey } from '../../locales/translations';
 
@@ -17,6 +18,21 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   const { t } = useLanguage();
   const [localWidgets, setLocalWidgets] = useState<DashboardWidget[]>([...widgets]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const widgetListRef = useRef<HTMLDivElement>(null);
+  const touchReorder = useTouchReorder({
+    listRef: widgetListRef,
+    onReorder: (fromId, toId) => {
+      setLocalWidgets((prev) => {
+        const fromIndex = prev.findIndex((widget) => widget.id === fromId);
+        const toIndex = prev.findIndex((widget) => widget.id === toId);
+        if (fromIndex < 0 || toIndex < 0) return prev;
+        const reordered = [...prev];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        return reordered.map((widget, index) => ({ ...widget, order: index }));
+      });
+    },
+  });
   // Track the input values for order fields - allow empty string while user is editing
   const [orderInputValues, setOrderInputValues] = useState<{ [widgetId: string]: string }>({});
   
@@ -123,19 +139,27 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
             </div>
           </div>
 
-          <div className="widget-list">
+          <div className="widget-list" ref={widgetListRef}>
             {localWidgets.map((widget, index) => {
               const metadata = WIDGET_METADATA[widget.type];
               return (
                 <div
                   key={widget.id}
-                  className={`widget-item ${draggedIndex === index ? 'dragging' : ''} ${!widget.enabled ? 'disabled' : ''}`}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
+                  className={`widget-item ${draggedIndex === index || touchReorder.activeId === widget.id ? 'dragging' : ''} ${touchReorder.overId === widget.id ? 'touch-drag-over' : ''} ${!widget.enabled ? 'disabled' : ''}`}
+                  data-touch-reorder-item={widget.id}
+                  draggable={!touchReorder.activeId}
+                  onDragStart={(event) => {
+                    if (touchReorder.isActive()) event.preventDefault();
+                    else handleDragStart(index);
+                  }}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="widget-drag-handle">⋮⋮</div>
+                  <div className="widget-drag-handle touch-drag-handle"
+                    onPointerDown={touchReorder.onPointerDown(widget.id)}
+                    onPointerMove={touchReorder.onPointerMove}
+                    onPointerUp={touchReorder.onPointerUp}
+                    onPointerCancel={touchReorder.onPointerCancel}>⋮⋮</div>
                   <input
                     type="text"
                     inputMode="numeric"

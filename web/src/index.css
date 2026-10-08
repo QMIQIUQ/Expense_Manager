@@ -141,6 +141,8 @@
 }
 
 body {
+  -webkit-user-select: none;
+  user-select: none;
   font-family: var(--font-family-base, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif);
@@ -226,6 +228,8 @@ a:hover {
 }
 
 input {
+  -webkit-user-select: text;
+  user-select: text;
   font-family: inherit;
   font-size: 14px;
   border: 1px solid var(--border-color);
@@ -259,6 +263,11 @@ select, textarea {
   padding: 10px 14px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.5;
+}
+
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 select:focus, textarea:focus {
@@ -2796,6 +2805,11 @@ button:not(:disabled):hover {
   cursor: grabbing;
 }
 
+.touch-drag-handle {
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
 .widget-actions {
   display: flex;
   gap: 4px;
@@ -3058,6 +3072,11 @@ button:not(:disabled):hover {
   opacity: 0.5;
   transform: scale(1.02);
   box-shadow: 0 4px 16px var(--shadow-md);
+}
+
+.widget-item.touch-drag-over {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
 }
 
 .widget-item.disabled {

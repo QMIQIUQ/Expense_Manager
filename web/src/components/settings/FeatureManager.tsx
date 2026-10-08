@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FeatureTab, DEFAULT_FEATURES } from '../../types';
+import { useTouchReorder } from '../../hooks/useTouchReorder';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../locales/translations';
 import { DragIcon } from '../icons';
@@ -126,6 +127,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const featureListRef = useRef<HTMLDivElement>(null);
   // Track hover/focus state for add (+) buttons to apply interactive styles
   const [hoveredAdd, setHoveredAdd] = useState<FeatureTab | null>(null);
 
@@ -149,6 +151,21 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   // Get current features based on active location
   const localEnabled = activeLocation === 'tab' ? localTabFeatures : localHamburgerFeatures;
   const setLocalEnabled = activeLocation === 'tab' ? setLocalTabFeatures : setLocalHamburgerFeatures;
+  const touchReorder = useTouchReorder({
+    listRef: featureListRef,
+    disabled: isSaving,
+    onReorder: (fromId, toId) => {
+      setLocalEnabled((prev) => {
+        const fromIndex = prev.indexOf(fromId as FeatureTab);
+        const toIndex = prev.indexOf(toId as FeatureTab);
+        if (fromIndex < 0 || toIndex < 0) return prev;
+        const reordered = [...prev];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        return reordered;
+      });
+    },
+  });
 
   // Get disabled features
   const disabledFeatures = ALL_FEATURES.filter((feature) => !localEnabled.includes(feature));
@@ -285,7 +302,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
           </h3>
           <p style={styles.sectionDesc}>{t('dragToReorder')}</p>
           
-          <div style={styles.list}>
+          <div style={styles.list} ref={featureListRef}>
             {localEnabled.map((feature, index) => {
               const metadata = FEATURE_METADATA[feature];
               // Skip if metadata is not found (safety check)
@@ -297,18 +314,28 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
               return (
                 <div
                   key={feature}
-                  draggable
-                  onDragStart={() => handleDragStart(feature)}
+                  data-touch-reorder-item={feature}
+                  draggable={!touchReorder.activeId}
+                  onDragStart={(event) => {
+                    if (touchReorder.isActive()) event.preventDefault();
+                    else handleDragStart(feature);
+                  }}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                   style={{
                     ...styles.card,
-                    ...(isDragging ? styles.cardDragging : {}),
-                    ...(isDragOver ? styles.cardDragOver : {}),
+                    ...(isDragging || touchReorder.activeId === feature ? styles.cardDragging : {}),
+                    ...(isDragOver || touchReorder.overId === feature ? styles.cardDragOver : {}),
                   }}
                 >
-                  <DragIcon size={20} style={styles.dragHandle} />
+                  <span className="touch-drag-handle" style={styles.dragHandle}
+                    onPointerDown={touchReorder.onPointerDown(feature)}
+                    onPointerMove={touchReorder.onPointerMove}
+                    onPointerUp={touchReorder.onPointerUp}
+                    onPointerCancel={touchReorder.onPointerCancel}>
+                    <DragIcon size={20} />
+                  </span>
                   <span style={styles.featureIcon}>{metadata.icon}</span>
                   <div style={styles.featureInfo}>
                     <div style={styles.featureName}>{t(metadata.labelKey)}</div>
