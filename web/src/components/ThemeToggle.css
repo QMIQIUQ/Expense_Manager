@@ -29,6 +29,10 @@
   text-align: left;
 }
 
+.theme-picker-option:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 .theme-picker-option:hover {
   background: var(--accent-light);
   border-color: var(--accent-primary);

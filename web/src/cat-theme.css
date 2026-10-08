@@ -284,3 +284,149 @@
     width: 46px;
   }
 }
+
+/* Dark Warm Kitty: retain the shared cat artwork and component shapes while
+   replacing the bright palette with a charcoal, plum, and rose color system. */
+.theme-cat.theme-cat-dark {
+  color-scheme: dark;
+  --bg-primary: #17141b;
+  --bg-secondary: #211b26;
+  --bg-tertiary: #302735;
+  --bg-quaternary: #403344;
+  --text-primary: #f5eaf1;
+  --text-secondary: #cbbbc8;
+  --text-tertiary: #b7a8b4;
+  --border-color: #554453;
+  --border-hover: #755a6d;
+  --divider-color: #554453;
+  --shadow: rgba(8, 4, 10, .3);
+  --shadow-sm: rgba(8, 4, 10, .24);
+  --shadow-md: rgba(8, 4, 10, .42);
+  --shadow-lg: rgba(8, 4, 10, .6);
+  --card-bg: #29222f;
+  --input-bg: #211b26;
+  --select-bg: #211b26;
+  --modal-bg: #29222f;
+  --icon-bg: #3b2c3c;
+  --button-hover: rgba(240, 164, 188, .14);
+  --hover-bg: rgba(240, 164, 188, .11);
+  --disabled-bg: #302b34;
+  --accent-primary: #f0a4bc;
+  --accent-secondary: #df8fae;
+  --accent-hover: #ffd0de;
+  --accent-light: #49303f;
+  --tab-active-bg: linear-gradient(135deg, #f0a4bc, #df8fae);
+  --tab-inactive-bg: #302735;
+  --tab-inactive-text: #cbbbc8;
+  --tab-active-text: #fff8fb;
+  --tab-hover-bg: #49303f;
+  --chip-bg: #49303f;
+  --chip-text: #ffd0de;
+  --chart-1: #f0a4bc;
+  --chart-2: #a9c995;
+  --chart-3: #f0b581;
+  --chart-4: #c2a5dc;
+  --chart-5: #e58eae;
+  --chart-6: #8dc8c3;
+  --chart-7: #e0c078;
+  --chart-8: #c5a9bb;
+  --purple-glow: 0 0 12px rgba(240, 164, 188, .22);
+  --purple-glow-strong: 0 0 20px rgba(240, 164, 188, .35);
+}
+
+.theme-cat.theme-cat-dark body {
+  background-color: var(--bg-secondary);
+}
+
+.theme-cat.theme-cat-dark ::selection {
+  background: #75465d;
+  color: var(--text-primary);
+}
+
+.theme-cat.theme-cat-dark .dashboard-header-modern {
+  background: linear-gradient(110deg, #29222f 55%, #352631);
+}
+
+.theme-cat.theme-cat-dark .user-icon,
+.theme-cat.theme-cat-dark .billing-icon {
+  background: #773c57;
+}
+
+.theme-cat.theme-cat-dark .display-icon {
+  background: #3e604a;
+}
+
+.theme-cat.theme-cat-dark .settings-icon {
+  background: #554267;
+}
+
+.theme-cat.theme-cat-dark .dashboard-tab.bg-primary {
+  box-shadow: 0 5px 13px rgba(240, 164, 188, .2);
+}
+
+.theme-cat.theme-cat-dark .dashboard-tab.bg-transparent:hover {
+  box-shadow: 0 3px 9px var(--shadow-md);
+}
+
+.theme-cat.theme-cat-dark .form-input:focus,
+.theme-cat.theme-cat-dark .form-select:focus,
+.theme-cat.theme-cat-dark .form-textarea:focus,
+.theme-cat.theme-cat-dark input:focus,
+.theme-cat.theme-cat-dark select:focus,
+.theme-cat.theme-cat-dark textarea:focus {
+  box-shadow: 0 0 0 3px rgba(240, 164, 188, .22);
+}
+
+.theme-cat.theme-cat-dark .btn-primary,
+.theme-cat.theme-cat-dark .bg-primary,
+.theme-cat.theme-cat-dark .dashboard-tab.bg-primary,
+.theme-cat.theme-cat-dark .popup-modal-btn-primary {
+  color: #321a25 !important;
+}
+
+.theme-cat.theme-cat-dark .btn-primary:hover:not(:disabled),
+.theme-cat.theme-cat-dark .btn-accent-light:hover:not(:disabled),
+.theme-cat.theme-cat-dark .header-menu-btn:hover,
+.theme-cat.theme-cat-dark .popup-modal-btn-primary:hover:not(:disabled),
+.theme-cat.theme-cat-dark .quick-expense-add-container .quick-expense-add-btn:hover {
+  box-shadow: 0 4px 12px rgba(240, 164, 188, .3);
+}
+
+.theme-cat.theme-cat-dark .credit-card.selected,
+.theme-cat.theme-cat-dark .budget-card.selected,
+.theme-cat.theme-cat-dark .recurring-card.selected,
+.theme-cat.theme-cat-dark .scheduled-payment-card.selected,
+.theme-cat.theme-cat-dark [data-payment-id].selected {
+  background-color: rgba(240, 164, 188, .12) !important;
+}
+
+.theme-cat.theme-cat-dark .autocomplete-option.selected,
+.theme-cat.theme-cat-dark .icon-option.selected,
+.theme-cat.theme-cat-dark .icon-option-small.selected,
+.theme-cat.theme-cat-dark .period-picker-month-grid button.selected,
+.theme-cat.theme-cat-dark .period-picker-year-grid button.selected,
+.theme-cat.theme-cat-dark .period-picker-calendar button.selected {
+  background-color: var(--accent-light) !important;
+}
+
+.theme-cat.theme-cat-dark .action-dropdown button:hover:not(:disabled),
+.theme-cat.theme-cat-dark [class*="dropdown"] > *:hover,
+.theme-cat.theme-cat-dark [class*="menu"] > *:hover {
+  background: linear-gradient(90deg, rgba(240, 164, 188, .1), rgba(223, 143, 174, .18));
+}
+
+.theme-cat.theme-cat-dark .floating-btn-hover {
+  color: #321a25 !important;
+  box-shadow: 0 8px 20px rgba(240, 164, 188, .28) !important;
+}
+
+.theme-cat.theme-cat-dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: linear-gradient(135deg, var(--card-bg), var(--bg-tertiary)) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 8px 24px var(--shadow-md) !important;
+  color: var(--text-primary) !important;
+}
+
+.theme-cat.theme-cat-dark .recharts-tooltip-wrapper .recharts-default-tooltip * {
+  color: var(--text-primary) !important;
+}

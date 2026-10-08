@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type ThemeMode = 'light' | 'dark' | 'system' | 'cat';
+export type ThemeMode = 'light' | 'dark' | 'system' | 'cat' | 'cat-dark';
 export type FontFamily = 'system' | 'serif' | 'mono';
 export type FontScale = 'small' | 'medium' | 'large';
 
@@ -32,7 +32,7 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('theme');
-    return saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'cat'
+    return saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'cat' || saved === 'cat-dark'
       ? saved
       : 'system';
   });
@@ -56,7 +56,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       if (theme === 'system') {
         isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       } else {
-        isDark = theme === 'dark';
+        isDark = theme === 'dark' || theme === 'cat-dark';
       }
 
       setEffectiveTheme(isDark ? 'dark' : 'light');
@@ -67,7 +67,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       } else {
         document.documentElement.classList.remove('dark');
       }
-      document.documentElement.classList.toggle('theme-cat', theme === 'cat');
+      document.documentElement.classList.toggle('theme-cat', theme === 'cat' || theme === 'cat-dark');
+      document.documentElement.classList.toggle('theme-cat-dark', theme === 'cat-dark');
     };
 
     updateEffectiveTheme();

@@ -4,11 +4,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import type { ThemeMode } from '../contexts/ThemeContext';
 import './ThemeToggle.css';
 
-const themeOptions: { value: ThemeMode; icon: string; label: 'themeLight' | 'themeDark' | 'themeSystem' | 'themeCat' }[] = [
+const themeOptions: { value: ThemeMode; icon: string; label: 'themeLight' | 'themeDark' | 'themeSystem' | 'themeCat' | 'themeCatDark' }[] = [
   { value: 'light', icon: '☀️', label: 'themeLight' },
   { value: 'dark', icon: '🌙', label: 'themeDark' },
   { value: 'system', icon: '💻', label: 'themeSystem' },
   { value: 'cat', icon: '🐱', label: 'themeCat' },
+  { value: 'cat-dark', icon: '🌙🐱', label: 'themeCatDark' },
 ];
 
 const ThemeToggle: React.FC = () => {

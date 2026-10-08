@@ -15,13 +15,13 @@ const renderPicker = () => render(
 
 beforeEach(() => {
   localStorage.clear();
-  document.documentElement.classList.remove('dark', 'theme-cat');
+  document.documentElement.classList.remove('dark', 'theme-cat', 'theme-cat-dark');
   document.documentElement.style.removeProperty('--font-family-base');
   document.documentElement.style.fontSize = '';
 });
 
 afterEach(() => {
-  document.documentElement.classList.remove('dark', 'theme-cat');
+  document.documentElement.classList.remove('dark', 'theme-cat', 'theme-cat-dark');
   document.documentElement.style.removeProperty('--font-family-base');
   document.documentElement.style.fontSize = '';
   vi.restoreAllMocks();
@@ -47,6 +47,51 @@ describe('theme picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Light' }));
     await waitFor(() => expect(document.documentElement).not.toHaveClass('dark'));
     expect(localStorage.getItem('theme')).toBe('light');
+  });
+
+  test('persists Dark Warm Kitty and keeps it dark independently of system changes', async () => {
+    let prefersDark = false;
+    const listeners = new Set<(event: MediaQueryListEvent) => void>();
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query === '(prefers-color-scheme: dark)' && prefersDark,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn((_type, listener) => {
+        if (typeof listener === 'function') listeners.add(listener as (event: MediaQueryListEvent) => void);
+      }),
+      removeEventListener: vi.fn((_type, listener) => {
+        listeners.delete(listener as (event: MediaQueryListEvent) => void);
+      }),
+      dispatchEvent: vi.fn(),
+    } as MediaQueryList));
+    localStorage.setItem('fontFamily', 'serif');
+    localStorage.setItem('fontScale', 'large');
+
+    const view = renderPicker();
+    fireEvent.click(screen.getByRole('button', { name: 'Dark Warm Kitty' }));
+    await waitFor(() => {
+      expect(document.documentElement).toHaveClass('dark', 'theme-cat', 'theme-cat-dark');
+    });
+    expect(localStorage.getItem('theme')).toBe('cat-dark');
+    expect(document.documentElement.style.getPropertyValue('--font-family-base')).toContain('ui-serif');
+    expect(document.documentElement.style.fontSize).toBe('18px');
+
+    prefersDark = true;
+    act(() => listeners.forEach((listener) => listener({ matches: true } as MediaQueryListEvent)));
+    expect(document.documentElement).toHaveClass('dark', 'theme-cat', 'theme-cat-dark');
+
+    view.unmount();
+    renderPicker();
+    expect(screen.getByRole('button', { name: 'Dark Warm Kitty' })).toHaveAttribute('aria-pressed', 'true');
+    expect(document.documentElement).toHaveClass('dark', 'theme-cat', 'theme-cat-dark');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Warm Kitty' }));
+    await waitFor(() => expect(document.documentElement).toHaveClass('theme-cat'));
+    expect(document.documentElement).not.toHaveClass('dark', 'theme-cat-dark');
+    expect(document.documentElement.style.getPropertyValue('--font-family-base')).toContain('ui-serif');
+    expect(document.documentElement.style.fontSize).toBe('18px');
   });
 
   test('system mode still follows a dark system preference', async () => {
@@ -113,14 +158,19 @@ describe('theme picker', () => {
     expect(document.documentElement.style.fontSize).toBe('18px');
   });
 
-  test('shows the Warm Kitty option in both Chinese locales', () => {
+  test('shows both cat theme options in all supported locales', () => {
+    renderPicker();
+    expect(screen.getByRole('button', { name: 'Dark Warm Kitty' })).toBeInTheDocument();
+
     localStorage.setItem('language', 'zh');
     const view = renderPicker();
     expect(screen.getByRole('button', { name: '暖心小貓' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '暗黑暖心小貓' })).toBeInTheDocument();
 
     view.unmount();
     localStorage.setItem('language', 'zh-CN');
     renderPicker();
     expect(screen.getByRole('button', { name: '暖心小猫' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '暗黑暖心小猫' })).toBeInTheDocument();
   });
 });
