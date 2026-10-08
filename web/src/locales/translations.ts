@@ -22,6 +22,13 @@ export const translations = {
   filter: { en: 'Filter', zh: '篩選', 'zh-CN': '筛选' },
   sort: { en: 'Sort', zh: '排序', 'zh-CN': '排序' },
   sortBy: { en: 'Sort', zh: '排序', 'zh-CN': '排序' },
+  sortCategories: { en: 'Reorder', zh: '調整順序', 'zh-CN': '调整顺序' },
+  doneSortingCategories: { en: 'Done', zh: '完成', 'zh-CN': '完成' },
+  reorderCategoriesHint: { en: 'Drag categories or use the arrows to change their order.', zh: '拖曳類別或使用箭頭調整順序。', 'zh-CN': '拖动分类或使用箭头调整顺序。' },
+  moveCategoryUp: { en: 'Move category up', zh: '類別上移', 'zh-CN': '分类上移' },
+  moveCategoryDown: { en: 'Move category down', zh: '類別下移', 'zh-CN': '分类下移' },
+  savingOrder: { en: 'Saving...', zh: '儲存中…', 'zh-CN': '保存中…' },
+  saveOrderFailed: { en: 'Could not save category order. Please try again.', zh: '無法儲存類別順序，請再試一次。', 'zh-CN': '无法保存分类顺序，请重试。' },
   
   // CRUD notifications
   successfullyCreated: { en: 'Successfully created!', zh: '新增成功！', 'zh-CN': '添加成功！' },

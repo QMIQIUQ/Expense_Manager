@@ -11,6 +11,7 @@ import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
+import { sortCategories } from '../utils/categoryOrder';
 import { budgetService } from '../services/budgetService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
@@ -834,23 +835,26 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Categories
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
+    const existingOrders = categories.map((category) => category.order).filter((order): order is number => Number.isFinite(order));
+    const nextOrder = existingOrders.length > 0 ? Math.max(categories.length - 1, ...existingOrders) + 1 : undefined;
+    const newCategoryData = nextOrder === undefined ? categoryData : { ...categoryData, order: nextOrder };
     
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticCategory: Category = {
-      ...categoryData,
+      ...newCategoryData,
       id: tempId,
       userId: currentUser.uid,
       createdAt: new Date(),
     };
-    setCategories((prev) => [...prev, optimisticCategory]);
+    setCategories((prev) => sortCategories([...prev, optimisticCategory]));
     
     // Update cache optimistically
-    dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => [...data, optimisticCategory]);
+    dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => sortCategories([...data, optimisticCategory]));
 
     await optimisticCRUD.run(
-      { type: 'create', data: categoryData },
-      () => categoryService.create({ ...categoryData, userId: currentUser.uid }),
+      { type: 'create', data: newCategoryData },
+      () => categoryService.create({ ...newCategoryData, userId: currentUser.uid }),
       {
         entityType: 'category',
         retryToQueueOnFail: true,
@@ -874,6 +878,25 @@ const Dashboard: React.FC = () => {
         },
       }
     );
+  };
+
+  const handleReorderCategories = async (orderedIds: string[]): Promise<void> => {
+    if (!currentUser || orderedIds.length !== categories.length || new Set(orderedIds).size !== categories.length ||
+        categories.some((category) => !category.id || !orderedIds.includes(category.id))) return;
+
+    const previousCategories = categories;
+    const byId = new Map(categories.map((category) => [category.id, category]));
+    const reordered = orderedIds.map((id, index) => ({ ...byId.get(id)!, order: index }));
+    setCategories(reordered);
+    dataService.updateCache<Category[]>('categories', currentUser.uid, () => reordered);
+
+    try {
+      await categoryService.updateOrder(orderedIds);
+    } catch (error) {
+      setCategories(previousCategories);
+      dataService.updateCache<Category[]>('categories', currentUser.uid, () => previousCategories);
+      throw error;
+    }
   };
 
   const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
@@ -2763,6 +2786,7 @@ const Dashboard: React.FC = () => {
                 onAdd={handleAddCategory}
                 onUpdate={handleUpdateCategory}
                 onDelete={handleDeleteCategory}
+                onReorder={handleReorderCategories}
                 onUpdateExpense={handleInlineUpdateExpense}
                 onDeleteExpense={handleDeleteExpense}
               />

@@ -8,9 +8,11 @@ import {
   query,
   where,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Category, DEFAULT_CATEGORIES } from '../types';
+import { sortCategories } from '../utils/categoryOrder';
 
 const COLLECTION_NAME = 'categories';
 
@@ -47,11 +49,21 @@ export const categoryService = {
   async getAll(userId: string): Promise<Category[]> {
     const q = query(collection(db, COLLECTION_NAME), where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
+    return sortCategories(querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate(),
-    })) as Category[];
+    })) as Category[]);
+  },
+
+  async updateOrder(orderedIds: string[]): Promise<void> {
+    for (let offset = 0; offset < orderedIds.length; offset += 500) {
+      const batch = writeBatch(db);
+      orderedIds.slice(offset, offset + 500).forEach((id, index) => {
+        batch.update(doc(db, COLLECTION_NAME, id), { order: offset + index });
+      });
+      await batch.commit();
+    }
   },
 
   // Update a category

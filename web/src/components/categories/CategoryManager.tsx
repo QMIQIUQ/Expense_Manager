@@ -9,6 +9,7 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
+import { sortCategories } from '../../utils/categoryOrder';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -35,6 +36,7 @@ interface CategoryManagerProps {
   onAdd: (category: Omit<Category, 'id' | 'userId' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Category>) => void;
   onDelete: (id: string) => void;
+  onReorder: (orderedIds: string[]) => Promise<void>;
   onUpdateExpense?: (id: string, updates: Partial<Expense>) => void;
   onDeleteExpense?: (id: string) => void;
 }
@@ -45,6 +47,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onAdd,
   onUpdate,
   onDelete,
+  onReorder,
   onUpdateExpense,
   onDeleteExpense,
 }) => {
@@ -54,6 +57,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSorting, setIsSorting] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -100,8 +108,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   const duplicateNames = getDuplicateCategoryNames();
   
-  // Sort categories by name
-  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedCategories = sortCategories(categories);
   
   // Filter categories by search term
   const filteredCategories = sortedCategories.filter((category) =>
@@ -117,6 +124,26 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     clearSelection,
     setIsSelectionMode
   } = useMultiSelect<Category>();
+
+  const reorderCategories = async (fromId: string, toId: string) => {
+    if (isSavingOrder || fromId === toId) return;
+    const fromIndex = sortedCategories.findIndex((category) => category.id === fromId);
+    const toIndex = sortedCategories.findIndex((category) => category.id === toId);
+    if (fromIndex < 0 || toIndex < 0 || sortedCategories.some((category) => !category.id)) return;
+
+    const reordered = [...sortedCategories];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setOrderError(false);
+    setIsSavingOrder(true);
+    try {
+      await onReorder(reordered.map((category) => category.id!));
+    } catch {
+      setOrderError(true);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
 
   const startEdit = (category: Category) => {
     // Close the add form if it's open
@@ -151,14 +178,28 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       <style>{responsiveStyles}</style>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('categories')}</h2>
-        <button onClick={() => {
-          setIsAdding(true);
-          // Cancel any editing when opening add form
-          setEditingCategory(null);
-        }} className="btn btn-accent-light">
-          <PlusIcon size={18} />
-          <span>{t('addCategory')}</span>
-        </button>
+        <div style={styles.headerActions}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSorting((value) => !value);
+              setSearchTerm('');
+              setOrderError(false);
+            }}
+            disabled={isSelectionMode || isSavingOrder}
+            className={`btn ${isSorting ? 'btn-accent-light' : 'btn-secondary'}`}
+            aria-pressed={isSorting}
+          >
+            ↕ {isSorting ? t('doneSortingCategories') : t('sortCategories')}
+          </button>
+          {!isSorting && <button onClick={() => {
+            setIsAdding(true);
+            setEditingCategory(null);
+          }} className="btn btn-accent-light">
+            <PlusIcon size={18} />
+            <span>{t('addCategory')}</span>
+          </button>}
+        </div>
       </div>
 
       {/* Add Category Popup Modal */}
@@ -181,15 +222,17 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       </PopupModal>
 
       {/* Search Bar */}
-      <div style={styles.searchContainer}>
+      {isSorting && <p style={styles.sortHint}>{t('reorderCategoriesHint')}{isSavingOrder ? ` · ${t('savingOrder')}` : ''}</p>}
+      {orderError && <p role="alert" style={styles.orderError}>{t('saveOrderFailed')}</p>}
+      {!isSorting && <div style={styles.searchContainer}>
         <SearchBar
           placeholder={t('searchByName') || 'Search by name...'}
           value={searchTerm}
           onChange={setSearchTerm}
         />
-      </div>
+      </div>}
 
-      <MultiSelectToolbar
+      {!isSorting && <MultiSelectToolbar
         isSelectionMode={isSelectionMode}
         selectedCount={selectedIds.size}
         onToggleSelectionMode={toggleSelectionMode}
@@ -200,7 +243,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           setBulkDeleteConfirm(true);
         }}
         style={{ marginBottom: '16px' }}
-      />
+      />}
 
       <div style={styles.categoryList}>
         {filteredCategories.length === 0 ? (
@@ -208,14 +251,26 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             <p>{categories.length === 0 ? t('noCategories') || 'No categories yet' : t('noResults') || 'No results found'}</p>
           </div>
         ) : (
-          filteredCategories.map((category) => {
+          filteredCategories.map((category, index) => {
             const isDuplicate = duplicateNames.has(category.name);
             return (
               <div 
                 key={category.id} 
                 className={`category-card ${isDuplicate ? 'warning-border' : ''}`} 
+                onDragOver={(event) => {
+                  if (!isSorting || isSavingOrder || !draggedId) return;
+                  event.preventDefault();
+                  setDragOverId(category.id!);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (isSorting && draggedId && category.id) void reorderCategories(draggedId, category.id);
+                  setDraggedId(null);
+                  setDragOverId(null);
+                }}
                 style={{
                   ...(openMenuId === category.id ? { zIndex: 9999 } : {}),
+                  ...(isSorting && dragOverId === category.id ? { outline: '2px solid var(--accent-primary)' } : {}),
                   display: 'flex',
                   flexDirection: 'row',
                   justifyContent: 'space-between',
@@ -226,6 +281,31 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   borderRadius: '8px',
                 }}
               >
+                {isSorting && (
+                  <div style={styles.sortControls}>
+                    <span
+                      draggable={!isSavingOrder}
+                      onDragStart={(event) => {
+                        if (!category.id) return;
+                        event.dataTransfer.effectAllowed = 'move';
+                        setDraggedId(category.id);
+                      }}
+                      onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                      style={styles.dragHandle}
+                      aria-hidden="true"
+                    >⋮⋮</span>
+                    <div style={styles.moveButtons}>
+                      <button type="button" className="btn-icon" style={styles.moveButton}
+                        aria-label={`${t('moveCategoryUp')}: ${category.name}`}
+                        disabled={index === 0 || isSavingOrder}
+                        onClick={() => void reorderCategories(category.id!, filteredCategories[index - 1].id!)}>↑</button>
+                      <button type="button" className="btn-icon" style={styles.moveButton}
+                        aria-label={`${t('moveCategoryDown')}: ${category.name}`}
+                        disabled={index === filteredCategories.length - 1 || isSavingOrder}
+                        onClick={() => void reorderCategories(category.id!, filteredCategories[index + 1].id!)}>↓</button>
+                    </div>
+                  </div>
+                )}
                 {isSelectionMode && (
                   <div style={{ paddingRight: '12px', display: 'flex', alignItems: 'center' }}>
                     <input
@@ -250,7 +330,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     </div>
                     
                     {/* Desktop: Show individual buttons */}
-                    <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
+                    {!isSorting && <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
                       <button onClick={() => startEdit(category)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -261,10 +341,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       >
                         <DeleteIcon size={18} />
                       </button>
-                    </div>
+                    </div>}
 
                     {/* Mobile: Show hamburger menu */}
-                    <div className="mobile-actions">
+                    {!isSorting && <div className="mobile-actions">
                       <div style={styles.menuContainer}>
                         <button
                           className="menu-trigger-button"
@@ -300,7 +380,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </div>}
                   </>
               </div>
             );
@@ -499,6 +579,53 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap' as const,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  sortHint: {
+    margin: 0,
+    color: 'var(--text-secondary)',
+    fontSize: '14px',
+  },
+  orderError: {
+    margin: 0,
+    padding: '10px 12px',
+    borderRadius: '8px',
+    color: 'var(--error-text)',
+    backgroundColor: 'var(--error-bg)',
+    fontSize: '14px',
+  },
+  sortControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginRight: '10px',
+    flexShrink: 0,
+  },
+  dragHandle: {
+    color: 'var(--text-secondary)',
+    cursor: 'grab',
+    padding: '4px',
+    fontSize: '20px',
+    userSelect: 'none' as const,
+  },
+  moveButtons: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '2px',
+  },
+  moveButton: {
+    padding: '0 5px',
+    minWidth: '32px',
+    minHeight: '32px',
+    color: 'var(--text-primary)',
+    lineHeight: 1,
   },
   title: {
     margin: 0,

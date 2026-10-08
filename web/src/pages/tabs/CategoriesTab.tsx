@@ -8,11 +8,12 @@ interface Props {
   onAdd: (data: Omit<Category, 'id' | 'userId' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Category>) => void;
   onDelete: (id: string) => void;
+  onReorder: (orderedIds: string[]) => Promise<void>;
   onUpdateExpense?: (id: string, updates: Partial<Expense>) => void;
   onDeleteExpense?: (id: string) => void;
 }
 
-const CategoriesTab: React.FC<Props> = ({ categories, expenses, onAdd, onUpdate, onDelete, onUpdateExpense, onDeleteExpense }) => {
+const CategoriesTab: React.FC<Props> = ({ categories, expenses, onAdd, onUpdate, onDelete, onReorder, onUpdateExpense, onDeleteExpense }) => {
   return (
     <div style={styles.section}>
       <CategoryManager
@@ -21,6 +22,7 @@ const CategoriesTab: React.FC<Props> = ({ categories, expenses, onAdd, onUpdate,
         onAdd={onAdd}
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onReorder={onReorder}
         onUpdateExpense={onUpdateExpense}
         onDeleteExpense={onDeleteExpense}
       />

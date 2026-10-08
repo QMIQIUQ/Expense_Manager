@@ -100,6 +100,7 @@ export interface Category {
   icon: string;
   color: string;
   isDefault: boolean;
+  order?: number;
   type?: 'expense' | 'e-wallet'; // Type of category (expense categories vs e-wallet categories)
   createdAt: Date;
 }
