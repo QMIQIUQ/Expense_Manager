@@ -10,6 +10,27 @@
   display: none;
 }
 
+.theme-cat .auth-startup-loading {
+  color: var(--text-secondary) !important;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.theme-cat .auth-startup-cat {
+  display: block;
+  height: auto;
+  max-width: min(300px, 72vw);
+  width: min(300px, 72vw);
+}
+
+.auth-startup-paw {
+  display: none;
+}
+
+.theme-cat .auth-startup-paw {
+  display: inline-flex;
+}
+
 .theme-cat {
   color-scheme: light;
   --bg-primary: #fff9f4;
@@ -252,10 +273,10 @@
 
 .theme-cat .cat-empty-illustration {
   display: block;
-  height: 110px;
-  margin: 0 auto 14px;
+  height: auto;
+  margin: 0 auto 18px;
   max-width: 100%;
-  width: 160px;
+  width: min(320px, 100%);
 }
 
 .theme-cat .cat-widget-illustration {
@@ -282,6 +303,57 @@
   .theme-cat .cat-header-illustration {
     height: 40px;
     width: 46px;
+  }
+
+  .theme-cat .cat-empty-illustration {
+    width: min(220px, 100%);
+  }
+}
+
+/* Replace only the rotating text glyphs in cat mode. Existing progress
+   messages, bars, completion controls, and semantic state colors stay intact. */
+.theme-cat .loading-status-icon {
+  animation: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  height: 20px;
+  position: relative;
+  width: 20px;
+}
+
+.theme-cat .loading-status-icon::before {
+  animation: kitty-status-ring 1.1s linear infinite;
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 22%, transparent);
+  border-radius: 50%;
+  border-top-color: var(--accent-primary);
+  content: '';
+  inset: 0;
+  position: absolute;
+}
+
+.theme-cat .loading-status-icon::after {
+  background: url('./assets/paw.svg') center / contain no-repeat;
+  content: '';
+  height: 9px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+}
+
+@keyframes kitty-status-ring {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-cat .loading-status-icon {
+    animation: none !important;
+  }
+
+  .theme-cat .loading-status-icon::before {
+    animation: none;
+    border-style: dashed;
   }
 }
 

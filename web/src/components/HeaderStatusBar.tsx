@@ -58,7 +58,7 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
           <div style={styles.statusRow}>
             <div style={styles.statusLeft}>
               {importProgress.status === 'importing' && (
-                <span style={styles.spinnerIcon}>⟳</span>
+                <span className="loading-status-icon" style={styles.spinnerIcon} aria-hidden="true">⟳</span>
               )}
               {importProgress.status === 'complete' && (
                 <span style={{ fontSize: '16px', color: 'var(--success-text)' }}>✓</span>
@@ -112,7 +112,7 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
           <div style={styles.statusRow}>
             <div style={styles.statusLeft}>
               {deleteProgress.status === 'deleting' && (
-                <span style={styles.spinnerIcon}>⟳</span>
+                <span className="loading-status-icon" style={styles.spinnerIcon} aria-hidden="true">⟳</span>
               )}
               {deleteProgress.status === 'complete' && (
                 <span style={{ fontSize: '16px', color: 'var(--success-text)' }}>✓</span>
@@ -159,7 +159,7 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
         >
           <div style={styles.statusRow}>
             <div style={styles.statusLeft}>
-              <span style={styles.spinnerIcon}>⟳</span>
+              <span className="loading-status-icon" style={styles.spinnerIcon} aria-hidden="true">⟳</span>
               <span style={styles.statusText}>{t('updatingData')}</span>
             </div>
           </div>
@@ -230,7 +230,6 @@ const styles = {
   },
   spinnerIcon: {
     display: 'inline-block',
-    animation: 'spin 1s linear infinite',
     fontSize: '16px',
     color: 'var(--accent-primary)',
   },

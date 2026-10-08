@@ -511,7 +511,9 @@ export const translations = {
 
   // Appearance
   appearance: { en: 'Appearance', zh: '外觀', 'zh-CN': '外观' },
+  themeBrightness: { en: 'Brightness', zh: '明暗模式', 'zh-CN': '明暗模式' },
   themeLabel: { en: 'Theme', zh: '主題', 'zh-CN': '主题' },
+  themeDefault: { en: 'Default', zh: '預設', 'zh-CN': '默认' },
   themeLight: { en: 'Light', zh: '淺色', 'zh-CN': '浅色' },
   themeDark: { en: 'Dark', zh: '深色', 'zh-CN': '深色' },
   themeSystem: { en: 'Follow system', zh: '跟隨系統', 'zh-CN': '跟随系统' },

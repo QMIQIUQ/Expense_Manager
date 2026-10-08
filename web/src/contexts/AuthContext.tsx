@@ -17,6 +17,8 @@ import {
 import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirebaseConfigured, firebaseSetupMessage } from '../config/firebase';
 import { COLLECTIONS } from '../constants/collections';
+import CatIllustration from '../components/CatIllustration';
+import InlineLoading from '../components/InlineLoading';
 
 export interface AuthContextType {
   currentUser: User | null;
@@ -212,6 +214,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     <AuthContext.Provider value={value}>
       {loading ? (
         <div
+          className="auth-startup-loading"
+          role="status"
+          aria-live="polite"
           style={{
             display: 'flex',
             justifyContent: 'center',
@@ -221,7 +226,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             color: 'var(--text-secondary)',
           }}
         >
-          Loading...
+          <CatIllustration variant="sleep" className="auth-startup-cat" />
+          <span className="auth-startup-paw"><InlineLoading size={34} /></span>
+          <span>Loading...</span>
         </div>
       ) : (
         children

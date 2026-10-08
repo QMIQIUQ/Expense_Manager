@@ -432,6 +432,10 @@ button:not(:disabled):hover {
 }
 
 /* Optimistic UI styles */
+.loading-status-icon {
+  animation: spin 1s linear infinite;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -439,6 +443,12 @@ button:not(:disabled):hover {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-status-icon {
+    animation: none;
+  }
 }
 
 @keyframes slideIn {
