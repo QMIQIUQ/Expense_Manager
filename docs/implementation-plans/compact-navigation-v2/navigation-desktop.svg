@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Manager 精簡桌機介面提案</title>
+  <desc id="desc">將品牌、依設定排序且可水平捲動的全部導覽項目與必要操作合併到一條 56 像素頁首，並保留底部獨立的新增支出與掃描收據快捷按鈕。</desc>
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+    <style>
+      text{font-family:Inter,"Noto Sans TC","Microsoft JhengHei",sans-serif;fill:#1f2937}.muted{fill:#737b8b}.tiny{font-size:12px}.small{font-size:14px}.label{font-size:15px;font-weight:600}.title{font-size:30px;font-weight:720}.inverse-text{fill:#fff!important}
+    </style>
+  </defs>
+  <rect width="1440" height="900" rx="28" fill="#f7f8fb"/>
+  <text x="64" y="54" class="tiny" fill="#7c3aed" font-weight="700" letter-spacing="1.3">PROPOSED · COMPACT DESKTOP</text>
+  <text x="64" y="91" class="title" font-size="27">桌機版：一條頂列，內容往上</text>
+  <text x="64" y="119" class="small muted">導覽列目標高度 56px · 全部功能依儲存順序排列，可水平滑動</text>
+
+  <rect x="52" y="151" width="1336" height="690" rx="18" fill="#fff" stroke="#e4e7ee"/>
+  <rect x="53" y="152" width="1334" height="57" rx="17" fill="#fff"/>
+  <circle cx="88" cy="180" r="17" fill="#f2ebff"/><text x="83" y="186" class="label" fill="#7c3aed">$</text>
+  <text x="116" y="185" class="label">Expense Manager</text>
+  <path d="M267 207v-2" stroke="#e6e7ec"/>
+  <text x="295" y="185" class="small" fill="#6b7280">總覽</text><path d="M286 204h46" stroke="url(#accent)" stroke-width="2.5"/>
+  <text x="374" y="185" class="small muted">支出</text><text x="453" y="185" class="small muted">收入</text><text x="532" y="185" class="small muted">預算</text>
+  <text x="593" y="185" class="small muted">分類</text><text x="650" y="185" class="small muted">定期付款</text><text x="738" y="185" class="small muted">付款方式</text><text x="831" y="185" class="small muted">設定</text>
+  <text x="875" y="185" class="tiny muted">本月</text><text x="913" y="185" class="small">2026 年 10 月　⌄</text>
+  <rect x="1160" y="159" width="42" height="42" rx="12" fill="#fff" stroke="#eceaf2"/><path d="M1172 182v-7a7 7 0 0 1 14 0v7l3 4h-20z" fill="none" stroke="#647084" stroke-width="1.6"/><circle cx="1184" cy="166" r="2.5" fill="#ef6262"/>
+  <rect x="1213" y="159" width="42" height="42" rx="12" fill="#fff" stroke="#eceaf2"/><path d="M1225 171h18m-18 7h18m-18 7h18" stroke="#647084" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="1300" cy="180" r="18" fill="#efe5dc"/><text x="1290" y="185" class="tiny" font-weight="700" fill="#795b4d">AL</text><path d="m1331 177 4 4 4-4" fill="none" stroke="#737b8b" stroke-width="1.5"/>
+  <line x1="53" y1="209" x2="1387" y2="209" stroke="#eef0f4"/>
+
+  <text x="96" y="267" class="tiny" fill="#7c3aed" font-weight="700" letter-spacing="1.1">總覽 · 2026 年 10 月</text>
+  <text x="96" y="310" class="title">收支概況</text>
+  <text x="96" y="339" class="small muted">本月摘要</text>
+
+  <rect x="96" y="376" width="1248" height="128" rx="14" fill="#fff" stroke="#eceef3"/>
+  <text x="124" y="410" class="tiny muted">本月支出</text><text x="124" y="454" class="title" font-size="31">$ 24,680</text><text x="124" y="480" class="tiny" fill="#3d9b73">↓ 8.2% 較上月</text>
+  <line x1="435" y1="397" x2="435" y2="483" stroke="#eceef3"/>
+  <text x="472" y="410" class="tiny muted">本月收入</text><text x="472" y="454" class="title" font-size="31">$ 38,500</text><text x="472" y="480" class="tiny muted">4 筆已記錄</text>
+  <line x1="780" y1="397" x2="780" y2="483" stroke="#eceef3"/>
+  <text x="817" y="410" class="tiny muted">預算使用</text><text x="817" y="454" class="title" font-size="31">62%</text><rect x="817" y="469" width="240" height="6" rx="3" fill="#eeeaf5"/><rect x="817" y="469" width="149" height="6" rx="3" fill="url(#accent)"/>
+  <line x1="1116" y1="397" x2="1116" y2="483" stroke="#eceef3"/><text x="1150" y="410" class="tiny muted">本月結餘</text><text x="1150" y="454" class="title" font-size="28">$ 13,820</text><text x="1150" y="480" class="tiny muted">收入 − 支出</text>
+
+  <rect x="96" y="528" width="1248" height="225" rx="14" fill="#fff" stroke="#eceef3"/>
+  <text x="124" y="567" class="label">收支趨勢</text><text x="124" y="590" class="tiny muted">近 6 個月 · 點選期間切換</text>
+  <path d="M140 704 C220 695 235 674 305 681 S410 654 470 663 S560 630 625 640 S740 612 790 622 S900 594 960 602 S1060 568 1115 580 S1220 550 1290 562" fill="none" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M140 704 C220 695 235 674 305 681 S410 654 470 663 S560 630 625 640 S740 612 790 622 S900 594 960 602 S1060 568 1115 580 S1220 550 1290 562 L1290 722 L140 722Z" fill="#f5f0ff" opacity=".75"/>
+  <line x1="140" y1="722" x2="1290" y2="722" stroke="#eef0f4"/><text x="140" y="743" class="tiny muted">5 月</text><text x="360" y="743" class="tiny muted">6 月</text><text x="590" y="743" class="tiny muted">7 月</text><text x="820" y="743" class="tiny muted">8 月</text><text x="1050" y="743" class="tiny muted">9 月</text><text x="1260" y="743" class="tiny muted">10 月</text>
+  <rect x="80" y="774" width="172" height="48" rx="24" fill="url(#accent)"/><circle cx="104" cy="798" r="9" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M104 792v12m-6-6h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><text x="123" y="803" class="tiny inverse-text" font-weight="700">新增支出</text>
+  <rect x="263" y="774" width="164" height="48" rx="24" fill="#fff" stroke="#e4e2eb"/><path d="M285 803v-8a6 6 0 0 1 12 0v8l3 3h-18z" fill="none" stroke="#647084" stroke-width="1.4"/><text x="310" y="803" class="tiny" font-weight="700">掃描收據</text>
+  <text x="448" y="803" class="tiny muted">保留兩個獨立入口，點擊後直接進入原操作。</text>
+</svg>

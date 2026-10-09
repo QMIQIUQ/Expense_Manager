@@ -227,7 +227,7 @@
   background: linear-gradient(90deg, rgba(162, 69, 98, .08), rgba(196, 111, 135, .13)) !important;
 }
 
-.theme-cat .floating-btn-hover {
+.theme-cat .floating-expense-action-primary {
   background: var(--accent-primary) !important;
   box-shadow: 0 8px 20px rgba(162, 69, 98, .25) !important;
 }
@@ -487,7 +487,7 @@
   background: linear-gradient(90deg, rgba(240, 164, 188, .1), rgba(223, 143, 174, .18));
 }
 
-.theme-cat.theme-cat-dark .floating-btn-hover {
+.theme-cat.theme-cat-dark .floating-expense-action-primary {
   color: #321a25 !important;
   box-shadow: 0 8px 20px rgba(240, 164, 188, .28) !important;
 }

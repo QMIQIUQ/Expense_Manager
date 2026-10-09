@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, DEFAULT_FEATURES, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode } from '../types';
+import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode, DEFAULT_FEATURES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
@@ -32,8 +32,10 @@ import CustomizableDashboard from '../components/dashboard/CustomizableDashboard
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
 import CurrencySelector from '../components/common/CurrencySelector';
-import { useLongPress } from '../hooks/useLongPress';
-import { PlusIcon, UploadIcon } from '../components/icons';
+import CompactNavigation from '../components/navigation/CompactNavigation';
+import FloatingExpenseActions from '../components/navigation/FloatingExpenseActions';
+import DashboardMenuSection from '../components/navigation/DashboardMenuSection';
+import { getNavigationFeatures } from '../components/navigation/navigationConfig';
 
 // Lazy load heavy components
 const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
@@ -59,16 +61,6 @@ import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY } from '../utils/currencyUtils';
 
 //#region Helper Functions
-// Helper function to get display name
-const getDisplayName = (user: { displayName?: string | null; email?: string | null } | null): string => {
-  if (!user) return '';
-  if (user.displayName) return user.displayName;
-  if (user.email) {
-    const emailPrefix = user.email.split('@')[0];
-    return emailPrefix || user.email;
-  }
-  return '';
-};
 //#endregion
 
 const Dashboard: React.FC = () => {
@@ -116,8 +108,8 @@ const Dashboard: React.FC = () => {
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
-  const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
+  const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
@@ -153,6 +145,19 @@ const Dashboard: React.FC = () => {
   const isSimplifiedChinese = language === 'zh-CN';
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   const addExpenseLabel = t('addNewExpense');
+  const { orderedFeatures: navigationFeatures } = getNavigationFeatures(featureSettings);
+  const navigationLabels: Record<FeatureTab, string> = {
+    dashboard: t('dashboard'),
+    expenses: t('expenses'),
+    incomes: t('incomes'),
+    categories: t('categories'),
+    budgets: t('budgets'),
+    recurring: t('recurring'),
+    paymentMethods: t('paymentMethods'),
+    settings: t('featureSettings'),
+    profile: t('profile'),
+    admin: t('admin'),
+  };
 
   const lastUsedCurrency = useMemo(() => {
     const latestExpense = expenses[0];
@@ -495,8 +500,8 @@ const Dashboard: React.FC = () => {
     if (!showHamburgerMenu) {
       setOpenLanguageSection(false);
       setOpenAppearanceSection(false);
-      setOpenImportExportSection(false);
       setOpenFeaturesSection(false);
+      setOpenImportExportSection(false);
     }
   }, [showHamburgerMenu]);
   //#endregion
@@ -510,7 +515,8 @@ const Dashboard: React.FC = () => {
     showImportModal ||
     showAddSheet ||
     showAddExpenseForm ||
-    isDashboardCustomizing;
+    isDashboardCustomizing ||
+    showRadialDateMenu;
   //#endregion
 
   //#region Event Handlers - Auth
@@ -2071,9 +2077,8 @@ const Dashboard: React.FC = () => {
 
   //#region Long Press Handlers
   // Handle long press on FAB to show radial date menu
-  const handleLongPress = (event: React.TouchEvent | React.MouseEvent) => {
+  const handleLongPress = (target: HTMLElement) => {
     // Get the position for the radial menu
-    const target = event.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
@@ -2100,12 +2105,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Configure long press hook
-  const longPressHandlers = useLongPress({
-    onLongPress: handleLongPress,
-    onClick: handleFabClick,
-    delay: 500, // 500ms long press delay
-  });
   //#endregion
 
   //#region Render
@@ -2119,7 +2118,7 @@ const Dashboard: React.FC = () => {
         onChange={handleReceiptEntrySelected}
         style={{ display: 'none' }}
       />
-      <div className="max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
+      <div className="dashboard-page max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
           <span className="header-logo">
@@ -2128,11 +2127,17 @@ const Dashboard: React.FC = () => {
           </span>
           <div className="header-text">
             <h1 className="header-title">{t('appTitleShort')}</h1>
-            <p className="header-subtitle">
-              {t('welcome')}, {getDisplayName(currentUser)}
-            </p>
           </div>
         </div>
+
+        <CompactNavigation
+          features={navigationFeatures}
+          activeTab={activeTab}
+          labels={navigationLabels}
+          navigationLabel={t('mainNavigation')}
+          isMobile={isMobile}
+          onNavigate={setActiveTab}
+        />
 
         <div className="header-actions">
           {/* Notification Bell */}
@@ -2174,25 +2179,13 @@ const Dashboard: React.FC = () => {
                 </div>
 
                   {/* Language Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenLanguageSection(o => !o)}
-                    aria-expanded={openLanguageSection}
-                    aria-controls="hamburger-language-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span> 🌐 Language / 語言</span>
-                    <svg
-                      className={`transition-transform ${openLanguageSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openLanguageSection && (
-                    <div id="hamburger-language-section" className="mt-2 space-y-1">
+                <DashboardMenuSection
+                  id="hamburger-language-section"
+                  title="🌐 Language / 語言"
+                  expanded={openLanguageSection}
+                  onToggle={() => setOpenLanguageSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           setLanguage('en');
@@ -2232,34 +2225,20 @@ const Dashboard: React.FC = () => {
                       >
                         简体中文
                       </button>
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Appearance Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenAppearanceSection(o => !o)}
-                    aria-expanded={openAppearanceSection}
-                    aria-controls="hamburger-appearance-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span> 🎨 {t('appearance')}</span>
-                    <svg
-                      className={`transition-transform ${openAppearanceSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openAppearanceSection && (
-                    <div id="hamburger-appearance-section" className="mt-2 space-y-3">
+                <DashboardMenuSection
+                  id="hamburger-appearance-section"
+                  title={`🎨 ${t('appearance')}`}
+                  expanded={openAppearanceSection}
+                  onToggle={() => setOpenAppearanceSection(open => !open)}
+                  contentClassName="space-y-3"
+                >
                       <ThemeToggle />
                       {/* Font Family */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontFamily')}</div>
+                        <div className="text-xs text-gray-500 mb-1 px-4">{t('fontFamily')}</div>
                         <div className="space-y-1">
                           <button
                             onClick={() => setFontFamily('system')}
@@ -2290,8 +2269,8 @@ const Dashboard: React.FC = () => {
 
                       {/* Font Size */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontSize')}</div>
-                        <div className="grid grid-cols-3 gap-2 px-1">
+                        <div className="text-xs text-gray-500 mb-1 px-4">{t('fontSize')}</div>
+                        <div className="grid grid-cols-3 gap-2 px-4">
                           <button
                             onClick={() => setFontScale('small')}
                             className={`py-2 text-sm rounded border transition-colors flex items-center justify-center ${
@@ -2327,28 +2306,16 @@ const Dashboard: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>                {/* Features Section - Collapsible */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenFeaturesSection(o => !o)}
-                    aria-expanded={openFeaturesSection}
-                    aria-controls="hamburger-features-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span>{t('features') || 'Features'}</span>
-                    <svg
-                      className={`transition-transform ${openFeaturesSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openFeaturesSection && (
-                    <div id="hamburger-features-section" className="mt-2 space-y-1">
+                </DashboardMenuSection>
+
+                {/* Features Section - Collapsible */}
+                <DashboardMenuSection
+                  id="hamburger-features-section"
+                  title={t('features') || 'Features'}
+                  expanded={openFeaturesSection}
+                  onToggle={() => setOpenFeaturesSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           setActiveTab('settings');
@@ -2356,21 +2323,18 @@ const Dashboard: React.FC = () => {
                           setOpenFeaturesSection(false);
                         }}
                         className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                          activeTab === 'settings'
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700'
+                          activeTab === 'settings' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                         }`}
                         style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         {t('featureSettings')}
                       </button>
-                      {(featureSettings?.hamburgerFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
+                      {(featureSettings?.hamburgerFeatures ?? featureSettings?.enabledFeatures ?? DEFAULT_FEATURES)
                         .map((feature) => {
                           const featureStr = feature as string;
-                          if (featureStr === 'cards' || featureStr === 'ewallets') {
-                            return 'paymentMethods' as FeatureTab;
-                          }
-                          return feature;
+                          return featureStr === 'cards' || featureStr === 'ewallets'
+                            ? 'paymentMethods' as FeatureTab
+                            : feature;
                         })
                         .filter((feature, index, array) => array.indexOf(feature) === index)
                         .filter((feature) => feature !== 'profile' && feature !== 'admin' && feature !== 'settings')
@@ -2397,9 +2361,7 @@ const Dashboard: React.FC = () => {
                                 setOpenFeaturesSection(false);
                               }}
                               className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
-                                activeTab === feature
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-700'
+                                activeTab === feature ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                               }`}
                               style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                             >
@@ -2407,30 +2369,16 @@ const Dashboard: React.FC = () => {
                             </button>
                           );
                         })}
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Import/Export Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenImportExportSection(o => !o)}
-                    aria-expanded={openImportExportSection}
-                    style={{ whiteSpace: 'nowrap' }}
-                    aria-controls="hamburger-importexport-section"
-                  >
-                    <span>Import / Export</span>
-                    <svg
-                      className={`transition-transform ${openImportExportSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openImportExportSection && (
-                    <div id="hamburger-importexport-section" className="mt-2 space-y-1">
+                <DashboardMenuSection
+                  id="hamburger-importexport-section"
+                  title="Import / Export"
+                  expanded={openImportExportSection}
+                  onToggle={() => setOpenImportExportSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           handleDownloadTemplate();
@@ -2467,9 +2415,7 @@ const Dashboard: React.FC = () => {
 
                         {t('import') || 'Import Data'}
                       </button>
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Offline Queue Status Section */}
                 {queueCount > 0 && (
@@ -2554,8 +2500,7 @@ const Dashboard: React.FC = () => {
                 )}
 
                 {/* Profile & Admin Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="space-y-1">
+                <div className="dashboard-menu-section-content dashboard-menu-account-section border-b border-gray-200 space-y-1">
                     <button
                       onClick={() => {
                         setActiveTab('profile');
@@ -2584,11 +2529,10 @@ const Dashboard: React.FC = () => {
                         {t('admin') || 'Admin'}
                       </button>
                     )}
-                  </div>
                 </div>
 
                 {/* Logout */}
-                <div className="px-4 py-2">
+                <div className="dashboard-menu-section-content dashboard-menu-logout-section">
                   <button
                     onClick={() => {
                       handleLogout();
@@ -2617,53 +2561,6 @@ const Dashboard: React.FC = () => {
         onDismissDelete={handleDismissDelete}
         isRevalidating={isRevalidating}
       />
-
-      <div className="dashboard-card dashboard-tabs" style={{ marginTop: '1rem' }}>
-        {/* Dynamically render tabs based on enabled features (use tabFeatures if available, fallback to enabledFeatures) */}
-        {(featureSettings?.tabFeatures || featureSettings?.enabledFeatures || DEFAULT_FEATURES)
-          .map((feature) => {
-            // Migrate old feature names to new ones
-            const featureStr = feature as string;
-            if (featureStr === 'cards' || featureStr === 'ewallets') {
-              return 'paymentMethods' as FeatureTab;
-            }
-            return feature;
-          })
-          .filter((feature, index, array) => {
-            // Remove duplicates (e.g., both 'cards' and 'ewallets' -> 'paymentMethods')
-            return array.indexOf(feature) === index;
-          })
-          .map((feature) => {
-            // Skip profile and admin from main tabs (they're in hamburger menu)
-            if (feature === 'profile' || feature === 'admin') return null;
-            
-            // Map feature to display label
-            const labelMap: Record<FeatureTab, string> = {
-              dashboard: t('dashboard'),
-              expenses: t('expenses'),
-              incomes: t('incomes'),
-              categories: t('categories'),
-              budgets: t('budgets'),
-              recurring: t('recurring'),
-              paymentMethods: t('paymentMethods'),
-              settings: t('featureSettings'),
-              profile: t('profile'),
-              admin: t('admin'),
-            };
-            
-            return (
-              <button
-                key={feature}
-                onClick={() => setActiveTab(feature)}
-                className={`dashboard-tab px-5 py-3 rounded font-medium text-sm transition-all ${
-                  activeTab === feature ? 'bg-primary text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {labelMap[feature]}
-              </button>
-            );
-          })}
-      </div>
 
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
@@ -2898,65 +2795,17 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Add Expense Button - unified: desktop shows expanded, mobile shows icon only */}
-      {activeTab !== 'expenses' && !showAddExpenseForm && !shouldHideFab && (
-        <div style={styles.floatingButtonGroup}>
-          <button
-            type="button"
-            {...longPressHandlers}
-            style={{
-              ...styles.floatingButton,
-              width: isMobile ? '56px' : 'auto',
-              height: '56px',
-              padding: isMobile ? '0' : '16px 24px',
-              borderRadius: isMobile ? '50%' : '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMobile ? '0' : '8px',
-              fontSize: isMobile ? '28px' : '16px',
-              fontWeight: isMobile ? 500 : 600,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            className="floating-btn-hover"
-            title={addExpenseLabel}
-            aria-label={addExpenseLabel}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
-            {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
-          </button>
-          <button
-            type="button"
-            onClick={() => openExpenseEntry({ withReceipt: true })}
-            style={{
-              ...styles.floatingButton,
-              ...styles.secondaryFloatingButton,
-              width: isMobile ? '56px' : 'auto',
-              height: '56px',
-              padding: isMobile ? '0' : '16px 24px',
-              borderRadius: isMobile ? '50%' : '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMobile ? '0' : '8px',
-              fontSize: isMobile ? '24px' : '16px',
-              fontWeight: isMobile ? 500 : 600,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            className="floating-btn-hover"
-            title={receiptActionLabel}
-            aria-label={receiptActionLabel}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
-            {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}
-          </button>
-        </div>
+      {/* Persistent quick-add actions stay available at the lower left. */}
+      {!shouldHideFab && (
+        <FloatingExpenseActions
+          isMobile={isMobile}
+          addExpenseLabel={addExpenseLabel}
+          scanReceiptLabel={receiptActionLabel}
+          onAddExpense={handleFabClick}
+          onScanReceipt={() => openExpenseEntry({ withReceipt: true })}
+          onLongPress={handleLongPress}
+        />
       )}
-
       {/* Radial Date Menu - shown on long press of FAB */}
       <RadialDateMenu
         isOpen={showRadialDateMenu}
@@ -3026,65 +2875,6 @@ const Dashboard: React.FC = () => {
         />
       )}
     </div>
-      {/* Floating Add button visible on Expenses tab (responsive like others) */}
-      {activeTab === 'expenses' && !showAddSheet && !shouldHideFab && (
-        <div style={styles.floatingButtonGroup}>
-          <button
-            type="button"
-            {...longPressHandlers}
-            aria-label={addExpenseLabel}
-            style={{
-              ...styles.floatingButton,
-              width: isMobile ? '56px' : 'auto',
-              height: '56px',
-              padding: isMobile ? '0' : '16px 24px',
-              borderRadius: isMobile ? '50%' : '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMobile ? '0' : '8px',
-              fontSize: isMobile ? '28px' : '16px',
-              fontWeight: isMobile ? 500 : 600,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            className="floating-btn-hover"
-            title={addExpenseLabel}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <PlusIcon size={isMobile ? 28 : 20} style={{ flexShrink: 0 }} />
-            {!isMobile && <span style={{ lineHeight: 1 }}>{addExpenseLabel}</span>}
-          </button>
-          <button
-            type="button"
-            aria-label={receiptActionLabel}
-            onClick={() => openExpenseEntry({ withReceipt: true })}
-            style={{
-              ...styles.floatingButton,
-              ...styles.secondaryFloatingButton,
-              width: isMobile ? '56px' : 'auto',
-              height: '56px',
-              padding: isMobile ? '0' : '16px 24px',
-              borderRadius: isMobile ? '50%' : '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMobile ? '0' : '8px',
-              fontSize: isMobile ? '24px' : '16px',
-              fontWeight: isMobile ? 500 : 600,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            className="floating-btn-hover"
-            title={receiptActionLabel}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <UploadIcon size={isMobile ? 24 : 18} style={{ flexShrink: 0 }} />
-            {!isMobile && <span style={{ lineHeight: 1 }}>{receiptActionLabel}</span>}
-          </button>
-        </div>
-      )}
-
       {/* Bottom Sheet for adding expense */}
       {activeTab === 'expenses' && (
         <PopupModal
@@ -3133,37 +2923,5 @@ const Dashboard: React.FC = () => {
     </>
   );
 };
-
-const styles = {
-  floatingButtonGroup: {
-    position: 'fixed' as const,
-    bottom: '24px',
-    left: '24px',
-    display: 'flex',
-    gap: '12px',
-    zIndex: 9999,
-    alignItems: 'center',
-    flexWrap: 'wrap' as const,
-  },
-  floatingButton: {
-    padding: '16px 24px',
-    background: 'var(--tab-active-bg)',
-    color: 'var(--tab-active-text)',
-    border: 'none',
-    borderRadius: '50px',
-    fontSize: '16px',
-    fontWeight: '600' as const,
-    cursor: 'pointer',
-    boxShadow: 'var(--purple-glow-strong)',
-    transition: 'all 0.3s ease',
-  },
-  secondaryFloatingButton: {
-    background: 'var(--card-bg, white)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-color, #e5e7eb)',
-    boxShadow: '0 8px 24px var(--shadow-md)',
-  },
-};
-//#endregion
 
 export default Dashboard;

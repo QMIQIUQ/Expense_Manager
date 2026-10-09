@@ -3,8 +3,8 @@ name: Deploy web to Firebase Hosting
 on:
   push:
     branches:
-      - firebase-testing
       - main
+      - firebase-testing
 
 jobs:
   build-and-deploy:
@@ -44,26 +44,46 @@ jobs:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
           projectId: expense-manager-41afb
-          channelId: live
+          channelId: ${{ github.ref_name == 'main' && 'live' || 'compact-navigation-v2' }}
+          expires: ${{ github.ref_name == 'firebase-testing' && '7d' || '' }}
           entryPoint: ./web
 
       - name: Output Deployment URL
         run: |
-          # For live channel, construct URL from project ID
-          DEPLOYMENT_URL="https://expense-manager-41afb.web.app"
-          DETAILS_URL="${{ steps.firebase-deploy.outputs.details_url }}"
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            DEPLOYMENT_URL="$LIVE_URL"
+            CHANNEL="Live (Production)"
+          else
+            DEPLOYMENT_URL="$CHANNEL_URL"
+            CHANNEL="Preview (firebase-testing; compact-navigation-v2)"
+          fi
           echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Firebase Console**: $DETAILS_URL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Channel**: Live (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Website URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$DETAILS_URL" ]; then
+            echo "- **Firebase Console**: $DETAILS_URL" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -n "$EXPIRE_TIME" ]; then
+            echo "- **Preview expires**: $EXPIRE_TIME" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Successfully deployed to Firebase Hosting!" >> $GITHUB_STEP_SUMMARY
           echo ""
           echo "============================================"
           echo "🎉 Firebase Hosting deployment succeeded!"
           echo "============================================"
-          echo "Deployment URL: $DEPLOYMENT_URL"
-          echo "Firebase Console: $DETAILS_URL"
-          echo "Channel: Live (Production)"
+          echo "Website URL: $DEPLOYMENT_URL"
+          echo "Channel: $CHANNEL"
+          if [ -n "$DETAILS_URL" ]; then
+            echo "Firebase Console: $DETAILS_URL"
+          fi
+          if [ -n "$EXPIRE_TIME" ]; then
+            echo "Preview expires: $EXPIRE_TIME"
+          fi
           echo "============================================"
+        env:
+          LIVE_URL: https://expense-manager-41afb.web.app/
+          CHANNEL_URL: ${{ steps.firebase-deploy.outputs.channel_url }}
+          DETAILS_URL: ${{ steps.firebase-deploy.outputs.details_url }}
+          EXPIRE_TIME: ${{ steps.firebase-deploy.outputs.expire_time_formatted }}
