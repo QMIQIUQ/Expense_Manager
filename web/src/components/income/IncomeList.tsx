@@ -9,6 +9,8 @@ import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
+import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import CurrencyAmount from '../common/CurrencyAmount';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -42,7 +44,7 @@ interface IncomeListProps {
 
 const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
-  const { dateFormat } = useUserSettings();
+  const { dateFormat, displayCurrency } = useUserSettings();
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -141,7 +143,12 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
 
     // Convert to array with daily totals
     return Object.entries(grouped).map(([date, incs]) => {
-      const dailyTotal = incs.reduce((sum, inc) => sum + inc.amount, 0);
+      const totalsByCurrency = new Map<string, number>();
+      incs.forEach((income) => {
+        const code = normalizeCurrencyCode(income.currency);
+        totalsByCurrency.set(code, (totalsByCurrency.get(code) || 0) + income.amount);
+      });
+      const dailyTotal = Array.from(totalsByCurrency.entries());
       return { date, incomes: incs, dailyTotal };
     }).sort((a, b) => b.date.localeCompare(a.date)); // Sort descending (newest first)
   };
@@ -196,7 +203,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                 <span style={styles.dateGroupDate}>{formatDate(date)}</span>
                 <span style={styles.incomeCount}>({dayIncomes.length})</span>
               </div>
-              <span style={styles.dateGroupTotal}>+${dailyTotal.toFixed(2)}</span>
+              <span style={styles.dateGroupTotal}>{dailyTotal.map(([currency, total]) => `+${formatMoney(total, currency)}`).join(' · ')}</span>
             </div>
             
             {/* Incomes for this date - hidden when collapsed */}
@@ -222,7 +229,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
           <>
             {/* Amount badge at top-right */}
             <div style={styles.amountBadge}>
-              +${income.amount.toFixed(2)}
+              +<CurrencyAmount amount={income.amount} currency={income.currency} targetCurrency={displayCurrency} date={income.date} showSource />
             </div>
 
             {/* Header row with time, linked expense, date */}

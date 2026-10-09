@@ -51,7 +51,7 @@ const MonthOverMonthWidget: React.FC<WidgetProps> = ({
     const previousExpenses = indexedExpenses.filter(({ expense }) => expense.date.slice(0, 7) === previousMonth);
     const getDisplayAmount = (expense: typeof expenses[number], index: number) => {
       const key = expense.id || `${expense.date}-${index}`;
-      return convertedAmounts[key] ?? getExpenseDisplaySource(expense, targetCurrency).amount;
+      return convertedAmounts[key] ?? Number.NaN;
     };
     const currentTotal = currentExpenses.reduce((sum, { expense, index }) => sum + getDisplayAmount(expense, index), 0);
     const previousTotal = previousExpenses.reduce((sum, { expense, index }) => sum + getDisplayAmount(expense, index), 0);
@@ -70,7 +70,7 @@ const MonthOverMonthWidget: React.FC<WidgetProps> = ({
         categories,
       ),
     };
-  }, [categories, convertedAmounts, currentMonth, expenses, previousMonth, targetCurrency]);
+  }, [categories, convertedAmounts, currentMonth, expenses, previousMonth]);
 
   const change = stats.previousTotal === 0
     ? (stats.currentTotal === 0 ? 0 : null)

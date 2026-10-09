@@ -77,7 +77,7 @@ const RecentExpensesWidget: React.FC<RecentExpensesWidgetProps> = ({ expenses, s
         const displayAmount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
-            : expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount)
+            : expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(expense);
 
         return (

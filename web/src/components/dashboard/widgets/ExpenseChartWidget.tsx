@@ -6,9 +6,12 @@ import { getBillingCycleRange } from './utils';
 import { sortCategoryEntries } from '../../../utils/categoryOrder';
 import { chartColors } from '../../../styles/chartPalette';
 import CatIllustration from '../../CatIllustration';
+import { useCurrencyConversionMapState } from '../../../hooks/useCurrencyConversionMap';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 
-const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billingCycleDay, size = 'medium' }) => {
+const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billingCycleDay, displayCurrency, size = 'medium' }) => {
   const { t } = useLanguage();
+  const targetCurrency = displayCurrency || DEFAULT_BASE_CURRENCY;
   const COLORS = chartColors;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 640);
@@ -25,6 +28,17 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
       return expDate >= cycleStart && expDate <= cycleEnd;
     });
   }, [expenses, cycleStart, cycleEnd]);
+
+  const conversionEntries = React.useMemo(() => filteredExpenses.map((expense, index) => {
+    const displaySource = getExpenseDisplaySource(expense, targetCurrency);
+    return {
+      key: expense.id || `${expense.date}-${index}`,
+      amount: displaySource.amount,
+      sourceCurrency: displaySource.sourceCurrency,
+      date: expense.date,
+    };
+  }), [filteredExpenses, targetCurrency]);
+  const conversionState = useCurrencyConversionMapState(conversionEntries, targetCurrency);
 
   // Determine chart dimensions based on widget size and container height
   const chartConfig = React.useMemo(() => {
@@ -98,12 +112,17 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
     const byCategory: { [key: string]: number } = {};
     let total = 0;
 
-    filteredExpenses.forEach((exp) => {
+    filteredExpenses.forEach((exp, index) => {
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
-      byCategory[exp.category] += exp.amount;
-      total += exp.amount;
+      const key = exp.id || `${exp.date}-${index}`;
+      const displaySource = getExpenseDisplaySource(exp, targetCurrency);
+      const amount = displaySource.sourceCurrency === targetCurrency
+        ? displaySource.amount
+        : conversionState.amountsByKey[key] ?? Number.NaN;
+      byCategory[exp.category] += amount;
+      total += amount;
     });
 
     const pieData = sortCategoryEntries(Object.entries(byCategory), categories)
@@ -114,7 +133,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
       }));
 
     return pieData;
-  }, [categories, filteredExpenses]);
+  }, [categories, conversionState.amountsByKey, filteredExpenses, targetCurrency]);
 
   if (pieData.length === 0) {
     return (
@@ -137,6 +156,9 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
         flexDirection: 'column'
       }}
     >
+      {!conversionState.isLoading && conversionState.failedKeys.length > 0 && (
+        <div className="text-xs mb-2" style={{ color: 'var(--warning-text)' }}>{t('conversionUnavailable')}</div>
+      )}
       <ResponsiveContainer width="100%" height={containerHeight}>
         <PieChart>
         <Pie
@@ -153,7 +175,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => value.toFixed(2)} />
+        <Tooltip formatter={(value: number) => formatMoney(value, targetCurrency)} />
         <Legend
           layout="horizontal"
           verticalAlign="bottom"

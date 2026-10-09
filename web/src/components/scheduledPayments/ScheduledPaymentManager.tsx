@@ -23,6 +23,7 @@ import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import SubTabs from '../common/SubTabs';
 import PopupModal from '../common/PopupModal';
 import { normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { useNotification } from '../../contexts/NotificationContext';
 
 // Responsive styles
 const responsiveStyles = `
@@ -81,6 +82,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
   focusPaymentId,
 }) => {
   const { t } = useLanguage();
+  const { showNotification } = useNotification();
   const [isAdding, setIsAdding] = useState(false);
   const [editingPayment, setEditingPayment] = useState<ScheduledPayment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +179,14 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
 
   const handleEditSubmit = (data: Partial<ScheduledPayment>) => {
     if (editingPayment) {
+      const hasPaymentHistory = paymentRecords.some((record) => record.scheduledPaymentId === editingPayment.id);
+      if (
+        hasPaymentHistory
+        && normalizeCurrencyCode(data.currency) !== normalizeCurrencyCode(editingPayment.currency)
+      ) {
+        showNotification('error', t('scheduledPaymentCurrencyLocked'));
+        return;
+      }
       onUpdate(editingPayment.id!, data);
       setEditingPayment(null);
     }

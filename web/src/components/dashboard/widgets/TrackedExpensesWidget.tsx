@@ -4,6 +4,7 @@ import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
+import { getRepaymentBaseAmount } from '../../../utils/currencyUtils';
 import { WidgetProps } from './types';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
@@ -40,7 +41,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     const totals: { [expenseId: string]: number } = {};
     repayments.forEach((rep) => {
       if (rep.expenseId) {
-        totals[rep.expenseId] = (totals[rep.expenseId] || 0) + rep.amount;
+        totals[rep.expenseId] = (totals[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       }
     });
 
@@ -72,9 +73,9 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
           key: repayment.id as string,
-          amount: repayment.amount,
-          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
-          date: linkedExpense?.date || repayment.date,
+          amount: getRepaymentBaseAmount(repayment),
+          sourceCurrency: repayment.baseCurrency || (linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY),
+          date: repayment.date,
         };
       });
   }, [displayCurrency, expenseById, repayments]);
@@ -99,12 +100,12 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
         const totalAmount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
-            : expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount)
+            : expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(expense);
         const repaidDisplay = displayCurrency
           ? repayments
               .filter((repayment) => repayment.expenseId === expense.id)
-              .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? repayment.amount), 0)
+              .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN), 0)
           : repaid;
         const remaining = totalAmount - repaidDisplay;
         const percentage = totalAmount > 0 ? (repaidDisplay / totalAmount) * 100 : 0;

@@ -1,5 +1,5 @@
 import { Expense, Repayment } from '../types';
-import { getExpenseBaseAmount } from './currencyUtils';
+import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 
 interface BudgetSuggestion {
   categoryName: string;
@@ -24,7 +24,7 @@ export function calculateBudgetSuggestions(
   // Build repayment lookup map
   const repaymentsByExpense: { [expenseId: string]: number } = {};
   for (const rep of repayments) {
-    repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+    repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
   }
 
   // Helper to get net amount after repayments

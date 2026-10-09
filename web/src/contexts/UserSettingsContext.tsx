@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
-import { UserSettings, TimeFormat, DateFormat, DateShortcut } from '../types';
+import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -10,10 +10,12 @@ interface UserSettingsContextType {
   dateFormat: DateFormat;
   useStepByStepForm: boolean;
   dateShortcuts?: DateShortcut[];
+  displayCurrency: CurrencyCode;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDateFormat: (format: DateFormat) => Promise<void>;
   setUseStepByStepForm: (value: boolean) => Promise<void>;
   setDateShortcuts: (shortcuts: DateShortcut[]) => Promise<void>;
+  setDisplayCurrency: (currency: CurrencyCode) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -118,6 +120,19 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setDisplayCurrency = async (currency: CurrencyCode) => {
+    if (!currentUser || !settings) return;
+    const previousCurrency = settings.displayCurrency || 'MYR';
+    setSettings((prev) => prev ? { ...prev, displayCurrency: currency } : null);
+    try {
+      await userSettingsService.update(currentUser.uid, { displayCurrency: currency });
+    } catch (error) {
+      setSettings((prev) => prev ? { ...prev, displayCurrency: previousCurrency } : null);
+      console.error('Error updating display currency:', error);
+      throw error;
+    }
+  };
+
   const refreshSettings = async () => {
     await loadSettings(true); // Force refresh from server
   };
@@ -129,10 +144,12 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     dateFormat: settings?.dateFormat || 'YYYY-MM-DD',
     useStepByStepForm: settings?.useStepByStepForm ?? false,
     dateShortcuts: settings?.dateShortcuts,
+    displayCurrency: settings?.displayCurrency || 'MYR',
     setTimeFormat,
     setDateFormat,
     setUseStepByStepForm,
     setDateShortcuts,
+    setDisplayCurrency,
     refreshSettings,
   };
 

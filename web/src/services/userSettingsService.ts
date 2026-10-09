@@ -1,6 +1,6 @@
 import { db } from '../config/firebase';
 import { doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { UserSettings, TimeFormat, DateFormat } from '../types';
+import { UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 
 export const userSettingsService = {
@@ -33,6 +33,8 @@ export const userSettingsService = {
       timeFormat: (data.timeFormat as TimeFormat) || '24h',
       dateFormat: (data.dateFormat as DateFormat) || 'YYYY-MM-DD',
       useStepByStepForm: data.useStepByStepForm ?? false,
+      displayCurrency: (data.displayCurrency as CurrencyCode) || 'MYR',
+      dateShortcuts: data.dateShortcuts,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -69,6 +71,7 @@ export const userSettingsService = {
       timeFormat: '24h', // Default to 24-hour format
       dateFormat: 'YYYY-MM-DD', // Default date format
       useStepByStepForm: false, // Default to traditional form
+      displayCurrency: 'MYR',
     };
     
     await this.create(defaultSettings);

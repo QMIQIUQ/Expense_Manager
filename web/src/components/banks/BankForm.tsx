@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Bank } from '../../types';
+import { Bank, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
+import CurrencySelector from '../common/CurrencySelector';
 
 interface BankFormProps {
   onSubmit: (bank: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -17,6 +18,7 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
     country: initialData?.country || '',
     code: initialData?.code || '',
     balance: initialData?.balance?.toString() || '',
+    currency: initialData?.currency || 'MYR',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -41,6 +43,7 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
       name: formData.name,
       country: formData.country,
       code: formData.code,
+      currency: formData.currency as CurrencyCode,
     };
     
     // Include balance if provided
@@ -83,6 +86,12 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
           <input name="code" value={formData.code} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
         </div>
       </div>
+
+      <CurrencySelector
+        value={formData.currency}
+        label={t('currency')}
+        onChange={(currency) => setFormData((previous) => ({ ...previous, currency }))}
+      />
 
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>

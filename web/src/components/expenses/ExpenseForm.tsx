@@ -14,6 +14,7 @@ import TimePicker from '../common/TimePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import CurrencySelector from '../common/CurrencySelector';
 import { sortCategories } from '../../utils/categoryOrder';
+import { fromMinorUnits, getCurrencyMinorDigits, toMinorUnits } from '../../domain/money';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -54,7 +55,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const today = useToday();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
-    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    amount: initialData?.amount ? toMinorUnits(initialData.amount, initialData.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY) : 0,
     currency: initialData?.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     date: initialData?.date || today,
@@ -78,6 +79,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [transferToEWalletName, setTransferToEWalletName] = useState(initialTransfer?.toPaymentMethodName || '');
   const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const currencyDigits = getCurrencyMinorDigits(formData.currency);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +105,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       try {
         const resolvedCurrency = await resolveExpenseCurrencyFields({
-          amount: formData.amount / 100,
+          amount: fromMinorUnits(formData.amount, formData.currency),
           currency: formData.currency,
           baseCurrency: DEFAULT_BASE_CURRENCY,
           date: formData.date,
@@ -125,7 +127,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           baseAmount: number;
         } = {
           ...formData,
-          amount: formData.amount / 100,
+          amount: fromMinorUnits(formData.amount, formData.currency),
           ...resolvedCurrency,
         };
 
@@ -291,10 +293,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             type="text"
             inputMode="numeric"
             name="amount"
-            value={(formData.amount / 100).toFixed(2)}
+            value={fromMinorUnits(formData.amount, formData.currency).toFixed(currencyDigits)}
             onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
-            placeholder="0.00"
+            placeholder={currencyDigits === 0 ? '0' : '0.00'}
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
               errors.amount ? 'border-red-500' : ''
             }`}
@@ -310,7 +312,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         <div className="flex flex-col gap-1">
           <CurrencySelector
             value={formData.currency}
-            onChange={(currency) => setFormData((prev) => ({ ...prev, currency }))}
+            onChange={(currency) => setFormData((prev) => ({
+              ...prev,
+              currency,
+              amount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), currency),
+            }))}
             label={t('currency')}
             compact={true}
           />

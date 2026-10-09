@@ -83,9 +83,8 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
   const convertedAmounts = useCurrencyConversionMap(conversionEntries, targetCurrency);
   const getConvertedAmount = useCallback((expense: Expense, index: number): number => {
     const key = expense.id || `${expense.date}-${index}`;
-    const displaySource = getExpenseDisplaySource(expense, targetCurrency);
-    return convertedAmounts[key] ?? displaySource.amount;
-  }, [convertedAmounts, targetCurrency]);
+    return convertedAmounts[key] ?? Number.NaN;
+  }, [convertedAmounts]);
   const total = useMemo(
     () => expenses.reduce((sum, expense, index) => sum + getConvertedAmount(expense, index), 0),
     [expenses, getConvertedAmount]

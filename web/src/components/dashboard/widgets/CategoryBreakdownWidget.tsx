@@ -75,7 +75,7 @@ const CategoryBreakdownWidget: React.FC<WidgetProps> = ({ expenses, categories: 
       const amount = displayCurrency
         ? (displaySource.sourceCurrency === displayCurrency
           ? displaySource.amount
-          : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
+          : expenseDisplayAmountsById[exp.id || ''] ?? Number.NaN)
         : getExpenseBaseAmount(exp);
       byCategory[exp.category] += amount;
       total += amount;

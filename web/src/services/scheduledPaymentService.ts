@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
+import { getCurrencyMinorDigits } from '../domain/money';
 
 const SCHEDULED_PAYMENTS_COLLECTION = 'scheduledPayments';
 const PAYMENT_RECORDS_COLLECTION = 'scheduledPaymentRecords';
@@ -335,6 +336,7 @@ export const scheduledPaymentService = {
       'Payment Name',
       'Category',
       'Type',
+      'Currency',
       'Expected Amount',
       'Actual Amount',
       'Difference',
@@ -346,13 +348,16 @@ export const scheduledPaymentService = {
 
     const rows = paymentRecords.map(record => {
       const payment = scheduledPayments.find(p => p.id === record.scheduledPaymentId);
+      const currency = record.currency || payment?.currency || 'MYR';
+      const digits = getCurrencyMinorDigits(currency);
       return [
         payment?.name || 'Unknown',
         payment?.category || '',
         payment?.type || '',
-        record.expectedAmount.toFixed(2),
-        record.actualAmount.toFixed(2),
-        record.difference.toFixed(2),
+        currency,
+        record.expectedAmount.toFixed(digits),
+        record.actualAmount.toFixed(digits),
+        record.difference.toFixed(digits),
         record.dueDate,
         record.paidDate,
         record.paymentMethod || 'cash',

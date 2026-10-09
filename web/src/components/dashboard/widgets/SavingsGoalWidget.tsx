@@ -2,6 +2,11 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getBillingCycleRange } from './utils';
+import { getExpenseBaseAmount, getIncomeBaseAmount, getRepaymentBaseAmount } from '../../../utils/currencyUtils';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
+import { useCurrencyConversionMapState } from '../../../hooks/useCurrencyConversionMap';
+import { formatMoney } from '../../../utils/currencyUtils';
+import { getTodayLocal } from '../../../utils/dateUtils';
 
 const SavingsGoalWidget: React.FC<WidgetProps> = ({
   expenses,
@@ -11,6 +16,7 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
   size = 'medium',
 }) => {
   const { t } = useLanguage();
+  const { displayCurrency } = useUserSettings();
 
   // Determine layout based on size
   const isCompact = size === 'small';
@@ -28,14 +34,14 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
     repayments.forEach((rep) => {
       if (rep.expenseId) {
         repaymentsByExpense[rep.expenseId] =
-          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+          (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       }
     });
 
     // Helper to get net expense amount (expense - repayments, min 0)
-    const getNetAmount = (exp: { id?: string; amount: number }) => {
+    const getNetAmount = (exp: (typeof expenses)[number]) => {
       const repaid = repaymentsByExpense[exp.id || ''] || 0;
-      return Math.max(0, exp.amount - repaid);
+      return Math.max(0, getExpenseBaseAmount(exp) - repaid);
     };
 
     // Total income for this billing cycle
@@ -44,7 +50,7 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
         const incDate = new Date(inc.date);
         return incDate >= cycleStart && incDate <= cycleEnd;
       })
-      .reduce((sum, inc) => sum + inc.amount, 0);
+      .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
 
     // Total net expenses for this billing cycle (after repayments)
     const totalExpenses = expenses
@@ -72,6 +78,21 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
     };
   }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
 
+  const conversionEntries = React.useMemo(() => [{
+    key: 'total-saved', amount: savingsStats.totalSaved, sourceCurrency: 'MYR', date: getTodayLocal(),
+  }, {
+    key: 'daily-average', amount: savingsStats.dailyAverage, sourceCurrency: 'MYR', date: getTodayLocal(),
+  }], [savingsStats.dailyAverage, savingsStats.totalSaved]);
+  const displayAmounts = useCurrencyConversionMapState(conversionEntries, displayCurrency);
+  const getDisplayAmount = (key: string, baseAmount: number): string => {
+    if (displayCurrency === 'MYR') return formatMoney(Math.abs(baseAmount), displayCurrency);
+    if (displayAmounts.isLoading) return '—';
+    const convertedAmount = displayAmounts.amountsByKey[key];
+    return Number.isFinite(convertedAmount)
+      ? formatMoney(Math.abs(convertedAmount), displayCurrency)
+      : t('conversionUnavailable');
+  };
+
   // Empty state
   if (!savingsStats.hasData) {
     return (
@@ -92,7 +113,7 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
         <div className="card-body">
           <div className="savings-amount">
             <span className={savingsStats.totalSaved >= 0 ? 'success-text' : 'error-text'}>
-              ${Math.abs(savingsStats.totalSaved).toFixed(2)}
+              {getDisplayAmount('total-saved', savingsStats.totalSaved)}
             </span>
           </div>
           <div className="savings-rate">
@@ -115,7 +136,7 @@ const SavingsGoalWidget: React.FC<WidgetProps> = ({
           <div className="daily-average">
             <span className="label">{t('dailyAverage')}:</span>
             <span className={savingsStats.dailyAverage >= 0 ? 'success-text' : 'error-text'}>
-              ${Math.abs(savingsStats.dailyAverage).toFixed(2)}
+              {getDisplayAmount('daily-average', savingsStats.dailyAverage)}
             </span>
           </div>
         </div>

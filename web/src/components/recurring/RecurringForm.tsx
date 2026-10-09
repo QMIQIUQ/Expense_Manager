@@ -1,17 +1,21 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
-import { Category, Card, Bank, PaymentMethodType } from '../../types';
+import { Category, Card, Bank, PaymentMethodType, CurrencyCode } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import { sortCategories } from '../../utils/categoryOrder';
+import CurrencySelector from '../common/CurrencySelector';
+import { fromMinorUnits, getCurrencyMinorDigits, toMinorUnits } from '../../domain/money';
+import { getCurrencySymbol } from '../../utils/currencyUtils';
 
 interface RecurringFormData {
   description: string;
   amount: number; // dollars
+  currency: CurrencyCode;
   category: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   startDate: string;
@@ -51,6 +55,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
     initialData || {
       description: '',
       amount: 0,
+      currency: 'MYR',
       category: '',
       frequency: 'monthly',
       startDate: today,
@@ -66,14 +71,20 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
   );
 
   const [amountInCents, setAmountInCents] = React.useState(
-    initialData ? Math.round(initialData.amount * 100) : 0
+    initialData ? toMinorUnits(initialData.amount, initialData.currency || 'MYR') : 0
   );
+  const currencyDigits = getCurrencyMinorDigits(formData.currency);
+
+  const handleCurrencyChange = (currency: CurrencyCode) => {
+    setAmountInCents(toMinorUnits(fromMinorUnits(amountInCents, formData.currency), currency));
+    setFormData((previous) => ({ ...previous, currency }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
       ...formData,
-      amount: amountInCents / 100
+      amount: fromMinorUnits(amountInCents, formData.currency),
     });
   };
 
@@ -103,11 +114,11 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
             <input
               type="text"
               inputMode="numeric"
-              value={(amountInCents / 100).toFixed(2)}
+              value={fromMinorUnits(amountInCents, formData.currency).toFixed(currencyDigits)}
               onChange={(e) => {
                 const value = e.target.value;
                 const digitsOnly = value.replace(/\D/g, '');
@@ -125,6 +136,9 @@ const RecurringForm: React.FC<RecurringFormProps> = ({
             />
           </div>
 
+          <div className="flex flex-col gap-1">
+            <CurrencySelector value={formData.currency} onChange={handleCurrencyChange} label={t('currency')} compact />
+          </div>
           <div className="flex flex-col gap-1">
             <AutocompleteDropdown
               options={sortCategories(categories).map((cat): AutocompleteOption => ({

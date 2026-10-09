@@ -9,7 +9,7 @@
 
 import { Budget, CurrencyCode, Expense, Repayment } from '../types';
 import { getBillingCyclePeriod } from './budgetRollover';
-import { getExpenseBaseAmount } from './currencyUtils';
+import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 import { getBudgetCurrency, toBudgetBaseAmount, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 export interface BudgetAdjustmentSuggestion {
@@ -47,7 +47,7 @@ export function getSpendingHistory(
   const repaymentsByExpense: { [expenseId: string]: number } = {};
   repayments.forEach((r) => {
     if (r.expenseId) {
-      repaymentsByExpense[r.expenseId] = (repaymentsByExpense[r.expenseId] || 0) + r.amount;
+      repaymentsByExpense[r.expenseId] = (repaymentsByExpense[r.expenseId] || 0) + getRepaymentBaseAmount(r);
     }
   });
 

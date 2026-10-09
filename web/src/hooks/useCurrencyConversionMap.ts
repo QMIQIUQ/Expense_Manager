@@ -7,6 +7,7 @@ export interface CurrencyConversionEntry {
   amount: number;
   sourceCurrency?: string | null;
   date: string;
+  targetCurrency?: string | null;
 }
 
 export interface CurrencyConversionMapState {
@@ -37,6 +38,7 @@ export const useCurrencyConversionMapState = (
 
   useEffect(() => {
     let cancelled = false;
+    const hasTarget = Boolean(targetCurrency || entries.some((entry) => entry.targetCurrency));
 
     setStoredState({
       entries,
@@ -44,11 +46,11 @@ export const useCurrencyConversionMapState = (
       fallbackToSource,
       amountsByKey: {},
       failedKeys: [],
-      isLoading: Boolean(targetCurrency && entries.length > 0),
+      isLoading: Boolean(hasTarget && entries.length > 0),
     });
 
     const resolveConversions = async () => {
-      if (!targetCurrency) {
+      if (!hasTarget) {
         if (!cancelled) {
           setStoredState({
             entries,
@@ -62,12 +64,15 @@ export const useCurrencyConversionMapState = (
         return;
       }
 
-      const target = normalizeCurrencyCode(targetCurrency);
       const nextMap: Record<string, number> = {};
       const failedKeys: string[] = [];
       await Promise.all(entries.map(async (entry) => {
         try {
-          if (normalizeCurrencyCode(entry.sourceCurrency) === target) {
+          const entryTarget = entry.targetCurrency
+            ? normalizeCurrencyCode(entry.targetCurrency)
+            : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
+          if (!entryTarget) return;
+          if (normalizeCurrencyCode(entry.sourceCurrency) === entryTarget) {
             nextMap[entry.key] = Math.round(entry.amount * 100) / 100;
             return;
           }
@@ -75,7 +80,7 @@ export const useCurrencyConversionMapState = (
           nextMap[entry.key] = await convertAmountToCurrency(
             entry.amount,
             entry.sourceCurrency ?? undefined,
-            targetCurrency ?? undefined,
+            entryTarget,
             entry.date
           );
         } catch (error) {
@@ -114,7 +119,7 @@ export const useCurrencyConversionMapState = (
     return {
       amountsByKey: {},
       failedKeys: [],
-      isLoading: Boolean(targetCurrency && entries.length > 0),
+      isLoading: Boolean((targetCurrency || entries.some((entry) => entry.targetCurrency)) && entries.length > 0),
     };
   }
 
@@ -129,5 +134,5 @@ export const useCurrencyConversionMap = (
   entries: CurrencyConversionEntry[],
   targetCurrency?: string | null
 ): Record<string, number> => {
-  return useCurrencyConversionMapState(entries, targetCurrency, true).amountsByKey;
+  return useCurrencyConversionMapState(entries, targetCurrency, false).amountsByKey;
 };

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Income, IncomeType, IncomeCategory, Expense, Card, EWallet, Bank, PaymentMethodType } from '../../types';
+import { Income, IncomeType, IncomeCategory, Expense, Card, EWallet, Bank, PaymentMethodType, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { getTodayLocal, formatDateWithUserFormat } from '../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../utils/currencyUtils';
+import { formatMoney, getCurrencySymbol } from '../../utils/currencyUtils';
+import { fromMinorUnits, toMinorUnits } from '../../domain/money';
+import CurrencySelector from '../common/CurrencySelector';
 import DatePicker from '../common/DatePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 
@@ -37,7 +39,8 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   const today = useToday();
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    amount: toMinorUnits(initialData?.amount || 0, initialData?.currency),
+    currency: initialData?.currency || 'MYR',
     date: initialData?.date || today,
     type: initialData?.type || ('other' as IncomeType),
     category: initialData?.category || ('default' as IncomeCategory),
@@ -81,7 +84,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
     // Convert amount from cents to dollars
     const submitData: Partial<typeof formData> = { 
       ...formData,
-      amount: formData.amount / 100
+      amount: fromMinorUnits(formData.amount, formData.currency),
     };
     
     // Remove empty optional fields
@@ -123,6 +126,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
       setFormData({
         title: '',
         amount: 0,
+        currency: 'MYR' as CurrencyCode,
         date: getTodayLocal(),
         type: 'other' as IncomeType,
         category: 'default' as IncomeCategory,
@@ -192,14 +196,14 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)}) *</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
           <input
             type="text"
             inputMode="numeric"
             name="amount"
-            value={(formData.amount / 100).toFixed(2)}
+            value={fromMinorUnits(formData.amount, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
             onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
@@ -214,6 +218,16 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           />
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
+
+        <CurrencySelector
+          value={formData.currency}
+          label={t('currency')}
+          onChange={(currency) => setFormData((prev) => ({
+            ...prev,
+            currency,
+            amount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), currency),
+          }))}
+        />
 
         <DatePicker
           label={t('date')}

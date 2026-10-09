@@ -658,6 +658,9 @@ export const translations = {
   addTransfer: { en: 'Add Transfer', zh: '新增轉賬', 'zh-CN': '添加转账' },
   transferFrom: { en: 'From', zh: '從', 'zh-CN': '从' },
   transferTo: { en: 'To', zh: '至', 'zh-CN': '至' },
+  transferFromCurrency: { en: 'Transfer from currency', zh: '轉出貨幣', 'zh-CN': '转出货币' },
+  transferToCurrency: { en: 'Transfer to currency', zh: '轉入貨幣', 'zh-CN': '转入货币' },
+  destinationAmount: { en: 'Amount received', zh: '實際轉入金額', 'zh-CN': '实际转入金额' },
   cannotTransferToSameAccount: { en: 'Cannot transfer to the same account', zh: '不能轉賬到相同帳戶', 'zh-CN': '不能转账到相同账户' },
   transferAdded: { en: 'Transfer added successfully', zh: '轉賬新增成功', 'zh-CN': '转账添加成功' },
   transferDeleted: { en: 'Transfer deleted successfully', zh: '轉賬刪除成功', 'zh-CN': '转账删除成功' },
@@ -839,6 +842,7 @@ export const translations = {
   // Scheduled Payments Feature (定期付款/待還款)
   scheduledPayments: { en: 'Scheduled Payments', zh: '定期帳單', 'zh-CN': '定期账单' },
   addScheduledPayment: { en: 'Add Scheduled Payment', zh: '新增定期付款', 'zh-CN': '添加定期付款' },
+  scheduledPaymentCurrencyLocked: { en: 'Currency cannot be changed after payment records exist. Create a new scheduled payment to use another currency.', zh: '已有付款紀錄，不能更改此定期付款的幣別。若要使用其他幣別，請新增一筆定期付款。', 'zh-CN': '已有付款记录，不能更改此定期付款的币种。若要使用其他币种，请新增一笔定期付款。' },
   editScheduledPayment: { en: 'Edit Scheduled Payment', zh: '編輯定期付款', 'zh-CN': '编辑定期付款' },
   deleteScheduledPayment: { en: 'Delete Scheduled Payment', zh: '刪除定期付款', 'zh-CN': '删除定期付款' },
   confirmDeleteScheduledPayment: { en: 'Are you sure you want to delete this scheduled payment?', zh: '您確定要刪除此定期付款嗎？', 'zh-CN': '您确定要删除此定期付款吗？' },
@@ -949,6 +953,8 @@ export const translations = {
   // Currency Support
   currency: { en: 'Currency', zh: '貨幣', 'zh-CN': '货币' },
   displayCurrency: { en: 'Display Currency', zh: '顯示貨幣', 'zh-CN': '显示货币' },
+  displayCurrencyHint: { en: 'Used to convert totals for display. Saved transaction amounts and exchange-rate snapshots stay unchanged.', zh: '用於換算畫面上的總額；不會更改已儲存的交易金額或匯率快照。', 'zh-CN': '用于换算画面上的总额；不会更改已保存的交易金额或汇率快照。' },
+  conversionUnavailable: { en: 'conversion unavailable', zh: '暫時無法換算', 'zh-CN': '暂时无法换算' },
   selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
   exchangeRate: { en: 'Exchange Rate', zh: '匯率', 'zh-CN': '汇率' },
   baseCurrency: { en: 'Base Currency', zh: '基礎貨幣', 'zh-CN': '基础货币' },

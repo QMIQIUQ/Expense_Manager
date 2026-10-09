@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CurrencyCode, Expense, Repayment } from '../../types';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { ChartBarIcon, BarChartSimpleIcon } from '../icons';
@@ -64,22 +64,24 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'bar' | 'chart'>('bar');
   const targetCurrency = displayCurrency || budgetCurrency;
-  const budgetRate = budgetExchangeRate > 0 ? budgetExchangeRate : 1;
+  const budgetRate = budgetExchangeRate > 0
+    ? budgetExchangeRate
+    : budgetCurrency === DEFAULT_BASE_CURRENCY ? 1 : Number.NaN;
   const conversionDate = budgetExchangeRateDate || getTodayLocal();
 
   // Build repayment lookup
   const repaymentsByExpense = React.useMemo(() => {
     const byExpense: { [expenseId: string]: number } = {};
     for (const rep of repayments) {
-      byExpense[rep.expenseId] = (byExpense[rep.expenseId] || 0) + rep.amount;
+      byExpense[rep.expenseId] = (byExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
     }
     return byExpense;
   }, [repayments]);
 
-  const getNetAmount = (exp: Expense): number => {
+  const getNetAmount = useCallback((exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
     return Math.max(0, getExpenseBaseAmount(exp) - repaid);
-  };
+  }, [repaymentsByExpense]);
 
   // Calculate historical periods
   const basePeriods = React.useMemo((): PeriodBaseData[] => {
@@ -120,7 +122,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
     // Reverse to show oldest first
     return periods.reverse();
-  }, [budgetAmount, budgetRate, billingCycleDay, expenses, periodsToShow, repaymentsByExpense, categoryName]);
+  }, [budgetAmount, budgetRate, billingCycleDay, expenses, periodsToShow, categoryName, getNetAmount]);
 
   const displayConversionEntries = React.useMemo(() => basePeriods.flatMap((period, index) => ([
     {
@@ -143,12 +145,12 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       ? period.spentInBudgetCurrency
       : targetCurrency === DEFAULT_BASE_CURRENCY
         ? period.spentBase
-        : displayAmounts[`history-${index}-spent`] ?? period.spentBase;
+        : displayAmounts[`history-${index}-spent`] ?? Number.NaN;
     const budget = targetCurrency === budgetCurrency
       ? budgetAmount
       : targetCurrency === DEFAULT_BASE_CURRENCY
         ? period.budgetBase
-        : displayAmounts[`history-${index}-budget`] ?? period.budgetBase;
+        : displayAmounts[`history-${index}-budget`] ?? Number.NaN;
     const percentage = budget > 0 ? (spent / budget) * 100 : 0;
 
     return { ...period, spent, budget, percentage };

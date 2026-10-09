@@ -2,8 +2,8 @@ import type { CurrencyCode, CurrencyRateSnapshot, Expense } from '../types';
 import {
   DEFAULT_BASE_CURRENCY,
   buildExpenseCurrencyFields,
-  normalizeCurrencyCode,
 } from '../utils/currencyUtils';
+import { requireCurrencyCode, roundMoney } from '../domain/money';
 
 const PROVIDER_NAME = 'fawazahmed0/exchange-api';
 const PRIMARY_BASE_URL = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api';
@@ -119,9 +119,6 @@ const fetchHistoricalRate = async (
   requestedDate: string
 ): Promise<CurrencyRateSnapshot> => {
   const dateTokens = [requestedDate];
-  if (requestedDate !== 'latest') {
-    dateTokens.push('latest');
-  }
 
   const sourceUrls = [PRIMARY_BASE_URL, FALLBACK_BASE_URL];
 
@@ -148,8 +145,8 @@ export const getHistoricalRate = async (
   toCurrencyInput: string | undefined,
   date: string
 ): Promise<CurrencyRateSnapshot> => {
-  const fromCurrency = normalizeCurrencyCode(fromCurrencyInput);
-  const toCurrency = normalizeCurrencyCode(toCurrencyInput || DEFAULT_BASE_CURRENCY);
+  const fromCurrency = requireCurrencyCode(fromCurrencyInput);
+  const toCurrency = requireCurrencyCode(toCurrencyInput || DEFAULT_BASE_CURRENCY);
   const rateDate = date || new Date().toISOString().split('T')[0];
   const cacheKey = getCacheKey(fromCurrency, toCurrency, rateDate);
 
@@ -182,10 +179,61 @@ export const convertAmountToCurrency = async (
   toCurrencyInput: string | undefined,
   date: string
 ): Promise<number> => {
-  if (!Number.isFinite(amount)) return 0;
+  if (!Number.isFinite(amount)) throw new Error('Amount must be finite');
 
   const snapshot = await getHistoricalRate(fromCurrencyInput, toCurrencyInput, date);
-  return Math.round(amount * snapshot.rate * 100) / 100;
+  return roundMoney(amount * snapshot.rate, snapshot.toCurrency);
+};
+
+export const resolveAmountCurrencyFields = async (input: {
+  amount: number;
+  currency?: string;
+  baseCurrency?: string;
+  date: string;
+  existing?: {
+    currency?: string;
+    baseCurrency?: string;
+    exchangeRate?: number;
+    exchangeRateDate?: string;
+    exchangeRateFetchedAt?: Date;
+    exchangeRateProvider?: string;
+    baseAmount?: number;
+  };
+  forceRefresh?: boolean;
+}): Promise<ReturnType<typeof buildExpenseCurrencyFields>> => {
+  const currency = requireCurrencyCode(input.currency ?? input.existing?.currency);
+  const baseCurrency = requireCurrencyCode(input.baseCurrency ?? input.existing?.baseCurrency ?? DEFAULT_BASE_CURRENCY);
+  const canReuseSnapshot = !input.forceRefresh
+    && input.existing?.exchangeRateDate === input.date
+    && input.existing?.exchangeRate
+    && input.existing.exchangeRate > 0
+    && requireCurrencyCode(input.existing.currency || currency) === currency
+    && requireCurrencyCode(input.existing.baseCurrency || baseCurrency) === baseCurrency;
+
+  if (canReuseSnapshot) {
+    return buildExpenseCurrencyFields({
+      amount: input.amount,
+      currency,
+      baseCurrency,
+      exchangeRate: input.existing?.exchangeRate,
+      exchangeRateDate: input.existing?.exchangeRateDate,
+      exchangeRateFetchedAt: input.existing?.exchangeRateFetchedAt,
+      exchangeRateProvider: input.existing?.exchangeRateProvider || PROVIDER_NAME,
+      baseAmount: roundMoney(input.amount * (input.existing?.exchangeRate as number), baseCurrency),
+    });
+  }
+
+  const snapshot = await getHistoricalRate(currency, baseCurrency, input.date);
+  return buildExpenseCurrencyFields({
+    amount: input.amount,
+    currency,
+    baseCurrency,
+    exchangeRate: snapshot.rate,
+    exchangeRateDate: snapshot.rateDate,
+    exchangeRateFetchedAt: snapshot.fetchedAt,
+    exchangeRateProvider: snapshot.provider,
+    baseAmount: roundMoney(input.amount * snapshot.rate, baseCurrency),
+  });
 };
 
 export const resolveExpenseCurrencyFields = async (input: {
@@ -205,44 +253,12 @@ export const resolveExpenseCurrencyFields = async (input: {
   >;
   forceRefresh?: boolean;
 }): Promise<ReturnType<typeof buildExpenseCurrencyFields>> => {
-  const currency = normalizeCurrencyCode(input.currency || input.existing?.currency || DEFAULT_BASE_CURRENCY);
-  const baseCurrency = normalizeCurrencyCode(input.baseCurrency || input.existing?.baseCurrency || DEFAULT_BASE_CURRENCY);
-
-  if (
-    !input.forceRefresh &&
-    input.existing?.exchangeRate &&
-    input.existing.exchangeRate > 0 &&
-    normalizeCurrencyCode(input.existing.currency || currency) === currency &&
-    normalizeCurrencyCode(input.existing.baseCurrency || baseCurrency) === baseCurrency
-  ) {
-    return buildExpenseCurrencyFields({
-      amount: input.amount,
-      currency,
-      baseCurrency,
-      exchangeRate: input.existing.exchangeRate,
-      exchangeRateDate: input.existing.exchangeRateDate || input.date,
-      exchangeRateFetchedAt: input.existing.exchangeRateFetchedAt,
-      exchangeRateProvider: input.existing.exchangeRateProvider || PROVIDER_NAME,
-      baseAmount: Math.round(input.amount * input.existing.exchangeRate * 100) / 100,
-    });
-  }
-
-  const snapshot = await getHistoricalRate(currency, baseCurrency, input.date);
-
-  return buildExpenseCurrencyFields({
-    amount: input.amount,
-    currency,
-    baseCurrency,
-    exchangeRate: snapshot.rate,
-    exchangeRateDate: snapshot.rateDate,
-    exchangeRateFetchedAt: snapshot.fetchedAt,
-    exchangeRateProvider: snapshot.provider,
-    baseAmount: Math.round(input.amount * snapshot.rate * 100) / 100,
-  });
+  return resolveAmountCurrencyFields(input);
 };
 
 export const currencyRateService = {
   getHistoricalRate,
   convertAmountToCurrency,
+  resolveAmountCurrencyFields,
   resolveExpenseCurrencyFields,
 };

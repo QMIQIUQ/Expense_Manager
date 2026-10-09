@@ -8,6 +8,8 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { SearchBar } from '../common/SearchBar';
 import PopupModal from '../common/PopupModal';
+import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
 
 // (Inline icon/color picker moved into EWalletForm for consistency)
 
@@ -62,6 +64,42 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     };
   }, [openMenuId]);
 
+  const walletConversionEntries = useMemo(() => ewallets.flatMap((wallet) => {
+    const currency = wallet.currency || DEFAULT_BASE_CURRENCY;
+    return [
+      ...expenses.filter((expense) => expense.paymentMethod === 'e_wallet' && expense.paymentMethodName === wallet.name).map((expense) => ({
+        key: `${wallet.name}:expense:${expense.id}`,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: expense.baseCurrency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: expense.date,
+      })),
+      ...incomes.filter((income) => income.paymentMethod === 'e_wallet' && income.paymentMethodName === wallet.name).map((income) => ({
+        key: `${wallet.name}:income:${income.id}`,
+        amount: getIncomeBaseAmount(income),
+        sourceCurrency: income.baseCurrency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: income.date,
+      })),
+      ...transfers.filter((transfer) => transfer.fromPaymentMethod === 'e_wallet' && transfer.fromPaymentMethodName === wallet.name).map((transfer) => ({
+        key: `${wallet.name}:transfer-out:${transfer.id}`,
+        amount: transfer.amount,
+        sourceCurrency: transfer.currency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: transfer.date,
+      })),
+      ...transfers.filter((transfer) => transfer.toPaymentMethod === 'e_wallet' && transfer.toPaymentMethodName === wallet.name).map((transfer) => ({
+        key: `${wallet.name}:transfer-in:${transfer.id}`,
+        amount: transfer.toBaseAmount ?? transfer.toAmount ?? transfer.amount,
+        sourceCurrency: transfer.toBaseAmount != null ? transfer.baseCurrency || DEFAULT_BASE_CURRENCY : transfer.toCurrency || transfer.currency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: transfer.date,
+      })),
+    ];
+  }), [ewallets, expenses, incomes, transfers]);
+  const walletConversion = useCurrencyConversionMapState(walletConversionEntries);
+  const convertedWalletAmounts = walletConversion.amountsByKey;
+
   // Calculate wallet stats including balance
   const getWalletStats = useMemo(() => {
     const stats: { 
@@ -79,24 +117,24 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
       const walletExpenses = expenses.filter(
         (exp) => exp.paymentMethod === 'e_wallet' && exp.paymentMethodName === wallet.name
       );
-      const totalSpending = walletExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const totalSpending = walletExpenses.reduce((sum, expense) => sum + (convertedWalletAmounts[`${wallet.name}:expense:${expense.id}`] ?? Number.NaN), 0);
       
       // Calculate incomes
       const walletIncomes = incomes.filter(
         (inc) => inc.paymentMethod === 'e_wallet' && inc.paymentMethodName === wallet.name
       );
-      const totalIncome = walletIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+      const totalIncome = walletIncomes.reduce((sum, income) => sum + (convertedWalletAmounts[`${wallet.name}:income:${income.id}`] ?? Number.NaN), 0);
       
       // Calculate transfers
       const outgoingTransfers = transfers.filter(
         (t) => t.fromPaymentMethod === 'e_wallet' && t.fromPaymentMethodName === wallet.name
       );
-      const totalOutgoing = outgoingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      const totalOutgoing = outgoingTransfers.reduce((sum, transfer) => sum + (convertedWalletAmounts[`${wallet.name}:transfer-out:${transfer.id}`] ?? Number.NaN), 0);
       
       const incomingTransfers = transfers.filter(
         (t) => t.toPaymentMethod === 'e_wallet' && t.toPaymentMethodName === wallet.name
       );
-      const totalIncoming = incomingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      const totalIncoming = incomingTransfers.reduce((sum, transfer) => sum + (convertedWalletAmounts[`${wallet.name}:transfer-in:${transfer.id}`] ?? Number.NaN), 0);
       
       // Calculate balance (income + incoming transfers - spending - outgoing transfers)
       const balance = totalIncome + totalIncoming - totalSpending - totalOutgoing;
@@ -119,7 +157,7 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     });
     
     return stats;
-  }, [ewallets, expenses, incomes, transfers]);
+  }, [ewallets, expenses, incomes, transfers, convertedWalletAmounts]);
 
   // Filter e-wallets based on search
   const filteredWallets = ewallets.filter((wallet) =>
@@ -409,18 +447,18 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                       <div className="stats-grid">
                         <div className="stat-card info">
                           <p className="stat-label">{t('walletIncome')}</p>
-                          <p className="stat-value success-text">${stats.totalIncome.toFixed(2)}</p>
+                          <p className="stat-value success-text">{formatMoney(stats.totalIncome, wallet.currency || DEFAULT_BASE_CURRENCY)}</p>
                         </div>
                         <div className="stat-card success">
                           <p className="stat-label">{t('walletSpending')}</p>
-                          <p className="stat-value info-text">${stats.totalSpending.toFixed(2)}</p>
+                          <p className="stat-value info-text">{formatMoney(stats.totalSpending, wallet.currency || DEFAULT_BASE_CURRENCY)}</p>
                         </div>
                         <div className="stat-card accent">
                           <p className="stat-label">{t('walletBalance')}</p>
                           <p className="stat-value" style={{ 
                             color: displayBalance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                           }}>
-                            ${displayBalance.toFixed(2)}
+                            {formatMoney(displayBalance, wallet.currency || DEFAULT_BASE_CURRENCY)}
                           </p>
                         </div>
                         <div className="stat-card warning">

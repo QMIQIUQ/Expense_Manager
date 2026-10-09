@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getTodayLocal } from '../../../utils/dateUtils';
+import { formatMoney } from '../../../utils/currencyUtils';
 
 const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
@@ -149,7 +150,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
 
             <div className="pending-payment-actions">
               <span className="pending-payment-amount">
-                ${payment.amount.toFixed(2)}
+                {formatMoney(payment.amount, payment.currency)}
               </span>
               
               {onConfirmScheduledPayment && (

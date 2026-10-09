@@ -1,11 +1,11 @@
 # 多幣別 UI 精簡與顯示切換
 
 Date: 2026-06-24
-Status: Implemented
+Status: Implemented; superseded by [Currency behavior and implementation plan](../../CURRENCY_GUIDE.md)
 
 ## Goal
 
-This change focuses on expense-related currency UX:
+This change originally focused on expense-related currency UX. Its remaining exclusions are now tracked in the comprehensive currency guide:
 
 - Make currency selection in add, edit, and quick-add flows more compact and easier to click.
 - Default new expense currency from the most recent expense when available.

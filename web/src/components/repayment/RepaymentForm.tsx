@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Repayment, Card, EWallet, Bank, PaymentMethodType } from '../../types';
+import { Repayment, Card, EWallet, Bank, PaymentMethodType, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
@@ -8,6 +8,8 @@ import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUtils';
+import { fromMinorUnits, toMinorUnits } from '../../domain/money';
+import CurrencySelector from '../common/CurrencySelector';
 
 interface RepaymentFormProps {
   expenseId: string;
@@ -19,6 +21,7 @@ interface RepaymentFormProps {
   ewallets?: EWallet[];
   banks?: Bank[]; // Prop threaded through component chain; implementation uses card.bankName directly
   title?: string;
+  expenseCurrency?: CurrencyCode;
 }
 
 // No component-scoped CSS needed; reuse the same utility classes
@@ -34,12 +37,14 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   ewallets = [],
   banks: _banks = [],
   title,
+  expenseCurrency = DEFAULT_BASE_CURRENCY,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const today = useToday();
   const [formData, setFormData] = useState({
-    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    amount: toMinorUnits(initialData?.amount || 0, initialData?.currency || expenseCurrency),
+    currency: initialData?.currency || expenseCurrency,
     date: initialData?.date || today,
     payerName: initialData?.payerName || '',
     note: initialData?.note || '',
@@ -59,7 +64,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       newErrors.amount = t('pleaseFillField') || 'Please enter a valid amount';
     }
     // Convert amount from cents to dollars
-    const amountInDollars = formData.amount / 100;
+    const amountInDollars = fromMinorUnits(formData.amount, formData.currency);
     if (!formData.date) {
       newErrors.date = t('pleaseFillField') || 'Please select a date';
     }
@@ -75,7 +80,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     // Convert amount from cents to dollars
     const submitData: Partial<typeof formData> = { 
       ...formData,
-      amount: amountInDollars
+      amount: amountInDollars,
+      currency: formData.currency,
     };
     
     // Remove empty optional fields
@@ -115,6 +121,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!initialData) {
       setFormData({
         amount: 0,
+        currency: expenseCurrency,
         date: getTodayLocal(),
         payerName: '',
         note: '',
@@ -163,17 +170,17 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       onCancel={onCancel || (() => {})}
       submitLabel={t('save')}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('repaymentAmount')} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)}) *
+            {t('repaymentAmount')} ({getCurrencySymbol(formData.currency)}) *
           </label>
           <input
             type="text"
             inputMode="numeric"
             id="amount"
             name="amount"
-            value={(formData.amount / 100).toFixed(2)}
+            value={fromMinorUnits(formData.amount, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
             onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
@@ -186,6 +193,16 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
           />
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
+
+        <CurrencySelector
+          value={formData.currency}
+          label={t('currency')}
+          onChange={(currency) => setFormData((prev) => ({
+            ...prev,
+            currency,
+            amount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), currency),
+          }))}
+        />
 
         <DatePicker
           label={t('repaymentDate')}

@@ -1,15 +1,18 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { ScheduledPaymentRecord } from '../../types';
+import { CurrencyCode, ScheduledPaymentRecord } from '../../types';
 import { DeleteIcon } from '../icons';
+import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
 
 interface PaymentHistoryListProps {
   records: ScheduledPaymentRecord[];
+  defaultCurrency?: CurrencyCode;
   onDelete?: (recordId: string) => void;
 }
 
 const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
   records,
+  defaultCurrency = 'MYR',
   onDelete,
 }) => {
   const { t } = useLanguage();
@@ -30,10 +33,16 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
     );
   }
 
-  // Calculate totals
-  const totalPaid = records.reduce((sum, r) => sum + r.actualAmount, 0);
-  const totalExpected = records.reduce((sum, r) => sum + r.expectedAmount, 0);
-  const totalDifference = totalPaid - totalExpected;
+  // Group totals by source currency so historical records are never summed across currencies.
+  const currencyTotals = records.reduce<Record<string, { paid: number; expected: number }>>((totals, record) => {
+    const currency = normalizeCurrencyCode(record.currency || defaultCurrency);
+    const current = totals[currency] || { paid: 0, expected: 0 };
+    totals[currency] = {
+      paid: current.paid + record.actualAmount,
+      expected: current.expected + record.expectedAmount,
+    };
+    return totals;
+  }, {});
 
   return (
     <div 
@@ -65,19 +74,31 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
       }}>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalExpected')}:</span>
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>${totalExpected.toFixed(2)}</div>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            {Object.entries(currencyTotals).map(([currency, totals]) => (
+              <div key={currency}>{formatMoney(totals.expected, currency)}</div>
+            ))}
+          </div>
         </div>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
-          <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>${totalPaid.toFixed(2)}</div>
+          <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>
+            {Object.entries(currencyTotals).map(([currency, totals]) => (
+              <div key={currency}>{formatMoney(totals.paid, currency)}</div>
+            ))}
+          </div>
         </div>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalDifference')}:</span>
-          <div style={{ 
-            fontWeight: 600, 
-            color: totalDifference > 0 ? 'var(--info-text)' : totalDifference < 0 ? 'var(--warning-text)' : 'var(--text-primary)' 
-          }}>
-            {totalDifference > 0 ? '+' : ''}{totalDifference.toFixed(2)}
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            {Object.entries(currencyTotals).map(([currency, totals]) => {
+              const difference = totals.paid - totals.expected;
+              return (
+                <div key={currency} style={{ color: difference > 0 ? 'var(--info-text)' : difference < 0 ? 'var(--warning-text)' : 'var(--text-primary)' }}>
+                  {difference > 0 ? '+' : ''}{formatMoney(difference, currency)}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -116,7 +137,7 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                         color: difference > 0 ? 'var(--info-text)' : 'var(--warning-text)',
                       }}
                     >
-                      {difference > 0 ? t('overpaid') : t('underpaid')} ${Math.abs(difference).toFixed(2)}
+                  {difference > 0 ? t('overpaid') : t('underpaid')} {formatMoney(Math.abs(difference), record.currency || defaultCurrency)}
                     </span>
                   )}
                 </div>
@@ -139,11 +160,11 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>
-                    ${record.actualAmount.toFixed(2)}
+                    {formatMoney(record.actualAmount, record.currency || defaultCurrency)}
                   </div>
                   {record.expectedAmount !== record.actualAmount && (
                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
-                      ${record.expectedAmount.toFixed(2)}
+                      {formatMoney(record.expectedAmount, record.currency || defaultCurrency)}
                     </div>
                   )}
                 </div>

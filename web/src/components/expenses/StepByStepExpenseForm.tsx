@@ -24,6 +24,7 @@ import {
 } from '../../services/receiptOcrService';
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 import { getRecentlyUsedCategories, sortCategories } from '../../utils/categoryOrder';
+import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
 
 const formatOcrDuration = (elapsedMs?: number): string => {
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
@@ -45,12 +46,12 @@ const STEP_PAYMENT: Step = 6;
 const CURRENT_DRAFT_FLOW_VERSION = 3;
 const EMPTY_RECENT_EXPENSES: Expense[] = [];
 
-const mapReceiptLineItemsToAmountItems = (lineItems?: ReceiptOcrResult['lineItems']): AmountItem[] => {
+const mapReceiptLineItemsToAmountItems = (lineItems?: ReceiptOcrResult['lineItems'], currency?: string): AmountItem[] => {
   if (!lineItems?.length) return [];
   return lineItems
     .filter((item) => typeof item.amount === 'number' && Number.isFinite(item.amount) && item.amount > 0)
     .map((item) => ({
-      amount: Math.round(item.amount * 100) / 100,
+      amount: roundMoney(item.amount, currency),
       description: item.description?.trim() || undefined,
     }));
 };
@@ -68,13 +69,16 @@ const buildReceiptReviewFormData = (
   result: ReceiptOcrResult,
   fallbackDescription: string,
 ): { formData: ReceiptDraftFormState; amountItems: AmountItem[] } => {
-  const amountItems = mapReceiptLineItemsToAmountItems(result.lineItems);
+  const currency = (result.currency || sourceFormData.currency || DEFAULT_BASE_CURRENCY) as CurrencyCode;
+  const amountItems = mapReceiptLineItemsToAmountItems(result.lineItems, currency);
   const amountInCents = typeof result.amount === 'number' && Number.isFinite(result.amount) && result.amount > 0
-    ? Math.round(result.amount * 100)
-    : amountItems.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+    ? toMinorUnits(result.amount, currency)
+    : amountItems.reduce((sum, item) => sum + toMinorUnits(item.amount, currency), 0);
   const resolvedAmount = amountItems.length > 0
     ? amountInCents
-    : (sourceFormData.amount > 0 ? sourceFormData.amount : amountInCents);
+    : (sourceFormData.amount > 0
+      ? toMinorUnits(fromMinorUnits(sourceFormData.amount, sourceFormData.currency), currency)
+      : amountInCents);
 
   return {
     amountItems,
@@ -82,7 +86,7 @@ const buildReceiptReviewFormData = (
       ...sourceFormData,
       date: result.date || sourceFormData.date,
       amount: resolvedAmount,
-      currency: (result.currency || sourceFormData.currency || DEFAULT_BASE_CURRENCY) as CurrencyCode,
+      currency,
       description: sourceFormData.description.trim() ? sourceFormData.description : result.merchant?.trim() || fallbackDescription,
       paymentMethod: result.paymentMethod || sourceFormData.paymentMethod,
       paymentMethodName: result.paymentMethod === 'e_wallet'
@@ -224,7 +228,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [formData, setFormData] = useState<ReceiptDraftFormState>({
     date: initialDate || initialData?.date || getTodayLocal(),
     time: initialData?.time || getCurrentTimeLocal(),
-    amount: initialData?.amount ? Math.round(initialData.amount * 100) : 0,
+    amount: initialData?.amount ? toMinorUnits(initialData.amount, initialData.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY) : 0,
     currency: initialData?.currency || lastUsedCurrency || DEFAULT_BASE_CURRENCY,
     category: initialData?.category || '',
     description: initialData?.description || '',
@@ -368,13 +372,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setCurrentAmountInput(receiptReviewAmountItems.length > 0 ? 0 : receiptReviewFormData.amount);
 
     if (receiptOcrResult) {
-      const totalFromItems = receiptReviewAmountItems.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+      const totalFromItems = receiptReviewAmountItems.reduce((sum, item) => sum + toMinorUnits(item.amount, receiptReviewFormData.currency), 0);
       const amountInCents = receiptReviewAmountItems.length > 0
         ? totalFromItems
         : receiptReviewFormData.amount;
       setReceiptOcrResult({
         ...receiptOcrResult,
-        amount: amountInCents > 0 ? Math.round(amountInCents) / 100 : receiptOcrResult.amount,
+        amount: amountInCents > 0 ? fromMinorUnits(amountInCents, receiptReviewFormData.currency) : receiptOcrResult.amount,
         currency: receiptReviewFormData.currency as ReceiptOcrResult['currency'],
         date: receiptReviewFormData.date || receiptOcrResult.date,
         merchant: receiptReviewFormData.description.trim() || receiptOcrResult.merchant,
@@ -406,7 +410,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       receiptDate: receiptResult?.date,
       receiptAmount: receiptResult?.amount,
       receiptCurrency: receiptResult?.currency,
-      receiptLineItems: mapReceiptLineItemsToAmountItems(receiptResult?.lineItems),
+      receiptLineItems: mapReceiptLineItemsToAmountItems(receiptResult?.lineItems, receiptResult?.currency),
     }, draftIdOverride, draftFormData, draftAmountItems, draftAmountItems.length > 0 ? 0 : draftFormData.amount);
     if (!snapshot) return;
 
@@ -645,11 +649,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       receiptDate: draftFormData.date || receiptOcrResult?.date,
       receiptAmount: draftAmountItems.length > 0
         ? draftAmountItems.reduce((sum, item) => sum + item.amount, 0)
-        : draftFormData.amount / 100,
+        : fromMinorUnits(draftFormData.amount, draftFormData.currency),
       receiptCurrency: draftFormData.currency || receiptOcrResult?.currency,
       receiptLineItems: draftAmountItems.length > 0
         ? draftAmountItems
-        : mapReceiptLineItemsToAmountItems(receiptOcrResult?.lineItems),
+        : mapReceiptLineItemsToAmountItems(receiptOcrResult?.lineItems, receiptOcrResult?.currency),
       imageName: undefined,
       imageType: undefined,
       imageSize: undefined,
@@ -736,11 +740,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   const receiptReviewForm = receiptReviewFormData || formData;
   const receiptReviewLineItems = receiptReviewAmountItems;
-  const receiptReviewTotalCents = receiptReviewLineItems.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+  const receiptReviewTotalCents = receiptReviewLineItems.reduce((sum, item) => sum + toMinorUnits(item.amount, receiptReviewForm.currency), 0);
   const receiptReviewAmountCents = receiptReviewLineItems.length > 0 ? receiptReviewTotalCents : receiptReviewForm.amount;
 
   const syncReceiptReviewAmount = (items: AmountItem[]) => {
-    const total = items.reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+    const total = items.reduce((sum, item) => sum + toMinorUnits(item.amount, receiptReviewForm.currency), 0);
     setReceiptReviewFormData((prev) => {
       if (!prev) return prev;
       return { ...prev, amount: total };
@@ -752,6 +756,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       if (!prev) return prev;
       return { ...prev, ...patch };
     });
+  };
+
+  const handleReceiptReviewCurrencyChange = (currency: CurrencyCode) => {
+    if (!receiptReviewFormData) return;
+    const currentCurrency = receiptReviewFormData.currency;
+    const nextItems = receiptReviewAmountItems.map((item) => ({ ...item, amount: roundMoney(item.amount, currency) }));
+    const nextAmount = nextItems.length > 0
+      ? nextItems.reduce((sum, item) => sum + toMinorUnits(item.amount, currency), 0)
+      : toMinorUnits(fromMinorUnits(receiptReviewFormData.amount, currentCurrency), currency);
+    setReceiptReviewAmountItems(nextItems);
+    setReceiptReviewFormData((previous) => previous ? { ...previous, currency, amount: nextAmount } : previous);
   };
 
   const updateReceiptReviewLineItem = (index: number, patch: Partial<AmountItem>) => {
@@ -777,7 +792,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     sourceFormData: ReceiptDraftFormState = formData,
   ): Promise<Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>> => {
     const resolvedCurrency = await resolveExpenseCurrencyFields({
-      amount: sourceFormData.amount / 100,
+      amount: fromMinorUnits(sourceFormData.amount, sourceFormData.currency),
       currency: sourceFormData.currency,
       baseCurrency: DEFAULT_BASE_CURRENCY,
       date: sourceFormData.date,
@@ -794,16 +809,16 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       && receiptOcrResult.baseCurrency
       && receiptOcrResult.currency === sourceFormData.currency
       && typeof receiptOcrResult.amount === 'number'
-      && Math.abs(receiptOcrResult.amount - (sourceFormData.amount / 100)) < 0.01;
+      && Math.abs(receiptOcrResult.amount - fromMinorUnits(sourceFormData.amount, sourceFormData.currency)) < 0.5 * (10 ** -getCurrencyMinorDigits(sourceFormData.currency));
 
     const submitData: Record<string, unknown> = {
       ...sourceFormData,
-      amount: sourceFormData.amount / 100,
+      amount: fromMinorUnits(sourceFormData.amount, sourceFormData.currency),
       ...resolvedCurrency,
     };
 
     if (receiptBaseOverride) {
-      const amount = sourceFormData.amount / 100;
+      const amount = fromMinorUnits(sourceFormData.amount, sourceFormData.currency);
       submitData.baseAmount = Math.round((receiptOcrResult.baseAmount as number) * 100) / 100;
       submitData.baseCurrency = receiptOcrResult.baseCurrency;
       submitData.exchangeRate = amount > 0 ? Math.round(((receiptOcrResult.baseAmount as number) / amount) * 1000000) / 1000000 : resolvedCurrency.exchangeRate;
@@ -815,10 +830,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     // Add multi-amount data if applicable
     if (amountItems.length > 0) {
       submitData.amountItems = amountItems;
-      submitData.subtotal = Math.round(subtotal * 100) / 100;
+      submitData.subtotal = roundMoney(subtotal, sourceFormData.currency);
       if (enableTax) {
         submitData.taxRate = taxRate;
-        submitData.taxAmount = Math.round(taxAmount * 100) / 100;
+        submitData.taxAmount = roundMoney(taxAmount, sourceFormData.currency);
       }
     }
 
@@ -948,17 +963,31 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const handleCurrentAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const digitsOnly = value.replace(/\D/g, '');
-    const amountInCents = parseInt(digitsOnly) || 0;
-    setCurrentAmountInput(amountInCents);
+    const amountInMinorUnits = parseInt(digitsOnly) || 0;
+    setCurrentAmountInput(amountInMinorUnits);
     // Also update formData amount for single item mode
     if (amountItems.length === 0) {
-      setFormData((prev) => ({ ...prev, amount: amountInCents }));
+      setFormData((prev) => ({ ...prev, amount: amountInMinorUnits }));
     }
+  };
+
+  const handleCurrencyChange = (currency: CurrencyCode) => {
+    const nextItems = amountItems.map((item) => ({ ...item, amount: roundMoney(item.amount, currency) }));
+    const nextTotal = nextItems.reduce((sum, item) => sum + item.amount, 0);
+    setAmountItems(nextItems);
+    setCurrentAmountInput((current) => toMinorUnits(fromMinorUnits(current, formData.currency), currency));
+    setFormData((previous) => ({
+      ...previous,
+      currency,
+      amount: nextItems.length > 0
+        ? toMinorUnits(roundMoney(nextTotal + (enableTax ? nextTotal * (taxRate / 100) : 0), currency), currency)
+        : toMinorUnits(fromMinorUnits(previous.amount, previous.currency), currency),
+    }));
   };
 
   const addAmountItem = (shouldFocusInput: boolean = false) => {
     if (currentAmountInput > 0) {
-      const newItem: AmountItem = { amount: currentAmountInput / 100 };
+      const newItem: AmountItem = { amount: fromMinorUnits(currentAmountInput, formData.currency) };
       setAmountItems(prev => [...prev, newItem]);
       setCurrentAmountInput(0);
       // Update total amount
@@ -980,7 +1009,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = enableTax ? subtotal * (taxRate / 100) : 0;
     const total = subtotal + taxAmount;
-    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+    setFormData(prev => ({ ...prev, amount: toMinorUnits(roundMoney(total, prev.currency), prev.currency) }));
   };
 
   const handleTaxRateChange = (rate: number) => {
@@ -989,7 +1018,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const subtotal = amountItems.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = subtotal * (rate / 100);
     const total = subtotal + taxAmount;
-    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+    setFormData(prev => ({ ...prev, amount: toMinorUnits(roundMoney(total, prev.currency), prev.currency) }));
   };
 
   const handleEnableTaxChange = (enabled: boolean) => {
@@ -998,7 +1027,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const subtotal = amountItems.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = enabled ? subtotal * (taxRate / 100) : 0;
     const total = subtotal + taxAmount;
-    setFormData(prev => ({ ...prev, amount: Math.round(total * 100) }));
+    setFormData(prev => ({ ...prev, amount: toMinorUnits(roundMoney(total, prev.currency), prev.currency) }));
   };
 
   // Calculate subtotal and tax for display
@@ -1026,7 +1055,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
   };
 
-  const formatAmountFromCents = (amount: number): string => formatMoney(amount / 100, formData.currency);
+  const formatAmountFromCents = (amount: number): string => formatMoney(fromMinorUnits(amount, formData.currency), formData.currency);
   const formatAmountFromDollars = (amount: number): string => formatMoney(amount, formData.currency);
 
   const getCategoryIcon = (categoryName: string): string => {
@@ -1044,7 +1073,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const sourceChoicesVisible = showReceiptSourcePicker && !receiptOcrBusy;
     const showFailureState = !!receiptOcrError && !hasReviewState && !receiptOcrBusy;
     const reviewCurrency = receiptReviewForm.currency;
-    const formatReviewAmount = (amountCents: number): string => formatMoney(amountCents / 100, reviewCurrency);
+    const formatReviewAmount = (amountCents: number): string => formatMoney(fromMinorUnits(amountCents, reviewCurrency), reviewCurrency);
 
     const sourceActions = (
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1177,7 +1206,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 <label style={styles.fieldLabel}>{t('currency')}</label>
                 <select
                   value={receiptReviewFormData.currency}
-                  onChange={(e) => updateReceiptReviewForm({ currency: e.target.value })}
+                  onChange={(e) => handleReceiptReviewCurrencyChange(e.target.value as CurrencyCode)}
                   style={styles.select}
                 >
                   {CURRENCIES.map((currency) => (
@@ -1206,9 +1235,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     type="number"
                     inputMode="decimal"
                     min="0"
-                    step="0.01"
-                    value={receiptReviewAmountCents > 0 ? (receiptReviewAmountCents / 100).toFixed(2) : ''}
-                    onChange={(e) => updateReceiptReviewForm({ amount: Math.round((Number(e.target.value) || 0) * 100) })}
+                    step={getCurrencyMinorDigits(receiptReviewFormData.currency) === 0 ? '1' : '0.01'}
+                    value={receiptReviewAmountCents > 0 ? fromMinorUnits(receiptReviewAmountCents, receiptReviewFormData.currency).toFixed(getCurrencyMinorDigits(receiptReviewFormData.currency)) : ''}
+                    onChange={(e) => updateReceiptReviewForm({ amount: toMinorUnits(Number(e.target.value) || 0, receiptReviewFormData.currency) })}
                     placeholder={formatMoney(0, receiptReviewFormData.currency)}
                     style={styles.textInput}
                   />
@@ -1284,8 +1313,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                         inputMode="decimal"
                         min="0"
                         step="0.01"
-                        value={item.amount > 0 ? item.amount.toFixed(2) : ''}
-                        onChange={(e) => updateReceiptReviewLineItem(index, { amount: Number(e.target.value) || 0 })}
+                        value={item.amount > 0 ? item.amount.toFixed(getCurrencyMinorDigits(receiptReviewForm.currency)) : ''}
+                        onChange={(e) => updateReceiptReviewLineItem(index, { amount: roundMoney(Number(e.target.value) || 0, receiptReviewForm.currency) })}
                         placeholder={formatMoney(0, receiptReviewForm.currency)}
                         style={styles.textInput}
                       />
@@ -1500,7 +1529,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                       key={currency.code}
                       type="button"
                       onClick={() => {
-                        setFormData((prev) => ({ ...prev, currency: currency.code }));
+                        handleCurrencyChange(currency.code);
                         window.setTimeout(() => handleNext(), 150);
                       }}
                       aria-pressed={selected}

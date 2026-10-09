@@ -4,9 +4,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { useNotification } from '../contexts/NotificationContext';
-import { TimeFormat, DateFormat, DateShortcut } from '../types';
+import { TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
 import PWAInstallButton from '../components/PWAInstallButton';
 import DateShortcutsSettings from '../components/settings/DateShortcutsSettings';
+import CurrencySelector from '../components/common/CurrencySelector';
 import './UserProfile.css';
 
 const UserProfile: React.FC = () => {
@@ -17,6 +18,8 @@ const UserProfile: React.FC = () => {
     timeFormat: contextTimeFormat,
     dateFormat: contextDateFormat,
     dateShortcuts,
+    displayCurrency,
+    setDisplayCurrency,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
     setDateShortcuts,
@@ -108,6 +111,19 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const handleDisplayCurrencyChange = async (currency: CurrencyCode) => {
+    setSaving(true);
+    try {
+      await setDisplayCurrency(currency);
+      showNotification('success', t('settingsSaved'));
+    } catch (error) {
+      console.error('Error saving display currency:', error);
+      showNotification('error', t('errorSavingSettings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveDateShortcuts = async (shortcuts: DateShortcut[]) => {
     try {
       await setDateShortcuts(shortcuts);
@@ -183,6 +199,21 @@ const UserProfile: React.FC = () => {
         
         {!loading && (
           <div className="settings-content">
+            <div className="setting-section">
+              <div className="setting-label-row">
+                <span className="setting-label">{t('displayCurrency')}</span>
+              </div>
+              <p className="setting-description">{t('displayCurrencyHint') || 'Used to convert totals for display. Saved transaction amounts and exchange-rate snapshots stay unchanged.'}</p>
+              <div style={{ maxWidth: 260 }}>
+                <CurrencySelector
+                  value={displayCurrency}
+                  onChange={(currency) => void handleDisplayCurrencyChange(currency)}
+                  disabled={saving}
+                  showLabel={false}
+                  ariaLabel={t('displayCurrency')}
+                />
+              </div>
+            </div>
             {/* Time Format Section */}
             <div className="setting-section">
               <div className="setting-label-row">
