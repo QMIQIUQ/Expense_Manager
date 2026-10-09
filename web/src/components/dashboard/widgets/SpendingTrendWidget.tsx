@@ -132,6 +132,14 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
     );
   }
 
+  if (conversionState.isLoading || conversionState.failedKeys.length > 0) {
+    return (
+      <div className="widget-empty-state" style={{ color: conversionState.isLoading ? 'var(--text-secondary)' : 'var(--warning-text)' }}>
+        <p>{conversionState.isLoading ? t('loading') : t('conversionUnavailable')}</p>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={containerRef} 
@@ -143,9 +151,6 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
         flexDirection: 'column'
       }}
     >
-      {!conversionState.isLoading && conversionState.failedKeys.length > 0 && (
-        <div className="text-xs mb-2" style={{ color: 'var(--warning-text)' }}>{t('conversionUnavailable')}</div>
-      )}
       <ResponsiveContainer width="100%" height={containerHeight}>
         <LineChart data={spendingTrend}>
         {chartConfig.showGrid && <CartesianGrid strokeDasharray="3 3" />}

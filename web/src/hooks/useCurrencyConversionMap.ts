@@ -36,6 +36,13 @@ export const useCurrencyConversionMapState = (
     isLoading: false,
   });
 
+  const canResolveWithoutFx = entries.every((entry) => {
+    const entryTarget = entry.targetCurrency
+      ? normalizeCurrencyCode(entry.targetCurrency)
+      : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
+    return !entryTarget || normalizeCurrencyCode(entry.sourceCurrency) === entryTarget;
+  });
+
   useEffect(() => {
     let cancelled = false;
     const hasTarget = Boolean(targetCurrency || entries.some((entry) => entry.targetCurrency));
@@ -110,6 +117,17 @@ export const useCurrencyConversionMapState = (
       cancelled = true;
     };
   }, [entries, targetCurrency, fallbackToSource]);
+
+  if (canResolveWithoutFx) {
+    const amountsByKey: Record<string, number> = {};
+    entries.forEach((entry) => {
+      const entryTarget = entry.targetCurrency
+        ? normalizeCurrencyCode(entry.targetCurrency)
+        : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
+      if (entryTarget) amountsByKey[entry.key] = Math.round(entry.amount * 100) / 100;
+    });
+    return { amountsByKey, failedKeys: [], isLoading: false };
+  }
 
   if (
     storedState.entries !== entries ||

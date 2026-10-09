@@ -3,7 +3,7 @@ import { Transfer, EWallet, Bank, Card } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { DeleteIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
-import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface TransferListProps {
   transfers: Transfer[];
@@ -172,9 +172,14 @@ const TransferList: React.FC<TransferListProps> = ({
           </div>
           <div className="transfer-details">
             <span className="transfer-amount">
-              {formatMoney(transfer.amount, transfer.currency || DEFAULT_BASE_CURRENCY)}
+              <DisplayCurrencyAmount
+                amount={transfer.amount}
+                currency={transfer.currency || 'MYR'}
+                date={transfer.date || new Date(transfer.createdAt).toISOString().slice(0, 10)}
+                showSource
+              />
               {transfer.toCurrency && transfer.currency && transfer.toCurrency !== transfer.currency && transfer.toAmount != null
-                ? ` → ${formatMoney(transfer.toAmount, transfer.toCurrency)}`
+                ? <> → <DisplayCurrencyAmount amount={transfer.toAmount} currency={transfer.toCurrency} date={transfer.date || new Date(transfer.createdAt).toISOString().slice(0, 10)} showSource /></>
                 : ''}
             </span>
             <span className="transfer-date">

@@ -5,7 +5,7 @@ import { calculateCardStats } from '../../../utils/cardUtils';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
-import { formatMoney } from '../../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
 
 type CardSortMode = 'default' | 'spending' | 'cashback-remaining';
 
@@ -149,7 +149,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
                 <div className="card-cashback">
                   <p className="cashback-label">{t('estimatedCashback')}</p>
                   <p className="cashback-value">
-                    {formatMoney(stats.estimatedTotalCashback, card.currency)}
+                    <DisplayCurrencyAmount amount={stats.estimatedTotalCashback} currency={card.currency} showSource />
                   </p>
                 </div>
               )}
@@ -158,7 +158,7 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
             {/* Utilization Bar */}
             <div className="utilization-section">
               <div className="utilization-info">
-                <span>{t('currentCycleSpending')}: {formatMoney(stats.currentCycleSpending, card.currency)}</span>
+                <span>{t('currentCycleSpending')}: <DisplayCurrencyAmount amount={stats.currentCycleSpending} currency={card.currency} showSource /></span>
                 <span>{utilizationPercent.toFixed(0)}%</span>
               </div>
               <div className="progress-bar">
@@ -173,8 +173,8 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
             </div>
 
             <div className="card-limits">
-              <span>{t('availableCredit')}: {formatMoney(stats.availableCredit, card.currency)}</span>
-              <span>{t('cardLimit')}: {formatMoney(card.cardLimit, card.currency)}</span>
+              <span>{t('availableCredit')}: <DisplayCurrencyAmount amount={stats.availableCredit} currency={card.currency} showSource /></span>
+              <span>{t('cardLimit')}: <DisplayCurrencyAmount amount={card.cardLimit} currency={card.currency} showSource /></span>
             </div>
 
             {/* High Priority Cashback Suggestions */}
@@ -187,12 +187,12 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
                     <div key={idx} className="suggestion-item">
                       {rule.requiredToReachMinSpend > 0 ? (
                         <span>
-                          💡 Spend {formatMoney(rule.requiredToReachMinSpend, card.currency)} more on{' '}
+                          💡 Spend <DisplayCurrencyAmount amount={rule.requiredToReachMinSpend} currency={card.currency} showSource /> more on{' '}
                           <span className="highlight-text">{rule.categoryName}</span> to unlock higher rate
                         </span>
                       ) : rule.requiredToReachCap > 0 ? (
                         <span>
-                          ⭐ Spend {formatMoney(rule.requiredToReachCap, card.currency)} more on{' '}
+                          ⭐ Spend <DisplayCurrencyAmount amount={rule.requiredToReachCap} currency={card.currency} showSource /> more on{' '}
                           <span className="highlight-text">{rule.categoryName}</span> to max out rewards
                         </span>
                       ) : null}

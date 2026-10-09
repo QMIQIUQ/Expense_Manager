@@ -6,7 +6,7 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BudgetAdjustmentSuggestion, getSuggestionReasonKey } from '../../utils/budgetAnalysis';
-import { formatMoney } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface BudgetAdjustmentCardProps {
   suggestion: BudgetAdjustmentSuggestion;
@@ -64,18 +64,18 @@ const BudgetAdjustmentCard: React.FC<BudgetAdjustmentCardProps> = ({
       <div style={styles.amounts}>
         <div style={styles.amountBox}>
           <span style={styles.amountLabel}>{t('current') || 'Current'}</span>
-          <span style={styles.amountValue}>{formatMoney(suggestion.currentAmount, suggestion.currency)}</span>
+          <span style={styles.amountValue}><DisplayCurrencyAmount amount={suggestion.currentAmount} currency={suggestion.currency} /></span>
         </div>
         <div style={styles.arrow}>{isIncrease ? '→' : '→'}</div>
         <div style={styles.amountBox}>
           <span style={styles.amountLabel}>{t('suggested') || 'Suggested'}</span>
           <span style={{ ...styles.amountValue, color: isIncrease ? 'var(--error-text)' : 'var(--success-text)' }}>
-            {formatMoney(suggestion.suggestedAmount, suggestion.currency)}
+            <DisplayCurrencyAmount amount={suggestion.suggestedAmount} currency={suggestion.currency} />
           </span>
         </div>
         <div style={styles.changeBadge}>
           <span style={{ color: isIncrease ? 'var(--error-text)' : 'var(--success-text)' }}>
-            {isIncrease ? '+' : '-'}{formatMoney(difference, suggestion.currency)} ({percentChange}%)
+            {isIncrease ? '+' : '-'}<DisplayCurrencyAmount amount={difference} currency={suggestion.currency} /> ({percentChange}%)
           </span>
         </div>
       </div>

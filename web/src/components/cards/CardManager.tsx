@@ -12,7 +12,8 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
 import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface CardManagerProps {
   cards: Card[];
@@ -265,7 +266,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                   <div className="card-info">
                     <h3 className="card-name">{card.name}</h3>
                     <p className="card-limit">
-                      {t('cardLimit')}: {formatMoney(card.cardLimit, card.currency || DEFAULT_BASE_CURRENCY)}
+                      {t('cardLimit')}: <DisplayCurrencyAmount amount={card.cardLimit} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource />
                     </p>
                   </div>
                   <div className="card-actions">
@@ -323,15 +324,15 @@ const CardManager: React.FC<CardManagerProps> = ({
                 <div className="stats-grid">
                   <div className="stat-card info">
                     <p className="stat-label">{t('currentCycleSpending')}</p>
-                    <p className="stat-value info-text">{formatMoney(stats.currentCycleSpending, card.currency || DEFAULT_BASE_CURRENCY)}</p>
+                    <p className="stat-value info-text"><DisplayCurrencyAmount amount={stats.currentCycleSpending} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                   </div>
                   <div className="stat-card success">
                     <p className="stat-label">{t('availableCredit')}</p>
-                    <p className="stat-value success-text">{formatMoney(stats.availableCredit, card.currency || DEFAULT_BASE_CURRENCY)}</p>
+                    <p className="stat-value success-text"><DisplayCurrencyAmount amount={stats.availableCredit} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                   </div>
                   <div className="stat-card accent">
                     <p className="stat-label">{t('estimatedCashback')}</p>
-                    <p className="stat-value accent-text">{formatMoney(stats.estimatedTotalCashback, card.currency || DEFAULT_BASE_CURRENCY)}</p>
+                    <p className="stat-value accent-text"><DisplayCurrencyAmount amount={stats.estimatedTotalCashback} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                   </div>
                   <div className="stat-card warning">
                     <p className="stat-label">{t('nextBillingDate')}</p>
@@ -353,20 +354,20 @@ const CardManager: React.FC<CardManagerProps> = ({
                         <div>
                           <div className="breakdown-title">{ruleStats.categoryName}</div>
                           <div className="breakdown-meta">
-                            {t('categorySpend')}: {formatMoney(ruleStats.categorySpend, card.currency || DEFAULT_BASE_CURRENCY)}
+                            {t('categorySpend')}: <DisplayCurrencyAmount amount={ruleStats.categorySpend} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource />
                           </div>
                           {ruleStats.requiredToReachMinSpend > 0 && (
                             <div className="breakdown-meta warning-text">
-                              {formatMoney(ruleStats.requiredToReachMinSpend, card.currency || DEFAULT_BASE_CURRENCY)} {t('toReachMinSpend')}
+                              <DisplayCurrencyAmount amount={ruleStats.requiredToReachMinSpend} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /> {t('toReachMinSpend')}
                             </div>
                           )}
                           {ruleStats.requiredToReachCap > 0 && (
                             <div className="breakdown-meta info-text">
-                              {formatMoney(ruleStats.requiredToReachCap, card.currency || DEFAULT_BASE_CURRENCY)} {t('toReachCap')}
+                              <DisplayCurrencyAmount amount={ruleStats.requiredToReachCap} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /> {t('toReachCap')}
                             </div>
                           )}
                         </div>
-                        <div className="breakdown-value">+{formatMoney(ruleStats.estimatedCashback, card.currency || DEFAULT_BASE_CURRENCY)}</div>
+                        <div className="breakdown-value">+<DisplayCurrencyAmount amount={ruleStats.estimatedCashback} currency={card.currency || DEFAULT_BASE_CURRENCY} showSource /></div>
                       </div>
                     ))}
                   </div>

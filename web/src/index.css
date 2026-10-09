@@ -6365,6 +6365,45 @@ button:not(:disabled):hover {
   gap: 4px;
 }
 
+.header-currency-control {
+  display: flex;
+  flex: 0 0 230px;
+  align-items: center;
+  min-width: 0;
+}
+
+.header-currency-control .display-currency-control {
+  width: 100%;
+  margin-left: 0 !important;
+  gap: 6px;
+}
+
+.header-currency-control .expense-display-currency-selector {
+  width: 142px;
+}
+
+@media (max-width: 1100px) {
+  .header-currency-control {
+    flex-basis: 124px;
+  }
+
+  .header-currency-control .display-currency-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .header-currency-control .expense-display-currency-selector {
+    width: 100%;
+  }
+}
+
 .floating-expense-actions {
   position: fixed;
   bottom: 24px;
@@ -6470,6 +6509,16 @@ button:not(:disabled):hover {
   .dashboard-header-modern .header-actions {
     grid-area: actions;
     min-height: 52px;
+  }
+
+  .header-currency-control {
+    flex-basis: 116px;
+  }
+
+  .header-currency-control .expense-display-currency-selector > button {
+    gap: 4px !important;
+    padding: 6px 7px !important;
+    font-size: 12px !important;
   }
 
   .floating-expense-actions.is-mobile {

@@ -19,6 +19,7 @@ const UserProfile: React.FC = () => {
     dateFormat: contextDateFormat,
     dateShortcuts,
     displayCurrency,
+    displayCurrencyReady,
     setDisplayCurrency,
     setTimeFormat: setContextTimeFormat,
     setDateFormat: setContextDateFormat,
@@ -208,7 +209,7 @@ const UserProfile: React.FC = () => {
                 <CurrencySelector
                   value={displayCurrency}
                   onChange={(currency) => void handleDisplayCurrencyChange(currency)}
-                  disabled={saving}
+                  disabled={saving || !displayCurrencyReady}
                   showLabel={false}
                   ariaLabel={t('displayCurrency')}
                 />

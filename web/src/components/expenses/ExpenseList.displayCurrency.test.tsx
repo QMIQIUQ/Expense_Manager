@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '../../test/test-utils';
+import { render, screen, waitFor } from '../../test/test-utils';
 import type { Category, Expense } from '../../types';
 import ExpenseList from './ExpenseList';
 import { getTodayLocal } from '../../utils/dateUtils';
@@ -19,7 +19,7 @@ vi.mock('../../contexts/UserSettingsContext', () => ({
   useUserSettings: () => ({ dateFormat: 'YYYY-MM-DD' }),
 }));
 
-describe('ExpenseList display currency controls', () => {
+describe('ExpenseList display currency', () => {
   const categories: Category[] = [
     {
       id: 'cat-food',
@@ -32,50 +32,19 @@ describe('ExpenseList display currency controls', () => {
     },
   ];
 
-  it('shows the display currency selector alongside the multi-select toolbar', async () => {
+  it('uses the shared header selector instead of rendering a page-level currency control', async () => {
     render(
       <ExpenseList
         expenses={[]}
         categories={[]}
         displayCurrency="MYR"
-        onDisplayCurrencyChange={vi.fn()}
         onDelete={vi.fn()}
         onInlineUpdate={vi.fn()}
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /multi-select/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /currency/i })).toBeInTheDocument();
-    });
-  });
-
-  it('calls the display currency change handler when a new currency is selected', async () => {
-    const onDisplayCurrencyChange = vi.fn();
-
-    render(
-      <ExpenseList
-        expenses={[]}
-        categories={[]}
-        displayCurrency="MYR"
-        onDisplayCurrencyChange={onDisplayCurrencyChange}
-        onDelete={vi.fn()}
-        onInlineUpdate={vi.fn()}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /currency/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('listbox')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('option', { name: /usd/i }));
-
-    await waitFor(() => {
-      expect(onDisplayCurrencyChange).toHaveBeenCalledWith('USD');
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: /multi-select/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /currency/i })).not.toBeInTheDocument();
   });
 
   it('keeps the original amount when display currency matches the expense currency', async () => {
@@ -104,7 +73,6 @@ describe('ExpenseList display currency controls', () => {
         expenses={[expense]}
         categories={categories}
         displayCurrency="TWD"
-        onDisplayCurrencyChange={vi.fn()}
         onDelete={vi.fn()}
         onInlineUpdate={vi.fn()}
       />

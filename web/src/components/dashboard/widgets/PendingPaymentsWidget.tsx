@@ -3,6 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getTodayLocal } from '../../../utils/dateUtils';
 import { formatMoney } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../../hooks/useCurrencyConversionMap';
 
 const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
@@ -10,6 +11,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
   categories,
   onConfirmScheduledPayment,
   onNavigateToScheduledPayment,
+  displayCurrency,
   size = 'medium',
 }) => {
   const { t } = useLanguage();
@@ -46,6 +48,17 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
       })
       .sort((a, b) => a.dueDay - b.dueDay);
   }, [scheduledPayments, scheduledPaymentRecords]);
+
+  const conversionEntries = useMemo<CurrencyConversionEntry[]>(() => {
+    const date = getTodayLocal();
+    return pendingPayments.map((payment, index) => ({
+      key: payment.id || `pending-${index}`,
+      amount: payment.amount,
+      sourceCurrency: payment.currency || 'MYR',
+      date,
+    }));
+  }, [pendingPayments]);
+  const conversion = useCurrencyConversionMapState(conversionEntries, displayCurrency);
 
   // Quick confirm handler
   const handleQuickConfirm = (payment: typeof pendingPayments[0]) => {
@@ -103,13 +116,20 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
 
   return (
     <div className={`pending-payments-list ${isCompact ? 'pending-payments-compact' : ''}`}>
-      {pendingPayments.slice(0, maxItems).map((payment) => {
+      {pendingPayments.slice(0, maxItems).map((payment, index) => {
         const categoryInfo = getCategoryInfo(payment.category);
         const today = new Date();
         const currentDay = today.getDate();
         const daysUntilDue = payment.dueDay - currentDay;
         const isOverdue = daysUntilDue < 0;
         const isDueSoon = daysUntilDue >= 0 && daysUntilDue <= 3;
+        const paymentKey = payment.id || `pending-${index}`;
+        const convertedAmount = conversion.amountsByKey[paymentKey];
+        const displayAmount = Number.isFinite(convertedAmount) && displayCurrency
+          ? formatMoney(convertedAmount, displayCurrency)
+          : conversion.isLoading
+            ? '…'
+            : '—';
 
         return (
           <div 
@@ -150,7 +170,7 @@ const PendingPaymentsWidget: React.FC<WidgetProps> = ({
 
             <div className="pending-payment-actions">
               <span className="pending-payment-amount">
-                {formatMoney(payment.amount, payment.currency)}
+                {displayAmount}
               </span>
               
               {onConfirmScheduledPayment && (

@@ -6,9 +6,11 @@ import ShowMoreButton from './ShowMoreButton';
 import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
 import { formatDateRangeShort, getTodayLocal } from '../../../utils/dateUtils';
 import { Expense } from '../../../types';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../../utils/currencyUtils';
+import { getExpenseBaseAmount, getRepaymentBaseAmount } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
 import { getBudgetCurrency, toBudgetBaseAmount, toBudgetCurrencyAmount } from '../../../utils/budgetCurrencyUtils';
 import { useCurrencyConversionMapState } from '../../../hooks/useCurrencyConversionMap';
+import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
 
 const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', displayCurrency, onNavigateToBudgets }) => {
   const { t } = useLanguage();
@@ -39,7 +41,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
   const repaymentsByExpense = React.useMemo(() => {
     const map: { [expenseId: string]: number } = {};
     for (const rep of repayments) {
-      map[rep.expenseId] = (map[rep.expenseId] || 0) + rep.amount;
+      map[rep.expenseId] = (map[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
     }
     return map;
   }, [repayments]);
@@ -294,10 +296,10 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
                 className="budget-spent" 
                 style={{ color: budget.progressColor }}
               >
-                {formatMoney(budget.spent, getBudgetCurrency(budget))}
+                <DisplayCurrencyAmount amount={budget.spent} currency={getBudgetCurrency(budget)} date={budget.exchangeRateDate || budget.startDate} showSource />
               </span>
               <span className="budget-separator"> / </span>
-              <span className="budget-total">{formatMoney(budget.effectiveAmount, getBudgetCurrency(budget))}</span>
+              <span className="budget-total"><DisplayCurrencyAmount amount={budget.effectiveAmount} currency={getBudgetCurrency(budget)} date={budget.exchangeRateDate || budget.startDate} showSource /></span>
             </div>
           </div>
 
@@ -307,7 +309,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
             {budget.isOverBudget ? (
               <span className="budget-status-text error-text">{t('overBudget')}</span>
             ) : (
-              <span className="budget-status-text success-text">{formatMoney(budget.remaining, getBudgetCurrency(budget))} {t('remaining')}</span>
+              <span className="budget-status-text success-text"><DisplayCurrencyAmount amount={budget.remaining} currency={getBudgetCurrency(budget)} date={budget.exchangeRateDate || budget.startDate} showSource /> {t('remaining')}</span>
             )}
           </div>
 
@@ -316,12 +318,12 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
             <div className="budget-daily-info">
               <div className="budget-daily-row">
                 <span className="budget-daily-label">{t('dailyBudget') || 'Daily'}:</span>
-                <span className="budget-daily-value">{formatMoney(budget.dailyBudget, getBudgetCurrency(budget))}</span>
+                <span className="budget-daily-value"><DisplayCurrencyAmount amount={budget.dailyBudget} currency={getBudgetCurrency(budget)} date={budget.exchangeRateDate || budget.startDate} showSource /></span>
               </div>
               <div className="budget-daily-row">
                 <span className="budget-daily-label">{t('todaySpent') || 'Today'}:</span>
                 <span className={`budget-daily-value ${budget.todaySpent > budget.dailyBudget ? 'over-daily' : ''}`}>
-                  {formatMoney(budget.todaySpent, getBudgetCurrency(budget))}
+                  <DisplayCurrencyAmount amount={budget.todaySpent} currency={getBudgetCurrency(budget)} date={budget.exchangeRateDate || budget.startDate} showSource />
                 </span>
               </div>
               {budget.spendingPace !== 'on-track' && (

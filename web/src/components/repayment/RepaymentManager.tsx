@@ -9,8 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { PlusIcon } from '../icons';
 import PopupModal from '../common/PopupModal';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount } from '../../utils/currencyUtils';
 import { getRepaymentBaseAmount } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 import { resolveAmountCurrencyFields } from '../../services/currencyRateService';
 
 interface RepaymentManagerProps {
@@ -543,16 +544,16 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       <div style={inline ? styles.summaryCard : undefined} className={inline ? undefined : 'expense-info'}>
         <div style={styles.summaryRow}>
           <span>{t('originalExpenseAmount')}</span>
-          <span style={styles.summaryValue}>{formatMoney(expenseBaseAmount, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+          <span style={styles.summaryValue}><DisplayCurrencyAmount amount={expenseBaseAmount} currency={expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY} showSource /></span>
         </div>
         <div style={styles.summaryRow}>
           <span>{t('totalRepaid')}</span>
-          <span style={styles.successValue}>{formatMoney(totalRepaid, expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
+          <span style={styles.successValue}><DisplayCurrencyAmount amount={totalRepaid} currency={expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY} showSource /></span>
         </div>
         <div style={styles.summaryRow}>
           <span>{hasExcess ? t('excessAmount') : t('remainingAmount')}</span>
           <span style={hasExcess ? styles.infoValue : (isFullyRepaid ? styles.successValue : styles.warningValue)}>
-            {formatMoney(Math.abs(remainingAmount), expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}
+            <DisplayCurrencyAmount amount={Math.abs(remainingAmount)} currency={expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY} showSource />
           </span>
         </div>
         {isFullyRepaid && !hasExcess && (

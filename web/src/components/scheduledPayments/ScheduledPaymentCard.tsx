@@ -14,7 +14,7 @@ import {
 import { EditIcon, DeleteIcon } from '../icons';
 import PaymentRecordForm from './PaymentRecordForm';
 import PaymentHistoryList from './PaymentHistoryList';
-import { formatMoney } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 // Responsive styles matching RecurringExpenseManager
 const responsiveCardStyles = `
@@ -204,7 +204,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
             )}
           </div>
           <div style={styles.amount}>
-            {formatMoney(payment.amount, payment.currency)}
+            <DisplayCurrencyAmount amount={payment.amount} currency={payment.currency} />
             <span style={styles.frequency}>/{payment.frequency === 'monthly' ? t('freqMonthly') : t('freqYearly')}</span>
           </div>
         </div>
@@ -248,7 +248,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           <div style={styles.progressContainer}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>
-                {t('totalPaid')}: {formatMoney(progress.totalPaid, payment.currency)} / {formatMoney(progress.totalAmount, payment.currency)}
+                {t('totalPaid')}: <DisplayCurrencyAmount amount={progress.totalPaid} currency={payment.currency} /> / <DisplayCurrencyAmount amount={progress.totalAmount} currency={payment.currency} />
               </span>
               <span style={{ color: 'var(--text-secondary)' }}>
                 {progress.percentage.toFixed(0)}%
@@ -265,7 +265,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
             </div>
             {progress.remaining > 0 && (
               <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--warning-text)' }}>
-                {t('remainingAmount')}: {formatMoney(progress.remaining, payment.currency)}
+                {t('remainingAmount')}: <DisplayCurrencyAmount amount={progress.remaining} currency={payment.currency} />
               </div>
             )}
           </div>
@@ -276,7 +276,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           <div style={styles.summaryGrid}>
             <div>
               <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
-              <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>{formatMoney(summary.totalPaid, payment.currency)}</div>
+              <div style={{ fontWeight: 600, color: 'var(--success-text)' }}><DisplayCurrencyAmount amount={summary.totalPaid} currency={payment.currency} /></div>
             </div>
             <div>
               <span style={{ color: 'var(--text-secondary)' }}>{t('paymentCount')}:</span>

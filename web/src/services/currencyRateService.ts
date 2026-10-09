@@ -15,6 +15,7 @@ type SerializedCurrencyRateSnapshot = Omit<CurrencyRateSnapshot, 'fetchedAt'> & 
 };
 
 const memoryCache = new Map<string, CurrencyRateSnapshot>();
+const pendingRateRequests = new Map<string, Promise<CurrencyRateSnapshot>>();
 
 const getCacheKey = (fromCurrency: CurrencyCode, toCurrency: CurrencyCode, rateDate: string): string => {
   return `${CACHE_PREFIX}${rateDate}:${fromCurrency}:${toCurrency}`;
@@ -168,9 +169,19 @@ export const getHistoricalRate = async (
     return snapshot;
   }
 
-  const snapshot = await fetchHistoricalRate(fromCurrency, toCurrency, rateDate);
-  setCachedSnapshot(cacheKey, snapshot);
-  return snapshot;
+  const pendingRequest = pendingRateRequests.get(cacheKey);
+  if (pendingRequest) return pendingRequest;
+
+  const request = fetchHistoricalRate(fromCurrency, toCurrency, rateDate)
+    .then((snapshot) => {
+      setCachedSnapshot(cacheKey, snapshot);
+      return snapshot;
+    })
+    .finally(() => {
+      pendingRateRequests.delete(cacheKey);
+    });
+  pendingRateRequests.set(cacheKey, request);
+  return request;
 };
 
 export const convertAmountToCurrency = async (
