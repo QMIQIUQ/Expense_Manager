@@ -13,17 +13,15 @@
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                         USER INTERFACE                             │
+│                         USER INTERFACE                            │
 ├───────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────┐│
-│  │Dashboard │  │ Expenses │  │Categories│  │ Budgets  │  │Recur.││
-│  │   Tab    │  │   Tab    │  │   Tab    │  │   Tab    │  │ Tab  ││
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────┘│
-│       │              │              │              │          │    │
-│       └──────────────┴──────────────┴──────────────┴──────────┘    │
-│                              │                                      │
-└──────────────────────────────┼──────────────────────────────────────┘
+│ Dashboard header                                                  │
+│  Brand + scrollable Tabs + notifications + hamburger              │
+│  Desktop: one 56px row; mobile: 52px actions + 44px Tabs          │
+│  Hamburger: tools, account, admin and sign-out                    │
+│  Separate lists: tabFeatures / hamburgerFeatures                 │
+│  activeTab switches views inside /dashboard                     │
+└─────────────────────────────┼────────────────────────────────────┘
                                │
 ┌──────────────────────────────┼──────────────────────────────────────┐
 │                       COMPONENT LAYER                               │
@@ -35,7 +33,7 @@
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘   │
 │                                                                     │
 │  ┌─────────────────┐  ┌─────────────────┐                         │
-│  │ RecurringMgr    │  │ DashboardSummary│                         │
+│  │ Scheduled Pmts  │  │ CustomizableDash│                         │
 │  └─────────────────┘  └─────────────────┘                         │
 │                              │                                      │
 └──────────────────────────────┼──────────────────────────────────────┘
@@ -169,37 +167,45 @@ Display Top Categories
 
 ```
 App.tsx
-  │
-  └─── Router
-        │
-        ├─── Home (/)
-        ├─── Login (/login)
-        ├─── Register (/register)
-        │
-        └─── Dashboard (/dashboard) [Protected]
-              │
-              ├─── Header (with logout & export)
-              │
-              ├─── Tabs Navigation
-              │
-              └─── Tab Content
-                    │
-                    ├─── Dashboard Tab
-                    │     └─── DashboardSummary
-                    │
-                    ├─── Expenses Tab
-                    │     ├─── ExpenseForm
-                    │     └─── ExpenseList
-                    │
-                    ├─── Categories Tab
-                    │     └─── CategoryManager
-                    │
-                    ├─── Budgets Tab
-                    │     └─── BudgetManager
-                    │
-                    └─── Recurring Tab
-                          └─── RecurringExpenseManager
+└── PWAProvider
+    ├── RouterProvider
+    │   ├── /                    Login
+    │   ├── /login               redirect to /
+    │   ├── /dashboard           PrivateRoute → Dashboard.tsx
+    │   └── *                    redirect to /
+    └── PWAInstallPrompt
+
+Dashboard.tsx (/dashboard; activeTab switches views, not URLs)
+├── dashboard-header-modern
+│   ├── header-brand
+│   ├── CompactNavigation (tabFeatures)
+│   └── header-actions
+│       ├── NotificationBell
+│       └── hamburger button → dashboard-menu-panel
+│           ├── NetworkStatusIndicator
+│           ├── Language accordion
+│           ├── Appearance accordion
+│           ├── Features accordion (settings + hamburgerFeatures)
+│           ├── Import / Export accordion
+│           ├── Offline queue (conditional)
+│           ├── Profile / Admin actions
+│           └── Logout action
+├── HeaderStatusBar (progress / revalidation status)
+├── dashboard-card (active feature view)
+└── FloatingExpenseActions (when overlays allow it)
+    ├── Add expense (tap; long-press opens date shortcuts)
+    └── Scan receipt
 ```
+
+### UI Navigation and Responsive Layout
+
+The production layout is a compact header, not a row of separate feature cards. On widths above 768px, brand, horizontally scrollable Tabs, notifications, and the hamburger button share one 56px row. At 768px and below, the header uses a 52px brand/actions row and a 44px horizontally scrollable Tabs row. `CompactNavigation` brings the active item into view after a tab change or order change; it does not create a `More` dropdown or a separate feature route.
+
+The hamburger panel is anchored to its header button. `DashboardMenuSection` renders each accordion as a full-width native button with `aria-expanded` and `aria-controls`; expanded content is hidden with the `hidden` attribute when collapsed. The trigger and actionable menu rows own their own full-width hit areas, with at least 44px height. Section wrappers stay unpadded so the visible row and clickable row remain aligned. Menu actions are sibling controls, not nested buttons.
+
+The main Tabs and the Hamburger Features list are independently configurable. `tabFeatures` controls only `CompactNavigation`; `hamburgerFeatures` controls only the feature destinations in the hamburger's Features accordion. The same feature may appear in both lists. `FeatureManager` lets users enable, disable, reorder, and reset each location independently. For older settings records, each missing location list falls back to `enabledFeatures`; saving keeps `enabledFeatures` equal to the Tabs list for backward compatibility, not the union of both lists.
+
+`FloatingExpenseActions` is one shared component that preserves two separate bottom-left actions. The primary action opens expense entry; a long press opens date shortcuts. The secondary action starts receipt scanning. On mobile both are 56px circular buttons positioned above the safe-area inset; on wider screens they show text labels. The group hides while selected menus, forms, import flows, or dashboard customization overlays are open. Component and style details are in [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md); the shipped implementation and its historical decisions are in [COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md).
 
 ## State Management
 
@@ -306,17 +312,18 @@ Dashboard Component (Local State)
 web/
 ├── src/
 │   ├── components/
-│   │   ├── budgets/
-│   │   │   └── BudgetManager.tsx
-│   │   ├── categories/
-│   │   │   └── CategoryManager.tsx
+│   │   ├── navigation/
+│   │   │   ├── CompactNavigation.tsx
+│   │   │   ├── DashboardMenuSection.tsx
+│   │   │   └── FloatingExpenseActions.tsx
 │   │   ├── dashboard/
-│   │   │   └── DashboardSummary.tsx
-│   │   ├── expenses/
-│   │   │   ├── ExpenseForm.tsx
-│   │   │   └── ExpenseList.tsx
-│   │   ├── recurring/
-│   │   │   └── RecurringExpenseManager.tsx
+│   │   │   └── CustomizableDashboard.tsx
+│   │   ├── settings/FeatureManager.tsx
+│   │   ├── scheduledPayments/ScheduledPaymentManager.tsx
+│   │   ├── HeaderStatusBar.tsx
+│   │   ├── budgets/BudgetManager.tsx
+│   │   ├── categories/CategoryManager.tsx
+│   │   ├── expenses/ExpenseList.tsx
 │   │   └── PrivateRoute.tsx
 │   │
 │   ├── services/
@@ -339,10 +346,11 @@ web/
 │   │   └── firebase.ts
 │   │
 │   ├── pages/
-│   │   ├── Home.tsx
 │   │   ├── Login.tsx
-│   │   ├── Register.tsx
-│   │   └── Dashboard.tsx
+│   │   ├── Dashboard.tsx
+│   │   └── tabs/
+│   │       ├── ExpensesTab.tsx
+│   │       └── IncomesTab.tsx
 │   │
 │   ├── App.tsx
 │   └── main.tsx
@@ -353,6 +361,8 @@ web/
 ├── vite.config.ts
 └── tsconfig.json
 ```
+
+This is a focused map of files that participate in the current Dashboard UI, not an exhaustive repository tree. `RecurringExpenseManager.tsx` and `RecurringTab.tsx` remain in the source tree for legacy functionality but are not mounted by `Dashboard.tsx`; the current `Recurring` entry renders `ScheduledPaymentManager`.
 
 ## Technology Stack
 
@@ -451,7 +461,7 @@ formatDateLocal(date: Date | string): string
 - DashboardSummary - Filtering expenses by today's date
 - ExpenseList - Date filtering and display
 
-**See:** [DATE_HANDLING_REFACTORING.md](DATE_HANDLING_REFACTORING.md) for detailed documentation
+**See:** [DATE_TIME_FORMAT_GUIDE.md](DATE_TIME_FORMAT_GUIDE.md) for date and time format details
 
 ### Export Utilities (`utils/exportUtils.ts`)
 

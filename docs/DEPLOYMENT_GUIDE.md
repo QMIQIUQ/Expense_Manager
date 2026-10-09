@@ -4,7 +4,7 @@ This document explains the deployment configuration for the Expense Manager appl
 
 ## Deployment Targets
 
-The application has two separate deployment targets:
+The application has production and preview deployments. GitHub Pages and Firebase live hosting are both triggered by `main`; `firebase-testing` uses a temporary Firebase Hosting preview channel.
 
 ### 1. GitHub Pages (Production)
 - **Branch**: `main`
@@ -12,11 +12,15 @@ The application has two separate deployment targets:
 - **Workflow**: `.github/workflows/deploy.yml`
 - **Auto-deploy**: ✅ Enabled (triggers on push to `main` branch)
 
-### 2. Firebase Hosting (Testing)
-- **Branch**: `firebase-testing`
-- **URL**: https://expense-manager-41afb.web.app/
+### 2. Firebase Hosting (Live and Testing Preview)
 - **Workflow**: `.github/workflows/firebase-hosting-deploy.yml`
-- **Auto-deploy**: ✅ Enabled (triggers on push to `firebase-testing` branch)
+- **Production branch / channel**: `main` → `live`
+- **Production URL**: https://expense-manager-41afb.web.app/
+- **Testing branch / channel**: `firebase-testing` → `compact-navigation-v2`
+- **Testing URL**: use the action's `channel_url` shown in the workflow run summary; this URL is temporary and expires after 7 days
+- **Auto-deploy**: ✅ Enabled (triggers on push to `main` or `firebase-testing`)
+
+The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database.
 
 ### 3. Firebase Preview (Pull Requests)
 - **Trigger**: Pull requests to `main` branch
@@ -25,31 +29,22 @@ The application has two separate deployment targets:
 
 ## How to Deploy
 
-### Deploy to GitHub Pages (Production)
-1. Push changes to the `main` branch:
+### Deploy production (`main`)
+1. Push reviewed changes to the `main` branch:
    ```bash
    git push origin main
    ```
-2. The workflow will automatically build and deploy to GitHub Pages
-3. Check the deployment status in the "Actions" tab on GitHub
+2. `.github/workflows/deploy.yml` deploys GitHub Pages, and `.github/workflows/firebase-hosting-deploy.yml` deploys Firebase Hosting to `live`.
+3. Check both workflow runs in the GitHub "Actions" tab. Firebase's visitor-facing production URL is https://expense-manager-41afb.web.app/.
 
-### Deploy to Firebase Hosting (Testing)
-1. Push changes to the `firebase-testing` branch:
+### Deploy a Firebase UI preview (`firebase-testing`)
+1. Push the reviewed changes to `firebase-testing`:
    ```bash
-   # Create the branch if it doesn't exist
-   git checkout -b firebase-testing
-   
-   # Or switch to it if it exists
-   git checkout firebase-testing
-   
-   # Merge your changes
-   git merge main
-   
-   # Push to trigger deployment
    git push origin firebase-testing
    ```
-2. The workflow will automatically build and deploy to Firebase Hosting
-3. Check the deployment status in the "Actions" tab on GitHub
+2. The shared Firebase workflow deploys to the `compact-navigation-v2` preview channel for seven days; it does not deploy to `live`.
+3. Open the workflow run summary and use its **Website URL** (`channel_url`) to visit the preview. Do not use the production `web.app` URL to identify the preview.
+4. Remember that this preview uses the configured Firebase backend shared with production. Avoid test actions that would create, alter, or delete real user records.
 
 ### Deploy Preview (For Pull Requests)
 1. Create a pull request to the `main` branch
@@ -59,22 +54,22 @@ The application has two separate deployment targets:
 
 ## Manual Deployment
 
-All workflows can also be triggered manually:
+GitHub Pages can also be triggered manually:
 1. Go to the "Actions" tab on GitHub
-2. Select the workflow you want to run
+2. Select "Deploy web to GitHub Pages"
 3. Click "Run workflow"
-4. Choose the branch and click "Run workflow"
+4. Choose `main` and click "Run workflow". Firebase Hosting is push-triggered by the shared Firebase workflow; PR previews are triggered by pull requests to `main`.
 
 ## Environment Variables
 
-All workflows use the following Firebase environment variables (configured as GitHub secrets):
+Firebase Hosting builds use the following environment variables (configured as GitHub secrets). GitHub Pages uses the Firebase app configuration values needed by its build, but does not deploy to Firebase:
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN`
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
-- `VITE_FIREBASE_MEASUREMENT_ID` (preview deploy only)
+- `VITE_FIREBASE_MEASUREMENT_ID` (Firebase PR preview workflow only)
 
 Additional secrets:
 - `FIREBASE_SERVICE_ACCOUNT` - Required for Firebase deployments
@@ -90,7 +85,7 @@ Additional secrets:
 - If you see "Branch is not allowed to deploy" error, check that environment protection rules in repository settings don't restrict the deployment branch
 
 ### Firebase not deploying
-- Verify the `firebase-testing` branch exists
+- Verify the expected source branch exists (`main` for live or `firebase-testing` for the temporary channel)
 - Check that `FIREBASE_SERVICE_ACCOUNT` secret is configured
 - Ensure Firebase project ID is correct in the workflow file
 - Check the "Actions" tab for deployment errors
@@ -106,8 +101,8 @@ Additional secrets:
 
 ## Recent Changes
 
-**Fixed Issues** (2025-12-09):
-1. ✅ Fixed GitHub Pages auto-deploy - changed trigger from `main1` to `main` branch
-2. ✅ Separated Firebase deployment to `firebase-testing` branch to avoid conflicts with GitHub Pages
-3. ✅ Removed environment protection specification to prevent deployment rejection errors
-4. ✅ Both deployments now work independently without interfering with each other
+**Deployment routing verified** (2026-10-09):
+- `main` deploys GitHub Pages and Firebase Hosting `live`.
+- `firebase-testing` deploys Firebase Hosting `compact-navigation-v2` with a 7-day expiry.
+- Pull requests targeting `main` use the Firebase PR preview workflow.
+- The Firebase action summary separates the visitor-facing Website URL from the Firebase Console details link.

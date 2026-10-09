@@ -1,5 +1,7 @@
 # Compact Navigation and Hamburger Menu
 
+> **Status: Implemented and deployed to `main` (baseline `13faf06`, 2026-10-09).** This file records the shipped behavior and the decisions that restored it. For current system placement, see [ARCHITECTURE.md](../ARCHITECTURE.md); for current visual rules, see [UI_STYLE_GUIDE.md](../UI_STYLE_GUIDE.md). The SVG/HTML mockups below are design references; the source code is authoritative when they differ.
+
 ## Goal
 
 Keep the compact header with a horizontally scrollable tab row. Keep the two existing bottom-left floating expense actions unchanged: quick add remains a one-tap expense entry with its long-press date shortcuts, and receipt scanning stays separate.
@@ -12,7 +14,7 @@ Keep the compact header with a horizontally scrollable tab row. Keep the two exi
 - There is no navigation `More` dropdown. The hamburger remains the utility/account menu for language, appearance, feature destinations, import/export, account, and admin actions.
 - Notifications, status/progress, responsive behavior, and active-tab underline keep their existing behavior.
 - The floating add-expense and scan-receipt controls keep their original separate desktop/mobile presentation and interaction behavior.
-- The floating action group itself stays transparent; dark-theme floating-button enhancement applies to the buttons, not their layout wrapper.
+- In dark themes, the floating action group stays transparent and is excluded from the generic floating-button background and shadow enhancement. The primary add-expense button keeps its own accent background and glow, while the scan-receipt button keeps its separate card background, border, and shadow. Warm Kitty overrides the primary button color and shadow in `web/src/cat-theme.css`.
 
 ## Hamburger menu structure and click target
 
@@ -68,7 +70,7 @@ Before the fix, the accordion button used `w-full` inside a wrapper with `px-4 p
 | Legacy records | Uses `enabledFeatures` when location-specific lists are absent; migrates cards/ewallets to payment methods; excludes profile/admin | Merging could revive disabled items and collapse placement | Each missing list falls back independently; aliases remain normalized and deduplicated |
 | Hamburger Features | Always includes Feature Settings; destination buttons follow hamburger order | Feature destinations and placement management were not independent | Feature Settings entry remains; configured hamburger destinations are listed beneath it |
 
-The initial comparison used `origin/main` at `3e30faf` and the early compact-navigation implementation at `235cc11`. The final tested source is `firebase-testing` at `c053561`; it was selectively promoted onto latest `origin/main` at `7718d54`, without the two branch-specific `AGENTS.md` commits. No permissions or admin checks changed as part of this restoration.
+Historical comparison: the initial reference used `origin/main` at `3e30faf` and the early compact-navigation implementation at `235cc11`. The tested UI came from `firebase-testing` at `c053561` and was selectively promoted onto `main` at `7718d54`, without the two branch-specific `AGENTS.md` commits. Review fixes and the final released state are included in `main` at `13faf06`. No permissions or admin checks changed as part of this restoration.
 
 ## Settings compatibility
 
@@ -91,14 +93,18 @@ The initial comparison used `origin/main` at `3e30faf` and the early compact-nav
 
 ## Validation
 
-- Tests cover independent location lists, touch and numeric ordering, Settings toggle behavior, legacy aliases, empty lists, reset persistence, hamburger trigger/action row width, minimum target size, and accordion semantics. FAB regression coverage confirms the dark-theme wrapper has no background or shadow while each button action remains independent.
-- Verify hamburger accordion left/right/top/bottom row edges, arrows, and labels all activate the same row; verify keyboard, expanded state, and each expanded action.
-- Confirm header tabs and hamburger features follow their independent saved orders; verify the add and scan floating actions retain their existing behavior.
-- Run the project test suite, lint, standard build, Firebase build, and `git diff --check`.
-- Review desktop and mobile at 1280, 768, 390, 375, and 320 px; check light/dark and Warm Kitty themes and the three supported languages.
+The final `main` release review at `13faf06` recorded 30 test files / 148 tests passing, the focused FAB suite at 5/5, lint, standard build, Firebase build, and `git diff --check` passing. The independent review also checked that the menu trigger/action rows span the visible row and that the add and scan FABs remain separate.
+
+For future UI changes, recheck hamburger row edges, keyboard activation, expanded state and child actions; independent saved order for both navigation lists; both FAB interactions; and desktop/mobile widths of 1280, 768, 390, 375, and 320 px across light, dark, Warm Kitty, and supported languages.
 
 ## Firebase test deployment
 
-The `firebase-testing` branch uses the existing Firebase project and backend for UI preview. Avoid creating, editing, or deleting expense records during deployment checks.
+The `firebase-testing` branch uses a separate Firebase Hosting preview channel for UI review, but it still connects to the existing Firebase project and backend. A preview URL does not create a separate database. Avoid creating, editing, or deleting real expense records during deployment checks.
 
-Both branches use `.github/workflows/firebase-hosting-deploy.yml`: `main` deploys to the live channel with no preview expiry, while `firebase-testing` deploys to the isolated `compact-navigation-v2` preview channel for seven days. The preview-only expiry and deployment summary are scoped to the testing branch. The user explicitly approved promoting this UI to `main`; future test pushes remain isolated from production.
+Both branches use `.github/workflows/firebase-hosting-deploy.yml`: `main` deploys to the live channel with no preview expiry, while `firebase-testing` deploys to the `compact-navigation-v2` preview channel for seven days. The preview-only expiry and deployment summary are scoped to the testing branch. The Firebase Hosting channel is separate; the backend is shared.
+
+## Released UI status
+
+- `main` contains the restored independent Tabs and Hamburger feature settings, compact responsive header, full-width hamburger accordion rows, separate add-expense and receipt-scan FABs, and the long-press date shortcut.
+- The primary/secondary FAB styles remain distinct in dark themes, and the deployment summary reports a visitor-facing URL separately from the Firebase Console details link.
+- Deployment and workflow behavior is documented in [DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md). Future proposals should be labeled as proposals and must not be presented as current behavior until implemented.

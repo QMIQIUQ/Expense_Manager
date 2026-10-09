@@ -10,8 +10,8 @@
 2. [按钮系统](#2-按钮系统)
 3. [表单按钮规范](#3-表单按钮规范)
 4. [图标按钮](#4-图标按钮)
-5. [汉堡菜单 (Hamburger Menu)](#5-汉堡菜单)
-6. [导航标签](#6-导航标签)
+5. [漢堡選單與 Portal 操作選單](#5-漢堡選單與-portal-操作選單)
+6. [主導覽頁籤](#6-主導覽頁籤)
 7. [卡片与容器](#7-卡片与容器)
 8. [浮动按钮 (FAB)](#8-浮动按钮)
 9. [响应式断点](#9-响应式断点)
@@ -193,11 +193,19 @@
 
 ---
 
-## 5. 汉堡菜单
+## 5. 漢堡選單與 Portal 操作選單
 
-### ⭐ 推荐：Portal 模式
+### 頁首 Hamburger Menu（目前實作）
 
-在 **所有** 卡片/组件中使用 Portal 模式以避免 z-index 问题。
+頁首的漢堡選單由 `Dashboard.tsx` 呈現，面板以 `dashboard-menu-panel` 錨定在漢堡按鈕下方。它包含網路狀態、語言、外觀、功能、匯入/匯出、可選的離線佇列，以及帳戶/管理和登出操作。它是工具與帳戶選單，不是主頁籤的「更多」下拉清單。
+
+語言、外觀、功能與匯入/匯出各自使用 `DashboardMenuSection` 折疊列。觸發列是獨立的原生 `<button>`，整列全寬可點擊，至少 44px 高，並提供 `aria-expanded` 和 `aria-controls`；折疊內容透過 `hidden` 隱藏。按鈕本身承載左右 padding，外層 section 不加水平 padding，確保文字、箭頭、hover 背景和點擊範圍對齊。選單項目也由全寬按鈕承載自己的 hit area；不要在可點擊列外再包一個會觸發相同操作的父層，也不要巢狀放置按鈕。
+
+功能區固定提供「功能設定」入口，再依 `hamburgerFeatures` 顯示使用者配置的功能入口。個人檔案、管理員和登出是各自的整列操作按鈕；管理入口仍遵循權限判斷。此選單與主頁籤清單分開設定，更多互動與組件樹見 [COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md)。
+
+### 卡片/元件操作選單：Portal 模式
+
+此 Portal 範例是卡片或元件操作選單在會裁切內容的容器中需要脫離堆疊上下文時的模式；不代表頁首 Hamburger 選單也使用 Portal。
 
 ```tsx
 import ReactDOM from 'react-dom';
@@ -344,45 +352,50 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 
 ---
 
-## 6. 导航标签
+## 6. 主導覽頁籤
 
-标签从用户功能设置中读取。
+目前頁籤順序和顯示內容由 `tabFeatures` 提供，使用簡潔的文字按鈕與作用中底線。按鈕列水平可捲動並隱藏捲軸；切換頁籤或排序後，作用中項目會自動捲入可視範圍。頁首使用緊湊版面：桌機單列；768px 以下由 52px 品牌/操作列和 44px 導覽列組成。沒有獨立的「更多」下拉按鈕或固定手機底列。
 
 ```
-[Dashboard] [Expenses] [Incomes] [Categories] [Budgets] [Recurring] [Payment Methods]
+[Dashboard] [Expenses] [Incomes] [Categories] [Budgets] [Recurring] [Payment Methods] [Settings]
 ```
 
 ### 标签样式
 
 | 状态 | 背景 | 文字 |
 |------|------|------|
-| 激活 | 紫色渐变 + 阴影 | 白色, 600 字重 |
-| 未激活 | `var(--tab-inactive-bg)` | 次要文字 |
-| 悬停 | `var(--accent-light)` | 紫色边框 |
+| 作用中：`.compact-navigation-item.is-active` | 透明底；文字與底線使用 `var(--accent-primary)` | 主題色，較高字重 |
+| 未作用中：`.compact-navigation-item` | 透明底 | `var(--text-secondary)` |
+| 懸停 | `var(--tab-hover-bg)` | `var(--text-primary)` |
+| 鍵盤焦點 | 不改變排列 | 以 `:focus-visible` 顯示主題色外框 |
 
 ### CSS
 
 ```css
-/* 激活标签 */
-.tab.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+/* current navigation item */
+.compact-navigation-item.is-active {
+  color: var(--accent-primary);
+  font-weight: 650;
 }
 
-/* 暗色模式激活标签 */
-.dark .tab.active {
-  box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
+.compact-navigation-item.is-active::after {
+  position: absolute;
+  right: 10px;
+  bottom: 1px;
+  left: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent-primary);
+  content: '';
 }
 
-/* 未激活标签悬停 */
-.tab:not(.active):hover {
-  background: var(--accent-light);
-  border: 1px solid var(--accent-primary);
-  transform: translateY(-1px);
+.compact-navigation-item:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 ```
+
+CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。主題覆寫應沿用設計 token，不能假設作用中頁籤固定為紫色漸層卡片。
 
 ---
 
@@ -431,10 +444,11 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 
 ### 规则
 
-- 除 Expenses 标签外，所有标签都显示
-- 模态框/菜单打开时自动隐藏
-- 移动端：圆形 56px 按钮
-- 桌面端：矩形带标签
+- `FloatingExpenseActions` 共用一套渲染，始終分開呈現新增支出與掃描收據兩個按鈕；只有頁面採用不同的支出表單開啟狀態。
+- 新增支出按一下即可新增；長按 500ms 進入日期快捷選單。掃描收據使用獨立按鈕，且兩者都有本地化 `aria-label` 和 `title`。
+- 主要表單、漢堡/其他選單、匯入流程或 Dashboard 自訂面板開啟時隱藏 FAB，避免遮住正在操作的內容。
+- 桌機按鈕固定在左下方，帶文字標籤；≤768px 時改為兩個獨立的 56×56px 圓形圖示按鈕，並以 `env(safe-area-inset-bottom)` 保留安全區域。
+- `.floating-expense-actions` 容器保持透明且不攔截點擊；實際按鈕各自接收點擊。主要新增按鈕與次要掃描按鈕須維持不同的背景、邊框和陰影。
 
 ---
 
@@ -442,9 +456,10 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 
 | 断点 | 行为 |
 |------|------|
-| `< 360px` | 卡片内边距减少 |
-| `< 768px` | 标签可滚动，FAB 仅图标 |
-| `≥ 768px` | 标签均匀分布，FAB 显示标签 |
+| `≤ 768px` | Dashboard `isMobile` 判斷；頁首改成兩列，FAB 改為圓形圖示按鈕 |
+| `≤ 480px` | 主要內容內距縮小 |
+
+768px 是 Dashboard 導覽與 FAB 的切換點；其他較窄斷點由各個內容元件自己的 CSS 定義，不會改變主導覽模式。
 
 ---
 
@@ -472,6 +487,9 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 | 组件 | 文件路径 |
 |------|---------|
 | BaseForm | `web/src/components/common/BaseForm.tsx` |
+| CompactNavigation | `web/src/components/navigation/CompactNavigation.tsx` |
+| DashboardMenuSection | `web/src/components/navigation/DashboardMenuSection.tsx` |
+| FloatingExpenseActions | `web/src/components/navigation/FloatingExpenseActions.tsx` |
 | QuickAddWidget | `web/src/components/dashboard/widgets/QuickAddWidget.tsx` |
 | ExpenseList | `web/src/components/expenses/ExpenseList.tsx` |
 | DashboardCustomizer | `web/src/components/dashboard/DashboardCustomizer.tsx` |
