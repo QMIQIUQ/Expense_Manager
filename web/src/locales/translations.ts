@@ -77,8 +77,6 @@ export const translations = {
   disableFeature: { en: 'Disable feature', zh: '停用功能', 'zh-CN': '停用功能' },
   profile: { en: '⚙️ Settings', zh: '⚙️ 設定', 'zh-CN': '⚙️ 设定' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
-  tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
-  hamburgerLocation: { en: 'More menu', zh: '更多選單', 'zh-CN': '更多菜单' },
   position: { en: 'Position', zh: '位置', 'zh-CN': '位置' },
   enterPosition: { en: 'Enter position (1-{max})', zh: '輸入位置 (1-{max})', 'zh-CN': '输入位置 (1-{max})' },
 
@@ -675,7 +673,7 @@ export const translations = {
   featureManager: { en: 'Feature Manager', zh: '功能管理', 'zh-CN': '功能管理' },
   manageFeatures: { en: 'Manage Features', zh: '管理功能', 'zh-CN': '管理功能' },
   featureSettings: { en: 'Feature Settings', zh: '功能設定', 'zh-CN': '功能设置' },
-  manageFeaturesDesc: { en: 'Choose which features to display and customize the tab order', zh: '選擇要顯示的功能並自訂頁籤順序', 'zh-CN': '选择要显示的功能并自定义标签顺序' },
+  manageFeaturesDesc: { en: 'Choose which features to display and customize their navigation order', zh: '選擇要顯示的功能並自訂導覽順序', 'zh-CN': '选择要显示的功能并自定义导航顺序' },
   enabledFeatures: { en: 'Enabled Features', zh: '已啟用功能', 'zh-CN': '已启用功能' },
   availableFeatures: { en: 'Available Features', zh: '可用功能', 'zh-CN': '可用功能' },
   dragToReorder: { en: 'Drag to reorder', zh: '拖曳以重新排序', 'zh-CN': '拖动以重新排序' },

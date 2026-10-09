@@ -109,7 +109,6 @@ const Dashboard: React.FC = () => {
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
   const [focusScheduledPaymentId, setFocusScheduledPaymentId] = useState<string | null>(null);
@@ -144,8 +143,7 @@ const Dashboard: React.FC = () => {
   const isSimplifiedChinese = language === 'zh-CN';
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   const addExpenseLabel = t('addNewExpense');
-  const { primary: primaryNavigationFeatures, overflow: overflowNavigationFeatures } =
-    getNavigationFeatures(featureSettings, isMobile);
+  const { orderedFeatures: navigationFeatures } = getNavigationFeatures(featureSettings);
   const navigationLabels: Record<FeatureTab, string> = {
     dashboard: t('dashboard'),
     expenses: t('expenses'),
@@ -509,7 +507,6 @@ const Dashboard: React.FC = () => {
   // Centralized flag to hide Floating Action Button when any popout/modal/menu is open
   const shouldHideFab =
     showHamburgerMenu ||
-    showMoreMenu ||
     showLanguageMenu ||
     showImportExportDropdown ||
     showImportModal ||
@@ -2131,15 +2128,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         <CompactNavigation
-          primaryFeatures={primaryNavigationFeatures}
-          overflowFeatures={overflowNavigationFeatures}
+          features={navigationFeatures}
           activeTab={activeTab}
           labels={navigationLabels}
           navigationLabel={t('mainNavigation')}
-          moreLabel={t('more')}
           isMobile={isMobile}
           onNavigate={setActiveTab}
-          onOpenChange={setShowMoreMenu}
         />
 
         <div className="header-actions">

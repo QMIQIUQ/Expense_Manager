@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FeatureTab } from '../../types';
 import CompactNavigation from './CompactNavigation';
@@ -20,12 +20,10 @@ const labels: Record<FeatureTab, string> = {
 const renderNavigation = (overrides: Partial<React.ComponentProps<typeof CompactNavigation>> = {}) =>
   render(
     <CompactNavigation
-      primaryFeatures={['dashboard', 'expenses', 'incomes']}
-      overflowFeatures={['budgets', 'categories']}
+      features={['dashboard', 'expenses', 'incomes', 'budgets', 'categories']}
       activeTab="dashboard"
       labels={labels}
       navigationLabel="Main navigation"
-      moreLabel="More"
       isMobile
       onNavigate={vi.fn()}
       {...overrides}
@@ -33,60 +31,54 @@ const renderNavigation = (overrides: Partial<React.ComponentProps<typeof Compact
   );
 
 describe('CompactNavigation', () => {
-  it('keeps More visible beside horizontally scrollable mobile tabs', () => {
+  it('shows every destination in one horizontally scrollable navigation with no More button', () => {
     renderNavigation();
 
-    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /More/ })).toBeInTheDocument();
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
+    expect(navigation).toHaveClass('compact-navigation-scroll');
+    expect(within(navigation).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Overview', 'Expenses', 'Income', 'Budgets', 'Categories',
+    ]);
+    expect(screen.queryByRole('button', { name: /More/ })).not.toBeInTheDocument();
   });
 
-  it('opens More, navigates to overflow pages, and marks More active', () => {
+  it('navigates to any destination and marks the active page', () => {
     const onNavigate = vi.fn();
-    renderNavigation({ onNavigate });
+    renderNavigation({ onNavigate, activeTab: 'categories' });
 
-    fireEvent.click(screen.getByRole('button', { name: /More/ }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Budgets' }));
-
+    expect(screen.getByRole('button', { name: 'Categories' })).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(screen.getByRole('button', { name: 'Budgets' }));
     expect(onNavigate).toHaveBeenCalledWith('budgets');
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('closes More when navigating to a primary page', () => {
-    const onNavigate = vi.fn();
-    const onOpenChange = vi.fn();
-    renderNavigation({ onNavigate, onOpenChange });
+  it('keeps the active destination visible when the saved feature order changes', () => {
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    const view = renderNavigation({
+      features: ['dashboard', 'expenses', 'incomes', 'budgets', 'categories'],
+      activeTab: 'categories',
+    });
+    scrollIntoView.mockClear();
 
-    fireEvent.click(screen.getByRole('button', { name: /More/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Expenses' }));
+    view.rerender(
+      <CompactNavigation
+        features={['categories', 'dashboard', 'expenses', 'incomes', 'budgets']}
+        activeTab="categories"
+        labels={labels}
+        navigationLabel="Main navigation"
+        isMobile
+        onNavigate={vi.fn()}
+      />,
+    );
 
-    expect(onNavigate).toHaveBeenCalledWith('expenses');
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('closes More on Escape and restores focus to its trigger', () => {
-    renderNavigation();
-    const trigger = screen.getByRole('button', { name: /More/ });
-
-    fireEvent.click(trigger);
-    fireEvent.keyDown(document, { key: 'Escape' });
-
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-  });
-
-  it('closes More when the user clicks outside the navigation', () => {
-    renderNavigation();
-    render(<button type="button">Outside</button>);
-    fireEvent.click(screen.getByRole('button', { name: /More/ }));
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Outside' }));
-
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-  });
-
-  it('marks More active when the current destination is an overflow page', () => {
-    renderNavigation({ activeTab: 'categories' });
-
-    expect(screen.getByRole('button', { name: /More/ })).toHaveAttribute('aria-current', 'page');
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: originalScrollIntoView,
+    });
   });
 });

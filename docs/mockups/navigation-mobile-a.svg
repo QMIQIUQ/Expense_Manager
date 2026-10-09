@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" height="1120" viewBox="0 0 680 1120" role="img" aria-labelledby="title desc">
   <title id="title">Expense Manager 精簡手機介面提案</title>
-  <desc id="desc">手機版使用 52 像素頁首和 44 像素頁籤列，更多固定可見，底部保留獨立新增支出與掃描收據浮動按鈕。</desc>
+  <desc id="desc">手機版使用 52 像素頁首和 44 像素水平捲動導覽列，所有功能依儲存順序排列，底部保留獨立新增支出與掃描收據浮動按鈕。</desc>
   <defs>
     <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
     <style>text{font-family:Inter,"Noto Sans TC","Microsoft JhengHei",sans-serif;fill:#1f2937}.muted{fill:#737b8b}.tiny{font-size:17px}.small{font-size:20px}.label{font-size:22px;font-weight:650}.title{font-size:34px;font-weight:720}.inverse-text{fill:#fff!important}</style>
@@ -8,7 +8,7 @@
   <rect width="680" height="1120" rx="28" fill="#f7f8fb"/>
   <text x="48" y="58" class="tiny" fill="#7c3aed" font-weight="700" letter-spacing="1.2">PROPOSED · COMPACT MOBILE</text>
   <text x="48" y="103" class="title">手機版：少一層、內容提早出現</text>
-  <text x="48" y="134" class="tiny muted">頁首 52px + 導覽 44px · More 固定可用</text>
+  <text x="48" y="134" class="tiny muted">頁首 52px + 導覽 44px · 全部功能可水平滑動</text>
 
   <rect x="146" y="166" width="388" height="898" rx="44" fill="#171923"/>
   <rect x="157" y="177" width="366" height="876" rx="34" fill="#fff"/>
@@ -20,8 +20,7 @@
 
   <rect x="157" y="270" width="366" height="47" fill="#fff"/>
   <text x="177" y="300" class="tiny" fill="#6d39d0" font-weight="700">總覽</text><line x1="169" y1="316" x2="222" y2="316" stroke="url(#accent)" stroke-width="2.5"/>
-  <text x="267" y="300" class="tiny muted">支出</text><text x="344" y="300" class="tiny muted">收入</text>
-  <rect x="421" y="270" width="88" height="44" rx="9" fill="#fff" stroke="#e7e8ef"/><text x="441" y="299" class="tiny muted">更多⌄</text>
+  <text x="267" y="300" class="tiny muted">支出</text><text x="344" y="300" class="tiny muted">收入</text><text x="421" y="300" class="tiny muted">預算</text><text x="485" y="300" class="tiny muted">分類</text>
   <line x1="157" y1="317" x2="523" y2="317" stroke="#eef0f4"/>
 
   <text x="177" y="360" class="tiny muted">本月摘要　·　2026 年 10 月</text><text x="177" y="400" class="title" font-size="28">總覽</text>

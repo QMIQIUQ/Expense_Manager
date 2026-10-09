@@ -4,19 +4,6 @@ import {
   FeatureTab,
 } from '../../types';
 
-export const DESKTOP_PRIMARY_PRIORITY: FeatureTab[] = [
-  'dashboard',
-  'expenses',
-  'incomes',
-  'budgets',
-];
-
-export const MOBILE_PRIMARY_PRIORITY: FeatureTab[] = [
-  'dashboard',
-  'expenses',
-  'incomes',
-];
-
 const normalizeFeatures = (features: FeatureTab[]): FeatureTab[] =>
   features
     .map((feature) => {
@@ -25,38 +12,56 @@ const normalizeFeatures = (features: FeatureTab[]): FeatureTab[] =>
         ? 'paymentMethods'
         : feature;
     })
-    .filter((feature, index, items) => items.indexOf(feature) === index)
-    .filter((feature) => feature !== 'profile' && feature !== 'admin');
+    .filter((feature): feature is FeatureTab =>
+      ['dashboard', 'expenses', 'incomes', 'categories', 'budgets', 'recurring', 'paymentMethods', 'settings'].includes(feature),
+    )
+    .filter((feature, index, items) => items.indexOf(feature) === index);
+
+/** Merge current and legacy feature lists into the single saved navigation order. */
+export const mergeNavigationFeatureLists = (
+  tabFeatures?: FeatureTab[],
+  hamburgerFeatures?: FeatureTab[],
+  enabledFeatures: FeatureTab[] = DEFAULT_FEATURES,
+): FeatureTab[] => {
+  const hasTabFeatures = Array.isArray(tabFeatures);
+  const hasHamburgerFeatures = Array.isArray(hamburgerFeatures);
+  let features: FeatureTab[];
+
+  if (hasTabFeatures && hasHamburgerFeatures) {
+    // These settings explicitly represent visible items, so do not resurrect
+    // entries left behind in the legacy enabledFeatures union.
+    features = normalizeFeatures([
+      ...(tabFeatures || []),
+      ...(hamburgerFeatures || []),
+    ]);
+  } else if (hasTabFeatures) {
+    features = normalizeFeatures([...(tabFeatures || []), ...enabledFeatures]);
+  } else if (hasHamburgerFeatures) {
+    features = normalizeFeatures([...(hamburgerFeatures || []), ...enabledFeatures]);
+  } else {
+    features = normalizeFeatures(enabledFeatures);
+  }
+
+  // Settings has historically been reachable from the navigation utility menu.
+  if (!features.includes('settings')) features.push('settings');
+  return features;
+};
+
+/** Resolve settings for the header without applying a separate display priority. */
+export const getOrderedNavigationFeatures = (settings: FeatureSettings | null): FeatureTab[] =>
+  mergeNavigationFeatureLists(
+    settings?.tabFeatures,
+    settings?.hamburgerFeatures,
+    settings?.enabledFeatures || DEFAULT_FEATURES,
+  );
 
 export interface NavigationFeatures {
-  primary: FeatureTab[];
-  overflow: FeatureTab[];
+  orderedFeatures: FeatureTab[];
 }
 
-export const getNavigationFeatures = (
-  settings: FeatureSettings | null,
-  isMobile: boolean,
-): NavigationFeatures => {
-  const tabFeatures = normalizeFeatures(
-    settings?.tabFeatures || settings?.enabledFeatures || DEFAULT_FEATURES,
-  );
-  const hamburgerFeatures = normalizeFeatures(settings?.hamburgerFeatures || []);
-  // Settings was always reachable from the previous utility menu. Keep it
-  // available even for older preference records that omit it from both lists.
-  const allFeatures = normalizeFeatures([...tabFeatures, ...hamburgerFeatures, 'settings']);
-  const priority = isMobile ? MOBILE_PRIMARY_PRIORITY : DESKTOP_PRIMARY_PRIORITY;
-  const primary = priority
-    .filter((feature) => tabFeatures.includes(feature))
-    .concat(tabFeatures.filter((feature) => !priority.includes(feature)))
-    .slice(0, priority.length);
+export const getNavigationFeatures = (settings: FeatureSettings | null): NavigationFeatures => ({
+  orderedFeatures: getOrderedNavigationFeatures(settings),
+});
 
-  return {
-    primary,
-    overflow: allFeatures.filter((feature) => !primary.includes(feature)),
-  };
-};
-
-export const getEnabledFeatures = (settings: FeatureSettings | null): FeatureTab[] => {
-  const tabFeatures = settings?.tabFeatures || settings?.enabledFeatures || DEFAULT_FEATURES;
-  return normalizeFeatures([...tabFeatures, ...(settings?.hamburgerFeatures || []), 'settings']);
-};
+export const getEnabledFeatures = (settings: FeatureSettings | null): FeatureTab[] =>
+  getOrderedNavigationFeatures(settings);

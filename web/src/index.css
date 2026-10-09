@@ -6269,52 +6269,7 @@ button:not(:disabled):hover {
   content: '';
 }
 
-.compact-navigation-more {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.compact-navigation-more-trigger {
-  text-transform: capitalize;
-}
-
-.compact-navigation-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 1001;
-  display: grid;
-  width: max-content;
-  min-width: 176px;
-  max-width: min(280px, calc(100vw - 24px));
-  max-height: min(65vh, 420px);
-  padding: 6px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--card-bg);
-  box-shadow: 0 12px 32px var(--shadow-lg);
-}
-
-.compact-navigation-menu-item {
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
-.compact-navigation-menu-item:hover,
-.compact-navigation-menu-item.is-active {
-  background: var(--tab-hover-bg);
-  color: var(--accent-primary);
-}
-
-.compact-navigation-item:focus-visible,
-.compact-navigation-menu-item:focus-visible {
+.compact-navigation-item:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
@@ -6424,13 +6379,6 @@ button:not(:disabled):hover {
     right: 9px;
     left: 9px;
     bottom: 0;
-  }
-
-  .compact-navigation-more-trigger {
-    min-width: 70px;
-    padding: 0 8px;
-    border-left: 1px solid var(--border-color);
-    border-radius: 0;
   }
 
   .dashboard-header-modern .header-actions {
