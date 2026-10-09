@@ -266,6 +266,35 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     }
     return total;
   }, [budgets, getBudgetDisplayAmount]);
+  const getBudgetDisplayTotal = React.useCallback((metric: 'spent' | 'remaining'): number | null => {
+    let total = 0;
+    for (const budget of budgets) {
+      const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
+      const spentBase = spentByCategory[budget.categoryName] || 0;
+      const spentInBudgetCurrency = toBudgetCurrencyAmount(spentBase, budget);
+      const spent = getBudgetDisplayAmount(`${budgetId}:spent`, spentInBudgetCurrency, spentBase, budget);
+      if (spent === null) return null;
+
+      if (metric === 'spent') {
+        total += spent;
+        continue;
+      }
+
+      const effectiveAmount = getEffectiveBudgetAmount(budget);
+      const effectiveAmountBase = toBudgetBaseAmount(effectiveAmount, budget);
+      const effective = getBudgetDisplayAmount(
+        `${budgetId}:effective`,
+        effectiveAmount,
+        effectiveAmountBase,
+        budget,
+      );
+      if (effective === null) return null;
+      total += Math.max(0, effective - spent);
+    }
+    return total;
+  }, [budgets, getBudgetDisplayAmount, spentByCategory]);
+  const totalSpentDisplay = React.useMemo(() => getBudgetDisplayTotal('spent'), [getBudgetDisplayTotal]);
+  const totalRemainingDisplay = React.useMemo(() => getBudgetDisplayTotal('remaining'), [getBudgetDisplayTotal]);
   const formatDisplayMoney = (amount: number | null): string =>
     amount === null ? '—' : formatMoney(amount, displayCurrency);
   const conversionFailureMessage = !budgetDisplayConversion.isLoading && budgetDisplayConversion.failedKeys.length > 0
@@ -568,16 +597,26 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         )}
       </PopupModal>
 
-      <section style={styles.totalBudgetSummary} aria-label={t('totalBudget')}>
-        <div>
+      <section className="budget-total-summary" style={styles.totalBudgetSummary} aria-label={t('totalBudget')}>
+        <div className="budget-total-summary-metric" style={styles.totalBudgetMetric}>
           <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
-        </div>
-        <div style={styles.totalBudgetValueContainer}>
-          <strong style={styles.totalBudgetValue} title={totalBudgetDisplay === null ? conversionFailureMessage : undefined}>
+          <strong className="budget-total-summary-value" style={styles.totalBudgetValue} title={totalBudgetDisplay === null ? conversionFailureMessage : undefined}>
             {formatDisplayMoney(totalBudgetDisplay)}
           </strong>
-          {conversionFailureMessage && <span role="alert" style={styles.conversionError}>{conversionFailureMessage}</span>}
         </div>
+        <div className="budget-total-summary-metric" style={styles.totalBudgetMetric}>
+          <h3 style={styles.totalBudgetTitle}>{t('spent')}</h3>
+          <strong className="budget-total-summary-value" style={{ ...styles.totalBudgetValue, ...styles.totalBudgetSpent }} title={totalSpentDisplay === null ? conversionFailureMessage : undefined}>
+            {formatDisplayMoney(totalSpentDisplay)}
+          </strong>
+        </div>
+        <div className="budget-total-summary-metric" style={styles.totalBudgetMetric}>
+          <h3 style={styles.totalBudgetTitle}>{t('remaining')}</h3>
+          <strong className="budget-total-summary-value" style={{ ...styles.totalBudgetValue, ...styles.totalBudgetRemaining }} title={totalRemainingDisplay === null ? conversionFailureMessage : undefined}>
+            {formatDisplayMoney(totalRemainingDisplay)}
+          </strong>
+        </div>
+        {conversionFailureMessage && <span role="alert" style={{ ...styles.conversionError, gridColumn: '1 / -1' }}>{conversionFailureMessage}</span>}
       </section>
 
       {/* Search Bar - placed after form */}
@@ -679,10 +718,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               effectiveAmountBase,
               budget,
             );
-            const remaining = spent === null || displayEffectiveAmount === null
-              ? null
-              : Math.max(0, displayEffectiveAmount - spent);
-            const isOverBudget = spentInBudgetCurrency > effectiveAmount;
             const rolloverAmount = budget.accumulatedRollover || 0;
             const displayRolloverAmount = getBudgetDisplayAmount(
               `${budgetId}:rollover`,
@@ -716,11 +751,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <span style={styles.periodRange}>{getPeriodRange(budget.period)}</span>
                       )}
                     </div>
-                    <div
-                      style={styles.budgetAmount}
-                      aria-label={`${t('spent')}: ${formatDisplayMoney(spent)} / ${formatDisplayMoney(displayEffectiveAmount)}`}
-                    >
-                      <span style={styles.spentLabel}>{t('spent')}</span>
+                    <div style={styles.budgetAmount}>
                       <span
                         style={{ ...styles.spent, color: progressColor }}
                         title={spent === null ? conversionFailureMessage : undefined}
@@ -814,17 +845,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    <div style={styles.remainingRow}>
-                      <span>{t('remaining')}</span>
-                      <span style={{
-                        ...styles.remainingAmount,
-                        color: isOverBudget ? 'var(--error-text)' : 'var(--success-text)',
-                      }}>
-                        {formatDisplayMoney(remaining)}
-                        {isOverBudget && <span style={styles.overBudgetLabel}> · {t('overBudget')}</span>}
-                      </span>
                     </div>
 
                     {/* History toggle button */}
@@ -922,14 +942,18 @@ const styles = {
     color: 'var(--text-primary)',
   },
   totalBudgetSummary: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    display: 'grid',
     gap: '12px',
     padding: '16px',
     background: 'var(--card-bg, white)',
     border: '1px solid var(--border-color, #e9ecef)',
     borderRadius: '12px',
+  },
+  totalBudgetMetric: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    minWidth: 0,
   },
   totalBudgetTitle: {
     margin: 0,
@@ -937,17 +961,17 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
   },
-  totalBudgetValueContainer: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'flex-end',
-    gap: '4px',
-  },
   totalBudgetValue: {
     color: 'var(--accent-primary)',
     fontSize: '24px',
     fontWeight: '700' as const,
     whiteSpace: 'nowrap' as const,
+  },
+  totalBudgetSpent: {
+    color: 'var(--error-text)',
+  },
+  totalBudgetRemaining: {
+    color: 'var(--success-text)',
   },
   conversionError: {
     color: 'var(--error-color, #dc3545)',
@@ -1184,7 +1208,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '12px',
-    flexWrap: 'wrap' as const,
   },
   periodInfo: {
     display: 'flex',
@@ -1243,26 +1266,6 @@ const styles = {
     alignItems: 'baseline',
     gap: '4px',
     whiteSpace: 'nowrap' as const,
-  },
-  spentLabel: {
-    fontSize: '11px',
-    color: 'var(--text-tertiary)',
-  },
-  remainingRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap' as const,
-    gap: '8px',
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-  },
-  remainingAmount: {
-    fontWeight: '600' as const,
-    textAlign: 'right' as const,
-  },
-  overBudgetLabel: {
-    fontWeight: '500' as const,
   },
   spent: {
     fontSize: '18px',

@@ -3522,6 +3522,81 @@ button:not(:disabled):hover {
   gap: 16px;
 }
 
+.budget-progress-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.budget-total-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.budget-progress-summary-metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.budget-progress-summary-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.budget-progress-summary-value {
+  overflow-wrap: anywhere;
+  font-size: 18px;
+}
+
+.total-budget-value {
+  color: var(--accent-primary);
+}
+
+.spent-budget-value {
+  color: var(--error-text);
+}
+
+.remaining-budget-value {
+  color: var(--success-text);
+}
+
+.budget-summary-conversion-error {
+  grid-column: 1 / -1;
+  color: var(--error-text);
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .budget-total-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-total-summary-metric {
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .budget-total-summary-metric .budget-total-summary-value {
+    font-size: 18px;
+  }
+
+  .budget-progress-summary {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .budget-progress-summary-value {
+    font-size: 14px;
+  }
+}
+
 .budget-progress-item {
   padding: 16px;
   background: var(--card-bg);
@@ -3540,7 +3615,6 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
 .budget-period-info {
@@ -3586,11 +3660,6 @@ button:not(:disabled):hover {
   font-weight: 600;
 }
 
-.budget-spent-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
 .budget-separator {
   font-size: 14px;
   color: var(--text-tertiary);
@@ -3606,16 +3675,7 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
-}
-
-.budget-status-group {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 .budget-category-name {
