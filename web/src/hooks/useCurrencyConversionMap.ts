@@ -9,25 +9,62 @@ export interface CurrencyConversionEntry {
   date: string;
 }
 
-export const useCurrencyConversionMap = (
+export interface CurrencyConversionMapState {
+  amountsByKey: Record<string, number>;
+  failedKeys: string[];
+  isLoading: boolean;
+}
+
+interface StoredCurrencyConversionMapState extends CurrencyConversionMapState {
+  entries: CurrencyConversionEntry[];
+  targetCurrency?: string | null;
+  fallbackToSource: boolean;
+}
+
+export const useCurrencyConversionMapState = (
   entries: CurrencyConversionEntry[],
-  targetCurrency?: string | null
-): Record<string, number> => {
-  const [amountsByKey, setAmountsByKey] = useState<Record<string, number>>({});
+  targetCurrency?: string | null,
+  fallbackToSource = false,
+): CurrencyConversionMapState => {
+  const [storedState, setStoredState] = useState<StoredCurrencyConversionMapState>({
+    entries: [],
+    targetCurrency: null,
+    fallbackToSource,
+    amountsByKey: {},
+    failedKeys: [],
+    isLoading: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
 
+    setStoredState({
+      entries,
+      targetCurrency,
+      fallbackToSource,
+      amountsByKey: {},
+      failedKeys: [],
+      isLoading: Boolean(targetCurrency && entries.length > 0),
+    });
+
     const resolveConversions = async () => {
       if (!targetCurrency) {
         if (!cancelled) {
-          setAmountsByKey({});
+          setStoredState({
+            entries,
+            targetCurrency,
+            fallbackToSource,
+            amountsByKey: {},
+            failedKeys: [],
+            isLoading: false,
+          });
         }
         return;
       }
 
       const target = normalizeCurrencyCode(targetCurrency);
       const nextMap: Record<string, number> = {};
+      const failedKeys: string[] = [];
       await Promise.all(entries.map(async (entry) => {
         try {
           if (normalizeCurrencyCode(entry.sourceCurrency) === target) {
@@ -43,12 +80,22 @@ export const useCurrencyConversionMap = (
           );
         } catch (error) {
           console.error('Failed to convert currency amount:', error);
-          nextMap[entry.key] = entry.amount;
+          failedKeys.push(entry.key);
+          if (fallbackToSource) {
+            nextMap[entry.key] = entry.amount;
+          }
         }
       }));
 
       if (!cancelled) {
-        setAmountsByKey(nextMap);
+        setStoredState({
+          entries,
+          targetCurrency,
+          fallbackToSource,
+          amountsByKey: nextMap,
+          failedKeys,
+          isLoading: false,
+        });
       }
     };
 
@@ -57,7 +104,30 @@ export const useCurrencyConversionMap = (
     return () => {
       cancelled = true;
     };
-  }, [entries, targetCurrency]);
+  }, [entries, targetCurrency, fallbackToSource]);
 
-  return amountsByKey;
+  if (
+    storedState.entries !== entries ||
+    storedState.targetCurrency !== targetCurrency ||
+    storedState.fallbackToSource !== fallbackToSource
+  ) {
+    return {
+      amountsByKey: {},
+      failedKeys: [],
+      isLoading: Boolean(targetCurrency && entries.length > 0),
+    };
+  }
+
+  return {
+    amountsByKey: storedState.amountsByKey,
+    failedKeys: storedState.failedKeys,
+    isLoading: storedState.isLoading,
+  };
+};
+
+export const useCurrencyConversionMap = (
+  entries: CurrencyConversionEntry[],
+  targetCurrency?: string | null
+): Record<string, number> => {
+  return useCurrencyConversionMapState(entries, targetCurrency, true).amountsByKey;
 };

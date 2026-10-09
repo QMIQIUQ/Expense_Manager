@@ -20,7 +20,7 @@ import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
-import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
 import CurrencySelector from '../common/CurrencySelector';
 import {
   convertBudgetAmount,
@@ -240,25 +240,37 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       { key: `${budgetId}:rollover`, amount: toBudgetBaseAmount(rolloverAmount, budget), sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
     ];
   }), [budgets, spentByCategory]);
-  const budgetDisplayAmounts = useCurrencyConversionMap(budgetDisplayEntries, displayCurrency);
+  const budgetDisplayConversion = useCurrencyConversionMapState(budgetDisplayEntries, displayCurrency);
+  const budgetDisplayAmounts = budgetDisplayConversion.amountsByKey;
 
   const getBudgetDisplayAmount = React.useCallback((
     key: string,
     budgetAmount: number,
     baseAmount: number,
     budget: Budget,
-  ): number => {
+  ): number | null => {
     if (displayCurrency === getBudgetCurrency(budget)) return budgetAmount;
     if (displayCurrency === DEFAULT_BASE_CURRENCY) return baseAmount;
-    return budgetDisplayAmounts[key] ?? baseAmount;
+    return budgetDisplayAmounts[key] ?? null;
   }, [budgetDisplayAmounts, displayCurrency]);
 
-  const totalBudgetDisplay = React.useMemo(() => budgets.reduce((sum, budget) => {
-    const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
-    const amount = getEffectiveBudgetAmount(budget);
-    const baseAmount = toBudgetBaseAmount(amount, budget);
-    return sum + getBudgetDisplayAmount(`${budgetId}:effective`, amount, baseAmount, budget);
-  }, 0), [budgets, getBudgetDisplayAmount]);
+  const totalBudgetDisplay = React.useMemo<number | null>(() => {
+    let total = 0;
+    for (const budget of budgets) {
+      const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
+      const amount = getEffectiveBudgetAmount(budget);
+      const baseAmount = toBudgetBaseAmount(amount, budget);
+      const displayAmount = getBudgetDisplayAmount(`${budgetId}:effective`, amount, baseAmount, budget);
+      if (displayAmount === null) return null;
+      total += displayAmount;
+    }
+    return total;
+  }, [budgets, getBudgetDisplayAmount]);
+  const formatDisplayMoney = (amount: number | null): string =>
+    amount === null ? '—' : formatMoney(amount, displayCurrency);
+  const conversionFailureMessage = !budgetDisplayConversion.isLoading && budgetDisplayConversion.failedKeys.length > 0
+    ? (t('exchangeRateLookupFailed') || 'Unable to get the exchange rate. Please try again.')
+    : undefined;
   
   // Filter and sort budgets
   const filteredAndSortedBudgets = React.useMemo(() => {
@@ -560,7 +572,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <div>
           <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
         </div>
-        <strong style={styles.totalBudgetValue}>{formatMoney(totalBudgetDisplay, displayCurrency)}</strong>
+        <div style={styles.totalBudgetValueContainer}>
+          <strong style={styles.totalBudgetValue} title={totalBudgetDisplay === null ? conversionFailureMessage : undefined}>
+            {formatDisplayMoney(totalBudgetDisplay)}
+          </strong>
+          {conversionFailureMessage && <span role="alert" style={styles.conversionError}>{conversionFailureMessage}</span>}
+        </div>
       </section>
 
       {/* Search Bar - placed after form */}
@@ -696,9 +713,19 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       )}
                     </div>
                     <div style={styles.budgetAmount}>
-                      <span style={{ ...styles.spent, color: progressColor }}>{formatMoney(spent, displayCurrency)}</span>
+                      <span
+                        style={{ ...styles.spent, color: progressColor }}
+                        title={spent === null ? conversionFailureMessage : undefined}
+                      >
+                        {formatDisplayMoney(spent)}
+                      </span>
                       <span style={styles.separator}> / </span>
-                      <span style={styles.total}>{formatMoney(displayEffectiveAmount, displayCurrency)}</span>
+                      <span
+                        style={styles.total}
+                        title={displayEffectiveAmount === null ? conversionFailureMessage : undefined}
+                      >
+                        {formatDisplayMoney(displayEffectiveAmount)}
+                      </span>
                     </div>
                   </div>
 
@@ -709,8 +736,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <span style={styles.rolloverBadge} title={t('rolloverEnabled') || 'Rollover Enabled'}>🔄</span>
                       )}
                       {budget.accumulatedRollover && budget.accumulatedRollover > 0 && (
-                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: ${formatMoney(displayRolloverAmount, displayCurrency)}`}>
-                          +{formatMoney(displayRolloverAmount, displayCurrency)}
+                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: ${formatDisplayMoney(displayRolloverAmount)}`}>
+                          +{formatDisplayMoney(displayRolloverAmount)}
                         </span>
                       )}
                     </div>
@@ -891,11 +918,22 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
   },
+  totalBudgetValueContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-end',
+    gap: '4px',
+  },
   totalBudgetValue: {
     color: 'var(--accent-primary)',
     fontSize: '24px',
     fontWeight: '700' as const,
     whiteSpace: 'nowrap' as const,
+  },
+  conversionError: {
+    color: 'var(--error-color, #dc3545)',
+    fontSize: '12px',
+    textAlign: 'right' as const,
   },
   listActionRow: {
     display: 'flex',
