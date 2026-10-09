@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Expense, Repayment } from '../../types';
+import { CurrencyCode, Expense, Repayment } from '../../types';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
 import { ChartBarIcon, BarChartSimpleIcon } from '../icons';
 import {
   BarChart,
@@ -16,6 +17,8 @@ import {
 interface BudgetHistoryProps {
   categoryName: string;
   budgetAmount: number;
+  budgetCurrency?: CurrencyCode;
+  budgetExchangeRate?: number;
   expenses: Expense[];
   repayments: Repayment[];
   billingCycleDay: number;
@@ -35,6 +38,8 @@ interface PeriodData {
 export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   categoryName,
   budgetAmount,
+  budgetCurrency = DEFAULT_BASE_CURRENCY,
+  budgetExchangeRate = 1,
   expenses,
   repayments,
   billingCycleDay,
@@ -52,7 +57,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
   const getNetAmount = (exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
-    return Math.max(0, exp.amount - repaid);
+    return Math.max(0, getExpenseBaseAmount(exp) - repaid);
   };
 
   // Calculate historical periods
@@ -76,7 +81,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
             expDate < cycleEnd
           );
         })
-        .reduce((sum, exp) => sum + getNetAmount(exp), 0);
+        .reduce((sum, exp) => sum + getNetAmount(exp), 0) / (budgetExchangeRate > 0 ? budgetExchangeRate : 1);
 
       const percentage = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
 
@@ -137,7 +142,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div style={tooltipStyles.container}>
           <p style={tooltipStyles.label}>{label}</p>
           <p style={tooltipStyles.value}>
-            ${data.spent.toFixed(2)} / ${data.budget.toFixed(2)}
+            {formatMoney(data.spent, budgetCurrency)} / {formatMoney(data.budget, budgetCurrency)}
           </p>
           <p style={{ ...tooltipStyles.percentage, color: getBarColor(data.percentage) }}>
             {data.percentage.toFixed(0)}%
@@ -191,15 +196,15 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div style={statsStyles.container}>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('average') || 'Avg'}</span>
-            <span style={statsStyles.value}>${stats.avg.toFixed(0)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.avg, budgetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('highest') || 'High'}</span>
-            <span style={statsStyles.value}>${stats.max.toFixed(0)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.max, budgetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('lowest') || 'Low'}</span>
-            <span style={statsStyles.value}>${stats.min.toFixed(0)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.min, budgetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('overBudget') || 'Over budget'}</span>
@@ -224,7 +229,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                     height: `${Math.min(barHeight, maxBarHeight)}px`,
                     backgroundColor: getBarColor(period.percentage),
                   }}
-                  title={`${period.label}: $${period.spent.toFixed(0)} (${period.percentage.toFixed(0)}%)`}
+                  title={`${period.label}: ${formatMoney(period.spent, budgetCurrency)} (${period.percentage.toFixed(0)}%)`}
                 />
                 <span className="budget-history-label">{period.label}</span>
               </div>
@@ -246,7 +251,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
               <YAxis 
                 tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
                 axisLine={{ stroke: 'var(--border-color)' }}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => formatMoney(value, budgetCurrency)}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine 

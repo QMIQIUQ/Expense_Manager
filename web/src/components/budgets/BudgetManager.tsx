@@ -20,6 +20,14 @@ import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import {
+  convertBudgetAmount,
+  formatBudgetMoney,
+  getBudgetCurrency,
+  getBudgetExchangeRate,
+  toBudgetBaseAmount,
+  toBudgetCurrencyAmount,
+} from '../../utils/budgetCurrencyUtils';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -45,8 +53,8 @@ interface BudgetManagerProps {
   categories: Category[];
   expenses?: Expense[];
   repayments?: Repayment[];
-  onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
-  onUpdate: (id: string, updates: Partial<Budget>) => void;
+  onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void | Promise<void>;
+  onUpdate: (id: string, updates: Partial<Budget>) => void | Promise<void>;
   onDelete: (id: string) => void;
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
@@ -205,7 +213,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
   // Calculate budget status for filtering and sorting
   const getBudgetStatus = React.useCallback((budget: Budget): { percentage: number; status: 'over' | 'warning' | 'normal' } => {
-    const spent = spentByCategory[budget.categoryName] || 0;
+    const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
     const effectiveAmount = getEffectiveBudgetAmount(budget);
     const percentage = effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : 0;
     
@@ -215,7 +223,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   }, [spentByCategory]);
 
   const totalBudget = React.useMemo(
-    () => budgets.reduce((sum, budget) => sum + getEffectiveBudgetAmount(budget), 0),
+    () => budgets.reduce((sum, budget) => sum + toBudgetBaseAmount(getEffectiveBudgetAmount(budget), budget), 0),
     [budgets],
   );
   
@@ -253,7 +261,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         case 'name':
           return a.categoryName.localeCompare(b.categoryName);
         case 'amount':
-          return getEffectiveBudgetAmount(b) - getEffectiveBudgetAmount(a);
+          return toBudgetBaseAmount(getEffectiveBudgetAmount(b), b) - toBudgetBaseAmount(getEffectiveBudgetAmount(a), a);
         default:
           return 0;
       }
@@ -283,9 +291,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
 
 
-  const getProgressPercentage = (categoryName: string, budgetAmount: number) => {
-    const spent = spentByCategory[categoryName] || 0;
-    return Math.min((spent / budgetAmount) * 100, 100);
+  const getProgressPercentage = (budget: Budget) => {
+    const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
+    const effectiveAmount = getEffectiveBudgetAmount(budget);
+    return effectiveAmount > 0 ? Math.min((spent / effectiveAmount) * 100, 100) : 0;
   };
 
   const getProgressColor = (percentage: number, threshold: number) => {
@@ -449,9 +458,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       >
         <BudgetForm
           categories={categories}
-          onSubmit={(data) => {
+          onSubmit={async (data) => {
             // Convert amount from cents to dollars
-            onAdd({
+            await onAdd({
               ...data,
               amount: data.amount / 100,
             });
@@ -483,16 +492,30 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               period: editingBudget.period,
               startDate: editingBudget.startDate,
               alertThreshold: editingBudget.alertThreshold,
+              currency: getBudgetCurrency(editingBudget),
+              baseCurrency: editingBudget.baseCurrency || DEFAULT_BASE_CURRENCY,
+              exchangeRate: editingBudget.exchangeRate,
+              exchangeRateDate: editingBudget.exchangeRateDate,
+              exchangeRateFetchedAt: editingBudget.exchangeRateFetchedAt,
+              exchangeRateProvider: editingBudget.exchangeRateProvider,
               rolloverEnabled: editingBudget.rolloverEnabled,
               rolloverPercentage: editingBudget.rolloverPercentage,
               rolloverCap: editingBudget.rolloverCap,
             }}
             isEditing={true}
-            onSubmit={(data) => {
-              onUpdate(editingBudget.id!, {
+            onSubmit={async (data) => {
+              const updates: Partial<Budget> = {
                 ...data,
                 amount: data.amount / 100, // Convert back to dollars
-              });
+              };
+              if (getBudgetCurrency(editingBudget) !== data.currency) {
+                updates.accumulatedRollover = convertBudgetAmount(
+                  editingBudget.accumulatedRollover || 0,
+                  editingBudget,
+                  data,
+                );
+              }
+              await onUpdate(editingBudget.id!, updates);
               setEditingBudget(null);
             }}
             onCancel={() => setEditingBudget(null)}
@@ -578,9 +601,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           </div>
         ) : (
           filteredAndSortedBudgets.map((budget) => {
-            const spent = spentByCategory[budget.categoryName] || 0;
+            const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
             const effectiveAmount = getEffectiveBudgetAmount(budget);
-            const percentage = getProgressPercentage(budget.categoryName, effectiveAmount);
+            const percentage = getProgressPercentage(budget);
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
             return (
@@ -607,9 +630,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       )}
                     </div>
                     <div style={styles.budgetAmount}>
-                      <span style={{ ...styles.spent, color: progressColor }}>${spent.toFixed(2)}</span>
+                      <span style={{ ...styles.spent, color: progressColor }}>{formatBudgetMoney(spent, budget)}</span>
                       <span style={styles.separator}> / </span>
-                      <span style={styles.total}>${effectiveAmount.toFixed(2)}</span>
+                      <span style={styles.total}>{formatBudgetMoney(effectiveAmount, budget)}</span>
                     </div>
                   </div>
 
@@ -620,8 +643,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <span style={styles.rolloverBadge} title={t('rolloverEnabled') || 'Rollover Enabled'}>🔄</span>
                       )}
                       {budget.accumulatedRollover && budget.accumulatedRollover > 0 && (
-                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: $${budget.accumulatedRollover.toFixed(2)}`}>
-                          +${budget.accumulatedRollover.toFixed(2)}
+                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: ${formatBudgetMoney(budget.accumulatedRollover, budget)}`}>
+                          +{formatBudgetMoney(budget.accumulatedRollover, budget)}
                         </span>
                       )}
                     </div>
@@ -718,6 +741,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       <BudgetHistory
                         categoryName={budget.categoryName}
                         budgetAmount={budget.amount}
+                        budgetCurrency={getBudgetCurrency(budget)}
+                        budgetExchangeRate={getBudgetExchangeRate(budget)}
                         expenses={expenses}
                         repayments={repayments}
                         billingCycleDay={billingCycleDay}

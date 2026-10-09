@@ -58,7 +58,7 @@ import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY } from '../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount } from '../utils/currencyUtils';
 
 //#region Helper Functions
 //#endregion
@@ -990,11 +990,22 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Budgets
   const handleAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
+
+    const currency = budgetData.currency || DEFAULT_BASE_CURRENCY;
+    const normalizedBudgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+      ...budgetData,
+      currency,
+      baseCurrency: budgetData.baseCurrency || DEFAULT_BASE_CURRENCY,
+      exchangeRate: budgetData.exchangeRate && budgetData.exchangeRate > 0 ? budgetData.exchangeRate : 1,
+      exchangeRateDate: budgetData.exchangeRateDate || getTodayLocal(),
+      exchangeRateFetchedAt: budgetData.exchangeRateFetchedAt || new Date(),
+      exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
+    };
     
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticBudget: Budget = {
-      ...budgetData,
+      ...normalizedBudgetData,
       id: tempId,
       userId: currentUser.uid,
       createdAt: new Date(),
@@ -1006,8 +1017,8 @@ const Dashboard: React.FC = () => {
     dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: budgetData },
-      () => budgetService.create({ ...budgetData, userId: currentUser.uid }),
+      { type: 'create', data: normalizedBudgetData },
+      () => budgetService.create({ ...normalizedBudgetData, userId: currentUser.uid }),
       {
         entityType: 'budget',
         retryToQueueOnFail: true,
@@ -2057,7 +2068,7 @@ const Dashboard: React.FC = () => {
     // Helper to get net amount after repayments
     const getNetAmount = (exp: Expense): number => {
       const repaid = repaymentsByExpense[exp.id || ''] || 0;
-      return Math.max(0, exp.amount - repaid);
+      return Math.max(0, getExpenseBaseAmount(exp) - repaid);
     };
 
     const spent: { [key: string]: number } = {};

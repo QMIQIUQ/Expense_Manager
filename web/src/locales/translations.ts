@@ -952,6 +952,7 @@ export const translations = {
   selectCurrency: { en: 'Select Currency', zh: '選擇貨幣', 'zh-CN': '选择货币' },
   exchangeRate: { en: 'Exchange Rate', zh: '匯率', 'zh-CN': '汇率' },
   baseCurrency: { en: 'Base Currency', zh: '基礎貨幣', 'zh-CN': '基础货币' },
+  exchangeRateLookupFailed: { en: 'Unable to get the exchange rate. Please try again.', zh: '無法取得匯率，請稍後再試。', 'zh-CN': '无法获取汇率，请稍后再试。' },
   exchangeRateHint: {
     en: 'Will be converted to MYR when you save.',
     zh: '儲存時會換算成 MYR。',

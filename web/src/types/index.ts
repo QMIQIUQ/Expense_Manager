@@ -137,6 +137,12 @@ export interface Budget {
   categoryId: string;
   categoryName: string;
   amount: number;
+  currency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
   period: 'monthly' | 'weekly' | 'yearly';
   startDate: string;
   alertThreshold: number; // percentage (e.g., 80 means alert at 80%)

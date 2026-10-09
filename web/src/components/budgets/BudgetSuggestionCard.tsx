@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
 
 interface BudgetSuggestionCardProps {
   categoryName: string;
@@ -25,7 +26,7 @@ export const BudgetSuggestionCard: React.FC<BudgetSuggestionCardProps> = ({
   const { t } = useLanguage();
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(0)}`;
+    return formatMoney(amount, DEFAULT_BASE_CURRENCY);
   };
 
   const getConfidenceInfo = () => {

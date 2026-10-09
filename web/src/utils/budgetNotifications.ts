@@ -2,6 +2,8 @@ import { Budget, Expense, Repayment } from '../types';
 import { NotificationType } from '../contexts/NotificationContext';
 import { getEffectiveBudgetAmount } from './budgetRollover';
 import { parseISO } from 'date-fns';
+import { getExpenseBaseAmount } from './currencyUtils';
+import { formatBudgetMoney, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 interface BudgetAlert {
   budget: Budget;
@@ -87,7 +89,7 @@ export function calculateBudgetSpending(
   // Helper to get net amount after repayments
   const getNetAmount = (exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
-    return Math.max(0, exp.amount - repaid);
+    return Math.max(0, getExpenseBaseAmount(exp) - repaid);
   };
 
   // Calculate spending in this period for this category (with repayment deduction)
@@ -100,7 +102,7 @@ export function calculateBudgetSpending(
     })
     .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
-  return spent;
+  return toBudgetCurrencyAmount(spent, budget);
 }
 
 /**
@@ -134,7 +136,7 @@ export function checkBudgetAlerts(
         spent,
         percentage,
         type: 'error',
-        message: `🚨 Budget Exceeded: ${budget.categoryName} - Spent $${spent.toFixed(2)} of $${effectiveAmount.toFixed(2)} (${percentage.toFixed(0)}%)`,
+        message: `🚨 Budget Exceeded: ${budget.categoryName} - Spent ${formatBudgetMoney(spent, budget)} of ${formatBudgetMoney(effectiveAmount, budget)} (${percentage.toFixed(0)}%)`,
       });
     } else if (percentage >= budget.alertThreshold) {
       // At or above alert threshold
@@ -143,7 +145,7 @@ export function checkBudgetAlerts(
         spent,
         percentage,
         type: 'info',
-        message: `⚠️ Budget Alert: ${budget.categoryName} - Spent $${spent.toFixed(2)} of $${effectiveAmount.toFixed(2)} (${percentage.toFixed(0)}%)`,
+        message: `⚠️ Budget Alert: ${budget.categoryName} - Spent ${formatBudgetMoney(spent, budget)} of ${formatBudgetMoney(effectiveAmount, budget)} (${percentage.toFixed(0)}%)`,
       });
     }
   }

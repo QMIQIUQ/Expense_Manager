@@ -6,6 +6,8 @@
  */
 
 import { Budget, Expense, Repayment } from '../types';
+import { getExpenseBaseAmount } from './currencyUtils';
+import { formatBudgetMoney, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 interface RolloverResult {
   budgetId: string;
@@ -85,7 +87,7 @@ export function calculateSpentInPeriod(
       const expDate = new Date(exp.date);
       if (expDate >= periodStart && expDate < periodEnd) {
         const repaid = repaymentsByExpense[exp.id!] || 0;
-        const netAmount = Math.max(0, exp.amount - repaid);
+        const netAmount = Math.max(0, getExpenseBaseAmount(exp) - repaid);
         totalSpent += netAmount;
       }
     });
@@ -112,13 +114,14 @@ export function calculateRolloverAmount(
   const { start: prevStart, end: prevEnd } = getPreviousBillingCyclePeriod(billingCycleDay);
 
   // Calculate spent in previous period
-  const spent = calculateSpentInPeriod(
+  const spentInBaseCurrency = calculateSpentInPeriod(
     budget.categoryName,
     expenses,
     repayments,
     prevStart,
     prevEnd
   );
+  const spent = toBudgetCurrencyAmount(spentInBaseCurrency, budget);
 
   // Calculate remaining from previous period (budget + any previous rollover)
   const effectiveBudget = budget.amount + (budget.accumulatedRollover || 0);
@@ -187,5 +190,5 @@ export function formatRolloverInfo(budget: Budget): string | null {
     return null;
   }
   
-  return `+$${budget.accumulatedRollover.toFixed(2)} rollover`;
+  return `+${formatBudgetMoney(budget.accumulatedRollover, budget)} rollover`;
 }

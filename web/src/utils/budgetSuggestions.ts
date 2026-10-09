@@ -1,4 +1,5 @@
 import { Expense, Repayment } from '../types';
+import { getExpenseBaseAmount } from './currencyUtils';
 
 interface BudgetSuggestion {
   categoryName: string;
@@ -29,7 +30,7 @@ export function calculateBudgetSuggestions(
   // Helper to get net amount after repayments
   const getNetAmount = (exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
-    return Math.max(0, exp.amount - repaid);
+    return Math.max(0, getExpenseBaseAmount(exp) - repaid);
   };
 
   // Get spending by month for this category

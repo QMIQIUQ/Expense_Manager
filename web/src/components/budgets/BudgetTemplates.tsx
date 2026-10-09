@@ -13,6 +13,7 @@ import {
   getTemplateDescriptionKey,
 } from '../../utils/budgetTemplates';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../utils/currencyUtils';
 
 interface BudgetTemplatesProps {
   categories: Category[];
@@ -104,7 +105,7 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
         {selectedTemplate && (
           <div style={styles.budgetInputSection}>
             <label style={styles.inputLabel}>
-              {t('totalMonthlyBudget') || 'Total Monthly Budget'} ($)
+              {t('totalMonthlyBudget') || 'Total Monthly Budget'} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)})
             </label>
             <input
               type="number"
@@ -154,7 +155,7 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
                         </span>
                       )}
                     </span>
-                    <span style={styles.previewAmount}>${budget.amount.toFixed(0)}</span>
+                    <span style={styles.previewAmount}>{formatMoney(budget.amount, DEFAULT_BASE_CURRENCY)}</span>
                   </div>
                 );
               })}

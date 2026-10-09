@@ -5,6 +5,9 @@ import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
 import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
 import { formatDateRangeShort } from '../../../utils/dateUtils';
+import { Expense } from '../../../types';
+import { formatMoney, getExpenseBaseAmount } from '../../../utils/currencyUtils';
+import { getBudgetCurrency, toBudgetCurrencyAmount } from '../../../utils/budgetCurrencyUtils';
 
 const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', onNavigateToBudgets }) => {
   const { t } = useLanguage();
@@ -41,9 +44,9 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
   }, [repayments]);
 
   // Helper to get net amount after repayments
-  const getNetAmount = React.useCallback((exp: { id?: string; amount: number }): number => {
+  const getNetBaseAmount = React.useCallback((exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
-    return Math.max(0, exp.amount - repaid);
+    return Math.max(0, getExpenseBaseAmount(exp) - repaid);
   }, [repaymentsByExpense]);
 
   // Format period range for display
@@ -126,15 +129,17 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
         return matchesCategory && inCycle;
       });
 
-      const spent = categoryExpenses.reduce((sum, exp) => sum + getNetAmount(exp), 0);
+      const spentBase = categoryExpenses.reduce((sum, exp) => sum + getNetBaseAmount(exp), 0);
+      const spent = toBudgetCurrencyAmount(spentBase, budget);
 
       // Calculate today's spending
-      const todaySpent = categoryExpenses
+      const todaySpentBase = categoryExpenses
         .filter((exp) => {
           const expDate = new Date(exp.date);
           return expDate >= today && expDate < tomorrow;
         })
-        .reduce((sum, exp) => sum + getNetAmount(exp), 0);
+        .reduce((sum, exp) => sum + getNetBaseAmount(exp), 0);
+      const todaySpent = toBudgetCurrencyAmount(todaySpentBase, budget);
 
       const percentage = effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : 0;
       const remaining = Math.max(0, effectiveAmount - spent);
@@ -178,7 +183,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
         spendingPace,
       };
     });
-  }, [budgets, expenses, cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining, getNetAmount, formatPeriodRange]);
+  }, [budgets, expenses, cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining, getNetBaseAmount, formatPeriodRange]);
 
   // Sort budget progress by percentage (high to low)
   const sortedBudgetProgress = React.useMemo(() => {
@@ -228,10 +233,10 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
                 className="budget-spent" 
                 style={{ color: budget.progressColor }}
               >
-                ${budget.spent.toFixed(2)}
+                {formatMoney(budget.spent, getBudgetCurrency(budget))}
               </span>
               <span className="budget-separator"> / </span>
-              <span className="budget-total">${budget.effectiveAmount.toFixed(2)}</span>
+              <span className="budget-total">{formatMoney(budget.effectiveAmount, getBudgetCurrency(budget))}</span>
             </div>
           </div>
 
@@ -241,7 +246,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
             {budget.isOverBudget ? (
               <span className="budget-status-text error-text">{t('overBudget')}</span>
             ) : (
-              <span className="budget-status-text success-text">${budget.remaining.toFixed(2)} {t('remaining')}</span>
+              <span className="budget-status-text success-text">{formatMoney(budget.remaining, getBudgetCurrency(budget))} {t('remaining')}</span>
             )}
           </div>
 
@@ -250,12 +255,12 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
             <div className="budget-daily-info">
               <div className="budget-daily-row">
                 <span className="budget-daily-label">{t('dailyBudget') || 'Daily'}:</span>
-                <span className="budget-daily-value">${budget.dailyBudget.toFixed(2)}</span>
+                <span className="budget-daily-value">{formatMoney(budget.dailyBudget, getBudgetCurrency(budget))}</span>
               </div>
               <div className="budget-daily-row">
                 <span className="budget-daily-label">{t('todaySpent') || 'Today'}:</span>
                 <span className={`budget-daily-value ${budget.todaySpent > budget.dailyBudget ? 'over-daily' : ''}`}>
-                  ${budget.todaySpent.toFixed(2)}
+                  {formatMoney(budget.todaySpent, getBudgetCurrency(budget))}
                 </span>
               </div>
               {budget.spendingPace !== 'on-track' && (

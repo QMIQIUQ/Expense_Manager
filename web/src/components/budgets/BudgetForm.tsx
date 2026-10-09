@@ -1,17 +1,26 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
-import { Category } from '../../types';
+import { Category, CurrencyCode } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { getTodayLocal } from '../../utils/dateUtils';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import { sortCategories } from '../../utils/categoryOrder';
+import CurrencySelector from '../common/CurrencySelector';
+import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUtils';
+import { getHistoricalRate } from '../../services/currencyRateService';
 
 interface BudgetFormData {
   categoryId: string;
   categoryName: string;
   amount: number; // stored in cents
+  currency: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
   period: 'monthly' | 'weekly' | 'yearly';
   startDate: string;
   alertThreshold: number;
@@ -24,7 +33,7 @@ interface BudgetFormData {
 interface BudgetFormProps {
   initialData?: BudgetFormData;
   categories: Category[];
-  onSubmit: (data: BudgetFormData) => void;
+  onSubmit: (data: BudgetFormData) => void | Promise<void>;
   onCancel: () => void;
   isEditing?: boolean;
 }
@@ -44,6 +53,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       categoryId: '',
       categoryName: '',
       amount: 0,
+      currency: DEFAULT_BASE_CURRENCY,
       period: 'monthly',
       startDate: getTodayLocal(),
       alertThreshold: 80,
@@ -52,16 +62,79 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       rolloverCap: undefined,
     }
   );
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isChangingCurrency, setIsChangingCurrency] = React.useState(false);
+  const [currencyError, setCurrencyError] = React.useState('');
+
+  const handleCurrencyChange = async (currency: CurrencyCode) => {
+    if (currency === formData.currency) return;
+
+    setCurrencyError('');
+    setIsChangingCurrency(true);
+    try {
+      const snapshot = await getHistoricalRate(currency, DEFAULT_BASE_CURRENCY, getTodayLocal());
+      const previousRate = formData.currency === DEFAULT_BASE_CURRENCY
+        ? 1
+        : (formData.exchangeRate && formData.exchangeRate > 0 ? formData.exchangeRate : 1);
+      setFormData((previous) => ({
+        ...previous,
+        currency,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        exchangeRate: snapshot.rate,
+        exchangeRateDate: snapshot.rateDate,
+        exchangeRateFetchedAt: snapshot.fetchedAt,
+        exchangeRateProvider: snapshot.provider,
+        rolloverCap: previous.rolloverCap === undefined
+          ? undefined
+          : Math.round((previous.rolloverCap * previousRate / snapshot.rate) * 100) / 100,
+      }));
+    } catch {
+      setCurrencyError(t('exchangeRateLookupFailed') || 'Unable to get the exchange rate. Please try again.');
+    } finally {
+      setIsChangingCurrency(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const selectedCategory = categories.find((cat) => cat.id === formData.categoryId);
     if (!selectedCategory) return;
 
-    onSubmit({
-      ...formData,
-      categoryName: selectedCategory.name,
-    });
+    void (async () => {
+      setIsSubmitting(true);
+      setCurrencyError('');
+
+      try {
+        const currency = formData.currency || DEFAULT_BASE_CURRENCY;
+        const formRateCanBeReused =
+          formData.exchangeRate &&
+          formData.exchangeRate > 0 &&
+          (formData.baseCurrency || DEFAULT_BASE_CURRENCY) === DEFAULT_BASE_CURRENCY;
+        const snapshot = formRateCanBeReused
+          ? {
+              rate: formData.exchangeRate!,
+              rateDate: formData.exchangeRateDate || getTodayLocal(),
+              fetchedAt: formData.exchangeRateFetchedAt || new Date(),
+              provider: formData.exchangeRateProvider || 'cached',
+            }
+          : await getHistoricalRate(currency, DEFAULT_BASE_CURRENCY, getTodayLocal());
+
+        await onSubmit({
+          ...formData,
+          categoryName: selectedCategory.name,
+          currency,
+          baseCurrency: DEFAULT_BASE_CURRENCY,
+          exchangeRate: snapshot.rate,
+          exchangeRateDate: snapshot.rateDate,
+          exchangeRateFetchedAt: snapshot.fetchedAt,
+          exchangeRateProvider: snapshot.provider,
+        });
+      } catch {
+        setCurrencyError(t('exchangeRateLookupFailed') || 'Unable to get the exchange rate. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (
@@ -69,9 +142,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       title={isEditing ? t('editBudget') : t('addBudget')}
       onSubmit={handleSubmit}
       onCancel={onCancel}
+      submitDisabled={isSubmitting || isChangingCurrency}
     >
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex flex-col gap-1">
             <AutocompleteDropdown
               options={sortCategories(categories).map((cat): AutocompleteOption => ({
@@ -89,7 +163,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ($) *</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
             <input
               type="text"
               inputMode="numeric"
@@ -110,6 +184,22 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                 color: 'var(--text-primary)'
               }}
             />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <CurrencySelector
+              value={formData.currency}
+              onChange={handleCurrencyChange}
+              disabled={isSubmitting || isChangingCurrency}
+              label={t('currency')}
+              compact={true}
+            />
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {formData.currency === DEFAULT_BASE_CURRENCY
+                ? (t('baseCurrencyHint') || 'MYR is the base currency, so no conversion is needed.')
+                : (t('exchangeRateHint') || 'Will be converted to MYR when you save.')}
+            </span>
+            {currencyError && <span className="text-xs text-red-600">{currencyError}</span>}
           </div>
         </div>
 
@@ -184,6 +274,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               }}
             />
           </div>
+
         </div>
 
         {/* Rollover Settings */}
@@ -257,7 +348,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  {t('rolloverCap') || 'Max Rollover ($)'}
+                  {t('rolloverCap') || 'Max Rollover'} ({getCurrencySymbol(formData.currency)})
                 </label>
                 <input
                   type="number"

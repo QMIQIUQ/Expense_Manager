@@ -66,10 +66,13 @@ export const getExpenseBaseCurrency = (expense: Pick<Expense, 'baseCurrency'>): 
 };
 
 export const getExpenseBaseAmount = (
-  expense: Pick<Expense, 'amount' | 'baseAmount'>
+  expense: Pick<Expense, 'amount'> & Partial<Pick<Expense, 'baseAmount' | 'exchangeRate'>>
 ): number => {
   if (typeof expense.baseAmount === 'number' && Number.isFinite(expense.baseAmount)) {
     return expense.baseAmount;
+  }
+  if (typeof expense.exchangeRate === 'number' && Number.isFinite(expense.exchangeRate) && expense.exchangeRate > 0) {
+    return Math.round(expense.amount * expense.exchangeRate * 100) / 100;
   }
   return expense.amount;
 };

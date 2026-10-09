@@ -7,14 +7,18 @@
  * - Consistently under budget (<50% usage) for 3+ months
  */
 
-import { Budget, Expense, Repayment } from '../types';
+import { Budget, CurrencyCode, Expense, Repayment } from '../types';
 import { getBillingCyclePeriod } from './budgetRollover';
+import { getExpenseBaseAmount } from './currencyUtils';
+import { getBudgetCurrency, toBudgetBaseAmount, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 export interface BudgetAdjustmentSuggestion {
   budgetId: string;
   categoryName: string;
   currentAmount: number;
   suggestedAmount: number;
+  currency: CurrencyCode;
+  changeBaseAmount: number;
   reason: 'consistently_over' | 'consistently_under';
   averageSpending: number;
   usageHistory: number[]; // Last N months usage percentages
@@ -60,7 +64,7 @@ export function getSpendingHistory(
         const expDate = new Date(exp.date);
         if (expDate >= start && expDate < end) {
           const repaid = repaymentsByExpense[exp.id!] || 0;
-          spent += Math.max(0, exp.amount - repaid);
+          spent += Math.max(0, getExpenseBaseAmount(exp) - repaid);
         }
       });
 
@@ -91,7 +95,8 @@ function getUsagePercentages(
 
   return history.map((h) => {
     if (budget.amount <= 0) return 0;
-    return (h.spent / budget.amount) * 100;
+    const baseBudgetAmount = toBudgetBaseAmount(budget.amount, budget);
+    return baseBudgetAmount > 0 ? (h.spent / baseBudgetAmount) * 100 : 0;
   });
 }
 
@@ -123,7 +128,7 @@ export function analyzeBudget(
   const overBudgetCount = usageHistory.filter((u) => u > 110).length;
   if (overBudgetCount >= 3) {
     // Suggest increasing budget to average spending + 10% buffer
-    const suggestedAmount = Math.ceil(averageSpending * 1.1);
+    const suggestedAmount = Math.ceil(toBudgetCurrencyAmount(averageSpending * 1.1, budget));
     
     // Calculate confidence based on spending consistency
     const variance = calculateVariance(usageHistory);
@@ -138,6 +143,8 @@ export function analyzeBudget(
       averageSpending,
       usageHistory,
       confidence,
+      currency: getBudgetCurrency(budget),
+      changeBaseAmount: Math.abs(toBudgetBaseAmount(suggestedAmount, budget) - toBudgetBaseAmount(budget.amount, budget)),
     };
   }
 
@@ -145,7 +152,7 @@ export function analyzeBudget(
   const underBudgetCount = usageHistory.filter((u) => u < 50).length;
   if (underBudgetCount >= 3) {
     // Suggest decreasing budget to average spending + 20% buffer
-    const suggestedAmount = Math.ceil(averageSpending * 1.2);
+    const suggestedAmount = Math.ceil(toBudgetCurrencyAmount(averageSpending * 1.2, budget));
     
     // Only suggest if the reduction is significant (>20%)
     if (suggestedAmount < budget.amount * 0.8) {
@@ -161,6 +168,8 @@ export function analyzeBudget(
         averageSpending,
         usageHistory,
         confidence,
+        currency: getBudgetCurrency(budget),
+        changeBaseAmount: Math.abs(toBudgetBaseAmount(suggestedAmount, budget) - toBudgetBaseAmount(budget.amount, budget)),
       };
     }
   }
@@ -202,7 +211,7 @@ export function getAllBudgetSuggestions(
     if (confidenceOrder[a.confidence] !== confidenceOrder[b.confidence]) {
       return confidenceOrder[a.confidence] - confidenceOrder[b.confidence];
     }
-    return Math.abs(b.suggestedAmount - b.currentAmount) - Math.abs(a.suggestedAmount - a.currentAmount);
+    return b.changeBaseAmount - a.changeBaseAmount;
   });
 }
 
