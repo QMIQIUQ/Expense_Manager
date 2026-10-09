@@ -19,11 +19,19 @@ describe('FloatingExpenseActions', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add expense' }));
+    const addExpenseButton = screen.getByRole('button', { name: 'Add expense' });
+    const scanReceiptButton = screen.getByRole('button', { name: 'Scan receipt' });
+
+    expect(addExpenseButton).toHaveClass('floating-expense-action-primary');
+    expect(scanReceiptButton).toHaveClass('floating-expense-action-secondary');
+    expect(addExpenseButton).not.toHaveClass('floating-btn-hover');
+    expect(scanReceiptButton).not.toHaveClass('floating-btn-hover');
+
+    fireEvent.click(addExpenseButton);
     expect(onAddExpense).toHaveBeenCalledTimes(1);
     expect(onScanReceipt).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Scan receipt' }));
+    fireEvent.click(scanReceiptButton);
     expect(onScanReceipt).toHaveBeenCalledTimes(1);
   });
 

@@ -30,7 +30,7 @@ const FloatingExpenseActions: React.FC<FloatingExpenseActionsProps> = ({
       <button
         type="button"
         {...longPressHandlers}
-        className="floating-expense-action floating-expense-action-primary floating-btn-hover"
+        className="floating-expense-action floating-expense-action-primary"
         title={addExpenseLabel}
         aria-label={addExpenseLabel}
         onContextMenu={(event) => event.preventDefault()}
@@ -41,7 +41,7 @@ const FloatingExpenseActions: React.FC<FloatingExpenseActionsProps> = ({
       <button
         type="button"
         onClick={onScanReceipt}
-        className="floating-expense-action floating-expense-action-secondary floating-btn-hover"
+        className="floating-expense-action floating-expense-action-secondary"
         title={scanReceiptLabel}
         aria-label={scanReceiptLabel}
         onContextMenu={(event) => event.preventDefault()}

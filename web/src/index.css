@@ -6343,18 +6343,17 @@ button:not(:disabled):hover {
   justify-content: center;
   gap: 8px;
   height: 56px;
-  padding: 0 20px;
+  padding: 16px 24px;
   border: 0;
-  border-radius: 999px;
-  font-size: 15px;
+  border-radius: 50px;
+  font-size: 16px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   pointer-events: auto;
-  box-shadow: var(--purple-glow-strong);
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  transition: all 0.3s ease;
 }
 
 .floating-expense-action:hover {
@@ -6364,6 +6363,7 @@ button:not(:disabled):hover {
 .floating-expense-action-primary {
   background: var(--tab-active-bg);
   color: var(--tab-active-text);
+  box-shadow: var(--purple-glow-strong);
 }
 
 .floating-expense-action-secondary {
