@@ -50,8 +50,7 @@ jobs:
 
       - name: Output Deployment URL
         run: |
-          DEPLOYMENT_URLS="${{ steps.firebase-deploy.outputs.urls }}"
-          DETAILS_URL="${{ steps.firebase-deploy.outputs.details_url }}"
+          DEPLOYMENT_URL="${{ steps.firebase-deploy.outputs.details_url }}"
           EXPIRE_TIME="${{ steps.firebase-deploy.outputs.expire_time_formatted }}"
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
             CHANNEL="Live (Production)"
@@ -60,8 +59,7 @@ jobs:
           fi
           echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment URL(s)**: $DEPLOYMENT_URLS" >> $GITHUB_STEP_SUMMARY
-          echo "- **Firebase Console**: $DETAILS_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
           if [ -n "$EXPIRE_TIME" ]; then
             echo "- **Preview expires**: $EXPIRE_TIME" >> $GITHUB_STEP_SUMMARY
@@ -72,8 +70,7 @@ jobs:
           echo "============================================"
           echo "🎉 Firebase Hosting deployment succeeded!"
           echo "============================================"
-          echo "Deployment URL(s): $DEPLOYMENT_URLS"
-          echo "Firebase Console: $DETAILS_URL"
+          echo "Deployment URL: $DEPLOYMENT_URL"
           echo "Channel: $CHANNEL"
           if [ -n "$EXPIRE_TIME" ]; then
             echo "Preview expires: $EXPIRE_TIME"
