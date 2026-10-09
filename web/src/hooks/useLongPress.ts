@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 interface UseLongPressOptions {
-  onLongPress: (event: React.TouchEvent | React.MouseEvent) => void;
+  onLongPress: (target: HTMLElement) => void;
   onClick?: (event: React.TouchEvent | React.MouseEvent) => void;
   delay?: number;
 }
@@ -54,9 +54,12 @@ export const useLongPress = (options: UseLongPressOptions): LongPressHandlers =>
       if (timeout.current) {
         clearTimeout(timeout.current);
       }
+      // Capture the DOM target synchronously. React clears SyntheticEvent
+      // fields after dispatch, so currentTarget is not safe in a timer.
+      const target = event.currentTarget as HTMLElement;
       timeout.current = setTimeout(() => {
         longPressTriggered.current = true;
-        onLongPress(event);
+        onLongPress(target);
       }, delay);
     },
     [onLongPress, delay]

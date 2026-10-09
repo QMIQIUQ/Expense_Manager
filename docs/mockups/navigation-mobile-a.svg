@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="1120" viewBox="0 0 680 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Manager 精簡手機介面提案</title>
+  <desc id="desc">手機版使用 52 像素頁首和 44 像素頁籤列，更多固定可見，底部保留獨立新增支出與掃描收據浮動按鈕。</desc>
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+    <style>text{font-family:Inter,"Noto Sans TC","Microsoft JhengHei",sans-serif;fill:#1f2937}.muted{fill:#737b8b}.tiny{font-size:17px}.small{font-size:20px}.label{font-size:22px;font-weight:650}.title{font-size:34px;font-weight:720}.inverse-text{fill:#fff!important}</style>
+  </defs>
+  <rect width="680" height="1120" rx="28" fill="#f7f8fb"/>
+  <text x="48" y="58" class="tiny" fill="#7c3aed" font-weight="700" letter-spacing="1.2">PROPOSED · COMPACT MOBILE</text>
+  <text x="48" y="103" class="title">手機版：少一層、內容提早出現</text>
+  <text x="48" y="134" class="tiny muted">頁首 52px + 導覽 44px · More 固定可用</text>
+
+  <rect x="146" y="166" width="388" height="898" rx="44" fill="#171923"/>
+  <rect x="157" y="177" width="366" height="876" rx="34" fill="#fff"/>
+  <rect x="270" y="186" width="140" height="19" rx="10" fill="#171923"/>
+  <circle cx="190" cy="239" r="16" fill="#f2ebff"/><text x="185" y="245" class="label" fill="#7c3aed">$</text>
+  <text x="216" y="245" class="label" font-size="17">Expense</text>
+  <rect x="396" y="217" width="42" height="44" rx="12" fill="#f9f8fc" stroke="#eceaf2"/><path d="M409 245v-6a7 7 0 0 1 14 0v6l3 4h-20z" fill="none" stroke="#657083" stroke-width="1.5"/><circle cx="422" cy="232" r="2.5" fill="#ef6262"/>
+  <rect x="488" y="217" width="34" height="44" rx="12" fill="#f9f8fc" stroke="#eceaf2"/><path d="M496 231h18m-18 7h18m-18 7h18" stroke="#657083" stroke-width="1.6" stroke-linecap="round"/>
+
+  <rect x="157" y="270" width="366" height="47" fill="#fff"/>
+  <text x="177" y="300" class="tiny" fill="#6d39d0" font-weight="700">總覽</text><line x1="169" y1="316" x2="222" y2="316" stroke="url(#accent)" stroke-width="2.5"/>
+  <text x="267" y="300" class="tiny muted">支出</text><text x="344" y="300" class="tiny muted">收入</text>
+  <rect x="421" y="270" width="88" height="44" rx="9" fill="#fff" stroke="#e7e8ef"/><text x="441" y="299" class="tiny muted">更多⌄</text>
+  <line x1="157" y1="317" x2="523" y2="317" stroke="#eef0f4"/>
+
+  <text x="177" y="360" class="tiny muted">本月摘要　·　2026 年 10 月</text><text x="177" y="400" class="title" font-size="28">總覽</text>
+  <text x="177" y="449" class="tiny muted">本月支出</text><text x="177" y="488" class="title" font-size="31">$ 24,680</text><text x="177" y="514" class="tiny" fill="#3d9b73">↓ 8.2% 較上月</text>
+  <line x1="177" y1="536" x2="503" y2="536" stroke="#eceef3"/>
+  <text x="177" y="575" class="tiny muted">本月收入</text><text x="177" y="614" class="title" font-size="31">$ 38,500</text><text x="177" y="640" class="tiny muted">4 筆已記錄</text>
+  <line x1="177" y1="661" x2="503" y2="661" stroke="#eceef3"/>
+  <text x="177" y="701" class="tiny muted">預算使用</text><text x="177" y="739" class="title" font-size="28">62%</text><rect x="177" y="756" width="310" height="7" rx="4" fill="#eeeaf5"/><rect x="177" y="756" width="192" height="7" rx="4" fill="url(#accent)"/>
+  <rect x="177" y="797" width="326" height="1" fill="#eceef3"/>
+  <text x="177" y="837" class="label">最近支出</text>
+  <circle cx="197" cy="880" r="17" fill="#f3efff"/><text x="192" y="886" class="tiny" fill="#7c3aed">咖</text><text x="226" y="879" class="small">咖啡</text><text x="226" y="900" class="tiny muted">今天 · 餐飲</text><text x="474" y="887" class="small" text-anchor="end">−$ 120</text>
+  <line x1="177" y1="922" x2="503" y2="922" stroke="#eceef3"/>
+  <circle cx="197" cy="947" r="17" fill="#eef7f2"/><text x="192" y="953" class="tiny" fill="#3d9b73">車</text><text x="226" y="946" class="small">交通卡</text><text x="226" y="967" class="tiny muted">昨天 · 交通</text><text x="474" y="954" class="small" text-anchor="end">−$ 280</text>
+  <rect x="158" y="985" width="364" height="68" fill="#fff"/>
+  <circle cx="201" cy="1009" r="28" fill="url(#accent)"/><path d="M201 997v24m-12-12h24" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="269" cy="1009" r="28" fill="#fff" stroke="#e4e2eb"/><path d="M262 1006v-3a7 7 0 0 1 14 0v8l3 3h-20z" fill="none" stroke="#647084" stroke-width="1.7"/>
+  <text x="48" y="1090" class="tiny" fill="#6d39d0" font-weight="700">保留兩個 56×56px 獨立 FAB · 左 16px · 底部含 safe area</text>
+</svg>

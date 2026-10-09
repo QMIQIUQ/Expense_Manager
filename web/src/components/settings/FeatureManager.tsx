@@ -216,7 +216,8 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onUpdate(localTabFeatures, localTabFeatures, localHamburgerFeatures);
+      const enabledFeatures = Array.from(new Set([...localTabFeatures, ...localHamburgerFeatures]));
+      await onUpdate(enabledFeatures, localTabFeatures, localHamburgerFeatures);
     } finally {
       setIsSaving(false);
     }

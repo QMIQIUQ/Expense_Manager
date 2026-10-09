@@ -78,7 +78,7 @@ export const translations = {
   profile: { en: '⚙️ Settings', zh: '⚙️ 設定', 'zh-CN': '⚙️ 设定' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
   tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
-  hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
+  hamburgerLocation: { en: 'More menu', zh: '更多選單', 'zh-CN': '更多菜单' },
   position: { en: 'Position', zh: '位置', 'zh-CN': '位置' },
   enterPosition: { en: 'Enter position (1-{max})', zh: '輸入位置 (1-{max})', 'zh-CN': '输入位置 (1-{max})' },
 
@@ -537,6 +537,7 @@ export const translations = {
   categoryInUse: { en: 'This category is being used by', zh: '此類別正被使用於', 'zh-CN': '此分类正被使用于' },
   and: { en: 'and', zh: '以及', 'zh-CN': '以及' },
   more: { en: 'more', zh: '更多', 'zh-CN': '更多' },
+  mainNavigation: { en: 'Main navigation', zh: '主要導覽', 'zh-CN': '主导航' },
   showLess: { en: 'Show less', zh: '收起', 'zh-CN': '收起' },
   viewAll: { en: 'View all', zh: '查看全部', 'zh-CN': '查看全部' },
   chooseDeletionAction: { en: 'What would you like to do with these expenses?', zh: '您想如何處理這些支出？', 'zh-CN': '您想如何处理这些支出？' },

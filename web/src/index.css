@@ -6163,3 +6163,326 @@ button:not(:disabled):hover {
     padding-bottom: calc(18px + env(safe-area-inset-bottom));
   }
 }
+
+/* Compact top navigation and persistent quick-add actions */
+.dashboard-page {
+  padding-bottom: 32px;
+}
+
+.dashboard-header-modern {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  min-height: 56px;
+  margin: 0 0 12px;
+  padding: 0 12px;
+  overflow: visible;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.dashboard-header-modern .header-brand {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.dashboard-header-modern .header-logo {
+  font-size: 26px;
+}
+
+.dashboard-header-modern .header-title {
+  font-size: 15px;
+}
+
+.dashboard-header-modern .header-subtitle {
+  display: none;
+}
+
+.compact-navigation {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 56px;
+}
+
+.compact-navigation-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 44px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.compact-navigation-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.compact-navigation-item {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+
+.compact-navigation-item:hover {
+  background: var(--tab-hover-bg);
+  color: var(--text-primary);
+}
+
+.compact-navigation-item.is-active {
+  color: var(--accent-primary);
+  font-weight: 650;
+}
+
+.compact-navigation-item.is-active::after {
+  position: absolute;
+  right: 10px;
+  bottom: 1px;
+  left: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent-primary);
+  content: '';
+}
+
+.compact-navigation-more {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.compact-navigation-more-trigger {
+  text-transform: capitalize;
+}
+
+.compact-navigation-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1001;
+  display: grid;
+  width: max-content;
+  min-width: 176px;
+  max-width: min(280px, calc(100vw - 24px));
+  max-height: min(65vh, 420px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 12px 32px var(--shadow-lg);
+}
+
+.compact-navigation-menu-item {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.compact-navigation-menu-item:hover,
+.compact-navigation-menu-item.is-active {
+  background: var(--tab-hover-bg);
+  color: var(--accent-primary);
+}
+
+.compact-navigation-item:focus-visible,
+.compact-navigation-menu-item:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.dashboard-header-modern .header-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.floating-expense-actions {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.floating-expense-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  pointer-events: auto;
+  box-shadow: var(--purple-glow-strong);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.floating-expense-action:hover {
+  transform: translateY(-2px);
+}
+
+.floating-expense-action-primary {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+
+.floating-expense-action-secondary {
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dashboard-header-modern {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'brand actions' 'navigation navigation';
+    gap: 0;
+    height: auto;
+    min-height: 0;
+    margin-bottom: 10px;
+    padding: 0 8px;
+  }
+
+  .dashboard-header-modern .header-brand {
+    grid-area: brand;
+    min-height: 52px;
+  }
+
+  .dashboard-header-modern .header-logo {
+    font-size: 24px;
+  }
+
+  .dashboard-header-modern .header-title {
+    font-size: 14px;
+  }
+
+  .compact-navigation {
+    grid-area: navigation;
+    width: 100%;
+    height: 44px;
+    gap: 2px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .compact-navigation-scroll {
+    flex: 1 1 0;
+    height: 44px;
+  }
+
+  .compact-navigation-item {
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .compact-navigation-item.is-active::after {
+    right: 9px;
+    left: 9px;
+    bottom: 0;
+  }
+
+  .compact-navigation-more-trigger {
+    min-width: 70px;
+    padding: 0 8px;
+    border-left: 1px solid var(--border-color);
+    border-radius: 0;
+  }
+
+  .dashboard-header-modern .header-actions {
+    grid-area: actions;
+    min-height: 52px;
+  }
+
+  .floating-expense-actions.is-mobile {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    gap: 12px;
+  }
+
+  .floating-expense-action {
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .floating-expense-action-primary {
+    font-size: 28px;
+  }
+
+  .floating-expense-action-secondary {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compact-navigation-item,
+  .floating-expense-action {
+    transition: none;
+  }
+}
+
+/* Keep dashboard widgets visually calm while preserving edit affordances. */
+.dashboard-widgets-grid .widget-container {
+  min-height: 0;
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.dashboard-widgets-grid .widget-container:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px var(--shadow);
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .dashboard-widgets-grid .widget-container {
+    padding: 12px;
+  }
+}
