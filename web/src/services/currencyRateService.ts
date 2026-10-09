@@ -108,10 +108,31 @@ const fetchFromSource = async (
     ? `${baseUrl}@${dateToken}/v1/currencies/${fromCurrency.toLowerCase()}.min.json`
     : `${dateToken}.${baseUrl.replace(/^https?:\/\//, '')}/v1/currencies/${fromCurrency.toLowerCase()}.min.json`;
   const response = await fetch(url, { cache: 'no-store' });
-  if (!response.ok) return null;
+  if (response.status === 404 || response.status === 410) return null;
+  if (!response.ok) throw new Error(`Exchange-rate request failed with HTTP ${response.status}`);
 
   const payload = (await response.json()) as Record<string, unknown>;
   return parseRateResponse(payload, fromCurrency, toCurrency, dateToken, `${PROVIDER_NAME}:${baseUrl.includes('jsdelivr') ? 'jsdelivr' : 'pages'}`);
+};
+
+const getHistoricalDateCandidates = (requestedDate: string): string[] => {
+  const date = new Date(`${requestedDate}T00:00:00.000Z`);
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== requestedDate) {
+    return [requestedDate];
+  }
+
+  const now = new Date();
+  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  // Never use a past rate for a future-dated transaction.
+  if (requestedDate > todayLocal) return [requestedDate];
+
+  // Daily feeds publish after the day begins and skip weekends/holidays.
+  // Try up to seven preceding calendar days to find the latest available rate.
+  return Array.from({ length: 8 }, (_, offset) => {
+    const candidate = new Date(date);
+    candidate.setUTCDate(candidate.getUTCDate() - offset);
+    return candidate.toISOString().slice(0, 10);
+  });
 };
 
 const fetchHistoricalRate = async (
@@ -119,26 +140,35 @@ const fetchHistoricalRate = async (
   toCurrency: CurrencyCode,
   requestedDate: string
 ): Promise<CurrencyRateSnapshot> => {
-  const dateTokens = [requestedDate];
+  const dateTokens = getHistoricalDateCandidates(requestedDate);
 
   const sourceUrls = [PRIMARY_BASE_URL, FALLBACK_BASE_URL];
+  let lastError: unknown;
 
   for (const dateToken of dateTokens) {
+    let sawNotFound = false;
+    let sawRequestError = false;
     for (const baseUrl of sourceUrls) {
       try {
         const snapshot = await fetchFromSource(baseUrl, dateToken, fromCurrency, toCurrency);
         if (snapshot) {
           return snapshot;
         }
+        sawNotFound = true;
       } catch (error) {
-        if (baseUrl === sourceUrls[sourceUrls.length - 1] && dateToken === dateTokens[dateTokens.length - 1]) {
-          throw error;
-        }
+        lastError = error;
+        sawRequestError = true;
       }
+    }
+
+    // If both providers failed to respond, retrying older dates cannot help.
+    // If either provider confirmed the date is absent, move to the previous day.
+    if (sawRequestError && !sawNotFound) {
+      throw lastError instanceof Error ? lastError : new Error(`Unable to fetch exchange rate for ${dateToken}`);
     }
   }
 
-  throw new Error(`Unable to fetch exchange rate for ${fromCurrency} -> ${toCurrency} on ${requestedDate}`);
+  throw new Error(`Unable to fetch exchange rate for ${fromCurrency} -> ${toCurrency} on or before ${requestedDate}`);
 };
 
 export const getHistoricalRate = async (
