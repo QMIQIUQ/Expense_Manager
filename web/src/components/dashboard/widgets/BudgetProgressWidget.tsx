@@ -229,6 +229,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
               )}
             </div>
             <div className="budget-amounts">
+              <span className="budget-spent-label">{t('spent')}:</span>
               <span 
                 className="budget-spent" 
                 style={{ color: budget.progressColor }}
@@ -243,11 +244,14 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
           {/* Row 2: Category name + Status */}
           <div className="budget-progress-row-2">
             <span className="budget-category-name">{budget.categoryName}</span>
-            {budget.isOverBudget ? (
-              <span className="budget-status-text error-text">{t('overBudget')}</span>
-            ) : (
-              <span className="budget-status-text success-text">{formatMoney(budget.remaining, getBudgetCurrency(budget))} {t('remaining')}</span>
-            )}
+            <div className="budget-status-group">
+              <span className={`budget-status-text ${budget.isOverBudget ? 'error-text' : 'success-text'}`}>
+                {formatMoney(budget.remaining, getBudgetCurrency(budget))} {t('remaining')}
+              </span>
+              {budget.isOverBudget && (
+                <span className="budget-status-text error-text">{t('overBudget')}</span>
+              )}
+            </div>
           </div>
 
           {/* Row 2.5: Daily budget info (for monthly budgets) */}

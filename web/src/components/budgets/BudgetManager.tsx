@@ -679,6 +679,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               effectiveAmountBase,
               budget,
             );
+            const remaining = spent === null || displayEffectiveAmount === null
+              ? null
+              : Math.max(0, displayEffectiveAmount - spent);
+            const isOverBudget = spentInBudgetCurrency > effectiveAmount;
             const rolloverAmount = budget.accumulatedRollover || 0;
             const displayRolloverAmount = getBudgetDisplayAmount(
               `${budgetId}:rollover`,
@@ -712,7 +716,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <span style={styles.periodRange}>{getPeriodRange(budget.period)}</span>
                       )}
                     </div>
-                    <div style={styles.budgetAmount}>
+                    <div
+                      style={styles.budgetAmount}
+                      aria-label={`${t('spent')}: ${formatDisplayMoney(spent)} / ${formatDisplayMoney(displayEffectiveAmount)}`}
+                    >
+                      <span style={styles.spentLabel}>{t('spent')}</span>
                       <span
                         style={{ ...styles.spent, color: progressColor }}
                         title={spent === null ? conversionFailureMessage : undefined}
@@ -806,6 +814,17 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    <div style={styles.remainingRow}>
+                      <span>{t('remaining')}</span>
+                      <span style={{
+                        ...styles.remainingAmount,
+                        color: isOverBudget ? 'var(--error-text)' : 'var(--success-text)',
+                      }}>
+                        {formatDisplayMoney(remaining)}
+                        {isOverBudget && <span style={styles.overBudgetLabel}> · {t('overBudget')}</span>}
+                      </span>
                     </div>
 
                     {/* History toggle button */}
@@ -1165,6 +1184,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '12px',
+    flexWrap: 'wrap' as const,
   },
   periodInfo: {
     display: 'flex',
@@ -1223,6 +1243,26 @@ const styles = {
     alignItems: 'baseline',
     gap: '4px',
     whiteSpace: 'nowrap' as const,
+  },
+  spentLabel: {
+    fontSize: '11px',
+    color: 'var(--text-tertiary)',
+  },
+  remainingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap' as const,
+    gap: '8px',
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+  },
+  remainingAmount: {
+    fontWeight: '600' as const,
+    textAlign: 'right' as const,
+  },
+  overBudgetLabel: {
+    fontWeight: '500' as const,
   },
   spent: {
     fontSize: '18px',

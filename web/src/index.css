@@ -3540,6 +3540,7 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .budget-period-info {
@@ -3585,6 +3586,11 @@ button:not(:disabled):hover {
   font-weight: 600;
 }
 
+.budget-spent-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 .budget-separator {
   font-size: 14px;
   color: var(--text-tertiary);
@@ -3600,7 +3606,16 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.budget-status-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .budget-category-name {
