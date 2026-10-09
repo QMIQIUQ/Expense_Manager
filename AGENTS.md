@@ -2,13 +2,16 @@
 
 ## Required ChatGPT collaboration
 
-For every task in this repository, use the [Codex with ChatGPT · Expense_Manager](plugin://dev-6ac7d0a2072c8191b3491e53ed81eef9@created-by-me-remote) plugin as part of the work:
+For every task in this repository, use the ChatGPT collaboration plugin that matches the task's target branch:
+
+- For work targeting `firebase-testing`, use [Codex with ChatGPT · Expense Manager Test](plugin://dev-6ac85cc49df08191b8d5cf39daaaeb24@created-by-me-remote).
+- For work targeting any other branch, use [Codex with ChatGPT · Expense_Manager](plugin://dev-6ac7d0a2072c8191b3491e53ed81eef9@created-by-me-remote).
 
 1. At the start of the task, send the goal to the plugin and obtain its plan before making project changes.
 2. Carry out the approved plan in the local workspace.
 3. After making changes, ask the plugin to review the result and continue its review and revision loop until it reports completion or a blocker.
 
-If the plugin is unavailable in the current session, pause project work and tell the user. Continue without it only if the user explicitly authorizes a fallback.
+If the selected plugin is unavailable in the current session, pause project work and tell the user. Continue without it only if the user explicitly authorizes a fallback.
 
 ## Default branch and Firebase test deployment
 
