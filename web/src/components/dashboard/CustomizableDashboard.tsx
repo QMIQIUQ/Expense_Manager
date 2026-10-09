@@ -9,6 +9,7 @@ import { dashboardLayoutService } from '../../services/dashboardLayoutService';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import { WidgetContainer, WidgetProps } from './widgets';
 import DashboardCustomizer from './DashboardCustomizer';
+import DisplayCurrencyControl from '../common/DisplayCurrencyControl';
 
 interface CustomizableDashboardProps {
   expenses: Expense[];
@@ -21,6 +22,7 @@ interface CustomizableDashboardProps {
   banks: Bank[];
   billingCycleDay: number;
   displayCurrency?: CurrencyCode;
+  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
@@ -54,6 +56,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   banks,
   billingCycleDay,
   displayCurrency,
+  onDisplayCurrencyChange,
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
@@ -186,6 +189,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
           <span>⚙️</span>
           <span>{t('customize')}</span>
         </button>
+        {displayCurrency && onDisplayCurrencyChange && (
+          <DisplayCurrencyControl value={displayCurrency} onChange={onDisplayCurrencyChange} />
+        )}
       </div>
 
       {/* Widgets Grid */}

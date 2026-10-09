@@ -4001,6 +4001,15 @@ button:not(:disabled):hover {
 }
 
 /* Customize button for dashboard header */
+.dashboard-customize-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .btn-customize {
   display: flex;
   align-items: center;

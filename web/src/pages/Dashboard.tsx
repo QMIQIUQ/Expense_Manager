@@ -31,7 +31,6 @@ import ExpensesTab from './tabs/ExpensesTab';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
 import RadialDateMenu from '../components/common/RadialDateMenu';
-import CurrencySelector from '../components/common/CurrencySelector';
 import CompactNavigation from '../components/navigation/CompactNavigation';
 import FloatingExpenseActions from '../components/navigation/FloatingExpenseActions';
 import DashboardMenuSection from '../components/navigation/DashboardMenuSection';
@@ -2575,37 +2574,6 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-card content-pad">
         {activeTab === 'dashboard' && (
-          <div style={{
-            marginBottom: '12px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}>
-            <div style={{
-              width: 'min(320px, 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}>
-              <span style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                whiteSpace: 'nowrap',
-              }}>
-                {t('displayCurrency')}
-              </span>
-              <CurrencySelector
-                value={displayCurrency}
-                onChange={setDisplayCurrency}
-                compact={true}
-                showLabel={false}
-                ariaLabel={t('displayCurrency')}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'dashboard' && (
           <CustomizableDashboard
             expenses={expenses}
             incomes={incomes}
@@ -2617,6 +2585,7 @@ const Dashboard: React.FC = () => {
             banks={banks}
             billingCycleDay={billingCycleDay}
             displayCurrency={displayCurrency}
+            onDisplayCurrencyChange={setDisplayCurrency}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => openExpenseEntry()}
             onQuickExpenseAdd={handleQuickExpenseAdd}

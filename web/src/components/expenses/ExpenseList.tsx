@@ -20,6 +20,7 @@ import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
+import DisplayCurrencyControl from '../common/DisplayCurrencyControl';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
@@ -860,18 +861,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         />
 
         {onDisplayCurrencyChange && displayCurrency && (
-          <div style={styles.displayCurrencyControl}>
-            <span style={styles.displayCurrencyLabel}>{t('displayCurrency')}</span>
-            <CurrencySelector
-              value={displayCurrency}
-              onChange={onDisplayCurrencyChange}
-              compact={true}
-              showLabel={false}
-              align="right"
-              ariaLabel={t('displayCurrency')}
-              className="expense-display-currency-selector"
-            />
-          </div>
+          <DisplayCurrencyControl value={displayCurrency} onChange={onDisplayCurrencyChange} />
         )}
       </div>
 
@@ -1743,19 +1733,6 @@ const styles = {
     justifyContent: 'space-between',
     gap: '12px',
     flexWrap: 'wrap' as const,
-  },
-  displayCurrencyControl: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginLeft: 'auto',
-    flexWrap: 'nowrap' as const,
-  },
-  displayCurrencyLabel: {
-    fontSize: '13px',
-    fontWeight: 600 as const,
-    color: 'var(--text-secondary)',
-    whiteSpace: 'nowrap' as const,
   },
   filterInput: {
     flex: 1,
