@@ -34,6 +34,7 @@ import RadialDateMenu from '../components/common/RadialDateMenu';
 import CurrencySelector from '../components/common/CurrencySelector';
 import CompactNavigation from '../components/navigation/CompactNavigation';
 import FloatingExpenseActions from '../components/navigation/FloatingExpenseActions';
+import DashboardMenuSection from '../components/navigation/DashboardMenuSection';
 import { getNavigationFeatures } from '../components/navigation/navigationConfig';
 
 // Lazy load heavy components
@@ -2178,25 +2179,13 @@ const Dashboard: React.FC = () => {
                 </div>
 
                   {/* Language Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenLanguageSection(o => !o)}
-                    aria-expanded={openLanguageSection}
-                    aria-controls="hamburger-language-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span> 🌐 Language / 語言</span>
-                    <svg
-                      className={`transition-transform ${openLanguageSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openLanguageSection && (
-                    <div id="hamburger-language-section" className="mt-2 space-y-1">
+                <DashboardMenuSection
+                  id="hamburger-language-section"
+                  title="🌐 Language / 語言"
+                  expanded={openLanguageSection}
+                  onToggle={() => setOpenLanguageSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           setLanguage('en');
@@ -2236,34 +2225,20 @@ const Dashboard: React.FC = () => {
                       >
                         简体中文
                       </button>
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Appearance Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenAppearanceSection(o => !o)}
-                    aria-expanded={openAppearanceSection}
-                    aria-controls="hamburger-appearance-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span> 🎨 {t('appearance')}</span>
-                    <svg
-                      className={`transition-transform ${openAppearanceSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openAppearanceSection && (
-                    <div id="hamburger-appearance-section" className="mt-2 space-y-3">
+                <DashboardMenuSection
+                  id="hamburger-appearance-section"
+                  title={`🎨 ${t('appearance')}`}
+                  expanded={openAppearanceSection}
+                  onToggle={() => setOpenAppearanceSection(open => !open)}
+                  contentClassName="space-y-3"
+                >
                       <ThemeToggle />
                       {/* Font Family */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontFamily')}</div>
+                        <div className="text-xs text-gray-500 mb-1 px-4">{t('fontFamily')}</div>
                         <div className="space-y-1">
                           <button
                             onClick={() => setFontFamily('system')}
@@ -2294,8 +2269,8 @@ const Dashboard: React.FC = () => {
 
                       {/* Font Size */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-1 px-1">{t('fontSize')}</div>
-                        <div className="grid grid-cols-3 gap-2 px-1">
+                        <div className="text-xs text-gray-500 mb-1 px-4">{t('fontSize')}</div>
+                        <div className="grid grid-cols-3 gap-2 px-4">
                           <button
                             onClick={() => setFontScale('small')}
                             className={`py-2 text-sm rounded border transition-colors flex items-center justify-center ${
@@ -2331,30 +2306,16 @@ const Dashboard: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Features Section - Collapsible */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenFeaturesSection(open => !open)}
-                    aria-expanded={openFeaturesSection}
-                    aria-controls="hamburger-features-section"
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <span>{t('features') || 'Features'}</span>
-                    <svg
-                      className={`transition-transform ${openFeaturesSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openFeaturesSection && (
-                    <div id="hamburger-features-section" className="mt-2 space-y-1">
+                <DashboardMenuSection
+                  id="hamburger-features-section"
+                  title={t('features') || 'Features'}
+                  expanded={openFeaturesSection}
+                  onToggle={() => setOpenFeaturesSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           setActiveTab('settings');
@@ -2408,30 +2369,16 @@ const Dashboard: React.FC = () => {
                             </button>
                           );
                         })}
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Import/Export Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <button
-                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
-                    onClick={() => setOpenImportExportSection(o => !o)}
-                    aria-expanded={openImportExportSection}
-                    style={{ whiteSpace: 'nowrap' }}
-                    aria-controls="hamburger-importexport-section"
-                  >
-                    <span>Import / Export</span>
-                    <svg
-                      className={`transition-transform ${openImportExportSection ? 'rotate-90' : ''}`}
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {openImportExportSection && (
-                    <div id="hamburger-importexport-section" className="mt-2 space-y-1">
+                <DashboardMenuSection
+                  id="hamburger-importexport-section"
+                  title="Import / Export"
+                  expanded={openImportExportSection}
+                  onToggle={() => setOpenImportExportSection(open => !open)}
+                  contentClassName="space-y-1"
+                >
                       <button
                         onClick={() => {
                           handleDownloadTemplate();
@@ -2468,9 +2415,7 @@ const Dashboard: React.FC = () => {
 
                         {t('import') || 'Import Data'}
                       </button>
-                    </div>
-                  )}
-                </div>
+                </DashboardMenuSection>
 
                 {/* Offline Queue Status Section */}
                 {queueCount > 0 && (
@@ -2555,8 +2500,7 @@ const Dashboard: React.FC = () => {
                 )}
 
                 {/* Profile & Admin Section */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="space-y-1">
+                <div className="dashboard-menu-section-content dashboard-menu-account-section border-b border-gray-200 space-y-1">
                     <button
                       onClick={() => {
                         setActiveTab('profile');
@@ -2585,11 +2529,10 @@ const Dashboard: React.FC = () => {
                         {t('admin') || 'Admin'}
                       </button>
                     )}
-                  </div>
                 </div>
 
                 {/* Logout */}
-                <div className="px-4 py-2">
+                <div className="dashboard-menu-section-content dashboard-menu-logout-section">
                   <button
                     onClick={() => {
                       handleLogout();

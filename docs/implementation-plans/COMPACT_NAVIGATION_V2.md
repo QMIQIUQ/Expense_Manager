@@ -1,53 +1,103 @@
-# Compact Navigation V2
+# Compact Navigation and Hamburger Menu
 
 ## Goal
 
-Keep the compact header while making every enabled destination available in one horizontally scrollable navigation row. Preserve the original bottom-left quick-add expense and receipt-scan actions, including direct add, long-press date shortcuts, and the page-specific entry behavior.
+Keep the compact header with a horizontally scrollable tab row. Keep the two existing bottom-left floating expense actions unchanged: quick add remains a one-tap expense entry with its long-press date shortcuts, and receipt scanning stays separate.
 
-## Layout
+## Navigation layout
 
-- **Desktop:** one compact header row targeted at 56 px. Brand, one horizontally scrollable navigation row, notifications, and the existing utility/account menu share the header.
-- **Mobile:** a 52 px brand/action row followed by a 44 px horizontally scrollable navigation row. The active item scrolls into view when selected. There is no bottom navigation bar and no navigation `More` dropdown.
-- **Order:** the navigation row follows the saved order exactly. Existing `tabFeatures` retain their order first; unique `hamburgerFeatures` follow in their saved order. No fixed desktop/mobile priority or item-count cap is applied.
-- **Active destination:** a subtle underline marks the current destination. Every navigation button remains directly available in the scrollable row.
-- **Utility menu:** the hamburger/account utility menu remains separate for language, appearance, a collapsible Features section, import/export, account, and admin actions. It is not the removed navigation `More` dropdown. The Features section retains the main-branch `Feature Settings` entry; saved legacy hamburger destinations remain available there when explicitly configured.
-- **Status:** synchronization and progress status remains absent while idle.
-- **Quick actions:** retain two separate bottom-left floating controls. On mobile both are 56×56 px circles, 16 px from the left and 16 px plus the safe-area inset from the bottom, with a 12 px gap. On desktop both remain separate 56 px-high actions, 24 px from the left and bottom. The add button opens the existing form on click and keeps its long-press date shortcuts; the receipt action keeps its current flow.
-- **Occlusion:** hide floating actions while utility menus, modals, customization, or the long-press radial date menu is open. The navigation row has no dropdown state that can cover page content.
+- **Desktop:** brand, the configured Tabs row, notifications, and the utility menu share one compact header line.
+- **Mobile:** brand/actions use the first header row; Tabs use a separate 44 px horizontally scrollable row. The active tab scrolls into view.
+- **Tabs and Hamburger Menu are separate destinations.** The header reads `tabFeatures` only. The hamburger Features section reads `hamburgerFeatures` only. Each keeps its own order and can contain the same destination, matching `main`.
+- There is no navigation `More` dropdown. The hamburger remains the utility/account menu for language, appearance, feature destinations, import/export, account, and admin actions.
+- Notifications, status/progress, responsive behavior, and active-tab underline keep their existing behavior.
+- The floating add-expense and scan-receipt controls keep their original separate desktop/mobile presentation and interaction behavior.
+- The floating action group itself stays transparent; dark-theme floating-button enhancement applies to the buttons, not their layout wrapper.
 
-## Feature settings and compatibility
+## Hamburger menu structure and click target
 
-Feature Manager now presents one ordered list for all navigation destinations. Dragging, touch reordering, numeric position changes, enabling/disabling features, saving, and reset all operate on this unified list. The hamburger's collapsible Features section is restored from the main design and always offers Feature Settings; the Settings destination remains protected from being disabled.
+The current implementation keeps one real button per row. The section wrapper is not clickable and never contains a nested button; expanded actions are sibling descendants. This prevents a parent click from firing a child action twice.
 
-On load, the shared normalization helper merges legacy settings without writing to Firestore:
+```text
+div.dashboard-header-modern
+└── div.header-actions
+    ├── NotificationBell
+    └── div (hamburgerRef; position: relative)
+        ├── button.header-menu-btn (opens/closes the menu)
+        └── div.dashboard-menu-panel
+            ├── div (NetworkStatusIndicator; informational)
+            ├── div.dashboard-menu-section (DashboardMenuSection: Language)
+            │   ├── button.dashboard-menu-section-trigger (full-width toggle)
+            │   └── div.dashboard-menu-section-content [always present; hidden when collapsed]
+            │       └── button.menu-item-hover (one per language)
+            ├── div.dashboard-menu-section (DashboardMenuSection: Appearance)
+            │   ├── button.dashboard-menu-section-trigger (full-width toggle)
+            │   └── div.dashboard-menu-section-content [always present; hidden when collapsed]
+            │       ├── ThemeToggle
+            │       ├── button.menu-item-hover (one per font family)
+            │       └── button (one per font size)
+            ├── div.dashboard-menu-section (DashboardMenuSection: Features)
+            │   ├── button.dashboard-menu-section-trigger (full-width toggle)
+            │   └── div.dashboard-menu-section-content [always present; hidden when collapsed]
+            │       ├── button.menu-item-hover (Feature Settings)
+            │       └── button.menu-item-hover (each hamburgerFeatures destination)
+            ├── div.dashboard-menu-section (DashboardMenuSection: Import / Export)
+            │   ├── button.dashboard-menu-section-trigger (full-width toggle)
+            │   └── div.dashboard-menu-section-content [always present; hidden when collapsed]
+            │       └── button.menu-item-hover (template, export, import)
+            ├── div (Offline Queue; conditional)
+            │   ├── button (retry upload)
+            │   └── button (clear queue)
+            ├── div.dashboard-menu-section-content.dashboard-menu-account-section (Profile / Admin)
+            │   └── button.menu-item-hover (one per permitted destination; full-width)
+            └── div.dashboard-menu-section-content.dashboard-menu-logout-section
+                └── button.menu-item-hover (Logout; full-width)
+```
 
-1. When both `tabFeatures` and `hamburgerFeatures` exist, preserve the tab order and append only not-yet-listed hamburger items. Do not revive stale entries from `enabledFeatures` in this case.
-2. When only one location list exists, retain its order and append enabled legacy items missing from that list.
-3. When neither location list exists, use the order in `enabledFeatures`, or defaults when no saved preferences exist.
-4. Normalize legacy `cards` and `ewallets` to `paymentMethods`, remove duplicates and utility-only `profile`/`admin` entries, and keep Settings reachable. In the hamburger menu, an explicitly empty `hamburgerFeatures` array stays empty instead of falling back to the full tab list and duplicating every navigation destination.
-5. Save the unified order to both `enabledFeatures` and `tabFeatures`; write an empty `hamburgerFeatures` array for older clients. A reset uses the same format. Existing data is not rewritten simply by opening the page.
+Before the fix, the accordion button used `w-full` inside a wrapper with `px-4 py-2`; child action buttons had the same problem, and Features briefly used a different wrapper geometry while sharing the negative-margin rule. The horizontal padding lived on non-clickable parents, so row edges missed both the button hit area and hover fill. The four accordions now share `DashboardMenuSection`: their section wrappers have no padding, and the native trigger owns `width: 100%`, `box-sizing: border-box`, `min-height: 44px`, and 16 px inline padding. Expanded action rows use the same unpadded content width and own their padding on `.menu-item-hover`. Profile/Admin and Logout also use full-width action buttons. Theme and font-size choices remain separate controls. Enter/Space and focus-visible behavior come from the native button; `aria-expanded` and `aria-controls` describe each accordion. No nested buttons or parent click handlers are used.
+
+## `main` comparison and restoration
+
+| Capability | `origin/main` behavior | Regression in compact branch | Restored behavior |
+|---|---|---|---|
+| Placement | Separate Tabs and Hamburger Menu selectors | One combined list; placement selector removed | Selector restored; header and hamburger read their own list |
+| Enable / disable | Independent available/enabled list per location; cannot disable the final item in a location | Only one shared list; Settings had an additional disable lock not present in `main` | Each location is edited independently and retains `main`'s minimum-one-item rule |
+| Ordering | Desktop drag, touch drag, and numeric position input per location | Ordering applied to the merged list | All three ordering methods apply only to the selected location |
+| Save | Saves tab order, legacy `enabledFeatures` as the tab list, and hamburger order | Wrote the merged order and an empty hamburger list | Restores the three-field save contract |
+| Reset | Resets both location lists to `DEFAULT_FEATURES` | Reset wrote a unified list and empty hamburger list | Both location lists reset to defaults |
+| Legacy records | Uses `enabledFeatures` when location-specific lists are absent; migrates cards/ewallets to payment methods; excludes profile/admin | Merging could revive disabled items and collapse placement | Each missing list falls back independently; aliases remain normalized and deduplicated |
+| Hamburger Features | Always includes Feature Settings; destination buttons follow hamburger order | Feature destinations and placement management were not independent | Feature Settings entry remains; configured hamburger destinations are listed beneath it |
+
+The comparison uses `origin/main` at `3e30faf` and current base `firebase-testing` at `235cc11`. No permissions or admin checks were changed as part of this restoration.
+
+## Settings compatibility
+
+- Prefer `tabFeatures` for the header and `hamburgerFeatures` for the menu independently.
+- If one location list is absent, use `enabledFeatures` for that list, as the `main` implementation does. An explicit empty array stays empty.
+- Normalize `cards` and `ewallets` to `paymentMethods`, remove duplicates, and filter utility-only `profile`/`admin` entries.
+- Opening settings does not write Firestore. Saving stores `enabledFeatures = tabFeatures` for older clients and saves both location arrays. Reset stores defaults in all three fields.
 
 ## Components
 
-- `Dashboard.tsx`: passes one ordered feature list to the compact header and leaves notification and utility controls in place.
-- `CompactNavigation.tsx`: renders all destinations in one horizontal scroll container, preserves focus/active states, and scrolls the active destination into view.
-- `navigationConfig.ts`: normalizes both current and legacy preference records into the same ordered list used by the header and Feature Manager.
-- `FeatureManager.tsx`: manages one feature list while continuing to save the legacy fields in a compatible form.
-- `featureSettingsService.ts`: preserves Firestore field compatibility and resets to the unified format.
-- `FloatingExpenseActions.tsx`: shares presentation for the two preserved floating actions.
-- `index.css`: establishes compact desktop/mobile header dimensions, horizontal scrolling, active underline, FAB placement, and widget spacing.
-- `docs/mockups/navigation-preview.html` and SVG mockups: illustrate that all destinations use the same scrollable row and the utility menu remains separate.
+- `web/src/pages/Dashboard.tsx`: renders the scrollable Tabs row, hamburger sections, expanded feature destinations, and existing floating expense actions.
+- `web/src/components/navigation/CompactNavigation.tsx`: renders and scrolls the header's Tabs list.
+- `web/src/components/navigation/FloatingExpenseActions.tsx`: keeps add expense and scan receipt as separate fixed actions; the parent only positions the buttons.
+- `web/src/components/navigation/DashboardMenuSection.tsx`: owns the shared accordion trigger, ARIA state, and content wrapper for all four hamburger sections.
+- `web/src/components/settings/FeatureManager.tsx`: restores independent location selection, availability, ordering, save, and reset behavior from `main`.
+- `web/src/services/featureSettingsService.ts`: persists both location lists and resets both to defaults.
+- `web/src/index.css`: defines full-row hamburger section triggers and compact navigation/FAB layout.
+- `web/src/locales/translations.ts`: provides the Tabs and Hamburger Menu selector labels in English, Traditional Chinese, and Simplified Chinese.
 
-## Validation plan
+## Validation
 
-- Test saved order, both legacy lists, partial migrations, duplicate/legacy aliases, no stale feature resurrection, and Settings reachability.
-- Test that no `More` navigation button renders, every destination is in the navigation row, click navigation and active states work, and the row remains horizontally scrollable.
-- Test Feature Manager's unified ordering and existing mouse/touch/numeric sorting and reset behavior.
-- Run `npm run test:run`, `npm run lint`, `npm run build`, `FIREBASE_DEPLOY=true npm run build`, and `git diff --check`.
-- Review desktop and mobile layouts at 1280, 768, 390, 375, and 320 px; confirm no page-level horizontal overflow and that notification and utility controls remain visible.
-- Confirm the add FAB remains a direct add action, long-press still opens date shortcuts, receipt scanning remains separate, and its restored primary/secondary styling is unchanged.
-- Check light/dark and Warm Kitty themes; Traditional Chinese, Simplified Chinese, and English; modal/menu/customizer occlusion; and safe-area/content spacing.
+- Tests cover independent location lists, touch and numeric ordering, Settings toggle behavior, legacy aliases, empty lists, reset persistence, hamburger trigger/action row width, minimum target size, and accordion semantics. FAB regression coverage confirms the dark-theme wrapper has no background or shadow while each button action remains independent.
+- Verify hamburger accordion left/right/top/bottom row edges, arrows, and labels all activate the same row; verify keyboard, expanded state, and each expanded action.
+- Confirm header tabs and hamburger features follow their independent saved orders; verify the add and scan floating actions retain their existing behavior.
+- Run the project test suite, lint, standard build, Firebase build, and `git diff --check`.
+- Review desktop and mobile at 1280, 768, 390, 375, and 320 px; check light/dark and Warm Kitty themes and the three supported languages.
 
 ## Firebase test deployment
 
-Push this task to `firebase-testing`. The existing `firebase-hosting-deploy.yml` workflow listens to that branch and deploys to Firebase Hosting's `live` channel at `https://expense-manager-41afb.web.app/`. The `main` trigger remains for explicitly requested production releases. Because both branches publish to the same live channel, whichever workflow deploys last controls the public site; a push to `firebase-testing` replaces the current Hosting release. The app uses the existing Firebase project and production backend, so do not create, edit, or delete real expense records during testing. Do not push this task to `main`.
+The repository instructions identify `origin/firebase-testing` as the test branch, and this Firebase project uses the existing backend; do not create, edit, or delete real expense records while checking the UI. Do not push this task to `main`.
+
+The Hosting workflow keeps `main` on the live channel and sends `firebase-testing` to the isolated `compact-navigation-v2` preview channel for seven days. The deploy summary reports the URL returned by Firebase and the preview expiry. This avoids replacing the public Hosting release when testing UI changes.

@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FeatureTab, DEFAULT_FEATURES } from '../../types';
 import { useTouchReorder } from '../../hooks/useTouchReorder';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../locales/translations';
 import { DragIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
-import { mergeNavigationFeatureLists } from '../navigation/navigationConfig';
 
 interface FeatureManagerProps {
   enabledFeatures: FeatureTab[]; // Deprecated: for backward compatibility
@@ -90,11 +89,39 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   onReset,
 }) => {
   const { t } = useLanguage();
-  const savedFeatures = useMemo(
-    () => mergeNavigationFeatureLists(tabFeatures, hamburgerFeatures, enabledFeatures),
-    [tabFeatures, hamburgerFeatures, enabledFeatures],
+  // Migrate old feature names to new ones
+  const migrateFeatures = (features: FeatureTab[]): FeatureTab[] => {
+    return features
+      .map((feature) => {
+        // Convert old 'cards' and 'ewallets' to new 'paymentMethods'
+        const featureStr = feature as string;
+        if (featureStr === 'cards' || featureStr === 'ewallets') {
+          return 'paymentMethods' as FeatureTab;
+        }
+        return feature;
+      })
+      .filter((feature, index, array) => {
+        // Remove duplicates (e.g., both 'cards' and 'ewallets' -> 'paymentMethods')
+        return array.indexOf(feature) === index;
+      })
+      .filter((feature) => {
+        // Filter out any features that don't have metadata
+        return FEATURE_METADATA[feature] !== undefined;
+      })
+      .filter((feature) => {
+        // Filter out profile and admin - these have dedicated buttons and shouldn't be in feature lists
+        return feature !== 'profile' && feature !== 'admin';
+      });
+  };
+
+  // Initialize with separate tab and hamburger features, or fall back to enabledFeatures
+  const [localTabFeatures, setLocalTabFeatures] = useState<FeatureTab[]>(
+    migrateFeatures(tabFeatures || enabledFeatures)
   );
-  const [localEnabled, setLocalEnabled] = useState<FeatureTab[]>(savedFeatures);
+  const [localHamburgerFeatures, setLocalHamburgerFeatures] = useState<FeatureTab[]>(
+    migrateFeatures(hamburgerFeatures || enabledFeatures)
+  );
+  const [activeLocation, setActiveLocation] = useState<'tab' | 'hamburger'>('tab');
   const [draggedItem, setDraggedItem] = useState<FeatureTab | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -106,15 +133,24 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
 
   // Update local state when props change
   useEffect(() => {
-    setLocalEnabled(mergeNavigationFeatureLists(tabFeatures, hamburgerFeatures, enabledFeatures));
+    setLocalTabFeatures(migrateFeatures(tabFeatures || enabledFeatures));
+    setLocalHamburgerFeatures(migrateFeatures(hamburgerFeatures || enabledFeatures));
   }, [enabledFeatures, tabFeatures, hamburgerFeatures]);
 
   // Check if there are unsaved changes
   useEffect(() => {
-    const changed = localEnabled.length !== savedFeatures.length ||
-      localEnabled.some((feature, index) => feature !== savedFeatures[index]);
-    setHasChanges(changed);
-  }, [localEnabled, savedFeatures]);
+    const tabChanged =
+      localTabFeatures.length !== (tabFeatures || enabledFeatures).length ||
+      localTabFeatures.some((feature, index) => feature !== (tabFeatures || enabledFeatures)[index]);
+    const hamburgerChanged =
+      localHamburgerFeatures.length !== (hamburgerFeatures || enabledFeatures).length ||
+      localHamburgerFeatures.some((feature, index) => feature !== (hamburgerFeatures || enabledFeatures)[index]);
+    setHasChanges(tabChanged || hamburgerChanged);
+  }, [localTabFeatures, localHamburgerFeatures, enabledFeatures, tabFeatures, hamburgerFeatures]);
+
+  // Get current features based on active location
+  const localEnabled = activeLocation === 'tab' ? localTabFeatures : localHamburgerFeatures;
+  const setLocalEnabled = activeLocation === 'tab' ? setLocalTabFeatures : setLocalHamburgerFeatures;
   const touchReorder = useTouchReorder({
     listRef: featureListRef,
     disabled: isSaving,
@@ -135,7 +171,6 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const disabledFeatures = ALL_FEATURES.filter((feature) => !localEnabled.includes(feature));
 
   const handleToggleFeature = (feature: FeatureTab) => {
-    if (feature === 'settings') return;
     if (localEnabled.includes(feature)) {
       // Disable feature (must have at least one enabled)
       if (localEnabled.length > 1) {
@@ -181,7 +216,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onUpdate(localEnabled, localEnabled, []);
+      await onUpdate(localTabFeatures, localTabFeatures, localHamburgerFeatures);
     } finally {
       setIsSaving(false);
     }
@@ -191,7 +226,8 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
     setIsSaving(true);
     try {
       await onReset();
-      setLocalEnabled([...DEFAULT_FEATURES]);
+      setLocalTabFeatures([...DEFAULT_FEATURES]);
+      setLocalHamburgerFeatures([...DEFAULT_FEATURES]);
       setShowResetConfirm(false);
     } finally {
       setIsSaving(false);
@@ -233,6 +269,30 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
           ⚠️ {t('unsavedChanges')}
         </div>
       )}
+
+      {/* Location selector tabs */}
+      <div style={styles.tabsContainer}>
+        <div style={styles.tabsList}>
+          <button
+            onClick={() => setActiveLocation('tab')}
+            style={{
+              ...styles.tabButton,
+              ...(activeLocation === 'tab' ? styles.tabButtonActive : styles.tabButtonInactive)
+            }}
+          >
+            📑 {t('tabsLocation') || 'Tabs'}
+          </button>
+          <button
+            onClick={() => setActiveLocation('hamburger')}
+            style={{
+              ...styles.tabButton,
+              ...(activeLocation === 'hamburger' ? styles.tabButtonActive : styles.tabButtonInactive)
+            }}
+          >
+            ☰ {t('hamburgerLocation') || 'Hamburger Menu'}
+          </button>
+        </div>
+      </div>
 
       <div style={styles.grid}>
         {/* Enabled Features */}
@@ -307,11 +367,11 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                     onClick={() => handleToggleFeature(feature)}
                     style={{
                       ...styles.removeButton,
-                      ...((localEnabled.length === 1 || feature === 'settings') ? styles.actionButtonDisabled : {})
+                      ...(localEnabled.length === 1 ? styles.actionButtonDisabled : {})
                     }}
                     aria-label="Disable feature"
                     title={t('disableFeature') || 'Disable feature'}
-                    disabled={localEnabled.length === 1 || feature === 'settings'}
+                    disabled={localEnabled.length === 1}
                   >
                     ✕
                   </button>
@@ -458,6 +518,32 @@ const styles = {
     borderRadius: '8px',
     fontSize: '14px',
     color: 'var(--warning-text)',
+  },
+  tabsContainer: {
+    borderBottom: '1px solid var(--border-color)',
+  },
+  tabsList: {
+    display: 'flex',
+    gap: '16px',
+  },
+  tabButton: {
+    padding: '12px 16px',
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    borderBottom: '2px solid transparent',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottomWidth: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  tabButtonActive: {
+    borderBottomColor: 'var(--accent-primary)',
+    color: 'var(--accent-primary)',
+  },
+  tabButtonInactive: {
+    borderBottomColor: 'transparent',
+    color: 'var(--text-secondary)',
   },
   grid: {
     display: 'grid',

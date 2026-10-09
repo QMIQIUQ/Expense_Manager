@@ -8,11 +8,11 @@ afterEach(() => {
   Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: originalElementFromPoint });
 });
 
-describe('FeatureManager touch ordering', () => {
-  it('saves the order chosen with a touch drag', async () => {
+describe('FeatureManager locations and ordering', () => {
+  it('saves the order chosen with a touch drag without changing the other location', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'expenses']}
-      tabFeatures={['dashboard', 'expenses']} hamburgerFeatures={['dashboard', 'expenses']}
+      tabFeatures={['dashboard', 'expenses']} hamburgerFeatures={['categories', 'budgets']}
       onUpdate={onUpdate} onReset={vi.fn()} />);
     const handle = container.querySelector('[data-touch-reorder-item="dashboard"] .touch-drag-handle') as HTMLElement;
     const target = container.querySelector('[data-touch-reorder-item="expenses"]') as HTMLElement;
@@ -24,69 +24,55 @@ describe('FeatureManager touch ordering', () => {
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(
-      ['expenses', 'dashboard', 'settings'], ['expenses', 'dashboard', 'settings'], []
+      ['expenses', 'dashboard'], ['expenses', 'dashboard'], ['categories', 'budgets'],
     ));
   });
 
-  it('uses the combined legacy tab and More order as one editable list', async () => {
-    const onUpdate = vi.fn().mockResolvedValue(undefined);
-    const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'expenses', 'categories', 'settings']}
-      tabFeatures={['expenses', 'dashboard']} hamburgerFeatures={['categories', 'expenses']}
-      onUpdate={onUpdate} onReset={vi.fn()} />);
+  it('switches between the independent Tabs and Hamburger Menu lists', () => {
+    const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'expenses', 'categories']}
+      tabFeatures={['expenses', 'dashboard']} hamburgerFeatures={['categories']}
+      onUpdate={vi.fn()} onReset={vi.fn()} />);
 
-    expect(screen.queryByRole('button', { name: /More menu/i })).not.toBeInTheDocument();
     expect(Array.from(container.querySelectorAll('[data-touch-reorder-item]'))
       .map((element) => element.getAttribute('data-touch-reorder-item')))
-      .toEqual(['expenses', 'dashboard', 'categories', 'settings']);
+      .toEqual(['expenses', 'dashboard']);
+
+    fireEvent.click(screen.getByRole('button', { name: /hamburger menu/i }));
+
+    expect(Array.from(container.querySelectorAll('[data-touch-reorder-item]'))
+      .map((element) => element.getAttribute('data-touch-reorder-item')))
+      .toEqual(['categories']);
   });
 
-  it('applies numeric position changes to the unified saved order', async () => {
+  it('applies numeric ordering to the selected location and preserves the other list', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
-    const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'expenses', 'categories', 'settings']}
-      tabFeatures={['dashboard', 'expenses', 'categories', 'settings']} hamburgerFeatures={[]}
+    const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'expenses']}
+      tabFeatures={['dashboard', 'expenses']} hamburgerFeatures={['categories', 'budgets']}
       onUpdate={onUpdate} onReset={vi.fn()} />);
 
-    fireEvent.change(container.querySelector('input[type="number"]') as HTMLInputElement, { target: { value: '3' } });
+    fireEvent.change(container.querySelector('input[type="number"]') as HTMLInputElement, { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(
-      ['expenses', 'categories', 'dashboard', 'settings'],
-      ['expenses', 'categories', 'dashboard', 'settings'],
-      [],
+      ['expenses', 'dashboard'], ['expenses', 'dashboard'], ['categories', 'budgets'],
     ));
   });
 
-  it('keeps a disabled legacy item disabled after save and reload', async () => {
+  it('allows Settings to be disabled as in main while keeping remaining features', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
-    const props = {
-      enabledFeatures: ['dashboard', 'expenses', 'categories', 'settings'] as ('dashboard' | 'expenses' | 'categories' | 'settings')[],
-      tabFeatures: ['dashboard', 'expenses', 'categories', 'settings'] as ('dashboard' | 'expenses' | 'categories' | 'settings')[],
-      hamburgerFeatures: [] as never[],
-      onUpdate,
-      onReset: vi.fn(),
-    };
-    const view = render(<FeatureManager {...props} />);
+    const { container } = render(<FeatureManager enabledFeatures={['dashboard', 'settings']}
+      tabFeatures={['dashboard', 'settings']} hamburgerFeatures={['expenses']}
+      onUpdate={onUpdate} onReset={vi.fn()} />);
 
-    fireEvent.click(view.container.querySelector('[data-touch-reorder-item="categories"] button[aria-label="Disable feature"]') as HTMLElement);
+    fireEvent.click(container.querySelector('[data-touch-reorder-item="settings"] button[aria-label="Disable feature"]') as HTMLElement);
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
-    await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(
-      ['dashboard', 'expenses', 'settings'],
-      ['dashboard', 'expenses', 'settings'],
-      [],
-    ));
 
-    view.rerender(<FeatureManager
-      {...props}
-      enabledFeatures={['dashboard', 'expenses', 'categories', 'settings']}
-      tabFeatures={['dashboard', 'expenses', 'settings']}
-      hamburgerFeatures={[]}
-    />);
-    expect(Array.from(view.container.querySelectorAll('[data-touch-reorder-item]'))
-      .map((element) => element.getAttribute('data-touch-reorder-item')))
-      .toEqual(['dashboard', 'expenses', 'settings']);
+    await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(
+      ['dashboard'], ['dashboard'], ['expenses'],
+    ));
   });
 
-  it('resets and saves with the unified feature list format', async () => {
+  it('resets both locations to main defaults and saves both lists', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const onReset = vi.fn().mockResolvedValue(undefined);
     render(<FeatureManager enabledFeatures={['dashboard', 'expenses']}
@@ -96,10 +82,12 @@ describe('FeatureManager touch ordering', () => {
     fireEvent.click(screen.getByRole('button', { name: /reset to defaults/i }));
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     await waitFor(() => expect(onReset).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
+    const saveButton = screen.getByRole('button', { name: /save settings/i });
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    fireEvent.click(saveButton);
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(
-      DEFAULT_FEATURES, DEFAULT_FEATURES, [],
+      DEFAULT_FEATURES, DEFAULT_FEATURES, DEFAULT_FEATURES,
     ));
   });
 });

@@ -3,12 +3,12 @@ import { DEFAULT_FEATURES } from '../types';
 import { featureSettingsService } from './featureSettingsService';
 
 describe('featureSettingsService', () => {
-  it('resets legacy-compatible fields to the unified navigation format', async () => {
+  it('resets both location lists and the legacy field to main defaults', async () => {
     const update = vi.spyOn(featureSettingsService, 'update').mockResolvedValue(undefined);
 
     await featureSettingsService.resetToDefaults('test-user');
 
-    expect(update).toHaveBeenCalledWith('test-user', DEFAULT_FEATURES, DEFAULT_FEATURES, []);
+    expect(update).toHaveBeenCalledWith('test-user', DEFAULT_FEATURES, DEFAULT_FEATURES, DEFAULT_FEATURES);
     update.mockRestore();
   });
 });

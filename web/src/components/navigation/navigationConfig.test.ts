@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FeatureSettings } from '../../types';
-import { getNavigationFeatures, mergeNavigationFeatureLists } from './navigationConfig';
+import { getNavigationFeatures } from './navigationConfig';
 
 describe('getNavigationFeatures', () => {
-  it('uses the configured tab order and appends legacy More items in their saved order', () => {
+  it('uses only the configured Tabs order and keeps Hamburger Menu items separate', () => {
     const settings: FeatureSettings = {
       userId: 'test-user',
       enabledFeatures: ['dashboard', 'expenses', 'incomes', 'budgets', 'categories', 'recurring', 'settings'],
@@ -13,24 +13,20 @@ describe('getNavigationFeatures', () => {
       updatedAt: new Date(0),
     };
 
-    expect(getNavigationFeatures(settings).orderedFeatures).toEqual([
-      'budgets', 'expenses', 'dashboard', 'incomes', 'categories', 'recurring', 'settings',
-    ]);
+    expect(getNavigationFeatures(settings).orderedFeatures).toEqual(['budgets', 'expenses', 'dashboard']);
   });
 
-  it('keeps every explicitly enabled item once and does not resurrect stale legacy items', () => {
+  it('preserves an explicitly empty Tabs list instead of reviving legacy or Hamburger items', () => {
     const settings: FeatureSettings = {
       userId: 'test-user',
-      enabledFeatures: ['dashboard', 'expenses', 'incomes', 'categories', 'settings'],
-      tabFeatures: ['expenses', 'dashboard', 'expenses'],
-      hamburgerFeatures: ['categories', 'categories'],
+      enabledFeatures: ['dashboard', 'expenses', 'settings'],
+      tabFeatures: [],
+      hamburgerFeatures: ['expenses'],
       createdAt: new Date(0),
       updatedAt: new Date(0),
     };
 
-    expect(getNavigationFeatures(settings).orderedFeatures).toEqual([
-      'expenses', 'dashboard', 'categories', 'settings',
-    ]);
+    expect(getNavigationFeatures(settings).orderedFeatures).toEqual([]);
   });
 
   it('uses legacy enabledFeatures when location-specific settings are absent', () => {
@@ -41,32 +37,34 @@ describe('getNavigationFeatures', () => {
       updatedAt: new Date(0),
     };
 
+    expect(getNavigationFeatures(settings).orderedFeatures).toEqual(['recurring', 'expenses', 'dashboard']);
+  });
+
+  it('normalizes legacy payment names and removes duplicates without changing order', () => {
+    const settings: FeatureSettings = {
+      userId: 'test-user',
+      enabledFeatures: [],
+      tabFeatures: ['cards' as never, 'expenses', 'ewallets' as never, 'recurring', 'expenses'],
+      hamburgerFeatures: [],
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
+
     expect(getNavigationFeatures(settings).orderedFeatures).toEqual([
-      'recurring', 'expenses', 'dashboard', 'settings',
+      'paymentMethods', 'expenses', 'recurring',
     ]);
   });
 
-  it('supplements a partially migrated list with missing enabled features', () => {
-    expect(mergeNavigationFeatureLists(
-      ['expenses', 'dashboard'],
-      undefined,
-      ['dashboard', 'expenses', 'incomes', 'settings'],
-    )).toEqual(['expenses', 'dashboard', 'incomes', 'settings']);
-  });
+  it('filters utility-only profile and admin destinations', () => {
+    const settings: FeatureSettings = {
+      userId: 'test-user',
+      enabledFeatures: [],
+      tabFeatures: ['dashboard', 'profile' as never, 'admin' as never],
+      hamburgerFeatures: [],
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
 
-  it('maps old card and wallet items once at their first saved position', () => {
-    expect(mergeNavigationFeatureLists(
-      ['cards' as never, 'expenses', 'ewallets' as never, 'recurring'],
-      [],
-      [],
-    )).toEqual(['paymentMethods', 'expenses', 'recurring', 'settings']);
-  });
-
-  it('always retains the Settings destination while filtering utility-only entries', () => {
-    expect(mergeNavigationFeatureLists(
-      ['dashboard', 'profile' as never, 'admin' as never],
-      [],
-      [],
-    )).toEqual(['dashboard', 'settings']);
+    expect(getNavigationFeatures(settings).orderedFeatures).toEqual(['dashboard']);
   });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import '../../index.css';
 import FloatingExpenseActions from './FloatingExpenseActions';
 
 describe('FloatingExpenseActions', () => {
@@ -33,6 +34,27 @@ describe('FloatingExpenseActions', () => {
 
     fireEvent.click(scanReceiptButton);
     expect(onScanReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the dark-theme floating action group transparent', () => {
+    render(
+      <div className="dark">
+        <FloatingExpenseActions
+          isMobile={false}
+          addExpenseLabel="Add expense"
+          scanReceiptLabel="Scan receipt"
+          onAddExpense={vi.fn()}
+          onScanReceipt={vi.fn()}
+          onLongPress={vi.fn()}
+        />
+      </div>,
+    );
+
+    const actionGroup = screen.getByRole('button', { name: 'Add expense' }).parentElement;
+    expect(actionGroup).toHaveClass('floating-expense-actions');
+    const actionGroupStyles = getComputedStyle(actionGroup as HTMLElement);
+    expect(actionGroupStyles.getPropertyValue('background-color')).toBe('transparent');
+    expect(actionGroupStyles.getPropertyValue('box-shadow')).toBe('none');
   });
 
   it('keeps the add expense long-press action separate from a normal click', () => {

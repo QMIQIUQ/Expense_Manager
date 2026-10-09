@@ -2249,13 +2249,13 @@ button:not(:disabled):hover {
 }
 
 /* Floating action button enhancement */
-.dark [class*="floating"],
+.dark [class*="floating"]:not(.floating-expense-actions),
 .dark [class*="fab"] {
   background: var(--tab-active-bg);
   box-shadow: var(--purple-glow-strong), 0 8px 16px var(--shadow-lg);
 }
 
-.dark [class*="floating"]:hover,
+.dark [class*="floating"]:not(.floating-expense-actions):hover,
 .dark [class*="fab"]:hover {
   box-shadow: var(--purple-glow-strong), 0 12px 24px var(--shadow-lg);
   transform: translateY(-2px);
@@ -6289,6 +6289,8 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: transparent;
+  box-shadow: none;
   pointer-events: none;
 }
 
@@ -6433,4 +6435,74 @@ button:not(:disabled):hover {
   .dashboard-widgets-grid .widget-container {
     padding: 12px;
   }
+}
+
+/* Hamburger menu rows own their complete hit area; section wrappers stay unpadded. */
+.dashboard-menu-panel .dashboard-menu-section-trigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-menu-panel .dashboard-menu-section-content {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 0 8px;
+}
+
+.dashboard-menu-panel .dashboard-menu-account-section,
+.dashboard-menu-panel .dashboard-menu-logout-section {
+  padding-top: 4px;
+}
+
+.dashboard-menu-panel .menu-item-hover {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 0;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.dashboard-menu-panel .menu-item-hover:hover:not(:disabled) {
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
+.dashboard-menu-panel .dashboard-menu-section-trigger:hover:not(:disabled) {
+  background: var(--button-hover) !important;
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
+.dark .dashboard-menu-panel .dashboard-menu-section-trigger:hover:not(:disabled) {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.12), rgba(167, 139, 250, 0.18)) !important;
+}
+
+.dashboard-menu-panel .dashboard-menu-section-trigger:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
 }

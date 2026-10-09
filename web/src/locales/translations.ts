@@ -77,6 +77,8 @@ export const translations = {
   disableFeature: { en: 'Disable feature', zh: '停用功能', 'zh-CN': '停用功能' },
   profile: { en: '⚙️ Settings', zh: '⚙️ 設定', 'zh-CN': '⚙️ 设定' },
   admin: { en: '👑 Admin', zh: '👑 管理員', 'zh-CN': '👑 管理员' },
+  tabsLocation: { en: 'Tabs', zh: '頁籤', 'zh-CN': '标签页' },
+  hamburgerLocation: { en: 'Hamburger Menu', zh: '選單', 'zh-CN': '菜单' },
   position: { en: 'Position', zh: '位置', 'zh-CN': '位置' },
   enterPosition: { en: 'Enter position (1-{max})', zh: '輸入位置 (1-{max})', 'zh-CN': '输入位置 (1-{max})' },
 

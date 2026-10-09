@@ -87,6 +87,6 @@ export const featureSettingsService = {
 
   // Reset to defaults
   async resetToDefaults(userId: string): Promise<void> {
-    await this.update(userId, [...DEFAULT_FEATURES], [...DEFAULT_FEATURES], []);
+    await this.update(userId, [...DEFAULT_FEATURES], [...DEFAULT_FEATURES], [...DEFAULT_FEATURES]);
   },
 };
