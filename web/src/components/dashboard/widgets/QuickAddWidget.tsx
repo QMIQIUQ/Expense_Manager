@@ -13,6 +13,8 @@ import { PaymentMethodType } from '../../../types';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../../utils/currencyUtils';
 import { sortCategories } from '../../../utils/categoryOrder';
 import { getCurrencyMinorDigits, roundMoney } from '../../../domain/money';
+import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
+import { getTodayLocal } from '../../../utils/dateUtils';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -91,6 +93,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
   quickExpensePresets = [],
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
+  displayCurrency,
   size = 'medium',
   // onQuickAdd is available in WidgetProps but not used in this component
 }) => {
@@ -475,7 +478,12 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                   {category?.name || t('uncategorized')}
                 </span>
                 <span className="quick-expense-card-amount">
-                  {formatMoney(preset.amount, preset.currency)}
+                  <DisplayCurrencyAmount
+                    amount={preset.amount}
+                    currency={preset.currency}
+                    targetCurrency={displayCurrency}
+                    date={getTodayLocal()}
+                  />
                 </span>
                 <span className="quick-expense-card-name">
                   {preset.name}

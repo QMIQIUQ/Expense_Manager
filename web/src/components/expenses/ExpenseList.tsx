@@ -21,6 +21,7 @@ import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import { sortCategories } from '../../utils/categoryOrder';
@@ -848,7 +849,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 >
                   {/* Compact layout: show name + amount inline. Category chip removed per user request */}
                   <span className="quick-expense-scroll-name">{preset.name}</span>
-                  <span className="quick-expense-scroll-amount">{formatMoney(preset.amount, preset.currency)}</span>
+                  <span className="quick-expense-scroll-amount">
+                    <DisplayCurrencyAmount
+                      amount={preset.amount}
+                      currency={preset.currency}
+                      targetCurrency={displayCurrency}
+                      date={getTodayLocal()}
+                    />
+                  </span>
                 </button>
               );
             })}
@@ -1699,7 +1707,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <span className="preset-name">{preset.name}</span>
                         <span className="preset-details">
                           <span className="preset-category">{category?.icon} {category?.name}</span>
-                          <span className="preset-amount">{formatMoney(preset.amount, preset.currency)}</span>
+                          <span className="preset-amount">
+                            <DisplayCurrencyAmount
+                              amount={preset.amount}
+                              currency={preset.currency}
+                              targetCurrency={displayCurrency}
+                              date={getTodayLocal()}
+                            />
+                          </span>
                         </span>
                       </div>
                       <div className="preset-actions">
