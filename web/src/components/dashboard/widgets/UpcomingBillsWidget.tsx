@@ -2,11 +2,14 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { formatMoney } from '../../../utils/currencyUtils';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../../hooks/useCurrencyConversionMap';
+import { getTodayLocal } from '../../../utils/dateUtils';
 
 const UpcomingBillsWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
   scheduledPaymentRecords = [],
   onNavigateToScheduledPayment,
+  displayCurrency,
   size = 'medium',
 }) => {
   const { t } = useLanguage();
@@ -38,6 +41,17 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
       .sort((a, b) => a.dueDay - b.dueDay);
   }, [scheduledPayments, scheduledPaymentRecords]);
 
+  const conversionEntries = useMemo<CurrencyConversionEntry[]>(() => {
+    const date = getTodayLocal();
+    return upcomingBills.map((bill, index) => ({
+      key: bill.id || `upcoming-${index}`,
+      amount: bill.amount,
+      sourceCurrency: bill.currency || 'MYR',
+      date,
+    }));
+  }, [upcomingBills]);
+  const conversion = useCurrencyConversionMapState(conversionEntries, displayCurrency);
+
   const handleKeyDown = (callback: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -56,11 +70,18 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
 
   return (
     <div className="upcoming-bills-widget">
-      {upcomingBills.slice(0, maxItems).map((bill) => {
+      {upcomingBills.slice(0, maxItems).map((bill, index) => {
         const today = new Date();
         const daysUntil = bill.dueDay - today.getDate();
         const isToday = daysUntil === 0;
         const isTomorrow = daysUntil === 1;
+        const billKey = bill.id || `upcoming-${index}`;
+        const convertedAmount = conversion.amountsByKey[billKey];
+        const displayAmount = Number.isFinite(convertedAmount) && displayCurrency
+          ? formatMoney(convertedAmount, displayCurrency)
+          : conversion.isLoading
+            ? '…'
+            : '—';
 
         return (
           <div
@@ -70,7 +91,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
             onKeyDown={onNavigateToScheduledPayment ? handleKeyDown(() => onNavigateToScheduledPayment(bill.id!)) : undefined}
             role={onNavigateToScheduledPayment ? 'button' : undefined}
             tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
-            aria-label={onNavigateToScheduledPayment ? `${bill.name} - ${formatMoney(bill.amount, bill.currency)}` : undefined}
+            aria-label={onNavigateToScheduledPayment ? `${bill.name} - ${displayAmount}` : undefined}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -102,7 +123,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
               </div>
             </div>
             <span style={{ fontWeight: 600, color: isToday ? 'var(--error-text)' : 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px', whiteSpace: 'nowrap' }}>
-              {formatMoney(bill.amount, bill.currency)}
+              {displayAmount}
             </span>
           </div>
         );

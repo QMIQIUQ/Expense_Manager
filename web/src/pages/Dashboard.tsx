@@ -49,6 +49,7 @@ import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUti
 import ImportExportModal from '../components/importexport/ImportExportModal';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import NotificationBell from '../components/NotificationBell';
+import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
 import ThemeToggle from '../components/ThemeToggle';
 import CatIllustration from '../components/CatIllustration';
 import { offlineQueue } from '../utils/offlineQueue';
@@ -69,7 +70,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
-  const { dateFormat, timeFormat, dateShortcuts, displayCurrency, setDisplayCurrency: saveDisplayCurrency } = useUserSettings();
+  const { dateFormat, timeFormat, dateShortcuts, displayCurrency, displayCurrencyReady, setDisplayCurrency: saveDisplayCurrency } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -2253,6 +2254,13 @@ const Dashboard: React.FC = () => {
         />
 
         <div className="header-actions">
+          <div className="header-currency-control">
+            <DisplayCurrencyControl
+              value={displayCurrency}
+              onChange={handleDisplayCurrencyChange}
+              disabled={!displayCurrencyReady}
+            />
+          </div>
           {/* Notification Bell */}
           <NotificationBell />
           {/* Hamburger Menu */}
@@ -2688,7 +2696,6 @@ const Dashboard: React.FC = () => {
             banks={banks}
             billingCycleDay={billingCycleDay}
             displayCurrency={displayCurrency}
-            onDisplayCurrencyChange={handleDisplayCurrencyChange}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => openExpenseEntry()}
             onQuickExpenseAdd={handleQuickExpenseAdd}
@@ -2737,7 +2744,6 @@ const Dashboard: React.FC = () => {
             onPeriodChange={setExpensePeriod}
             initialCategory={expenseCategory}
             displayCurrency={displayCurrency}
-            onDisplayCurrencyChange={handleDisplayCurrencyChange}
             onDelete={handleDeleteExpense}
             onInlineUpdate={handleInlineUpdateExpense}
             onBulkDelete={handleBulkDeleteExpenses}
@@ -2800,7 +2806,6 @@ const Dashboard: React.FC = () => {
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}
                 displayCurrency={displayCurrency}
-                onDisplayCurrencyChange={handleDisplayCurrencyChange}
               />
             </Suspense>
           </div>

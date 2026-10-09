@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Income, Expense, Card, EWallet, Bank } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -9,8 +9,9 @@ import ConfirmModal from '../ConfirmModal';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
-import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { formatMoney } from '../../utils/currencyUtils';
 import CurrencyAmount from '../common/CurrencyAmount';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../hooks/useCurrencyConversionMap';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -45,6 +46,16 @@ interface IncomeListProps {
 const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewallets, banks, onDelete, onInlineUpdate, onOpenExpenseById }) => {
   const { t } = useLanguage();
   const { dateFormat, displayCurrency } = useUserSettings();
+  const incomeKeyByRecord = useMemo(() => new Map(
+    incomes.map((income, index) => [income, income.id || `income-${index}`])
+  ), [incomes]);
+  const incomeConversionEntries = useMemo<CurrencyConversionEntry[]>(() => incomes.map((income) => ({
+    key: incomeKeyByRecord.get(income) || income.id || '',
+    amount: income.amount,
+    sourceCurrency: income.currency || 'MYR',
+    date: income.date,
+  })), [incomeKeyByRecord, incomes]);
+  const incomeConversion = useCurrencyConversionMapState(incomeConversionEntries, displayCurrency);
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -126,8 +137,8 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
     return formatDateWithUserFormat(dateString, dateFormat);
   };
 
-  // Group incomes by date for display
-  const groupIncomesByDate = () => {
+  // Convert each income before calculating a daily total so mixed currencies are never added raw.
+  const groupIncomesByDate = useMemo(() => {
     const grouped: { [date: string]: Income[] } = {};
     
     // Sort incomes by date (newest first)
@@ -143,17 +154,18 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
 
     // Convert to array with daily totals
     return Object.entries(grouped).map(([date, incs]) => {
-      const totalsByCurrency = new Map<string, number>();
-      incs.forEach((income) => {
-        const code = normalizeCurrencyCode(income.currency);
-        totalsByCurrency.set(code, (totalsByCurrency.get(code) || 0) + income.amount);
+      const convertedAmounts = incs.map((income) => {
+        const key = incomeKeyByRecord.get(income) || income.id || '';
+        return incomeConversion.amountsByKey[key];
       });
-      const dailyTotal = Array.from(totalsByCurrency.entries());
+      const dailyTotal = convertedAmounts.every(Number.isFinite)
+        ? convertedAmounts.reduce((total, amount) => total + amount, 0)
+        : null;
       return { date, incomes: incs, dailyTotal };
     }).sort((a, b) => b.date.localeCompare(a.date)); // Sort descending (newest first)
-  };
+  }, [incomeConversion.amountsByKey, incomeKeyByRecord, incomes]);
 
-  const groupedIncomes = groupIncomesByDate();
+  const groupedIncomes = groupIncomesByDate;
 
   const {
     isSelectionMode,
@@ -203,7 +215,14 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                 <span style={styles.dateGroupDate}>{formatDate(date)}</span>
                 <span style={styles.incomeCount}>({dayIncomes.length})</span>
               </div>
-              <span style={styles.dateGroupTotal}>{dailyTotal.map(([currency, total]) => `+${formatMoney(total, currency)}`).join(' · ')}</span>
+              <span
+                style={styles.dateGroupTotal}
+                title={dailyTotal === null && !incomeConversion.isLoading ? (t('conversionUnavailable') || 'Conversion unavailable') : undefined}
+              >
+                {dailyTotal === null
+                  ? incomeConversion.isLoading ? '…' : '—'
+                  : `+${formatMoney(dailyTotal, displayCurrency)}`}
+              </span>
             </div>
             
             {/* Incomes for this date - hidden when collapsed */}

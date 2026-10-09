@@ -1,49 +1,80 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
-import { formatMoney, normalizeCurrencyCode } from '../../../utils/currencyUtils';
-import { roundMoney } from '../../../domain/money';
+import { formatMoney } from '../../../utils/currencyUtils';
+import { useUserSettings } from '../../../contexts/UserSettingsContext';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../../hooks/useCurrencyConversionMap';
+import { getTodayLocal } from '../../../utils/dateUtils';
 
 const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
   scheduledPaymentRecords = [],
   onNavigateToScheduledPayment,
+  displayCurrency,
   size = 'medium',
 }) => {
   const { t } = useLanguage();
+  const { displayCurrency: savedDisplayCurrency } = useUserSettings();
+  const targetCurrency = displayCurrency || savedDisplayCurrency;
   const isCompact = size === 'small';
   const maxItems = isCompact ? 2 : 5;
 
   // Get active installment-type payments with progress
-  const installments = useMemo(() => {
-    return scheduledPayments
-      .filter(p => p.isActive && !p.isCompleted && p.type === 'installment')
-      .map(p => {
-        const paidRecords = scheduledPaymentRecords.filter(r => r.scheduledPaymentId === p.id);
-        const paidCount = paidRecords.length;
-        const totalInstallments = p.totalInstallments || 0;
-        const currency = normalizeCurrencyCode(p.currency);
-        const hasMixedCurrencies = paidRecords.some((record) => normalizeCurrencyCode(record.currency || p.currency) !== currency);
-        const rawTotalPaid = hasMixedCurrencies
-          ? Number.NaN
-          : paidRecords.reduce((sum, record) => sum + (record.actualAmount ?? record.expectedAmount), 0);
-        const totalPaid = Number.isFinite(rawTotalPaid) ? roundMoney(rawTotalPaid, currency) : Number.NaN;
-        const totalAmount = p.totalAmount || (p.amount * totalInstallments);
-        const remaining = Number.isFinite(totalPaid) ? roundMoney(Math.max(0, totalAmount - totalPaid), currency) : Number.NaN;
-        const progress = Number.isFinite(totalPaid) && totalInstallments > 0 ? (paidCount / totalInstallments) * 100 : null;
+  const activeInstallments = useMemo(
+    () => scheduledPayments.filter(p => p.isActive && !p.isCompleted && p.type === 'installment'),
+    [scheduledPayments]
+  );
+  const conversionEntries = useMemo<CurrencyConversionEntry[]>(() => {
+    const today = getTodayLocal();
+    const entries: CurrencyConversionEntry[] = [];
+    activeInstallments.forEach((payment, index) => {
+      const paymentKey = payment.id || `installment-${index}`;
+      const currency = payment.currency || 'MYR';
+      const totalInstallments = payment.totalInstallments || 0;
+      entries.push(
+        { key: `${paymentKey}:period`, amount: payment.amount, sourceCurrency: currency, date: today },
+        { key: `${paymentKey}:total`, amount: payment.totalAmount || payment.amount * totalInstallments, sourceCurrency: currency, date: today },
+      );
+      scheduledPaymentRecords
+        .filter((record) => record.scheduledPaymentId === payment.id)
+        .forEach((record, recordIndex) => {
+          entries.push({
+            key: `${paymentKey}:paid:${record.id || recordIndex}`,
+            amount: record.actualAmount ?? record.expectedAmount,
+            sourceCurrency: record.currency || currency,
+            date: record.paidDate || today,
+          });
+        });
+    });
+    return entries;
+  }, [activeInstallments, scheduledPaymentRecords]);
+  const conversion = useCurrencyConversionMapState(conversionEntries, targetCurrency);
+  const installments = useMemo(() => activeInstallments.map((payment, index) => {
+    const paymentKey = payment.id || `installment-${index}`;
+    const paidRecords = scheduledPaymentRecords.filter((record) => record.scheduledPaymentId === payment.id);
+    const paidAmounts = paidRecords.map((record, recordIndex) => conversion.amountsByKey[`${paymentKey}:paid:${record.id || recordIndex}`]);
+    const totalPaid = paidAmounts.every(Number.isFinite) ? paidAmounts.reduce((sum, amount) => sum + amount, 0) : paidRecords.length === 0 ? 0 : null;
+    const totalAmount = conversion.amountsByKey[`${paymentKey}:total`];
+    const periodAmount = conversion.amountsByKey[`${paymentKey}:period`];
+    const safeTotalAmount = Number.isFinite(totalAmount) ? totalAmount : null;
+    const remaining = safeTotalAmount !== null && totalPaid !== null ? Math.max(0, safeTotalAmount - totalPaid) : null;
+    const totalInstallments = payment.totalInstallments || 0;
+    const progress = totalInstallments > 0 ? (paidRecords.length / totalInstallments) * 100 : null;
 
-        return {
-          ...p,
-          paidCount,
-          totalInstallments,
-          totalPaid,
-          totalAmount: roundMoney(totalAmount, currency),
-          remaining,
-          progress: progress === null ? null : Math.round(progress * 100) / 100,
-        };
-      })
-      .sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0));
-  }, [scheduledPayments, scheduledPaymentRecords]);
+    return {
+      ...payment,
+      paidCount: paidRecords.length,
+      totalInstallments,
+      totalPaid,
+      totalAmount: safeTotalAmount,
+      periodAmount: Number.isFinite(periodAmount) ? periodAmount : null,
+      remaining,
+      progress: progress === null ? null : Math.round(progress * 100) / 100,
+    };
+  }).sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0)), [activeInstallments, conversion.amountsByKey, scheduledPaymentRecords]);
+  const formatDisplayAmount = (amount: number | null): string => amount === null
+    ? conversion.isLoading ? '…' : '—'
+    : formatMoney(amount, targetCurrency);
 
   const handleKeyDown = (callback: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -63,6 +94,9 @@ const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
 
   return (
     <div className="installment-tracker-widget">
+      {!conversion.isLoading && conversion.failedKeys.length > 0 && (
+        <div className="text-xs mb-2" style={{ color: 'var(--warning-text)' }}>{t('conversionUnavailable')}</div>
+      )}
       {installments.slice(0, maxItems).map((inst) => (
         <div
           key={inst.id}
@@ -88,12 +122,12 @@ const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
                 📅 {inst.name}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {inst.paidCount}/{inst.totalInstallments} {t('installmentsPaid')} · {formatMoney(inst.amount, inst.currency)}/{t('period')}
+                {inst.paidCount}/{inst.totalInstallments} {t('installmentsPaid')} · {formatDisplayAmount(inst.periodAmount)}/{t('period')}
               </div>
             </div>
             <div style={{ textAlign: 'right', whiteSpace: 'nowrap', marginLeft: '8px' }}>
               <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px' }}>
-                {formatMoney(inst.remaining, inst.currency)}
+                {formatDisplayAmount(inst.remaining)}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('remaining')}</div>
             </div>
@@ -112,7 +146,7 @@ const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
             <span>{inst.progress === null ? '—' : `${inst.progress.toFixed(0)}%`}</span>
-            <span>{formatMoney(inst.totalPaid, inst.currency)} / {formatMoney(inst.totalAmount, inst.currency)}</span>
+            <span>{formatDisplayAmount(inst.totalPaid)} / {formatDisplayAmount(inst.totalAmount)}</span>
           </div>
         </div>
       ))}

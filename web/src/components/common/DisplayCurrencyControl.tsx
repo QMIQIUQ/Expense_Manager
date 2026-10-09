@@ -6,19 +6,21 @@ import CurrencySelector from './CurrencySelector';
 interface DisplayCurrencyControlProps {
   value: CurrencyCode;
   onChange: (currency: CurrencyCode) => void;
+  disabled?: boolean;
 }
 
-const DisplayCurrencyControl: React.FC<DisplayCurrencyControlProps> = ({ value, onChange }) => {
+const DisplayCurrencyControl: React.FC<DisplayCurrencyControlProps> = ({ value, onChange, disabled = false }) => {
   const { t } = useLanguage();
   const label = t('displayCurrency');
 
   return (
-    <div style={styles.container}>
-      <span style={styles.label}>{label}</span>
+    <div className="display-currency-control" style={styles.container}>
+      <span className="display-currency-label" style={styles.label}>{label}</span>
       <div style={styles.selector}>
         <CurrencySelector
           value={value}
           onChange={onChange}
+          disabled={disabled}
           compact={true}
           showLabel={false}
           align="right"
@@ -48,9 +50,9 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   selector: {
-    width: 'clamp(120px, 28vw, 150px)',
+    width: '100%',
     minWidth: 0,
-    flex: '0 1 auto',
+    flex: '0 1 150px',
   },
 };
 

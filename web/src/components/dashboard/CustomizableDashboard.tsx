@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord, CurrencyCode } from '../../types';
+import { Expense, Income, Repayment, Budget, Card, Category, EWallet, Bank, ScheduledPayment, ScheduledPaymentRecord } from '../../types';
 import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard';
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import { WidgetContainer, WidgetProps } from './widgets';
 import DashboardCustomizer from './DashboardCustomizer';
-import DisplayCurrencyControl from '../common/DisplayCurrencyControl';
 
 interface CustomizableDashboardProps {
   expenses: Expense[];
@@ -21,8 +20,7 @@ interface CustomizableDashboardProps {
   ewallets: EWallet[];
   banks: Bank[];
   billingCycleDay: number;
-  displayCurrency?: CurrencyCode;
-  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
+  displayCurrency?: import('../../types').CurrencyCode;
   onMarkTrackingCompleted?: (expenseId: string) => void;
   onQuickAdd?: () => void;
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
@@ -56,7 +54,6 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   banks,
   billingCycleDay,
   displayCurrency,
-  onDisplayCurrencyChange,
   onMarkTrackingCompleted,
   onQuickAdd,
   onQuickExpenseAdd,
@@ -189,9 +186,6 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
           <span>⚙️</span>
           <span>{t('customize')}</span>
         </button>
-        {displayCurrency && onDisplayCurrencyChange && (
-          <DisplayCurrencyControl value={displayCurrency} onChange={onDisplayCurrencyChange} />
-        )}
       </div>
 
       {/* Widgets Grid */}

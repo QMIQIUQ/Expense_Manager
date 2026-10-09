@@ -30,7 +30,6 @@ interface ExpensesTabProps {
   onPeriodChange: (period: ExpensePeriodSelection) => void;
   initialCategory?: string;
   displayCurrency: CurrencyCode;
-  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onBulkDelete: (ids: string[]) => void;
@@ -57,7 +56,6 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   onPeriodChange,
   initialCategory = '',
   displayCurrency,
-  onDisplayCurrencyChange,
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -120,7 +118,6 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         repayments={repayments}
         transfers={transfers}
         displayCurrency={displayCurrency}
-        onDisplayCurrencyChange={onDisplayCurrencyChange}
         onDelete={onDelete}
         onInlineUpdate={onInlineUpdate}
         onBulkDelete={onBulkDelete}

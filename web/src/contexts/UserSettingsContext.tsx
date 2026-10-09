@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
@@ -11,6 +11,7 @@ interface UserSettingsContextType {
   useStepByStepForm: boolean;
   dateShortcuts?: DateShortcut[];
   displayCurrency: CurrencyCode;
+  displayCurrencyReady: boolean;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDateFormat: (format: DateFormat) => Promise<void>;
   setUseStepByStepForm: (value: boolean) => Promise<void>;
@@ -35,31 +36,60 @@ interface UserSettingsProviderProps {
 
 export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ children }) => {
   const { currentUser } = useAuth();
+  const userId = currentUser?.uid ?? null;
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const latestUserIdRef = useRef(userId);
+  const currencyWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const currencyWriteIdRef = useRef(0);
+  latestUserIdRef.current = userId;
+
+  useEffect(() => {
+    let cancelled = false;
+    setSettings(null);
+    setLoading(Boolean(userId));
+
+    if (!userId) {
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+
+    userSettingsService.getOrCreate(userId, true)
+      .then((userSettings) => {
+        if (!cancelled) setSettings(userSettings);
+      })
+      .catch((error) => {
+        console.error('Error loading user settings:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const displayCurrencyReady = Boolean(
+    userId && !loading && settings && (settings.userId === userId || settings.id === userId)
+  );
 
   const loadSettings = async (forceRefresh: boolean = false) => {
-    if (!currentUser) {
+    if (!userId) {
       setSettings(null);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
-      // Force refresh from server when requested to avoid stale cache
-      const userSettings = await userSettingsService.getOrCreate(currentUser.uid, forceRefresh);
-      setSettings(userSettings);
+      const userSettings = await userSettingsService.getOrCreate(userId, forceRefresh);
+      if (latestUserIdRef.current === userId) setSettings(userSettings);
     } catch (error) {
       console.error('Error loading user settings:', error);
+      throw error;
     } finally {
-      setLoading(false);
+      if (latestUserIdRef.current === userId) setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadSettings(true); // Force refresh from server on initial load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
 
   const setTimeFormat = async (format: TimeFormat) => {
     if (!currentUser || !settings) return;
@@ -121,13 +151,27 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   };
 
   const setDisplayCurrency = async (currency: CurrencyCode) => {
-    if (!currentUser || !settings) return;
+    if (!userId) throw new Error('A signed-in user is required to save display currency');
+    if (!displayCurrencyReady || !settings) throw new Error('User settings are not ready');
+
+    const uid = userId;
     const previousCurrency = settings.displayCurrency || 'MYR';
+    const requestId = ++currencyWriteIdRef.current;
     setSettings((prev) => prev ? { ...prev, displayCurrency: currency } : null);
+
+    const write = currencyWriteQueueRef.current
+      .catch(() => undefined)
+      .then(() => userSettingsService.update(uid, { displayCurrency: currency }));
+    currencyWriteQueueRef.current = write.catch(() => undefined);
+
     try {
-      await userSettingsService.update(currentUser.uid, { displayCurrency: currency });
+      await write;
     } catch (error) {
-      setSettings((prev) => prev ? { ...prev, displayCurrency: previousCurrency } : null);
+      if (currencyWriteIdRef.current === requestId && latestUserIdRef.current === uid) {
+        setSettings((prev) => prev && (prev.userId === uid || prev.id === uid)
+          ? { ...prev, displayCurrency: previousCurrency }
+          : prev);
+      }
       console.error('Error updating display currency:', error);
       throw error;
     }
@@ -145,6 +189,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     useStepByStepForm: settings?.useStepByStepForm ?? false,
     dateShortcuts: settings?.dateShortcuts,
     displayCurrency: settings?.displayCurrency || 'MYR',
+    displayCurrencyReady,
     setTimeFormat,
     setDateFormat,
     setUseStepByStepForm,

@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { DeleteIcon, EditIcon } from '../icons';
 import ConfirmModal from '../ConfirmModal';
-import { formatMoney } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface RepaymentListProps {
   repayments: Repayment[];
@@ -165,7 +165,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
 
               {/* Right section: Amount and actions */}
               <div style={styles.rightSection}>
-                <div style={getAmountStyle()}>{formatMoney(repayment.amount, repayment.currency)}</div>
+                <div style={getAmountStyle()}><DisplayCurrencyAmount amount={repayment.amount} currency={repayment.currency} date={repayment.date} showSource /></div>
                 <div style={styles.actions}>
                   <button
                     onClick={() => onEdit(repayment)}

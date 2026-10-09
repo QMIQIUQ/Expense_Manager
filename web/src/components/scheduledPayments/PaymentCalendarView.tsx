@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { ScheduledPayment, ScheduledPaymentRecord, Category } from '../../types';
-import { formatCurrency } from './ScheduledPaymentForm';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 import { formatDateWithUserFormat } from '../../utils/dateUtils';
 
 interface PaymentCalendarViewProps {
@@ -215,7 +215,7 @@ const PaymentCalendarView: React.FC<PaymentCalendarViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium" style={{ color: 'var(--error-text)' }}>
-                        {formatCurrency(payment.amount, payment.currency)}
+                        <DisplayCurrencyAmount amount={payment.amount} currency={payment.currency} />
                       </span>
                       {isPaid && (
                         <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>

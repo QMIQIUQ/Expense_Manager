@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { CurrencyCode, ScheduledPaymentRecord } from '../../types';
 import { DeleteIcon } from '../icons';
 import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../hooks/useCurrencyConversionMap';
 
 interface PaymentHistoryListProps {
   records: ScheduledPaymentRecord[];
@@ -16,6 +18,36 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const { displayCurrency } = useUserSettings();
+
+  const conversionEntries = useMemo<CurrencyConversionEntry[]>(() => records.flatMap((record, index) => {
+    const key = record.id || `record-${index}`;
+    const sourceCurrency = record.currency || defaultCurrency;
+    const date = record.paidDate || record.dueDate;
+    return [
+      { key: `${key}:expected`, amount: record.expectedAmount, sourceCurrency, date },
+      { key: `${key}:actual`, amount: record.actualAmount, sourceCurrency, date },
+    ];
+  }), [defaultCurrency, records]);
+  const conversion = useCurrencyConversionMapState(conversionEntries, displayCurrency);
+  const convertedTotal = (kind: 'expected' | 'actual'): number | null => {
+    const values = records.map((record, index) => {
+      const key = `${record.id || `record-${index}`}:${kind}`;
+      return conversion.amountsByKey[key];
+    });
+    return values.every(Number.isFinite) ? values.reduce((sum, amount) => sum + amount, 0) : null;
+  };
+  const totalExpected = convertedTotal('expected');
+  const totalPaid = convertedTotal('actual');
+  const formatConverted = (amount: number, record: ScheduledPaymentRecord, index: number, kind: 'expected' | 'actual'): string => {
+    const sourceCurrency = normalizeCurrencyCode(record.currency || defaultCurrency);
+    const key = `${record.id || `record-${index}`}:${kind}`;
+    const convertedAmount = conversion.amountsByKey[key];
+    if (sourceCurrency === displayCurrency && Number.isFinite(convertedAmount)) return formatMoney(amount, displayCurrency);
+    if (Number.isFinite(convertedAmount)) return formatMoney(convertedAmount, displayCurrency);
+    if (conversion.isLoading) return '…';
+    return `${formatMoney(amount, sourceCurrency)} (${t('conversionUnavailable') || 'conversion unavailable'})`;
+  };
 
   if (records.length === 0) {
     return (
@@ -32,17 +64,6 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
       </div>
     );
   }
-
-  // Group totals by source currency so historical records are never summed across currencies.
-  const currencyTotals = records.reduce<Record<string, { paid: number; expected: number }>>((totals, record) => {
-    const currency = normalizeCurrencyCode(record.currency || defaultCurrency);
-    const current = totals[currency] || { paid: 0, expected: 0 };
-    totals[currency] = {
-      paid: current.paid + record.actualAmount,
-      expected: current.expected + record.expectedAmount,
-    };
-    return totals;
-  }, {});
 
   return (
     <div 
@@ -72,41 +93,43 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
         borderRadius: '6px',
         fontSize: '12px',
       }}>
+        {!conversion.isLoading && conversion.failedKeys.length > 0 && (
+          <div style={{ gridColumn: '1 / -1', color: 'var(--warning-text)' }}>
+            {t('conversionUnavailable') || 'Conversion unavailable'}
+          </div>
+        )}
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalExpected')}:</span>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-            {Object.entries(currencyTotals).map(([currency, totals]) => (
-              <div key={currency}>{formatMoney(totals.expected, currency)}</div>
-            ))}
+            {totalExpected === null ? (conversion.isLoading ? '…' : '—') : formatMoney(totalExpected, displayCurrency)}
           </div>
         </div>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
           <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>
-            {Object.entries(currencyTotals).map(([currency, totals]) => (
-              <div key={currency}>{formatMoney(totals.paid, currency)}</div>
-            ))}
+            {totalPaid === null ? (conversion.isLoading ? '…' : '—') : formatMoney(totalPaid, displayCurrency)}
           </div>
         </div>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>{t('totalDifference')}:</span>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-            {Object.entries(currencyTotals).map(([currency, totals]) => {
-              const difference = totals.paid - totals.expected;
-              return (
-                <div key={currency} style={{ color: difference > 0 ? 'var(--info-text)' : difference < 0 ? 'var(--warning-text)' : 'var(--text-primary)' }}>
-                  {difference > 0 ? '+' : ''}{formatMoney(difference, currency)}
-                </div>
-              );
-            })}
+            {totalExpected === null || totalPaid === null
+              ? (conversion.isLoading ? '…' : '—')
+              : (() => {
+                const difference = totalPaid - totalExpected;
+                return <span style={{ color: difference > 0 ? 'var(--info-text)' : difference < 0 ? 'var(--warning-text)' : 'var(--text-primary)' }}>
+                  {difference > 0 ? '+' : ''}{formatMoney(difference, displayCurrency)}
+                </span>;
+              })()}
           </div>
         </div>
       </div>
 
       {/* Records List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {records.map((record) => {
-          const difference = record.actualAmount - record.expectedAmount;
+        {records.map((record, index) => {
+          const difference = conversion.amountsByKey[`${record.id || `record-${index}`}:actual`]
+            - conversion.amountsByKey[`${record.id || `record-${index}`}:expected`];
           
           return (
             <div
@@ -137,7 +160,9 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                         color: difference > 0 ? 'var(--info-text)' : 'var(--warning-text)',
                       }}
                     >
-                  {difference > 0 ? t('overpaid') : t('underpaid')} {formatMoney(Math.abs(difference), record.currency || defaultCurrency)}
+                  {difference > 0 ? t('overpaid') : t('underpaid')} {Number.isFinite(difference)
+                    ? formatMoney(Math.abs(difference), displayCurrency)
+                    : `${formatMoney(Math.abs(record.actualAmount - record.expectedAmount), normalizeCurrencyCode(record.currency || defaultCurrency))} (${t('conversionUnavailable') || 'conversion unavailable'})`}
                     </span>
                   )}
                 </div>
@@ -160,11 +185,11 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>
-                    {formatMoney(record.actualAmount, record.currency || defaultCurrency)}
+                    {formatConverted(record.actualAmount, record, index, 'actual')}
                   </div>
                   {record.expectedAmount !== record.actualAmount && (
                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
-                      {formatMoney(record.expectedAmount, record.currency || defaultCurrency)}
+                      {formatConverted(record.expectedAmount, record, index, 'expected')}
                     </div>
                   )}
                 </div>

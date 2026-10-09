@@ -21,13 +21,14 @@ import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
-import DisplayCurrencyControl from '../common/DisplayCurrencyControl';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
 import CatIllustration from '../CatIllustration';
 import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
+
+const EMPTY_REPAYMENTS: Repayment[] = [];
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -58,7 +59,6 @@ interface ExpenseListProps {
   repayments?: Repayment[];
   transfers?: Transfer[];
   displayCurrency?: CurrencyCode;
-  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
   onDelete: (id: string) => void;
   onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
   onEdit?: (exp: Expense | null) => void;
@@ -89,10 +89,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   cards = [],
   ewallets = [],
   banks = [],
-  repayments = [],
+  repayments = EMPTY_REPAYMENTS,
   transfers = [],
   displayCurrency,
-  onDisplayCurrencyChange,
   onDelete,
   onInlineUpdate,
   onBulkDelete,
@@ -882,9 +881,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           }}
         />
 
-        {onDisplayCurrencyChange && displayCurrency && (
-          <DisplayCurrencyControl value={displayCurrency} onChange={onDisplayCurrencyChange} />
-        )}
       </div>
 
       {groupedExpenses.length === 0 ? (

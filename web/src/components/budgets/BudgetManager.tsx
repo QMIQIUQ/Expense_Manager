@@ -21,7 +21,6 @@ import PopupModal from '../common/PopupModal';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
 import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
-import CurrencySelector from '../common/CurrencySelector';
 import {
   convertBudgetAmount,
   getBudgetCurrency,
@@ -60,7 +59,6 @@ interface BudgetManagerProps {
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
   displayCurrency?: CurrencyCode;
-  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
 }
 
 const BudgetManager: React.FC<BudgetManagerProps> = ({
@@ -74,7 +72,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   spentByCategory,
   billingCycleDay = 1,
   displayCurrency = DEFAULT_BASE_CURRENCY,
-  onDisplayCurrencyChange,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -643,20 +640,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               }
             }}
           />
-          {onDisplayCurrencyChange && (
-            <div style={styles.displayCurrencyControl}>
-              <span style={styles.displayCurrencyLabel}>{t('displayCurrency')}</span>
-              <CurrencySelector
-                value={displayCurrency}
-                onChange={onDisplayCurrencyChange}
-                compact={true}
-                showLabel={false}
-                align="right"
-                ariaLabel={t('displayCurrency')}
-                className="budget-display-currency-selector"
-              />
-            </div>
-          )}
         </div>
       )}
 

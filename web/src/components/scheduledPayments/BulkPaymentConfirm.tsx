@@ -7,7 +7,10 @@ import {
   PaymentMethodType 
 } from '../../types';
 import { getTodayLocal } from '../../utils/dateUtils';
-import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
+import { formatMoney } from '../../utils/currencyUtils';
+import { useUserSettings } from '../../contexts/UserSettingsContext';
+import { useCurrencyConversionMapState, type CurrencyConversionEntry } from '../../hooks/useCurrencyConversionMap';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface BulkPaymentConfirmProps {
   scheduledPayments: ScheduledPayment[];
@@ -28,6 +31,7 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
   onClose,
 }) => {
   const { t } = useLanguage();
+  const { displayCurrency } = useUserSettings();
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
@@ -86,16 +90,24 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
     }
   };
 
-  // Keep selected totals separated by currency.
-  const selectedTotalsByCurrency = useMemo(() => {
+  const selectedConversionEntries = useMemo<CurrencyConversionEntry[]>(() => {
+    const date = getTodayLocal();
     return pendingPayments
       .filter((payment) => selectedIds.has(payment.id!))
-      .reduce<Record<string, number>>((totals, payment) => {
-        const currency = normalizeCurrencyCode(payment.currency);
-        totals[currency] = (totals[currency] || 0) + payment.amount;
-        return totals;
-      }, {});
+      .map((payment, index) => ({
+        key: payment.id || `selected-${index}`,
+        amount: payment.amount,
+        sourceCurrency: payment.currency || 'MYR',
+        date,
+      }));
   }, [pendingPayments, selectedIds]);
+  const selectedConversion = useCurrencyConversionMapState(selectedConversionEntries, displayCurrency);
+  const selectedTotal = selectedConversionEntries.length === 0
+    ? 0
+    : selectedConversionEntries.reduce<number | null>((total, entry) => {
+      const amount = selectedConversion.amountsByKey[entry.key];
+      return total === null || !Number.isFinite(amount) ? null : total + amount;
+    }, 0);
 
   const handleConfirmSelected = async () => {
     if (selectedIds.size === 0) return;
@@ -246,7 +258,7 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
                       className="font-semibold"
                       style={{ color: 'var(--error-text)' }}
                     >
-                      {formatMoney(payment.amount, payment.currency)}
+                      <DisplayCurrencyAmount amount={payment.amount} currency={payment.currency} />
                     </span>
                   </button>
                 );
@@ -260,11 +272,16 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
           <div className="flex items-center justify-between mb-3">
             <span style={{ color: 'var(--text-secondary)' }}>{t('totalAmount')}:</span>
             <span className="text-xl font-bold" style={{ color: 'var(--text-primary)', textAlign: 'right' }}>
-              {Object.entries(selectedTotalsByCurrency).map(([currency, amount]) => (
-                <div key={currency}>{formatMoney(amount, currency)}</div>
-              ))}
+              {selectedTotal === null
+                ? selectedConversion.isLoading ? '…' : '—'
+                : formatMoney(selectedTotal, displayCurrency)}
             </span>
           </div>
+          {!selectedConversion.isLoading && selectedConversion.failedKeys.length > 0 && (
+            <div className="text-sm mb-3" style={{ color: 'var(--warning-text)' }}>
+              {t('conversionUnavailable') || 'Conversion unavailable'}
+            </div>
+          )}
           
           <div className="flex gap-2">
             <button

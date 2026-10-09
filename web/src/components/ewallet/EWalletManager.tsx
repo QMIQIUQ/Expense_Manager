@@ -8,8 +8,9 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { SearchBar } from '../common/SearchBar';
 import PopupModal from '../common/PopupModal';
-import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY } from '../../utils/currencyUtils';
 import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 // (Inline icon/color picker moved into EWalletForm for consistency)
 
@@ -447,18 +448,18 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
                       <div className="stats-grid">
                         <div className="stat-card info">
                           <p className="stat-label">{t('walletIncome')}</p>
-                          <p className="stat-value success-text">{formatMoney(stats.totalIncome, wallet.currency || DEFAULT_BASE_CURRENCY)}</p>
+                          <p className="stat-value success-text"><DisplayCurrencyAmount amount={stats.totalIncome} currency={wallet.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                         </div>
                         <div className="stat-card success">
                           <p className="stat-label">{t('walletSpending')}</p>
-                          <p className="stat-value info-text">{formatMoney(stats.totalSpending, wallet.currency || DEFAULT_BASE_CURRENCY)}</p>
+                          <p className="stat-value info-text"><DisplayCurrencyAmount amount={stats.totalSpending} currency={wallet.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                         </div>
                         <div className="stat-card accent">
                           <p className="stat-label">{t('walletBalance')}</p>
                           <p className="stat-value" style={{ 
                             color: displayBalance >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                           }}>
-                            {formatMoney(displayBalance, wallet.currency || DEFAULT_BASE_CURRENCY)}
+                            <DisplayCurrencyAmount amount={displayBalance} currency={wallet.currency || DEFAULT_BASE_CURRENCY} showSource />
                           </p>
                         </div>
                         <div className="stat-card warning">

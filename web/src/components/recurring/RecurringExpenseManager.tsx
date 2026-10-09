@@ -9,7 +9,7 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { getDueRecurringExpenses } from '../../utils/recurringUtils';
 import PopupModal from '../common/PopupModal';
-import { formatMoney } from '../../utils/currencyUtils';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -370,7 +370,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   
                   <div style={{ textAlign: 'right' }}>
-                    <div style={styles.dueBillAmount}>{formatMoney(bill.amount, bill.currency)}</div>
+                    <div style={styles.dueBillAmount}><DisplayCurrencyAmount amount={bill.amount} currency={bill.currency} showSource /></div>
                   </div>
                   
                   <div style={{ gridColumn: '1 / -1' }}>
@@ -465,7 +465,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       <span style={styles.inactiveStatus}>● {t('inactive')}</span>
                     )}
                   </div>
-                  <div style={styles.amount}>{formatMoney(expense.amount, expense.currency)}</div>
+                  <div style={styles.amount}><DisplayCurrencyAmount amount={expense.amount} currency={expense.currency} showSource /></div>
                 </div>
 
                 {/* Second row: Description */}

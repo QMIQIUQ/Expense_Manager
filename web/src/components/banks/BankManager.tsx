@@ -8,8 +8,9 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
-import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY } from '../../utils/currencyUtils';
 import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
+import DisplayCurrencyAmount from '../common/DisplayCurrencyAmount';
 
 interface BankManagerProps {
   banks: Bank[];
@@ -363,18 +364,18 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                     <div className="stats-grid">
                       <div className="stat-card info">
                         <p className="stat-label">{t('walletIncome')}</p>
-                        <p className="stat-value success-text">{formatMoney(stats.totalIncome, bank.currency || DEFAULT_BASE_CURRENCY)}</p>
+                        <p className="stat-value success-text"><DisplayCurrencyAmount amount={stats.totalIncome} currency={bank.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                       </div>
                       <div className="stat-card success">
                         <p className="stat-label">{t('walletSpending')}</p>
-                        <p className="stat-value info-text">{formatMoney(stats.totalSpending, bank.currency || DEFAULT_BASE_CURRENCY)}</p>
+                        <p className="stat-value info-text"><DisplayCurrencyAmount amount={stats.totalSpending} currency={bank.currency || DEFAULT_BASE_CURRENCY} showSource /></p>
                       </div>
                       <div className="stat-card accent">
                         <p className="stat-label">{t('walletBalance')}</p>
                         <p className="stat-value" style={{ 
                           color: (bank.balance ?? stats.balance) >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                         }}>
-                          {formatMoney(bank.balance ?? stats.balance, bank.currency || DEFAULT_BASE_CURRENCY)}
+                          <DisplayCurrencyAmount amount={bank.balance ?? stats.balance} currency={bank.currency || DEFAULT_BASE_CURRENCY} showSource />
                         </p>
                       </div>
                       <div className="stat-card warning">
