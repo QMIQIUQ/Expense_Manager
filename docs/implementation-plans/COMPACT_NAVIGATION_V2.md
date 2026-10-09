@@ -10,21 +10,21 @@ Keep the compact header while making every enabled destination available in one 
 - **Mobile:** a 52 px brand/action row followed by a 44 px horizontally scrollable navigation row. The active item scrolls into view when selected. There is no bottom navigation bar and no navigation `More` dropdown.
 - **Order:** the navigation row follows the saved order exactly. Existing `tabFeatures` retain their order first; unique `hamburgerFeatures` follow in their saved order. No fixed desktop/mobile priority or item-count cap is applied.
 - **Active destination:** a subtle underline marks the current destination. Every navigation button remains directly available in the scrollable row.
-- **Utility menu:** the hamburger/account utility menu remains separate for language, appearance, import/export, account, and admin actions. It is not the removed navigation `More` dropdown.
+- **Utility menu:** the hamburger/account utility menu remains separate for language, appearance, a collapsible Features section, import/export, account, and admin actions. It is not the removed navigation `More` dropdown. The Features section retains the main-branch `Feature Settings` entry; saved legacy hamburger destinations remain available there when explicitly configured.
 - **Status:** synchronization and progress status remains absent while idle.
 - **Quick actions:** retain two separate bottom-left floating controls. On mobile both are 56×56 px circles, 16 px from the left and 16 px plus the safe-area inset from the bottom, with a 12 px gap. On desktop both remain separate 56 px-high actions, 24 px from the left and bottom. The add button opens the existing form on click and keeps its long-press date shortcuts; the receipt action keeps its current flow.
 - **Occlusion:** hide floating actions while utility menus, modals, customization, or the long-press radial date menu is open. The navigation row has no dropdown state that can cover page content.
 
 ## Feature settings and compatibility
 
-Feature Manager now presents one ordered list for all navigation destinations. Dragging, touch reordering, numeric position changes, enabling/disabling features, saving, and reset all operate on this unified list.
+Feature Manager now presents one ordered list for all navigation destinations. Dragging, touch reordering, numeric position changes, enabling/disabling features, saving, and reset all operate on this unified list. The hamburger's collapsible Features section is restored from the main design and always offers Feature Settings; the Settings destination remains protected from being disabled.
 
 On load, the shared normalization helper merges legacy settings without writing to Firestore:
 
 1. When both `tabFeatures` and `hamburgerFeatures` exist, preserve the tab order and append only not-yet-listed hamburger items. Do not revive stale entries from `enabledFeatures` in this case.
 2. When only one location list exists, retain its order and append enabled legacy items missing from that list.
 3. When neither location list exists, use the order in `enabledFeatures`, or defaults when no saved preferences exist.
-4. Normalize legacy `cards` and `ewallets` to `paymentMethods`, remove duplicates and utility-only `profile`/`admin` entries, and keep Settings reachable.
+4. Normalize legacy `cards` and `ewallets` to `paymentMethods`, remove duplicates and utility-only `profile`/`admin` entries, and keep Settings reachable. In the hamburger menu, an explicitly empty `hamburgerFeatures` array stays empty instead of falling back to the full tab list and duplicating every navigation destination.
 5. Save the unified order to both `enabledFeatures` and `tabFeatures`; write an empty `hamburgerFeatures` array for older clients. A reset uses the same format. Existing data is not rewritten simply by opening the page.
 
 ## Components

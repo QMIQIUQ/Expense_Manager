@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode } from '../types';
+import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode, DEFAULT_FEATURES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
@@ -107,6 +107,7 @@ const Dashboard: React.FC = () => {
   // Collapsible sections inside hamburger
   const [openLanguageSection, setOpenLanguageSection] = useState(false);
   const [openAppearanceSection, setOpenAppearanceSection] = useState(false);
+  const [openFeaturesSection, setOpenFeaturesSection] = useState(false);
   const [openImportExportSection, setOpenImportExportSection] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
@@ -498,6 +499,7 @@ const Dashboard: React.FC = () => {
     if (!showHamburgerMenu) {
       setOpenLanguageSection(false);
       setOpenAppearanceSection(false);
+      setOpenFeaturesSection(false);
       setOpenImportExportSection(false);
     }
   }, [showHamburgerMenu]);
@@ -2331,7 +2333,86 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>                {/* Import/Export Section */}
+                </div>
+
+                {/* Features Section - Collapsible */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                    onClick={() => setOpenFeaturesSection(open => !open)}
+                    aria-expanded={openFeaturesSection}
+                    aria-controls="hamburger-features-section"
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    <span>{t('features') || 'Features'}</span>
+                    <svg
+                      className={`transition-transform ${openFeaturesSection ? 'rotate-90' : ''}`}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {openFeaturesSection && (
+                    <div id="hamburger-features-section" className="mt-2 space-y-1">
+                      <button
+                        onClick={() => {
+                          setActiveTab('settings');
+                          setShowHamburgerMenu(false);
+                          setOpenFeaturesSection(false);
+                        }}
+                        className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          activeTab === 'settings' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                        }`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        {t('featureSettings')}
+                      </button>
+                      {(featureSettings?.hamburgerFeatures ?? featureSettings?.enabledFeatures ?? DEFAULT_FEATURES)
+                        .map((feature) => {
+                          const featureStr = feature as string;
+                          return featureStr === 'cards' || featureStr === 'ewallets'
+                            ? 'paymentMethods' as FeatureTab
+                            : feature;
+                        })
+                        .filter((feature, index, array) => array.indexOf(feature) === index)
+                        .filter((feature) => feature !== 'profile' && feature !== 'admin' && feature !== 'settings')
+                        .map((feature) => {
+                          const labelMap: Record<FeatureTab, string> = {
+                            dashboard: t('dashboard'),
+                            expenses: t('expenses'),
+                            incomes: t('incomes'),
+                            categories: t('categories'),
+                            budgets: t('budgets'),
+                            recurring: t('recurring'),
+                            paymentMethods: t('paymentMethods'),
+                            settings: t('featureSettings'),
+                            profile: t('profile'),
+                            admin: t('admin'),
+                          };
+
+                          return (
+                            <button
+                              key={feature}
+                              onClick={() => {
+                                setActiveTab(feature);
+                                setShowHamburgerMenu(false);
+                                setOpenFeaturesSection(false);
+                              }}
+                              className={`menu-item-hover w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                                activeTab === feature ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                              }`}
+                              style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                            >
+                              {labelMap[feature]}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Import/Export Section */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <button
                     className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 uppercase tracking-wide"
