@@ -9,8 +9,9 @@
 | [FEATURES.md](FEATURES.md) | 功能总览与使用指南 | 用户 / 开发者 |
 | [FEATURES_AND_PAGES.md](FEATURES_AND_PAGES.md) | 功能入口、目前頁面掛載與主要資料結構 | 開發者 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系统架构设计 | 开发者 |
+| [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
 | [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
-| [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2、漢堡選單與浮動快捷操作 | 產品 / 設計 / 開發 |
+| [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2 實作紀錄；較新的導覽改進建議見 UI 導覽盤點 | 產品 / 設計 / 開發 |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | GitHub Pages 與 Firebase live / preview 部署方式 | 開發者 / 運維 |
 | [DARK_MODE_GUIDE.md](DARK_MODE_GUIDE.md) | 深色模式完整指南 | 开发者 |
 | [ADMIN_GUIDE.md](ADMIN_GUIDE.md) | 管理员与用户管理 | 管理员 / 开发者 |
@@ -34,7 +35,8 @@
 ### 我是开发者
 - 🏗️ [架构](ARCHITECTURE.md) - 系统设计
 - 🧭 [功能與頁面](FEATURES_AND_PAGES.md) - 功能入口與實際掛載位置
-- 📱 [Compact Navigation V2](implementation-plans/COMPACT_NAVIGATION_V2.md) - 已發布的 UI 導覽與浮動操作規格
+- 🧭 [UI 架構與排列盤點](UI_NAVIGATION_AUDIT.md) - 導覽結構、目前問題與改進方案
+- 📱 [Compact Navigation V2](implementation-plans/COMPACT_NAVIGATION_V2.md) - 已發布的實作紀錄；新建議見 UI 導覽盤點
 - 🎨 [UI 规范](UI_STYLE_GUIDE.md) - 样式与组件
 - 🚀 [部署指南](DEPLOYMENT_GUIDE.md) - GitHub Pages 與 Firebase Hosting
 - 🌙 [深色模式](DARK_MODE_GUIDE.md) - 主题系统

@@ -2,6 +2,8 @@
 
 本文档整合了 Expense Manager 的所有 UI 规范，包括按钮、组件、布局和交互模式。
 
+> 頁面層級、目前導覽和推薦排列方案請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。本指南提供元件外觀與互動原則；目前程式的導覽和建議改版需分開理解。
+
 ---
 
 ## 目录
@@ -10,8 +12,8 @@
 2. [按钮系统](#2-按钮系统)
 3. [表单按钮规范](#3-表单按钮规范)
 4. [图标按钮](#4-图标按钮)
-5. [漢堡選單與 Portal 操作選單](#5-漢堡選單與-portal-操作選單)
-6. [主導覽頁籤](#6-主導覽頁籤)
+5. [卡片操作菜单（⋮）](#5-卡片操作菜单)
+6. [导航标签](#6-导航标签)
 7. [卡片与容器](#7-卡片与容器)
 8. [浮动按钮 (FAB)](#8-浮动按钮)
 9. [响应式断点](#9-响应式断点)
@@ -193,19 +195,13 @@
 
 ---
 
-## 5. 漢堡選單與 Portal 操作選單
+## 5. 卡片操作菜单（⋮）
 
-### 頁首 Hamburger Menu（目前實作）
+本節的 Portal 範例用於卡片內的項目操作選單（例如編輯/刪除），觸發圖示通常是 `⋮`。它**不是** `Dashboard.tsx` 頁首的 `☰` 工具選單；目前頁首選單的折疊列由 `DashboardMenuSection` 呈現（見第 6 節）。本節描述現行元件，導覽改版建議請看 [UI 導覽盤點](UI_NAVIGATION_AUDIT.md)。
 
-頁首的漢堡選單由 `Dashboard.tsx` 呈現，面板以 `dashboard-menu-panel` 錨定在漢堡按鈕下方。它包含網路狀態、語言、外觀、功能、匯入/匯出、可選的離線佇列，以及帳戶/管理和登出操作。它是工具與帳戶選單，不是主頁籤的「更多」下拉清單。
+### ⭐ 推荐：Portal 模式
 
-語言、外觀、功能與匯入/匯出各自使用 `DashboardMenuSection` 折疊列。觸發列是獨立的原生 `<button>`，整列全寬可點擊，至少 44px 高，並提供 `aria-expanded` 和 `aria-controls`；折疊內容透過 `hidden` 隱藏。按鈕本身承載左右 padding，外層 section 不加水平 padding，確保文字、箭頭、hover 背景和點擊範圍對齊。選單項目也由全寬按鈕承載自己的 hit area；不要在可點擊列外再包一個會觸發相同操作的父層，也不要巢狀放置按鈕。
-
-功能區固定提供「功能設定」入口，再依 `hamburgerFeatures` 顯示使用者配置的功能入口。個人檔案、管理員和登出是各自的整列操作按鈕；管理入口仍遵循權限判斷。此選單與主頁籤清單分開設定，更多互動與組件樹見 [COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md)。
-
-### 卡片/元件操作選單：Portal 模式
-
-此 Portal 範例是卡片或元件操作選單在會裁切內容的容器中需要脫離堆疊上下文時的模式；不代表頁首 Hamburger 選單也使用 Portal。
+在 **所有** 卡片/组件中使用 Portal 模式以避免 z-index 问题。
 
 ```tsx
 import ReactDOM from 'react-dom';
@@ -352,27 +348,44 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 
 ---
 
-## 6. 主導覽頁籤
+## 6. 導覽頁籤
 
-目前頁籤順序和顯示內容由 `tabFeatures` 提供，使用簡潔的文字按鈕與作用中底線。按鈕列水平可捲動並隱藏捲軸；切換頁籤或排序後，作用中項目會自動捲入可視範圍。頁首使用緊湊版面：桌機單列；768px 以下由 52px 品牌/操作列和 44px 導覽列組成。沒有獨立的「更多」下拉按鈕或固定手機底列。
+目前主要頁籤依使用者功能設定顯示與排序；預設功能與響應式行為以 [UI 導覽盤點](UI_NAVIGATION_AUDIT.md) 為準。Dashboard 的目前導覽元件如下：
+
+- `CompactNavigation`（`web/src/components/navigation/CompactNavigation.tsx`）讀取 `tabFeatures`，以 `.compact-navigation-item` 呈現可水平捲動的主頁籤；切換頁籤或排序後會將作用中項目捲入可視範圍。
+- `DashboardMenuSection`（`web/src/components/navigation/DashboardMenuSection.tsx`）呈現漢堡選單內的折疊列。觸發列是全寬原生按鈕，並提供 `aria-expanded`、`aria-controls`；各操作按鈕自行承載完整點擊範圍。
+- `FloatingExpenseActions`（`web/src/components/navigation/FloatingExpenseActions.tsx`）保留新增支出與掃描收據兩個分開的浮動操作。
+
+主頁籤保持水平捲動，所有寬度都不會改為漢堡選單或固定手機底列。頁首選單內容、點擊區結構及桌機/手機現況請見 [UI 導覽盤點](UI_NAVIGATION_AUDIT.md)。
+
+### 目前導覽選擇器與行為
+
+| CSS 選擇器 | 現行行為 |
+|-----------|---------|
+| `.compact-navigation` | 主頁籤容器；桌面高度 56px，≤768px 時放在第二列並縮至 44px |
+| `.compact-navigation-scroll` | 橫向可捲動的頁籤列；使用者可滑動，捲軸隱藏 |
+| `.compact-navigation-item` | 透明底、次要文字色；懸停時套用 `--tab-hover-bg` 和主要文字色 |
+| `.compact-navigation-item.is-active` | 主要主題色文字與底線，不使用卡片底色 |
+| `.compact-navigation-item:focus-visible` | 以主題色外框標示鍵盤焦點 |
 
 ```
 [Dashboard] [Expenses] [Incomes] [Categories] [Budgets] [Recurring] [Payment Methods] [Settings]
 ```
 
-### 标签样式
+### 樣式狀態與主題
 
-| 状态 | 背景 | 文字 |
+| 狀態 | 背景 | 文字 |
 |------|------|------|
-| 作用中：`.compact-navigation-item.is-active` | 透明底；文字與底線使用 `var(--accent-primary)` | 主題色，較高字重 |
+| 作用中：`.compact-navigation-item.is-active` | 透明底；底線使用 `var(--accent-primary)` | `var(--accent-primary)`，較高字重 |
 | 未作用中：`.compact-navigation-item` | 透明底 | `var(--text-secondary)` |
-| 懸停 | `var(--tab-hover-bg)` | `var(--text-primary)` |
-| 鍵盤焦點 | 不改變排列 | 以 `:focus-visible` 顯示主題色外框 |
+| 未作用中且懸停 | `var(--tab-hover-bg)` | `var(--text-primary)` |
+| 鍵盤焦點：`.compact-navigation-item:focus-visible` | 不改變排列 | 以 `var(--accent-primary)` 顯示外框 |
 
-### CSS
+主頁籤顏色由主題 token 決定，不應假設所有主題都是紫色背景配白字。`ThemeContext` 提供 `light`、`dark`、`system`、`cat`、`cat-dark` 五種 `ThemeMode`；`system` 跟隨作業系統色彩偏好，`cat` 和 `cat-dark` 使用 Warm Kitty 配色，並覆寫主題 token。變數定義位於 `web/src/index.css` 和 `web/src/cat-theme.css`。
+
+### 目前 CSS 選擇器
 
 ```css
-/* current navigation item */
 .compact-navigation-item.is-active {
   color: var(--accent-primary);
   font-weight: 650;
@@ -395,7 +408,7 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 }
 ```
 
-CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。主題覆寫應沿用設計 token，不能假設作用中頁籤固定為紫色漸層卡片。
+CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。`web/src/index.css` 仍保留 `.dashboard-tabs` / `.dashboard-tab` 與 `≥640px` 等寬規則；它們是舊版頁籤樣式，不是 `Dashboard.tsx` 目前掛載的主導覽。避免將這組舊選擇器記成現行元件樣式。
 
 ---
 
@@ -444,22 +457,26 @@ CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。主題覆寫應�
 
 ### 规则
 
-- `FloatingExpenseActions` 共用一套渲染，始終分開呈現新增支出與掃描收據兩個按鈕；只有頁面採用不同的支出表單開啟狀態。
-- 新增支出按一下即可新增；長按 500ms 進入日期快捷選單。掃描收據使用獨立按鈕，且兩者都有本地化 `aria-label` 和 `title`。
-- 主要表單、漢堡/其他選單、匯入流程或 Dashboard 自訂面板開啟時隱藏 FAB，避免遮住正在操作的內容。
-- 桌機按鈕固定在左下方，帶文字標籤；≤768px 時改為兩個獨立的 56×56px 圓形圖示按鈕，並以 `env(safe-area-inset-bottom)` 保留安全區域。
-- `.floating-expense-actions` 容器保持透明且不攔截點擊；實際按鈕各自接收點擊。主要新增按鈕與次要掃描按鈕須維持不同的背景、邊框和陰影。
+- Expenses 和其他 Dashboard 頁面都會顯示兩個操作：新增支出與掃描收據；目前各自有對應的 FAB 渲染分支。
+- Expenses 頁用 `showAddSheet` 開啟支出表單；其他頁面用 `showAddExpenseForm`。兩者共用 `StepByStepExpenseForm`。
+- 漢堡選單、其他選單、匯入彈窗、支出表單或 Dashboard 自訂面板開啟時，FAB 會隱藏。
+- 長按新增支出按鈕會開啟日期快捷選單。
+- `isMobile` 在視窗寬度 `≤768px` 時成立：新增和掃描按鈕均為 56px 圓形圖示按鈕；較寬時為帶文字的橢圓按鈕。
+- 圖示按鈕需保留本地化 `aria-label` 和可見的 `title`；掃描入口標示為掃描收據。
 
 ---
 
-## 9. 响应式断点
+## 9. 響應式斷點
 
-| 断点 | 行为 |
+| 寬度/判斷 | 目前行為 |
 |------|------|
-| `≤ 768px` | Dashboard `isMobile` 判斷；頁首改成兩列，FAB 改為圓形圖示按鈕 |
-| `≤ 480px` | 主要內容內距縮小 |
+| 所有寬度 | 主頁籤列可水平捲動，捲軸隱藏 |
+| `≥ 640px` | 舊版 `.dashboard-tab` CSS 會平均伸展；不適用於目前的 `CompactNavigation` |
+| `≤ 768px` | FAB 使用僅圖示的圓形按鈕（由 Dashboard `isMobile` 判斷） |
+| `≤ 480px` | 內容內距縮小 |
+| `≤ 360px` / `≤ 320px` | 頁籤最小寬度、按鈕內距及字級縮小 |
 
-768px 是 Dashboard 導覽與 FAB 的切換點；其他較窄斷點由各個內容元件自己的 CSS 定義，不會改變主導覽模式。
+640px 和 768px 是不同用途的切換點，不應合併解讀成同一個裝置模式。改版時請以具體版面需求重新定義斷點，並在短標籤、長語系和超窄螢幕下檢查溢出。
 
 ---
 

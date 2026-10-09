@@ -16,26 +16,40 @@
 
 ## 頁面結構 Page Structure
 
-### 現行路由與導覽 Current Routes & Navigation
+> 現行實際路由與 UI 導覽已核對 `web/src` 原始碼。完整的 As-is 架構及桌機/手機排列方案請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。以下表格列出 Dashboard 目前掛載的功能。
 
-目前正式版的 Dashboard 導覽已採用 Compact Navigation V2。`/dashboard` 是唯一的功能工作區；`activeTab` 在同一路徑中切換內容，不會為每個功能建立獨立網址。`/login` 會轉址到 `/`，未識別路徑也會回到 `/`；目前沒有獨立的 `/register` 路由。
+### 實際路由與版面層級 Current Routes & Layout
 
-桌機在 768px 以上以單列呈現品牌、水平可捲動的主頁籤、通知與漢堡按鈕；768px 以下改為 52px 品牌/操作列加 44px 可水平捲動的頁籤列。頁首沒有獨立的「更多」下拉選單。完整元件樹、Hamburger 點擊區與響應式細節見 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md)。
+| 路徑/層級 | 實際內容 | 實作 |
+|---|---|---|
+| `/` | 登入入口 | `web/src/pages/Login.tsx` |
+| `/login` | 轉址到 `/` | `web/src/App.tsx` |
+| `/dashboard` | 登入後的 Dashboard 外殼；8 個主頁籤和頁首選單中的帳戶入口共用 `activeTab`，沒有各自的網址 | `web/src/pages/Dashboard.tsx` |
+| Dashboard 子檢視 | 支出日期/篩選、Payment Methods 子頁籤、定期付款清單/月曆/分析 | 各功能元件內的狀態，不是頂層路由 |
+
+目前 Router 沒有獨立 `/register` 路由。未知路徑會導回 `/`。功能頁面更新或新增時，請以 `Dashboard.tsx` 目前實際掛載為準。
 
 ### 主要頁籤 Main Tabs
 
 | 頁籤名稱 | 英文名稱 | 組件路徑 | 功能描述 |
 |---------|---------|---------|---------|
-| 儀表板 | Dashboard | `web/src/components/dashboard/CustomizableDashboard.tsx` | 總覽、Widget、圖表與快速操作 |
+| 儀表板 | Dashboard | `web/src/components/dashboard/CustomizableDashboard.tsx` | 總覽、Widget、圖表、快速操作 |
 | 支出 | Expenses | `web/src/pages/tabs/ExpensesTab.tsx`、`web/src/components/expenses/` | 支出記錄、日期導覽、搜尋與篩選 |
 | 收入 | Incomes | `web/src/pages/tabs/IncomesTab.tsx`、`web/src/components/income/` | 收入記錄管理 |
-| 分類 | Categories | `web/src/components/categories/CategoryManager.tsx` | 分類管理 |
+| 分類 | Categories | `web/src/components/categories/CategoryManager.tsx` | 類別管理 |
 | 預算 | Budgets | `web/src/components/budgets/BudgetManager.tsx` | 預算設定與追蹤 |
-| 定期 | Recurring | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx` | 目前入口顯示定期付款，含清單、月曆與分析檢視 |
-| 支付方式 | Payment Methods | `web/src/components/payment/PaymentMethodsTab.tsx` | 信用卡、電子錢包、銀行帳戶與轉帳紀錄 |
-| 功能設定 | Settings | `web/src/components/settings/FeatureManager.tsx` | 分別管理主頁籤與漢堡選單中的功能、順序與重設 |
+| 定期 | Recurring | `web/src/components/scheduledPayments/ScheduledPaymentManager.tsx` | 目前 Dashboard 實際顯示定期付款，含清單、月曆與分析檢視 |
+| 支付方式 | Payment Methods | `web/src/components/payment/PaymentMethodsTab.tsx` | 信用卡、電子錢包、銀行帳戶、轉帳紀錄 |
+| 設定 | Settings | `web/src/components/settings/FeatureManager.tsx` | 主頁籤與漢堡選單功能顯示/排序 |
 
-個人檔案和管理員入口不是可排序的主頁籤功能：它們由漢堡選單的帳戶/管理區提供，且管理員入口只對具管理權限的使用者顯示。主頁籤讀取 `tabFeatures`；漢堡的 Features 區讀取 `hamburgerFeatures`。`FeatureManager` 讓兩份清單各自啟用、停用、排序與重設；排序支援拖放、觸控拖放和數字位置輸入，每個位置至少保留一個功能，同一功能可同時出現在兩處。舊設定若缺少某一份清單，該位置會分別回退使用 `enabledFeatures`；儲存時 `enabledFeatures` 保留 Tabs 清單供舊版用戶端相容，不代表兩份清單的合併。
+### 頁首選單入口 Header Menu Entries
+
+| 入口 | 組件路徑 | 功能描述 |
+|------|---------|---------|
+| 個人檔案 Profile | `web/src/pages/UserProfile.tsx` | 從頁首漢堡選單開啟 |
+| 管理 Admin | `web/src/pages/tabs/AdminTab.tsx` | 從頁首漢堡選單開啟；只有管理員看到入口 |
+
+8 個主要頁籤與上述頁首選單入口都使用同一個 `/dashboard` 路徑，由 `activeTab` 切換內容。`pages/tabs/RecurringTab.tsx` 和 `components/recurring/RecurringExpenseManager.tsx` 尚在程式碼中，但目前沒有由 Dashboard 掛載；勿將其描述為目前的定期頁入口。
 
 ### 子頁面與 Modal Sub-pages & Modals
 
@@ -267,7 +281,7 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 
 ### 8. 舊定期支出介面 Legacy Recurring Expense UI (not mounted)
 
-`RecurringExpenseManager` 和 `RecurringTab` 仍在來源樹，但目前沒有從 Dashboard 掛載。以下列出其元件能力供維護時辨認；使用者目前看到的「Recurring」入口實際顯示定期付款管理，請看下一節。
+`RecurringExpenseManager` 和 `RecurringTab` 仍在來源樹，但目前沒有從 Dashboard 掛載。以下列出其元件能力供程式維護時辨認；目前使用者看到的「Recurring」入口請看下一節的定期付款管理。
 
 **組件**: `components/recurring/`
 
@@ -283,7 +297,7 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 
 **組件**: `components/scheduledPayments/`
 
-**目前 UI 入口**: Dashboard 的 `Recurring` 主頁籤由 `Dashboard.tsx` 掛載 `ScheduledPaymentManager`，並在此元件內切換清單、月曆及分析檢視。
+**目前 UI 入口**: Dashboard 的 `Recurring` 主頁籤（由 `Dashboard.tsx` 掛載 `ScheduledPaymentManager`），其中可切換清單、月曆及分析檢視。
 
 | 功能 | 描述 |
 |------|------|
@@ -396,9 +410,10 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 
 ### 響應式設計 Responsive Design
 
-- **桌機寬度 (>768px)**：品牌、可水平捲動的主頁籤、通知與漢堡按鈕同列，高 56px。
-- **窄版 (≤768px)**：品牌/操作列高 52px，主頁籤另列為高 44px 的水平捲動區；主頁籤不會改成漢堡或底部導覽。
-- **浮動操作**：保留獨立的「新增支出」與「掃描收據」按鈕；≤768px 顯示圓形圖示按鈕並使用安全區域間距。
+- **主導覽（所有寬度）**：主頁籤保留水平捲動，不會在手機寬度改由漢堡選單取代。
+- **窄版（≤768px）**：Dashboard 頁首分為品牌/操作列與主頁籤列；主頁籤仍可水平捲動，新增支出與掃描收據浮動按鈕改為圓形圖示。
+- **較寬版（>768px）**：品牌、主頁籤、通知與漢堡選單位於同一列；浮動按鈕顯示文字標籤。
+- `≥640px` 的 `.dashboard-tab` 等寬規則屬於舊版頁籤 CSS；目前 Dashboard 掛載 `CompactNavigation`，不使用該選擇器。
 
 ---
 
@@ -550,13 +565,16 @@ interface Bank {
 
 ### 3. 導航優化
 
-現行導覽已在 Compact Navigation V2 中縮短頁首占用，並保留使用者可分別管理主頁籤和 Hamburger Features 清單。以下是未排入目前實作的後續研究方向，不能視為已完成行為：
+目前產品的導覽問題、推薦排列及桌機/手機方案請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準。優先方向如下：
 
-| 後續研究方向 | 說明 | 優先級 |
+| 建議 | 說明 | 優先級 |
 |------|------|--------|
-| 頁籤溢出提示 | 在不增加固定「更多」按鈕的前提下，研究低干擾的橫向溢出提示 | 低 |
-| 功能頁深連結 | 評估將 `activeTab` 同步到網址，以支援重新整理、分享及瀏覽器返回 | 低 |
-| 子檢視返回路徑 | 評估在真正具有獨立子流程的頁面加入明確返回提示 | 低 |
+| 整理主導覽與「更多」 | 區分高頻功能和低頻入口，移除主頁籤與頁首工具選單重複的功能捷徑 | 高 |
+| 清楚提示手機頁籤溢出 | 保留橫向頁籤時，顯示尚有內容、切頁自動捲到目前頁籤，並提供明確的更多入口 | 高 |
+| 分開頁面入口與工具設定 | 語言、外觀、匯入/匯出、離線同步及個人帳戶操作使用清楚分組 | 高 |
+| 用明確名稱表示排程付款 | 讓目前標為 Recurring 的入口與實際掛載的 ScheduledPaymentManager 相符 | 中 |
+| 評估手機底部導覽 | 先做原型並檢查 PWA 安全區域、浮動新增按鈕及功能個人化 | 中 |
+| 支援功能頁深連結 | 之後再考慮讓主頁籤和子檢視同步到網址，支援重新整理及瀏覽器返回 | 低 |
 
 ### 4. 視覺反饋優化
 
