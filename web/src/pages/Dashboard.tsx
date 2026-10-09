@@ -2727,6 +2727,8 @@ const Dashboard: React.FC = () => {
                 onDelete={handleDeleteBudget}
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}
+                displayCurrency={displayCurrency}
+                onDisplayCurrencyChange={setDisplayCurrency}
               />
             </Suspense>
           </div>

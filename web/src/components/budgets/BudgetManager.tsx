@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Budget, Category, Expense, Repayment } from '../../types';
+import { Budget, Category, CurrencyCode, Expense, Repayment } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -20,9 +20,10 @@ import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import CurrencySelector from '../common/CurrencySelector';
 import {
   convertBudgetAmount,
-  formatBudgetMoney,
   getBudgetCurrency,
   getBudgetExchangeRate,
   toBudgetBaseAmount,
@@ -58,6 +59,8 @@ interface BudgetManagerProps {
   onDelete: (id: string) => void;
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
+  displayCurrency?: CurrencyCode;
+  onDisplayCurrencyChange?: (currency: CurrencyCode) => void;
 }
 
 const BudgetManager: React.FC<BudgetManagerProps> = ({
@@ -70,6 +73,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   onDelete,
   spentByCategory,
   billingCycleDay = 1,
+  displayCurrency = DEFAULT_BASE_CURRENCY,
+  onDisplayCurrencyChange,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
@@ -222,10 +227,38 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     return { percentage, status: 'normal' };
   }, [spentByCategory]);
 
-  const totalBudget = React.useMemo(
-    () => budgets.reduce((sum, budget) => sum + toBudgetBaseAmount(getEffectiveBudgetAmount(budget), budget), 0),
-    [budgets],
-  );
+  const budgetDisplayEntries = React.useMemo(() => budgets.flatMap((budget) => {
+    const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
+    const rateDate = budget.exchangeRateDate || budget.startDate || getTodayLocal();
+    const spentBase = spentByCategory[budget.categoryName] || 0;
+    const effectiveAmount = getEffectiveBudgetAmount(budget);
+    const rolloverAmount = budget.accumulatedRollover || 0;
+
+    return [
+      { key: `${budgetId}:spent`, amount: spentBase, sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
+      { key: `${budgetId}:effective`, amount: toBudgetBaseAmount(effectiveAmount, budget), sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
+      { key: `${budgetId}:rollover`, amount: toBudgetBaseAmount(rolloverAmount, budget), sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
+    ];
+  }), [budgets, spentByCategory]);
+  const budgetDisplayAmounts = useCurrencyConversionMap(budgetDisplayEntries, displayCurrency);
+
+  const getBudgetDisplayAmount = React.useCallback((
+    key: string,
+    budgetAmount: number,
+    baseAmount: number,
+    budget: Budget,
+  ): number => {
+    if (displayCurrency === getBudgetCurrency(budget)) return budgetAmount;
+    if (displayCurrency === DEFAULT_BASE_CURRENCY) return baseAmount;
+    return budgetDisplayAmounts[key] ?? baseAmount;
+  }, [budgetDisplayAmounts, displayCurrency]);
+
+  const totalBudgetDisplay = React.useMemo(() => budgets.reduce((sum, budget) => {
+    const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
+    const amount = getEffectiveBudgetAmount(budget);
+    const baseAmount = toBudgetBaseAmount(amount, budget);
+    return sum + getBudgetDisplayAmount(`${budgetId}:effective`, amount, baseAmount, budget);
+  }, 0), [budgets, getBudgetDisplayAmount]);
   
   // Filter and sort budgets
   const filteredAndSortedBudgets = React.useMemo(() => {
@@ -527,7 +560,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <div>
           <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
         </div>
-        <strong style={styles.totalBudgetValue}>{formatMoney(totalBudget, DEFAULT_BASE_CURRENCY)}</strong>
+        <strong style={styles.totalBudgetValue}>{formatMoney(totalBudgetDisplay, displayCurrency)}</strong>
       </section>
 
       {/* Search Bar - placed after form */}
@@ -574,24 +607,40 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </div>
 
       {activeSubTab === 'list' && (
-      <MultiSelectToolbar
-        isSelectionMode={isSelectionMode}
-        selectedCount={selectedIds.size}
-        onToggleSelectionMode={() => {
-            if (isSelectionMode) {
+        <div style={styles.listActionRow}>
+          <MultiSelectToolbar
+            isSelectionMode={isSelectionMode}
+            selectedCount={selectedIds.size}
+            onToggleSelectionMode={() => {
+              if (isSelectionMode) {
                 clearSelection();
                 setIsSelectionMode(false);
-            } else {
+              } else {
                 setIsSelectionMode(true);
-            }
-        }}
-        onSelectAll={() => selectAll(filteredAndSortedBudgets)}
-        onDeleteSelected={() => {
-          if (selectedIds.size > 0) {
-             setDeleteConfirm({ isOpen: true, budgetId: null });
-          }
-        }}
-      />
+              }
+            }}
+            onSelectAll={() => selectAll(filteredAndSortedBudgets)}
+            onDeleteSelected={() => {
+              if (selectedIds.size > 0) {
+                setDeleteConfirm({ isOpen: true, budgetId: null });
+              }
+            }}
+          />
+          {onDisplayCurrencyChange && (
+            <div style={styles.displayCurrencyControl}>
+              <span style={styles.displayCurrencyLabel}>{t('displayCurrency')}</span>
+              <CurrencySelector
+                value={displayCurrency}
+                onChange={onDisplayCurrencyChange}
+                compact={true}
+                showLabel={false}
+                align="right"
+                ariaLabel={t('displayCurrency')}
+                className="budget-display-currency-selector"
+              />
+            </div>
+          )}
+        </div>
       )}
 
       <div style={styles.budgetList}>
@@ -601,8 +650,25 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           </div>
         ) : (
           filteredAndSortedBudgets.map((budget) => {
-            const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
+            const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
+            const spentBase = spentByCategory[budget.categoryName] || 0;
+            const spentInBudgetCurrency = toBudgetCurrencyAmount(spentBase, budget);
+            const spent = getBudgetDisplayAmount(`${budgetId}:spent`, spentInBudgetCurrency, spentBase, budget);
             const effectiveAmount = getEffectiveBudgetAmount(budget);
+            const effectiveAmountBase = toBudgetBaseAmount(effectiveAmount, budget);
+            const displayEffectiveAmount = getBudgetDisplayAmount(
+              `${budgetId}:effective`,
+              effectiveAmount,
+              effectiveAmountBase,
+              budget,
+            );
+            const rolloverAmount = budget.accumulatedRollover || 0;
+            const displayRolloverAmount = getBudgetDisplayAmount(
+              `${budgetId}:rollover`,
+              rolloverAmount,
+              toBudgetBaseAmount(rolloverAmount, budget),
+              budget,
+            );
             const percentage = getProgressPercentage(budget);
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
 
@@ -630,9 +696,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                       )}
                     </div>
                     <div style={styles.budgetAmount}>
-                      <span style={{ ...styles.spent, color: progressColor }}>{formatBudgetMoney(spent, budget)}</span>
+                      <span style={{ ...styles.spent, color: progressColor }}>{formatMoney(spent, displayCurrency)}</span>
                       <span style={styles.separator}> / </span>
-                      <span style={styles.total}>{formatBudgetMoney(effectiveAmount, budget)}</span>
+                      <span style={styles.total}>{formatMoney(displayEffectiveAmount, displayCurrency)}</span>
                     </div>
                   </div>
 
@@ -643,8 +709,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <span style={styles.rolloverBadge} title={t('rolloverEnabled') || 'Rollover Enabled'}>🔄</span>
                       )}
                       {budget.accumulatedRollover && budget.accumulatedRollover > 0 && (
-                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: ${formatBudgetMoney(budget.accumulatedRollover, budget)}`}>
-                          +{formatBudgetMoney(budget.accumulatedRollover, budget)}
+                        <span style={styles.rolloverAmount} title={`${t('accumulatedRollover') || 'Accumulated Rollover'}: ${formatMoney(displayRolloverAmount, displayCurrency)}`}>
+                          +{formatMoney(displayRolloverAmount, displayCurrency)}
                         </span>
                       )}
                     </div>
@@ -743,6 +809,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         budgetAmount={budget.amount}
                         budgetCurrency={getBudgetCurrency(budget)}
                         budgetExchangeRate={getBudgetExchangeRate(budget)}
+                        budgetExchangeRateDate={budget.exchangeRateDate}
+                        displayCurrency={displayCurrency}
                         expenses={expenses}
                         repayments={repayments}
                         billingCycleDay={billingCycleDay}
@@ -827,6 +895,26 @@ const styles = {
     color: 'var(--accent-primary)',
     fontSize: '24px',
     fontWeight: '700' as const,
+    whiteSpace: 'nowrap' as const,
+  },
+  listActionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap' as const,
+  },
+  displayCurrencyControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginLeft: 'auto',
+    flexWrap: 'nowrap' as const,
+  },
+  displayCurrencyLabel: {
+    fontSize: '13px',
+    fontWeight: 600 as const,
+    color: 'var(--text-secondary)',
     whiteSpace: 'nowrap' as const,
   },
   templateButton: {

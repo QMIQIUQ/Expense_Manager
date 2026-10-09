@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CurrencyCode, Expense, Repayment } from '../../types';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import { getTodayLocal } from '../../utils/dateUtils';
 import { ChartBarIcon, BarChartSimpleIcon } from '../icons';
 import {
   BarChart,
@@ -19,6 +21,8 @@ interface BudgetHistoryProps {
   budgetAmount: number;
   budgetCurrency?: CurrencyCode;
   budgetExchangeRate?: number;
+  budgetExchangeRateDate?: string;
+  displayCurrency?: CurrencyCode;
   expenses: Expense[];
   repayments: Repayment[];
   billingCycleDay: number;
@@ -35,11 +39,22 @@ interface PeriodData {
   endDate: Date;
 }
 
+interface PeriodBaseData {
+  label: string;
+  spentBase: number;
+  spentInBudgetCurrency: number;
+  budgetBase: number;
+  startDate: Date;
+  endDate: Date;
+}
+
 export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   categoryName,
   budgetAmount,
   budgetCurrency = DEFAULT_BASE_CURRENCY,
   budgetExchangeRate = 1,
+  budgetExchangeRateDate,
+  displayCurrency,
   expenses,
   repayments,
   billingCycleDay,
@@ -48,12 +63,18 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 }) => {
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'bar' | 'chart'>('bar');
+  const targetCurrency = displayCurrency || budgetCurrency;
+  const budgetRate = budgetExchangeRate > 0 ? budgetExchangeRate : 1;
+  const conversionDate = budgetExchangeRateDate || getTodayLocal();
 
   // Build repayment lookup
-  const repaymentsByExpense: { [expenseId: string]: number } = {};
-  for (const rep of repayments) {
-    repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
-  }
+  const repaymentsByExpense = React.useMemo(() => {
+    const byExpense: { [expenseId: string]: number } = {};
+    for (const rep of repayments) {
+      byExpense[rep.expenseId] = (byExpense[rep.expenseId] || 0) + rep.amount;
+    }
+    return byExpense;
+  }, [repayments]);
 
   const getNetAmount = (exp: Expense): number => {
     const repaid = repaymentsByExpense[exp.id || ''] || 0;
@@ -61,8 +82,8 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   };
 
   // Calculate historical periods
-  const getHistoricalPeriods = (): PeriodData[] => {
-    const periods: PeriodData[] = [];
+  const basePeriods = React.useMemo((): PeriodBaseData[] => {
+    const periods: PeriodBaseData[] = [];
     const now = new Date();
 
     for (let i = 1; i <= periodsToShow; i++) {
@@ -72,7 +93,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       const cycleEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, billingCycleDay);
 
       // Calculate spending for this period (cycleEnd is exclusive)
-      const spent = expenses
+      const spentBase = expenses
         .filter((exp) => {
           const expDate = new Date(exp.date);
           return (
@@ -81,9 +102,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
             expDate < cycleEnd
           );
         })
-        .reduce((sum, exp) => sum + getNetAmount(exp), 0) / (budgetExchangeRate > 0 ? budgetExchangeRate : 1);
-
-      const percentage = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
+        .reduce((sum, exp) => sum + getNetAmount(exp), 0);
 
       // Format label (e.g., "Nov" or "11月")
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -91,9 +110,9 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
       periods.push({
         label,
-        spent,
-        percentage,
-        budget: budgetAmount,
+        spentBase,
+        spentInBudgetCurrency: spentBase / budgetRate,
+        budgetBase: budgetAmount * budgetRate,
         startDate: cycleStart,
         endDate: cycleEnd,
       });
@@ -101,9 +120,39 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
     // Reverse to show oldest first
     return periods.reverse();
-  };
+  }, [budgetAmount, budgetRate, billingCycleDay, expenses, periodsToShow, repaymentsByExpense, categoryName]);
 
-  const periods = getHistoricalPeriods();
+  const displayConversionEntries = React.useMemo(() => basePeriods.flatMap((period, index) => ([
+    {
+      key: `history-${index}-spent`,
+      amount: period.spentBase,
+      sourceCurrency: DEFAULT_BASE_CURRENCY,
+      date: conversionDate,
+    },
+    {
+      key: `history-${index}-budget`,
+      amount: period.budgetBase,
+      sourceCurrency: DEFAULT_BASE_CURRENCY,
+      date: conversionDate,
+    },
+  ])), [basePeriods, conversionDate]);
+  const displayAmounts = useCurrencyConversionMap(displayConversionEntries, targetCurrency);
+
+  const periods = React.useMemo((): PeriodData[] => basePeriods.map((period, index) => {
+    const spent = targetCurrency === budgetCurrency
+      ? period.spentInBudgetCurrency
+      : targetCurrency === DEFAULT_BASE_CURRENCY
+        ? period.spentBase
+        : displayAmounts[`history-${index}-spent`] ?? period.spentBase;
+    const budget = targetCurrency === budgetCurrency
+      ? budgetAmount
+      : targetCurrency === DEFAULT_BASE_CURRENCY
+        ? period.budgetBase
+        : displayAmounts[`history-${index}-budget`] ?? period.budgetBase;
+    const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+
+    return { ...period, spent, budget, percentage };
+  }), [basePeriods, budgetAmount, budgetCurrency, displayAmounts, targetCurrency]);
 
   // Calculate statistics for advanced view (before hasData check)
   const stats = React.useMemo(() => {
@@ -142,7 +191,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div style={tooltipStyles.container}>
           <p style={tooltipStyles.label}>{label}</p>
           <p style={tooltipStyles.value}>
-            {formatMoney(data.spent, budgetCurrency)} / {formatMoney(data.budget, budgetCurrency)}
+            {formatMoney(data.spent, targetCurrency)} / {formatMoney(data.budget, targetCurrency)}
           </p>
           <p style={{ ...tooltipStyles.percentage, color: getBarColor(data.percentage) }}>
             {data.percentage.toFixed(0)}%
@@ -196,15 +245,15 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div style={statsStyles.container}>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('average') || 'Avg'}</span>
-            <span style={statsStyles.value}>{formatMoney(stats.avg, budgetCurrency)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.avg, targetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('highest') || 'High'}</span>
-            <span style={statsStyles.value}>{formatMoney(stats.max, budgetCurrency)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.max, targetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('lowest') || 'Low'}</span>
-            <span style={statsStyles.value}>{formatMoney(stats.min, budgetCurrency)}</span>
+            <span style={statsStyles.value}>{formatMoney(stats.min, targetCurrency)}</span>
           </div>
           <div style={statsStyles.item}>
             <span style={statsStyles.label}>{t('overBudget') || 'Over budget'}</span>
@@ -229,7 +278,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                     height: `${Math.min(barHeight, maxBarHeight)}px`,
                     backgroundColor: getBarColor(period.percentage),
                   }}
-                  title={`${period.label}: ${formatMoney(period.spent, budgetCurrency)} (${period.percentage.toFixed(0)}%)`}
+                  title={`${period.label}: ${formatMoney(period.spent, targetCurrency)} (${period.percentage.toFixed(0)}%)`}
                 />
                 <span className="budget-history-label">{period.label}</span>
               </div>
@@ -251,11 +300,11 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
               <YAxis 
                 tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
                 axisLine={{ stroke: 'var(--border-color)' }}
-                tickFormatter={(value) => formatMoney(value, budgetCurrency)}
+                tickFormatter={(value) => formatMoney(value, targetCurrency)}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine 
-                y={budgetAmount} 
+                y={periods[0]?.budget ?? budgetAmount}
                 stroke="var(--error-text)" 
                 strokeDasharray="3 3" 
                 label={{ value: 'Budget', fontSize: 10, fill: 'var(--error-text)' }}
