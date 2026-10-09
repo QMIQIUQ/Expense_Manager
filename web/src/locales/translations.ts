@@ -177,6 +177,7 @@ export const translations = {
 
   // Budgets
   budgetManagement: { en: 'Budget Management', zh: '預算管理', 'zh-CN': '预算管理' },
+  totalBudget: { en: 'Total Budget', zh: '總預算', 'zh-CN': '总预算' },
   budgetList: { en: 'Budget List', zh: '預算列表', 'zh-CN': '预算列表' },
   setBudget: { en: 'Set Budget', zh: '設定預算', 'zh-CN': '设定预算' },
   noBudgetsYet: { en: 'No budgets set yet. Create your first budget! 💰', zh: '尚未設定預算。建立您的第一個預算！💰', 'zh-CN': '尚未设定预算。创建您的第一个预算！💰' },

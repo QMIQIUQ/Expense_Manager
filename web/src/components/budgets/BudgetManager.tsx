@@ -19,6 +19,7 @@ import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
+import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -212,6 +213,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     if (percentage >= budget.alertThreshold) return { percentage, status: 'warning' };
     return { percentage, status: 'normal' };
   }, [spentByCategory]);
+
+  const totalBudget = React.useMemo(
+    () => budgets.reduce((sum, budget) => sum + getEffectiveBudgetAmount(budget), 0),
+    [budgets],
+  );
   
   // Filter and sort budgets
   const filteredAndSortedBudgets = React.useMemo(() => {
@@ -247,7 +253,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         case 'name':
           return a.categoryName.localeCompare(b.categoryName);
         case 'amount':
-          return b.amount - a.amount;
+          return getEffectiveBudgetAmount(b) - getEffectiveBudgetAmount(a);
         default:
           return 0;
       }
@@ -493,6 +499,13 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           />
         )}
       </PopupModal>
+
+      <section style={styles.totalBudgetSummary} aria-label={t('totalBudget')}>
+        <div>
+          <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
+        </div>
+        <strong style={styles.totalBudgetValue}>{formatMoney(totalBudget, DEFAULT_BASE_CURRENCY)}</strong>
+      </section>
 
       {/* Search Bar - placed after form */}
       <div style={styles.searchContainer}>
@@ -768,6 +781,28 @@ const styles = {
     fontSize: '24px',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
+  },
+  totalBudgetSummary: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px',
+    background: 'var(--card-bg, white)',
+    border: '1px solid var(--border-color, #e9ecef)',
+    borderRadius: '12px',
+  },
+  totalBudgetTitle: {
+    margin: 0,
+    color: 'var(--text-secondary)',
+    fontSize: '14px',
+    fontWeight: '500' as const,
+  },
+  totalBudgetValue: {
+    color: 'var(--accent-primary)',
+    fontSize: '24px',
+    fontWeight: '700' as const,
+    whiteSpace: 'nowrap' as const,
   },
   templateButton: {
     display: 'flex',
