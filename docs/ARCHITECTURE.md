@@ -1,5 +1,7 @@
 # Expense Manager - System Architecture
 
+> **UI 架構更新（2026-10-09）**：現行畫面路由、Dashboard 頁籤與導覽排列請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準。早期系統圖是簡化示意，不能用來推斷目前所有功能入口。
+
 ## System Overview
 
 ```
@@ -13,15 +15,15 @@
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                         USER INTERFACE                            │
+│                         USER INTERFACE                             │
 ├───────────────────────────────────────────────────────────────────┤
-│ Dashboard header                                                  │
-│  Brand + scrollable Tabs + notifications + hamburger              │
-│  Desktop: one 56px row; mobile: 52px actions + 44px Tabs          │
-│  Hamburger: tools, account, admin and sign-out                    │
-│  Separate lists: tabFeatures / hamburgerFeatures                 │
-│  activeTab switches views inside /dashboard                     │
-└─────────────────────────────┼────────────────────────────────────┘
+│  Main tabs (user-configurable order and visibility)                  │
+│  Dashboard · Expenses · Incomes · Categories · Budgets               │
+│  Recurring · Payment Methods · Settings                               │
+│  Profile and Admin are opened from the header utility menu            │
+│  activeTab selects one view inside the shared Dashboard content area  │
+│                              │                                      │
+└──────────────────────────────┼──────────────────────────────────────┘
                                │
 ┌──────────────────────────────┼──────────────────────────────────────┐
 │                       COMPONENT LAYER                               │
@@ -33,7 +35,7 @@
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘   │
 │                                                                     │
 │  ┌─────────────────┐  ┌─────────────────┐                         │
-│  │ Scheduled Pmts  │  │ CustomizableDash│                         │
+│  │ Scheduled Pmts  │  │ CustomizableDash │                         │
 │  └─────────────────┘  └─────────────────┘                         │
 │                              │                                      │
 └──────────────────────────────┼──────────────────────────────────────┘
@@ -168,44 +170,44 @@ Display Top Categories
 ```
 App.tsx
 └── PWAProvider
-    ├── RouterProvider
-    │   ├── /                    Login
-    │   ├── /login               redirect to /
-    │   ├── /dashboard           PrivateRoute → Dashboard.tsx
-    │   └── *                    redirect to /
-    └── PWAInstallPrompt
-
-Dashboard.tsx (/dashboard; activeTab switches views, not URLs)
-├── dashboard-header-modern
-│   ├── header-brand
-│   ├── CompactNavigation (tabFeatures)
-│   └── header-actions
-│       ├── NotificationBell
-│       └── hamburger button → dashboard-menu-panel
-│           ├── NetworkStatusIndicator
-│           ├── Language accordion
-│           ├── Appearance accordion
-│           ├── Features accordion (settings + hamburgerFeatures)
-│           ├── Import / Export accordion
-│           ├── Offline queue (conditional)
-│           ├── Profile / Admin actions
-│           └── Logout action
-├── HeaderStatusBar (progress / revalidation status)
-├── dashboard-card (active feature view)
-└── FloatingExpenseActions (when overlays allow it)
-    ├── Add expense (tap; long-press opens date shortcuts)
-    └── Scan receipt
+   ├── Router
+   │   ├── /                         Login
+   │   ├── /login                    redirect to /
+   │   └── /dashboard [PrivateRoute]
+   │       └── Dashboard.tsx
+   │           ├── Dashboard header
+   │           │   ├── Brand / greeting
+   │           │   ├── CompactNavigation (tabFeatures)
+   │           │   └── Header actions
+   │           │       ├── NotificationBell
+   │           │       └── Hamburger → dashboard-menu-panel
+   │           │           ├── DashboardMenuSection accordions
+   │           │           ├── Profile action
+   │           │           ├── Admin action (admin only)
+   │           │           └── Logout action
+   │           ├── HeaderStatusBar
+   │           ├── Shared content card (activeTab state)
+   │           │   ├── Dashboard → CustomizableDashboard → widgets
+   │           │   ├── Expenses → ExpensesTab
+   │           │   ├── Incomes → IncomesTab
+   │           │   ├── Categories → CategoryManager
+   │           │   ├── Budgets → BudgetManager
+   │           │   ├── Recurring → ScheduledPaymentManager
+   │           │   │   └── list / calendar / analytics views
+   │           │   ├── Payment Methods → cards / e-wallets / banks / transfers
+   │           │   └── Settings → FeatureManager
+   │           ├── FloatingExpenseActions
+   │           │   ├── Add expense (tap; long-press opens date shortcuts)
+   │           │   └── Scan receipt
+   │           └── Modal / Bottom Sheet / date shortcut overlays
+   └── PWAInstallPrompt
 ```
 
-### UI Navigation and Responsive Layout
+### Current UI implementation (As-is)
 
-The production layout is a compact header, not a row of separate feature cards. On widths above 768px, brand, horizontally scrollable Tabs, notifications, and the hamburger button share one 56px row. At 768px and below, the header uses a 52px brand/actions row and a 44px horizontally scrollable Tabs row. `CompactNavigation` brings the active item into view after a tab change or order change; it does not create a `More` dropdown or a separate feature route.
+`CompactNavigation`, `DashboardMenuSection`, and `FloatingExpenseActions` are the three mounted navigation/action components. `CompactNavigation` renders the user-configured `tabFeatures`; `DashboardMenuSection` owns each full-width accordion trigger inside the hamburger menu; and `FloatingExpenseActions` keeps separate add-expense and receipt-scan actions. Main tabs and hamburger utilities share the `/dashboard` shell and `activeTab` state, while Profile and Admin are opened from the menu rather than listed as main tabs.
 
-The hamburger panel is anchored to its header button. `DashboardMenuSection` renders each accordion as a full-width native button with `aria-expanded` and `aria-controls`; expanded content is hidden with the `hidden` attribute when collapsed. The trigger and actionable menu rows own their own full-width hit areas, with at least 44px height. Section wrappers stay unpadded so the visible row and clickable row remain aligned. Menu actions are sibling controls, not nested buttons.
-
-The main Tabs and the Hamburger Features list are independently configurable. `tabFeatures` controls only `CompactNavigation`; `hamburgerFeatures` controls only the feature destinations in the hamburger's Features accordion. The same feature may appear in both lists. `FeatureManager` lets users enable, disable, reorder, and reset each location independently. For older settings records, each missing location list falls back to `enabledFeatures`; saving keeps `enabledFeatures` equal to the Tabs list for backward compatibility, not the union of both lists.
-
-`FloatingExpenseActions` is one shared component that preserves two separate bottom-left actions. The primary action opens expense entry; a long press opens date shortcuts. The secondary action starts receipt scanning. On mobile both are 56px circular buttons positioned above the safe-area inset; on wider screens they show text labels. The group hides while selected menus, forms, import flows, or dashboard customization overlays are open. Component and style details are in [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md); the shipped implementation and its historical decisions are in [COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md).
+The `Recurring` main tab currently renders `ScheduledPaymentManager`; `RecurringTab` and `RecurringExpenseManager` remain in the source tree but are not mounted from `Dashboard.tsx`. Responsive layout, menu contents, and recommended desktop/mobile arrangements are documented separately in the [UI navigation audit](UI_NAVIGATION_AUDIT.md), with the current implementation clearly separated from proposed changes.
 
 ## State Management
 
@@ -312,18 +314,17 @@ Dashboard Component (Local State)
 web/
 ├── src/
 │   ├── components/
-│   │   ├── navigation/
-│   │   │   ├── CompactNavigation.tsx
-│   │   │   ├── DashboardMenuSection.tsx
-│   │   │   └── FloatingExpenseActions.tsx
+│   │   ├── budgets/
+│   │   │   └── BudgetManager.tsx
+│   │   ├── categories/
+│   │   │   └── CategoryManager.tsx
 │   │   ├── dashboard/
-│   │   │   └── CustomizableDashboard.tsx
-│   │   ├── settings/FeatureManager.tsx
-│   │   ├── scheduledPayments/ScheduledPaymentManager.tsx
-│   │   ├── HeaderStatusBar.tsx
-│   │   ├── budgets/BudgetManager.tsx
-│   │   ├── categories/CategoryManager.tsx
-│   │   ├── expenses/ExpenseList.tsx
+│   │   │   └── DashboardSummary.tsx
+│   │   ├── expenses/
+│   │   │   ├── ExpenseForm.tsx
+│   │   │   └── ExpenseList.tsx
+│   │   ├── recurring/
+│   │   │   └── RecurringExpenseManager.tsx
 │   │   └── PrivateRoute.tsx
 │   │
 │   ├── services/
@@ -346,11 +347,10 @@ web/
 │   │   └── firebase.ts
 │   │
 │   ├── pages/
+│   │   ├── Home.tsx
 │   │   ├── Login.tsx
-│   │   ├── Dashboard.tsx
-│   │   └── tabs/
-│   │       ├── ExpensesTab.tsx
-│   │       └── IncomesTab.tsx
+│   │   ├── Register.tsx
+│   │   └── Dashboard.tsx
 │   │
 │   ├── App.tsx
 │   └── main.tsx
@@ -361,8 +361,6 @@ web/
 ├── vite.config.ts
 └── tsconfig.json
 ```
-
-This is a focused map of files that participate in the current Dashboard UI, not an exhaustive repository tree. `RecurringExpenseManager.tsx` and `RecurringTab.tsx` remain in the source tree for legacy functionality but are not mounted by `Dashboard.tsx`; the current `Recurring` entry renders `ScheduledPaymentManager`.
 
 ## Technology Stack
 
