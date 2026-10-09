@@ -5,10 +5,13 @@ import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import { formatDateLocal, formatDateShort } from '../../../utils/dateUtils';
 import { getBillingCycleRange } from './utils';
+import { useCurrencyConversionMapState } from '../../../hooks/useCurrencyConversionMap';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 
-const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, size = 'medium' }) => {
+const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay, displayCurrency, size = 'medium' }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
+  const targetCurrency = displayCurrency || DEFAULT_BASE_CURRENCY;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = React.useState(220);
 
@@ -23,6 +26,17 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
       return expDate >= cycleStart && expDate <= cycleEnd;
     });
   }, [expenses, cycleStart, cycleEnd]);
+
+  const conversionEntries = React.useMemo(() => filteredExpenses.map((expense, index) => {
+    const displaySource = getExpenseDisplaySource(expense, targetCurrency);
+    return {
+      key: expense.id || `${expense.date}-${index}`,
+      amount: displaySource.amount,
+      sourceCurrency: displaySource.sourceCurrency,
+      date: expense.date,
+    };
+  }), [filteredExpenses, targetCurrency]);
+  const conversionState = useCurrencyConversionMapState(conversionEntries, targetCurrency);
 
   // Determine chart dimensions based on widget size
   const chartConfig = React.useMemo(() => {
@@ -92,9 +106,14 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
     }
 
     // Accumulate expenses
-    filteredExpenses.forEach((exp) => {
+    filteredExpenses.forEach((exp, index) => {
       if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
-        last7Days[exp.date] += exp.amount;
+        const key = exp.id || `${exp.date}-${index}`;
+        const displaySource = getExpenseDisplaySource(exp, targetCurrency);
+        const amount = displaySource.sourceCurrency === targetCurrency
+          ? displaySource.amount
+          : conversionState.amountsByKey[key] ?? Number.NaN;
+        last7Days[exp.date] += amount;
       }
     });
 
@@ -102,7 +121,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
       date: formatDateShort(date, dateFormat),
       amount: parseFloat(amount.toFixed(2)),
     }));
-  }, [filteredExpenses, dateFormat]);
+  }, [conversionState.amountsByKey, dateFormat, filteredExpenses, targetCurrency]);
 
   if (spendingTrend.length === 0) {
     return (
@@ -124,6 +143,9 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
         flexDirection: 'column'
       }}
     >
+      {!conversionState.isLoading && conversionState.failedKeys.length > 0 && (
+        <div className="text-xs mb-2" style={{ color: 'var(--warning-text)' }}>{t('conversionUnavailable')}</div>
+      )}
       <ResponsiveContainer width="100%" height={containerHeight}>
         <LineChart data={spendingTrend}>
         {chartConfig.showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -135,7 +157,7 @@ const SpendingTrendWidget: React.FC<WidgetProps> = ({ expenses, billingCycleDay,
           height={chartConfig.xAxisHeight}
         />
         <YAxis tick={{ fontSize: chartConfig.fontSize }} />
-        <Tooltip formatter={(value: number) => value.toFixed(2)} />
+        <Tooltip formatter={(value: number) => formatMoney(value, targetCurrency)} />
         <Line
           type="monotone"
           dataKey="amount"

@@ -11,6 +11,7 @@ import { quickExpenseService } from '../../services/quickExpenseService';
 import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentForm from '../repayment/RepaymentForm';
+import { resolveAmountCurrencyFields } from '../../services/currencyRateService';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
 import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon, PlusIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
@@ -22,9 +23,11 @@ import PopupModal from '../common/PopupModal';
 import CurrencySelector from '../common/CurrencySelector';
 import DisplayCurrencyControl from '../common/DisplayCurrencyControl';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import { getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
 import CatIllustration from '../CatIllustration';
+import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -153,6 +156,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     paymentMethod: 'cash',
     icon: '💰',
   });
+  const quickExpenseCurrencyDigits = getCurrencyMinorDigits(quickExpenseFormData.currency);
 
   const {
     isSelectionMode: multiSelectEnabled,
@@ -288,7 +292,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     const totals: { [expenseId: string]: number } = {};
     repayments.forEach((repayment) => {
       if (repayment.expenseId) {
-        totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + repayment.amount;
+        totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + getRepaymentBaseAmount(repayment);
       }
     });
     return totals;
@@ -321,8 +325,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
           key: repayment.id as string,
-          amount: repayment.amount,
-          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          amount: getRepaymentBaseAmount(repayment),
+          sourceCurrency: repayment.baseCurrency || (linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY),
           date: repayment.date,
         };
       });
@@ -340,12 +344,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     if (!displayCurrency) return getExpenseBaseAmount(expense);
     const displaySource = getExpenseDisplaySource(expense, displayCurrency);
     if (displaySource.sourceCurrency === displayCurrency) return displaySource.amount;
-    return expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount;
+    return expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN;
   };
 
   const getDisplayRepaymentAmount = (repayment: Repayment): number => {
-    if (!displayCurrency) return repayment.amount;
-    return repaymentDisplayAmountsById[repayment.id || ''] ?? repayment.amount;
+    if (!displayCurrency) return getRepaymentBaseAmount(repayment);
+    return repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN;
   };
 
   // Handle adding a repayment
@@ -355,8 +359,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
     
     try {
+      const expense = expenses.find((item) => item.id === expenseId);
+      const currencyFields = await resolveAmountCurrencyFields({
+        amount: repaymentData.amount,
+        currency: repaymentData.currency || expense?.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: repaymentData.date,
+      });
       await repaymentService.create({
         ...repaymentData,
+        ...currencyFields,
         userId: currentUser.uid,
         expenseId: expenseId,
       });
@@ -380,7 +392,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
     
     try {
-      await repaymentService.update(repaymentId, updates);
+      const existing = repayments.find((item) => item.id === repaymentId);
+      const expense = expenses.find((item) => item.id === existing?.expenseId);
+      const needsRevaluation = updates.amount !== undefined || updates.currency !== undefined || updates.date !== undefined;
+      const currencyFields = needsRevaluation ? await resolveAmountCurrencyFields({
+        amount: updates.amount ?? existing?.amount ?? 0,
+        currency: updates.currency || existing?.currency || expense?.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: updates.baseCurrency || existing?.baseCurrency || DEFAULT_BASE_CURRENCY,
+        date: updates.date || existing?.date || new Date().toISOString().slice(0, 10),
+        existing,
+      }) : {};
+      await repaymentService.update(repaymentId, { ...updates, ...currencyFields });
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
       setEditingRepayment(null);
@@ -1457,6 +1479,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             cards={cards}
             ewallets={ewallets}
             banks={banks}
+            expenseCurrency={expenses.find((expense) => expense.id === showRepaymentFormForExpenseId)?.currency || DEFAULT_BASE_CURRENCY}
           />
         )}
       </PopupModal>
@@ -1489,6 +1512,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             cards={cards}
             ewallets={ewallets}
             banks={banks}
+            expenseCurrency={expenses.find((expense) => expense.id === editingRepayment.expenseId)?.currency || DEFAULT_BASE_CURRENCY}
           />
         )}
       </PopupModal>
@@ -1535,12 +1559,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               <input
                 type="text"
                 inputMode="numeric"
-                value={(quickExpenseFormData.amount / 100).toFixed(2)}
+                value={(quickExpenseFormData.amount / 100).toFixed(quickExpenseCurrencyDigits)}
                 onChange={(e) => {
                   const value = e.target.value;
                   const digitsOnly = value.replace(/\D/g, '');
-                  const amountInCents = parseInt(digitsOnly) || 0;
-                  setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInCents });
+                  const amountInMinorUnits = parseInt(digitsOnly) || 0;
+                  const storageScale = 10 ** (2 - quickExpenseCurrencyDigits);
+                  setQuickExpenseFormData({ ...quickExpenseFormData, amount: amountInMinorUnits * storageScale });
                 }}
                 onFocus={(e) => e.target.select()}
                 placeholder={formatMoney(0, quickExpenseFormData.currency)}
@@ -1550,7 +1575,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             <div className="quick-expense-form-field">
               <CurrencySelector
                 value={quickExpenseFormData.currency || DEFAULT_BASE_CURRENCY}
-                onChange={(currency) => setQuickExpenseFormData({ ...quickExpenseFormData, currency })}
+                onChange={(currency) => setQuickExpenseFormData((previous) => ({
+                  ...previous,
+                  currency,
+                  amount: Math.round(roundMoney(previous.amount / 100, currency) * 100),
+                }))}
                 label={t('currency')}
                 compact={true}
               />

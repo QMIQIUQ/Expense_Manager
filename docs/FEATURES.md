@@ -438,7 +438,7 @@ React components are organized by feature:
 
 ### Medium Term
 - [ ] Receipt scanning with OCR
-- [ ] Multi-currency support
+- [x] Multi-currency support for expenses, incomes, repayments, and converted summaries (see [Currency guide](CURRENCY_GUIDE.md))
 - [ ] Budget recommendations
 - [ ] Expense trends analysis
 

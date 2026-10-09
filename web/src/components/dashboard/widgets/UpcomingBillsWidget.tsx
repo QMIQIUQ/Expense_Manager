@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
+import { formatMoney } from '../../../utils/currencyUtils';
 
 const UpcomingBillsWidget: React.FC<WidgetProps> = ({
   scheduledPayments = [],
@@ -69,7 +70,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
             onKeyDown={onNavigateToScheduledPayment ? handleKeyDown(() => onNavigateToScheduledPayment(bill.id!)) : undefined}
             role={onNavigateToScheduledPayment ? 'button' : undefined}
             tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
-            aria-label={onNavigateToScheduledPayment ? `${bill.name} - $${bill.amount}` : undefined}
+            aria-label={onNavigateToScheduledPayment ? `${bill.name} - ${formatMoney(bill.amount, bill.currency)}` : undefined}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -101,7 +102,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
               </div>
             </div>
             <span style={{ fontWeight: 600, color: isToday ? 'var(--error-text)' : 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px', whiteSpace: 'nowrap' }}>
-              ${bill.amount.toFixed(2)}
+              {formatMoney(bill.amount, bill.currency)}
             </span>
           </div>
         );

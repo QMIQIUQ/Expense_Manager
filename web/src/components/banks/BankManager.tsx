@@ -8,6 +8,8 @@ import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
+import { getExpenseBaseAmount, getIncomeBaseAmount, DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
+import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
 
 interface BankManagerProps {
   banks: Bank[];
@@ -60,6 +62,42 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
     (bank.code && bank.code.includes(searchTerm))
   );
 
+  const bankConversionEntries = useMemo(() => banks.flatMap((bank) => {
+    const currency = bank.currency || DEFAULT_BASE_CURRENCY;
+    return [
+      ...expenses.filter((expense) => expense.paymentMethod === 'bank' && expense.bankId === bank.id).map((expense) => ({
+        key: `${bank.id}:expense:${expense.id}`,
+        amount: getExpenseBaseAmount(expense),
+        sourceCurrency: expense.baseCurrency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: expense.date,
+      })),
+      ...incomes.filter((income) => income.paymentMethod === 'bank' && income.bankId === bank.id).map((income) => ({
+        key: `${bank.id}:income:${income.id}`,
+        amount: getIncomeBaseAmount(income),
+        sourceCurrency: income.baseCurrency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: income.date,
+      })),
+      ...transfers.filter((transfer) => transfer.fromPaymentMethod === 'bank' && transfer.fromBankId === bank.id).map((transfer) => ({
+        key: `${bank.id}:transfer-out:${transfer.id}`,
+        amount: transfer.amount,
+        sourceCurrency: transfer.currency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: transfer.date,
+      })),
+      ...transfers.filter((transfer) => transfer.toPaymentMethod === 'bank' && transfer.toBankId === bank.id).map((transfer) => ({
+        key: `${bank.id}:transfer-in:${transfer.id}`,
+        amount: transfer.toBaseAmount ?? transfer.toAmount ?? transfer.amount,
+        sourceCurrency: transfer.toBaseAmount != null ? transfer.baseCurrency || DEFAULT_BASE_CURRENCY : transfer.toCurrency || transfer.currency || DEFAULT_BASE_CURRENCY,
+        targetCurrency: currency,
+        date: transfer.date,
+      })),
+    ];
+  }), [banks, expenses, incomes, transfers]);
+  const bankConversion = useCurrencyConversionMapState(bankConversionEntries);
+  const convertedBankAmounts = bankConversion.amountsByKey;
+
   // Calculate bank stats including balance
   const getBankStats = useMemo(() => {
     const stats: { 
@@ -77,24 +115,24 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
       const bankExpenses = expenses.filter(
         (exp) => exp.paymentMethod === 'bank' && exp.bankId === bank.id
       );
-      const totalSpending = bankExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const totalSpending = bankExpenses.reduce((sum, exp) => sum + (convertedBankAmounts[`${bank.id}:expense:${exp.id}`] ?? Number.NaN), 0);
       
       // Calculate incomes
       const bankIncomes = incomes.filter(
         (inc) => inc.paymentMethod === 'bank' && inc.bankId === bank.id
       );
-      const totalIncome = bankIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+      const totalIncome = bankIncomes.reduce((sum, inc) => sum + (convertedBankAmounts[`${bank.id}:income:${inc.id}`] ?? Number.NaN), 0);
       
       // Calculate transfers
       const outgoingTransfers = transfers.filter(
         (t) => t.fromPaymentMethod === 'bank' && t.fromBankId === bank.id
       );
-      const totalOutgoing = outgoingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      const totalOutgoing = outgoingTransfers.reduce((sum, transfer) => sum + (convertedBankAmounts[`${bank.id}:transfer-out:${transfer.id}`] ?? Number.NaN), 0);
       
       const incomingTransfers = transfers.filter(
         (t) => t.toPaymentMethod === 'bank' && t.toBankId === bank.id
       );
-      const totalIncoming = incomingTransfers.reduce((sum, t) => sum + t.amount, 0);
+      const totalIncoming = incomingTransfers.reduce((sum, transfer) => sum + (convertedBankAmounts[`${bank.id}:transfer-in:${transfer.id}`] ?? Number.NaN), 0);
       
       // Calculate balance (income + incoming transfers - spending - outgoing transfers)
       const balance = totalIncome + totalIncoming - totalSpending - totalOutgoing;
@@ -117,7 +155,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
     });
     
     return stats;
-  }, [banks, expenses, incomes, transfers]);
+  }, [banks, expenses, incomes, transfers, convertedBankAmounts]);
 
   const styles = {
     menuContainer: {
@@ -325,18 +363,18 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                     <div className="stats-grid">
                       <div className="stat-card info">
                         <p className="stat-label">{t('walletIncome')}</p>
-                        <p className="stat-value success-text">${stats.totalIncome.toFixed(2)}</p>
+                        <p className="stat-value success-text">{formatMoney(stats.totalIncome, bank.currency || DEFAULT_BASE_CURRENCY)}</p>
                       </div>
                       <div className="stat-card success">
                         <p className="stat-label">{t('walletSpending')}</p>
-                        <p className="stat-value info-text">${stats.totalSpending.toFixed(2)}</p>
+                        <p className="stat-value info-text">{formatMoney(stats.totalSpending, bank.currency || DEFAULT_BASE_CURRENCY)}</p>
                       </div>
                       <div className="stat-card accent">
                         <p className="stat-label">{t('walletBalance')}</p>
                         <p className="stat-value" style={{ 
                           color: (bank.balance ?? stats.balance) >= 0 ? 'var(--success-text)' : 'var(--error-text)'
                         }}>
-                          ${(bank.balance ?? stats.balance).toFixed(2)}
+                          {formatMoney(bank.balance ?? stats.balance, bank.currency || DEFAULT_BASE_CURRENCY)}
                         </p>
                       </div>
                       <div className="stat-card warning">

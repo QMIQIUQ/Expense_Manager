@@ -96,7 +96,8 @@ export function getNextBillingDate(card: Card, referenceDate: Date = new Date())
 export function calculateCurrentCycleSpending(
   card: Card,
   expenses: Expense[],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  convertedAmounts: Record<string, number> = {},
 ): number {
   const cycle = getCurrentBillingCycle(card, referenceDate);
   
@@ -108,7 +109,8 @@ export function calculateCurrentCycleSpending(
       // Check if expense date is within the billing cycle
       return expense.date >= cycle.startDate && expense.date <= cycle.endDate;
     })
-    .reduce((sum, expense) => sum + getExpenseBaseAmount(expense), 0);
+    .reduce((sum, expense) => sum + (convertedAmounts[`${card.id}:${expense.id}`]
+      ?? (card.currency && card.currency !== 'MYR' ? Number.NaN : getExpenseBaseAmount(expense))), 0);
 }
 
 /**
@@ -118,7 +120,8 @@ export function calculateCategorySpending(
   card: Card,
   expenses: Expense[],
   categoryId: string,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  convertedAmounts: Record<string, number> = {},
 ): number {
   const cycle = getCurrentBillingCycle(card, referenceDate);
   
@@ -130,7 +133,8 @@ export function calculateCategorySpending(
       // We'll need to pass category mapping from the caller
       return expense.category === categoryId;
     })
-    .reduce((sum, expense) => sum + getExpenseBaseAmount(expense), 0);
+    .reduce((sum, expense) => sum + (convertedAmounts[`${card.id}:${expense.id}`]
+      ?? (card.currency && card.currency !== 'MYR' ? Number.NaN : getExpenseBaseAmount(expense))), 0);
 }
 
 /**
@@ -184,9 +188,10 @@ export function calculateCardStats(
   card: Card,
   expenses: Expense[],
   categories: Category[],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  convertedAmounts: Record<string, number> = {},
 ): CardStats {
-  const currentCycleSpending = calculateCurrentCycleSpending(card, expenses, referenceDate);
+  const currentCycleSpending = calculateCurrentCycleSpending(card, expenses, referenceDate, convertedAmounts);
   const availableCredit = card.cardLimit - currentCycleSpending;
   const nextBillingDate = getNextBillingDate(card, referenceDate);
   
@@ -200,7 +205,7 @@ export function calculateCardStats(
       if (!category) continue;
       
       // Calculate spending in this category
-      const categorySpend = calculateCategorySpending(card, expenses, category.name, referenceDate);
+      const categorySpend = calculateCategorySpending(card, expenses, category.name, referenceDate, convertedAmounts);
       
       // Calculate cashback for this rule
       const ruleResult = calculateRuleCashback(rule, categorySpend);

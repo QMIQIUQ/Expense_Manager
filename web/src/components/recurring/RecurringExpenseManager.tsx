@@ -9,6 +9,7 @@ import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { getDueRecurringExpenses } from '../../utils/recurringUtils';
 import PopupModal from '../common/PopupModal';
+import { formatMoney } from '../../utils/currencyUtils';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -236,6 +237,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             const baseData = {
               description: data.description,
               amount: data.amount,
+              currency: data.currency,
               category: data.category,
               frequency: data.frequency,
               startDate: data.startDate,
@@ -277,6 +279,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             initialData={{
               description: editingExpense.description,
               amount: editingExpense.amount,
+              currency: editingExpense.currency || 'MYR',
               category: editingExpense.category,
               frequency: editingExpense.frequency,
               startDate: editingExpense.startDate,
@@ -296,6 +299,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               const updates: Partial<RecurringExpense> = {};
               if (editingExpense.description !== data.description) updates.description = data.description;
               if (editingExpense.amount !== data.amount) updates.amount = data.amount;
+              if ((editingExpense.currency || 'MYR') !== data.currency) updates.currency = data.currency;
               if (editingExpense.category !== data.category) updates.category = data.category;
               if (editingExpense.frequency !== data.frequency) updates.frequency = data.frequency;
               if (editingExpense.startDate !== data.startDate) updates.startDate = data.startDate;
@@ -366,7 +370,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   </div>
                   
                   <div style={{ textAlign: 'right' }}>
-                    <div style={styles.dueBillAmount}>${bill.amount.toFixed(2)}</div>
+                    <div style={styles.dueBillAmount}>{formatMoney(bill.amount, bill.currency)}</div>
                   </div>
                   
                   <div style={{ gridColumn: '1 / -1' }}>
@@ -461,7 +465,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       <span style={styles.inactiveStatus}>● {t('inactive')}</span>
                     )}
                   </div>
-                  <div style={styles.amount}>${expense.amount.toFixed(2)}</div>
+                  <div style={styles.amount}>{formatMoney(expense.amount, expense.currency)}</div>
                 </div>
 
                 {/* Second row: Description */}

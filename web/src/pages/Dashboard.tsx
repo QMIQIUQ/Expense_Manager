@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, CurrencyCode, DEFAULT_FEATURES } from '../types';
+import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
@@ -25,7 +25,7 @@ import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { balanceService } from '../services/balanceService';
-import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
+import { resolveAmountCurrencyFields, resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
 import ExpensesTab from './tabs/ExpensesTab';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
@@ -57,7 +57,7 @@ import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount } from '../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 
 //#region Helper Functions
 //#endregion
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
-  const { dateFormat, timeFormat, dateShortcuts } = useUserSettings();
+  const { dateFormat, timeFormat, dateShortcuts, displayCurrency, setDisplayCurrency: saveDisplayCurrency } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -113,7 +113,6 @@ const Dashboard: React.FC = () => {
   const [showImportExportDropdown, setShowImportExportDropdown] = useState(false);
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
   const [focusScheduledPaymentId, setFocusScheduledPaymentId] = useState<string | null>(null);
-  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(DEFAULT_BASE_CURRENCY);
   const [importProgress, setImportProgress] = useState<{
     id: string;
     current: number;
@@ -142,6 +141,9 @@ const Dashboard: React.FC = () => {
   const receiptInputRef = useRef<HTMLInputElement | null>(null);
   const isEnglish = language === 'en';
   const isSimplifiedChinese = language === 'zh-CN';
+  const handleDisplayCurrencyChange = (currency: import('../types').CurrencyCode) => {
+    void saveDisplayCurrency(currency).catch(() => showNotification('error', t('errorSavingSettings')));
+  };
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   const addExpenseLabel = t('addNewExpense');
   const { orderedFeatures: navigationFeatures } = getNavigationFeatures(featureSettings);
@@ -991,11 +993,18 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     const currency = budgetData.currency || DEFAULT_BASE_CURRENCY;
+    const exchangeRate = budgetData.exchangeRate && budgetData.exchangeRate > 0
+      ? budgetData.exchangeRate
+      : currency === DEFAULT_BASE_CURRENCY ? 1 : undefined;
+    if (!exchangeRate) {
+      showNotification('error', t('exchangeRateLookupFailed'));
+      return;
+    }
     const normalizedBudgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
       ...budgetData,
       currency,
       baseCurrency: budgetData.baseCurrency || DEFAULT_BASE_CURRENCY,
-      exchangeRate: budgetData.exchangeRate && budgetData.exchangeRate > 0 ? budgetData.exchangeRate : 1,
+      exchangeRate,
       exchangeRateDate: budgetData.exchangeRateDate || getTodayLocal(),
       exchangeRateFetchedAt: budgetData.exchangeRateFetchedAt || new Date(),
       exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
@@ -1232,10 +1241,47 @@ const Dashboard: React.FC = () => {
 
     // Find the scheduled payment to check if autoGenerateExpense is enabled
     const scheduledPayment = scheduledPayments.find(p => p.id === scheduledPaymentId);
+    const paymentCurrency = scheduledPayment?.currency || DEFAULT_BASE_CURRENCY;
+    let actualCurrencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    let expectedCurrencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    try {
+      actualCurrencyFields = await resolveAmountCurrencyFields({
+        amount: recordData.actualAmount,
+        currency: paymentCurrency,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: recordData.paidDate,
+      });
+      expectedCurrencyFields = await resolveAmountCurrencyFields({
+        amount: recordData.expectedAmount,
+        currency: paymentCurrency,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: recordData.dueDate,
+      });
+    } catch (error) {
+      console.error('[Scheduled Payment] Unable to resolve currency snapshot:', error);
+      showNotification('error', t('exchangeRateLookupFailed'));
+      return;
+    }
+
+    const savedRecordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'> = {
+      ...recordData,
+      currency: actualCurrencyFields.currency,
+      baseCurrency: actualCurrencyFields.baseCurrency,
+      baseAmount: actualCurrencyFields.baseAmount,
+      exchangeRate: actualCurrencyFields.exchangeRate,
+      exchangeRateDate: actualCurrencyFields.exchangeRateDate,
+      exchangeRateFetchedAt: actualCurrencyFields.exchangeRateFetchedAt,
+      exchangeRateProvider: actualCurrencyFields.exchangeRateProvider,
+      expectedBaseAmount: expectedCurrencyFields.baseAmount,
+      expectedExchangeRate: expectedCurrencyFields.exchangeRate,
+      expectedExchangeRateDate: expectedCurrencyFields.exchangeRateDate,
+      expectedExchangeRateFetchedAt: expectedCurrencyFields.exchangeRateFetchedAt,
+      expectedExchangeRateProvider: expectedCurrencyFields.exchangeRateProvider,
+    };
 
     const tempId = `temp-${Date.now()}`;
     const optimisticRecord: ScheduledPaymentRecord = {
-      ...recordData,
+      ...savedRecordData,
       id: tempId,
       userId: currentUser.uid,
       scheduledPaymentId,
@@ -1245,9 +1291,9 @@ const Dashboard: React.FC = () => {
     setScheduledPaymentRecords((prev) => [optimisticRecord, ...prev]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: { ...recordData, scheduledPaymentId } },
+      { type: 'create', data: { ...savedRecordData, scheduledPaymentId } },
       () => scheduledPaymentService.createPaymentRecord({
-        ...recordData,
+        ...savedRecordData,
         userId: currentUser.uid,
         scheduledPaymentId,
       }),
@@ -1265,17 +1311,11 @@ const Dashboard: React.FC = () => {
           // Auto-generate expense if enabled
           if (scheduledPayment?.autoGenerateExpense) {
             try {
-              const currencyFields = await resolveExpenseCurrencyFields({
-                amount: recordData.actualAmount,
-                currency: scheduledPayment.currency,
-                date: recordData.paidDate,
-              });
-
               const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
                 userId: currentUser.uid,
                 description: scheduledPayment.name,
                 amount: recordData.actualAmount,
-                ...currencyFields,
+                ...actualCurrencyFields,
                 category: scheduledPayment.category,
                 date: recordData.paidDate,
                 time: getCurrentTimeLocal(),
@@ -1364,11 +1404,25 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Incomes
   const handleAddIncome = async (incomeData: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
+    let currencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    try {
+      currencyFields = await resolveAmountCurrencyFields({
+        amount: incomeData.amount,
+        currency: incomeData.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: incomeData.date,
+      });
+    } catch (error) {
+      console.error('Failed to resolve income currency:', error);
+      showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+      return;
+    }
+    const normalizedIncomeData = { ...incomeData, ...currencyFields };
     
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticIncome: Income = {
-      ...incomeData,
+      ...normalizedIncomeData,
       id: tempId,
       userId: currentUser.uid,
       createdAt: new Date(),
@@ -1380,8 +1434,8 @@ const Dashboard: React.FC = () => {
     dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [optimisticIncome, ...data]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: incomeData },
-      () => incomeService.create({ ...incomeData, userId: currentUser.uid }),
+      { type: 'create', data: normalizedIncomeData },
+      () => incomeService.create({ ...normalizedIncomeData, userId: currentUser.uid }),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
@@ -1413,20 +1467,39 @@ const Dashboard: React.FC = () => {
 
   const handleInlineUpdateIncome = async (id: string, updates: Partial<Income>) => {
     const originalIncome = incomes.find((i) => i.id === id);
+    if (!originalIncome) return;
+    const needsRevaluation = updates.amount !== undefined || updates.currency !== undefined || updates.date !== undefined;
+    let valuationFields: Partial<Awaited<ReturnType<typeof resolveAmountCurrencyFields>>> = {};
+    if (needsRevaluation) {
+      try {
+        valuationFields = await resolveAmountCurrencyFields({
+          amount: updates.amount ?? originalIncome.amount,
+          currency: updates.currency ?? originalIncome.currency ?? DEFAULT_BASE_CURRENCY,
+          baseCurrency: updates.baseCurrency ?? originalIncome.baseCurrency ?? DEFAULT_BASE_CURRENCY,
+          date: updates.date ?? originalIncome.date,
+          existing: originalIncome,
+        });
+      } catch (error) {
+        console.error('Failed to resolve income currency:', error);
+        showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+        return;
+      }
+    }
+    const normalizedUpdates = { ...updates, ...valuationFields };
     
     // Optimistic update
-    setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
+    setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...normalizedUpdates } : i)));
     
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
-        data.map((i) => (i.id === id ? { ...i, ...updates } : i))
+        data.map((i) => (i.id === id ? { ...i, ...normalizedUpdates } : i))
       );
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalIncome },
-      () => incomeService.update(id, updates),
+      { type: 'update', data: normalizedUpdates, originalData: originalIncome },
+      () => incomeService.update(id, normalizedUpdates),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
@@ -1490,11 +1563,41 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Transfers
   const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, silent = false) => {
     if (!currentUser) return;
+    let sourceFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    let destinationFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    try {
+      sourceFields = await resolveAmountCurrencyFields({
+        amount: transferData.amount,
+        currency: transferData.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: transferData.date,
+      });
+      destinationFields = await resolveAmountCurrencyFields({
+        amount: transferData.toAmount ?? transferData.amount,
+        currency: transferData.toCurrency || transferData.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: transferData.date,
+      });
+    } catch (error) {
+      console.error('Failed to resolve transfer currency:', error);
+      if (!silent) showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+      return;
+    }
+    const normalizedTransferData = {
+      ...transferData,
+      ...sourceFields,
+      toCurrency: destinationFields.currency,
+      toBaseAmount: destinationFields.baseAmount,
+      toExchangeRate: destinationFields.exchangeRate,
+      toExchangeRateDate: destinationFields.exchangeRateDate,
+      toExchangeRateFetchedAt: destinationFields.exchangeRateFetchedAt,
+      toExchangeRateProvider: destinationFields.exchangeRateProvider,
+    };
     
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticTransfer: Transfer = {
-      ...transferData,
+      ...normalizedTransferData,
       id: tempId,
       userId: currentUser.uid,
       createdAt: new Date(),
@@ -1503,8 +1606,8 @@ const Dashboard: React.FC = () => {
     setTransfers((prev) => [optimisticTransfer, ...prev]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: transferData },
-      () => transferService.create({ ...transferData, userId: currentUser.uid }),
+      { type: 'create', data: normalizedTransferData },
+      () => transferService.create({ ...normalizedTransferData, userId: currentUser.uid }),
       {
         retryToQueueOnFail: true,
         suppressNotification: silent, // Don't show notification if silent mode
@@ -2061,7 +2164,7 @@ const Dashboard: React.FC = () => {
     // Build repayment lookup map
     const repaymentsByExpense: { [expenseId: string]: number } = {};
     for (const rep of repayments) {
-      repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+      repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
     }
 
     // Helper to get net amount after repayments
@@ -2585,7 +2688,7 @@ const Dashboard: React.FC = () => {
             banks={banks}
             billingCycleDay={billingCycleDay}
             displayCurrency={displayCurrency}
-            onDisplayCurrencyChange={setDisplayCurrency}
+            onDisplayCurrencyChange={handleDisplayCurrencyChange}
             onMarkTrackingCompleted={handleMarkTrackingCompleted}
             onQuickAdd={() => openExpenseEntry()}
             onQuickExpenseAdd={handleQuickExpenseAdd}
@@ -2634,7 +2737,7 @@ const Dashboard: React.FC = () => {
             onPeriodChange={setExpensePeriod}
             initialCategory={expenseCategory}
             displayCurrency={displayCurrency}
-            onDisplayCurrencyChange={setDisplayCurrency}
+            onDisplayCurrencyChange={handleDisplayCurrencyChange}
             onDelete={handleDeleteExpense}
             onInlineUpdate={handleInlineUpdateExpense}
             onBulkDelete={handleBulkDeleteExpenses}
@@ -2697,7 +2800,7 @@ const Dashboard: React.FC = () => {
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}
                 displayCurrency={displayCurrency}
-                onDisplayCurrencyChange={setDisplayCurrency}
+                onDisplayCurrencyChange={handleDisplayCurrencyChange}
               />
             </Suspense>
           </div>

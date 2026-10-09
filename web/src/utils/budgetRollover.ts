@@ -6,7 +6,7 @@
  */
 
 import { Budget, Expense, Repayment } from '../types';
-import { getExpenseBaseAmount } from './currencyUtils';
+import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 import { formatBudgetMoney, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 interface RolloverResult {
@@ -74,7 +74,7 @@ export function calculateSpentInPeriod(
   const repaymentsByExpense: { [expenseId: string]: number } = {};
   repayments.forEach((r) => {
     if (r.expenseId) {
-      repaymentsByExpense[r.expenseId] = (repaymentsByExpense[r.expenseId] || 0) + r.amount;
+      repaymentsByExpense[r.expenseId] = (repaymentsByExpense[r.expenseId] || 0) + getRepaymentBaseAmount(r);
     }
   });
 

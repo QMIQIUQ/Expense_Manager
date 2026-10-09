@@ -2,7 +2,7 @@ import { Budget, Expense, Repayment } from '../types';
 import { NotificationType } from '../contexts/NotificationContext';
 import { getEffectiveBudgetAmount } from './budgetRollover';
 import { parseISO } from 'date-fns';
-import { getExpenseBaseAmount } from './currencyUtils';
+import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 import { formatBudgetMoney, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
 interface BudgetAlert {
@@ -83,7 +83,7 @@ export function calculateBudgetSpending(
   // Build repayment lookup map
   const repaymentsByExpense: { [expenseId: string]: number } = {};
   for (const rep of repayments) {
-    repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+    repaymentsByExpense[rep.expenseId] = (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
   }
 
   // Helper to get net amount after repayments

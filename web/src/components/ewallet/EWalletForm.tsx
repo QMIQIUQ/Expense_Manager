@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { EWallet } from '../../types';
+import { EWallet, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
+import CurrencySelector from '../common/CurrencySelector';
 
 interface EWalletFormProps {
   onSubmit: (ewallet: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -33,6 +34,7 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
     provider: initialData?.provider || '',
     accountNumber: initialData?.accountNumber || '',
     balance: initialData?.balance?.toString() || '',
+    currency: initialData?.currency || 'MYR',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +67,7 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
         name: formData.name.trim(),
         icon: formData.icon,
         color: formData.color,
+        currency: formData.currency as CurrencyCode,
       };
 
       const trimmedProvider = formData.provider.trim();
@@ -151,6 +154,12 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           />
         </div>
       </div>
+
+      <CurrencySelector
+        value={formData.currency}
+        label={t('currency')}
+        onChange={(currency) => setFormData((previous) => ({ ...previous, currency }))}
+      />
 
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>

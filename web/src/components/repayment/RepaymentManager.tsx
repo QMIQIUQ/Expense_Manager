@@ -10,6 +10,8 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { PlusIcon } from '../icons';
 import PopupModal from '../common/PopupModal';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
+import { getRepaymentBaseAmount } from '../../utils/currencyUtils';
+import { resolveAmountCurrencyFields } from '../../services/currencyRateService';
 
 interface RepaymentManagerProps {
   expense: Expense;
@@ -74,11 +76,25 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
 
   const handleAddRepayment = async (repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
     if (!currentUser || !expense.id) return;
+    let currencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    try {
+      currencyFields = await resolveAmountCurrencyFields({
+        amount: repaymentData.amount,
+        currency: repaymentData.currency || expense.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: repaymentData.date,
+      });
+    } catch (error) {
+      console.error('Failed to resolve repayment currency:', error);
+      showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+      return;
+    }
+    const normalizedRepaymentData = { ...repaymentData, ...currencyFields };
     
     // Optimistic update: immediately add to local state
     const tempId = `temp-${Date.now()}`;
     const optimisticRepayment: Repayment = {
-      ...repaymentData,
+      ...normalizedRepaymentData,
       id: tempId,
       userId: currentUser.uid,
       expenseId: expense.id,
@@ -95,7 +111,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       setSaving(true);
       // Perform actual database operation in background
       const newRepaymentId = await repaymentService.create({
-        ...repaymentData,
+        ...normalizedRepaymentData,
         userId: currentUser.uid,
         expenseId: expense.id,
       });
@@ -109,7 +125,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
       updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
 
       // Handle excess income logic asynchronously
-      const totalRepaid = [...repayments, optimisticRepayment].reduce((sum, r) => sum + r.amount, 0);
+      const totalRepaid = [...repayments, optimisticRepayment].reduce((sum, r) => sum + getRepaymentBaseAmount(r), 0);
       
       if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
@@ -117,11 +133,18 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
-          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount, currency: DEFAULT_BASE_CURRENCY, baseCurrency: DEFAULT_BASE_CURRENCY, exchangeRate: 1, baseAmount: excessAmount });
         } else {
           await incomeService.create({
             userId: currentUser.uid,
             amount: excessAmount,
+            currency: DEFAULT_BASE_CURRENCY,
+            baseCurrency: DEFAULT_BASE_CURRENCY,
+            exchangeRate: 1,
+            exchangeRateDate: repaymentData.date,
+            exchangeRateFetchedAt: new Date(),
+            exchangeRateProvider: 'local',
+            baseAmount: excessAmount,
             date: repaymentData.date,
             type: 'repayment',
             linkedExpenseId: expense.id,
@@ -151,11 +174,26 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     // Store original for rollback
     const originalRepayment = editingRepayment;
     const repaymentId = editingRepayment.id;
+    let currencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
+    try {
+      currencyFields = await resolveAmountCurrencyFields({
+        amount: repaymentData.amount,
+        currency: repaymentData.currency || expense.currency || DEFAULT_BASE_CURRENCY,
+        baseCurrency: DEFAULT_BASE_CURRENCY,
+        date: repaymentData.date,
+        existing: originalRepayment,
+      });
+    } catch (error) {
+      console.error('Failed to resolve repayment currency:', error);
+      showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+      return;
+    }
+    const normalizedRepaymentData = { ...repaymentData, ...currencyFields };
     
     // Optimistic update: immediately update in local state
     setRepayments(prev => prev.map(r => 
       r.id === editingRepayment.id 
-        ? { ...r, ...repaymentData, updatedAt: new Date() }
+        ? { ...r, ...normalizedRepaymentData, updatedAt: new Date() }
         : r
     ));
     setShowForm(false);
@@ -167,15 +205,15 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     try {
       setSaving(true);
       // Perform actual database operation in background
-      await repaymentService.update(repaymentId, repaymentData);
+      await repaymentService.update(repaymentId, normalizedRepaymentData);
 
       // Update notification to success
       updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
 
       // Handle excess income logic asynchronously
       const totalRepaid = repayments
-        .map(r => r.id === editingRepayment.id ? { ...r, ...repaymentData } : r)
-        .reduce((sum, r) => sum + r.amount, 0);
+        .map(r => r.id === editingRepayment.id ? { ...r, ...normalizedRepaymentData } : r)
+        .reduce((sum, r) => sum + getRepaymentBaseAmount(r), 0);
       
       if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
@@ -183,11 +221,18 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
-          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount, currency: DEFAULT_BASE_CURRENCY, baseCurrency: DEFAULT_BASE_CURRENCY, exchangeRate: 1, baseAmount: excessAmount });
         } else {
           await incomeService.create({
             userId: currentUser.uid,
             amount: excessAmount,
+            currency: DEFAULT_BASE_CURRENCY,
+            baseCurrency: DEFAULT_BASE_CURRENCY,
+            exchangeRate: 1,
+            exchangeRateDate: repaymentData.date,
+            exchangeRateFetchedAt: new Date(),
+            exchangeRateProvider: 'local',
+            baseAmount: excessAmount,
             date: repaymentData.date,
             type: 'repayment',
             linkedExpenseId: expense.id,
@@ -278,11 +323,29 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     // Store original for rollback
     const originalRepayment = repayments.find(r => r.id === id);
     if (!originalRepayment) return;
+    const needsRevaluation = updates.amount !== undefined || updates.currency !== undefined || updates.date !== undefined;
+    let currencyFields: Partial<Awaited<ReturnType<typeof resolveAmountCurrencyFields>>> = {};
+    if (needsRevaluation) {
+      try {
+        currencyFields = await resolveAmountCurrencyFields({
+          amount: updates.amount ?? originalRepayment.amount,
+          currency: updates.currency || originalRepayment.currency || expense.currency || DEFAULT_BASE_CURRENCY,
+          baseCurrency: updates.baseCurrency || originalRepayment.baseCurrency || DEFAULT_BASE_CURRENCY,
+          date: updates.date || originalRepayment.date,
+          existing: originalRepayment,
+        });
+      } catch (error) {
+        console.error('Failed to resolve repayment currency:', error);
+        showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
+        return;
+      }
+    }
+    const normalizedUpdates = { ...updates, ...currencyFields };
     
     // Optimistic update: immediately update in local state
     setRepayments(prev => prev.map(r => 
       r.id === id 
-        ? { ...r, ...updates, updatedAt: new Date() }
+        ? { ...r, ...normalizedUpdates, updatedAt: new Date() }
         : r
     ));
     
@@ -292,14 +355,14 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     try {
       setSaving(true);
       // Perform actual database operation in background
-      await repaymentService.update(id, updates);
+      await repaymentService.update(id, normalizedUpdates);
 
       // Update notification to success
       updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
 
       // Handle excess income logic asynchronously
-      const updatedRepayments = repayments.map(r => r.id === id ? { ...r, ...updates } : r);
-      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + r.amount, 0);
+      const updatedRepayments = repayments.map(r => r.id === id ? { ...r, ...normalizedUpdates } : r);
+      const totalRepaid = updatedRepayments.reduce((sum, r) => sum + getRepaymentBaseAmount(r), 0);
       
       if (totalRepaid > expenseBaseAmount) {
         const linkedIncomes = await incomeService.getByExpenseId(currentUser.uid, expense.id);
@@ -307,11 +370,18 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
         const excessAmount = totalRepaid - expenseBaseAmount;
         
         if (existingExcessIncome) {
-          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount });
+          await incomeService.update(existingExcessIncome.id!, { amount: excessAmount, currency: DEFAULT_BASE_CURRENCY, baseCurrency: DEFAULT_BASE_CURRENCY, exchangeRate: 1, baseAmount: excessAmount });
         } else {
           await incomeService.create({
             userId: currentUser.uid,
             amount: excessAmount,
+            currency: DEFAULT_BASE_CURRENCY,
+            baseCurrency: DEFAULT_BASE_CURRENCY,
+            exchangeRate: 1,
+            exchangeRateDate: updates.date || originalRepayment.date,
+            exchangeRateFetchedAt: new Date(),
+            exchangeRateProvider: 'local',
+            baseAmount: excessAmount,
             date: updates.date || originalRepayment.date,
             type: 'repayment',
             linkedExpenseId: expense.id,
@@ -348,7 +418,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
     setEditingRepayment(null);
   };
 
-  const totalRepaid = repayments.reduce((sum, r) => sum + r.amount, 0);
+  const totalRepaid = repayments.reduce((sum, r) => sum + getRepaymentBaseAmount(r), 0);
   const remainingAmount = expenseBaseAmount - totalRepaid;
   const isFullyRepaid = remainingAmount <= 0;
   const hasExcess = remainingAmount < 0;
@@ -521,6 +591,7 @@ const RepaymentManager: React.FC<RepaymentManagerProps> = ({ expense, onClose, i
           cards={cards}
           ewallets={ewallets}
           banks={banks}
+          expenseCurrency={expense.currency || DEFAULT_BASE_CURRENCY}
         />
       </PopupModal>
 

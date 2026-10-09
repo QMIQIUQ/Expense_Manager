@@ -3,6 +3,7 @@ import { Category } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../utils/dateUtils';
+import { formatMoney } from '../../utils/currencyUtils';
 import {
   parseUploadedFile,
   matchCategories,
@@ -30,6 +31,7 @@ interface ExpenseRow {
   description: string;
   category: string;
   amount: number;
+  currency?: string;
   notes?: string;
 }
 
@@ -315,7 +317,7 @@ const ImportExportModal: React.FC<Props> = ({
                       }}>
                         {isBlank ? <em style={styles.blankText}>{t('blank')}</em> : exp.category}
                       </td>
-                      <td style={styles.td}>${exp.amount.toFixed(2)}</td>
+                      <td style={styles.td}>{formatMoney(exp.amount, exp.currency)}</td>
                     </tr>
                   );
                 })}

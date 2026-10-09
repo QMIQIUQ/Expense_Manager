@@ -14,7 +14,7 @@ import {
 import { EditIcon, DeleteIcon } from '../icons';
 import PaymentRecordForm from './PaymentRecordForm';
 import PaymentHistoryList from './PaymentHistoryList';
-import { getCurrencySymbol } from './ScheduledPaymentForm';
+import { formatMoney } from '../../utils/currencyUtils';
 
 // Responsive styles matching RecurringExpenseManager
 const responsiveCardStyles = `
@@ -154,7 +154,6 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
   };
 
   const progress = getProgress();
-  const currencySymbol = getCurrencySymbol(payment.currency);
   const categoryStyle = getCategoryColor(payment.category);
 
   const handlePaymentSubmit = (data: {
@@ -205,7 +204,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
             )}
           </div>
           <div style={styles.amount}>
-            {currencySymbol}{payment.amount.toFixed(2)}
+            {formatMoney(payment.amount, payment.currency)}
             <span style={styles.frequency}>/{payment.frequency === 'monthly' ? t('freqMonthly') : t('freqYearly')}</span>
           </div>
         </div>
@@ -249,7 +248,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           <div style={styles.progressContainer}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>
-                {t('totalPaid')}: {currencySymbol}{progress.totalPaid.toFixed(2)} / {currencySymbol}{progress.totalAmount.toFixed(2)}
+                {t('totalPaid')}: {formatMoney(progress.totalPaid, payment.currency)} / {formatMoney(progress.totalAmount, payment.currency)}
               </span>
               <span style={{ color: 'var(--text-secondary)' }}>
                 {progress.percentage.toFixed(0)}%
@@ -266,7 +265,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
             </div>
             {progress.remaining > 0 && (
               <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--warning-text)' }}>
-                {t('remainingAmount')}: {currencySymbol}{progress.remaining.toFixed(2)}
+                {t('remainingAmount')}: {formatMoney(progress.remaining, payment.currency)}
               </div>
             )}
           </div>
@@ -277,7 +276,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           <div style={styles.summaryGrid}>
             <div>
               <span style={{ color: 'var(--text-secondary)' }}>{t('totalPaid')}:</span>
-              <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>{currencySymbol}{summary.totalPaid.toFixed(2)}</div>
+              <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>{formatMoney(summary.totalPaid, payment.currency)}</div>
             </div>
             <div>
               <span style={{ color: 'var(--text-secondary)' }}>{t('paymentCount')}:</span>
@@ -423,6 +422,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
         {showHistory && (
           <PaymentHistoryList
             records={records}
+            defaultCurrency={payment.currency}
             onDelete={onDeletePaymentRecord}
           />
         )}

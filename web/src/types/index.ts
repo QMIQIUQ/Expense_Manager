@@ -42,6 +42,7 @@ export interface UserSettings {
   timeFormat?: TimeFormat; // 12-hour or 24-hour format
   dateFormat?: DateFormat; // Date display format
   useStepByStepForm?: boolean; // Enable multi-step expense entry form
+  displayCurrency?: CurrencyCode; // Preferred currency for converted summaries
   dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
   createdAt: Date;
   updatedAt: Date;
@@ -116,6 +117,7 @@ export interface EWallet {
   accountNumber?: string; // Optional: last 4 digits or identifier
   isDefault?: boolean; // Whether this is a default/system e-wallet
   balance?: number; // Account balance (default: 0)
+  currency?: CurrencyCode; // Native account currency; legacy wallets are MYR
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +129,7 @@ export interface Bank {
   country?: string;
   code?: string; // optional bank code
   balance?: number; // Account balance (default: 0)
+  currency?: CurrencyCode; // Native account currency; legacy banks are MYR
   createdAt: Date;
   updatedAt: Date;
 }
@@ -181,6 +184,7 @@ export interface RecurringExpense {
   userId: string;
   description: string;
   amount: number;
+  currency?: CurrencyCode;
   category: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   startDate: string;
@@ -205,6 +209,13 @@ export interface Repayment {
   userId: string;
   expenseId: string; // FK to expenses.id - which expense this repays
   amount: number; // Positive number - amount repaid
+  currency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
+  baseAmount?: number;
   date: string;
   payerName?: string; // Who made the repayment
   note?: string;
@@ -228,6 +239,13 @@ export interface Income {
   userId: string;
   title?: string; // Optional title/source description
   amount: number; // Positive number
+  currency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
+  baseAmount?: number;
   date: string;
   type: IncomeType;
   category?: IncomeCategory; // Category for special income types like e-wallet reloads
@@ -248,6 +266,20 @@ export interface Transfer {
   id?: string;
   userId: string;
   amount: number;
+  currency?: CurrencyCode; // Source amount currency; legacy transfers are MYR
+  toAmount?: number; // Actual settled destination amount when currencies differ
+  toCurrency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  baseAmount?: number;
+  toBaseAmount?: number;
+  toExchangeRate?: number;
+  toExchangeRateDate?: string;
+  toExchangeRateFetchedAt?: Date;
+  toExchangeRateProvider?: string;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
   date: string;
   time?: string; // Optional time in HH:mm format
   // Source (from)
@@ -304,6 +336,7 @@ export interface Card {
   name: string;
   bankName?: string; // Optional: bank name for the card
   cardLimit: number;
+  currency?: CurrencyCode; // Credit limit currency; legacy cards are MYR
   billingDay: number; // 1-28, fixed billing day each month
   perMonthOverrides?: MonthOverride[]; // Optional month-specific overrides
   benefitMinSpend?: number; // Optional: minimum spend for card benefits
@@ -478,6 +511,18 @@ export interface ScheduledPaymentRecord {
   expectedAmount: number; // The expected/scheduled amount
   actualAmount: number; // The actual amount paid
   difference: number; // actualAmount - expectedAmount (positive = overpaid, negative = underpaid)
+  currency?: CurrencyCode;
+  baseCurrency?: CurrencyCode;
+  expectedBaseAmount?: number;
+  expectedExchangeRate?: number;
+  expectedExchangeRateDate?: string;
+  expectedExchangeRateFetchedAt?: Date;
+  expectedExchangeRateProvider?: string;
+  baseAmount?: number; // Actual amount valued at the booked rate below
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  exchangeRateFetchedAt?: Date;
+  exchangeRateProvider?: string;
   
   // Period tracking
   periodYear: number; // Year of this payment period

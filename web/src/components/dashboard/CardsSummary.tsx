@@ -5,6 +5,7 @@ import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { calculateCardStats } from '../../utils/cardUtils';
 import { formatDateWithUserFormat } from '../../utils/dateUtils';
 import { ShowMoreButton } from './widgets';
+import { formatMoney } from '../../utils/currencyUtils';
 
 interface CardsSummaryProps {
   cards: Card[];
@@ -59,7 +60,7 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
                   <div className="card-cashback">
                     <p className="cashback-label">{t('estimatedCashback')}</p>
                     <p className="cashback-value">
-                      ${stats.estimatedTotalCashback.toFixed(2)}
+                      {formatMoney(stats.estimatedTotalCashback, card.currency)}
                     </p>
                   </div>
                 )}
@@ -68,7 +69,7 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
               {/* Utilization Bar */}
               <div className="utilization-section">
                 <div className="utilization-info">
-                  <span>{t('currentCycleSpending')}: ${stats.currentCycleSpending.toFixed(2)}</span>
+                  <span>{t('currentCycleSpending')}: {formatMoney(stats.currentCycleSpending, card.currency)}</span>
                   <span>{utilizationPercent.toFixed(0)}%</span>
                 </div>
                 <div className="progress-bar">
@@ -83,8 +84,8 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
               </div>
 
               <div className="card-limits">
-                <span>{t('availableCredit')}: ${stats.availableCredit.toFixed(2)}</span>
-                <span>{t('cardLimit')}: ${card.cardLimit.toLocaleString()}</span>
+                <span>{t('availableCredit')}: {formatMoney(stats.availableCredit, card.currency)}</span>
+                <span>{t('cardLimit')}: {formatMoney(card.cardLimit, card.currency)}</span>
               </div>
 
               {/* High Priority Cashback Suggestions */}
@@ -97,12 +98,12 @@ const CardsSummary: React.FC<CardsSummaryProps> = ({ cards, categories, expenses
                       <div key={idx} className="suggestion-item">
                         {rule.requiredToReachMinSpend > 0 ? (
                           <span>
-                            💡 Spend ${rule.requiredToReachMinSpend.toFixed(0)} more on{' '}
+                            💡 Spend {formatMoney(rule.requiredToReachMinSpend, card.currency)} more on{' '}
                             <span className="highlight-text">{rule.categoryName}</span> to unlock higher rate
                           </span>
                         ) : rule.requiredToReachCap > 0 ? (
                           <span>
-                            ⭐ Spend ${rule.requiredToReachCap.toFixed(0)} more on{' '}
+                            ⭐ Spend {formatMoney(rule.requiredToReachCap, card.currency)} more on{' '}
                             <span className="highlight-text">{rule.categoryName}</span> to max out rewards
                           </span>
                         ) : null}

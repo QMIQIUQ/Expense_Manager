@@ -12,6 +12,8 @@ import { useToday } from '../../hooks/useToday';
 import { CloseIcon } from '../icons';
 import { getCurrencySymbol } from './ScheduledPaymentForm';
 import DatePicker from '../common/DatePicker';
+import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
+import { formatMoney } from '../../utils/currencyUtils';
 
 interface PaymentRecordFormData {
   expectedAmount: number;
@@ -53,6 +55,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
   const currencySymbol = getCurrencySymbol(scheduledPayment.currency);
+  const currencyDigits = getCurrencyMinorDigits(scheduledPayment.currency);
   
   const [formData, setFormData] = useState<PaymentRecordFormData>({
     expectedAmount: scheduledPayment.amount,
@@ -70,20 +73,21 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   });
 
   const [actualAmountInCents, setActualAmountInCents] = useState(
-    Math.round(scheduledPayment.amount * 100)
+    toMinorUnits(scheduledPayment.amount, scheduledPayment.currency)
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const actualAmount = actualAmountInCents / 100;
+    const actualAmount = fromMinorUnits(actualAmountInCents, scheduledPayment.currency);
     onSubmit({
       ...formData,
       actualAmount,
-      difference: actualAmount - formData.expectedAmount,
+      difference: roundMoney(actualAmount - formData.expectedAmount, scheduledPayment.currency),
     });
   };
 
-  const difference = (actualAmountInCents / 100) - formData.expectedAmount;
+  const actualAmount = fromMinorUnits(actualAmountInCents, scheduledPayment.currency);
+  const difference = roundMoney(actualAmount - formData.expectedAmount, scheduledPayment.currency);
 
   return (
     <div className="flex flex-col gap-4" style={{ 
@@ -122,7 +126,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('expectedAmount')}:</span>
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{currencySymbol}{scheduledPayment.amount.toFixed(2)}</span>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatMoney(scheduledPayment.amount, scheduledPayment.currency)}</span>
           </div>
         </div>
 
@@ -182,7 +186,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
           <input
             type="text"
             inputMode="numeric"
-            value={(actualAmountInCents / 100).toFixed(2)}
+            value={actualAmount.toFixed(currencyDigits)}
             onChange={(e) => {
               const value = e.target.value;
               const digitsOnly = value.replace(/\D/g, '');
@@ -210,9 +214,9 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             }}
           >
             {difference > 0 ? (
-              <span>💰 {t('overpaid')}: {currencySymbol}{difference.toFixed(2)}</span>
+              <span>💰 {t('overpaid')}: {formatMoney(difference, scheduledPayment.currency)}</span>
             ) : (
-              <span>⚠️ {t('underpaid')}: {currencySymbol}{Math.abs(difference).toFixed(2)}</span>
+              <span>⚠️ {t('underpaid')}: {formatMoney(Math.abs(difference), scheduledPayment.currency)}</span>
             )}
           </div>
         )}

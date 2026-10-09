@@ -10,6 +10,7 @@ import { sortCategories } from '../../utils/categoryOrder';
 import CurrencySelector from '../common/CurrencySelector';
 import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUtils';
 import { getHistoricalRate } from '../../services/currencyRateService';
+import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 
 interface BudgetFormData {
   categoryId: string;
@@ -65,6 +66,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isChangingCurrency, setIsChangingCurrency] = React.useState(false);
   const [currencyError, setCurrencyError] = React.useState('');
+  const currencyDigits = getCurrencyMinorDigits(formData.currency);
 
   const handleCurrencyChange = async (currency: CurrencyCode) => {
     if (currency === formData.currency) return;
@@ -75,16 +77,20 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       const snapshot = await getHistoricalRate(currency, DEFAULT_BASE_CURRENCY, getTodayLocal());
       const previousRate = formData.currency === DEFAULT_BASE_CURRENCY
         ? 1
-        : (formData.exchangeRate && formData.exchangeRate > 0 ? formData.exchangeRate : 1);
+        : (formData.exchangeRate && formData.exchangeRate > 0 ? formData.exchangeRate : undefined);
+      if (formData.rolloverCap !== undefined && !previousRate) {
+        throw new Error('Previous budget currency rate is unavailable');
+      }
       setFormData((previous) => ({
         ...previous,
         currency,
+        amount: Math.round(roundMoney(previous.amount / 100, currency) * 100),
         baseCurrency: DEFAULT_BASE_CURRENCY,
         exchangeRate: snapshot.rate,
         exchangeRateDate: snapshot.rateDate,
         exchangeRateFetchedAt: snapshot.fetchedAt,
         exchangeRateProvider: snapshot.provider,
-        rolloverCap: previous.rolloverCap === undefined
+        rolloverCap: previous.rolloverCap === undefined || previousRate === undefined
           ? undefined
           : Math.round((previous.rolloverCap * previousRate / snapshot.rate) * 100) / 100,
       }));
@@ -167,15 +173,16 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             <input
               type="text"
               inputMode="numeric"
-              value={(formData.amount / 100).toFixed(2)}
+              value={(formData.amount / 100).toFixed(currencyDigits)}
               onChange={(e) => {
                 const value = e.target.value;
                 const digitsOnly = value.replace(/\D/g, '');
-                const amountInCents = parseInt(digitsOnly) || 0;
-                setFormData({ ...formData, amount: amountInCents });
+                const enteredMinorUnits = parseInt(digitsOnly) || 0;
+                const storageScale = 10 ** (2 - currencyDigits);
+                setFormData({ ...formData, amount: enteredMinorUnits * storageScale });
               }}
               onFocus={(e) => e.target.select()}
-              placeholder="0.00"
+              placeholder={currencyDigits === 0 ? '0' : '0.00'}
               required
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
               style={{

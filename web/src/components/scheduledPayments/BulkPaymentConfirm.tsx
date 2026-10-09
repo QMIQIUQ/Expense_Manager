@@ -7,6 +7,7 @@ import {
   PaymentMethodType 
 } from '../../types';
 import { getTodayLocal } from '../../utils/dateUtils';
+import { formatMoney, normalizeCurrencyCode } from '../../utils/currencyUtils';
 
 interface BulkPaymentConfirmProps {
   scheduledPayments: ScheduledPayment[];
@@ -85,11 +86,15 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
     }
   };
 
-  // Calculate total selected amount
-  const totalSelectedAmount = useMemo(() => {
+  // Keep selected totals separated by currency.
+  const selectedTotalsByCurrency = useMemo(() => {
     return pendingPayments
-      .filter(p => selectedIds.has(p.id!))
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter((payment) => selectedIds.has(payment.id!))
+      .reduce<Record<string, number>>((totals, payment) => {
+        const currency = normalizeCurrencyCode(payment.currency);
+        totals[currency] = (totals[currency] || 0) + payment.amount;
+        return totals;
+      }, {});
   }, [pendingPayments, selectedIds]);
 
   const handleConfirmSelected = async () => {
@@ -241,7 +246,7 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
                       className="font-semibold"
                       style={{ color: 'var(--error-text)' }}
                     >
-                      ${payment.amount.toFixed(2)}
+                      {formatMoney(payment.amount, payment.currency)}
                     </span>
                   </button>
                 );
@@ -254,8 +259,10 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
         <div className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
           <div className="flex items-center justify-between mb-3">
             <span style={{ color: 'var(--text-secondary)' }}>{t('totalAmount')}:</span>
-            <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              ${totalSelectedAmount.toFixed(2)}
+            <span className="text-xl font-bold" style={{ color: 'var(--text-primary)', textAlign: 'right' }}>
+              {Object.entries(selectedTotalsByCurrency).map(([currency, amount]) => (
+                <div key={currency}>{formatMoney(amount, currency)}</div>
+              ))}
             </span>
           </div>
           

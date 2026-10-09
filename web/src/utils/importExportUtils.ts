@@ -5,7 +5,8 @@ import Papa from 'papaparse';
 import { Expense, Category } from '../types';
 import { categoryService } from '../services/categoryService';
 import { expenseService } from '../services/expenseService';
-import { DEFAULT_BASE_CURRENCY, buildExpenseCurrencyFields } from './currencyUtils';
+import { DEFAULT_BASE_CURRENCY } from './currencyUtils';
+import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
 
 // Types for import operations
 export interface ImportOptions {
@@ -516,15 +517,20 @@ export const importData = async (
             date: expRow.date,
           };
 
-          const currencyFields = buildExpenseCurrencyFields({
+          const currencyFields = await resolveExpenseCurrencyFields({
             amount: Number(expRow.amount),
             currency: expRow.currency || DEFAULT_BASE_CURRENCY,
             baseCurrency: expRow.baseCurrency || DEFAULT_BASE_CURRENCY,
-            exchangeRate: expRow.exchangeRate,
-            exchangeRateDate: expRow.exchangeRateDate,
-            exchangeRateFetchedAt: expRow.exchangeRateFetchedAt ? new Date(expRow.exchangeRateFetchedAt) : undefined,
-            exchangeRateProvider: expRow.exchangeRateProvider,
-            baseAmount: expRow.baseAmount,
+            date: expRow.date,
+            existing: {
+              currency: expRow.currency as Expense['currency'],
+              baseCurrency: expRow.baseCurrency as Expense['baseCurrency'],
+              exchangeRate: expRow.exchangeRate,
+              exchangeRateDate: expRow.exchangeRateDate,
+              exchangeRateFetchedAt: expRow.exchangeRateFetchedAt ? new Date(expRow.exchangeRateFetchedAt) : undefined,
+              exchangeRateProvider: expRow.exchangeRateProvider,
+              baseAmount: expRow.baseAmount,
+            },
           });
 
           expenseData.currency = currencyFields.currency;

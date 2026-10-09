@@ -4,6 +4,7 @@ import { Expense } from '../../../types';
 import { WidgetProps } from './types';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
+import { getIncomeBaseAmount, getRepaymentBaseAmount } from '../../../utils/currencyUtils';
 
 const SummaryCardsWidget: React.FC<WidgetProps> = ({
   expenses,
@@ -69,8 +70,8 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
           key: repayment.id as string,
-          amount: repayment.amount,
-          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          amount: getRepaymentBaseAmount(repayment),
+          sourceCurrency: repayment.baseCurrency || (linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY),
           date: repayment.date,
         };
       });
@@ -78,6 +79,13 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseConversionEntries, displayCurrency);
   const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentConversionEntries, displayCurrency);
+  const incomeConversionEntries = React.useMemo(() => incomes.filter((income) => !!income.id).map((income) => ({
+    key: income.id as string,
+    amount: getIncomeBaseAmount(income),
+    sourceCurrency: income.baseCurrency || DEFAULT_BASE_CURRENCY,
+    date: income.date,
+  })), [incomes]);
+  const incomeDisplayAmountsById = useCurrencyConversionMap(incomeConversionEntries, displayCurrency);
 
   const stats = React.useMemo(() => {
     const repaymentsByExpenseBase: { [expenseId: string]: number } = {};
@@ -85,9 +93,9 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
 
     repayments.forEach((rep) => {
       if (!rep.expenseId) return;
-      repaymentsByExpenseBase[rep.expenseId] = (repaymentsByExpenseBase[rep.expenseId] || 0) + rep.amount;
+      repaymentsByExpenseBase[rep.expenseId] = (repaymentsByExpenseBase[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       repaymentsByExpenseDisplay[rep.expenseId] = (repaymentsByExpenseDisplay[rep.expenseId] || 0) + (
-        displayCurrency ? (repaymentDisplayAmountsById[rep.id || ''] ?? rep.amount) : rep.amount
+        displayCurrency ? (repaymentDisplayAmountsById[rep.id || ''] ?? Number.NaN) : getRepaymentBaseAmount(rep)
       );
     });
 
@@ -101,7 +109,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       const expenseAmount = displayCurrency
         ? (displaySource.sourceCurrency === displayCurrency
           ? displaySource.amount
-          : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
+          : expenseDisplayAmountsById[exp.id || ''] ?? Number.NaN)
         : getExpenseBaseAmount(exp);
       const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
       return Math.max(0, expenseAmount - repaid);
@@ -126,7 +134,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         const incDate = new Date(inc.date);
         return incDate >= cycleStart && incDate <= cycleEnd;
       })
-      .reduce((sum, inc) => sum + inc.amount, 0);
+        .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
 
     const totalUnrecoveredBase = expenses
       .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
@@ -143,7 +151,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         const amount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
-            : expenseDisplayAmountsById[exp.id || ''] ?? displaySource.amount)
+            : expenseDisplayAmountsById[exp.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(exp);
         return sum + Math.max(0, amount - repaid);
       }, 0);
@@ -164,6 +172,15 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       trackedCount,
     };
   }, [cycleEnd, cycleStart, displayCurrency, expenseDisplayAmountsById, incomes, repaymentDisplayAmountsById, repayments, expenses]);
+
+  const monthlyIncomeDisplay = React.useMemo(() => {
+    if (!displayCurrency) return stats.monthlyIncome;
+    return incomes.filter((income) => {
+      const incomeDate = new Date(income.date);
+      return incomeDate >= cycleStart && incomeDate <= cycleEnd;
+    }).reduce((sum, income) => sum + (incomeDisplayAmountsById[income.id || ''] ?? Number.NaN), 0);
+  }, [cycleEnd, cycleStart, displayCurrency, incomeDisplayAmountsById, incomes, stats.monthlyIncome]);
+  const displayCashflow = monthlyIncomeDisplay - stats.monthlyDisplay;
 
   const expenseCurrency = displayCurrency || DEFAULT_BASE_CURRENCY;
 
@@ -193,18 +210,18 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         <div className="card-icon success-bg">💵</div>
         <div className="card-content">
           <div className="card-label">{t('monthlyIncome')}</div>
-          <div className="card-value success-text">{formatMoney(stats.monthlyIncome, DEFAULT_BASE_CURRENCY)}</div>
+          <div className="card-value success-text">{formatMoney(monthlyIncomeDisplay, displayCurrency || DEFAULT_BASE_CURRENCY)}</div>
         </div>
       </div>
 
       <div className="summary-card">
-        <div className={`card-icon ${stats.netCashflow >= 0 ? 'success-bg' : 'error-bg'}`}>
-          {stats.netCashflow >= 0 ? '📈' : '📉'}
+        <div className={`card-icon ${displayCashflow >= 0 ? 'success-bg' : 'error-bg'}`}>
+          {displayCashflow >= 0 ? '📈' : '📉'}
         </div>
         <div className="card-content">
           <div className="card-label">{t('netCashflow')}</div>
-          <div className={`card-value ${stats.netCashflow >= 0 ? 'success-text' : 'error-text'}`}>
-            {formatMoney(stats.netCashflow, DEFAULT_BASE_CURRENCY)}
+          <div className={`card-value ${displayCashflow >= 0 ? 'success-text' : 'error-text'}`}>
+            {formatMoney(displayCashflow, displayCurrency || DEFAULT_BASE_CURRENCY)}
           </div>
         </div>
       </div>

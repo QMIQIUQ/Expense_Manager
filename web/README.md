@@ -268,7 +268,7 @@ web/
 - [x] Session-based caching for fast offline access ✅
 - [ ] Receipt scanning with OCR
 - [ ] Advanced data visualization with charts
-- [ ] Multi-currency support
+- [x] Multi-currency support for expenses, incomes, repayments, and converted summaries (see [Currency guide](../docs/CURRENCY_GUIDE.md))
 - [ ] Dark mode
 - [ ] Mobile app version
 - [ ] PDF export

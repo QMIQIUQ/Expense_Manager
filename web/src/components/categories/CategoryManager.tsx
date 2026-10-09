@@ -11,6 +11,7 @@ import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
 import { sortCategories } from '../../utils/categoryOrder';
 import { useTouchReorder } from '../../hooks/useTouchReorder';
+import { formatMoney } from '../../utils/currencyUtils';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -494,7 +495,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             <div style={styles.expenseList}>
               {deleteConfirm.expensesUsingCategory.slice(0, 5).map(exp => (
                 <div key={exp.id} style={styles.expenseItem}>
-                  • {exp.description} (${exp.amount.toFixed(2)} - {formatDateWithUserFormat(exp.date, dateFormat)})
+                  • {exp.description} ({formatMoney(exp.amount, exp.currency)} - {formatDateWithUserFormat(exp.date, dateFormat)})
                 </div>
               ))}
               {deleteConfirm.expensesUsingCategory.length > 5 && (

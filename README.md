@@ -136,7 +136,7 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - [x] Progressive Web App (PWA) with offline support ✅
 - [ ] Data visualization with charts (partially complete)
 - [ ] Receipt photo attachments with OCR
-- [ ] Multi-currency support
+- [x] Multi-currency support for expenses, incomes, repayments, and converted summaries (see [Currency guide](docs/CURRENCY_GUIDE.md))
 - [ ] Dark mode toggle
 - [ ] PDF export
 

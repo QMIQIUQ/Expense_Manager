@@ -9,12 +9,15 @@ import {
   ScheduledPaymentType, 
   ScheduledPaymentFrequency,
   PaymentMethodType,
-  PaymentSplitParticipant 
+  PaymentSplitParticipant,
+  CurrencyCode,
 } from '../../types';
 import { BaseForm } from '../common/BaseForm';
 import { useToday } from '../../hooks/useToday';
 import { calculateInstallmentAmount } from '../../services/scheduledPaymentService';
 import { CURRENCIES, getCurrencySymbol, formatMoney as formatCurrency } from '../../utils/currencyUtils';
+import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
+import CurrencySelector from '../common/CurrencySelector';
 import DatePicker from '../common/DatePicker';
 import AutocompleteDropdown, { AutocompleteOption } from '../common/AutocompleteDropdown';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
@@ -30,7 +33,7 @@ interface ScheduledPaymentFormData {
   amount: number;
   totalAmount: number;
   interestRate: number;
-  currency: string;
+  currency: CurrencyCode;
   frequency: ScheduledPaymentFrequency;
   dueDay: number;
   startDate: string;
@@ -104,12 +107,20 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
   });
 
   const [amountInCents, setAmountInCents] = useState(
-    initialData?.amount ? Math.round(initialData.amount * 100) : 0
+    initialData?.amount ? toMinorUnits(initialData.amount, initialData.currency || 'MYR') : 0
   );
   
   const [totalAmountInCents, setTotalAmountInCents] = useState(
-    initialData?.totalAmount ? Math.round(initialData.totalAmount * 100) : 0
+    initialData?.totalAmount ? toMinorUnits(initialData.totalAmount, initialData.currency || 'MYR') : 0
   );
+  const currencyDigits = getCurrencyMinorDigits(formData.currency);
+
+  const handleCurrencyChange = (currency: CurrencyCode) => {
+    const currentCurrency = formData.currency;
+    setAmountInCents(toMinorUnits(fromMinorUnits(amountInCents, currentCurrency), currency));
+    setTotalAmountInCents(toMinorUnits(fromMinorUnits(totalAmountInCents, currentCurrency), currency));
+    setFormData((previous) => ({ ...previous, currency }));
+  };
 
   const [calculateFromTotal, setCalculateFromTotal] = useState(false);
 
@@ -117,20 +128,20 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
   useEffect(() => {
     if (calculateFromTotal && formData.type !== 'subscription' && totalAmountInCents > 0 && formData.totalInstallments > 0) {
       const calculatedAmount = calculateInstallmentAmount(
-        totalAmountInCents / 100,
+        fromMinorUnits(totalAmountInCents, formData.currency),
         formData.totalInstallments,
         formData.interestRate
       );
-      setAmountInCents(Math.round(calculatedAmount * 100));
+      setAmountInCents(toMinorUnits(roundMoney(calculatedAmount, formData.currency), formData.currency));
     }
-  }, [calculateFromTotal, totalAmountInCents, formData.totalInstallments, formData.interestRate, formData.type]);
+  }, [calculateFromTotal, totalAmountInCents, formData.totalInstallments, formData.interestRate, formData.type, formData.currency]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
       ...formData,
-      amount: amountInCents / 100,
-      totalAmount: totalAmountInCents / 100,
+      amount: fromMinorUnits(amountInCents, formData.currency),
+      totalAmount: fromMinorUnits(totalAmountInCents, formData.currency),
     });
   };
 
@@ -252,7 +263,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               <input
                 type="text"
                 inputMode="numeric"
-                value={(totalAmountInCents / 100).toFixed(2)}
+                value={fromMinorUnits(totalAmountInCents, formData.currency).toFixed(currencyDigits)}
                 onChange={(e) => {
                   const value = e.target.value;
                   const digitsOnly = value.replace(/\D/g, '');
@@ -338,10 +349,10 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             {calculateFromTotal && totalAmountInCents > 0 && (
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success-text)' }}>
                 <span className="text-sm">
-                  {t('calculatedMonthlyAmount')}: <strong>{formatCurrency(amountInCents / 100, formData.currency)}</strong>
+                  {t('calculatedMonthlyAmount')}: <strong>{formatCurrency(fromMinorUnits(amountInCents, formData.currency), formData.currency)}</strong>
                   {formData.interestRate > 0 && (
                     <span className="ml-2">
-                      ({t('withInterest')}: {formatCurrency((totalAmountInCents / 100) * (1 + formData.interestRate / 100), formData.currency)})
+                      ({t('withInterest')}: {formatCurrency(roundMoney(fromMinorUnits(totalAmountInCents, formData.currency) * (1 + formData.interestRate / 100), formData.currency), formData.currency)})
                     </span>
                   )}
                 </span>
@@ -358,7 +369,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           <input
             type="text"
             inputMode="numeric"
-            value={(amountInCents / 100).toFixed(2)}
+            value={fromMinorUnits(amountInCents, formData.currency).toFixed(currencyDigits)}
             onChange={(e) => {
               const value = e.target.value;
               const digitsOnly = value.replace(/\D/g, '');
@@ -464,27 +475,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
         />
 
         {/* Currency Selection */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('currency')}
-          </label>
-          <select
-            value={formData.currency}
-            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              borderColor: 'var(--border-color)'
-            }}
-          >
-            {CURRENCIES.map((curr) => (
-              <option key={curr.code} value={curr.code}>
-                {curr.symbol} {curr.code} - {curr.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CurrencySelector value={formData.currency} onChange={handleCurrencyChange} label={t('currency')} compact />
 
         {/* End Date Option (for subscriptions) */}
         {formData.type === 'subscription' && (
@@ -684,7 +675,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               {formData.splitParticipants.length > 0 && amountInCents > 0 && (
                 (() => {
                   const totalParticipantShare = formData.splitParticipants.reduce((sum, p) => sum + p.shareAmount, 0);
-                  const yourShare = (amountInCents / 100) - totalParticipantShare;
+                  const yourShare = fromMinorUnits(amountInCents, formData.currency) - totalParticipantShare;
                   const isInvalid = yourShare < 0;
                   return (
                     <div 
@@ -694,7 +685,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                         color: isInvalid ? 'var(--error-text)' : 'var(--success-text)' 
                       }}
                     >
-                      {t('yourShare')}: {formatCurrency(Math.max(0, yourShare), formData.currency)}
+                      {t('yourShare')}: {formatCurrency(roundMoney(Math.max(0, yourShare), formData.currency), formData.currency)}
                       {isInvalid && (
                         <span className="ml-2">⚠️ {t('shareExceedsTotal') || 'Shares exceed total amount'}</span>
                       )}

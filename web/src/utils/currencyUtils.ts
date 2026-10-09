@@ -1,4 +1,5 @@
 import type { CurrencyCode, CurrencyOption, Expense } from '../types';
+import { getCurrencyMinorDigits, roundMoney } from '../domain/money';
 
 export const DEFAULT_BASE_CURRENCY: CurrencyCode = 'MYR';
 
@@ -29,8 +30,9 @@ export const getCurrencySymbol = (currencyCode?: string | null): string => {
 };
 
 export const formatMoney = (amount: number, currencyCode?: string | null): string => {
-  const symbol = getCurrencySymbol(currencyCode);
-  return `${symbol}${amount.toFixed(2)}`;
+  const option = getCurrencyOption(currencyCode);
+  const digits = getCurrencyMinorDigits(option.code);
+  return `${option.symbol}${Number.isFinite(amount) ? amount.toFixed(digits) : '—'}`;
 };
 
 export const formatExchangeRate = (rate: number): string => {
@@ -66,16 +68,41 @@ export const getExpenseBaseCurrency = (expense: Pick<Expense, 'baseCurrency'>): 
 };
 
 export const getExpenseBaseAmount = (
-  expense: Pick<Expense, 'amount'> & Partial<Pick<Expense, 'baseAmount' | 'exchangeRate'>>
+  expense: Pick<Expense, 'amount' | 'currency'> & Partial<Pick<Expense, 'baseAmount' | 'exchangeRate'>>
 ): number => {
   if (typeof expense.baseAmount === 'number' && Number.isFinite(expense.baseAmount)) {
     return expense.baseAmount;
   }
   if (typeof expense.exchangeRate === 'number' && Number.isFinite(expense.exchangeRate) && expense.exchangeRate > 0) {
-    return Math.round(expense.amount * expense.exchangeRate * 100) / 100;
+    return roundMoney(expense.amount * expense.exchangeRate, 'MYR');
+  }
+  // Legacy records without currency metadata are MYR. A foreign amount without
+  // its booked valuation is intentionally not presented as a MYR amount.
+  if ('currency' in expense && expense.currency && normalizeCurrencyCode(expense.currency) !== DEFAULT_BASE_CURRENCY) {
+    return Number.NaN;
   }
   return expense.amount;
 };
+
+export const getCurrencyBaseAmount = (record: {
+  amount: number;
+  currency?: string;
+  baseCurrency?: string;
+  exchangeRate?: number;
+  baseAmount?: number;
+}): number => {
+  const currency = normalizeCurrencyCode(record.currency);
+  const baseCurrency = normalizeCurrencyCode(record.baseCurrency || DEFAULT_BASE_CURRENCY);
+  if (typeof record.baseAmount === 'number' && Number.isFinite(record.baseAmount)) return record.baseAmount;
+  if (currency === baseCurrency) return record.amount;
+  if (typeof record.exchangeRate === 'number' && Number.isFinite(record.exchangeRate) && record.exchangeRate > 0) {
+    return roundMoney(record.amount * record.exchangeRate, baseCurrency);
+  }
+  return Number.NaN;
+};
+
+export const getIncomeBaseAmount = getCurrencyBaseAmount;
+export const getRepaymentBaseAmount = getCurrencyBaseAmount;
 
 export const getExpenseDisplaySource = (
   expense: Pick<Expense, 'amount' | 'currency' | 'baseAmount' | 'baseCurrency'>,
@@ -93,7 +120,8 @@ export const getExpenseDisplaySource = (
     return { amount: getExpenseBaseAmount(expense), sourceCurrency: baseCurrency };
   }
 
-  return { amount: getExpenseBaseAmount(expense), sourceCurrency: baseCurrency };
+  const baseAmount = getExpenseBaseAmount(expense);
+  return { amount: baseAmount, sourceCurrency: baseCurrency };
 };
 
 export const buildExpenseCurrencyFields = (params: {
@@ -117,13 +145,16 @@ export const buildExpenseCurrencyFields = (params: {
   const currency = normalizeCurrencyCode(params.currency);
   const baseCurrency = normalizeCurrencyCode(params.baseCurrency || DEFAULT_BASE_CURRENCY);
   const exchangeRate = params.exchangeRate ?? (currency === baseCurrency ? 1 : 0);
+  if (currency !== baseCurrency && (!Number.isFinite(exchangeRate) || exchangeRate <= 0)) {
+    throw new Error(`A valid ${currency} to ${baseCurrency} exchange rate is required`);
+  }
   const exchangeRateDate = params.exchangeRateDate || new Date().toISOString().split('T')[0];
   const exchangeRateFetchedAt = params.exchangeRateFetchedAt || new Date();
   const exchangeRateProvider = params.exchangeRateProvider || 'local';
   const baseAmount =
     typeof params.baseAmount === 'number' && Number.isFinite(params.baseAmount)
       ? params.baseAmount
-      : Math.round(params.amount * exchangeRate * 100) / 100;
+      : roundMoney(params.amount * exchangeRate, baseCurrency);
 
   return {
     currency,

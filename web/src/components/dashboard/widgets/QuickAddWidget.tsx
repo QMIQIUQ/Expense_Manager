@@ -10,8 +10,9 @@ import { PlusIcon, EditIcon, DeleteIcon } from '../../icons';
 import PaymentMethodSelector from '../../common/PaymentMethodSelector';
 import CurrencySelector from '../../common/CurrencySelector';
 import { PaymentMethodType } from '../../../types';
-import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../../utils/currencyUtils';
 import { sortCategories } from '../../../utils/categoryOrder';
+import { getCurrencyMinorDigits, roundMoney } from '../../../domain/money';
 
 // Portal-based floating menu component for better z-index handling
 interface FloatingMenuProps {
@@ -116,6 +117,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     paymentMethod: 'cash',
     icon: '💰',
   });
+  const currencyDigits = getCurrencyMinorDigits(formData.currency);
 
   // Sync local presets with props
   useEffect(() => {
@@ -348,14 +350,14 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       <div className="inline-form-field">
         <label className="inline-form-label">{t('amount')}</label>
         <div className="inline-amount-wrapper">
-          <span className="currency-symbol">{formatMoney(0, formData.currency).replace('0.00', '')}</span>
+          <span className="currency-symbol">{getCurrencySymbol(formData.currency)}</span>
           <input
             type="number"
             value={formData.amount || ''}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : roundMoney(parseFloat(e.target.value), formData.currency) })}
             placeholder={formatMoney(0, formData.currency)}
             className="inline-input inline-input-amount"
-            step="0.01"
+            step={currencyDigits === 0 ? '1' : '0.01'}
             min="0"
           />
         </div>
@@ -365,7 +367,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       <div className="inline-form-field">
         <CurrencySelector
           value={formData.currency || DEFAULT_BASE_CURRENCY}
-          onChange={(currency) => setFormData({ ...formData, currency })}
+          onChange={(currency) => setFormData((previous) => ({ ...previous, currency, amount: roundMoney(previous.amount, currency) }))}
           label={t('currency')}
           compact={true}
         />

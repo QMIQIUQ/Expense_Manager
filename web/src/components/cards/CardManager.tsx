@@ -11,6 +11,8 @@ import { PlusIcon, EditIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import PopupModal from '../common/PopupModal';
+import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount } from '../../utils/currencyUtils';
 
 interface CardManagerProps {
   cards: Card[];
@@ -83,6 +85,17 @@ const CardManager: React.FC<CardManagerProps> = ({
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (card.bankName && card.bankName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const cardConversionEntries = React.useMemo(() => cards.flatMap((card) => expenses
+    .filter((expense) => expense.cardId === card.id && !!expense.id)
+    .map((expense) => ({
+      key: `${card.id}:${expense.id}`,
+      amount: getExpenseBaseAmount(expense),
+      sourceCurrency: expense.baseCurrency || DEFAULT_BASE_CURRENCY,
+      targetCurrency: card.currency || DEFAULT_BASE_CURRENCY,
+      date: expense.date,
+    }))), [cards, expenses]);
+  const cardConversion = useCurrencyConversionMapState(cardConversionEntries);
 
   const {
     isSelectionMode,
@@ -233,7 +246,7 @@ const CardManager: React.FC<CardManagerProps> = ({
         <div className="card-list">
           {filteredCards.map((card) => {
             const isExpanded = expandedCardId === card.id;
-            const stats: CardStats = calculateCardStats(card, expenses, categories);
+            const stats: CardStats = calculateCardStats(card, expenses, categories, new Date(), cardConversion.amountsByKey);
 
             return (
               <div key={card.id} className={`credit-card ${isSelectionMode && selectedIds.has(card.id!) ? 'selected' : ''}`} style={openMenuId === card.id ? { zIndex: 9999 } : {}}>
@@ -252,7 +265,7 @@ const CardManager: React.FC<CardManagerProps> = ({
                   <div className="card-info">
                     <h3 className="card-name">{card.name}</h3>
                     <p className="card-limit">
-                      {t('cardLimit')}: ${card.cardLimit.toLocaleString()}
+                      {t('cardLimit')}: {formatMoney(card.cardLimit, card.currency || DEFAULT_BASE_CURRENCY)}
                     </p>
                   </div>
                   <div className="card-actions">
@@ -310,15 +323,15 @@ const CardManager: React.FC<CardManagerProps> = ({
                 <div className="stats-grid">
                   <div className="stat-card info">
                     <p className="stat-label">{t('currentCycleSpending')}</p>
-                    <p className="stat-value info-text">${stats.currentCycleSpending.toFixed(2)}</p>
+                    <p className="stat-value info-text">{formatMoney(stats.currentCycleSpending, card.currency || DEFAULT_BASE_CURRENCY)}</p>
                   </div>
                   <div className="stat-card success">
                     <p className="stat-label">{t('availableCredit')}</p>
-                    <p className="stat-value success-text">${stats.availableCredit.toFixed(2)}</p>
+                    <p className="stat-value success-text">{formatMoney(stats.availableCredit, card.currency || DEFAULT_BASE_CURRENCY)}</p>
                   </div>
                   <div className="stat-card accent">
                     <p className="stat-label">{t('estimatedCashback')}</p>
-                    <p className="stat-value accent-text">${stats.estimatedTotalCashback.toFixed(2)}</p>
+                    <p className="stat-value accent-text">{formatMoney(stats.estimatedTotalCashback, card.currency || DEFAULT_BASE_CURRENCY)}</p>
                   </div>
                   <div className="stat-card warning">
                     <p className="stat-label">{t('nextBillingDate')}</p>
@@ -340,20 +353,20 @@ const CardManager: React.FC<CardManagerProps> = ({
                         <div>
                           <div className="breakdown-title">{ruleStats.categoryName}</div>
                           <div className="breakdown-meta">
-                            {t('categorySpend')}: ${ruleStats.categorySpend.toFixed(2)}
+                            {t('categorySpend')}: {formatMoney(ruleStats.categorySpend, card.currency || DEFAULT_BASE_CURRENCY)}
                           </div>
                           {ruleStats.requiredToReachMinSpend > 0 && (
                             <div className="breakdown-meta warning-text">
-                              ${ruleStats.requiredToReachMinSpend.toFixed(2)} {t('toReachMinSpend')}
+                              {formatMoney(ruleStats.requiredToReachMinSpend, card.currency || DEFAULT_BASE_CURRENCY)} {t('toReachMinSpend')}
                             </div>
                           )}
                           {ruleStats.requiredToReachCap > 0 && (
                             <div className="breakdown-meta info-text">
-                              ${ruleStats.requiredToReachCap.toFixed(2)} {t('toReachCap')}
+                              {formatMoney(ruleStats.requiredToReachCap, card.currency || DEFAULT_BASE_CURRENCY)} {t('toReachCap')}
                             </div>
                           )}
                         </div>
-                        <div className="breakdown-value">+${ruleStats.estimatedCashback.toFixed(2)}</div>
+                        <div className="breakdown-value">+{formatMoney(ruleStats.estimatedCashback, card.currency || DEFAULT_BASE_CURRENCY)}</div>
                       </div>
                     ))}
                   </div>

@@ -6,9 +6,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, L
 import { getTodayLocal, formatDateLocal, formatDateShort, formatDateWithUserFormat } from '../../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
+import { getIncomeBaseAmount, getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import type { CurrencyCode } from '../../types';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { chartColors } from '../../styles/chartPalette';
+import { getCurrencyMinorDigits } from '../../domain/money';
 
 interface DashboardSummaryProps {
   expenses: Expense[];
@@ -80,8 +82,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
           key: repayment.id as string,
-          amount: repayment.amount,
-          sourceCurrency: linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY,
+          amount: getRepaymentBaseAmount(repayment),
+          sourceCurrency: repayment.baseCurrency || (linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY),
           date: repayment.date,
         };
       });
@@ -89,24 +91,31 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
   const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
+  const incomeDisplayEntries = React.useMemo(() => incomes.filter((income) => !!income.id).map((income) => ({
+    key: income.id as string,
+    amount: getIncomeBaseAmount(income),
+    sourceCurrency: income.baseCurrency || DEFAULT_BASE_CURRENCY,
+    date: income.date,
+  })), [incomes]);
+  const incomeDisplayAmountsById = useCurrencyConversionMap(incomeDisplayEntries, displayCurrency);
 
   const getDisplayExpenseAmount = React.useCallback((expense: Expense): number => {
     if (!displayCurrency) return getExpenseBaseAmount(expense);
     const displaySource = getExpenseDisplaySource(expense, displayCurrency);
     if (displaySource.sourceCurrency === displayCurrency) return displaySource.amount;
-    return expenseDisplayAmountsById[expense.id || ''] ?? displaySource.amount;
+    return expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN;
   }, [displayCurrency, expenseDisplayAmountsById]);
 
   const getDisplayRepaymentTotal = React.useCallback((expenseId: string): number => {
     if (!displayCurrency) {
       return repayments
         .filter((repayment) => repayment.expenseId === expenseId)
-        .reduce((sum, repayment) => sum + repayment.amount, 0);
+        .reduce((sum, repayment) => sum + getRepaymentBaseAmount(repayment), 0);
     }
 
     return repayments
       .filter((repayment) => repayment.expenseId === expenseId)
-      .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? repayment.amount), 0);
+      .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN), 0);
   }, [displayCurrency, repaymentDisplayAmountsById, repayments]);
   
   // Memoize expensive calculations (only recalculates when dependencies change)
@@ -116,7 +125,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     repayments.forEach((rep) => {
       if (rep.expenseId) {
         repaymentsByExpense[rep.expenseId] =
-          (repaymentsByExpense[rep.expenseId] || 0) + rep.amount;
+          (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       }
     });
 
@@ -128,7 +137,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
 
     // Total expenses (deducting repayments)
     const total = expenses.reduce((sum, exp) => sum + getNetAmount(exp), 0);
-    const totalIncome = incomes.reduce((sum, inc) => inc.amount + sum, 0);
+    const totalIncome = incomes.reduce((sum, inc) => getIncomeBaseAmount(inc) + sum, 0);
     
     // Calculate monthly expenses based on billing cycle (deducting repayments)
     const monthly = expenses
@@ -144,7 +153,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
         const incDate = new Date(inc.date);
         return incDate >= cycleStart && incDate <= cycleEnd;
       })
-      .reduce((sum, inc) => sum + inc.amount, 0);
+      .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
 
     const today = getTodayLocal();
     // Daily expenses (deducting repayments)
@@ -166,7 +175,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
       .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
         const repaid = repaymentsByExpense[exp.id || ''] || 0;
-        const remaining = Math.max(0, exp.amount - repaid);
+        const remaining = Math.max(0, getExpenseBaseAmount(exp) - repaid);
         return sum + remaining;
       }, 0);
 
@@ -184,6 +193,14 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
       netCashflow,
     };
   }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
+
+  const displayMonthlyIncome = React.useMemo(() => {
+    if (!displayCurrency) return stats.monthlyIncome;
+    return incomes.filter((income) => {
+      const incomeDate = new Date(income.date);
+      return incomeDate >= cycleStart && incomeDate <= cycleEnd;
+    }).reduce((sum, income) => sum + (incomeDisplayAmountsById[income.id || ''] ?? Number.NaN), 0);
+  }, [cycleEnd, cycleStart, displayCurrency, incomeDisplayAmountsById, incomes, stats.monthlyIncome]);
 
   const displayMonthlyExpense = React.useMemo(() => {
     if (!displayCurrency) return stats.monthly;
@@ -224,15 +241,15 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
   }, [configuredCategories, displayByCategory]);
 
   // Memoize pie chart data preparation
-  const pieData = React.useMemo(() => 
-    sortCategoryEntries(Object.entries(stats.byCategory), configuredCategories)
+  const pieData = React.useMemo(() => {
+    const displayCategoryTotal = Object.values(displayByCategory).reduce((sum, amount) => sum + amount, 0);
+    return sortCategoryEntries(Object.entries(displayByCategory), configuredCategories)
       .map(([name, value]) => ({
         name,
         value,
-        percentage: ((value / stats.total) * 100).toFixed(1)
-      })),
-    [configuredCategories, stats.byCategory, stats.total]
-  );
+        percentage: displayCategoryTotal > 0 ? ((value / displayCategoryTotal) * 100).toFixed(1) : '0.0'
+      }));
+  }, [configuredCategories, displayByCategory]);
 
   // Memoize spending trend data (last 7 days)
   const spendingTrend = React.useMemo(() => {
@@ -250,15 +267,17 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     // Accumulate expenses
     expenses.forEach(exp => {
       if (Object.prototype.hasOwnProperty.call(last7Days, exp.date)) {
-        last7Days[exp.date] += getExpenseBaseAmount(exp);
+        last7Days[exp.date] += getDisplayExpenseAmount(exp);
       }
     });
     
     return Object.entries(last7Days).map(([date, amount]) => ({
       date: formatDateShort(date, dateFormat),
-      amount: parseFloat(amount.toFixed(2))
+      amount: Number.isFinite(amount)
+        ? Number(amount.toFixed(getCurrencyMinorDigits(displayCurrency || DEFAULT_BASE_CURRENCY)))
+        : Number.NaN,
     }));
-  }, [expenses, dateFormat]);
+  }, [displayCurrency, expenses, dateFormat, getDisplayExpenseAmount]);
 
   // Memoize recent expenses sorting (last 5)
   const recentExpenses = React.useMemo(() => 
@@ -288,7 +307,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
           <div className="card-content">
             <div className="card-label">{t('monthlyIncome')}</div>
             <div className="card-value success-text">
-              {formatMoney(stats.monthlyIncome, DEFAULT_BASE_CURRENCY)}
+              {formatMoney(displayMonthlyIncome, displayCurrency || DEFAULT_BASE_CURRENCY)}
             </div>
           </div>
         </div>
@@ -300,7 +319,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
           <div className="card-content">
             <div className="card-label">{t('netCashflow')}</div>
             <div className={`card-value ${stats.netCashflow >= 0 ? 'success-text' : 'error-text'}`}>
-              {formatMoney(stats.netCashflow, DEFAULT_BASE_CURRENCY)}
+              {formatMoney(displayMonthlyIncome - displayMonthlyExpense, displayCurrency || DEFAULT_BASE_CURRENCY)}
             </div>
           </div>
         </div>
@@ -418,7 +437,8 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
           <h3 className="section-title">{t('topCategories')}</h3>
           <div className="category-list">
             {topCategories.map(([category, amount]) => {
-              const percentage = (amount / stats.total) * 100;
+                  const displayCategoryTotal = Object.values(displayByCategory).reduce((sum, value) => sum + value, 0);
+                  const percentage = displayCategoryTotal > 0 ? (amount / displayCategoryTotal) * 100 : 0;
               return (
                 <div key={category} className="category-item">
                   <div className="category-info">
@@ -459,7 +479,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => formatMoney(value, DEFAULT_BASE_CURRENCY)}
+                formatter={(value: number) => formatMoney(value, displayCurrency || DEFAULT_BASE_CURRENCY)}
               />
               <Legend 
                 layout="horizontal"
@@ -494,7 +514,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
                 height={60}
               />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value: number) => formatMoney(value, DEFAULT_BASE_CURRENCY)} />
+              <Tooltip formatter={(value: number) => formatMoney(value, displayCurrency || DEFAULT_BASE_CURRENCY)} />
               <Line type="monotone" dataKey="amount" stroke="var(--accent-primary)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>

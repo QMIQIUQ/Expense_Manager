@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardType, CashbackRule, Category, Bank } from '../../types';
+import { Card, CardType, CashbackRule, Category, Bank, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { BaseForm } from '../common/BaseForm';
 import { sortCategories } from '../../utils/categoryOrder';
+import CurrencySelector from '../common/CurrencySelector';
+import { fromMinorUnits, toMinorUnits } from '../../domain/money';
+import { formatMoney } from '../../utils/currencyUtils';
 
 interface CardFormProps {
   onSubmit: (card: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
@@ -66,24 +69,42 @@ const CardForm: React.FC<CardFormProps> = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     bankName: initialData?.bankName || '',
-    cardLimit: initialData?.cardLimit ? Math.round(initialData.cardLimit * 100) : 0, // Store in cents
+    cardLimit: toMinorUnits(initialData?.cardLimit || 0, initialData?.currency),
+    currency: initialData?.currency || 'MYR',
     billingDay: initialData?.billingDay || 1,
-    benefitMinSpend: initialData?.benefitMinSpend ? Math.round(initialData.benefitMinSpend * 100) : 0, // Store in cents
+    benefitMinSpend: toMinorUnits(initialData?.benefitMinSpend || 0, initialData?.currency),
     cardType: initialData?.cardType || ('cashback' as CardType),
   });
 
   const [cashbackRules, setCashbackRules] = useState<CashbackRule[]>(
     initialData?.cashbackRules?.map(rule => ({
       ...rule,
-      minSpendForRate: Math.round(rule.minSpendForRate * 100),
-      capIfMet: Math.round(rule.capIfMet * 100),
-      capIfNotMet: Math.round(rule.capIfNotMet * 100),
+      minSpendForRate: toMinorUnits(rule.minSpendForRate, initialData?.currency),
+      capIfMet: toMinorUnits(rule.capIfMet, initialData?.currency),
+      capIfNotMet: toMinorUnits(rule.capIfNotMet, initialData?.currency),
     })) || []
   );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showBankSuggestions, setShowBankSuggestions] = useState(false);
   const [bankSuggestions, setBankSuggestions] = useState<string[]>([]);
+
+  const handleCurrencyChange = (currency: CurrencyCode) => {
+    if (currency === formData.currency) return;
+    const convertUnits = (value: number) => toMinorUnits(fromMinorUnits(value, formData.currency), currency);
+    setFormData((previous) => ({
+      ...previous,
+      currency,
+      cardLimit: convertUnits(previous.cardLimit),
+      benefitMinSpend: convertUnits(previous.benefitMinSpend),
+    }));
+    setCashbackRules((previous) => previous.map((rule) => ({
+      ...rule,
+      minSpendForRate: convertUnits(rule.minSpendForRate),
+      capIfMet: convertUnits(rule.capIfMet),
+      capIfNotMet: convertUnits(rule.capIfNotMet),
+    })));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +127,8 @@ const CardForm: React.FC<CardFormProps> = ({
     // Build card data, omitting undefined fields to avoid Firebase errors
     const cardData: Omit<Card, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
       name: formData.name,
-      cardLimit: formData.cardLimit / 100, // Convert from cents to dollars
+      cardLimit: fromMinorUnits(formData.cardLimit, formData.currency),
+      currency: formData.currency as CurrencyCode,
       billingDay: formData.billingDay,
       cardType: formData.cardType,
     };
@@ -116,15 +138,15 @@ const CardForm: React.FC<CardFormProps> = ({
       cardData.bankName = formData.bankName;
     }
     if (formData.benefitMinSpend && formData.benefitMinSpend > 0) {
-      cardData.benefitMinSpend = formData.benefitMinSpend / 100; // Convert from cents to dollars
+      cardData.benefitMinSpend = fromMinorUnits(formData.benefitMinSpend, formData.currency);
     }
     if (formData.cardType === 'cashback' && cashbackRules.length > 0) {
       // Convert cashback rules from cents to dollars
       cardData.cashbackRules = cashbackRules.map(rule => ({
         ...rule,
-        minSpendForRate: rule.minSpendForRate / 100,
-        capIfMet: rule.capIfMet / 100,
-        capIfNotMet: rule.capIfNotMet / 100,
+        minSpendForRate: fromMinorUnits(rule.minSpendForRate, formData.currency),
+        capIfMet: fromMinorUnits(rule.capIfMet, formData.currency),
+        capIfNotMet: fromMinorUnits(rule.capIfNotMet, formData.currency),
       }));
     }
     if (initialData?.perMonthOverrides && initialData.perMonthOverrides.length > 0) {
@@ -241,7 +263,7 @@ const CardForm: React.FC<CardFormProps> = ({
   // Calculate how much spending needed to reach cap for display
   const calculateSpendToReachCap = (rate: number, capInCents: number): number => {
     if (rate === 0) return 0;
-    const capInDollars = capInCents / 100;
+    const capInDollars = fromMinorUnits(capInCents, formData.currency);
     return Math.ceil(capInDollars / rate);
   };
 
@@ -322,15 +344,17 @@ const CardForm: React.FC<CardFormProps> = ({
         </div>
       </div>
 
+      <CurrencySelector value={formData.currency} label={t('currency')} onChange={handleCurrencyChange} />
+
       {/* Card Limit and Billing Day */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ($) *</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ({formData.currency}) *</label>
           <input
             type="text"
             inputMode="numeric"
             name="cardLimit"
-            value={(formData.cardLimit / 100).toFixed(2)}
+            value={fromMinorUnits(formData.cardLimit, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
             onChange={handleAmountChange('cardLimit')}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
@@ -377,12 +401,12 @@ const CardForm: React.FC<CardFormProps> = ({
       {/* Benefit Min Spend and Card Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')} ($)</label>
+          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')} ({formData.currency})</label>
           <input
             type="text"
             inputMode="numeric"
             name="benefitMinSpend"
-            value={(formData.benefitMinSpend / 100).toFixed(2)}
+            value={fromMinorUnits(formData.benefitMinSpend, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
             onChange={handleAmountChange('benefitMinSpend')}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
@@ -485,13 +509,13 @@ const CardForm: React.FC<CardFormProps> = ({
                 {/* Min Spend for Higher Rate */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
-                    {t('minSpendForRate')} ($)
+                    {t('minSpendForRate')} ({formData.currency})
                     <Tooltip text={t('tooltipMinSpendForRate')} />
                   </label>
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={(rule.minSpendForRate / 100).toFixed(2)}
+                    value={fromMinorUnits(rule.minSpendForRate, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
                     onChange={handleCashbackAmountChange(index, 'minSpendForRate')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"
@@ -537,13 +561,13 @@ const CardForm: React.FC<CardFormProps> = ({
                 {/* Cap if Met */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
-                    {t('capIfMet')} ($)
+                    {t('capIfMet')} ({formData.currency})
                     <Tooltip text={t('tooltipCapIfMet')} />
                   </label>
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={(rule.capIfMet / 100).toFixed(2)}
+                    value={fromMinorUnits(rule.capIfMet, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
                     onChange={handleCashbackAmountChange(index, 'capIfMet')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"
@@ -569,7 +593,7 @@ const CardForm: React.FC<CardFormProps> = ({
                       color: 'var(--text-secondary)',
                     }}
                   >
-                    ${calculateSpendToReachCap(rule.rateIfMet, rule.capIfMet)}
+                    {formatMoney(calculateSpendToReachCap(rule.rateIfMet, rule.capIfMet), formData.currency)}
                   </div>
                 </div>
 
@@ -606,13 +630,13 @@ const CardForm: React.FC<CardFormProps> = ({
                 {/* Cap if Not Met */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
-                    {t('capIfNotMet')} ($)
+                    {t('capIfNotMet')} ({formData.currency})
                     <Tooltip text={t('tooltipCapIfNotMet')} />
                   </label>
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={(rule.capIfNotMet / 100).toFixed(2)}
+                    value={fromMinorUnits(rule.capIfNotMet, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
                     onChange={handleCashbackAmountChange(index, 'capIfNotMet')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"

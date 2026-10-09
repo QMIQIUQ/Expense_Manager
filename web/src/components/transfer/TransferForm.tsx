@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transfer, Card, EWallet, Bank, PaymentMethodType } from '../../types';
+import { Transfer, Card, EWallet, Bank, PaymentMethodType, CurrencyCode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { getTodayLocal } from '../../utils/dateUtils';
@@ -8,6 +8,9 @@ import { getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
 import DatePicker from '../common/DatePicker';
 import PaymentMethodSelector from '../common/PaymentMethodSelector';
+import CurrencySelector from '../common/CurrencySelector';
+import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUtils';
+import { fromMinorUnits, toMinorUnits } from '../../domain/money';
 
 interface TransferFormProps {
   onSubmit: (transfer: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -31,6 +34,9 @@ const TransferForm: React.FC<TransferFormProps> = ({
   const today = useToday();
   const [formData, setFormData] = useState({
     amount: 0,
+    currency: DEFAULT_BASE_CURRENCY as CurrencyCode,
+    toAmount: 0,
+    toCurrency: DEFAULT_BASE_CURRENCY as CurrencyCode,
     date: today,
     time: getCurrentTimeLocal(),
     fromPaymentMethod: 'cash' as 'cash' | 'credit_card' | 'e_wallet' | 'bank',
@@ -55,6 +61,9 @@ const TransferForm: React.FC<TransferFormProps> = ({
     }
     if (!formData.date) {
       newErrors.date = t('pleaseFillField') || 'Please select a date';
+    }
+    if (formData.currency !== formData.toCurrency && formData.toAmount <= 0) {
+      newErrors.toAmount = t('pleaseFillField') || 'Enter the amount received in the destination currency';
     }
 
     // Validate from payment method
@@ -98,9 +107,14 @@ const TransferForm: React.FC<TransferFormProps> = ({
     setErrors({});
 
     // Prepare data and remove unused fields
+    const sourceAmount = fromMinorUnits(formData.amount, formData.currency);
+    const destinationAmount = formData.currency === formData.toCurrency
+      ? sourceAmount
+      : fromMinorUnits(formData.toAmount, formData.toCurrency);
     const submitData: Partial<typeof formData> = {
       ...formData,
-      amount: formData.amount / 100, // Convert from cents to dollars
+      amount: sourceAmount,
+      toAmount: destinationAmount,
     };
 
     // Clean up from fields based on payment method
@@ -145,6 +159,9 @@ const TransferForm: React.FC<TransferFormProps> = ({
     // Reset form
     setFormData({
       amount: 0,
+      currency: DEFAULT_BASE_CURRENCY,
+      toAmount: 0,
+      toCurrency: DEFAULT_BASE_CURRENCY,
       date: getTodayLocal(),
       time: getCurrentTimeLocal(),
       fromPaymentMethod: 'cash',
@@ -167,6 +184,12 @@ const TransferForm: React.FC<TransferFormProps> = ({
     if (errors.amount) {
       setErrors((prev) => ({ ...prev, amount: '' }));
     }
+  };
+
+  const handleDestinationAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    setFormData((prev) => ({ ...prev, toAmount: parseInt(digitsOnly) || 0 }));
+    if (errors.toAmount) setErrors((prev) => ({ ...prev, toAmount: '' }));
   };
 
   const handleChange = (
@@ -192,16 +215,16 @@ const TransferForm: React.FC<TransferFormProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {t('amount')} ($) *
+            {t('amount')} ({getCurrencySymbol(formData.currency)}) *
           </label>
           <input
             type="text"
             inputMode="numeric"
             name="amount"
-            value={(formData.amount / 100).toFixed(2)}
+            value={fromMinorUnits(formData.amount, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
             onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
@@ -216,6 +239,17 @@ const TransferForm: React.FC<TransferFormProps> = ({
           />
           {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
         </div>
+
+        <CurrencySelector
+          value={formData.currency}
+          label={t('transferFromCurrency') || `${t('transferFrom')} ${t('currency')}`}
+          onChange={(currency) => setFormData((prev) => ({
+            ...prev,
+            currency,
+            amount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), currency),
+            ...(currency === prev.toCurrency ? { toAmount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), currency) } : {}),
+          }))}
+        />
 
         <DatePicker
           label={t('date')}
@@ -292,6 +326,36 @@ const TransferForm: React.FC<TransferFormProps> = ({
         {errors.toCardId && <span className="text-xs text-red-600">{errors.toCardId}</span>}
         {errors.toPaymentMethodName && <span className="text-xs text-red-600">{errors.toPaymentMethodName}</span>}
         {errors.toBankId && <span className="text-xs text-red-600">{errors.toBankId}</span>}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CurrencySelector
+          value={formData.toCurrency}
+          label={t('transferToCurrency') || `${t('transferTo')} ${t('currency')}`}
+          onChange={(toCurrency) => setFormData((prev) => ({
+            ...prev,
+            toCurrency,
+            ...(toCurrency === prev.currency ? { toAmount: toMinorUnits(fromMinorUnits(prev.amount, prev.currency), toCurrency) } : {}),
+          }))}
+        />
+        {formData.currency !== formData.toCurrency && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              {t('destinationAmount') || 'Amount received'} ({getCurrencySymbol(formData.toCurrency)}) *
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={fromMinorUnits(formData.toAmount, formData.toCurrency).toFixed(formData.toCurrency === 'JPY' ? 0 : 2)}
+              onChange={handleDestinationAmountChange}
+              onFocus={(e) => e.target.select()}
+              placeholder="0"
+              className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${errors.toAmount ? 'border-red-500' : ''}`}
+              style={{ borderColor: errors.toAmount ? undefined : 'var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}
+            />
+            {errors.toAmount && <span className="text-xs text-red-600">{errors.toAmount}</span>}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">
