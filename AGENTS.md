@@ -1,18 +1,5 @@
 # Project instructions
 
-## Required ChatGPT collaboration
-
-For every task in this repository, choose the ChatGPT collaboration plugin based on the target branch:
-
-- **Default:** Make and publish changes to `firebase-testing` first. Use [Codex with ChatGPT · Expense Manager Test](plugin://dev-6ac85cc49df08191b8d5cf39daaaeb24@created-by-me-remote) for planning and review.
-- **Direct `main` changes:** Only target `main` when the user explicitly asks for it. Use [Codex with ChatGPT · Expense_Manager](plugin://dev-6ac7d0a2072c8191b3491e53ed81eef9@created-by-me-remote) for planning and review.
-
-1. At the start of the task, send the goal to the plugin and obtain its plan before making project changes.
-2. Carry out the approved plan in the local workspace.
-3. After making changes, ask the plugin to review the result and continue its review and revision loop until it reports completion or a blocker.
-
-If the plugin selected for the target branch is unavailable in the current session, pause project work and tell the user. Continue without it only if the user explicitly authorizes a fallback.
-
 ## Default branch and Firebase test deployment
 
 - Unless the user requests a different destination, use `firebase-testing` as the default branch for project changes and push the task's finished commits to `origin/firebase-testing`. This branch triggers `.github/workflows/firebase-hosting-deploy.yml`.
