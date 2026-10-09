@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import '../../index.css';
+import '../../cat-theme.css';
 import FloatingExpenseActions from './FloatingExpenseActions';
 
 describe('FloatingExpenseActions', () => {
@@ -55,6 +56,33 @@ describe('FloatingExpenseActions', () => {
     const actionGroupStyles = getComputedStyle(actionGroup as HTMLElement);
     expect(actionGroupStyles.getPropertyValue('background-color')).toBe('transparent');
     expect(actionGroupStyles.getPropertyValue('box-shadow')).toBe('none');
+  });
+
+  it.each([
+    ['Dark', 'dark'],
+    ['Dark Warm Kitty', 'dark theme-cat theme-cat-dark'],
+  ])('keeps the receipt scan action visually secondary in %s', (_theme, themeClasses) => {
+    render(
+      <div className={themeClasses}>
+        <FloatingExpenseActions
+          isMobile={false}
+          addExpenseLabel="Add expense"
+          scanReceiptLabel="Scan receipt"
+          onAddExpense={vi.fn()}
+          onScanReceipt={vi.fn()}
+          onLongPress={vi.fn()}
+        />
+      </div>,
+    );
+
+    const addExpenseButton = screen.getByRole('button', { name: 'Add expense' });
+    const scanReceiptButton = screen.getByRole('button', { name: 'Scan receipt' });
+    const addExpenseStyles = getComputedStyle(addExpenseButton);
+    const scanReceiptStyles = getComputedStyle(scanReceiptButton);
+
+    expect(scanReceiptButton).toHaveClass('floating-expense-action-secondary');
+    expect(scanReceiptStyles.getPropertyValue('background')).not.toBe(addExpenseStyles.getPropertyValue('background'));
+    expect(scanReceiptStyles.getPropertyValue('box-shadow')).not.toBe(addExpenseStyles.getPropertyValue('box-shadow'));
   });
 
   it('keeps the add expense long-press action separate from a normal click', () => {

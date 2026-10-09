@@ -45,22 +45,25 @@ jobs:
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
           projectId: expense-manager-41afb
           channelId: ${{ github.ref_name == 'main' && 'live' || 'compact-navigation-v2' }}
-          expires: 7d
+          expires: ${{ github.ref_name == 'firebase-testing' && '7d' || '' }}
           entryPoint: ./web
 
       - name: Output Deployment URL
         run: |
-          DEPLOYMENT_URL="${{ steps.firebase-deploy.outputs.details_url }}"
-          EXPIRE_TIME="${{ steps.firebase-deploy.outputs.expire_time_formatted }}"
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            DEPLOYMENT_URL="$LIVE_URL"
             CHANNEL="Live (Production)"
           else
+            DEPLOYMENT_URL="$CHANNEL_URL"
             CHANNEL="Preview (firebase-testing; compact-navigation-v2)"
           fi
           echo "### Deployment succeeded 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Website URL**: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Channel**: $CHANNEL" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$DETAILS_URL" ]; then
+            echo "- **Firebase Console**: $DETAILS_URL" >> $GITHUB_STEP_SUMMARY
+          fi
           if [ -n "$EXPIRE_TIME" ]; then
             echo "- **Preview expires**: $EXPIRE_TIME" >> $GITHUB_STEP_SUMMARY
           fi
@@ -70,9 +73,17 @@ jobs:
           echo "============================================"
           echo "🎉 Firebase Hosting deployment succeeded!"
           echo "============================================"
-          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Website URL: $DEPLOYMENT_URL"
           echo "Channel: $CHANNEL"
+          if [ -n "$DETAILS_URL" ]; then
+            echo "Firebase Console: $DETAILS_URL"
+          fi
           if [ -n "$EXPIRE_TIME" ]; then
             echo "Preview expires: $EXPIRE_TIME"
           fi
           echo "============================================"
+        env:
+          LIVE_URL: https://expense-manager-41afb.web.app/
+          CHANNEL_URL: ${{ steps.firebase-deploy.outputs.channel_url }}
+          DETAILS_URL: ${{ steps.firebase-deploy.outputs.details_url }}
+          EXPIRE_TIME: ${{ steps.firebase-deploy.outputs.expire_time_formatted }}

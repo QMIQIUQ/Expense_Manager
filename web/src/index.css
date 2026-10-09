@@ -2249,13 +2249,13 @@ button:not(:disabled):hover {
 }
 
 /* Floating action button enhancement */
-.dark [class*="floating"]:not(.floating-expense-actions),
+.dark [class*="floating"]:not(.floating-expense-actions):not(.floating-expense-action),
 .dark [class*="fab"] {
   background: var(--tab-active-bg);
   box-shadow: var(--purple-glow-strong), 0 8px 16px var(--shadow-lg);
 }
 
-.dark [class*="floating"]:not(.floating-expense-actions):hover,
+.dark [class*="floating"]:not(.floating-expense-actions):not(.floating-expense-action):hover,
 .dark [class*="fab"]:hover {
   box-shadow: var(--purple-glow-strong), 0 12px 24px var(--shadow-lg);
   transform: translateY(-2px);
