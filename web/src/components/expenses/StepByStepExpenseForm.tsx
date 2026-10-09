@@ -35,6 +35,7 @@ const formatOcrDuration = (elapsedMs?: number): string => {
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 const STEP_RECEIPT: Step = 0;
+const SHOW_RECEIPT_ENTRY_PROMPT = false;
 const STEP_DATE: Step = 1;
 const STEP_CURRENCY: Step = 2;
 const STEP_AMOUNT: Step = 3;
@@ -1439,7 +1440,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <span style={styles.stepHeaderIcon}>📅</span>
               <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
             </div>
-            {!initialData && (
+            {!initialData && SHOW_RECEIPT_ENTRY_PROMPT && (
               <div style={styles.receiptEntryStrip}>
                 <div style={styles.receiptEntryText}>
                   {receiptDraftId ? receiptTexts.restoreHint : receiptTexts.entryHint}
