@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Expense Manager",
+  "short_name": "Expense Manager",
+  "description": "A comprehensive expense tracking application for managing your finances",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#211b26",
+  "theme_color": "#211b26",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "app-icons/warm-kitty-dark-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "app-icons/warm-kitty-dark-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "app-icons/warm-kitty-dark-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["finance", "productivity"]
+}

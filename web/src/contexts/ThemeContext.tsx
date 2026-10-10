@@ -17,6 +17,41 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const updateThemeAppAssets = (theme: ThemeMode, isDark: boolean) => {
+  const isCatTheme = theme === 'cat' || theme === 'cat-dark';
+  const appearance = isDark ? 'dark' : 'light';
+  const baseUrl = import.meta.env.BASE_URL;
+  const icon = isCatTheme ? `app-icons/warm-kitty-${appearance}.svg` : 'favicon.png';
+  const touchIcon = isCatTheme ? `app-icons/warm-kitty-${appearance}-192.png` : 'pwa-192x192.png';
+  const manifest = isCatTheme
+    ? `manifest-warm-kitty-${appearance}.webmanifest`
+    : 'manifest.webmanifest';
+  const themeColor = isCatTheme ? (isDark ? '#211b26' : '#fff9f4') : '#10b981';
+
+  const setLink = (rel: string, href: string, type?: string) => {
+    let link = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = rel;
+      document.head.appendChild(link);
+    }
+    link.href = `${baseUrl}${href}`;
+    if (type) link.type = type;
+  };
+
+  setLink('icon', icon, isCatTheme ? 'image/svg+xml' : 'image/png');
+  setLink('apple-touch-icon', touchIcon, 'image/png');
+  setLink('manifest', manifest, 'application/manifest+json');
+
+  let themeColorMeta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!themeColorMeta) {
+    themeColorMeta = document.createElement('meta');
+    themeColorMeta.name = 'theme-color';
+    document.head.appendChild(themeColorMeta);
+  }
+  themeColorMeta.content = themeColor;
+};
+
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
@@ -69,6 +104,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       }
       document.documentElement.classList.toggle('theme-cat', theme === 'cat' || theme === 'cat-dark');
       document.documentElement.classList.toggle('theme-cat-dark', theme === 'cat-dark');
+      updateThemeAppAssets(theme, isDark);
     };
 
     updateEffectiveTheme();

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#17141b"/>
+  <circle cx="256" cy="256" r="232" fill="#211b26" stroke="#554453" stroke-width="8"/>
+  <g transform="translate(38 96) scale(2.66)" fill="none">
+    <ellipse cx="91" cy="108" rx="75" ry="12" fill="#403344"/>
+    <path d="M40 84c-8-24 6-51 36-55 32-4 64 15 65 43 1 23-20 36-48 36-27 0-44-6-53-24Z" fill="#F5EAF1" stroke="#554453" stroke-width="3"/>
+    <path d="M124 79c17-8 37-2 38 11 1 15-21 19-35 11" stroke="#554453" stroke-width="9" stroke-linecap="round"/>
+    <path d="M31 66 28 31c-.3-3 2.5-4.5 5-2l20 19m43-5 19-25c2-2.5 5.5-1.5 5.5 1.5l-1 37" fill="#F5EAF1" stroke="#554453" stroke-width="3" stroke-linejoin="round"/>
+    <path d="m35 49-2-12 12 11m65-10-9 12 14-7" fill="#E58EAE"/>
+    <path d="M24 65c0-19 20-30 48-30 31 0 50 13 50 33 0 19-21 34-50 34S24 85 24 65Z" fill="#F5EAF1" stroke="#554453" stroke-width="3"/>
+    <path d="M46 69c4 5 10 5 14 0m30 0c4 5 10 5 14 0" stroke="#554453" stroke-width="3" stroke-linecap="round"/>
+    <path d="m70 76 4 3 4-3-4-2-4 2Z" fill="#F0A4BC"/>
+    <path d="M74 79v3m0 0c-3 3-6 3-9 0m9 0c3 3 6 3 9 0" stroke="#554453" stroke-width="2" stroke-linecap="round"/>
+    <path d="m44 79-18-3m18 9-18 3m65-9 18-3m-18 9 18 3" stroke="#554453" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="48" cy="78" rx="6" ry="4" fill="#E58EAE" opacity=".8"/>
+    <ellipse cx="98" cy="78" rx="6" ry="4" fill="#E58EAE" opacity=".8"/>
+    <path d="M43 98c3 8 15 11 24 8m15-1c12 5 24 2 27-5" stroke="#554453" stroke-width="3" stroke-linecap="round"/>
+    <path d="m133 16 8-6-8 1 8-6m6 26 11-8-11 2 10-8" stroke="#F0A4BC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(48 204) scale(.78)" fill="#F0A4BC">
+    <ellipse cx="24" cy="32" rx="12" ry="9"/><ellipse cx="8" cy="21" rx="4" ry="6" transform="rotate(-20 8 21)"/>
+    <ellipse cx="18" cy="13" rx="4" ry="6" transform="rotate(-7 18 13)"/><ellipse cx="30" cy="13" rx="4" ry="6" transform="rotate(7 30 13)"/>
+    <ellipse cx="40" cy="21" rx="4" ry="6" transform="rotate(20 40 21)"/>
+  </g>
+  <g transform="translate(393 390) scale(.72)" fill="#F0A4BC">
+    <ellipse cx="24" cy="32" rx="12" ry="9"/><ellipse cx="8" cy="21" rx="4" ry="6" transform="rotate(-20 8 21)"/>
+    <ellipse cx="18" cy="13" rx="4" ry="6" transform="rotate(-7 18 13)"/><ellipse cx="30" cy="13" rx="4" ry="6" transform="rotate(7 30 13)"/>
+    <ellipse cx="40" cy="21" rx="4" ry="6" transform="rotate(20 40 21)"/>
+  </g>
+</svg>
