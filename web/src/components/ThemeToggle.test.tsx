@@ -124,6 +124,31 @@ describe('theme picker', () => {
     expect(document.documentElement.style.fontSize).toBe('18px');
   });
 
+  test('updates the browser and install icons with the selected kitty theme', async () => {
+    renderPicker();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Warm Kitty' }));
+    await waitFor(() => {
+      expect(document.querySelector('link[rel="icon"]')?.getAttribute('href')).toContain('app-icons/warm-kitty-light.svg');
+      expect(document.querySelector('link[rel="manifest"]')?.getAttribute('href')).toContain('manifest-warm-kitty-light.webmanifest');
+      expect(document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href')).toContain('warm-kitty-light-192.png');
+    });
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Brightness' }));
+    await waitFor(() => {
+      expect(document.querySelector('link[rel="icon"]')?.getAttribute('href')).toContain('app-icons/warm-kitty-dark.svg');
+      expect(document.querySelector('link[rel="manifest"]')?.getAttribute('href')).toContain('manifest-warm-kitty-dark.webmanifest');
+      expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#211b26');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Default' }));
+    await waitFor(() => {
+      expect(document.querySelector('link[rel="icon"]')?.getAttribute('href')).toContain('favicon.png');
+      expect(document.querySelector('link[rel="manifest"]')?.getAttribute('href')).toContain('manifest.webmanifest');
+      expect(document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href')).toContain('pwa-192x192.png');
+    });
+  });
+
   test('shows the new choices in all supported locales', () => {
     const english = renderPicker();
     expect(screen.getByRole('button', { name: 'Default' })).toBeInTheDocument();

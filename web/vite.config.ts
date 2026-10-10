@@ -27,9 +27,15 @@ export default defineConfig(({ command }) => {
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',
-        includeAssets: ['favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
+        includeAssets: [
+          'favicon.png', 'pwa-64x64.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png',
+          'app-icons/warm-kitty-light.svg', 'app-icons/warm-kitty-light-192.png', 'app-icons/warm-kitty-light-512.png',
+          'app-icons/warm-kitty-light-maskable-512.png', 'app-icons/warm-kitty-dark.svg',
+          'app-icons/warm-kitty-dark-192.png', 'app-icons/warm-kitty-dark-512.png', 'app-icons/warm-kitty-dark-maskable-512.png',
+          'manifest-warm-kitty-light.webmanifest', 'manifest-warm-kitty-dark.webmanifest',
+        ],
         injectManifest: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,webmanifest}'],
           globIgnores: ['**/*.wasm', '**/ort-wasm*'],
           maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         },

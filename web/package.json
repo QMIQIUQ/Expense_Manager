@@ -12,6 +12,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "generate:icons": "node scripts/generate-theme-icons.mjs",
     "screenshots": "node public/screenshots/convert-svg-to-png.js"
   },
   "dependencies": {
