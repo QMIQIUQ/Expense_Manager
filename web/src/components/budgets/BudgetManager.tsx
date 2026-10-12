@@ -467,13 +467,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       <div style={styles.header}>
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
         <div style={styles.headerActions}>
-          <button
-            type="button"
-            onClick={() => openOverallBudgetModal()}
-            style={styles.overallBudgetHeaderButton}
-          >
-            {overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
-          </button>
           <button 
             onClick={() => {
               if (activeSubTab !== 'list') {
@@ -1051,15 +1044,6 @@ const styles = {
     gap: '8px',
     alignItems: 'center',
     flexWrap: 'wrap' as const,
-  },
-  overallBudgetHeaderButton: {
-    padding: '8px 12px',
-    border: '1px solid var(--accent-primary)',
-    borderRadius: '8px',
-    background: 'transparent',
-    color: 'var(--accent-primary)',
-    fontWeight: 600 as const,
-    cursor: 'pointer',
   },
   title: {
     margin: 0,
