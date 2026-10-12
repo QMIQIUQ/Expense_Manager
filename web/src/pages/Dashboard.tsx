@@ -62,6 +62,7 @@ import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 import { type BudgetAllocationInput, validateBudgetAllocationChange, validateOverallBudgetLimit } from '../utils/budgetAllocation';
 import { withBudgetMutationLock } from '../utils/budgetMutationLock';
+import { clearExpenseCreateFailure, hasExpenseBeenDeleted, hasExpenseCreateFailed, markExpenseCreateFailed, markExpenseDeleted, withExpenseMutationLock } from '../utils/expenseMutationLock';
 
 //#region Helper Functions
 type BudgetQueuePayload = Partial<Budget> & { userId?: string; previousBudget?: Budget };
@@ -107,6 +108,45 @@ const applyPendingBudgetOperations = (
     }
   }
   return result;
+};
+
+type ExpenseQueuePayload = Partial<Expense> & { userId?: string };
+
+const applyPendingExpenseOperations = (
+  initialExpenses: Expense[],
+  operations: QueuedOperation[],
+  userId: string,
+): Expense[] => {
+  let result = [...initialExpenses];
+
+  for (const operation of operations) {
+    if (operation.entity !== 'expense') continue;
+    const payload = operation.payload as ExpenseQueuePayload;
+    const id = typeof payload.id === 'string' ? payload.id : undefined;
+    if (!id || payload.userId !== userId) continue;
+
+    if (operation.type === 'create') {
+      // The server copy may already include later edits from another device. Do not replace it.
+      if (!result.some((expense) => expense.id === id)) {
+        result.push({
+          ...payload,
+          id,
+          userId,
+          createdAt: payload.createdAt || new Date(operation.timestamp),
+          updatedAt: payload.updatedAt || new Date(operation.timestamp),
+        } as Expense);
+      }
+    } else if (operation.type === 'update') {
+      const updates = { ...payload };
+      delete updates.id;
+      delete updates.userId;
+      result = result.map((expense) => expense.id === id ? { ...expense, ...updates, id } as Expense : expense);
+    } else if (operation.type === 'delete') {
+      result = result.filter((expense) => expense.id !== id);
+    }
+  }
+
+  return result.sort((a, b) => b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''));
 };
 
 const rollbackRejectedBudgetOperation = (budgets: Budget[], rejection: BudgetOfflineRejection): Budget[] => {
@@ -156,7 +196,7 @@ const Dashboard: React.FC = () => {
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
-  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
+  const [startReceiptEntry, setStartReceiptEntry] = useState(false);
   const [receiptEntryKey, setReceiptEntryKey] = useState(0);
   const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -194,6 +234,7 @@ const Dashboard: React.FC = () => {
   } | null>(null);
   const [queueCount, setQueueCount] = useState<number>(0);
   const [isUploadingQueue, setIsUploadingQueue] = useState<boolean>(false);
+  const notifiedOfflineExpenseAttentionRef = React.useRef(new Set<string>());
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
   const hamburgerRef = useRef<HTMLDivElement | null>(null);
@@ -203,7 +244,6 @@ const Dashboard: React.FC = () => {
   // Radial date menu state for long-press on FAB
   const [showRadialDateMenu, setShowRadialDateMenu] = useState(false);
   const [radialMenuPosition, setRadialMenuPosition] = useState({ x: 0, y: 0 });
-  const receiptInputRef = useRef<HTMLInputElement | null>(null);
   const isEnglish = language === 'en';
   const isSimplifiedChinese = language === 'zh-CN';
   const handleDisplayCurrencyChange = (currency: import('../types').CurrencyCode) => {
@@ -250,12 +290,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   const openExpenseEntry = (options?: { withReceipt?: boolean }) => {
-    if (options?.withReceipt) {
-      receiptInputRef.current?.click();
-      return;
-    }
-
-    setPendingReceiptFile(null);
+    setStartReceiptEntry(!!options?.withReceipt);
     setReceiptEntryKey((prev) => prev + 1);
     if (activeTab === 'expenses') {
       setShowAddSheet(true);
@@ -265,26 +300,40 @@ const Dashboard: React.FC = () => {
   };
 
   const closeExpenseEntry = () => {
-    setPendingReceiptFile(null);
+    setStartReceiptEntry(false);
     setShowAddExpenseForm(false);
     setShowAddSheet(false);
   };
 
-  const handleReceiptEntrySelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    if (!file) return;
+  const currentUserId = currentUser?.uid;
+  const notifyOfflineExpenseNeedsAttention = React.useCallback((operationId: string) => {
+    if (!currentUserId) return;
+    const operation = offlineQueue.getAll().find((item) => item.id === operationId);
+    if (!operation || operation.entity !== 'expense' || operation.status !== 'needs-attention') return;
+    const payload = operation.payload as { userId?: unknown };
+    if (payload.userId !== currentUserId) return;
 
-    setPendingReceiptFile(file);
-    setReceiptEntryKey((prev) => prev + 1);
-    if (activeTab === 'expenses') {
-      setShowAddSheet(true);
-    } else {
-      setShowAddExpenseForm(true);
-    }
+    const notificationKey = `${currentUserId}:${operationId}`;
+    if (notifiedOfflineExpenseAttentionRef.current.has(notificationKey)) return;
+    notifiedOfflineExpenseAttentionRef.current.add(notificationKey);
+    showNotification('error', t('offlineExpenseNeedsAttention'), {
+      duration: 0,
+      actions: [{
+        label: t('retry'),
+        onClick: () => {
+          const operationPayload = operation.payload as { id?: unknown; userId?: unknown };
+          const expenseId = typeof operationPayload.id === 'string' ? operationPayload.id : undefined;
+          if (!expenseId || !offlineQueue.retryExpenseOperationsForId(expenseId, currentUserId)) {
+            showNotification('error', t('offlineQueueSaveFailed'));
+            return;
+          }
+          notifiedOfflineExpenseAttentionRef.current.delete(notificationKey);
+          void syncService.syncOfflineQueue();
+        },
+      }],
+    });
+  }, [currentUserId, showNotification, t]);
 
-    event.target.value = '';
-  };
-  
   //#region Effects
   useEffect(() => {
     if (activeTab !== 'expenses') setExpenseCategory('');
@@ -292,18 +341,27 @@ const Dashboard: React.FC = () => {
 
   // Track offline queue count
   useEffect(() => {
+    if (!currentUserId) return;
+    offlineQueue.getAll().forEach((operation) => {
+      if (operation.entity === 'expense' && operation.status === 'needs-attention') {
+        notifyOfflineExpenseNeedsAttention(operation.id);
+      }
+    });
+  }, [currentUserId, notifyOfflineExpenseNeedsAttention]);
+
+  useEffect(() => {
     const updateQueueCount = () => {
       setQueueCount(offlineQueue.count());
     };
-    
+
     updateQueueCount();
-    
+
     // Update queue count every 5 seconds (reduced from 1 second for better performance)
     const interval = setInterval(updateQueueCount, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
@@ -320,6 +378,11 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      const setExpensesWithPendingOperations = (loadedExpenses: Expense[]) => {
+        const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
+        sessionCache.set('expenses', currentUser.uid, reconciled);
+        setExpenses(reconciled);
+      };
       const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
         const reconciled = applyPendingBudgetOperations(loadedBudgets, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('budgets', currentUser.uid, reconciled);
@@ -328,7 +391,7 @@ const Dashboard: React.FC = () => {
 
       // Phase 1: Load cached data first (instant display)
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
-        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
+        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpensesWithPendingOperations),
         dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
         dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
         dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
@@ -339,7 +402,7 @@ const Dashboard: React.FC = () => {
       ]);
 
       // Set initial data (from cache or fresh)
-      setExpenses(expensesData);
+      setExpensesWithPendingOperations(expensesData);
       setIncomes(incomesData);
       setCategories(categoriesData);
       setBudgetsWithPendingOperations(budgetsData);
@@ -347,13 +410,13 @@ const Dashboard: React.FC = () => {
       setTransfers(transfersData);
       setScheduledPayments(scheduledPaymentsData);
       setScheduledPaymentRecords(scheduledPaymentRecordsData);
-      
+
       // Initial UI now rendered; no blocking loader needed
-      
+
       // Phase 2: Initialize and load additional data in background (only if online)
       if (networkStatus.isOnline) {
         setIsRevalidating(true);
-        
+
         // Batch all background tasks to complete together
         Promise.all([
           // Initialize defaults in background
@@ -361,19 +424,19 @@ const Dashboard: React.FC = () => {
             console.warn('Background category init failed:', err);
             return null;
           }),
-          
+
           // Check admin status
           adminService.isAdmin(currentUser.uid).catch(err => {
             console.warn('Admin check failed:', err);
             return false;
           }),
-          
+
           // Load user settings
           userSettingsService.getOrCreate(currentUser.uid).catch(err => {
             console.warn('User settings load failed:', err);
             return { billingCycleDay: 1 };
           }),
-          
+
           // Load cards
           dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
             setCards(cardsData);
@@ -385,7 +448,7 @@ const Dashboard: React.FC = () => {
             console.warn('Could not load cards:', err);
             return [];
           }),
-          
+
           // Initialize and load e-wallets
           ewalletService.initializeDefaults(currentUser.uid)
             .catch(() => null)
@@ -394,7 +457,7 @@ const Dashboard: React.FC = () => {
               console.warn('Could not load e-wallets:', err);
               return [];
             }),
-          
+
           // Load banks
           dataService.getDataWithRevalidate('banks', currentUser.uid, () => bankService.getAll(currentUser.uid), (banksData) => {
             setBanks(banksData);
@@ -406,13 +469,13 @@ const Dashboard: React.FC = () => {
             console.warn('Could not load banks:', err);
             return [];
           }),
-          
+
           // Load feature settings
           featureSettingsService.getOrCreate(currentUser.uid).catch(err => {
             console.warn('Could not load feature settings:', err);
             return null;
           }),
-          
+
           // Load quick expense presets
           quickExpenseService.getPresets(currentUser.uid).catch(err => {
             console.warn('Could not load quick expense presets:', err);
@@ -453,7 +516,7 @@ const Dashboard: React.FC = () => {
   //#region Budget Notifications
   // Track if budget check has been done this session to prevent duplicates
   const budgetCheckDoneRef = React.useRef(false);
-  
+
   // Budget notifications check
   useEffect(() => {
     // Skip if already checked this session or no data
@@ -464,9 +527,9 @@ const Dashboard: React.FC = () => {
       const { checkBudgetAlerts } = await import('../utils/budgetNotifications');
       const lastChecked = localStorage.getItem('lastBudgetCheck');
       const lastCheckedDate = lastChecked ? new Date(lastChecked) : null;
-      
+
       const alerts = checkBudgetAlerts(budgets, expenses, lastCheckedDate, billingCycleDay, repayments);
-      
+
       if (alerts.length > 0) {
         // Show notifications for each alert with unique ID to prevent duplicates
         alerts.forEach(alert => {
@@ -475,11 +538,11 @@ const Dashboard: React.FC = () => {
             id: `budget-alert-${alert.budget.id}` // Unique ID prevents duplicate notifications
           });
         });
-        
+
         // Update last check time
         localStorage.setItem('lastBudgetCheck', new Date().toISOString());
       }
-      
+
       // Mark as done for this session
       budgetCheckDoneRef.current = true;
     };
@@ -527,6 +590,12 @@ const Dashboard: React.FC = () => {
         void loadData();
       }
     });
+    const handleOfflineExpenseNeedsAttention = (event: Event) => {
+      const detail = (event as CustomEvent<{ operationId: string; userId?: string }>).detail;
+      if (!detail?.operationId || (detail.userId && detail.userId !== currentUserId)) return;
+      notifyOfflineExpenseNeedsAttention(detail.operationId);
+      void loadData();
+    };
     const handleOfflineBudgetOperationRejected = (event: Event) => {
       const detail = (event as CustomEvent<BudgetOfflineRejection & { userId?: string }>).detail;
       if (detail?.userId && detail.userId !== currentUser?.uid) return;
@@ -553,12 +622,14 @@ const Dashboard: React.FC = () => {
         showNotification('error', t('errorLoadingData'));
       });
     };
+    window.addEventListener('expense-offline-operation-needs-attention', handleOfflineExpenseNeedsAttention);
     window.addEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
     return () => {
       unsubscribe();
+      window.removeEventListener('expense-offline-operation-needs-attention', handleOfflineExpenseNeedsAttention);
       window.removeEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
     };
-  }, [currentUser?.uid, loadData, showNotification, t]);
+  }, [currentUserId, loadData, notifyOfflineExpenseNeedsAttention, showNotification, t]);
 
   // Tab switching now instant - no refetch, uses cached data + optimistic updates
   // Background revalidation happens only on initial load via loadData()
@@ -659,54 +730,65 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Expenses
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    if (!currentUser) return;
-    
-    // Optimistic update: add temporary expense
-    const tempId = `temp-${Date.now()}`;
-    const optimisticExpense: Expense = {
+  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<{ status: 'saved' | 'queued' | 'failed'; expenseId?: string }> => {
+    if (!currentUser) return { status: 'failed' };
+
+    const expenseId = expenseService.createId();
+    const expensePayload: Omit<Expense, 'createdAt' | 'updatedAt'> = {
       ...expenseData,
-      id: tempId,
+      id: expenseId,
       userId: currentUser.uid,
+    };
+
+    // Keep the stable document ID in the optimistic list and offline queue.
+    const optimisticExpense: Expense = {
+      ...expensePayload,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     setExpenses((prev) => [optimisticExpense, ...prev]);
-    
+
     // Update cache optimistically
     dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [optimisticExpense, ...data]);
 
-    await optimisticCRUD.run(
-      { type: 'create', data: expenseData },
-      () => expenseService.create({ ...expenseData, userId: currentUser.uid }),
-      {
-        entityType: 'expense',
-        retryToQueueOnFail: true,
-        onSuccess: async (result) => {
-          // Replace temp expense with real ID
-          const newId = result as string;
-          const realExpense: Expense = {
-            ...optimisticExpense,
-            id: newId,
-          };
-          setExpenses((prev) => prev.map((e) => (e.id === tempId ? realExpense : e)));
-          // Update cache with real ID
-          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
-            data.map((e) => (e.id === tempId ? realExpense : e))
-          );
-          // Update balance for the payment method
-          await balanceService.handleExpenseCreated(realExpense);
-          // Reload e-wallets and banks to reflect updated balances
-          loadData();
-        },
-        onError: () => {
-          // Rollback optimistic update
-          setExpenses((prev) => prev.filter((e) => e.id !== tempId));
-          // Rollback cache
-          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== tempId));
-        },
-      }
-    );
+    const outcome: 'saved' | 'queued' | 'failed' = await withExpenseMutationLock(currentUser.uid, expenseId, async () => {
+      let queuedForRetry = false;
+      const result = await optimisticCRUD.run(
+        { type: 'create', data: expensePayload },
+        () => expenseService.create(expensePayload, { updateAccountBalances: true }),
+        {
+          entityType: 'expense',
+          retryToQueueOnFail: true,
+          onQueued: () => { queuedForRetry = true; },
+          onSuccess: (result) => {
+            // Preserve the stable ID used by the queue and server document.
+            const newId = result as string;
+            const realExpense: Expense = {
+              ...optimisticExpense,
+              id: newId,
+            };
+            setExpenses((prev) => prev.map((e) => (e.id === expenseId ? realExpense : e)));
+            // Update cache with real ID
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
+              data.map((e) => (e.id === expenseId ? realExpense : e))
+            );
+            // Reload e-wallets and banks to reflect updated balances
+            loadData();
+          },
+          onError: () => {
+            // Rollback optimistic update
+            setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+            // Rollback cache
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== expenseId));
+          },
+        }
+      );
+      const outcome = result !== null ? 'saved' : queuedForRetry ? 'queued' : 'failed';
+      if (outcome === 'failed') markExpenseCreateFailed(currentUser.uid, expenseId);
+      else clearExpenseCreateFailure(currentUser.uid, expenseId);
+      return outcome;
+    });
+    return outcome === 'failed' ? { status: outcome } : { status: outcome, expenseId };
   };
 
   // Reload quick expense presets
@@ -723,15 +805,15 @@ const Dashboard: React.FC = () => {
   // Handle quick expense add from preset
   const handleQuickExpenseAdd = async (preset: QuickExpensePreset) => {
     if (!currentUser) return;
-    
+
     // Use selected date from DateNavigator (if in day view mode), otherwise use today
     const dateToUse = expensePeriod.mode === 'day' ? expensePeriod.anchorDate : getTodayLocal();
     const now = new Date().toTimeString().slice(0, 5);
-    
+
     // Find category name from categoryId
     const category = categories.find(c => c.id === preset.categoryId);
     const categoryName = category?.name || '';
-    
+
     // Find e-wallet name if ewalletId is set
     const ewallet = preset.ewalletId ? ewallets.find(w => w.id === preset.ewalletId) : null;
     const currencyFields = await resolveExpenseCurrencyFields({
@@ -739,7 +821,7 @@ const Dashboard: React.FC = () => {
       currency: preset.currency,
       date: dateToUse,
     });
-    
+
     // Build expense data, excluding undefined fields (Firebase doesn't accept undefined)
     const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
       description: preset.name,
@@ -751,28 +833,32 @@ const Dashboard: React.FC = () => {
       paymentMethod: preset.paymentMethod || 'cash',
       notes: preset.description || '',
     };
-    
+
     // Only add payment-specific fields if they exist
     if (preset.cardId) expenseData.cardId = preset.cardId;
     if (preset.bankId) expenseData.bankId = preset.bankId;
     // For e-wallet, use paymentMethodName (the wallet's name), not ewalletId
     if (ewallet) expenseData.paymentMethodName = ewallet.name;
-    
+
     await handleAddExpense(expenseData);
     // Note: handleAddExpense via optimisticCRUD already shows notification
   };
 
   const handleDeleteExpense = async (id: string) => {
     if (!currentUser) return;
+    const userId = currentUser.uid;
     const expenseToDelete = expenses.find((e) => e.id === id);
-    
-    // Find related transfer to delete (by matching date, amount, and payment method)
-    // Transfer.fromPaymentMethod should match expense.paymentMethod
-    const relatedTransfer = expenseToDelete ? transfers.find(t => {
+    const alreadyQueuedForDeletion = offlineQueue.hasPendingExpenseDelete(id, userId);
+    if (alreadyQueuedForDeletion) return;
+
+    const relatedTransfers = transfers.filter((transfer) => transfer.expenseId === id && !!transfer.id);
+    // Older transfers have no explicit expense link, so date/amount matches are never deleted automatically.
+    const possibleLegacyTransfers = expenseToDelete ? transfers.filter(t => {
+      if (t.expenseId) return false;
       const dateMatch = t.date === expenseToDelete.date;
       const expenseAmount = expenseToDelete.baseAmount ?? expenseToDelete.amount;
       const amountMatch = Math.abs(t.amount - expenseAmount) < 0.01;
-      
+
       // Match payment method as the source (fromPaymentMethod = expense's payment method)
       let paymentMethodMatch = false;
       if (expenseToDelete.paymentMethod === 'credit_card') {
@@ -784,66 +870,100 @@ const Dashboard: React.FC = () => {
       } else if (expenseToDelete.paymentMethod === 'cash') {
         paymentMethodMatch = t.fromPaymentMethod === 'cash';
       }
-      
+
       return dateMatch && amountMatch && paymentMethodMatch;
-    }) : undefined;
-    
+    }) : [];
+    const relatedTransferIds = relatedTransfers.map((transfer) => transfer.id!).filter(Boolean);
+    if (possibleLegacyTransfers.length > 0) showNotification('info', t('relatedTransferNotLinked'));
+
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
-    
-    // Optimistic update: remove related transfer if exists
-    if (relatedTransfer?.id) {
-      setTransfers((prev) => prev.filter((t) => t.id !== relatedTransfer.id));
-    }
-    
-    // Update cache optimistically
-    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== id));
 
-    await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: expenseToDelete },
-      () => expenseService.delete(id),
-      {
-        entityType: 'expense',
-        retryToQueueOnFail: true,
-        onSuccess: async () => {
-          // Update balance for the payment method (add back the expense amount)
-          if (expenseToDelete) {
-            await balanceService.handleExpenseDeleted(expenseToDelete);
-            // Reload to reflect updated balances
-            loadData();
-          }
-          // Delete related transfer if exists
-          if (relatedTransfer?.id) {
-            try {
-              await transferService.delete(relatedTransfer.id);
-            } catch (err) {
-              console.error('Failed to delete related transfer:', err);
-            }
-          }
-        },
-        onError: () => {
-          // Rollback optimistic update
-          if (expenseToDelete) {
-            setExpenses((prev) => [expenseToDelete, ...prev]);
-            // Rollback cache
-            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [expenseToDelete, ...data]);
-          }
-          // Rollback transfer if was removed
-          if (relatedTransfer) {
-            setTransfers((prev) => [relatedTransfer, ...prev]);
-          }
-        },
+    // Optimistic update: remove related transfer if exists
+    if (relatedTransferIds.length > 0) setTransfers((prev) => prev.filter((transfer) => !relatedTransferIds.includes(transfer.id || '')));
+
+    // Update cache optimistically
+    dataService.updateCache<Expense[]>('expenses', userId, (data) => data.filter((e) => e.id !== id));
+
+    await withExpenseMutationLock(userId, id, async () => {
+      if (hasExpenseCreateFailed(userId, id)) {
+        setExpenses((prev) => prev.filter((expense) => expense.id !== id));
+        dataService.updateCache<Expense[]>('expenses', userId, (data) => data.filter((expense) => expense.id !== id));
+        return;
       }
-    );
+      if (offlineQueue.hasPendingExpenseDelete(id, userId) || hasExpenseBeenDeleted(userId, id)) return;
+
+      const deletePayload = {
+        id,
+        userId,
+        ...(relatedTransferIds.length > 0 ? { relatedTransferIds } : {}),
+      };
+      if (offlineQueue.hasPendingExpenseOperations(id, userId)) {
+        const queuedId = offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
+        if (queuedId) {
+          markExpenseDeleted(userId, id);
+          showNotification('info', t('operationSavedOffline'));
+          return;
+        }
+
+        if (expenseToDelete) {
+          setExpenses((prev) => [expenseToDelete, ...prev]);
+          dataService.updateCache<Expense[]>('expenses', userId, (data) => [expenseToDelete, ...data]);
+        }
+        if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+        showNotification('error', t('offlineQueueSaveFailed'));
+        return;
+      }
+
+      let queuedForRetry = false;
+      await optimisticCRUD.run(
+        { type: 'delete', data: deletePayload, originalData: expenseToDelete },
+        () => expenseService.deleteWithRelatedTransfers(id, userId, relatedTransferIds),
+        {
+          entityType: 'expense',
+          retryToQueueOnFail: true,
+          onQueued: () => {
+            queuedForRetry = true;
+            markExpenseDeleted(userId, id);
+          },
+          onSuccess: (result) => {
+            markExpenseDeleted(userId, id);
+            const deletedTransferIds = new Set((result as Transfer[]).map((transfer) => transfer.id).filter((transferId): transferId is string => !!transferId));
+            if (deletedTransferIds.size > 0) {
+              setTransfers((prev) => prev.filter((transfer) => !deletedTransferIds.has(transfer.id || '')));
+            }
+            if (expenseToDelete) {
+              loadData();
+            }
+          },
+          onError: () => {
+            if (queuedForRetry) return;
+            if (expenseToDelete) {
+              setExpenses((prev) => [expenseToDelete, ...prev]);
+              dataService.updateCache<Expense[]>('expenses', userId, (data) => [expenseToDelete, ...data]);
+            }
+            if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+          },
+        }
+      );
+    });
   };
 
   // Inline update by id (used by ExpenseList inline editing)
   const handleInlineUpdateExpense = async (id: string, updates: Partial<Expense>) => {
+    if (!currentUser) return;
     const originalExpense = expenses.find((e) => e.id === id);
+    if (!originalExpense) return;
+    if (offlineQueue.hasPendingExpenseDelete(id, currentUser.uid)) {
+      showNotification('info', t('expensePendingDelete'));
+      return;
+    }
+
+    const updatePayload = { ...updates, id, userId: currentUser.uid };
 
     // Optimistic update
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
@@ -851,29 +971,50 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalExpense },
-      () => expenseService.update(id, updates),
-      {
-        entityType: 'expense',
-        retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
-        onError: () => {
-          if (originalExpense) {
-            // Rollback state
-            setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
-                data.map((e) => (e.id === id ? originalExpense : e))
-              );
-            }
-          }
-        },
+    await withExpenseMutationLock(currentUser.uid, id, async () => {
+      if (hasExpenseCreateFailed(currentUser.uid, id) || hasExpenseBeenDeleted(currentUser.uid, id)) {
+        setExpenses((prev) => prev.filter((expense) => expense.id !== id));
+        dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== id));
+        if (hasExpenseBeenDeleted(currentUser.uid, id)) showNotification('info', t('expensePendingDelete'));
+        return;
       }
-    );
+      if (offlineQueue.hasPendingExpenseDelete(id, currentUser.uid)) {
+        showNotification('info', t('expensePendingDelete'));
+        return;
+      }
+
+      if (offlineQueue.hasPendingExpenseOperations(id, currentUser.uid)) {
+        const queuedId = offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: updatePayload });
+        if (queuedId) {
+          showNotification('info', t('operationSavedOffline'));
+          return;
+        }
+        setExpenses((prev) => prev.map((expense) => expense.id === id ? originalExpense : expense));
+        dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
+          data.map((expense) => expense.id === id ? originalExpense : expense)
+        );
+        showNotification('error', t('offlineQueueSaveFailed'));
+        return;
+      }
+
+      await optimisticCRUD.run(
+        { type: 'update', data: updatePayload, originalData: originalExpense },
+        () => expenseService.update(id, updates),
+        {
+          entityType: 'expense',
+          retryToQueueOnFail: true,
+          onSuccess: () => {
+            // Cache already updated optimistically, no need to reload
+          },
+          onError: () => {
+            setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
+              data.map((e) => (e.id === id ? originalExpense : e))
+            );
+          },
+        }
+      );
+    });
   };
 
   // Mark tracking as completed
@@ -883,12 +1024,15 @@ const Dashboard: React.FC = () => {
 
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
-    if (ids.length === 0) return;
-    
+    if (!currentUser || ids.length === 0) return;
+
     const originals = expenses.filter((e) => ids.includes(e.id!));
+    const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && ids.includes(transfer.expenseId));
 
     // Optimistic update: remove selected expenses
     setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !ids.includes(expense.id!)));
+    setTransfers((prev) => prev.filter((transfer) => !linkedTransfers.some((linked) => linked.id === transfer.id)));
 
     // 設置刪除進度狀態
     const deleteId = `delete-${Date.now()}`;
@@ -903,42 +1047,90 @@ const Dashboard: React.FC = () => {
     // 逐個刪除並更新進度
     let successCount = 0;
     let failCount = 0;
-    
+    let queuedCount = 0;
+
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
       const original = originals.find((o) => o.id === id);
-      
-      try {
-        const result = await optimisticCRUD.run(
-          { type: 'delete', data: { id }, originalData: original },
-          () => expenseService.delete(id),
-          {
-            entityType: 'expense',
-            retryToQueueOnFail: true,
-            suppressNotification: true,
-            onSuccess: () => {},
-            onError: () => {
-              // Rollback the specific failed deletion
-              if (original) {
-                setExpenses((prev) => [original!, ...prev]);
-              }
-            },
-          }
-        );
-        
-        if (result === null) {
-          failCount++;
-        } else {
-          successCount++;
-        }
-      } catch (error) {
-        failCount++;
-        // Rollback on error
+      const relatedTransfers = linkedTransfers.filter((transfer) => transfer.expenseId === id);
+      const relatedTransferIds = relatedTransfers.map((transfer) => transfer.id!).filter(Boolean);
+      const restoreOptimisticDelete = () => {
         if (original) {
-          setExpenses((prev) => [original!, ...prev]);
+          setExpenses((prev) => [original, ...prev]);
+          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [original, ...data]);
         }
+        if (relatedTransfers.length > 0) {
+          setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+        }
+      };
+      let mutationResult: 'saved' | 'queued' | 'failed' = 'failed';
+      await withExpenseMutationLock(currentUser.uid, id, async () => {
+        if (hasExpenseCreateFailed(currentUser.uid, id)) {
+          markExpenseDeleted(currentUser.uid, id);
+          mutationResult = 'saved';
+          return;
+        }
+        if (hasExpenseBeenDeleted(currentUser.uid, id) || offlineQueue.hasPendingExpenseDelete(id, currentUser.uid)) {
+          markExpenseDeleted(currentUser.uid, id);
+          mutationResult = 'saved';
+          return;
+        }
+
+        const deletePayload = {
+          id,
+          userId: currentUser.uid,
+          ...(relatedTransferIds.length > 0 ? { relatedTransferIds } : {}),
+        };
+        if (offlineQueue.hasPendingExpenseOperations(id, currentUser.uid)) {
+          const queuedId = offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
+          if (queuedId) {
+            markExpenseDeleted(currentUser.uid, id);
+            mutationResult = 'queued';
+          } else {
+            mutationResult = 'failed';
+            restoreOptimisticDelete();
+          }
+          return;
+        }
+
+        try {
+          let queuedForRetry = false;
+          const result = await optimisticCRUD.run(
+            { type: 'delete', data: deletePayload, originalData: original },
+            () => expenseService.deleteWithRelatedTransfers(id, currentUser.uid, relatedTransferIds),
+            {
+              entityType: 'expense',
+              retryToQueueOnFail: true,
+              suppressNotification: true,
+              onQueued: () => {
+                queuedForRetry = true;
+                markExpenseDeleted(currentUser.uid, id);
+              },
+              onSuccess: (result) => {
+                markExpenseDeleted(currentUser.uid, id);
+                const deletedTransferIds = new Set((result as Transfer[]).map((transfer) => transfer.id).filter((transferId): transferId is string => !!transferId));
+                if (deletedTransferIds.size > 0) {
+                  setTransfers((prev) => prev.filter((transfer) => !deletedTransferIds.has(transfer.id || '')));
+                }
+              },
+              onError: () => {
+                restoreOptimisticDelete();
+              },
+            }
+          );
+          mutationResult = result !== null ? 'saved' : queuedForRetry ? 'queued' : 'failed';
+        } catch (error) {
+          console.error('Failed to delete expense:', error);
+          restoreOptimisticDelete();
+        }
+      });
+
+      if (mutationResult === 'failed') failCount++;
+      else {
+        successCount++;
+        if (mutationResult === 'queued') queuedCount++;
       }
-      
+
       // 更新進度
       const current = i + 1;
       setDeleteProgress(prev => prev ? {
@@ -962,11 +1154,13 @@ const Dashboard: React.FC = () => {
         message: `${t('success')}: ${successCount} ${t('items')}`,
       } : null);
     }
-    
+
     // 3秒後自動關閉
     setTimeout(() => {
       setDeleteProgress(null);
     }, 3000);
+
+    if (queuedCount > 0) showNotification('info', t('operationSavedOffline'));
 
     // Refresh to ensure server state is in sync
     loadData();
@@ -979,7 +1173,7 @@ const Dashboard: React.FC = () => {
     const existingOrders = categories.map((category) => category.order).filter((order): order is number => Number.isFinite(order));
     const nextOrder = existingOrders.length > 0 ? Math.max(categories.length - 1, ...existingOrders) + 1 : undefined;
     const newCategoryData = nextOrder === undefined ? categoryData : { ...categoryData, order: nextOrder };
-    
+
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticCategory: Category = {
@@ -989,7 +1183,7 @@ const Dashboard: React.FC = () => {
       createdAt: new Date(),
     };
     setCategories((prev) => sortCategories([...prev, optimisticCategory]));
-    
+
     // Update cache optimistically
     dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => sortCategories([...data, optimisticCategory]));
 
@@ -1042,12 +1236,12 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
     const originalCategory = categories.find((c) => c.id === id);
-    
+
     // Optimistic update
     setCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
@@ -1083,10 +1277,10 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteCategory = async (id: string) => {
     const categoryToDelete = categories.find((c) => c.id === id);
-    
+
     // Optimistic update
     setCategories((prev) => prev.filter((c) => c.id !== id));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== id));
@@ -1205,7 +1399,7 @@ const Dashboard: React.FC = () => {
     )) return false;
     const budgetId = budgetService.createId();
     const createPayload = { ...normalizedBudgetData, userId: currentUser.uid, id: budgetId };
-    
+
     // Optimistic update
     const optimisticBudget: Budget = {
       ...normalizedBudgetData,
@@ -1215,7 +1409,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setBudgets((prev) => [...prev, optimisticBudget]);
-    
+
     // Update cache optimistically
     dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
 
@@ -1281,7 +1475,7 @@ const Dashboard: React.FC = () => {
     setBudgets((prev) =>
       prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
     );
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
@@ -1424,7 +1618,7 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Scheduled Payments
   const handleAddScheduledPayment = async (paymentData: Omit<ScheduledPayment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
-    
+
     const tempId = `temp-${Date.now()}`;
     const optimisticPayment: ScheduledPayment = {
       ...paymentData,
@@ -1458,7 +1652,7 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateScheduledPayment = async (id: string, updates: Partial<ScheduledPayment>) => {
     const original = scheduledPayments.find((p) => p.id === id);
-    
+
     setScheduledPayments((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
@@ -1483,7 +1677,7 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteScheduledPayment = async (id: string) => {
     const original = scheduledPayments.find((p) => p.id === id);
-    
+
     setScheduledPayments((prev) => prev.filter((p) => p.id !== id));
 
     await optimisticCRUD.run(
@@ -1504,7 +1698,7 @@ const Dashboard: React.FC = () => {
 
   const handleToggleScheduledPaymentActive = async (id: string, isActive: boolean) => {
     const original = scheduledPayments.find((p) => p.id === id);
-    
+
     setScheduledPayments((prev) =>
       prev.map((p) => (p.id === id ? { ...p, isActive } : p))
     );
@@ -1601,7 +1795,7 @@ const Dashboard: React.FC = () => {
             id: newId,
           };
           setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
-          
+
           // Auto-generate expense if enabled
           if (scheduledPayment?.autoGenerateExpense) {
             try {
@@ -1619,9 +1813,9 @@ const Dashboard: React.FC = () => {
                 paymentMethodName: recordData.paymentMethodName || scheduledPayment.paymentMethodName,
                 bankId: recordData.bankId || scheduledPayment.bankId,
               };
-              
-              const expenseId = await expenseService.create(expenseData);
-              
+
+              const expenseId = await expenseService.create(expenseData, { updateAccountBalances: true });
+
               // Create expense with real ID from server
               const newExpense: Expense = {
                 ...expenseData,
@@ -1629,19 +1823,16 @@ const Dashboard: React.FC = () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };
-              
+
               // Update state
               setExpenses((prev) => [newExpense, ...prev]);
-              
+
               // Update cache to ensure expense persists
               dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [newExpense, ...data]);
-              
-              // Update balance for the payment method
-              await balanceService.handleExpenseCreated(newExpense);
-              
+
               // Reload e-wallets and banks to reflect updated balances
               loadData();
-              
+
               showNotification('success', t('expenseGenerated') || 'Expense record created');
             } catch (error) {
               console.error('[Auto-Generate Expense] Failed to auto-generate expense:', error);
@@ -1658,7 +1849,7 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteScheduledPaymentRecord = async (id: string) => {
     const original = scheduledPaymentRecords.find((r) => r.id === id);
-    
+
     setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
 
     await optimisticCRUD.run(
@@ -1712,7 +1903,7 @@ const Dashboard: React.FC = () => {
       return;
     }
     const normalizedIncomeData = { ...incomeData, ...currencyFields };
-    
+
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticIncome: Income = {
@@ -1723,7 +1914,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setIncomes((prev) => [optimisticIncome, ...prev]);
-    
+
     // Update cache optimistically
     dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [optimisticIncome, ...data]);
 
@@ -1780,10 +1971,10 @@ const Dashboard: React.FC = () => {
       }
     }
     const normalizedUpdates = { ...updates, ...valuationFields };
-    
+
     // Optimistic update
     setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...normalizedUpdates } : i)));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
@@ -1817,10 +2008,10 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteIncome = async (id: string) => {
     const incomeToDelete = incomes.find((i) => i.id === id);
-    
+
     // Optimistic update
     setIncomes((prev) => prev.filter((i) => i.id !== id));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== id));
@@ -1887,39 +2078,56 @@ const Dashboard: React.FC = () => {
       toExchangeRateFetchedAt: destinationFields.exchangeRateFetchedAt,
       toExchangeRateProvider: destinationFields.exchangeRateProvider,
     };
-    
-    // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+
+    // Use the final document ID immediately so expense deletion can target the
+    // exact linked transfer even while the create request is settling.
+    const transferId = transferService.createId();
     const optimisticTransfer: Transfer = {
       ...normalizedTransferData,
-      id: tempId,
+      id: transferId,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    const transferPayload = { ...normalizedTransferData, id: transferId, userId: currentUser.uid };
     setTransfers((prev) => [optimisticTransfer, ...prev]);
 
-    await optimisticCRUD.run(
-      { type: 'create', data: normalizedTransferData },
-      () => transferService.create({ ...normalizedTransferData, userId: currentUser.uid }),
+    const saveTransfer = () => optimisticCRUD.run(
+      { type: 'create', data: transferPayload },
+      () => transferService.create(transferPayload),
       {
         retryToQueueOnFail: true,
         suppressNotification: silent, // Don't show notification if silent mode
-        onSuccess: async () => {
-          // Update balances for both source and destination
-          await balanceService.handleTransferCreated(optimisticTransfer);
+        onSuccess: (result) => {
+          const savedTransfer = { ...optimisticTransfer, id: result as string };
+          setTransfers((prev) => prev.map((transfer) => transfer.id === transferId ? savedTransfer : transfer));
           loadData();
         },
         onError: () => {
-          setTransfers((prev) => prev.filter((t) => t.id !== tempId));
+          setTransfers((prev) => prev.filter((transfer) => transfer.id !== transferId));
         },
       }
     );
+
+    if (normalizedTransferData.expenseId) {
+      const expenseId = normalizedTransferData.expenseId;
+      const result = await withExpenseMutationLock(currentUser.uid, expenseId, async () => {
+        if (hasExpenseCreateFailed(currentUser.uid, expenseId) || hasExpenseBeenDeleted(currentUser.uid, expenseId)) {
+          setTransfers((prev) => prev.filter((transfer) => transfer.id !== transferId));
+          showNotification('info', t('expensePendingDelete'));
+          return null;
+        }
+        return saveTransfer();
+      });
+      void result;
+    } else {
+      await saveTransfer();
+    }
   };
 
   const handleDeleteTransfer = async (id: string) => {
     const transferToDelete = transfers.find((t) => t.id === id);
-    
+
     // Optimistic update
     setTransfers((prev) => prev.filter((t) => t.id !== id));
 
@@ -1949,7 +2157,7 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Cards
   const handleAddCard = async (cardData: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
-    
+
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticCard: Card = {
@@ -1960,7 +2168,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setCards((prev) => [optimisticCard, ...prev]);
-    
+
     // Update cache optimistically
     dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [optimisticCard, ...data]);
 
@@ -1998,7 +2206,7 @@ const Dashboard: React.FC = () => {
     const tempId = `temp-${Date.now()}`;
     const optimisticBank: Bank = { ...bankData, id: tempId, userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date() };
     setBanks(prev => [...prev, optimisticBank]);
-    
+
     // Update cache optimistically
     dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, optimisticBank]);
 
@@ -2035,7 +2243,7 @@ const Dashboard: React.FC = () => {
     if (!original) return;
     // Optimistic
     setBanks(prev => prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date() } : b));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
@@ -2069,7 +2277,7 @@ const Dashboard: React.FC = () => {
     const original = banks.find(b => b.id === id);
     if (!original) return;
     setBanks(prev => prev.filter(b => b.id !== id));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== id));
@@ -2097,12 +2305,12 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateCard = async (id: string, updates: Partial<Card>) => {
     const originalCard = cards.find((c) => c.id === id);
-    
+
     // Optimistic update
     setCards((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
@@ -2138,10 +2346,10 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteCard = async (id: string) => {
     const cardToDelete = cards.find((c) => c.id === id);
-    
+
     // Optimistic update
     setCards((prev) => prev.filter((c) => c.id !== id));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== id));
@@ -2183,7 +2391,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     setEWallets((prev) => [...prev, optimisticWallet]);
-    
+
     // Update cache optimistically
     dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, optimisticWallet]);
 
@@ -2223,7 +2431,7 @@ const Dashboard: React.FC = () => {
     setEWallets((prev) =>
       prev.map((w) => (w.id === id ? { ...w, ...updates, updatedAt: new Date() } : w))
     );
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
@@ -2261,7 +2469,7 @@ const Dashboard: React.FC = () => {
 
     // Optimistic update
     setEWallets((prev) => prev.filter((w) => w.id !== id));
-    
+
     // Update cache optimistically
     if (currentUser) {
       dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== id));
@@ -2371,23 +2579,23 @@ const Dashboard: React.FC = () => {
   const handleImportComplete = () => {
     // Reload data after import
     loadData();
-    
+
     // Update import progress to complete using functional update
     setImportProgress(prev => {
       if (!prev) return null;
-      
+
       const completedProgress = {
         ...prev,
         status: 'complete' as const,
         message: t('importComplete'),
         current: prev.total, // 確保顯示完成
       };
-      
+
       // 3秒後自動關閉完成通知
       setTimeout(() => {
         setImportProgress(null);
       }, 3000);
-      
+
       return completedProgress;
     });
   };
@@ -2420,7 +2628,7 @@ const Dashboard: React.FC = () => {
   const handleImportError = (errorMessage: string) => {
     setImportProgress(prev => {
       if (!prev) return null;
-      
+
       return {
         ...prev,
         status: 'error' as const,
@@ -2517,14 +2725,6 @@ const Dashboard: React.FC = () => {
   //#region Render
   return (
     <>
-      <input
-        ref={receiptInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleReceiptEntrySelected}
-        style={{ display: 'none' }}
-      />
       <div className="dashboard-page max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
@@ -2848,18 +3048,18 @@ const Dashboard: React.FC = () => {
                         <button
                           onClick={async () => {
                             if (isUploadingQueue) return; // 防止重复点击
-                            
+
                             try {
                               // 乐观更新：立即显示处理中状态
                               setIsUploadingQueue(true);
                               showNotification('info', t('processing') || '处理中...', { duration: 0 });
-                              
+
                               // 模拟清除队列显示（乐观更新）
                               setQueueCount(0);
-                              
+
                               // 实际重新加载数据，触发同步
                               await loadData();
-                              
+
                               // 成功后显示通知
                               showNotification('success', t('queueCleared') || '数据同步成功');
                               setShowHamburgerMenu(false);
@@ -3213,17 +3413,18 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              handleAddExpense(data);
-              closeExpenseEntry();
+            onSubmit={async (data) => {
+              const result = await handleAddExpense(data);
+              if (result.status !== 'failed') closeExpenseEntry();
+              return result;
             }}
-            onSubmitAndAddAnother={(data) => {
-              handleAddExpense(data);
-              setPendingReceiptFile(null);
+            onSubmitAndAddAnother={async (data) => {
+              const result = await handleAddExpense(data);
               // Don't close modal - form will reset itself
+              return result;
             }}
             onCancel={closeExpenseEntry}
-            initialReceiptFile={pendingReceiptFile}
+            startAtReceiptStep={startReceiptEntry}
             categories={orderedCategories}
             recentExpenses={expenses}
             cards={cards}
@@ -3273,17 +3474,18 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              handleAddExpense(data);
-              closeExpenseEntry();
+            onSubmit={async (data) => {
+              const result = await handleAddExpense(data);
+              if (result.status !== 'failed') closeExpenseEntry();
+              return result;
             }}
-            onSubmitAndAddAnother={(data) => {
-              handleAddExpense(data);
-              setPendingReceiptFile(null);
+            onSubmitAndAddAnother={async (data) => {
+              const result = await handleAddExpense(data);
               // Don't close modal - form will reset itself
+              return result;
             }}
             onCancel={closeExpenseEntry}
-            initialReceiptFile={pendingReceiptFile}
+            startAtReceiptStep={startReceiptEntry}
             categories={orderedCategories}
             recentExpenses={expenses}
             cards={cards}

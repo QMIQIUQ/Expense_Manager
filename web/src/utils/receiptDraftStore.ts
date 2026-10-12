@@ -90,12 +90,13 @@ const readUserIndex = (userId: string): string[] => {
   }
 };
 
-const writeUserIndex = (userId: string, draftIds: string[]): void => {
+const writeUserIndex = (userId: string, draftIds: string[]): boolean => {
   try {
     const unique = Array.from(new Set(draftIds.filter(Boolean)));
     localStorage.setItem(getUserIndexKey(userId), JSON.stringify(unique));
+    return true;
   } catch {
-    // Ignore quota issues for the index
+    return false;
   }
 };
 
@@ -108,11 +109,12 @@ const readMeta = (draftId: string): ReceiptDraftSnapshot | null => {
   }
 };
 
-const writeMeta = (draft: ReceiptDraftSnapshot): void => {
+const writeMeta = (draft: ReceiptDraftSnapshot): boolean => {
   try {
     localStorage.setItem(getMetaKey(draft.draftId), JSON.stringify(draft));
+    return true;
   } catch {
-    // Ignore quota issues for metadata; the UI will continue without persistence.
+    return false;
   }
 };
 
@@ -193,9 +195,13 @@ const deleteBlobRecord = async (draftId: string): Promise<void> => {
 
 export const createReceiptDraftId = makeDraftId;
 
-export const loadReceiptDraft = async (draftId: string): Promise<LoadedReceiptDraft | null> => {
+export const loadReceiptDraft = async (draftId: string, userId: string): Promise<LoadedReceiptDraft | null> => {
   const draft = readMeta(draftId);
-  if (!draft) return null;
+  if (!draft || draft.userId !== userId) return null;
+  if (!Number.isFinite(draft.expiresAt) || draft.expiresAt <= Date.now()) {
+    await deleteReceiptDraft(draftId, userId);
+    return null;
+  }
 
   let imageBlob: Blob | null = null;
   try {
@@ -222,7 +228,7 @@ export const loadLatestReceiptDraft = async (userId: string): Promise<LoadedRece
       continue;
     }
 
-    if (draft.expiresAt <= Date.now()) {
+    if (!Number.isFinite(draft.expiresAt) || draft.expiresAt <= Date.now()) {
       await deleteReceiptDraft(draftId);
       continue;
     }
@@ -239,7 +245,7 @@ export const loadLatestReceiptDraft = async (userId: string): Promise<LoadedRece
 
   candidates.sort((a, b) => b.updatedAt - a.updatedAt);
   const latest = candidates[0];
-  return loadReceiptDraft(latest.draftId);
+  return loadReceiptDraft(latest.draftId, userId);
 };
 
 export const saveReceiptDraft = async (
@@ -252,16 +258,29 @@ export const saveReceiptDraft = async (
     expiresAt: draft.expiresAt || (Date.now() + DEFAULT_TTL_MS),
   };
 
-  writeMeta(nextDraft);
+  if (!writeMeta(nextDraft)) {
+    throw new Error('Failed to save receipt draft metadata');
+  }
 
   if (imageBlob) {
-    await putBlobRecord(nextDraft.draftId, imageBlob);
+    try {
+      await putBlobRecord(nextDraft.draftId, imageBlob);
+    } catch (error) {
+      try {
+        await deleteBlobRecord(nextDraft.draftId);
+      } catch {
+        // Keep the storage error as the primary failure.
+      }
+      throw error;
+    }
   }
 
   const userIndex = readUserIndex(nextDraft.userId);
   if (!userIndex.includes(nextDraft.draftId)) {
     userIndex.push(nextDraft.draftId);
-    writeUserIndex(nextDraft.userId, userIndex);
+    if (!writeUserIndex(nextDraft.userId, userIndex)) {
+      throw new Error('Failed to index receipt draft');
+    }
   }
 };
 
@@ -303,7 +322,13 @@ export const cleanupReceiptDrafts = async (userId?: string): Promise<number> => 
 
     for (const draftId of draftIds) {
       const draft = readMeta(draftId);
-      if (!draft || draft.expiresAt <= Date.now()) {
+      if (!draft) {
+        await deleteReceiptDraft(draftId, rawUserId);
+        removed += 1;
+        continue;
+      }
+      if (draft.userId !== rawUserId) continue;
+      if (!Number.isFinite(draft.expiresAt) || draft.expiresAt <= Date.now()) {
         await deleteReceiptDraft(draftId, rawUserId);
         removed += 1;
         continue;

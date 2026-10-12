@@ -314,11 +314,21 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const unallocatedBudget = allocationDifference !== null && allocationDifference >= 0
     ? allocationDifference
     : null;
+  const modalAllocatedMinorUnits = getAllocatedBudgetMinorUnits(budgets, summaryPeriod);
+  const modalInputAmount = overallBudgetInput.trim() === '' ? null : Number(overallBudgetInput);
+  const modalInputMinorUnits = modalInputAmount !== null && Number.isFinite(modalInputAmount)
+    ? Math.round(modalInputAmount * 100)
+    : null;
+  const modalAvailableMinorUnits = modalAllocatedMinorUnits !== null && modalInputMinorUnits !== null
+    ? modalInputMinorUnits - modalAllocatedMinorUnits
+    : null;
 
   const openOverallBudgetModal = (period: BudgetPeriod = summaryPeriod) => {
     setSummaryPeriod(period);
     const limit = overallBudgetLimits?.[period];
-    setOverallBudgetInput(limit === undefined ? '' : String(limit));
+    const allocatedForPeriod = getAllocatedBudgetMinorUnits(budgets, period);
+    const suggestedLimit = allocatedForPeriod === null ? '' : (allocatedForPeriod / 100).toFixed(2);
+    setOverallBudgetInput(limit === undefined ? suggestedLimit : limit.toFixed(2));
     setShowOverallBudgetModal(true);
   };
 
@@ -346,6 +356,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     event.preventDefault();
     const amount = Number(overallBudgetInput);
     if (!Number.isFinite(amount) || amount < 0) return;
+    if (modalAllocatedMinorUnits === null || Math.round(amount * 100) < modalAllocatedMinorUnits) return;
     if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) closeOverallBudgetModal();
   };
   
@@ -696,8 +707,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               : styles.overallBudgetMetricValue}>
               {allocationDifference !== null && allocationDifference < 0
                 ? `${t('budgetOverAllocation')} ${formatMoney(Math.abs(allocationDifference), DEFAULT_BASE_CURRENCY)}`
-                : unallocatedBudget === null ? '—' : formatMoney(unallocatedBudget, DEFAULT_BASE_CURRENCY)}
+                : unallocatedBudget === null
+                  ? t('setOverallBudgetToSeeAvailable')
+                  : formatMoney(unallocatedBudget, DEFAULT_BASE_CURRENCY)}
             </strong>
+            <span style={styles.overallBudgetMetricHint}>{t('unallocatedBudgetHint')}</span>
           </div>
         </div>
         {allocatedMinorUnits === null && (
@@ -998,8 +1012,40 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             required
             value={overallBudgetInput}
             onChange={(event) => setOverallBudgetInput(event.target.value)}
+            aria-invalid={modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0}
+            aria-describedby="overall-budget-form-help overall-budget-form-summary"
             style={styles.overallBudgetInput}
           />
+          <p id="overall-budget-form-help" style={styles.overallBudgetFormHint}>
+            {overallBudgetLimit === undefined
+              ? `${t('overallBudgetSuggestedHint')}${modalAllocatedMinorUnits === null ? '' : ` ${formatMoney(modalAllocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)}`}`
+              : `${t('overallBudgetSavedHint')} ${formatMoney(overallBudgetLimit, DEFAULT_BASE_CURRENCY)}`}
+          </p>
+          <div id="overall-budget-form-summary" style={styles.overallBudgetFormSummary} aria-live="polite">
+            <div style={styles.overallBudgetFormSummaryRow}>
+              <span>{t('allocatedBudget')}</span>
+              <strong>{modalAllocatedMinorUnits === null ? '—' : formatMoney(modalAllocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)}</strong>
+            </div>
+            <div style={styles.overallBudgetFormSummaryRow}>
+              <span>{t('unallocatedBudget')}</span>
+              <strong style={modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0
+                ? styles.overallBudgetOverageValue
+                : styles.overallBudgetMetricValue}>
+                {modalAvailableMinorUnits === null
+                  ? '—'
+                  : modalAvailableMinorUnits < 0
+                    ? `${t('budgetOverAllocation')} ${formatMoney(Math.abs(modalAvailableMinorUnits) / 100, DEFAULT_BASE_CURRENCY)}`
+                    : formatMoney(modalAvailableMinorUnits / 100, DEFAULT_BASE_CURRENCY)}
+              </strong>
+            </div>
+            <span style={styles.overallBudgetMetricHint}>{t('unallocatedBudgetHint')}</span>
+          </div>
+          {modalAllocatedMinorUnits === null && (
+            <span role="alert" style={styles.overallBudgetError}>{t('budgetAllocationCannotBeCompared')}</span>
+          )}
+          {modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0 && (
+            <span role="alert" style={styles.overallBudgetError}>{t('overallBudgetBelowAllocation')}</span>
+          )}
         </div>
       </PopupModal>
 
@@ -1147,6 +1193,33 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '8px',
+  },
+  overallBudgetFormHint: {
+    margin: 0,
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+    lineHeight: 1.5,
+  },
+  overallBudgetFormSummary: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    padding: '10px 12px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    background: 'var(--bg-secondary)',
+  },
+  overallBudgetFormSummaryRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '12px',
+    color: 'var(--text-secondary)',
+    fontSize: '13px',
+  },
+  overallBudgetMetricHint: {
+    color: 'var(--text-secondary)',
+    fontSize: '11px',
+    lineHeight: 1.4,
   },
   overallBudgetInput: {
     width: '100%',

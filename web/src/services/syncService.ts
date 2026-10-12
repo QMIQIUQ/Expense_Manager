@@ -82,6 +82,14 @@ class SyncService {
     }));
   }
 
+  private notifyExpenseOperationNeedsAttention(operation: QueuedOperation) {
+    if (operation.entity !== 'expense' || typeof window === 'undefined') return;
+    const payload = operation.payload as { userId?: unknown };
+    window.dispatchEvent(new CustomEvent('expense-offline-operation-needs-attention', {
+      detail: { operationId: operation.id, userId: payload?.userId },
+    }));
+  }
+
   /**
    * Enable/disable automatic sync when connection is restored
    */
@@ -128,6 +136,7 @@ class SyncService {
     let failed = 0;
     const rejectedBudgetOperations: QueuedOperation[] = [];
     const blockedBudgetKeys = new Set<string>();
+    const blockedExpenseKeys = new Set<string>();
 
     this.notifyProgress({
       total: queue.length,
@@ -141,6 +150,31 @@ class SyncService {
 
       // A prior terminal create rejection may have removed this dependent write.
       if (!offlineQueue.getAll().some((queuedOperation) => queuedOperation.id === operation.id)) continue;
+
+      let expenseKey: string | undefined;
+      if (operation.entity === 'expense') {
+        const payload = operation.payload as { id?: unknown; userId?: unknown } | null;
+        const signedInUserId = auth.currentUser?.uid;
+        // Leave legacy and other-account entries untouched without consuming retries.
+        if (!signedInUserId || !payload || typeof payload.userId !== 'string' || payload.userId !== signedInUserId) continue;
+
+        if (operation.type === 'create' && (typeof payload.id !== 'string' || !payload.id)) {
+          const updatedPayload = { ...payload, id: expenseService.createId() };
+          if (!offlineQueue.updatePayload(operation.id, updatedPayload)) continue;
+          operation.payload = updatedPayload;
+          payload.id = updatedPayload.id;
+        }
+        if (typeof payload.id !== 'string' || !payload.id) continue;
+
+        expenseKey = `${signedInUserId}:${payload.id}`;
+        if (blockedExpenseKeys.has(expenseKey)) continue;
+        if (operation.status === 'needs-attention') {
+          blockedExpenseKeys.add(expenseKey);
+          continue;
+        }
+      } else if (operation.status === 'needs-attention') {
+        continue;
+      }
 
       let budgetKey: string | undefined;
       if (operation.entity === 'budget') {
@@ -167,6 +201,7 @@ class SyncService {
           offlineQueue.dequeue(operation.id);
           success++;
         } else {
+          if (expenseKey) blockedExpenseKeys.add(expenseKey);
           if (operation.entity === 'budget') {
             const payload = operation.payload as { userId?: unknown };
             if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
@@ -175,6 +210,12 @@ class SyncService {
           if (budgetKey) blockedBudgetKeys.add(budgetKey);
           if (!canRetry) {
             failed++;
+            if (operation.entity === 'expense') {
+              const retainedOperation = offlineQueue.getAll().find((queuedOperation) => queuedOperation.id === operation.id);
+              if (retainedOperation?.status === 'needs-attention') {
+                this.notifyExpenseOperationNeedsAttention(retainedOperation);
+              }
+            }
             if (operation.entity === 'budget') {
               rejectedBudgetOperations.push(operation);
               if (operation.type === 'create' && budgetKey) {
@@ -186,6 +227,7 @@ class SyncService {
         }
       } catch (error) {
         console.error('Error executing queued operation:', error);
+        if (expenseKey) blockedExpenseKeys.add(expenseKey);
         if (operation.entity === 'budget') {
           const payload = operation.payload as { userId?: unknown };
           if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
@@ -194,6 +236,12 @@ class SyncService {
         if (budgetKey) blockedBudgetKeys.add(budgetKey);
         if (!canRetry) {
           failed++;
+          if (operation.entity === 'expense') {
+            const retainedOperation = offlineQueue.getAll().find((queuedOperation) => queuedOperation.id === operation.id);
+            if (retainedOperation?.status === 'needs-attention') {
+              this.notifyExpenseOperationNeedsAttention(retainedOperation);
+            }
+          }
           if (operation.entity === 'budget') {
             rejectedBudgetOperations.push(operation);
             if (operation.type === 'create' && budgetKey) {
@@ -216,6 +264,12 @@ class SyncService {
       currentOperation: 'Sync complete',
       budgetRejections: rejectedBudgetOperations.length,
     });
+
+    const initialOperationIds = new Set(queue.map((operation) => operation.id));
+    const hasOperationsAddedDuringSync = offlineQueue.getAll().some((operation) => !initialOperationIds.has(operation.id));
+    if (hasOperationsAddedDuringSync) {
+      setTimeout(() => { void this.syncOfflineQueue(); }, 0);
+    }
 
     return { success, failed };
   }
@@ -258,18 +312,33 @@ class SyncService {
     // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    const signedInUserId = auth.currentUser?.uid;
+    if (!signedInUserId || typeof payload?.userId !== 'string' || payload.userId !== signedInUserId) return false;
+    if (typeof payload.id !== 'string' || !payload.id) return false;
     
     switch (operation.type) {
       case 'create':
-        await expenseService.create(payload);
+        await expenseService.create(
+          { ...payload, id: payload.id, userId: signedInUserId },
+          { updateAccountBalances: true },
+        );
         return true;
       case 'update':
-        if (!payload.id) return false;
-        await expenseService.update(payload.id, payload);
+        {
+          const updates = { ...payload };
+          delete updates.id;
+          delete updates.userId;
+          await expenseService.update(payload.id, updates);
+        }
         return true;
       case 'delete':
-        if (!payload.id) return false;
-        await expenseService.delete(payload.id);
+        await expenseService.deleteWithRelatedTransfers(
+          payload.id,
+          signedInUserId,
+          Array.isArray(payload.relatedTransferIds)
+            ? payload.relatedTransferIds.filter((transferId: unknown): transferId is string => typeof transferId === 'string')
+            : [],
+        );
         return true;
       default:
         return false;
