@@ -12,7 +12,7 @@ import { DEFAULT_BASE_CURRENCY, getCurrencySymbol } from '../../utils/currencyUt
 import { getHistoricalRate } from '../../services/currencyRateService';
 import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 
-interface BudgetFormData {
+export interface BudgetFormData {
   categoryId: string;
   categoryName: string;
   amount: number; // stored in cents
@@ -36,6 +36,7 @@ interface BudgetFormProps {
   categories: Category[];
   onSubmit: (data: BudgetFormData) => void | Promise<void>;
   onCancel: () => void;
+  onManageOverallBudget?: (draft: BudgetFormData) => void;
   isEditing?: boolean;
 }
 
@@ -44,6 +45,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   categories,
   onSubmit,
   onCancel,
+  onManageOverallBudget,
   isEditing = false
 }) => {
   const { t } = useLanguage();
@@ -209,6 +211,33 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             {currencyError && <span className="text-xs text-red-600">{currencyError}</span>}
           </div>
         </div>
+
+        {!isEditing && onManageOverallBudget && (
+          <div
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-3"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--bg-secondary)',
+            }}
+          >
+            <p className="text-xs m-0" style={{ color: 'var(--text-secondary)' }}>
+              {t('categoryBudgetAllocationHint')}
+            </p>
+            <button
+              type="button"
+              onClick={() => onManageOverallBudget(formData)}
+              className="px-3 py-2 border rounded-lg font-medium whitespace-nowrap"
+              style={{
+                borderColor: 'var(--accent-primary)',
+                backgroundColor: 'transparent',
+                color: 'var(--accent-primary)',
+                cursor: 'pointer',
+              }}
+            >
+              {t('manageOverallBudget')}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">

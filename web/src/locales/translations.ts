@@ -185,6 +185,8 @@ export const translations = {
   allPeriodsBudgetNote: { en: 'The category list below includes budgets from all periods.', zh: '下方分類列表包含所有週期的預算。', 'zh-CN': '下方分类列表包含所有周期的预算。' },
   setOverallBudget: { en: 'Set overall budget', zh: '設定總預算', 'zh-CN': '设置总预算' },
   editOverallBudget: { en: 'Edit overall budget', zh: '編輯總預算', 'zh-CN': '编辑总预算' },
+  manageOverallBudget: { en: 'Set or edit overall budget', zh: '設定／編輯總預算', 'zh-CN': '设置／编辑总预算' },
+  categoryBudgetAllocationHint: { en: 'This amount belongs to one category and is allocated from your overall budget.', zh: '此金額屬於單一分類，會從總預算中分配。', 'zh-CN': '此金额属于单一分类，会从总预算中分配。' },
   overallBudgetAmount: { en: 'Maximum amount (MYR)', zh: '上限金額（MYR）', 'zh-CN': '上限金额（MYR）' },
   overallBudgetHint: { en: 'Category budgets are allocations within this limit.', zh: '各類別預算會從此上限中分配。', 'zh-CN': '各分类预算会从此上限中分配。' },
   overallBudgetNotSet: { en: 'Not set', zh: '尚未設定', 'zh-CN': '尚未设置' },

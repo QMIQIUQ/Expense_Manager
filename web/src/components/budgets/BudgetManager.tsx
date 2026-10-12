@@ -4,7 +4,7 @@ import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { PlusIcon, EditIcon, DeleteIcon } from '../icons';
-import BudgetForm from './BudgetForm';
+import BudgetForm, { type BudgetFormData } from './BudgetForm';
 import { SearchBar } from '../common/SearchBar';
 import { useMultiSelect } from '../../hooks/useMultiSelect';
 import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
@@ -113,6 +113,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [summaryPeriod, setSummaryPeriod] = useState<BudgetPeriod>('monthly');
   const [showOverallBudgetModal, setShowOverallBudgetModal] = useState(false);
   const [overallBudgetInput, setOverallBudgetInput] = useState('');
+  const [pendingBudgetDraft, setPendingBudgetDraft] = useState<BudgetFormData | undefined>();
+  const [resumeAddBudgetAfterOverallModal, setResumeAddBudgetAfterOverallModal] = useState(false);
   const shouldOpenAddModalRef = React.useRef(false);
 
 
@@ -313,16 +315,38 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     ? allocationDifference
     : null;
 
-  const openOverallBudgetModal = () => {
-    setOverallBudgetInput(overallBudgetLimit === undefined ? '' : String(overallBudgetLimit));
+  const openOverallBudgetModal = (period: BudgetPeriod = summaryPeriod) => {
+    setSummaryPeriod(period);
+    const limit = overallBudgetLimits?.[period];
+    setOverallBudgetInput(limit === undefined ? '' : String(limit));
     setShowOverallBudgetModal(true);
+  };
+
+  const closeOverallBudgetModal = () => {
+    setShowOverallBudgetModal(false);
+    if (resumeAddBudgetAfterOverallModal) {
+      setResumeAddBudgetAfterOverallModal(false);
+      setIsAdding(true);
+    }
+  };
+
+  const handleManageOverallBudgetFromAdd = (draft: BudgetFormData) => {
+    setPendingBudgetDraft(draft);
+    setResumeAddBudgetAfterOverallModal(true);
+    setIsAdding(false);
+    openOverallBudgetModal(draft.period);
+  };
+
+  const closeAddBudgetModal = () => {
+    setIsAdding(false);
+    setPendingBudgetDraft(undefined);
   };
 
   const saveOverallBudget = async (event: React.FormEvent) => {
     event.preventDefault();
     const amount = Number(overallBudgetInput);
     if (!Number.isFinite(amount) || amount < 0) return;
-    if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) setShowOverallBudgetModal(false);
+    if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) closeOverallBudgetModal();
   };
   
   // Filter and sort budgets
@@ -443,6 +467,13 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       <div style={styles.header}>
         <h2 style={styles.title}>{t('budgetManagement')}</h2>
         <div style={styles.headerActions}>
+          <button
+            type="button"
+            onClick={() => openOverallBudgetModal()}
+            style={styles.overallBudgetHeaderButton}
+          >
+            {overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
+          </button>
           <button 
             onClick={() => {
               if (activeSubTab !== 'list') {
@@ -550,7 +581,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       {/* Add Budget Popup Modal */}
       <PopupModal
         isOpen={isAdding}
-        onClose={() => setIsAdding(false)}
+        onClose={closeAddBudgetModal}
         title={t('addBudget') || 'Add Budget'}
         hideHeader={true}
         chromeless={true}
@@ -558,18 +589,18 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         maxWidth="600px"
       >
         <BudgetForm
+          initialData={pendingBudgetDraft}
           categories={categories}
+          onManageOverallBudget={handleManageOverallBudgetFromAdd}
           onSubmit={async (data) => {
             // Convert amount from cents to dollars
             const saved = await onAdd({
               ...data,
               amount: data.amount / 100,
             });
-            if (saved !== false) setIsAdding(false);
+            if (saved !== false) closeAddBudgetModal();
           }}
-          onCancel={() => {
-            setIsAdding(false);
-          }}
+          onCancel={closeAddBudgetModal}
         />
       </PopupModal>
 
@@ -647,7 +678,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               <option value="monthly">{t('periodMonthly')}</option>
               <option value="yearly">{t('periodYearly')}</option>
             </select>
-            <button type="button" style={styles.overallBudgetButton} onClick={openOverallBudgetModal}>
+            <button type="button" style={styles.overallBudgetButton} onClick={() => openOverallBudgetModal()}>
               {overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
             </button>
           </div>
@@ -680,30 +711,6 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           <span role="alert" style={styles.overallBudgetError}>{t('budgetAllocationCannotBeCompared')}</span>
         )}
       </section>
-
-      <PopupModal
-        isOpen={showOverallBudgetModal}
-        onClose={() => setShowOverallBudgetModal(false)}
-        title={overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
-        isForm
-        onSubmit={saveOverallBudget}
-        primaryButtonLabel={t('save')}
-        maxWidth="480px"
-      >
-        <div style={styles.overallBudgetForm}>
-          <label htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
-          <input
-            id="overall-budget-amount"
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            value={overallBudgetInput}
-            onChange={(event) => setOverallBudgetInput(event.target.value)}
-            style={styles.overallBudgetInput}
-          />
-        </div>
-      </PopupModal>
 
       {/* Search Bar - placed after form */}
       <p style={styles.allPeriodsBudgetNote}>{t('allPeriodsBudgetNote')}</p>
@@ -979,6 +986,30 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </>
       )}
       
+      <PopupModal
+        isOpen={showOverallBudgetModal}
+        onClose={closeOverallBudgetModal}
+        title={overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
+        isForm
+        onSubmit={saveOverallBudget}
+        primaryButtonLabel={t('save')}
+        maxWidth="480px"
+      >
+        <div style={styles.overallBudgetForm}>
+          <label htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
+          <input
+            id="overall-budget-amount"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            value={overallBudgetInput}
+            onChange={(event) => setOverallBudgetInput(event.target.value)}
+            style={styles.overallBudgetInput}
+          />
+        </div>
+      </PopupModal>
+
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         title={t('deleteBudget')}
@@ -1020,6 +1051,15 @@ const styles = {
     gap: '8px',
     alignItems: 'center',
     flexWrap: 'wrap' as const,
+  },
+  overallBudgetHeaderButton: {
+    padding: '8px 12px',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '8px',
+    background: 'transparent',
+    color: 'var(--accent-primary)',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
   },
   title: {
     margin: 0,
