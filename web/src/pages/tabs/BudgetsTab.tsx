@@ -1,6 +1,6 @@
 import React from 'react';
 import BudgetManager from '../../components/budgets/BudgetManager';
-import { Budget, Category, Expense, Repayment } from '../../types';
+import { Budget, BudgetPeriod, Category, Expense, OverallBudgetLimits, Repayment } from '../../types';
 
 interface Props {
   budgets: Budget[];
@@ -9,9 +9,11 @@ interface Props {
   repayments?: Repayment[];
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
-  onAdd: (data: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
-  onUpdate: (id: string, updates: Partial<Budget>) => void;
+  onAdd: (data: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => boolean | Promise<boolean>;
+  onUpdate: (id: string, updates: Partial<Budget>) => boolean | Promise<boolean>;
   onDelete: (id: string) => void;
+  overallBudgetLimits?: OverallBudgetLimits;
+  onSaveOverallBudgetLimit: (period: BudgetPeriod, amount: number) => Promise<boolean>;
 }
 
 const BudgetsTab: React.FC<Props> = ({ 
@@ -23,7 +25,9 @@ const BudgetsTab: React.FC<Props> = ({
   billingCycleDay = 1,
   onAdd, 
   onUpdate, 
-  onDelete 
+  onDelete,
+  overallBudgetLimits,
+  onSaveOverallBudgetLimit,
 }) => {
   return (
     <div style={styles.section}>
@@ -35,6 +39,8 @@ const BudgetsTab: React.FC<Props> = ({
         onAdd={onAdd}
         onUpdate={onUpdate}
         onDelete={onDelete}
+        overallBudgetLimits={overallBudgetLimits}
+        onSaveOverallBudgetLimit={onSaveOverallBudgetLimit}
         spentByCategory={spentByCategory}
         billingCycleDay={billingCycleDay}
       />

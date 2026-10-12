@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
-import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
+import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod } from '../types';
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -17,6 +17,7 @@ interface UserSettingsContextType {
   setUseStepByStepForm: (value: boolean) => Promise<void>;
   setDateShortcuts: (shortcuts: DateShortcut[]) => Promise<void>;
   setDisplayCurrency: (currency: CurrencyCode) => Promise<void>;
+  setOverallBudgetLimit: (period: BudgetPeriod, amount?: number) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -40,13 +41,16 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const latestUserIdRef = useRef(userId);
+  const latestSettingsRef = useRef(settings);
   const currencyWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const currencyWriteIdRef = useRef(0);
+  const overallBudgetWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   latestUserIdRef.current = userId;
 
   useEffect(() => {
     let cancelled = false;
     setSettings(null);
+    latestSettingsRef.current = null;
     setLoading(Boolean(userId));
 
     if (!userId) {
@@ -56,7 +60,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
 
     userSettingsService.getOrCreate(userId, true)
       .then((userSettings) => {
-        if (!cancelled) setSettings(userSettings);
+        if (!cancelled) {
+          latestSettingsRef.current = userSettings;
+          setSettings(userSettings);
+        }
       })
       .catch((error) => {
         console.error('Error loading user settings:', error);
@@ -82,7 +89,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     setLoading(true);
     try {
       const userSettings = await userSettingsService.getOrCreate(userId, forceRefresh);
-      if (latestUserIdRef.current === userId) setSettings(userSettings);
+      if (latestUserIdRef.current === userId) {
+        latestSettingsRef.current = userSettings;
+        setSettings(userSettings);
+      }
     } catch (error) {
       console.error('Error loading user settings:', error);
       throw error;
@@ -177,6 +187,52 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setOverallBudgetLimit = async (period: BudgetPeriod, amount?: number) => {
+    if (!userId) throw new Error('A signed-in user is required to save an overall budget limit');
+    if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
+      throw new Error('Overall budget limit must be a non-negative number');
+    }
+
+    const uid = userId;
+    const write = overallBudgetWriteQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const currentSettings = latestSettingsRef.current;
+        if (!currentSettings || (currentSettings.userId !== uid && currentSettings.id !== uid)) {
+          throw new Error('User settings are not ready');
+        }
+
+        const previousLimits = currentSettings.overallBudgetLimits;
+        const nextLimits = { ...previousLimits };
+        if (amount === undefined) {
+          delete nextLimits[period];
+        } else {
+          nextLimits[period] = amount;
+        }
+        latestSettingsRef.current = { ...currentSettings, overallBudgetLimits: nextLimits };
+        setSettings((previous) => previous && (previous.userId === uid || previous.id === uid)
+          ? { ...previous, overallBudgetLimits: nextLimits }
+          : previous);
+
+        try {
+          await userSettingsService.setOverallBudgetLimit(uid, period, amount);
+        } catch (error) {
+          if (latestUserIdRef.current === uid) {
+            const current = latestSettingsRef.current;
+            latestSettingsRef.current = current && (current.userId === uid || current.id === uid)
+              ? { ...current, overallBudgetLimits: previousLimits }
+              : current;
+            setSettings((previous) => previous && (previous.userId === uid || previous.id === uid)
+              ? { ...previous, overallBudgetLimits: previousLimits }
+              : previous);
+          }
+          throw error;
+        }
+    });
+    overallBudgetWriteQueueRef.current = write.then(() => undefined, () => undefined);
+    await write;
+  };
+
   const refreshSettings = async () => {
     await loadSettings(true); // Force refresh from server
   };
@@ -195,6 +251,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     setUseStepByStepForm,
     setDateShortcuts,
     setDisplayCurrency,
+    setOverallBudgetLimit,
     refreshSettings,
   };
 

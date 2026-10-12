@@ -34,6 +34,9 @@ export interface CurrencyRateSnapshot {
   fetchedAt: Date;
 }
 
+export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly';
+export type OverallBudgetLimits = Partial<Record<BudgetPeriod, number>>;
+
 // User settings
 export interface UserSettings {
   id?: string;
@@ -44,6 +47,8 @@ export interface UserSettings {
   useStepByStepForm?: boolean; // Enable multi-step expense entry form
   displayCurrency?: CurrencyCode; // Preferred currency for converted summaries
   dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
+  overallBudgetLimits?: OverallBudgetLimits; // Per-period limits, stored in MYR
+  budgetAllocationRevision?: number; // Internal revision used to serialize budget mutations
   createdAt: Date;
   updatedAt: Date;
 }
@@ -146,7 +151,7 @@ export interface Budget {
   exchangeRateDate?: string;
   exchangeRateFetchedAt?: Date;
   exchangeRateProvider?: string;
-  period: 'monthly' | 'weekly' | 'yearly';
+  period: BudgetPeriod;
   startDate: string;
   alertThreshold: number; // percentage (e.g., 80 means alert at 80%)
   // Rollover settings (Phase 3)

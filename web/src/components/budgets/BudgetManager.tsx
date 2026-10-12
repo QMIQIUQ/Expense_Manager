@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Budget, Category, CurrencyCode, Expense, Repayment } from '../../types';
+import { Budget, BudgetPeriod, Category, CurrencyCode, Expense, OverallBudgetLimits, Repayment } from '../../types';
 import ConfirmModal from '../ConfirmModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -18,6 +18,7 @@ import { getTodayLocal, formatDateRangeShort } from '../../utils/dateUtils';
 import { getAllBudgetSuggestions as getAdjustmentSuggestions } from '../../utils/budgetAnalysis';
 import BudgetAdjustmentCard from './BudgetAdjustmentCard';
 import PopupModal from '../common/PopupModal';
+import { useNotification } from '../../contexts/NotificationContext';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../utils/currencyUtils';
 import { useCurrencyConversionMapState } from '../../hooks/useCurrencyConversionMap';
@@ -28,6 +29,7 @@ import {
   toBudgetBaseAmount,
   toBudgetCurrencyAmount,
 } from '../../utils/budgetCurrencyUtils';
+import { getAllocatedBudgetMinorUnits, validateBudgetAllocationBatch } from '../../utils/budgetAllocation';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -48,17 +50,34 @@ const responsiveStyles = `
   }
 `;
 
+const safelyConvertBudgetAmount = (convert: () => number): number | null => {
+  try {
+    const converted = convert();
+    return Number.isFinite(converted) ? converted : null;
+  } catch {
+    return null;
+  }
+};
+
+const safelyConvertToBaseAmount = (amount: number, budget: Budget): number | null =>
+  safelyConvertBudgetAmount(() => toBudgetBaseAmount(amount, budget));
+
+const safelyConvertToBudgetCurrency = (amount: number, budget: Budget): number | null =>
+  safelyConvertBudgetAmount(() => toBudgetCurrencyAmount(amount, budget));
+
 interface BudgetManagerProps {
   budgets: Budget[];
   categories: Category[];
   expenses?: Expense[];
   repayments?: Repayment[];
-  onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void | Promise<void>;
-  onUpdate: (id: string, updates: Partial<Budget>) => void | Promise<void>;
+  onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => boolean | void | Promise<boolean | void>;
+  onUpdate: (id: string, updates: Partial<Budget>) => boolean | void | Promise<boolean | void>;
   onDelete: (id: string) => void;
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
   displayCurrency?: CurrencyCode;
+  overallBudgetLimits?: OverallBudgetLimits;
+  onSaveOverallBudgetLimit: (period: BudgetPeriod, amount: number) => Promise<boolean>;
 }
 
 const BudgetManager: React.FC<BudgetManagerProps> = ({
@@ -72,9 +91,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   spentByCategory,
   billingCycleDay = 1,
   displayCurrency = DEFAULT_BASE_CURRENCY,
+  overallBudgetLimits,
+  onSaveOverallBudgetLimit,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
+  const { showNotification } = useNotification();
   const [isAdding, setIsAdding] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -88,6 +110,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'suggestions' | 'adjustments'>('list');
   const [dismissedAdjustments, setDismissedAdjustments] = useState<Set<string>>(new Set());
+  const [summaryPeriod, setSummaryPeriod] = useState<BudgetPeriod>('monthly');
+  const [showOverallBudgetModal, setShowOverallBudgetModal] = useState(false);
+  const [overallBudgetInput, setOverallBudgetInput] = useState('');
   const shouldOpenAddModalRef = React.useRef(false);
 
 
@@ -95,7 +120,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const adjustmentSuggestions = React.useMemo(() => {
     if (!showAdjustments || expenses.length === 0 || budgets.length === 0) return [];
     
-    const suggestions = getAdjustmentSuggestions(budgets, expenses, repayments, billingCycleDay);
+    const validRateBudgets = budgets.filter((budget) => Number.isFinite(getBudgetExchangeRate(budget)));
+    const suggestions = getAdjustmentSuggestions(validRateBudgets, expenses, repayments, billingCycleDay);
     return sortCategoryEntries(
       suggestions.filter((suggestion) => !dismissedAdjustments.has(suggestion.budgetId))
         .map((suggestion): [string, typeof suggestion] => [suggestion.categoryName, suggestion]),
@@ -104,9 +130,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   }, [showAdjustments, budgets, categories, expenses, repayments, billingCycleDay, dismissedAdjustments]);
 
   // Handle applying adjustment suggestion
-  const handleApplyAdjustment = (budgetId: string, newAmount: number) => {
-    onUpdate(budgetId, { amount: newAmount });
-    setDismissedAdjustments((prev) => new Set([...prev, budgetId]));
+  const handleApplyAdjustment = async (budgetId: string, newAmount: number) => {
+    const saved = await onUpdate(budgetId, { amount: newAmount });
+    if (saved !== false) setDismissedAdjustments((prev) => new Set([...prev, budgetId]));
   };
 
   // Handle dismissing adjustment suggestion
@@ -115,22 +141,29 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   };
 
   // Handle applying a budget template
-  const handleApplyTemplate = (budgetsFromTemplate: Array<{ categoryName: string; categoryId: string; amount: number; alertThreshold: number }>) => {
-    // Create all budgets from the template
-    budgetsFromTemplate.forEach((b) => {
-      // Check if budget for this category already exists
-      const exists = budgets.some((existing) => existing.categoryId === b.categoryId);
-      if (!exists) {
-        onAdd({
-          categoryId: b.categoryId,
-          categoryName: b.categoryName,
-          amount: b.amount,
-          period: 'monthly',
-          startDate: getTodayLocal(),
-          alertThreshold: b.alertThreshold,
-        });
-      }
-    });
+  const handleApplyTemplate = async (budgetsFromTemplate: Array<{ categoryName: string; categoryId: string; amount: number; alertThreshold: number }>) => {
+    const newBudgets = budgetsFromTemplate
+      .filter((templateBudget) => !budgets.some((existing) => existing.categoryId === templateBudget.categoryId))
+      .map((templateBudget) => ({
+        categoryId: templateBudget.categoryId,
+        categoryName: templateBudget.categoryName,
+        amount: templateBudget.amount,
+        period: 'monthly' as const,
+        startDate: getTodayLocal(),
+        alertThreshold: templateBudget.alertThreshold,
+        currency: DEFAULT_BASE_CURRENCY,
+        exchangeRate: 1,
+      }));
+
+    const validation = validateBudgetAllocationBatch(budgets, newBudgets, overallBudgetLimits);
+    if (!validation.valid && validation.reason !== 'limit-below-allocation') {
+      showNotification('error', t('budgetAllocationCannotBeCompared'));
+      return;
+    }
+
+    for (const budget of newBudgets) {
+      if (await onAdd(budget) === false) return;
+    }
     setShowTemplates(false);
   };
 
@@ -152,15 +185,16 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const handleApplySuggestion = (categoryName: string, amount: number) => {
     const category = categories.find((c) => c.name === categoryName);
     if (category) {
-      onAdd({
+      void Promise.resolve(onAdd({
         categoryId: category.id!,
         categoryName: categoryName,
         amount: amount,
         period: 'monthly',
         startDate: new Date().toISOString().split('T')[0],
         alertThreshold: 80,
+      })).then((saved) => {
+        if (saved !== false) setShowSuggestions(false);
       });
-      setShowSuggestions(false);
     }
   };
 
@@ -215,9 +249,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
   // Calculate budget status for filtering and sorting
   const getBudgetStatus = React.useCallback((budget: Budget): { percentage: number; status: 'over' | 'warning' | 'normal' } => {
-    const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
+    const spent = safelyConvertToBudgetCurrency(spentByCategory[budget.categoryName] || 0, budget);
     const effectiveAmount = getEffectiveBudgetAmount(budget);
-    const percentage = effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : 0;
+    const percentage = spent !== null && effectiveAmount > 0 ? (spent / effectiveAmount) * 100 : Number.NaN;
+    if (!Number.isFinite(percentage)) return { percentage: 0, status: 'warning' };
     
     if (percentage >= 100) return { percentage, status: 'over' };
     if (percentage >= budget.alertThreshold) return { percentage, status: 'warning' };
@@ -230,20 +265,27 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     const spentBase = spentByCategory[budget.categoryName] || 0;
     const effectiveAmount = getEffectiveBudgetAmount(budget);
     const rolloverAmount = budget.accumulatedRollover || 0;
-
-    return [
-      { key: `${budgetId}:spent`, amount: spentBase, sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
-      { key: `${budgetId}:effective`, amount: toBudgetBaseAmount(effectiveAmount, budget), sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
-      { key: `${budgetId}:rollover`, amount: toBudgetBaseAmount(rolloverAmount, budget), sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate },
-    ];
+    const entries: Array<{ key: string; amount: number; sourceCurrency: CurrencyCode; date: string }> = [];
+    if (Number.isFinite(spentBase)) {
+      entries.push({ key: `${budgetId}:spent`, amount: spentBase, sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate });
+    }
+    const effectiveBaseAmount = safelyConvertToBaseAmount(effectiveAmount, budget);
+    if (effectiveBaseAmount !== null) {
+      entries.push({ key: `${budgetId}:effective`, amount: effectiveBaseAmount, sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate });
+    }
+    const rolloverBaseAmount = safelyConvertToBaseAmount(rolloverAmount, budget);
+    if (rolloverBaseAmount !== null) {
+      entries.push({ key: `${budgetId}:rollover`, amount: rolloverBaseAmount, sourceCurrency: DEFAULT_BASE_CURRENCY, date: rateDate });
+    }
+    return entries;
   }), [budgets, spentByCategory]);
   const budgetDisplayConversion = useCurrencyConversionMapState(budgetDisplayEntries, displayCurrency);
   const budgetDisplayAmounts = budgetDisplayConversion.amountsByKey;
 
   const getBudgetDisplayAmount = React.useCallback((
     key: string,
-    budgetAmount: number,
-    baseAmount: number,
+    budgetAmount: number | null,
+    baseAmount: number | null,
     budget: Budget,
   ): number | null => {
     if (displayCurrency === getBudgetCurrency(budget)) return budgetAmount;
@@ -251,23 +293,37 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
     return budgetDisplayAmounts[key] ?? null;
   }, [budgetDisplayAmounts, displayCurrency]);
 
-  const totalBudgetDisplay = React.useMemo<number | null>(() => {
-    let total = 0;
-    for (const budget of budgets) {
-      const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
-      const amount = getEffectiveBudgetAmount(budget);
-      const baseAmount = toBudgetBaseAmount(amount, budget);
-      const displayAmount = getBudgetDisplayAmount(`${budgetId}:effective`, amount, baseAmount, budget);
-      if (displayAmount === null) return null;
-      total += displayAmount;
-    }
-    return total;
-  }, [budgets, getBudgetDisplayAmount]);
   const formatDisplayMoney = (amount: number | null): string =>
     amount === null ? '—' : formatMoney(amount, displayCurrency);
   const conversionFailureMessage = !budgetDisplayConversion.isLoading && budgetDisplayConversion.failedKeys.length > 0
     ? (t('exchangeRateLookupFailed') || 'Unable to get the exchange rate. Please try again.')
     : undefined;
+  const hasInvalidBudgetExchangeRate = budgets.some((budget) =>
+    getBudgetCurrency(budget) !== DEFAULT_BASE_CURRENCY && !Number.isFinite(getBudgetExchangeRate(budget))
+  );
+  const budgetCurrencyError = hasInvalidBudgetExchangeRate
+    ? t('budgetCurrencyDataInvalid')
+    : conversionFailureMessage;
+  const allocatedMinorUnits = getAllocatedBudgetMinorUnits(budgets, summaryPeriod);
+  const overallBudgetLimit = overallBudgetLimits?.[summaryPeriod];
+  const allocationDifference = overallBudgetLimit !== undefined && allocatedMinorUnits !== null
+    ? overallBudgetLimit - allocatedMinorUnits / 100
+    : null;
+  const unallocatedBudget = allocationDifference !== null && allocationDifference >= 0
+    ? allocationDifference
+    : null;
+
+  const openOverallBudgetModal = () => {
+    setOverallBudgetInput(overallBudgetLimit === undefined ? '' : String(overallBudgetLimit));
+    setShowOverallBudgetModal(true);
+  };
+
+  const saveOverallBudget = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const amount = Number(overallBudgetInput);
+    if (!Number.isFinite(amount) || amount < 0) return;
+    if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) setShowOverallBudgetModal(false);
+  };
   
   // Filter and sort budgets
   const filteredAndSortedBudgets = React.useMemo(() => {
@@ -303,7 +359,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         case 'name':
           return a.categoryName.localeCompare(b.categoryName);
         case 'amount':
-          return toBudgetBaseAmount(getEffectiveBudgetAmount(b), b) - toBudgetBaseAmount(getEffectiveBudgetAmount(a), a);
+          return (safelyConvertToBaseAmount(getEffectiveBudgetAmount(b), b) ?? 0) -
+            (safelyConvertToBaseAmount(getEffectiveBudgetAmount(a), a) ?? 0);
         default:
           return 0;
       }
@@ -333,13 +390,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
 
 
-  const getProgressPercentage = (budget: Budget) => {
-    const spent = toBudgetCurrencyAmount(spentByCategory[budget.categoryName] || 0, budget);
+  const getProgressPercentage = (budget: Budget): number | null => {
+    const spent = safelyConvertToBudgetCurrency(spentByCategory[budget.categoryName] || 0, budget);
     const effectiveAmount = getEffectiveBudgetAmount(budget);
+    if (spent === null || !Number.isFinite(effectiveAmount)) return null;
     return effectiveAmount > 0 ? Math.min((spent / effectiveAmount) * 100, 100) : 0;
   };
 
-  const getProgressColor = (percentage: number, threshold: number) => {
+  const getProgressColor = (percentage: number | null, threshold: number) => {
+    if (percentage === null) return 'var(--warning-text)';
     if (percentage >= 100) return 'var(--error-text)'; // Red - over budget
     if (percentage >= 90) return '#ea580c'; // Orange-red
     if (percentage >= threshold) return 'var(--warning-text)'; // Orange - warning
@@ -502,11 +561,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           categories={categories}
           onSubmit={async (data) => {
             // Convert amount from cents to dollars
-            await onAdd({
+            const saved = await onAdd({
               ...data,
               amount: data.amount / 100,
             });
-            setIsAdding(false);
+            if (saved !== false) setIsAdding(false);
           }}
           onCancel={() => {
             setIsAdding(false);
@@ -551,14 +610,19 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                 amount: data.amount / 100, // Convert back to dollars
               };
               if (getBudgetCurrency(editingBudget) !== data.currency) {
-                updates.accumulatedRollover = convertBudgetAmount(
+                const convertedRollover = safelyConvertBudgetAmount(() => convertBudgetAmount(
                   editingBudget.accumulatedRollover || 0,
                   editingBudget,
                   data,
-                );
+                ));
+                if (convertedRollover === null) {
+                  showNotification('error', t('budgetCurrencyDataInvalid'));
+                  return;
+                }
+                updates.accumulatedRollover = convertedRollover;
               }
-              await onUpdate(editingBudget.id!, updates);
-              setEditingBudget(null);
+              const saved = await onUpdate(editingBudget.id!, updates);
+              if (saved !== false) setEditingBudget(null);
             }}
             onCancel={() => setEditingBudget(null)}
           />
@@ -566,18 +630,83 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </PopupModal>
 
       <section style={styles.totalBudgetSummary} aria-label={t('totalBudget')}>
-        <div>
-          <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
+        <div style={styles.overallBudgetHeader}>
+          <div>
+            <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
+            <p style={styles.overallBudgetHint}>{t('overallBudgetHint')}</p>
+          </div>
+          <div style={styles.overallBudgetControls}>
+            <label style={styles.budgetPeriodLabel} htmlFor="overall-budget-period">{t('budgetPeriodSummary')}</label>
+            <select
+              id="overall-budget-period"
+              value={summaryPeriod}
+              onChange={(event) => setSummaryPeriod(event.target.value as BudgetPeriod)}
+              style={styles.controlSelect}
+            >
+              <option value="weekly">{t('periodWeekly')}</option>
+              <option value="monthly">{t('periodMonthly')}</option>
+              <option value="yearly">{t('periodYearly')}</option>
+            </select>
+            <button type="button" style={styles.overallBudgetButton} onClick={openOverallBudgetModal}>
+              {overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
+            </button>
+          </div>
         </div>
-        <div style={styles.totalBudgetValueContainer}>
-          <strong style={styles.totalBudgetValue} title={totalBudgetDisplay === null ? conversionFailureMessage : undefined}>
-            {formatDisplayMoney(totalBudgetDisplay)}
-          </strong>
-          {conversionFailureMessage && <span role="alert" style={styles.conversionError}>{conversionFailureMessage}</span>}
+        <div style={styles.overallBudgetMetrics}>
+          <div style={styles.overallBudgetMetric}>
+            <span style={styles.overallBudgetMetricLabel}>{t('overallBudgetLimit')}</span>
+            <strong style={styles.totalBudgetValue}>
+              {overallBudgetLimit === undefined ? t('overallBudgetNotSet') : formatMoney(overallBudgetLimit, DEFAULT_BASE_CURRENCY)}
+            </strong>
+          </div>
+          <div style={styles.overallBudgetMetric}>
+            <span style={styles.overallBudgetMetricLabel}>{t('allocatedBudget')}</span>
+            <strong style={styles.overallBudgetMetricValue}>
+              {allocatedMinorUnits === null ? '—' : formatMoney(allocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)}
+            </strong>
+          </div>
+          <div style={styles.overallBudgetMetric}>
+            <span style={styles.overallBudgetMetricLabel}>{t('unallocatedBudget')}</span>
+            <strong style={allocationDifference !== null && allocationDifference < 0
+              ? styles.overallBudgetOverageValue
+              : styles.overallBudgetMetricValue}>
+              {allocationDifference !== null && allocationDifference < 0
+                ? `${t('budgetOverAllocation')} ${formatMoney(Math.abs(allocationDifference), DEFAULT_BASE_CURRENCY)}`
+                : unallocatedBudget === null ? '—' : formatMoney(unallocatedBudget, DEFAULT_BASE_CURRENCY)}
+            </strong>
+          </div>
         </div>
+        {allocatedMinorUnits === null && (
+          <span role="alert" style={styles.overallBudgetError}>{t('budgetAllocationCannotBeCompared')}</span>
+        )}
       </section>
 
+      <PopupModal
+        isOpen={showOverallBudgetModal}
+        onClose={() => setShowOverallBudgetModal(false)}
+        title={overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
+        isForm
+        onSubmit={saveOverallBudget}
+        primaryButtonLabel={t('save')}
+        maxWidth="480px"
+      >
+        <div style={styles.overallBudgetForm}>
+          <label htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
+          <input
+            id="overall-budget-amount"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            value={overallBudgetInput}
+            onChange={(event) => setOverallBudgetInput(event.target.value)}
+            style={styles.overallBudgetInput}
+          />
+        </div>
+      </PopupModal>
+
       {/* Search Bar - placed after form */}
+      <p style={styles.allPeriodsBudgetNote}>{t('allPeriodsBudgetNote')}</p>
       <div style={styles.searchContainer}>
         <SearchBar
           placeholder={t('searchByName') || 'Search by category name...'}
@@ -652,10 +781,15 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           filteredAndSortedBudgets.map((budget) => {
             const budgetId = budget.id || `${budget.categoryId}-${budget.categoryName}`;
             const spentBase = spentByCategory[budget.categoryName] || 0;
-            const spentInBudgetCurrency = toBudgetCurrencyAmount(spentBase, budget);
-            const spent = getBudgetDisplayAmount(`${budgetId}:spent`, spentInBudgetCurrency, spentBase, budget);
+            const spentInBudgetCurrency = safelyConvertToBudgetCurrency(spentBase, budget);
+            const spent = getBudgetDisplayAmount(
+              `${budgetId}:spent`,
+              spentInBudgetCurrency,
+              Number.isFinite(spentBase) ? spentBase : null,
+              budget,
+            );
             const effectiveAmount = getEffectiveBudgetAmount(budget);
-            const effectiveAmountBase = toBudgetBaseAmount(effectiveAmount, budget);
+            const effectiveAmountBase = safelyConvertToBaseAmount(effectiveAmount, budget);
             const displayEffectiveAmount = getBudgetDisplayAmount(
               `${budgetId}:effective`,
               effectiveAmount,
@@ -663,14 +797,17 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               budget,
             );
             const rolloverAmount = budget.accumulatedRollover || 0;
+            const rolloverAmountBase = safelyConvertToBaseAmount(rolloverAmount, budget);
             const displayRolloverAmount = getBudgetDisplayAmount(
               `${budgetId}:rollover`,
               rolloverAmount,
-              toBudgetBaseAmount(rolloverAmount, budget),
+              rolloverAmountBase,
               budget,
             );
             const percentage = getProgressPercentage(budget);
             const progressColor = getProgressColor(percentage, budget.alertThreshold);
+            const hasUnavailableBudgetValue = spent === null || displayEffectiveAmount === null ||
+              displayRolloverAmount === null || percentage === null;
 
             return (
               <div key={budget.id} className={`budget-card ${isSelectionMode && selectedIds.has(budget.id!) ? 'selected' : ''}`} style={openMenuId === budget.id ? { zIndex: 9999 } : undefined}>
@@ -698,19 +835,23 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     <div style={styles.budgetAmount}>
                       <span
                         style={{ ...styles.spent, color: progressColor }}
-                        title={spent === null ? conversionFailureMessage : undefined}
+                        title={spent === null ? budgetCurrencyError : undefined}
                       >
                         {formatDisplayMoney(spent)}
                       </span>
                       <span style={styles.separator}> / </span>
                       <span
                         style={styles.total}
-                        title={displayEffectiveAmount === null ? conversionFailureMessage : undefined}
+                        title={displayEffectiveAmount === null ? budgetCurrencyError : undefined}
                       >
                         {formatDisplayMoney(displayEffectiveAmount)}
                       </span>
                     </div>
                   </div>
+
+                  {hasUnavailableBudgetValue && budgetCurrencyError && (
+                    <span role="alert" style={styles.conversionError}>{budgetCurrencyError}</span>
+                  )}
 
                     {/* Second row: Category name and rollover badge */}
                     <div style={styles.budgetRow2}>
@@ -731,12 +872,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                         <div
                           style={{
                             ...styles.progressFill,
-                            width: `${percentage}%`,
+                          width: `${percentage ?? 0}%`,
                             backgroundColor: progressColor,
                           }}
                         />
                       </div>
-                      <span style={styles.percentage}>{percentage.toFixed(1)}%</span>
+                      <span style={styles.percentage}>{percentage === null ? '—' : `${percentage.toFixed(1)}%`}</span>
                       
                       {/* Desktop: Show individual buttons */}
                       <div className="desktop-actions" style={{ gap: '8px' }}>
@@ -813,7 +954,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
                     )}
 
                     {/* Budget History */}
-                    {expandedHistoryIds.has(budget.id!) && budget.period === 'monthly' && (
+                    {expandedHistoryIds.has(budget.id!) && budget.period === 'monthly' &&
+                      Number.isFinite(getBudgetExchangeRate(budget)) && (
                       <BudgetHistory
                         categoryName={budget.categoryName}
                         budgetAmount={budget.amount}
@@ -887,9 +1029,8 @@ const styles = {
   },
   totalBudgetSummary: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '12px',
+    flexDirection: 'column' as const,
+    gap: '16px',
     padding: '16px',
     background: 'var(--card-bg, white)',
     border: '1px solid var(--border-color, #e9ecef)',
@@ -901,22 +1042,97 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500' as const,
   },
-  totalBudgetValueContainer: {
+  overallBudgetHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
+    gap: '12px',
+  },
+  overallBudgetHint: {
+    margin: '6px 0 0',
+    color: 'var(--text-secondary)',
+    fontSize: '13px',
+  },
+  overallBudgetControls: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
+    gap: '8px',
+  },
+  budgetPeriodLabel: {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+  },
+  overallBudgetButton: {
+    padding: '8px 12px',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '8px',
+    background: 'var(--accent-primary)',
+    color: 'white',
+    fontWeight: 600 as const,
+    cursor: 'pointer',
+  },
+  overallBudgetMetrics: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '12px',
+  },
+  overallBudgetMetric: {
     display: 'flex',
     flexDirection: 'column' as const,
-    alignItems: 'flex-end',
     gap: '4px',
+    padding: '12px',
+    borderRadius: '8px',
+    background: 'var(--bg-secondary, #f8f9fa)',
+  },
+  overallBudgetMetricLabel: {
+    color: 'var(--text-secondary)',
+    fontSize: '13px',
+  },
+  overallBudgetMetricValue: {
+    color: 'var(--text-primary)',
+    fontSize: '20px',
+    fontWeight: 700 as const,
+  },
+  overallBudgetOverageValue: {
+    color: 'var(--error-text, #dc2626)',
+    fontSize: '16px',
+    fontWeight: 700 as const,
+  },
+  overallBudgetError: {
+    color: 'var(--error-text, #dc2626)',
+    fontSize: '13px',
+  },
+  conversionError: {
+    color: 'var(--error-text, #dc2626)',
+    fontSize: '12px',
+  },
+  allPeriodsBudgetNote: {
+    margin: '0 2px',
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+  },
+  overallBudgetForm: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+  },
+  overallBudgetInput: {
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    padding: '10px 12px',
+    border: '1px solid var(--border-color, #dee2e6)',
+    borderRadius: '8px',
+    background: 'var(--input-bg, var(--card-bg, white))',
+    color: 'var(--text-primary)',
+    fontSize: '16px',
   },
   totalBudgetValue: {
     color: 'var(--accent-primary)',
     fontSize: '24px',
     fontWeight: '700' as const,
     whiteSpace: 'nowrap' as const,
-  },
-  conversionError: {
-    color: 'var(--error-color, #dc3545)',
-    fontSize: '12px',
-    textAlign: 'right' as const,
   },
   listActionRow: {
     display: 'flex',

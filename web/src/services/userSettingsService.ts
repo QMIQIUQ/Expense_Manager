@@ -1,10 +1,12 @@
 import { db } from '../config/firebase';
-import { doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
+import { deleteField, doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { BudgetPeriod, OverallBudgetLimits, UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
 import { COLLECTIONS } from '../constants/collections';
+import { validateOverallBudgetLimit } from '../utils/budgetAllocation';
+import { runBudgetMutationTransaction } from '../utils/budgetMutationTransaction';
 
 export const userSettingsService = {
-  async get(userId: string, forceRefresh: boolean = false): Promise<UserSettings | null> {
+  async get(userId: string, forceRefresh: boolean = false, requireServer: boolean = false): Promise<UserSettings | null> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
     // Force refresh from server to bypass Firestore cache
     // Fall back to cached read if server fetch fails (e.g., offline)
@@ -12,7 +14,8 @@ export const userSettingsService = {
     if (forceRefresh) {
       try {
         docSnap = await getDocFromServer(docRef);
-      } catch {
+      } catch (error) {
+        if (requireServer) throw error;
         // Fallback to cached read if server fetch fails (offline, network error, etc.)
         docSnap = await getDoc(docRef);
       }
@@ -35,6 +38,7 @@ export const userSettingsService = {
       useStepByStepForm: data.useStepByStepForm ?? false,
       displayCurrency: (data.displayCurrency as CurrencyCode) || 'MYR',
       dateShortcuts: data.dateShortcuts,
+      overallBudgetLimits: (data.overallBudgetLimits as OverallBudgetLimits | undefined) || undefined,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -54,6 +58,26 @@ export const userSettingsService = {
     await updateDoc(docRef, {
       ...updates,
       updatedAt: Timestamp.now(),
+    });
+  },
+
+  async setOverallBudgetLimit(userId: string, period: BudgetPeriod, amount?: number): Promise<void> {
+    if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
+      throw new Error('Overall budget limit must be a non-negative number');
+    }
+
+    await runBudgetMutationTransaction(userId, async (transaction, snapshot, settingsRef) => {
+      if (!snapshot.hasSettingsDocument) throw new Error('user-settings-not-found');
+      if (amount !== undefined) {
+        const validation = validateOverallBudgetLimit(snapshot.budgets, period, amount);
+        if (!validation.valid) throw new Error(validation.reason);
+      }
+
+      transaction.update(settingsRef, {
+        [`overallBudgetLimits.${period}`]: amount === undefined ? deleteField() : amount,
+        updatedAt: Timestamp.now(),
+        budgetAllocationRevision: snapshot.budgetAllocationRevision + 1,
+      });
     });
   },
 

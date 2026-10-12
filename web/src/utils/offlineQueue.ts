@@ -37,6 +37,23 @@ export const offlineQueue = {
     }
   },
 
+  hasPendingBudgetOperations(budgetId: string, userId: string): boolean {
+    return this.getAll().some((operation) => {
+      if (operation.entity !== 'budget') return false;
+      const payload = operation.payload as { id?: unknown; userId?: unknown };
+      return payload?.id === budgetId && payload?.userId === userId;
+    });
+  },
+
+  removeBudgetOperationsForId(budgetId: string, userId: string): void {
+    const queue = this.getAll().filter((operation) => {
+      if (operation.entity !== 'budget') return true;
+      const payload = operation.payload as { id?: unknown; userId?: unknown };
+      return payload?.id !== budgetId || payload?.userId !== userId;
+    });
+    this.save(queue);
+  },
+
   // Remove operation from queue
   dequeue(id: string): void {
     const queue = this.getAll().filter((op) => op.id !== id);

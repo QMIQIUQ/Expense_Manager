@@ -12,15 +12,18 @@ import { cardService } from './cardService';
 import { ewalletService } from './ewalletService';
 import { bankService } from './bankService';
 import { repaymentService } from './repaymentService';
+import { auth } from '../config/firebase';
 import { offlineQueue, QueuedOperation } from '../utils/offlineQueue';
 import { networkStatus } from '../utils/networkStatus';
 import { sessionCache, CacheableEntity } from '../utils/sessionCache';
+import { withBudgetMutationLock } from '../utils/budgetMutationLock';
 
 export interface SyncProgress {
   total: number;
   completed: number;
   failed: number;
   currentOperation?: string;
+  budgetRejections?: number;
 }
 
 type SyncProgressCallback = (progress: SyncProgress) => void;
@@ -63,6 +66,20 @@ class SyncService {
         console.error('Error in sync progress callback:', error);
       }
     });
+  }
+
+  private notifyBudgetOperationRejected(operation: QueuedOperation) {
+    if (operation.entity !== 'budget' || typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = operation.payload as any;
+    window.dispatchEvent(new CustomEvent('budget-offline-operation-rejected', {
+      detail: {
+        userId: payload?.userId || auth.currentUser?.uid,
+        operationType: operation.type,
+        budgetId: payload?.id,
+        previousBudget: payload?.previousBudget,
+      },
+    }));
   }
 
   /**
@@ -109,6 +126,8 @@ class SyncService {
     this.isSyncing = true;
     let success = 0;
     let failed = 0;
+    const rejectedBudgetOperations: QueuedOperation[] = [];
+    const blockedBudgetKeys = new Set<string>();
 
     this.notifyProgress({
       total: queue.length,
@@ -119,6 +138,21 @@ class SyncService {
 
     for (let i = 0; i < queue.length; i++) {
       const operation = queue[i];
+
+      // A prior terminal create rejection may have removed this dependent write.
+      if (!offlineQueue.getAll().some((queuedOperation) => queuedOperation.id === operation.id)) continue;
+
+      let budgetKey: string | undefined;
+      if (operation.entity === 'budget') {
+        const payload = operation.payload as { id?: unknown; userId?: unknown };
+        const signedInUserId = auth.currentUser?.uid;
+        // Leave legacy and other-account operations queued without consuming retries.
+        if (!signedInUserId || typeof payload?.userId !== 'string' || payload.userId !== signedInUserId) continue;
+        if (typeof payload.id === 'string') {
+          budgetKey = `${payload.userId}:${payload.id}`;
+          if (blockedBudgetKeys.has(budgetKey)) continue;
+        }
+      }
       
       this.notifyProgress({
         total: queue.length,
@@ -133,27 +167,54 @@ class SyncService {
           offlineQueue.dequeue(operation.id);
           success++;
         } else {
+          if (operation.entity === 'budget') {
+            const payload = operation.payload as { userId?: unknown };
+            if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
+          }
           const canRetry = offlineQueue.incrementRetry(operation.id);
+          if (budgetKey) blockedBudgetKeys.add(budgetKey);
           if (!canRetry) {
             failed++;
+            if (operation.entity === 'budget') {
+              rejectedBudgetOperations.push(operation);
+              if (operation.type === 'create' && budgetKey) {
+                const payload = operation.payload as { id: string; userId: string };
+                offlineQueue.removeBudgetOperationsForId(payload.id, payload.userId);
+              }
+            }
           }
         }
       } catch (error) {
         console.error('Error executing queued operation:', error);
+        if (operation.entity === 'budget') {
+          const payload = operation.payload as { userId?: unknown };
+          if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
+        }
         const canRetry = offlineQueue.incrementRetry(operation.id);
+        if (budgetKey) blockedBudgetKeys.add(budgetKey);
         if (!canRetry) {
           failed++;
+          if (operation.entity === 'budget') {
+            rejectedBudgetOperations.push(operation);
+            if (operation.type === 'create' && budgetKey) {
+              const payload = operation.payload as { id: string; userId: string };
+              offlineQueue.removeBudgetOperationsForId(payload.id, payload.userId);
+            }
+          }
         }
       }
     }
 
     this.isSyncing = false;
 
+    rejectedBudgetOperations.forEach((operation) => this.notifyBudgetOperationRejected(operation));
+
     this.notifyProgress({
       total: queue.length,
       completed: success,
       failed,
       currentOperation: 'Sync complete',
+      budgetRejections: rejectedBudgetOperations.length,
     });
 
     return { success, failed };
@@ -241,22 +302,30 @@ class SyncService {
     // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await budgetService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await budgetService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await budgetService.delete(payload.id);
-        return true;
-      default:
-        return false;
-    }
+
+    return withBudgetMutationLock(async () => {
+      const signedInUserId = auth.currentUser?.uid;
+      if (!signedInUserId || typeof payload.userId !== 'string' || payload.userId !== signedInUserId) return false;
+
+      switch (operation.type) {
+        case 'delete':
+          if (!payload.id) return false;
+          await budgetService.delete(payload.id);
+          return true;
+        case 'create':
+          await budgetService.create({ ...payload, userId: signedInUserId });
+          return true;
+        case 'update': {
+          if (!payload.id) return false;
+          const updates = { ...payload };
+          delete updates.previousBudget;
+          await budgetService.update(payload.id, { ...updates, userId: signedInUserId });
+          return true;
+        }
+        default:
+          return false;
+      }
+    });
   }
 
   private async executeRecurringOperation(operation: QueuedOperation): Promise<boolean> {
