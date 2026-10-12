@@ -13,6 +13,7 @@ export interface OptimisticOperation<T> {
 interface UseOptimisticCRUDOptions {
   onSuccess?: (data: unknown) => void;
   onError?: (error: unknown) => void;
+  onQueued?: () => void;
   retryToQueueOnFail?: boolean;
   entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment';
   suppressNotification?: boolean;
@@ -122,6 +123,7 @@ export const useOptimisticCRUD = <T,>() => {
             entity: options.entityType,
             payload: operation.data,
           });
+          options.onQueued?.();
 
           // Update notification
           if (notificationId) {
@@ -209,7 +211,20 @@ export const useOptimisticCRUD = <T,>() => {
 
 // Helper function for checking offline errors
 function isOfflineError(error: unknown): boolean {
+  const errorCode = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : undefined;
+  if (errorCode === 'permission-denied' || errorCode === 'invalid-argument' || errorCode === 'failed-precondition') {
+    return false;
+  }
+  if (errorCode === 'unavailable' || errorCode === 'deadline-exceeded' || errorCode === 'network-request-failed') {
+    return true;
+  }
+
   if (error instanceof Error) {
+    if (/invalid-allocation|invalid-limit|limit-below-allocation|budget-(?:owner-mismatch|id-conflict|not-found|owner-missing)|user-settings-not-found/i.test(error.message)) {
+      return false;
+    }
     // Don't treat permission errors as offline errors
     if (error.message.includes('Missing or insufficient permissions') || error.message.includes('permission-denied')) {
       return false;

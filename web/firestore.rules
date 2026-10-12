@@ -14,10 +14,34 @@ service cloud.firestore {
     
     // Helper function to check if user is an admin
     function isAdmin() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              ((get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) ||
               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminStatus == true));
+    }
+
+    function hasValidOverallBudgetLimits(data) {
+      return (!('overallBudgetLimits' in data) ||
+        (data.overallBudgetLimits is map &&
+         data.overallBudgetLimits.keys().hasOnly(['weekly', 'monthly', 'yearly']) &&
+         (!('weekly' in data.overallBudgetLimits) ||
+           (data.overallBudgetLimits.weekly is number && data.overallBudgetLimits.weekly >= 0)) &&
+         (!('monthly' in data.overallBudgetLimits) ||
+           (data.overallBudgetLimits.monthly is number && data.overallBudgetLimits.monthly >= 0)) &&
+         (!('yearly' in data.overallBudgetLimits) ||
+           (data.overallBudgetLimits.yearly is number && data.overallBudgetLimits.yearly >= 0)))) &&
+        (!('budgetAllocationRevision' in data) ||
+          (data.budgetAllocationRevision is int && data.budgetAllocationRevision >= 0));
+    }
+
+    function hasAdvancedBudgetAllocationRevision(userId) {
+      let settingsPath = /databases/$(database)/documents/userSettings/$(userId);
+      let currentSettings = exists(settingsPath) ? get(settingsPath).data : {};
+      let currentRevision = currentSettings.get('budgetAllocationRevision', 0);
+      return existsAfter(settingsPath) &&
+        currentRevision is int && currentRevision >= 0 &&
+        getAfter(settingsPath).data.budgetAllocationRevision is int &&
+        getAfter(settingsPath).data.budgetAllocationRevision > currentRevision;
     }
     
     // Users collection - for admin management
@@ -67,7 +91,8 @@ service cloud.firestore {
                       (!('rolloverCap' in request.resource.data) || 
                         request.resource.data.rolloverCap is number) &&
                       (!('accumulatedRollover' in request.resource.data) || 
-                        request.resource.data.accumulatedRollover is number);
+                        request.resource.data.accumulatedRollover is number) &&
+                      hasAdvancedBudgetAllocationRevision(request.resource.data.userId);
       allow update: if isAuthenticated() && 
                        (isOwner(resource.data.userId) || isAdmin()) &&
                        request.resource.data.amount is number &&
@@ -84,8 +109,11 @@ service cloud.firestore {
                        (!('rolloverCap' in request.resource.data) || 
                          request.resource.data.rolloverCap is number) &&
                        (!('accumulatedRollover' in request.resource.data) || 
-                         request.resource.data.accumulatedRollover is number);
-      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+                         request.resource.data.accumulatedRollover is number) &&
+                       hasAdvancedBudgetAllocationRevision(resource.data.userId);
+      allow delete: if isAuthenticated() &&
+                    (isOwner(resource.data.userId) || isAdmin()) &&
+                    hasAdvancedBudgetAllocationRevision(resource.data.userId);
     }
     
     // Recurring expenses collection
@@ -160,12 +188,16 @@ service cloud.firestore {
                       isOwner(userId) &&
                       request.resource.data.billingCycleDay is number &&
                       request.resource.data.billingCycleDay >= 1 &&
-                      request.resource.data.billingCycleDay <= 31;
+                      request.resource.data.billingCycleDay <= 31 &&
+                      hasValidOverallBudgetLimits(request.resource.data);
       allow update: if isAuthenticated() && 
                        (isOwner(userId) || isAdmin()) &&
                        request.resource.data.billingCycleDay is number &&
                        request.resource.data.billingCycleDay >= 1 &&
-                       request.resource.data.billingCycleDay <= 31;
+                       request.resource.data.billingCycleDay <= 31 &&
+                       hasValidOverallBudgetLimits(request.resource.data) &&
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['overallBudgetLimits']) ||
+                         hasAdvancedBudgetAllocationRevision(userId));
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
     

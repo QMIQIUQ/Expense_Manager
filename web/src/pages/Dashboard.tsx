@@ -6,13 +6,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES } from '../types';
+import { Expense, Category, Budget, BudgetPeriod, OverallBudgetLimits, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { sortCategories } from '../utils/categoryOrder';
 import { budgetService } from '../services/budgetService';
+import { syncService } from '../services/syncService';
 import { incomeService } from '../services/incomeService';
 import { cardService } from '../services/cardService';
 import { bankService } from '../services/bankService';
@@ -52,15 +53,78 @@ import NotificationBell from '../components/NotificationBell';
 import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
 import ThemeToggle from '../components/ThemeToggle';
 import CatIllustration from '../components/CatIllustration';
-import { offlineQueue } from '../utils/offlineQueue';
+import { offlineQueue, type QueuedOperation } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
+import { type BudgetAllocationInput, validateBudgetAllocationChange, validateOverallBudgetLimit } from '../utils/budgetAllocation';
+import { withBudgetMutationLock } from '../utils/budgetMutationLock';
 
 //#region Helper Functions
+type BudgetQueuePayload = Partial<Budget> & { userId?: string; previousBudget?: Budget };
+type BudgetOfflineRejection = {
+  operationType?: QueuedOperation['type'];
+  budgetId?: string;
+  previousBudget?: Budget;
+};
+
+const applyPendingBudgetOperations = (
+  initialBudgets: Budget[],
+  operations: QueuedOperation[],
+  userId: string,
+): Budget[] => {
+  let result = [...initialBudgets];
+  for (const operation of operations) {
+    if (operation.entity !== 'budget') continue;
+    const payload = operation.payload as BudgetQueuePayload;
+    if (payload.userId !== userId) continue;
+    const id = typeof payload.id === 'string' ? payload.id : undefined;
+
+    if (operation.type === 'create' && id) {
+      const pendingBudget = {
+        ...payload,
+        id,
+        userId,
+        createdAt: payload.createdAt || new Date(operation.timestamp),
+        updatedAt: payload.updatedAt || new Date(operation.timestamp),
+      } as Budget;
+      const existingIndex = result.findIndex((budget) => budget.id === id);
+      if (existingIndex >= 0) result[existingIndex] = { ...result[existingIndex], ...pendingBudget };
+      else result.push(pendingBudget);
+      continue;
+    }
+
+    if (!id) continue;
+    if (operation.type === 'update') {
+      const updates = { ...payload };
+      delete updates.previousBudget;
+      result = result.map((budget) => budget.id === id ? { ...budget, ...updates, id } as Budget : budget);
+    } else if (operation.type === 'delete') {
+      result = result.filter((budget) => budget.id !== id);
+    }
+  }
+  return result;
+};
+
+const rollbackRejectedBudgetOperation = (budgets: Budget[], rejection: BudgetOfflineRejection): Budget[] => {
+  if (rejection.operationType === 'create' && rejection.budgetId) {
+    return budgets.filter((budget) => budget.id !== rejection.budgetId);
+  }
+  if (rejection.operationType === 'update' && rejection.previousBudget) {
+    const previousBudget = rejection.previousBudget;
+    return budgets.map((budget) => budget.id === previousBudget.id ? previousBudget : budget);
+  }
+  if (rejection.operationType === 'delete' && rejection.previousBudget) {
+    const previousBudget = rejection.previousBudget;
+    return budgets.some((budget) => budget.id === previousBudget.id)
+      ? budgets
+      : [...budgets, previousBudget];
+  }
+  return budgets;
+};
 //#endregion
 
 const Dashboard: React.FC = () => {
@@ -70,7 +134,7 @@ const Dashboard: React.FC = () => {
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
   const { fontFamily, setFontFamily, fontScale, setFontScale } = useTheme();
-  const { dateFormat, timeFormat, dateShortcuts, displayCurrency, displayCurrencyReady, setDisplayCurrency: saveDisplayCurrency } = useUserSettings();
+  const { dateFormat, timeFormat, dateShortcuts, displayCurrency, displayCurrencyReady, settings, setDisplayCurrency: saveDisplayCurrency, setOverallBudgetLimit: saveOverallBudgetLimit, refreshSettings } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
@@ -148,6 +212,23 @@ const Dashboard: React.FC = () => {
   const receiptActionLabel = isEnglish ? 'Scan receipt' : isSimplifiedChinese ? '扫描收据' : '掃描收據';
   const addExpenseLabel = t('addNewExpense');
   const { orderedFeatures: navigationFeatures } = getNavigationFeatures(featureSettings);
+
+  useEffect(() => {
+    const handleBudgetLimitAutoIncrease = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId: string; amount: number }>).detail;
+      if (!detail || detail.userId !== currentUser?.uid) return;
+      showNotification(
+        'info',
+        `${t('overallBudgetAutoIncreased')} ${formatMoney(detail.amount, DEFAULT_BASE_CURRENCY)}`,
+      );
+      void refreshSettings().catch(() => undefined);
+    };
+    window.addEventListener('budget-limit-auto-increased', handleBudgetLimitAutoIncrease);
+    return () => {
+      window.removeEventListener('budget-limit-auto-increased', handleBudgetLimitAutoIncrease);
+    };
+  }, [currentUser?.uid, refreshSettings, showNotification, t]);
+
   const navigationLabels: Record<FeatureTab, string> = {
     dashboard: t('dashboard'),
     expenses: t('expenses'),
@@ -239,12 +320,18 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
+        const reconciled = applyPendingBudgetOperations(loadedBudgets, offlineQueue.getAll(), currentUser.uid);
+        sessionCache.set('budgets', currentUser.uid, reconciled);
+        setBudgets(reconciled);
+      };
+
       // Phase 1: Load cached data first (instant display)
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
         dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpenses),
         dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
         dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
-        dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgets),
+        dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
         dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
         dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
         dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
@@ -255,7 +342,7 @@ const Dashboard: React.FC = () => {
       setExpenses(expensesData);
       setIncomes(incomesData);
       setCategories(categoriesData);
-      setBudgets(budgetsData);
+      setBudgetsWithPendingOperations(budgetsData);
       setRepayments(repaymentsData);
       setTransfers(transfersData);
       setScheduledPayments(scheduledPaymentsData);
@@ -433,6 +520,45 @@ const Dashboard: React.FC = () => {
       loadData();
     }
   }, [currentUser, loadData]);
+
+  useEffect(() => {
+    const unsubscribe = syncService.onSyncProgress((progress) => {
+      if (progress.currentOperation === 'Sync complete' && progress.completed > 0 && !progress.budgetRejections) {
+        void loadData();
+      }
+    });
+    const handleOfflineBudgetOperationRejected = (event: Event) => {
+      const detail = (event as CustomEvent<BudgetOfflineRejection & { userId?: string }>).detail;
+      if (detail?.userId && detail.userId !== currentUser?.uid) return;
+      showNotification('error', t('offlineBudgetMutationRejected'));
+      const userId = detail?.userId || currentUser?.uid;
+      if (!userId) return;
+
+      void budgetService.getAll(userId, true).then((serverBudgets) => {
+        if (currentUser?.uid !== userId) return;
+        const reconciled = applyPendingBudgetOperations(serverBudgets, offlineQueue.getAll(), userId);
+        setBudgets(reconciled);
+        sessionCache.set('budgets', userId, reconciled);
+      }).catch(() => {
+        if (currentUser?.uid !== userId) return;
+        setBudgets((currentBudgets) => {
+          const reconciled = applyPendingBudgetOperations(
+            rollbackRejectedBudgetOperation(currentBudgets, detail),
+            offlineQueue.getAll(),
+            userId,
+          );
+          sessionCache.set('budgets', userId, reconciled);
+          return reconciled;
+        });
+        showNotification('error', t('errorLoadingData'));
+      });
+    };
+    window.addEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
+    };
+  }, [currentUser?.uid, loadData, showNotification, t]);
 
   // Tab switching now instant - no refetch, uses cached data + optimistic updates
   // Background revalidation happens only on initial load via loadData()
@@ -990,8 +1116,67 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Budgets
-  const handleAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (!currentUser) return;
+  const loadBudgetsForAllocationCheck = async (): Promise<{ budgets: Budget[]; limits: OverallBudgetLimits | undefined; isOffline: boolean } | null> => {
+    if (!currentUser) return null;
+
+    try {
+      const [latestSettings, latestBudgets] = await Promise.all([
+        userSettingsService.get(currentUser.uid, true, true),
+        budgetService.getAll(currentUser.uid, true),
+      ]);
+      return {
+        budgets: latestBudgets,
+        limits: latestSettings?.overallBudgetLimits,
+        isOffline: false,
+      };
+    } catch (error) {
+      const networkFailure = error instanceof Error && /network|offline|unavailable|failed to fetch|deadline/i.test(error.message);
+      if (!navigator.onLine || !networkStatus.isOnline || networkFailure) {
+        return { budgets, limits: settings?.overallBudgetLimits, isOffline: true };
+      }
+      showNotification('error', t('budgetAllocationCannotBeCompared'));
+      return null;
+    }
+  };
+
+  const showAllocationValidationError = (validation: ReturnType<typeof validateBudgetAllocationChange>) => {
+    if (validation.valid) return;
+    if (validation.reason === 'invalid-allocation') {
+      showNotification('error', t('budgetAllocationCannotBeCompared'));
+      return;
+    }
+    if (validation.reason === 'limit-below-allocation' && validation.allocatedMinorUnits !== undefined && validation.limitMinorUnits !== undefined) {
+      showNotification(
+        'error',
+        `${t('budgetAllocationExceedsLimit')} ${formatMoney(validation.allocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)} / ${formatMoney(validation.limitMinorUnits / 100, DEFAULT_BASE_CURRENCY)}`,
+      );
+      return;
+    }
+    showNotification('error', t('budgetAllocationExceedsLimit'));
+  };
+
+  const makeRoomForBudgetAllocation = async (
+    budgetsForCheck: Budget[],
+    proposedBudget: BudgetAllocationInput,
+    limits: OverallBudgetLimits | undefined,
+    previousBudgetId?: string,
+  ): Promise<boolean> => {
+    const validation = validateBudgetAllocationChange(
+      budgetsForCheck,
+      proposedBudget,
+      limits,
+      previousBudgetId,
+    );
+    if (validation.valid || validation.reason === 'limit-below-allocation') {
+      // The transaction in budgetService raises the limit and writes the allocation atomically.
+      return true;
+    }
+    showAllocationValidationError(validation);
+    return false;
+  };
+
+  const performAddBudget = async (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!currentUser) return false;
 
     const currency = budgetData.currency || DEFAULT_BASE_CURRENCY;
     const exchangeRate = budgetData.exchangeRate && budgetData.exchangeRate > 0
@@ -999,7 +1184,7 @@ const Dashboard: React.FC = () => {
       : currency === DEFAULT_BASE_CURRENCY ? 1 : undefined;
     if (!exchangeRate) {
       showNotification('error', t('exchangeRateLookupFailed'));
-      return;
+      return false;
     }
     const normalizedBudgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
       ...budgetData,
@@ -1010,12 +1195,21 @@ const Dashboard: React.FC = () => {
       exchangeRateFetchedAt: budgetData.exchangeRateFetchedAt || new Date(),
       exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
     };
+
+    const allocationBudgets = await loadBudgetsForAllocationCheck();
+    if (!allocationBudgets) return false;
+    if (!allocationBudgets.isOffline && !await makeRoomForBudgetAllocation(
+      allocationBudgets.budgets,
+      normalizedBudgetData,
+      allocationBudgets.limits,
+    )) return false;
+    const budgetId = budgetService.createId();
+    const createPayload = { ...normalizedBudgetData, userId: currentUser.uid, id: budgetId };
     
     // Optimistic update
-    const tempId = `temp-${Date.now()}`;
     const optimisticBudget: Budget = {
       ...normalizedBudgetData,
-      id: tempId,
+      id: budgetId,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1025,37 +1219,64 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
 
-    await optimisticCRUD.run(
-      { type: 'create', data: normalizedBudgetData },
-      () => budgetService.create({ ...normalizedBudgetData, userId: currentUser.uid }),
+    if (allocationBudgets.isOffline) {
+      offlineQueue.enqueue({
+        type: 'create',
+        entity: 'budget',
+        payload: createPayload,
+      });
+      showNotification('info', t('operationSavedOffline'));
+      return true;
+    }
+
+    let queuedForRetry = false;
+    const createdId = await optimisticCRUD.run(
+      { type: 'create', data: createPayload },
+      () => budgetService.create(createPayload),
       {
         entityType: 'budget',
         retryToQueueOnFail: true,
+        onQueued: () => { queuedForRetry = true; },
         onSuccess: (result) => {
-          // Replace temp budget with real ID
           const newId = result as string;
           const realBudget: Budget = {
             ...optimisticBudget,
             id: newId,
           };
-          setBudgets((prev) => prev.map((b) => (b.id === tempId ? realBudget : b)));
-          // Update cache with real ID
+          setBudgets((prev) => prev.map((b) => (b.id === budgetId ? realBudget : b)));
           dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
-            data.map((b) => (b.id === tempId ? realBudget : b))
+            data.map((b) => (b.id === budgetId ? realBudget : b))
           );
         },
         onError: () => {
-          setBudgets((prev) => prev.filter((b) => b.id !== tempId));
-          // Rollback cache
-          dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== tempId));
+          if (queuedForRetry) return;
+          setBudgets((prev) => prev.filter((b) => b.id !== budgetId));
+          dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== budgetId));
         },
       }
     );
+    if (createdId === null) return queuedForRetry;
+    return true;
   };
 
-  const handleUpdateBudget = async (id: string, updates: Partial<Budget>) => {
+  const handleAddBudget = (budgetData: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) =>
+    withBudgetMutationLock(() => performAddBudget(budgetData));
+
+  const performUpdateBudget = async (id: string, updates: Partial<Budget>) => {
     const originalBudget = budgets.find((b) => b.id === id);
-    
+    if (!originalBudget) return false;
+    const proposedBudget = { ...originalBudget, ...updates, id };
+    const allocationBudgets = await loadBudgetsForAllocationCheck();
+    if (!allocationBudgets) return false;
+    if (!allocationBudgets.isOffline && !await makeRoomForBudgetAllocation(
+      allocationBudgets.budgets,
+      proposedBudget,
+      allocationBudgets.limits,
+      id,
+    )) return false;
+    const hasPendingOperation = currentUser
+      ? offlineQueue.hasPendingBudgetOperations(id, originalBudget.userId)
+      : false;
     // Optimistic update
     setBudgets((prev) =>
       prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
@@ -1068,16 +1289,29 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalBudget },
+    if (allocationBudgets.isOffline || hasPendingOperation) {
+      offlineQueue.enqueue({
+        type: 'update',
+        entity: 'budget',
+        payload: { ...updates, id, userId: originalBudget.userId, previousBudget: originalBudget },
+      });
+      showNotification('info', t('operationSavedOffline'));
+      return true;
+    }
+
+    let queuedForRetry = false;
+    const updateResult = await optimisticCRUD.run(
+      { type: 'update', data: { ...updates, id, userId: originalBudget.userId, previousBudget: originalBudget }, originalData: originalBudget },
       () => budgetService.update(id, updates),
       {
         entityType: 'budget',
         retryToQueueOnFail: true,
+        onQueued: () => { queuedForRetry = true; },
         onSuccess: () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
+          if (queuedForRetry) return;
           if (originalBudget) {
             setBudgets((prev) =>
               prev.map((b) => (b.id === id ? originalBudget : b))
@@ -1092,39 +1326,98 @@ const Dashboard: React.FC = () => {
         },
       }
     );
+    if (updateResult === null) return queuedForRetry;
+    return true;
   };
 
-  const handleDeleteBudget = async (id: string) => {
-    const budgetToDelete = budgets.find((b) => b.id === id);
-    
-    // Optimistic update
-    setBudgets((prev) => prev.filter((b) => b.id !== id));
-    
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== id));
-    }
+  const handleUpdateBudget = (id: string, updates: Partial<Budget>) =>
+    withBudgetMutationLock(() => performUpdateBudget(id, updates));
 
-    await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: budgetToDelete },
-      () => budgetService.delete(id),
-      {
-        entityType: 'budget',
-        retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
-        onError: () => {
-          if (budgetToDelete) {
-            setBudgets((prev) => [...prev, budgetToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, budgetToDelete]);
-            }
-          }
-        },
+  const performSaveOverallBudgetLimit = async (period: BudgetPeriod, amount: number): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      const latestBudgets = await budgetService.getAll(currentUser.uid, true);
+      const validation = validateOverallBudgetLimit(latestBudgets, period, amount);
+      if (!validation.valid) {
+        if (validation.reason === 'limit-below-allocation' && validation.allocatedMinorUnits !== undefined && validation.limitMinorUnits !== undefined) {
+          showNotification(
+            'error',
+            `${t('overallBudgetBelowAllocation')} ${formatMoney(validation.allocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)} / ${formatMoney(validation.limitMinorUnits / 100, DEFAULT_BASE_CURRENCY)}`,
+          );
+        } else if (validation.reason === 'invalid-allocation') {
+          showNotification('error', t('budgetAllocationCannotBeCompared'));
+        } else {
+          showNotification('error', t('budgetLimitSaveFailed'));
+        }
+        return false;
       }
-    );
+
+      await saveOverallBudgetLimit(period, amount);
+      showNotification('success', t('saveSuccess'));
+      return true;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'limit-below-allocation') {
+        showNotification('error', t('overallBudgetBelowAllocation'));
+        return false;
+      }
+      if (error instanceof Error && error.message === 'invalid-allocation') {
+        showNotification('error', t('budgetAllocationCannotBeCompared'));
+        return false;
+      }
+      showNotification('error', t('budgetLimitSaveFailed'));
+      return false;
+    }
+  };
+
+  const handleSaveOverallBudgetLimit = (period: BudgetPeriod, amount: number): Promise<boolean> =>
+    withBudgetMutationLock(() => performSaveOverallBudgetLimit(period, amount));
+
+  const handleDeleteBudget = async (id: string) => {
+    return withBudgetMutationLock(async () => {
+      const budgetToDelete = budgets.find((b) => b.id === id);
+
+      // Optimistic update
+      setBudgets((prev) => prev.filter((b) => b.id !== id));
+
+      // Update cache optimistically
+      if (currentUser) {
+        dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== id));
+      }
+
+      if (currentUser && offlineQueue.hasPendingBudgetOperations(id, currentUser.uid)) {
+        offlineQueue.enqueue({
+          type: 'delete',
+          entity: 'budget',
+          payload: { id, userId: currentUser.uid, previousBudget: budgetToDelete },
+        });
+        showNotification('info', t('operationSavedOffline'));
+        return;
+      }
+
+      let queuedForRetry = false;
+      await optimisticCRUD.run(
+        { type: 'delete', data: { id, userId: currentUser?.uid, previousBudget: budgetToDelete }, originalData: budgetToDelete },
+        () => budgetService.delete(id),
+        {
+          entityType: 'budget',
+          retryToQueueOnFail: true,
+          onQueued: () => { queuedForRetry = true; },
+          onSuccess: () => {
+            // Cache already updated optimistically, no need to reload
+          },
+          onError: () => {
+            if (queuedForRetry) return;
+            if (budgetToDelete) {
+              setBudgets((prev) => [...prev, budgetToDelete]);
+              // Rollback cache
+              if (currentUser) {
+                dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, budgetToDelete]);
+              }
+            }
+          },
+        }
+      );
+    });
   };
   //#endregion
 
@@ -2803,6 +3096,8 @@ const Dashboard: React.FC = () => {
                 onAdd={handleAddBudget}
                 onUpdate={handleUpdateBudget}
                 onDelete={handleDeleteBudget}
+                overallBudgetLimits={settings?.overallBudgetLimits}
+                onSaveOverallBudgetLimit={handleSaveOverallBudgetLimit}
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}
                 displayCurrency={displayCurrency}
