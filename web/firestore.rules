@@ -20,6 +20,13 @@ service cloud.firestore {
               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminStatus == true));
     }
 
+    function hasValidExpenseLink(data) {
+      return !('expenseId' in data) ||
+        (data.expenseId is string &&
+         exists(/databases/$(database)/documents/expenses/$(data.expenseId)) &&
+         get(/databases/$(database)/documents/expenses/$(data.expenseId)).data.userId == data.userId);
+    }
+
     function hasValidOverallBudgetLimits(data) {
       return (!('overallBudgetLimits' in data) ||
         (data.overallBudgetLimits is map &&
@@ -65,7 +72,9 @@ service cloud.firestore {
     
     // Expenses collection
     match /expenses/{expenseId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      // Allow an authenticated transaction to check whether its stable create ID is unused.
+      // Existing expense documents remain readable only by their owner or an admin.
+      allow read: if isAuthenticated() && (resource == null || isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
@@ -203,13 +212,16 @@ service cloud.firestore {
     
     // Transfers collection (tracks money transfers between payment methods)
     match /transfers/{transferId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      // Allow expense-delete transactions to safely check an optional transfer ID.
+      // Existing transfer documents remain readable only by their owner or an admin.
+      allow read: if isAuthenticated() && (resource == null || isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
                       request.resource.data.amount is number &&
                       request.resource.data.amount > 0 &&
                       request.resource.data.fromPaymentMethod is string &&
                       request.resource.data.toPaymentMethod is string &&
+                      hasValidExpenseLink(request.resource.data) &&
                       // Prevent transfers to the same account
                       !(request.resource.data.fromPaymentMethod == request.resource.data.toPaymentMethod &&
                         request.resource.data.fromPaymentMethod == 'cash') &&
@@ -225,7 +237,8 @@ service cloud.firestore {
       allow update: if isAuthenticated() && 
                        (isOwner(resource.data.userId) || isAdmin()) &&
                        request.resource.data.amount is number &&
-                       request.resource.data.amount > 0;
+                       request.resource.data.amount > 0 &&
+                       hasValidExpenseLink(request.resource.data);
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     

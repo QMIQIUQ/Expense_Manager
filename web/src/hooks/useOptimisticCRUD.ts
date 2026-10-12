@@ -115,23 +115,31 @@ export const useOptimisticCRUD = <T,>() => {
 
         // Check if it's a network error
         const isNetworkError = isOfflineError(error);
+        let errorForCallback = error;
+        let operationQueued = false;
 
         if (isNetworkError && options?.retryToQueueOnFail && options?.entityType) {
           // Queue the operation for later retry
-          offlineQueue.enqueue({
+          const queuedId = offlineQueue.enqueue({
             type: operation.type,
             entity: options.entityType,
             payload: operation.data,
           });
-          options.onQueued?.();
 
-          // Update notification
-          if (notificationId) {
-            updateNotification(notificationId, {
-              type: 'info',
-              message: t('operationSavedOffline'),
-              duration: 5000,
-            });
+          if (queuedId) {
+            operationQueued = true;
+            options.onQueued?.();
+            if (notificationId) {
+              updateNotification(notificationId, {
+                type: 'info',
+                message: t('operationSavedOffline'),
+                duration: 5000,
+              });
+            }
+          } else {
+            errorForCallback = new Error(t('offlineQueueSaveFailed'));
+            if (notificationId) hideNotification(notificationId);
+            showNotification('error', t('offlineQueueSaveFailed'), { duration: 0 });
           }
         } else {
           // Show error notification with retry option
@@ -150,15 +158,15 @@ export const useOptimisticCRUD = <T,>() => {
                     {
                       label: t('saveOffline'),
                       onClick: () => {
-                        offlineQueue.enqueue({
+                        const queuedId = offlineQueue.enqueue({
                           type: operation.type,
                           entity: options.entityType!,
                           payload: operation.data,
                         });
                         showNotification(
-                          'info',
-                          t('operationSavedOffline'),
-                          { duration: 5000 }
+                          queuedId ? 'info' : 'error',
+                          queuedId ? t('operationSavedOffline') : t('offlineQueueSaveFailed'),
+                          { duration: queuedId ? 5000 : 0 }
                         );
                       },
                     },
@@ -169,8 +177,8 @@ export const useOptimisticCRUD = <T,>() => {
         }
 
         // Call error callback
-        if (options?.onError) {
-          options.onError(error);
+        if (options?.onError && !operationQueued) {
+          options.onError(errorForCallback);
         }
 
         return null;

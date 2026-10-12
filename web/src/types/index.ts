@@ -65,6 +65,7 @@ export interface AmountItem {
 export interface Expense {
   id?: string;
   userId: string;
+  relatedTransferIds?: string[];
   description: string;
   amount: number;
   currency?: CurrencyCode;
@@ -269,6 +270,7 @@ export interface Income {
 // Transfer between payment methods
 export interface Transfer {
   id?: string;
+  expenseId?: string; // Explicit link when a transfer is created alongside an expense
   userId: string;
   amount: number;
   currency?: CurrencyCode; // Source amount currency; legacy transfers are MYR

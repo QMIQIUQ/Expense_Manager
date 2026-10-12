@@ -5,6 +5,7 @@ export interface QueuedOperation {
   payload: unknown;
   timestamp: number;
   retryCount: number;
+  status?: 'needs-attention';
 }
 
 const QUEUE_KEY = 'offline_operations_queue';
@@ -12,7 +13,7 @@ const MAX_RETRY = 3;
 
 export const offlineQueue = {
   // Add operation to queue
-  enqueue(operation: Omit<QueuedOperation, 'id' | 'timestamp' | 'retryCount'>): string {
+  enqueue(operation: Omit<QueuedOperation, 'id' | 'timestamp' | 'retryCount'>): string | null {
     const queue = this.getAll();
     const id = `op-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const queuedOp: QueuedOperation = {
@@ -22,8 +23,7 @@ export const offlineQueue = {
       retryCount: 0,
     };
     queue.push(queuedOp);
-    this.save(queue);
-    return id;
+    return this.save(queue) ? id : null;
   },
 
   // Get all queued operations
@@ -43,6 +43,53 @@ export const offlineQueue = {
       const payload = operation.payload as { id?: unknown; userId?: unknown };
       return payload?.id === budgetId && payload?.userId === userId;
     });
+  },
+
+  hasPendingExpenseOperations(expenseId: string, userId: string): boolean {
+    return this.getAll().some((operation) => {
+      if (operation.entity !== 'expense') return false;
+      const payload = operation.payload as { id?: unknown; userId?: unknown };
+      return payload?.id === expenseId && payload?.userId === userId;
+    });
+  },
+
+  hasPendingExpenseDelete(expenseId: string, userId: string): boolean {
+    return this.getAll().some((operation) => {
+      if (operation.entity !== 'expense' || operation.type !== 'delete') return false;
+      const payload = operation.payload as { id?: unknown; userId?: unknown };
+      return payload?.id === expenseId && payload?.userId === userId;
+    });
+  },
+
+  updatePayload(id: string, payload: unknown): boolean {
+    const queue = this.getAll();
+    const operation = queue.find((item) => item.id === id);
+    if (!operation) return false;
+    operation.payload = payload;
+    return this.save(queue);
+  },
+
+  retry(id: string): boolean {
+    const queue = this.getAll();
+    const operation = queue.find((item) => item.id === id);
+    if (!operation) return false;
+    operation.retryCount = 0;
+    delete operation.status;
+    return this.save(queue);
+  },
+
+  retryExpenseOperationsForId(expenseId: string, userId: string): boolean {
+    const queue = this.getAll();
+    let found = false;
+    for (const operation of queue) {
+      if (operation.entity !== 'expense') continue;
+      const payload = operation.payload as { id?: unknown; userId?: unknown };
+      if (payload?.id !== expenseId || payload?.userId !== userId) continue;
+      operation.retryCount = 0;
+      delete operation.status;
+      found = true;
+    }
+    return found && this.save(queue);
   },
 
   removeBudgetOperationsForId(budgetId: string, userId: string): void {
@@ -68,6 +115,12 @@ export const offlineQueue = {
 
     operation.retryCount += 1;
 
+    if (operation.entity === 'expense') {
+      if (operation.retryCount >= MAX_RETRY) operation.status = 'needs-attention';
+      if (!this.save(queue)) return true;
+      return operation.status !== 'needs-attention';
+    }
+
     // If max retries exceeded, remove from queue
     if (operation.retryCount >= MAX_RETRY) {
       this.dequeue(id);
@@ -89,11 +142,13 @@ export const offlineQueue = {
   },
 
   // Save queue to localStorage
-  save(queue: QueuedOperation[]): void {
+  save(queue: QueuedOperation[]): boolean {
     try {
       localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      return true;
     } catch (error) {
       console.error('Error saving offline queue:', error);
+      return false;
     }
   },
 
