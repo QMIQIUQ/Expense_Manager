@@ -8,17 +8,18 @@ import {
   query,
   where,
   Timestamp,
+  setDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Category, DEFAULT_CATEGORIES } from '../types';
+import { Category, DEFAULT_CATEGORIES, DEFAULT_CATEGORY_NAMES } from '../types';
 import { sortCategories } from '../utils/categoryOrder';
 
 const COLLECTION_NAME = 'categories';
 
 export const categoryService = {
-  // Initialize default categories for a new user
-  async initializeDefaults(userId: string): Promise<void> {
+  // Seed new accounts and return categories after any one-time default migration.
+  async initializeDefaults(userId: string, migrateSavingsCategory = false): Promise<Category[]> {
     const existing = await this.getAll(userId);
     if (existing.length === 0) {
       const now = Timestamp.now();
@@ -33,7 +34,22 @@ export const categoryService = {
         })
       );
       await Promise.all(promises);
+    } else if (
+      migrateSavingsCategory &&
+      !existing.some((category) => category.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAMES.savings.toLowerCase())
+    ) {
+      const savingsCategory = DEFAULT_CATEGORIES.find((category) => category.name === DEFAULT_CATEGORY_NAMES.savings);
+      if (savingsCategory) {
+        await setDoc(doc(db, COLLECTION_NAME, `${userId}_default_savings`), {
+          userId,
+          ...savingsCategory,
+          isDefault: true,
+          createdAt: Timestamp.now(),
+        });
+      }
     }
+
+    return this.getAll(userId);
   },
 
   // Create a new category

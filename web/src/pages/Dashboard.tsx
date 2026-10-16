@@ -417,13 +417,31 @@ const Dashboard: React.FC = () => {
       if (networkStatus.isOnline) {
         setIsRevalidating(true);
 
+        const userSettingsPromise = userSettingsService.getOrCreate(currentUser.uid).catch(err => {
+          console.warn('User settings load failed:', err);
+          return { billingCycleDay: 1, defaultCategoryMigrationVersion: 0 };
+        });
+        const categoryInitializationPromise = userSettingsPromise.then(async (userSettings) => {
+          const shouldMigrateSavingsCategory = (userSettings.defaultCategoryMigrationVersion ?? 0) < 1;
+          const initializedCategories = await categoryService.initializeDefaults(
+            currentUser.uid,
+            shouldMigrateSavingsCategory,
+          );
+
+          if (shouldMigrateSavingsCategory) {
+            await userSettingsService.update(currentUser.uid, { defaultCategoryMigrationVersion: 1 })
+              .catch(err => console.warn('Default category migration marker update failed:', err));
+          }
+
+          return initializedCategories;
+        }).catch(err => {
+          console.warn('Background category init failed:', err);
+          return null;
+        });
+
         // Batch all background tasks to complete together
         Promise.all([
-          // Initialize defaults in background
-          categoryService.initializeDefaults(currentUser.uid).catch(err => {
-            console.warn('Background category init failed:', err);
-            return null;
-          }),
+          categoryInitializationPromise,
 
           // Check admin status
           adminService.isAdmin(currentUser.uid).catch(err => {
@@ -431,11 +449,8 @@ const Dashboard: React.FC = () => {
             return false;
           }),
 
-          // Load user settings
-          userSettingsService.getOrCreate(currentUser.uid).catch(err => {
-            console.warn('User settings load failed:', err);
-            return { billingCycleDay: 1 };
-          }),
+          // Load user settings before initializing migrated default categories
+          userSettingsPromise,
 
           // Load cards
           dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
@@ -481,8 +496,9 @@ const Dashboard: React.FC = () => {
             console.warn('Could not load quick expense presets:', err);
             return [];
           }),
-        ]).then(([_catInit, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
+        ]).then(([categoriesData, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
           // Apply all state updates together (single render cycle)
+          if (Array.isArray(categoriesData)) setCategories(categoriesData);
           if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
           if (userSettings) setBillingCycleDay(userSettings.billingCycleDay);
           if (Array.isArray(cardsData) && cardsData.length > 0) {

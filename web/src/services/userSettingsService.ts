@@ -39,6 +39,7 @@ export const userSettingsService = {
       displayCurrency: (data.displayCurrency as CurrencyCode) || 'MYR',
       dateShortcuts: data.dateShortcuts,
       overallBudgetLimits: (data.overallBudgetLimits as OverallBudgetLimits | undefined) || undefined,
+      defaultCategoryMigrationVersion: data.defaultCategoryMigrationVersion ?? 0,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
@@ -96,6 +97,7 @@ export const userSettingsService = {
       dateFormat: 'YYYY-MM-DD', // Default date format
       useStepByStepForm: false, // Default to traditional form
       displayCurrency: 'MYR',
+      defaultCategoryMigrationVersion: 0,
     };
     
     await this.create(defaultSettings);

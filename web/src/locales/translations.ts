@@ -242,7 +242,7 @@ export const translations = {
   hidePreview: { en: 'Hide Preview', zh: '隱藏預覽', 'zh-CN': '隐藏预览' },
   budgetPreview: { en: 'Budget Preview', zh: '預算預覽', 'zh-CN': '预算预览' },
   categoryMissing: { en: 'Missing', zh: '缺少', 'zh-CN': '缺少' },
-  templateNote: { en: 'Only categories that exist in your account will be created.', zh: '只會建立您帳戶中已存在的類別。', 'zh-CN': '只会创建您帐户中已存在的类别。' },
+  templateNote: { en: '“Missing” means this category is not in your account; its budget will be skipped when applying the template.', zh: '「缺少」表示您的帳戶中沒有該分類；套用範本時會略過該項預算。', 'zh-CN': '“缺少”表示您的帐户中没有该分类；应用模板时会跳过该项预算。' },
   applyTemplate: { en: 'Apply Template', zh: '套用模板', 'zh-CN': '应用模板' },
   templateStudent: { en: 'Student', zh: '學生版', 'zh-CN': '学生版' },
   templateStudentDesc: { en: 'Budget for students with limited income', zh: '適合收入有限的學生', 'zh-CN': '适合收入有限的学生' },
