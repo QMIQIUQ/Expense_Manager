@@ -73,6 +73,7 @@ interface BudgetManagerProps {
   onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => boolean | void | Promise<boolean | void>;
   onUpdate: (id: string, updates: Partial<Budget>) => boolean | void | Promise<boolean | void>;
   onDelete: (id: string) => void;
+  onCreateCategory?: (categoryName: string) => void;
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
   displayCurrency?: CurrencyCode;
@@ -88,6 +89,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   onAdd,
   onUpdate,
   onDelete,
+  onCreateCategory,
   spentByCategory,
   billingCycleDay = 1,
   displayCurrency = DEFAULT_BASE_CURRENCY,
@@ -552,6 +554,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <BudgetTemplates
           categories={categories}
           onApplyTemplate={handleApplyTemplate}
+          onCreateCategory={onCreateCategory}
           onClose={() => setShowTemplates(false)}
         />
       )}

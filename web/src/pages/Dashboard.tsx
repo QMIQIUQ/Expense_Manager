@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
-import { Expense, Category, Budget, BudgetPeriod, OverallBudgetLimits, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES } from '../types';
+import { Expense, Category, Budget, BudgetPeriod, OverallBudgetLimits, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES, DEFAULT_CATEGORIES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
 import { expenseService } from '../services/expenseService';
@@ -183,6 +183,11 @@ const Dashboard: React.FC = () => {
   const [repayments, setRepayments] = useState<Repayment[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [pendingCategoryCreationRequest, setPendingCategoryCreationRequest] = useState<{
+    id: number;
+    initialData: { name: string; icon: string; color: string };
+  } | null>(null);
+  const categoryCreationRequestIdRef = useRef(0);
   const orderedCategories = React.useMemo(() => sortCategories(categories), [categories]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
@@ -1184,6 +1189,21 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Categories
+  const handleNavigateToCreateCategory = (categoryName: string) => {
+    const defaultCategory = DEFAULT_CATEGORIES.find(
+      (category) => category.name.toLowerCase() === categoryName.toLowerCase(),
+    );
+    setPendingCategoryCreationRequest({
+      id: ++categoryCreationRequestIdRef.current,
+      initialData: {
+        name: categoryName,
+        icon: defaultCategory?.icon || '📦',
+        color: defaultCategory?.color || '#95A5A6',
+      },
+    });
+    setActiveTab('categories');
+  };
+
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'userId' | 'createdAt'>) => {
     if (!currentUser) return;
     const existingOrders = categories.map((category) => category.order).filter((order): order is number => Number.isFinite(order));
@@ -3290,6 +3310,10 @@ const Dashboard: React.FC = () => {
               <CategoryManager
                 categories={orderedCategories}
                 expenses={expenses}
+                categoryCreationRequest={pendingCategoryCreationRequest}
+                onCategoryCreationRequestHandled={(requestId) => {
+                  setPendingCategoryCreationRequest((current) => current?.id === requestId ? null : current);
+                }}
                 onAdd={handleAddCategory}
                 onUpdate={handleUpdateCategory}
                 onDelete={handleDeleteCategory}
@@ -3312,6 +3336,7 @@ const Dashboard: React.FC = () => {
                 onAdd={handleAddBudget}
                 onUpdate={handleUpdateBudget}
                 onDelete={handleDeleteBudget}
+                onCreateCategory={handleNavigateToCreateCategory}
                 overallBudgetLimits={settings?.overallBudgetLimits}
                 onSaveOverallBudgetLimit={handleSaveOverallBudgetLimit}
                 spentByCategory={getSpentByCategory()}

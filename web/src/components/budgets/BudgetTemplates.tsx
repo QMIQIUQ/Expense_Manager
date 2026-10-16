@@ -18,12 +18,14 @@ import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../uti
 interface BudgetTemplatesProps {
   categories: Category[];
   onApplyTemplate: (budgets: Array<{ categoryName: string; categoryId: string; amount: number; alertThreshold: number }>) => void;
+  onCreateCategory?: (categoryName: string) => void;
   onClose: () => void;
 }
 
 const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
   categories,
   onApplyTemplate,
+  onCreateCategory,
   onClose,
 }) => {
   const { t } = useLanguage();
@@ -150,9 +152,21 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
                     <span style={styles.previewCategory}>
                       {budget.categoryName}
                       {!hasCategory && (
-                        <span style={styles.missingBadge}>
-                          {t('categoryMissing') || 'Missing'}
-                        </span>
+                        <>
+                          <span style={styles.missingBadge}>
+                            {t('categoryMissing') || 'Missing'}
+                          </span>
+                          {onCreateCategory && (
+                            <button
+                              type="button"
+                              onClick={() => onCreateCategory(budget.categoryName)}
+                              style={styles.createMissingCategoryButton}
+                              aria-label={`${t('addCategory') || 'Add Category'}: ${budget.categoryName}`}
+                            >
+                              + {t('add') || 'Add'}
+                            </button>
+                          )}
+                        </>
                       )}
                     </span>
                     <span style={styles.previewAmount}>{formatMoney(budget.amount, DEFAULT_BASE_CURRENCY)}</span>
@@ -346,6 +360,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'var(--error-text)',
     padding: '2px 6px',
     borderRadius: '4px',
+  },
+  createMissingCategoryButton: {
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '5px',
+    padding: '2px 7px',
+    backgroundColor: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    fontSize: '11px',
+    lineHeight: 1.4,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   previewNote: {
     marginTop: '12px',
