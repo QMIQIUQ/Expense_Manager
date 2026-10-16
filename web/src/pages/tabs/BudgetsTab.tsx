@@ -12,6 +12,7 @@ interface Props {
   onAdd: (data: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => boolean | Promise<boolean>;
   onUpdate: (id: string, updates: Partial<Budget>) => boolean | Promise<boolean>;
   onDelete: (id: string) => void;
+  onCreateCategory: (categoryName: string) => void;
   overallBudgetLimits?: OverallBudgetLimits;
   onSaveOverallBudgetLimit: (period: BudgetPeriod, amount: number) => Promise<boolean>;
 }
@@ -26,6 +27,7 @@ const BudgetsTab: React.FC<Props> = ({
   onAdd, 
   onUpdate, 
   onDelete,
+  onCreateCategory,
   overallBudgetLimits,
   onSaveOverallBudgetLimit,
 }) => {
@@ -39,6 +41,7 @@ const BudgetsTab: React.FC<Props> = ({
         onAdd={onAdd}
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onCreateCategory={onCreateCategory}
         overallBudgetLimits={overallBudgetLimits}
         onSaveOverallBudgetLimit={onSaveOverallBudgetLimit}
         spentByCategory={spentByCategory}

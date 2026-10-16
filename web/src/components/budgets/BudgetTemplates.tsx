@@ -18,7 +18,7 @@ import { DEFAULT_BASE_CURRENCY, formatMoney, getCurrencySymbol } from '../../uti
 interface BudgetTemplatesProps {
   categories: Category[];
   onApplyTemplate: (budgets: Array<{ categoryName: string; categoryId: string; amount: number; alertThreshold: number }>) => void;
-  onCreateCategory?: (categoryName: string) => void;
+  onCreateCategory: (categoryName: string) => void;
   onClose: () => void;
 }
 
@@ -144,32 +144,31 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
                 return (
                   <div
                     key={index}
-                    style={{
-                      ...styles.previewItem,
-                      opacity: hasCategory ? 1 : 0.5,
-                    }}
+                    style={styles.previewItem}
                   >
-                    <span style={styles.previewCategory}>
-                      {budget.categoryName}
-                      {!hasCategory && (
-                        <>
+                    <div style={styles.previewCategoryGroup}>
+                      <span style={{ ...styles.previewCategory, opacity: hasCategory ? 1 : 0.5 }}>
+                        {budget.categoryName}
+                        {!hasCategory && (
                           <span style={styles.missingBadge}>
                             {t('categoryMissing') || 'Missing'}
                           </span>
-                          {onCreateCategory && (
-                            <button
-                              type="button"
-                              onClick={() => onCreateCategory(budget.categoryName)}
-                              style={styles.createMissingCategoryButton}
-                              aria-label={`${t('addCategory') || 'Add Category'}: ${budget.categoryName}`}
-                            >
-                              + {t('add') || 'Add'}
-                            </button>
-                          )}
-                        </>
+                        )}
+                      </span>
+                      {!hasCategory && (
+                        <button
+                          type="button"
+                          onClick={() => onCreateCategory(budget.categoryName)}
+                          style={styles.createMissingCategoryButton}
+                          aria-label={`${t('addCategory') || 'Add Category'}: ${budget.categoryName}`}
+                        >
+                          + {t('addCategory') || 'Add Category'}
+                        </button>
                       )}
+                    </div>
+                    <span style={{ ...styles.previewAmount, opacity: hasCategory ? 1 : 0.5 }}>
+                      {formatMoney(budget.amount, DEFAULT_BASE_CURRENCY)}
                     </span>
-                    <span style={styles.previewAmount}>{formatMoney(budget.amount, DEFAULT_BASE_CURRENCY)}</span>
                   </div>
                 );
               })}
@@ -349,6 +348,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     gap: '8px',
   },
+  previewCategoryGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    minWidth: 0,
+    flexWrap: 'wrap' as const,
+  },
   previewAmount: {
     fontSize: '14px',
     fontWeight: 600,
@@ -363,11 +369,12 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   createMissingCategoryButton: {
     border: '1px solid var(--accent-primary)',
-    borderRadius: '5px',
-    padding: '2px 7px',
+    borderRadius: '6px',
+    padding: '5px 9px',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
-    fontSize: '11px',
+    fontSize: '12px',
+    fontWeight: 600,
     lineHeight: 1.4,
     cursor: 'pointer',
     whiteSpace: 'nowrap',

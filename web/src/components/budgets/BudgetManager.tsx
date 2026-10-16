@@ -73,7 +73,7 @@ interface BudgetManagerProps {
   onAdd: (budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => boolean | void | Promise<boolean | void>;
   onUpdate: (id: string, updates: Partial<Budget>) => boolean | void | Promise<boolean | void>;
   onDelete: (id: string) => void;
-  onCreateCategory?: (categoryName: string) => void;
+  onCreateCategory: (categoryName: string) => void;
   spentByCategory: { [key: string]: number };
   billingCycleDay?: number;
   displayCurrency?: CurrencyCode;
