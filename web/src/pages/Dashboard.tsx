@@ -650,7 +650,7 @@ const Dashboard: React.FC = () => {
       window.removeEventListener('expense-offline-operation-needs-attention', handleOfflineExpenseNeedsAttention);
       window.removeEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
     };
-  }, [currentUserId, loadData, notifyOfflineExpenseNeedsAttention, showNotification, t]);
+  }, [currentUser?.uid, currentUserId, loadData, notifyOfflineExpenseNeedsAttention, showNotification, t]);
 
   // Tab switching now instant - no refetch, uses cached data + optimistic updates
   // Background revalidation happens only on initial load via loadData()
