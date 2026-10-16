@@ -76,13 +76,14 @@ jobs:
           release_status="$(curl --silent --show-error -o /tmp/firestore-release.json -w '%{http_code}' \
             -H "Authorization: Bearer $access_token" "$release_url")"
           release_request="$(jq -n --arg name "$release_name" --arg rulesetName "$ruleset_name" '{name:$name,rulesetName:$rulesetName}')"
+          release_patch_request="$(jq -n --arg name "$release_name" --arg rulesetName "$ruleset_name" '{release:{name:$name,rulesetName:$rulesetName},updateMask:"rulesetName"}')"
           if [ "$release_status" = '200' ]; then
             curl --fail-with-body --silent --show-error \
               -X PATCH \
               -H "Authorization: Bearer $access_token" \
               -H 'Content-Type: application/json' \
-              --data "$release_request" \
-              "$release_url?updateMask=rulesetName"
+              --data "$release_patch_request" \
+              "$release_url"
           elif [ "$release_status" = '404' ]; then
             curl --fail-with-body --silent --show-error \
               -X POST \
