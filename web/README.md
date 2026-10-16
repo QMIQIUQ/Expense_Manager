@@ -73,6 +73,16 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - ✅ Auto-updates when new version is available
 - ✅ Access from home screen like a native app
 
+### 11. **Friend Spending Dashboard (好友消費儀表板)**
+- ✅ Add friends by account UID and accept or decline requests
+- ✅ Choose whether each friend can see your spending summary
+- ✅ View total or category summaries for all time, the last three months, this month, or one day
+- ✅ Convert summaries to the viewer's display currency when rates are available
+- ✅ Save view and date preferences separately for each friend
+- ✅ Keep expense documents private; callable Functions return aggregate amounts only
+
+See [the friend-spending guide](../docs/FRIEND_SPENDING.md) and [local Emulator setup](FIREBASE_EMULATORS.md).
+
 ## 🛠️ Technology Stack
 
 - **React 18** - UI framework
@@ -87,7 +97,7 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js 20 or newer for the web app; Cloud Functions use Node.js 22
 - npm or yarn
 - A Firebase project (for authentication)
 
@@ -110,6 +120,8 @@ A comprehensive expense tracking application built with React, TypeScript, and F
    ```bash
    cp .env.example .env
    ```
+
+Friend spending is enabled in the live Firebase build and disabled on the shared-backend preview channel. For safe end-to-end testing, use the [Firebase Emulator instructions](FIREBASE_EMULATORS.md).
 
 ### Development
 

@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -24,6 +26,54 @@ jobs:
       - name: Install dependencies
         working-directory: web
         run: npm ci
+
+      - name: Detect Firebase backend changes
+        id: backend-changes
+        if: github.ref_name == 'main'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -Eq '^web/(functions/|firestore\.rules$|firestore\.indexes\.json$|firebase\.json$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate Google Cloud
+        if: steps.backend-changes.outputs.changed == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        if: steps.backend-changes.outputs.changed == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: expense-manager-41afb
+
+      - name: Deploy Firebase Functions and Firestore rules
+        if: steps.backend-changes.outputs.changed == 'true'
+        working-directory: web
+        run: |
+          npx --yes firebase-tools@15.34.0 deploy \
+            --only functions,firestore:rules,firestore:indexes \
+            --project expense-manager-41afb \
+            --non-interactive
+
+      - name: Wait for friend-spending Firestore index
+        if: steps.backend-changes.outputs.changed == 'true'
+        run: |
+          for attempt in $(seq 1 60); do
+            indexes="$(gcloud firestore indexes composite list --project expense-manager-41afb --database='(default)' --format=json)"
+            if echo "$indexes" | jq -e 'any(.[]; .collectionGroup == "expenses" and .queryScope == "COLLECTION" and .state == "READY" and any(.fields[]; .fieldPath == "userId" and .order == "ASCENDING") and any(.fields[]; .fieldPath == "date" and .order == "ASCENDING"))' >/dev/null; then
+              echo "Friend-spending Firestore index is ready."
+              exit 0
+            fi
+            echo "Friend-spending Firestore index is still building (check $attempt/60)."
+            sleep 10
+          done
+          echo "Timed out waiting for the friend-spending Firestore index to become ready." >&2
+          exit 1
 
       - name: Build
         working-directory: web
@@ -36,8 +86,8 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          # The preview channel shares production Firebase; disable friend backend calls there.
-          VITE_FRIEND_SPENDING_ENABLED: 'false'
+          # Preview shares production data; only the live build can call friend functions.
+          VITE_FRIEND_SPENDING_ENABLED: ${{ github.ref_name == 'main' && 'true' || 'false' }}
 
       - name: Deploy to Firebase Hosting
         id: firebase-deploy

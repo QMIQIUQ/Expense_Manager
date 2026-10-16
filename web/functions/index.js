@@ -1,10 +1,11 @@
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
+import * as functions from 'firebase-functions/v1';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp } from 'firebase-admin/app';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { createHash } from 'node:crypto';
 
-admin.initializeApp();
-const db = admin.firestore();
-const firestore = admin.firestore;
+initializeApp();
+const db = getFirestore();
 const FRIENDSHIPS_COLLECTION = 'friendships';
 const FRIEND_SHARING_COLLECTION = 'friendSharing';
 const VALID_CURRENCIES = new Set(['MYR', 'USD', 'TWD', 'SGD', 'CNY', 'EUR', 'GBP', 'JPY']);
@@ -68,7 +69,7 @@ export const adminDeleteUser = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    await admin.auth().deleteUser(targetUid);
+    await getAuth().deleteUser(targetUid);
     return { ok: true };
   } catch (err) {
     console.error('adminDeleteUser error', err);
@@ -123,7 +124,7 @@ export const manageFriendship = functions.https.onCall(async (data, context) => 
 
   if (action === 'send') {
     try {
-      await admin.auth().getUser(friendUid);
+      await getAuth().getUser(friendUid);
     } catch (error) {
       if (error?.code === 'auth/user-not-found') {
         throw new functions.https.HttpsError('not-found', 'No account matches this friend code.');
@@ -147,8 +148,8 @@ export const manageFriendship = functions.https.onCall(async (data, context) => 
         status: 'pending',
         requestedBy: uid,
         requestedTo: friendUid,
-        createdAt: existingData?.createdAt || firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        createdAt: existingData?.createdAt || FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
     });
     return { ok: true };
@@ -166,8 +167,8 @@ export const manageFriendship = functions.https.onCall(async (data, context) => 
       }
       transaction.update(friendshipRef, {
         status: action === 'accept' ? 'accepted' : 'declined',
-        acceptedAt: action === 'accept' ? firestore.FieldValue.serverTimestamp() : null,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        acceptedAt: action === 'accept' ? FieldValue.serverTimestamp() : null,
+        updatedAt: FieldValue.serverTimestamp(),
       });
     });
     return { ok: true };
@@ -187,7 +188,7 @@ export const manageFriendship = functions.https.onCall(async (data, context) => 
       }
       transaction.update(friendshipRef, {
         status: 'removed',
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
       if (myShare.exists) transaction.delete(myShareRef);
       if (theirShare.exists) transaction.delete(theirShareRef);
@@ -210,7 +211,7 @@ export const manageFriendship = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('failed-precondition', 'An accepted friendship is required.');
       }
       if (data.enabled) {
-        transaction.set(myShareRef, { enabled: true, updatedAt: firestore.FieldValue.serverTimestamp() });
+        transaction.set(myShareRef, { enabled: true, updatedAt: FieldValue.serverTimestamp() });
       } else if (existingShare.exists) {
         transaction.delete(myShareRef);
       }
