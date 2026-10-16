@@ -113,6 +113,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [summaryPeriod, setSummaryPeriod] = useState<BudgetPeriod>('monthly');
   const [showOverallBudgetModal, setShowOverallBudgetModal] = useState(false);
   const [overallBudgetInput, setOverallBudgetInput] = useState('');
+  const [isSavingOverallBudget, setIsSavingOverallBudget] = useState(false);
+  const [overallBudgetSaveError, setOverallBudgetSaveError] = useState('');
   const [pendingBudgetDraft, setPendingBudgetDraft] = useState<BudgetFormData | undefined>();
   const [resumeAddBudgetAfterOverallModal, setResumeAddBudgetAfterOverallModal] = useState(false);
   const shouldOpenAddModalRef = React.useRef(false);
@@ -325,6 +327,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
   const openOverallBudgetModal = (period: BudgetPeriod = summaryPeriod) => {
     setSummaryPeriod(period);
+    setOverallBudgetSaveError('');
     const limit = overallBudgetLimits?.[period];
     const allocatedForPeriod = getAllocatedBudgetMinorUnits(budgets, period);
     const suggestedLimit = allocatedForPeriod === null ? '' : (allocatedForPeriod / 100).toFixed(2);
@@ -354,10 +357,31 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
 
   const saveOverallBudget = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (isSavingOverallBudget) return;
     const amount = Number(overallBudgetInput);
     if (!Number.isFinite(amount) || amount < 0) return;
     if (modalAllocatedMinorUnits === null || Math.round(amount * 100) < modalAllocatedMinorUnits) return;
-    if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) closeOverallBudgetModal();
+    setOverallBudgetSaveError('');
+
+    // Saving an unchanged value needs no Firestore write; close the dialog
+    // immediately (and continue the pending add-budget flow, if any).
+    if (overallBudgetLimit !== undefined && Math.round(amount * 100) === Math.round(overallBudgetLimit * 100)) {
+      closeOverallBudgetModal();
+      return;
+    }
+
+    setIsSavingOverallBudget(true);
+    try {
+      if (await onSaveOverallBudgetLimit(summaryPeriod, amount)) {
+        closeOverallBudgetModal();
+      } else {
+        setOverallBudgetSaveError(t('budgetLimitSaveFailed'));
+      }
+    } catch {
+      setOverallBudgetSaveError(t('budgetLimitSaveFailed'));
+    } finally {
+      setIsSavingOverallBudget(false);
+    }
   };
   
   // Filter and sort budgets
@@ -999,7 +1023,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         title={overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
         isForm
         onSubmit={saveOverallBudget}
-        primaryButtonLabel={t('save')}
+        primaryButtonLabel={isSavingOverallBudget ? t('saving') : t('save')}
+        primaryButtonDisabled={isSavingOverallBudget}
         maxWidth="480px"
       >
         <div style={styles.overallBudgetForm}>
@@ -1011,7 +1036,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             step="0.01"
             required
             value={overallBudgetInput}
-            onChange={(event) => setOverallBudgetInput(event.target.value)}
+            disabled={isSavingOverallBudget}
+            onChange={(event) => {
+              setOverallBudgetInput(event.target.value);
+              setOverallBudgetSaveError('');
+            }}
             aria-invalid={modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0}
             aria-describedby="overall-budget-form-help overall-budget-form-summary"
             style={styles.overallBudgetInput}
@@ -1045,6 +1074,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           )}
           {modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0 && (
             <span role="alert" style={styles.overallBudgetError}>{t('overallBudgetBelowAllocation')}</span>
+          )}
+          {overallBudgetSaveError && (
+            <span role="alert" style={styles.overallBudgetError}>{overallBudgetSaveError}</span>
           )}
         </div>
       </PopupModal>
