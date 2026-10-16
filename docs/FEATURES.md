@@ -286,7 +286,7 @@ Date,Description,Category,Amount,Notes
 **Purpose**: Personalize your dashboard by showing/hiding widgets and reordering them.
 
 **Capabilities**:
-- 9 customizable widget components
+- 10 customizable widget components
 - Show/hide individual widgets
 - Reorder widgets via drag-and-drop or arrow buttons
 - Layout settings saved per user in Firebase
@@ -304,6 +304,7 @@ Date,Description,Category,Amount,Notes
 | 信用卡摘要 | 💳 | Credit card usage and cashback summary |
 | 追蹤中的支出 | 👁️ | Expenses waiting for repayment |
 | 新增支出 | ➕ | Quick add expense button |
+| 好友消費 | 👥 | Opt-in friend summaries by total or category |
 
 **User Flow**:
 1. Navigate to Dashboard (儀表板) tab
@@ -318,6 +319,28 @@ Date,Description,Category,Amount,Notes
 - Collection: `dashboardLayouts`
 - Document ID: User's UID
 - Persists across sessions and devices
+
+---
+
+### 9. Friend Spending Dashboard (好友消費儀表板)
+
+**Purpose**: Let friends view consented, aggregate spending summaries without granting access to expense records.
+
+**Capabilities**:
+- Send and accept friend requests using existing account UIDs
+- Enable or revoke sharing separately for each accepted friend; sharing defaults off
+- View total or category spending for all time, the rolling last three months, the current month, or a selected day
+- Convert amounts to the viewer's display currency when an exchange rate is available
+- Save the selected view and period separately for each friend
+- Automatically add the widget to new dashboards and migrate existing dashboard layouts
+
+**Privacy boundary**:
+- Firestore expense reads remain owner-only (admins retain existing access).
+- Callable Cloud Functions check accepted friendship and the owner's active consent before reading expenses.
+- The callable response contains only totals and category totals grouped by currency; it excludes expense IDs and transaction descriptions.
+- Friendship state, sharing consent, and viewer preferences use separate collections with owner/member-scoped Firestore rules.
+
+See the [Friend Spending guide](FRIEND_SPENDING.md) for data paths, emulator testing, and deployment behavior.
 
 ---
 

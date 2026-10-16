@@ -20,7 +20,7 @@ The application has production and preview deployments. GitHub Pages and Firebas
 - **Testing URL**: use the action's `channel_url` shown in the workflow run summary; this URL is temporary and expires after 7 days
 - **Auto-deploy**: ✅ Enabled (triggers on push to `main` or `firebase-testing`)
 
-The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database.
+The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database. Friend-spending calls are disabled in the preview build. On `main`, changes to Functions, Firestore rules, indexes, or Firebase configuration deploy the backend before Hosting; the live build enables the feature.
 
 ### 3. Firebase Preview (Pull Requests)
 - **Trigger**: Pull requests to `main` branch
@@ -34,7 +34,7 @@ The Firebase Hosting preview channel changes the deployed frontend only. Both `m
    ```bash
    git push origin main
    ```
-2. `.github/workflows/deploy.yml` deploys GitHub Pages, and `.github/workflows/firebase-hosting-deploy.yml` deploys Firebase Hosting to `live`.
+2. `.github/workflows/deploy.yml` deploys GitHub Pages. The Firebase workflow deploys changed Functions and Firestore rules/indexes first, then deploys Hosting to `live`.
 3. Check both workflow runs in the GitHub "Actions" tab. Firebase's visitor-facing production URL is https://expense-manager-41afb.web.app/.
 
 ### Deploy a Firebase UI preview (`firebase-testing`)

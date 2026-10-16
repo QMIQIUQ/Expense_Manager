@@ -101,6 +101,7 @@ A comprehensive React-based expense manager with Firebase integration is now ava
 - ✅ Custom categories with icon and color customization
 - ✅ Budget tracking with visual progress indicators
 - ✅ Dashboard analytics with summary cards
+- ✅ Opt-in friend spending summaries with per-friend privacy controls
 - ✅ Recurring expense management
 - ✅ Excel/CSV import/export functionality
 - ✅ Multi-device sync via Firebase
