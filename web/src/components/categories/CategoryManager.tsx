@@ -39,6 +39,11 @@ interface CategoryManagerProps {
   onUpdate: (id: string, updates: Partial<Category>) => void;
   onDelete: (id: string) => void;
   onReorder: (orderedIds: string[]) => Promise<void>;
+  categoryCreationRequest?: {
+    id: number;
+    initialData: { name: string; icon: string; color: string };
+  } | null;
+  onCategoryCreationRequestHandled?: (requestId: number) => void;
   onUpdateExpense?: (id: string, updates: Partial<Expense>) => void;
   onDeleteExpense?: (id: string) => void;
 }
@@ -50,12 +55,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   onUpdate,
   onDelete,
   onReorder,
+  categoryCreationRequest,
+  onCategoryCreationRequestHandled,
   onUpdateExpense,
   onDeleteExpense,
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const [isAdding, setIsAdding] = useState(false);
+  const [addingCategoryInitialData, setAddingCategoryInitialData] = useState<{ name: string; icon: string; color: string } | undefined>();
+  const [addCategoryFormKey, setAddCategoryFormKey] = useState(0);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +74,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const categoryListRef = useRef<HTMLDivElement>(null);
+  const handledCategoryCreationRequestIds = useRef(new Set<number>());
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -83,6 +93,17 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       document.removeEventListener('click', handleClickOutside);
     };
   }, [openMenuId]);
+
+  useEffect(() => {
+    if (!categoryCreationRequest || handledCategoryCreationRequestIds.current.has(categoryCreationRequest.id)) return;
+
+    handledCategoryCreationRequestIds.current.add(categoryCreationRequest.id);
+    setAddingCategoryInitialData(categoryCreationRequest.initialData);
+    setAddCategoryFormKey((key) => key + 1);
+    setEditingCategory(null);
+    setIsAdding(true);
+    onCategoryCreationRequestHandled?.(categoryCreationRequest.id);
+  }, [categoryCreationRequest, onCategoryCreationRequestHandled]);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ 
     isOpen: boolean; 
@@ -201,6 +222,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             ↕ {isSorting ? t('doneSortingCategories') : t('sortCategories')}
           </button>
           {!isSorting && <button onClick={() => {
+            setAddingCategoryInitialData(undefined);
+            setAddCategoryFormKey((key) => key + 1);
             setIsAdding(true);
             setEditingCategory(null);
           }} className="btn btn-accent-light">
@@ -221,6 +244,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         maxWidth="500px"
       >
         <CategoryForm
+          key={addCategoryFormKey}
+          initialData={addingCategoryInitialData}
           onSubmit={(data) => {
             onAdd({ ...data, isDefault: false });
             setIsAdding(false);
