@@ -68,7 +68,7 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
     if (!currentUser || !featureEnabled) return;
     setIsLoadingConnections(true);
     try {
-      const nextConnections = await friendSpendingService.getConnections();
+      const nextConnections = await friendSpendingService.getConnections(currentUser.uid);
       setConnections(nextConnections);
       const nextAccepted = nextConnections.filter((connection) => connection.status === 'accepted');
       if (!nextAccepted.some((connection) => connection.friendUid === selectedFriendUid)) {
@@ -111,52 +111,65 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
     if (!selectedFriend || !preferenceReadyFor || preferenceReadyFor !== selectedFriendUid) {
       setSummary(null);
       setPresentation(null);
+      setIsLoadingSummary(false);
       return;
     }
     if (!selectedFriend.shareEnabledWithMe) {
       setSummary(null);
       setPresentation(null);
+      setIsLoadingSummary(false);
       setError('friend_not_sharing');
       return;
     }
 
     let cancelled = false;
+    let presentationVersion = 0;
     const range = getFriendSpendingDateRange(preference.period, preference.selectedDate);
     setIsLoadingSummary(true);
     setError('');
-    friendSpendingService.getSpendingSummary({ friendUid: selectedFriendUid, ...range })
-      .then(async (nextSummary) => {
+    const unsubscribe = friendSpendingService.listenSpendingSummary(
+      { friendUid: selectedFriendUid, ...range },
+      async (nextSummary) => {
         if (cancelled) return;
+        const currentVersion = ++presentationVersion;
         setSummary(nextSummary);
         const nextPresentation = await presentFriendSpending(
           nextSummary,
           (displayCurrency || DEFAULT_BASE_CURRENCY) as CurrencyCode
         );
-        if (!cancelled) setPresentation(nextPresentation);
-      })
-      .catch((summaryError) => {
+        if (!cancelled && currentVersion === presentationVersion) {
+          setPresentation(nextPresentation);
+          setIsLoadingSummary(false);
+        }
+      },
+      (summaryError) => {
         if (cancelled) return;
         setSummary(null);
         setPresentation(null);
         const code = getErrorCode(summaryError);
         setError(code.includes('permission-denied') ? 'friend_not_sharing' : code);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingSummary(false);
-      });
-    return () => { cancelled = true; };
+        setIsLoadingSummary(false);
+      }
+    );
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [displayCurrency, preference, preferenceReadyFor, selectedFriend, selectedFriendUid]);
 
   const runMutation = async (input: FriendMutation, successMessage: TranslationKey): Promise<void> => {
     setBusyAction(`${input.action}:${input.friendUid}`);
     try {
-      await friendSpendingService.mutateFriendship(input);
+      if (!currentUser) return;
+      await friendSpendingService.mutateFriendship(currentUser.uid, input);
       await loadConnections();
       showNotification('success', t(successMessage));
     } catch (mutationError) {
       const code = getErrorCode(mutationError);
       await loadConnections();
-      showNotification('error', code.includes('not-found') ? t('friendCodeInvalid') : t('friendRequestFailed'));
+      const invalidFriendCode = input.action === 'send' &&
+        (code.includes('not-found') || code.includes('permission-denied'));
+      showNotification('error', invalidFriendCode ? t('friendCodeInvalid') : t('friendRequestFailed'));
     } finally {
       setBusyAction('');
     }

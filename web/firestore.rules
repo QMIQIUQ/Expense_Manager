@@ -11,6 +11,11 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+
+    function hasActiveAccount(userId) {
+      let userPath = /databases/$(database)/documents/users/$(userId);
+      return exists(userPath) && get(userPath).data.get('isActive', true) != false;
+    }
     
     // Helper function to check if user is an admin
     function isAdmin() {
@@ -18,6 +23,95 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              ((get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) ||
               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminStatus == true));
+    }
+
+    function hasAcceptedConnection(ownerUid, friendUid) {
+      let connectionPath = /databases/$(database)/documents/friendConnections/$(ownerUid)/friends/$(friendUid);
+      return exists(connectionPath) &&
+        get(connectionPath).data.status == 'accepted' &&
+        get(connectionPath).data.friendUid == friendUid;
+    }
+
+    function hasFriendSharingEnabled(ownerUid, friendUid) {
+      let sharingPath = /databases/$(database)/documents/friendSharing/$(ownerUid)/friends/$(friendUid);
+      return exists(sharingPath) && get(sharingPath).data.enabled == true;
+    }
+
+    function hasNoAcceptedConnection(uidA, uidB) {
+      return !exists(/databases/$(database)/documents/friendConnections/$(uidA)/friends/$(uidB)) &&
+        !exists(/databases/$(database)/documents/friendConnections/$(uidB)/friends/$(uidA));
+    }
+
+    function validFriendRequestData(senderUid, recipientUid, status) {
+      return request.resource.data.keys().hasAll(['senderUid', 'recipientUid', 'status']) &&
+        request.resource.data.keys().hasOnly(['senderUid', 'recipientUid', 'status']) &&
+        request.resource.data.senderUid == senderUid &&
+        request.resource.data.recipientUid == recipientUid &&
+        request.resource.data.status == status;
+    }
+
+    function hasAcceptedFriendRequestAfter(senderUid, recipientUid) {
+      let outgoingPath = /databases/$(database)/documents/friendRequests/$(senderUid)/outgoing/$(recipientUid);
+      let incomingPath = /databases/$(database)/documents/friendRequests/$(recipientUid)/incoming/$(senderUid);
+      return existsAfter(outgoingPath) &&
+        getAfter(outgoingPath).data.status == 'accepted' &&
+        existsAfter(incomingPath) &&
+        getAfter(incomingPath).data.status == 'accepted';
+    }
+
+    function canCreateFriendConnection(ownerUid, friendUid, requesterUid) {
+      return (requesterUid == ownerUid && request.auth.uid == friendUid &&
+          hasAcceptedFriendRequestAfter(ownerUid, friendUid)) ||
+        (requesterUid == friendUid && request.auth.uid == ownerUid &&
+          hasAcceptedFriendRequestAfter(friendUid, ownerUid));
+    }
+
+    function isFriendRemovalCompleteAfter(uidA, uidB) {
+      return !existsAfter(/databases/$(database)/documents/friendConnections/$(uidA)/friends/$(uidB)) &&
+        !existsAfter(/databases/$(database)/documents/friendConnections/$(uidB)/friends/$(uidA)) &&
+        !existsAfter(/databases/$(database)/documents/friendRequests/$(uidA)/incoming/$(uidB)) &&
+        !existsAfter(/databases/$(database)/documents/friendRequests/$(uidA)/outgoing/$(uidB)) &&
+        !existsAfter(/databases/$(database)/documents/friendRequests/$(uidB)/incoming/$(uidA)) &&
+        !existsAfter(/databases/$(database)/documents/friendRequests/$(uidB)/outgoing/$(uidA)) &&
+        !existsAfter(/databases/$(database)/documents/friendSharing/$(uidA)/friends/$(uidB)) &&
+        !existsAfter(/databases/$(database)/documents/friendSharing/$(uidB)/friends/$(uidA));
+    }
+
+    function validFriendConnectionData(ownerUid, friendUid) {
+      return request.resource.data.keys().hasAll(['friendUid', 'requesterUid', 'status', 'connectedAt']) &&
+        request.resource.data.keys().hasOnly(['friendUid', 'requesterUid', 'status', 'connectedAt']) &&
+        request.resource.data.friendUid == friendUid &&
+        request.resource.data.requesterUid in [ownerUid, friendUid] &&
+        request.resource.data.status == 'accepted' &&
+        request.resource.data.connectedAt == request.time &&
+        canCreateFriendConnection(ownerUid, friendUid, request.resource.data.requesterUid);
+    }
+
+    function validFriendSharingData() {
+      return request.resource.data.keys().hasAll(['enabled', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['enabled', 'updatedAt']) &&
+        request.resource.data.enabled == true &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    function validFriendSpendingSummaryData() {
+      return request.resource.data.keys().hasAll(['date', 'category', 'currency', 'amount', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['date', 'category', 'currency', 'amount', 'updatedAt']) &&
+        request.resource.data.date is string &&
+        request.resource.data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        request.resource.data.category is string &&
+        request.resource.data.category.size() <= 80 &&
+        request.resource.data.currency in ['MYR', 'USD', 'TWD', 'SGD', 'CNY', 'EUR', 'GBP', 'JPY'] &&
+        request.resource.data.amount is number &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    function validFriendSpendingSummaryStateData() {
+      return request.resource.data.keys().hasAll(['version', 'ready', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['version', 'ready', 'updatedAt']) &&
+        request.resource.data.version == 1 &&
+        request.resource.data.ready == true &&
+        request.resource.data.updatedAt == request.time;
     }
 
     function hasValidExpenseLink(data) {
@@ -250,17 +344,109 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
 
-    // Friendship metadata contains UIDs and state only. Mutations are callable-only.
+    // Legacy friendship metadata remains readable by its members during migration.
     match /friendships/{friendshipId} {
       allow read: if isAuthenticated() &&
         resource.data.memberIds is list && request.auth.uid in resource.data.memberIds;
       allow create, update, delete: if false;
     }
 
-    // Only an account owner can read its explicit per-friend share settings.
+    // Incoming and outgoing request mirrors are written atomically by the sender.
+    match /friendRequests/{userId}/incoming/{friendUid} {
+      allow get: if isAuthenticated() && (isOwner(userId) || request.auth.uid == friendUid);
+      allow list: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() &&
+        request.auth.uid == friendUid &&
+        userId != friendUid &&
+        hasActiveAccount(userId) &&
+        hasNoAcceptedConnection(userId, friendUid) &&
+        validFriendRequestData(friendUid, userId, 'pending') &&
+        existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/outgoing/$(userId)) &&
+        getAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/outgoing/$(userId)).data.status == 'pending';
+      allow update: if isAuthenticated() &&
+        isOwner(userId) &&
+        resource.data.status == 'pending' &&
+        validFriendRequestData(friendUid, userId, 'accepted') &&
+        existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/outgoing/$(userId)) &&
+        getAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/outgoing/$(userId)).data.status == 'accepted' &&
+        existsAfter(/databases/$(database)/documents/friendConnections/$(userId)/friends/$(friendUid)) &&
+        existsAfter(/databases/$(database)/documents/friendConnections/$(friendUid)/friends/$(userId));
+      allow delete: if isAuthenticated() &&
+        ((isOwner(userId) && resource.data.status == 'pending' &&
+          !existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/outgoing/$(userId))) ||
+         (request.auth.uid in [userId, friendUid] && isFriendRemovalCompleteAfter(userId, friendUid)));
+    }
+
+    match /friendRequests/{userId}/outgoing/{friendUid} {
+      allow get: if isAuthenticated() && (isOwner(userId) || request.auth.uid == friendUid);
+      allow list: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() &&
+        isOwner(userId) &&
+        userId != friendUid &&
+        hasActiveAccount(friendUid) &&
+        hasNoAcceptedConnection(userId, friendUid) &&
+        validFriendRequestData(userId, friendUid, 'pending') &&
+        existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/incoming/$(userId)) &&
+        getAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/incoming/$(userId)).data.status == 'pending';
+      allow update: if isAuthenticated() &&
+        request.auth.uid == friendUid &&
+        resource.data.status == 'pending' &&
+        validFriendRequestData(userId, friendUid, 'accepted') &&
+        existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/incoming/$(userId)) &&
+        getAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/incoming/$(userId)).data.status == 'accepted' &&
+        existsAfter(/databases/$(database)/documents/friendConnections/$(userId)/friends/$(friendUid)) &&
+        existsAfter(/databases/$(database)/documents/friendConnections/$(friendUid)/friends/$(userId));
+      allow delete: if isAuthenticated() &&
+        ((request.auth.uid == friendUid && resource.data.status == 'pending' &&
+          !existsAfter(/databases/$(database)/documents/friendRequests/$(friendUid)/incoming/$(userId))) ||
+         (request.auth.uid in [userId, friendUid] && isFriendRemovalCompleteAfter(userId, friendUid)));
+    }
+
+    // Accepting a request creates both private connection records atomically.
+    match /friendConnections/{userId}/friends/{friendUid} {
+      allow get: if isAuthenticated() && (isOwner(userId) || request.auth.uid == friendUid);
+      allow list: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && validFriendConnectionData(userId, friendUid);
+      allow update: if false;
+      allow delete: if isAuthenticated() &&
+        request.auth.uid in [userId, friendUid] &&
+        resource.data.status == 'accepted' &&
+        isFriendRemovalCompleteAfter(userId, friendUid);
+    }
+
+    // Owners control sharing; the accepted friend can read the consent flag.
     match /friendSharing/{ownerUid}/friends/{friendUid} {
-      allow read: if isAuthenticated() && isOwner(ownerUid);
-      allow create, update, delete: if false;
+      allow read: if isAuthenticated() &&
+        (isOwner(ownerUid) ||
+         (request.auth.uid == friendUid && hasAcceptedConnection(ownerUid, friendUid)));
+      allow create, update: if isAuthenticated() &&
+        isOwner(ownerUid) &&
+        hasAcceptedConnection(ownerUid, friendUid) &&
+        validFriendSharingData();
+      allow delete: if isAuthenticated() &&
+        (isOwner(ownerUid) ||
+         (request.auth.uid == friendUid &&
+          hasAcceptedConnection(ownerUid, friendUid) &&
+          isFriendRemovalCompleteAfter(ownerUid, friendUid)));
+    }
+
+    // Daily category and currency totals are the only friend-readable spending data.
+    match /friendSpendingSummaries/{ownerUid}/dailyBuckets/{bucketId} {
+      allow read: if isAuthenticated() &&
+        (isOwner(ownerUid) ||
+         (hasActiveAccount(ownerUid) &&
+          hasAcceptedConnection(ownerUid, request.auth.uid) &&
+          hasFriendSharingEnabled(ownerUid, request.auth.uid)));
+      allow create, update: if isAuthenticated() &&
+        isOwner(ownerUid) && validFriendSpendingSummaryData();
+      allow delete: if isAuthenticated() && isOwner(ownerUid);
+    }
+
+    match /friendSpendingSummaryStates/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create, update: if isAuthenticated() &&
+        isOwner(userId) && validFriendSpendingSummaryStateData();
+      allow delete: if false;
     }
 
     function hasValidFriendDashboardPreference() {
@@ -277,7 +463,9 @@ service cloud.firestore {
     match /friendDashboardPreferences/{userId}/friends/{friendUid} {
       allow read: if isAuthenticated() && isOwner(userId);
       allow create, update: if isAuthenticated() && isOwner(userId) && hasValidFriendDashboardPreference();
-      allow delete: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAuthenticated() &&
+        (isOwner(userId) ||
+         (request.auth.uid == friendUid && isFriendRemovalCompleteAfter(userId, friendUid)));
     }
     
     // Quick Expense Presets collection (stores user's quick expense shortcuts)

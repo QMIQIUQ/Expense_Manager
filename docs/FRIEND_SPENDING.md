@@ -1,10 +1,10 @@
 # Friend Spending Dashboard
 
-The Dashboard includes a Friend Spending widget. Users add a friend with an existing account UID; the recipient must accept the request. After acceptance, each person can independently turn on sharing for that friend. Sharing is off by default and can be revoked at any time.
+The dashboard lets users add an existing account by UID, accept requests, and independently enable or revoke spending sharing for each friend. Sharing is off by default.
 
 ## Viewing and saved preferences
 
-For each accepted friend, select either total spending or category spending, then choose one of these periods:
+For each accepted friend, users can select total or category spending and one of these periods:
 
 - All time
 - Rolling last three months
@@ -13,23 +13,29 @@ For each accepted friend, select either total spending or category spending, the
 
 The view mode, period, and selected date are saved separately for each friend. Amounts are converted to the viewer's configured display currency when a rate is available; if a rate is unavailable, the source currency is preserved.
 
-## Data access and privacy
+## Data model and privacy
 
-- `friendships/{friendshipHash}` stores member UIDs and request state. Callable Functions perform mutations; members can read their own friendship metadata.
-- `friendSharing/{ownerUid}/friends/{friendUid}` stores the owner's explicit sharing consent. Only the owner can read it directly; only callable Functions can change it.
-- `friendDashboardPreferences/{viewerUid}/friends/{friendUid}` stores the viewer's display choices and is readable and writable only by that viewer.
-- Expense documents remain owner-only under Firestore rules. `getFriendSpendingSummary` checks accepted friendship and active consent on the server, then returns only totals and category totals grouped by currency. It never returns transaction IDs, descriptions, or individual expense rows.
+- Raw documents in `expenses` remain readable only by their owner or an admin.
+- `friendRequests/{userId}/incoming/{friendUid}` and `friendRequests/{userId}/outgoing/{friendUid}` hold mirrored request states. Firestore rules require the sender to create both mirrors and the recipient to accept or decline.
+- `friendConnections/{ownerUid}/friends/{friendUid}` records accepted relationships. Both users receive a connection record when the recipient accepts.
+- `friendSharing/{ownerUid}/friends/{friendUid}` holds the owner's explicit sharing choice. Only the owner can change it; the accepted friend can read the consent flag.
+- `friendSpendingSummaries/{ownerUid}/dailyBuckets/{bucketId}` stores only date, category, currency, and amount totals. A friend can read these documents only while the relationship is accepted and the owner has sharing enabled.
+- `friendSpendingSummaryStates/{ownerUid}` records whether the owner's initial summary has been built. It is private to the owner.
+- `friendDashboardPreferences/{viewerUid}/friends/{friendUid}` stores the viewer's choices and is private to that viewer.
+
+The owner's app builds the initial daily summary from the owner's own expenses the first time spending is shared. Each later expense create, edit, delete, import, or offline-queue sync updates the same summary buckets in the expense write transaction. The dashboard listens to those buckets, so an online friend sees updates automatically. It never reads a friend's raw expense documents.
+
+This client-maintained summary avoids Cloud Functions and a Blaze upgrade for the friend dashboard. It uses normal Firestore reads and writes. The owner controls the summary values and could change them directly; changes made outside the app will not be reflected until the owner rebuilds the summary. The separate admin account-deletion action still uses the app's existing callable Cloud Function.
 
 New dashboards include the widget by default. Existing saved layouts are migrated by adding it once while preserving the user's other widgets and their order.
 
 ## Local testing
 
-Use the demo Firebase Emulator project for friend-flow testing. The hosted `firebase-testing` preview shares the production Firebase project, so the feature is disabled there.
+Use the Auth and Firestore emulators for friend-flow testing. Friend requests, sharing, and summaries no longer call the Functions emulator. Follow [FIREBASE_EMULATORS.md](../web/FIREBASE_EMULATORS.md) to start the emulators.
 
-Follow [FIREBASE_EMULATORS.md](../web/FIREBASE_EMULATORS.md) to start Auth, Firestore, and Functions emulators and run `npm run test:friend-emulator`.
+The hosted `firebase-testing` preview shares the production Firebase project, so the friend-spending feature remains disabled there.
 
 ## Deployment behavior
 
-- A push to `main` that changes `web/functions/**`, `web/firestore.rules`, `web/firestore.indexes.json`, or `web/firebase.json` deploys Functions and Firestore configuration before Hosting.
-- The `main` Hosting build enables friend-spending calls. The `firebase-testing` build keeps them disabled so preview activity cannot read or change production friendship records.
-- The Functions runtime is Node.js 22. Keep the checked-in `web/functions/package-lock.json` in sync with `package.json`.
+- A push to `main` that changes Firestore rules or indexes deploys those Firestore resources before Hosting. The workflow does not deploy Cloud Functions.
+- The `main` Hosting build enables friend spending; the `firebase-testing` preview keeps it disabled because it shares production data.
