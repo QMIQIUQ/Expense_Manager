@@ -249,6 +249,36 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
+
+    // Friendship metadata contains UIDs and state only. Mutations are callable-only.
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() &&
+        resource.data.memberIds is list && request.auth.uid in resource.data.memberIds;
+      allow create, update, delete: if false;
+    }
+
+    // Only an account owner can read its explicit per-friend share settings.
+    match /friendSharing/{ownerUid}/friends/{friendUid} {
+      allow read: if isAuthenticated() && isOwner(ownerUid);
+      allow create, update, delete: if false;
+    }
+
+    function hasValidFriendDashboardPreference() {
+      return request.resource.data.keys().hasAll(['mode', 'period', 'selectedDate', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['mode', 'period', 'selectedDate', 'updatedAt']) &&
+        request.resource.data.mode in ['total', 'categories'] &&
+        request.resource.data.period in ['all', 'rolling-three-months', 'current-month', 'day'] &&
+        request.resource.data.selectedDate is string &&
+        request.resource.data.selectedDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        request.resource.data.updatedAt is timestamp;
+    }
+
+    // Viewing preferences belong to the viewer and are independent for each friend.
+    match /friendDashboardPreferences/{userId}/friends/{friendUid} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create, update: if isAuthenticated() && isOwner(userId) && hasValidFriendDashboardPreference();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
     
     // Quick Expense Presets collection (stores user's quick expense shortcuts)
     match /quickExpensePresets/{presetId} {

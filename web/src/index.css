@@ -6564,3 +6564,256 @@ button:not(:disabled):hover {
   outline: 2px solid var(--accent-primary);
   outline-offset: -2px;
 }
+
+.friend-spending-widget {
+  display: grid;
+  gap: 16px;
+  color: var(--text-primary);
+}
+
+.friend-spending-preview-notice,
+.friend-code-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.friend-spending-preview-notice p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.friend-code-panel > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.friend-code-panel code,
+.friend-row code,
+.friend-select-button code,
+.friend-spending-details h4 code {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.friend-add-form,
+.friend-list-section,
+.friend-spending-details {
+  display: grid;
+  gap: 10px;
+}
+
+.friend-add-form label,
+.friend-list-section h4,
+.friend-spending-details h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.friend-add-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.friend-add-controls input,
+.friend-preference-controls select,
+.friend-preference-controls input {
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  padding: 9px 10px;
+}
+
+.friend-add-controls input {
+  flex: 1;
+}
+
+.friend-spending-widget button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: #fff;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.friend-spending-widget button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.friend-spending-widget button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.friend-spending-widget .friend-secondary-button,
+.friend-spending-widget .friend-remove-button {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.friend-spending-widget .friend-remove-button {
+  color: var(--error-text);
+}
+
+.friend-row,
+.friend-card-row,
+.friend-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+
+.friend-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.friend-card-row {
+  flex-wrap: wrap;
+}
+
+.friend-card-row.selected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.friend-select-button {
+  display: grid;
+  flex: 1 1 220px;
+  gap: 4px;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  text-align: left;
+}
+
+.friend-select-button span,
+.friend-muted-label {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.friend-share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.friend-share-toggle input {
+  accent-color: var(--accent-primary);
+}
+
+.friend-preference-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.friend-preference-controls label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.friend-preference-controls button {
+  min-height: 38px;
+}
+
+.friend-total-list,
+.friend-category-list {
+  display: grid;
+  gap: 8px;
+}
+
+.friend-total-row strong {
+  font-size: 1.1rem;
+}
+
+.friend-category-row {
+  display: grid;
+  gap: 6px;
+}
+
+.friend-category-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.88rem;
+}
+
+.friend-category-heading strong {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.friend-category-meter {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+}
+
+.friend-category-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-primary);
+}
+
+.friend-error-message {
+  margin: 0;
+  color: var(--error-text);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 600px) {
+  .friend-add-controls,
+  .friend-row,
+  .friend-total-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .friend-row-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .friend-category-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .friend-category-heading strong {
+    text-align: left;
+  }
+}

@@ -16,7 +16,8 @@ export type DashboardWidgetType =
   | 'month-over-month'   // Month-over-month comparison
   | 'tag-cloud'          // Tag cloud of frequent expenses
   | 'upcoming-bills'     // Bills due in next 7 days
-  | 'installment-tracker'; // Installment payment tracker
+  | 'installment-tracker' // Installment payment tracker
+  | 'friend-spending';   // Friends' shared spending summaries
 
 // Widget size options
 export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
@@ -206,6 +207,16 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
     minSize: 'small',
     maxSize: 'large',
   },
+  'friend-spending': {
+    type: 'friend-spending',
+    defaultTitle: 'friendSpending',
+    defaultTitleFallback: 'Friends Spending',
+    description: 'friendSpendingDesc',
+    icon: '👥',
+    defaultSize: 'full',
+    minSize: 'medium',
+    maxSize: 'full',
+  },
 };
 
 // Default dashboard layout
@@ -225,6 +236,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
   { id: 'widget-13', type: 'tag-cloud', enabled: false, order: 12, size: 'medium' },
   { id: 'widget-14', type: 'upcoming-bills', enabled: false, order: 13, size: 'medium' },
   { id: 'widget-15', type: 'installment-tracker', enabled: false, order: 14, size: 'medium' },
+  { id: 'widget-16', type: 'friend-spending', enabled: true, order: 15, size: 'full' },
 ];
 
 // Helper to generate unique widget ID

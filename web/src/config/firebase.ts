@@ -1,13 +1,14 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+import { connectAuthEmulator, getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  connectFirestoreEmulator,
   setLogLevel,
   type Firestore,
 } from 'firebase/firestore';
-import { getFunctions, type Functions } from 'firebase/functions';
+import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions';
 
 const firebaseEnv = {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,6 +25,9 @@ export const missingFirebaseEnvVars = Object.entries(firebaseEnv)
   .map(([key]) => key);
 
 export const isFirebaseConfigured = missingFirebaseEnvVars.length === 0;
+export const usingFirebaseEmulators = import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
+export const friendSpendingEnabled = import.meta.env.VITE_FRIEND_SPENDING_ENABLED === 'true' &&
+  (!import.meta.env.DEV || usingFirebaseEmulators);
 
 const firebaseConfig = {
   apiKey: firebaseEnv.VITE_FIREBASE_API_KEY,
@@ -54,6 +58,12 @@ if (isFirebaseConfigured) {
   });
 
   functionsClientInstance = getFunctions(firebaseApp);
+
+  if (usingFirebaseEmulators) {
+    connectAuthEmulator(authInstance, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(dbInstance, '127.0.0.1', 8080);
+    connectFunctionsEmulator(functionsClientInstance, '127.0.0.1', 5001);
+  }
 } else {
   console.warn(
     `Missing required Firebase environment variables: ${missingFirebaseEnvVars.join(', ')}. ` +

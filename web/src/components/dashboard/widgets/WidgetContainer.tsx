@@ -18,6 +18,7 @@ import MonthOverMonthWidget from './MonthOverMonthWidget';
 import TagCloudWidget from './TagCloudWidget';
 import UpcomingBillsWidget from './UpcomingBillsWidget';
 import InstallmentTrackerWidget from './InstallmentTrackerWidget';
+import FriendSpendingWidget from './FriendSpendingWidget';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -99,6 +100,8 @@ const renderWidget = (
       return <UpcomingBillsWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
     case 'installment-tracker':
       return <InstallmentTrackerWidget {...propsWithSize} onNavigateToScheduledPayment={onNavigateToScheduledPayment} />;
+    case 'friend-spending':
+      return <FriendSpendingWidget {...propsWithSize} />;
     default:
       return null;
   }
