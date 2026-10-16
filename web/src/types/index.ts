@@ -49,6 +49,7 @@ export interface UserSettings {
   dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
   overallBudgetLimits?: OverallBudgetLimits; // Per-period limits, stored in MYR
   budgetAllocationRevision?: number; // Internal revision used to serialize budget mutations
+  defaultCategoryMigrationVersion?: number; // Tracks one-time default category additions
   createdAt: Date;
   updatedAt: Date;
 }
@@ -422,16 +423,30 @@ export const DEFAULT_HAMBURGER_FEATURES: FeatureTab[] = [
   'admin',
 ];
 
+// Shared names keep built-in budget templates aligned with the default categories.
+export const DEFAULT_CATEGORY_NAMES = {
+  foodAndDining: 'Food & Dining',
+  transportation: 'Transportation',
+  shopping: 'Shopping',
+  entertainment: 'Entertainment',
+  billsAndUtilities: 'Bills & Utilities',
+  healthcare: 'Healthcare',
+  education: 'Education',
+  savings: 'Savings',
+  other: 'Other',
+} as const;
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
-  { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B' },
-  { name: 'Transportation', icon: '🚗', color: '#4ECDC4' },
-  { name: 'Shopping', icon: '🛍️', color: '#45B7D1' },
-  { name: 'Entertainment', icon: '🎬', color: '#FFA07A' },
-  { name: 'Bills & Utilities', icon: '📄', color: '#98D8C8' },
-  { name: 'Healthcare', icon: '🏥', color: '#F7DC6F' },
-  { name: 'Education', icon: '📚', color: '#BB8FCE' },
-  { name: 'Other', icon: '📦', color: '#95A5A6' },
+  { name: DEFAULT_CATEGORY_NAMES.foodAndDining, icon: '🍔', color: '#FF6B6B' },
+  { name: DEFAULT_CATEGORY_NAMES.transportation, icon: '🚗', color: '#4ECDC4' },
+  { name: DEFAULT_CATEGORY_NAMES.shopping, icon: '🛍️', color: '#45B7D1' },
+  { name: DEFAULT_CATEGORY_NAMES.entertainment, icon: '🎬', color: '#FFA07A' },
+  { name: DEFAULT_CATEGORY_NAMES.billsAndUtilities, icon: '📄', color: '#98D8C8' },
+  { name: DEFAULT_CATEGORY_NAMES.savings, icon: '💰', color: '#2ECC71' },
+  { name: DEFAULT_CATEGORY_NAMES.healthcare, icon: '🏥', color: '#F7DC6F' },
+  { name: DEFAULT_CATEGORY_NAMES.education, icon: '📚', color: '#BB8FCE' },
+  { name: DEFAULT_CATEGORY_NAMES.other, icon: '📦', color: '#95A5A6' },
 ];
 
 // Default e-wallets

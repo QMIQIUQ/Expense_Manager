@@ -3,7 +3,8 @@
  * Phase 3.2 Implementation
  */
 
-import { BudgetTemplate } from '../types';
+import { DEFAULT_CATEGORY_NAMES } from '../types';
+import type { BudgetTemplate } from '../types';
 
 // Built-in templates
 export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
@@ -15,12 +16,12 @@ export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
     isBuiltIn: true,
     totalBudget: 800,
     budgets: [
-      { categoryName: 'Food', amount: 30, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Transportation', amount: 15, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Entertainment', amount: 10, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Education', amount: 20, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Shopping', amount: 10, isPercentage: true, alertThreshold: 70 },
-      { categoryName: 'Other', amount: 15, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.foodAndDining, amount: 30, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.transportation, amount: 15, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.entertainment, amount: 10, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.education, amount: 20, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.shopping, amount: 10, isPercentage: true, alertThreshold: 70 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.other, amount: 15, isPercentage: true, alertThreshold: 80 },
     ],
   },
   {
@@ -31,14 +32,14 @@ export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
     isBuiltIn: true,
     totalBudget: 3000,
     budgets: [
-      { categoryName: 'Food', amount: 20, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Transportation', amount: 10, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Entertainment', amount: 10, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Shopping', amount: 15, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Utilities', amount: 10, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Healthcare', amount: 5, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Savings', amount: 20, isPercentage: true, alertThreshold: 100 },
-      { categoryName: 'Other', amount: 10, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.foodAndDining, amount: 20, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.transportation, amount: 10, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.entertainment, amount: 10, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.shopping, amount: 15, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.billsAndUtilities, amount: 10, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.healthcare, amount: 5, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.savings, amount: 20, isPercentage: true, alertThreshold: 100 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.other, amount: 10, isPercentage: true, alertThreshold: 80 },
     ],
   },
   {
@@ -49,15 +50,15 @@ export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
     isBuiltIn: true,
     totalBudget: 5000,
     budgets: [
-      { categoryName: 'Food', amount: 25, isPercentage: true, alertThreshold: 85 },
-      { categoryName: 'Transportation', amount: 10, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Education', amount: 15, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Entertainment', amount: 5, isPercentage: true, alertThreshold: 70 },
-      { categoryName: 'Healthcare', amount: 10, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Utilities', amount: 10, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Shopping', amount: 10, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Savings', amount: 10, isPercentage: true, alertThreshold: 100 },
-      { categoryName: 'Other', amount: 5, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.foodAndDining, amount: 25, isPercentage: true, alertThreshold: 85 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.transportation, amount: 10, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.education, amount: 15, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.entertainment, amount: 5, isPercentage: true, alertThreshold: 70 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.healthcare, amount: 10, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.billsAndUtilities, amount: 10, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.shopping, amount: 10, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.savings, amount: 10, isPercentage: true, alertThreshold: 100 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.other, amount: 5, isPercentage: true, alertThreshold: 80 },
     ],
   },
   {
@@ -68,11 +69,11 @@ export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
     isBuiltIn: true,
     totalBudget: 2000,
     budgets: [
-      { categoryName: 'Transportation', amount: 30, isPercentage: true, alertThreshold: 85 },
-      { categoryName: 'Food', amount: 25, isPercentage: true, alertThreshold: 80 },
-      { categoryName: 'Entertainment', amount: 20, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Shopping', amount: 15, isPercentage: true, alertThreshold: 70 },
-      { categoryName: 'Other', amount: 10, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.transportation, amount: 30, isPercentage: true, alertThreshold: 85 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.foodAndDining, amount: 25, isPercentage: true, alertThreshold: 80 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.entertainment, amount: 20, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.shopping, amount: 15, isPercentage: true, alertThreshold: 70 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.other, amount: 10, isPercentage: true, alertThreshold: 80 },
     ],
   },
   {
@@ -83,11 +84,11 @@ export const BUILT_IN_TEMPLATES: BudgetTemplate[] = [
     isBuiltIn: true,
     totalBudget: 1500,
     budgets: [
-      { categoryName: 'Food', amount: 25, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Transportation', amount: 10, isPercentage: true, alertThreshold: 75 },
-      { categoryName: 'Utilities', amount: 15, isPercentage: true, alertThreshold: 90 },
-      { categoryName: 'Savings', amount: 40, isPercentage: true, alertThreshold: 100 },
-      { categoryName: 'Other', amount: 10, isPercentage: true, alertThreshold: 70 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.foodAndDining, amount: 25, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.transportation, amount: 10, isPercentage: true, alertThreshold: 75 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.billsAndUtilities, amount: 15, isPercentage: true, alertThreshold: 90 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.savings, amount: 40, isPercentage: true, alertThreshold: 100 },
+      { categoryName: DEFAULT_CATEGORY_NAMES.other, amount: 10, isPercentage: true, alertThreshold: 70 },
     ],
   },
 ];
