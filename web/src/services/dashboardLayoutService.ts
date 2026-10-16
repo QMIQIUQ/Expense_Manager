@@ -8,11 +8,26 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { DashboardLayout, DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../types/dashboard';
+import { DashboardLayout, DashboardWidget, DEFAULT_DASHBOARD_LAYOUT, generateWidgetId } from '../types/dashboard';
 import { sessionCache } from '../utils/sessionCache';
 import { networkStatus } from '../utils/networkStatus';
 
 const COLLECTION_NAME = 'dashboardLayouts';
+
+const ensureDefaultFriendWidget = (layout: DashboardLayout): DashboardLayout => {
+  if (layout.widgets.some((widget) => widget.type === 'friend-spending')) return layout;
+
+  const defaultWidget = DEFAULT_DASHBOARD_LAYOUT.find((widget) => widget.type === 'friend-spending');
+  if (!defaultWidget) return layout;
+
+  const nextOrder = layout.widgets.reduce((maxOrder, widget) => Math.max(maxOrder, widget.order), -1) + 1;
+  const widget: DashboardWidget = {
+    ...defaultWidget,
+    id: generateWidgetId(),
+    order: nextOrder,
+  };
+  return { ...layout, widgets: [...layout.widgets, widget] };
+};
 
 // Convert Firestore Timestamps to Date objects
 const convertTimestamps = (data: Record<string, unknown>): DashboardLayout => {
@@ -46,14 +61,20 @@ export const dashboardLayoutService = {
     const existing = await this.get(userId);
     
     if (existing) {
+      let widgets = [...existing.widgets];
       const monthWidget = DEFAULT_DASHBOARD_LAYOUT.find((widget) => widget.type === 'month-over-month');
-      const hasMonthWidget = existing.widgets.some((widget) => widget.type === 'month-over-month');
-      if (monthWidget && !hasMonthWidget) {
-        const widgets = [...existing.widgets, { ...monthWidget, order: existing.widgets.length }];
+      if (monthWidget && !widgets.some((widget) => widget.type === 'month-over-month')) {
+        const nextOrder = widgets.reduce((maxOrder, widget) => Math.max(maxOrder, widget.order), -1) + 1;
+        widgets.push({ ...monthWidget, id: generateWidgetId(), order: nextOrder });
+      }
+
+      const withFriendWidget = ensureDefaultFriendWidget({ ...existing, widgets });
+      if (withFriendWidget.widgets.length !== existing.widgets.length) {
+        widgets = withFriendWidget.widgets;
         await this.updateWidgets(userId, widgets);
         return { ...existing, widgets };
       }
-      return existing;
+      return withFriendWidget;
     }
     
     // Create default layout
@@ -84,12 +105,16 @@ export const dashboardLayoutService = {
       // and fetch fresh data in the background
       if (cached && networkStatus.isOnline) {
         console.log('Using cached dashboard layout, revalidating in background...');
+        const cachedWithDefaults = ensureDefaultFriendWidget(cached);
+        if (cachedWithDefaults !== cached) {
+          sessionCache.set('dashboardLayout', userId, cachedWithDefaults);
+        }
         
         // Fetch fresh data in background (non-blocking)
         this.fetchFromFirebase(userId)
           .then((freshLayout) => {
             // Only update cache if data actually changed
-            const cachedStr = JSON.stringify(cached);
+            const cachedStr = JSON.stringify(cachedWithDefaults);
             const freshStr = JSON.stringify(freshLayout);
             
             if (cachedStr !== freshStr) {
@@ -103,13 +128,13 @@ export const dashboardLayoutService = {
             console.warn('Background revalidation failed for dashboard layout:', error);
           });
         
-        return cached;
+        return cachedWithDefaults;
       }
       
       // If offline and have cache, use it
       if (!networkStatus.isOnline && cached) {
         console.log('Using cached dashboard layout (offline mode)');
-        return cached;
+        return ensureDefaultFriendWidget(cached);
       }
       
       // No cache or need fresh data - fetch from Firebase

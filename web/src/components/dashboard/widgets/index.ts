@@ -15,6 +15,7 @@ export { default as MonthOverMonthWidget } from './MonthOverMonthWidget';
 export { default as TagCloudWidget } from './TagCloudWidget';
 export { default as UpcomingBillsWidget } from './UpcomingBillsWidget';
 export { default as InstallmentTrackerWidget } from './InstallmentTrackerWidget';
+export { default as FriendSpendingWidget } from './FriendSpendingWidget';
 export { default as ShowMoreButton } from './ShowMoreButton';
 
 // Export types

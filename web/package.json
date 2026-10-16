@@ -11,6 +11,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:friend-emulator": "node scripts/friend-spending-emulator-test.mjs",
+    "emulators:start": "npx --yes firebase-tools emulators:start --only auth,firestore,functions --project demo-expense-manager",
     "test:coverage": "vitest run --coverage",
     "generate:icons": "node scripts/generate-theme-icons.mjs",
     "screenshots": "node public/screenshots/convert-svg-to-png.js"
