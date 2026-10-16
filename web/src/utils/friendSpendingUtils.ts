@@ -133,5 +133,3 @@ export const presentFriendSpending = async (
 
   return { totals, categories };
 };
-
-\n
