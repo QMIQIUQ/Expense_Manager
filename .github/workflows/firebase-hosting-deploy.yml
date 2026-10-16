@@ -33,24 +33,76 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
-          if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -Eq '^web/firestore\.(rules|indexes\.json)$'; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          changed_files="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")"
+          if echo "$changed_files" | grep -Eq '^web/firestore\.rules$'; then
+            echo "rules_changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "rules_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$changed_files" | grep -Eq '^web/firestore\.indexes\.json$'; then
+            echo "indexes_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "indexes_changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Authenticate Google Cloud
-        if: steps.firestore-changes.outputs.changed == 'true'
+        if: steps.firestore-changes.outputs.rules_changed == 'true' || steps.firestore-changes.outputs.indexes_changed == 'true'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-      - name: Deploy Firestore rules and indexes
-        if: steps.firestore-changes.outputs.changed == 'true'
+      - name: Set up Google Cloud CLI
+        if: steps.firestore-changes.outputs.rules_changed == 'true' || steps.firestore-changes.outputs.indexes_changed == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: expense-manager-41afb
+
+      - name: Deploy Firestore rules through the Rules API
+        if: steps.firestore-changes.outputs.rules_changed == 'true'
+        working-directory: web
+        run: |
+          set -euo pipefail
+          access_token="$(gcloud auth print-access-token)"
+          ruleset_request="$(jq -n --rawfile rules firestore.rules '{source:{files:[{name:"firestore.rules",content:$rules}]}}')"
+          ruleset_response="$(curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer $access_token" \
+            -H 'Content-Type: application/json' \
+            --data "$ruleset_request" \
+            "https://firebaserules.googleapis.com/v1/projects/expense-manager-41afb/rulesets")"
+          ruleset_name="$(jq -er '.name' <<< "$ruleset_response")"
+          release_name="projects/expense-manager-41afb/releases/cloud.firestore"
+          release_url="https://firebaserules.googleapis.com/v1/$release_name"
+          release_status="$(curl --silent --show-error -o /tmp/firestore-release.json -w '%{http_code}' \
+            -H "Authorization: Bearer $access_token" "$release_url")"
+          release_request="$(jq -n --arg name "$release_name" --arg rulesetName "$ruleset_name" '{name:$name,rulesetName:$rulesetName}')"
+          if [ "$release_status" = '200' ]; then
+            curl --fail-with-body --silent --show-error \
+              -X PATCH \
+              -H "Authorization: Bearer $access_token" \
+              -H 'Content-Type: application/json' \
+              --data "$release_request" \
+              "$release_url?updateMask=rulesetName"
+          elif [ "$release_status" = '404' ]; then
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Authorization: Bearer $access_token" \
+              -H 'Content-Type: application/json' \
+              --data "$release_request" \
+              'https://firebaserules.googleapis.com/v1/projects/expense-manager-41afb/releases'
+          else
+            cat /tmp/firestore-release.json >&2
+            echo "Could not read the current Firestore rules release (HTTP $release_status)." >&2
+            exit 1
+          fi
+          echo "Published Firestore ruleset $ruleset_name."
+
+      - name: Deploy Firestore indexes
+        if: steps.firestore-changes.outputs.indexes_changed == 'true'
         working-directory: web
         run: |
           npx --yes firebase-tools@15.34.0 deploy \
-            --only firestore:rules,firestore:indexes \
+            --only firestore:indexes \
             --project expense-manager-41afb \
             --non-interactive
 
