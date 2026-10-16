@@ -79,7 +79,7 @@ A comprehensive expense tracking application built with React, TypeScript, and F
 - ✅ View total or category summaries for all time, the last three months, this month, or one day
 - ✅ Convert summaries to the viewer's display currency when rates are available
 - ✅ Save view and date preferences separately for each friend
-- ✅ Keep expense documents private; callable Functions return aggregate amounts only
+- ✅ Keep expense documents private; friends can read only owner-maintained daily category and currency totals
 
 See [the friend-spending guide](../docs/FRIEND_SPENDING.md) and [local Emulator setup](FIREBASE_EMULATORS.md).
 
@@ -121,7 +121,7 @@ See [the friend-spending guide](../docs/FRIEND_SPENDING.md) and [local Emulator 
    cp .env.example .env
    ```
 
-Friend spending is enabled in the live Firebase build and disabled on the shared-backend preview channel. For safe end-to-end testing, use the [Firebase Emulator instructions](FIREBASE_EMULATORS.md).
+Friend spending is enabled in the live Firebase build and disabled on the shared-backend preview channel. The dashboard uses Firestore and does not require Cloud Functions or a Blaze upgrade. For safe end-to-end testing, use the [Firebase Emulator instructions](FIREBASE_EMULATORS.md).
 
 ### Development
 

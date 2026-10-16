@@ -1,11 +1,10 @@
 import {
   collection,
   runTransaction,
-  updateDoc,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   query,
   where,
   orderBy,
@@ -14,6 +13,11 @@ import {
 import { db } from '../config/firebase';
 import { Expense, Transfer } from '../types';
 import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import {
+  applyExpenseSummaryChange,
+  friendSpendingSummaryStateRef,
+  isFriendSpendingSummaryReady,
+} from './friendSpendingSummaryService';
 
 // Helper to strip undefined fields so Firestore doesn't reject the payload
 const removeUndefinedFields = (data: Record<string, unknown>): Record<string, unknown> => {
@@ -56,7 +60,10 @@ export const expenseService = {
         }])
       : [];
     await runTransaction(db, async (transaction) => {
-      const existingExpense = await transaction.get(docRef);
+      const [existingExpense, summaryState] = await Promise.all([
+        transaction.get(docRef),
+        transaction.get(friendSpendingSummaryStateRef(expense.userId)),
+      ]);
       if (existingExpense.exists()) {
         if (existingExpense.data().userId !== expense.userId) {
           throw new Error('Expense ID is already owned by another user');
@@ -64,6 +71,9 @@ export const expenseService = {
         return;
       }
       await applyBalanceAdjustmentsInTransaction(transaction, balanceAdjustments);
+      if (isFriendSpendingSummaryReady(summaryState.data())) {
+        applyExpenseSummaryChange(transaction, null, { ...expense, id: docRef.id } as Expense);
+      }
       transaction.set(docRef, dataToSave);
     });
     return docRef.id;
@@ -85,6 +95,21 @@ export const expenseService = {
     })) as Expense[];
   },
 
+  async getAllFromServer(userId: string): Promise<Expense[]> {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
+    );
+    const querySnapshot = await getDocsFromServer(q);
+    return querySnapshot.docs.map((expenseDoc) => ({
+      id: expenseDoc.id,
+      ...expenseDoc.data(),
+      createdAt: expenseDoc.data().createdAt?.toDate(),
+      updatedAt: expenseDoc.data().updatedAt?.toDate(),
+    })) as Expense[];
+  },
+
   // Update an expense
   async update(id: string, updates: Partial<Expense>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
@@ -92,13 +117,37 @@ export const expenseService = {
       ...updates,
       updatedAt: Timestamp.now(),
     });
-    await updateDoc(docRef, dataToUpdate);
+    await runTransaction(db, async (transaction) => {
+      const expenseSnapshot = await transaction.get(docRef);
+      if (!expenseSnapshot.exists()) throw new Error('Expense not found');
+      const previousExpense = { id, ...expenseSnapshot.data() } as Expense;
+      const summaryState = await transaction.get(friendSpendingSummaryStateRef(previousExpense.userId));
+      const nextExpense = { ...previousExpense, ...updates, id } as Expense;
+      if (nextExpense.userId !== previousExpense.userId) {
+        throw new Error('Expense owner cannot be changed');
+      }
+      if (isFriendSpendingSummaryReady(summaryState.data())) {
+        applyExpenseSummaryChange(transaction, previousExpense, nextExpense);
+      }
+      transaction.update(docRef, dataToUpdate);
+    });
   },
 
   // Delete an expense
   async delete(id: string): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
+    await runTransaction(db, async (transaction) => {
+      const expenseSnapshot = await transaction.get(docRef);
+      if (!expenseSnapshot.exists()) {
+        return;
+      }
+      const expense = { id, ...expenseSnapshot.data() } as Expense;
+      const summaryState = await transaction.get(friendSpendingSummaryStateRef(expense.userId));
+      if (isFriendSpendingSummaryReady(summaryState.data())) {
+        applyExpenseSummaryChange(transaction, expense, null);
+      }
+      transaction.delete(docRef);
+    });
   },
 
   async deleteWithRelatedTransfers(id: string, userId: string, candidateTransferIds: string[] = []): Promise<Transfer[]> {
@@ -157,7 +206,10 @@ export const expenseService = {
     }));
 
     return runTransaction(db, async (transaction) => {
-      const expenseSnapshot = await transaction.get(expenseRef);
+      const [expenseSnapshot, summaryState] = await Promise.all([
+        transaction.get(expenseRef),
+        transaction.get(friendSpendingSummaryStateRef(userId)),
+      ]);
 
       if (expenseSnapshot.exists()) {
         if (expenseSnapshot.data().userId !== userId) throw new Error('Expense is owned by another user');
@@ -201,6 +253,9 @@ export const expenseService = {
       // Revalidate the exact expense link inside the transaction. A stale UI ID
       // or a transfer relinked elsewhere must never delete an unrelated record.
       await applyBalanceAdjustmentsInTransaction(transaction, balanceAdjustments);
+      if (currentExpenseData && isFriendSpendingSummaryReady(summaryState.data())) {
+        applyExpenseSummaryChange(transaction, { id, ...currentExpenseData } as Expense, null);
+      }
       if (expenseSnapshot.exists()) transaction.delete(expenseRef);
       const deletedTransfers = currentLinkedTransfers.map((snapshot) => toTransfer(snapshot.id, snapshot.data));
       currentLinkedTransfers.forEach((snapshot) => {

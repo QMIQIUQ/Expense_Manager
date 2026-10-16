@@ -20,7 +20,7 @@ The application has production and preview deployments. GitHub Pages and Firebas
 - **Testing URL**: use the action's `channel_url` shown in the workflow run summary; this URL is temporary and expires after 7 days
 - **Auto-deploy**: ✅ Enabled (triggers on push to `main` or `firebase-testing`)
 
-The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database. Friend-spending calls are disabled in the preview build. On `main`, changes to Functions, Firestore rules, indexes, or Firebase configuration deploy the backend before Hosting; the live build enables the feature.
+The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database. Friend spending is disabled in the preview build. On `main`, changes to Firestore rules or indexes deploy those resources before Hosting; the live build enables the feature. The friend dashboard uses Firestore directly and adds no Cloud Functions dependency. The separate admin account-deletion action still uses the app's existing callable Cloud Function, and this workflow does not deploy Functions.
 
 ### 3. Firebase Preview (Pull Requests)
 - **Trigger**: Pull requests to `main` branch
@@ -34,7 +34,7 @@ The Firebase Hosting preview channel changes the deployed frontend only. Both `m
    ```bash
    git push origin main
    ```
-2. `.github/workflows/deploy.yml` deploys GitHub Pages. The Firebase workflow deploys changed Functions and Firestore rules/indexes first, then deploys Hosting to `live`.
+2. `.github/workflows/deploy.yml` deploys GitHub Pages. The Firebase workflow deploys changed Firestore rules/indexes first, then deploys Hosting to `live`; it does not deploy Cloud Functions.
 3. Check both workflow runs in the GitHub "Actions" tab. Firebase's visitor-facing production URL is https://expense-manager-41afb.web.app/.
 
 ### Deploy a Firebase UI preview (`firebase-testing`)
