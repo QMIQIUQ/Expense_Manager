@@ -406,5 +406,3 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
 };
 
 export default FriendSpendingWidget;
-
-\n

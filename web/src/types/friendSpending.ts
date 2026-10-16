@@ -37,5 +37,3 @@ export interface FriendSpendingSummary {
   totalByCurrency: FriendSpendingCurrencyAmount[];
   categories: FriendSpendingCategory[];
 }
-
-\n

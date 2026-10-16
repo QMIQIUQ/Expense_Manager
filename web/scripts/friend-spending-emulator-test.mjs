@@ -138,5 +138,3 @@ try {
   }
   await Promise.all([deleteApp(appA), deleteApp(appB)]);
 }
-
-\n

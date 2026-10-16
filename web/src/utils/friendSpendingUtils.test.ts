@@ -62,5 +62,3 @@ describe('friend spending display currency', () => {
     });
   });
 });
-
-\n
