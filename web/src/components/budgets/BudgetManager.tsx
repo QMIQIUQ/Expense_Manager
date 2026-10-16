@@ -1218,6 +1218,7 @@ const styles = {
   conversionError: {
     color: 'var(--error-text, #dc2626)',
     fontSize: '12px',
+    textAlign: 'right' as const,
   },
   allPeriodsBudgetNote: {
     margin: '0 2px',
@@ -1271,11 +1272,6 @@ const styles = {
     fontSize: '24px',
     fontWeight: '700' as const,
     whiteSpace: 'nowrap' as const,
-  },
-  conversionError: {
-    color: 'var(--error-color, #dc3545)',
-    fontSize: '12px',
-    textAlign: 'right' as const,
   },
   listActionRow: {
     display: 'flex',
