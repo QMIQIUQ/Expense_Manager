@@ -4,6 +4,22 @@
 
 ## System Overview
 
+> 本文件保留歷史架構說明及資料流範例。現行目錄職責、主頁籤與完整功能地圖請先看 [完整功能與頁面文檔](FEATURES_AND_PAGES.md)，其中以 `web/src` 現況核對。
+
+### Current Implementation Layers
+
+| Layer | Current implementation | Responsibility |
+|---|---|---|
+| Bootstrap | `web/src/main.tsx` | Registers the service worker and mounts Theme, Language, Auth, Notification, and UserSettings providers. |
+| Routing and access | `web/src/App.tsx`, `components/PrivateRoute.tsx` | Routes login and the authenticated dashboard; unknown paths return to `/`. |
+| Application shell | `web/src/pages/Dashboard.tsx` | Owns the shared dashboard shell, tab selection, data handlers, header menu, and overlays. |
+| Feature UI | `web/src/pages/tabs/`, `web/src/components/` | Implements finance, planning, payment, analytics, settings, admin, and shared UI features. |
+| Shared state and interactions | `web/src/contexts/`, `web/src/hooks/` | Shares account/preferences/theme/notifications and reusable offline, optimistic CRUD, network, and selection behavior. |
+| Application and domain logic | `web/src/services/`, `web/src/domain/`, `web/src/utils/` | Owns Firestore operations, currency and money handling, OCR, import/export, dashboard layout, caching, and synchronization. |
+| Firebase boundary | `web/src/config/firebase.ts`, `web/firestore.rules`, `web/functions/` | Initializes Firebase, enforces database access, and runs privileged callable operations. |
+
+The current provider and feature map is documented alongside the route and feature inventory in [FEATURES_AND_PAGES.md](FEATURES_AND_PAGES.md). Avoid using the simplified diagram below as a complete inventory of current collections or mounted features.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Expense Manager Web App                      │

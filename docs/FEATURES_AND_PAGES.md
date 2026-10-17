@@ -2,15 +2,104 @@
 
 ## 概覽 Overview
 
-本文檔提供 Expense Manager 網頁應用程式中所有功能和頁面的完整資訊，以便未來修改時不會遺漏任何功能。
+本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
+
+> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層細節另見 [系統架構](ARCHITECTURE.md)。
 
 ## 目錄 Table of Contents
 
-1. [頁面結構 Page Structure](#頁面結構)
-2. [共用 UI 組件 Shared UI Components](#共用-ui-組件)
-3. [功能列表 Feature List](#功能列表)
-4. [主題與樣式 Theme & Styles](#主題與樣式)
-5. [數據模型 Data Models](#數據模型)
+1. [功能地圖 Feature Map](#功能地圖-feature-map)
+2. [程式分層與資料流 Application Layers](#程式分層與資料流-application-layers)
+3. [頁面結構 Page Structure](#頁面結構)
+4. [共用 UI 組件 Shared UI Components](#共用-ui-組件)
+5. [功能列表 Feature List](#功能列表)
+6. [主題與樣式 Theme & Styles](#主題與樣式)
+7. [數據模型 Data Models](#數據模型)
+
+---
+
+## 功能地圖 Feature Map
+
+下表先按使用者任務整理功能群組，再列出它們的入口。入口是否可個人化依設定而定；Dashboard 主區域的實際掛載點為 `web/src/pages/Dashboard.tsx`。
+
+| 功能群組 | 包含功能 | 目前入口 / 主要實作 |
+|---|---|---|
+| 帳戶與存取 | 登入、註冊流程、登出、個人檔案、管理員工具 | `/` 登入；`/dashboard` 受 `PrivateRoute` 保護；Profile/Admin 從頁首選單開啟 |
+| 財務紀錄 | 支出、收入、分類、還款追蹤 | Dashboard 主頁籤；`ExpensesTab`、`IncomesTab`、`CategoryManager`、`RepaymentManager` |
+| 預算與規劃 | 預算、預算模板/建議/歷史/結轉、定期付款、到期提醒 | `BudgetManager`；`ScheduledPaymentManager`（Recurring 主頁籤） |
+| 支付與帳戶 | 信用卡、電子錢包、銀行帳戶、轉帳 | Payment Methods 子頁籤：cards、ewallets、banks、transfers |
+| 分析與總覽 | 摘要卡、支出/分類圖表、趨勢、月比、標籤雲、預算進度、卡片摘要、分期追蹤、待付款、近期支出、追蹤支出、儲蓄目標、朋友支出、快速新增、即將到期帳單 | `CustomizableDashboard`、`DashboardSummary`、`dashboard/widgets/`、朋友支出服務 |
+| 快速輸入 | 快速記帳、一般/步驟式支出表單、掃描收據與 OCR 草稿 | Dashboard 浮動操作；`ExpenseForm`、`StepByStepExpenseForm`、`receiptOcrService` |
+| 個人化 | 主頁籤順序/顯示、Dashboard Widget 排列、語言、主題、顯示幣別、日期捷徑 | Settings 頁籤、`DashboardCustomizer`、頁首/設定面板 |
+| 資料移轉 | CSV/Excel 匯入匯出 | 匯入匯出 Modal；`importExportUtils` |
+| 離線與安裝 | PWA 安裝、離線讀寫佇列、網路狀態、恢復同步 | PWA Provider/Service Worker、`offlineQueue`、`syncService`、同步狀態元件 |
+| 管理與維運 | 管理員使用者管理、刪除使用者帳戶 | Admin 頁籤；Firebase Callable Function `adminDeleteUser` |
+
+### 目前入口與未掛載程式碼
+
+- 頂層路徑由 `web/src/App.tsx` 定義：`/` 登入、`/login` 轉回 `/`、`/dashboard` 登入後外殼，其他路徑導回 `/`。註冊元件存在於來源樹，但目前沒有獨立 `/register` 路由。
+- Dashboard 實際掛載 8 個可排序/顯示的主頁籤：Dashboard、Expenses、Incomes、Categories、Budgets、Recurring、Payment Methods、Settings。Profile 與 Admin 是頁首選單入口，不是主頁籤。
+- `Recurring` 目前掛載 `ScheduledPaymentManager`。`RecurringTab` 與 `RecurringExpenseManager` 保留在來源樹，但未由 Dashboard 掛載；兩種資料/介面不可混稱。
+- 還款與轉帳是其他流程中的管理元件，不是獨立頂層路由；轉帳列表位於 Payment Methods 的 transfers 子頁籤。
+- `navigationConfig.ts` 會把舊設定值 `cards`、`ewallets` 正規化為 `paymentMethods`，所以信用卡及電子錢包不會成為獨立主頁籤。
+
+---
+
+## 程式分層與資料流 Application Layers
+
+```text
+main.tsx
+├── 共用 Provider：Theme / Language / Auth / Notification / UserSettings
+├── PWA 註冊：Service Worker
+└── App.tsx：PWAProvider + Router + PWAInstallPrompt
+    ├── / → Login
+    └── /dashboard → PrivateRoute → Dashboard
+        ├── CompactNavigation → 8 個主頁籤
+        ├── 頁首選單 → Profile / Admin / 登出
+        ├── 功能元件 → components/<feature>/ 與 pages/tabs/
+        └── 表單、Modal、浮動操作、Widget
+             ↓ props / React Context / hooks
+        services/ + domain/ + utils/
+        ├── Firebase CRUD 與查詢服務
+        ├── 匯率、金額、OCR、匯入匯出、儀表板配置
+        └── 離線佇列、快取、網路狀態、同步協調
+             ↓
+        Firebase Auth / Cloud Firestore / Callable Functions
+```
+
+| 目錄 | 職責 | 常用入口 |
+|---|---|---|
+| `web/src/pages/` | 頁面殼層、登入及 Profile | `App.tsx` 路由指向 `Login`、`Dashboard`；Dashboard 內嵌各主頁籤 |
+| `web/src/components/` | 頁面功能、表單、共用 UI 與 Dashboard Widget | 依功能分資料夾，如 `expenses/`、`budgets/`、`scheduledPayments/` |
+| `web/src/contexts/` | 跨頁共享的登入、語言、主題、通知、使用者偏好及 PWA 狀態 | 五個主要 Provider 在 `main.tsx` 包裝；`PWAProvider` 在 `App.tsx` 包裝 Router |
+| `web/src/hooks/` | 可重用互動/狀態邏輯 | 離線同步、樂觀 CRUD、多選、網路狀態、觸控排序 |
+| `web/src/services/` | Firebase 存取及跨元件應用服務 | `expenseService`、`budgetService`、`syncService` 等 |
+| `web/src/domain/`、`utils/`、`types/` | 金額等領域邏輯、日期/幣別/預算/匯入匯出等輔助邏輯、型別 | 供服務、hooks、元件共用 |
+| `web/src/config/`、`constants/`、`locales/` | Firebase 初始化、集合常數、語系字典 | 應用環境及共用定義 |
+| `web/functions/` | 需伺服器權限的 Firebase Callable Functions | 目前包含管理員刪除使用者帳戶 |
+
+### 一般資料操作流程
+
+```text
+頁面 / 元件 → handler 或 hook → 對應 service → Firestore
+      ↑                                  ↓
+      └──── 更新 React 狀態 / 快取 ←─────┘
+
+離線時：service / hook → 本地佇列與快取 → 網路恢復 → syncService → Firestore
+```
+
+不是所有操作都會經過同一個 Hook。新增功能時，請沿用該領域既有 service，並檢查其 Firestore Rules、離線支援與同步行為；資料隔離及授權以 `web/firestore.rules` 和 Functions 驗證為準。
+
+### 主要共用狀態
+
+| 狀態範圍 | 實作位置 | 管理內容 |
+|---|---|---|
+| 身份 | `contexts/AuthContext.tsx` | Firebase 使用者、登入/登出狀態 |
+| 顯示偏好 | `contexts/UserSettingsContext.tsx`、`services/userSettingsService.ts` | 語言/顯示幣別及使用者設定 |
+| 外觀 | `contexts/ThemeContext.tsx` | 淺色/深色主題 |
+| 通知 | `contexts/NotificationContext.tsx` | 跨元件通知狀態 |
+| 頁籤/Widget | `services/featureSettingsService.ts`、`services/dashboardLayoutService.ts` | 導覽功能排序/顯示與 Dashboard 配置 |
+| 離線 | `services/syncService.ts`、`utils/offlineQueue.ts`、`utils/sessionCache.ts` | 待同步操作、資料快取與同步進度 |
 
 ---
 
@@ -238,7 +327,7 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 | 刪除預算 | 刪除預算設定 |
 | 進度追蹤 | 視覺化預算使用進度 |
 | 預算週期 | 日/週/月/年 |
-| 預算建議 | AI 智能建議 |
+| 預算建議 | 依預算及支出資料顯示預算建議卡片 |
 | 調整建議 | 基於歷史數據的調整建議 |
 | 預算模板 | 快速套用預算模板 |
 | 結轉設定 | 剩餘預算結轉至下期 |
@@ -606,5 +695,4 @@ interface Bank {
 
 ---
 
-**最後更新**: 2025年12月
-**版本**: 1.2.0
+**最後更新**: 2026-10-17

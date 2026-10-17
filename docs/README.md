@@ -8,7 +8,7 @@
 |------|------|---------|
 | [FEATURES.md](FEATURES.md) | 功能总览与使用指南 | 用户 / 开发者 |
 | [FEATURES_AND_PAGES.md](FEATURES_AND_PAGES.md) | 功能入口、目前頁面掛載與主要資料結構 | 開發者 |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | 系统架构设计 | 开发者 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 系統分層、資料流與 Firebase 架構 | 開發者 |
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
 | [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
 | [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2 實作紀錄；較新的導覽改進建議見 UI 導覽盤點 | 產品 / 設計 / 開發 |
@@ -48,4 +48,4 @@
 
 ---
 
-*最後更新: 2026-10-09*
+*最後更新: 2026-10-17*
