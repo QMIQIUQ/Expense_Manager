@@ -115,6 +115,7 @@ interface StepByStepExpenseFormProps {
   banks?: Bank[];
   onCreateEWallet?: () => void;
   onCreateCard?: () => void;
+  onCreateBank?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   initialDate?: string;
   timeFormat?: TimeFormat;
@@ -139,6 +140,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   onAddTransfer,
   onCreateEWallet,
   onCreateCard,
+  onCreateBank,
   initialDate,
   timeFormat = '24h',
   dateFormat = 'YYYY-MM-DD',
@@ -975,7 +977,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !isStep6Valid()) return;
     setIsSubmitting(true);
     setCurrencyError('');
     try {
@@ -1000,7 +1002,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   const handleSubmitAndAddAnother = async () => {
     if (!onSubmitAndAddAnother) return;
-    if (isSubmitting) return;
+    if (isSubmitting || !isStep6Valid()) return;
     setIsSubmitting(true);
     setCurrencyError('');
     
@@ -1351,6 +1353,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               ewallets={ewallets}
               onCreateCard={onCreateCard}
               onCreateEWallet={onCreateEWallet}
+              onCreateBank={onCreateBank}
               showLabels={true}
             />
 
@@ -1896,6 +1899,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               ewallets={ewallets}
               onCreateCard={onCreateCard}
               onCreateEWallet={onCreateEWallet}
+              onCreateBank={onCreateBank}
               showLabels={false}
             />
 
@@ -2021,7 +2025,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const isStep6Valid = () => {
     if (formData.paymentMethod === 'e_wallet' && !formData.paymentMethodName?.trim()) return false;
     if (formData.paymentMethod === 'credit_card' && cards.length > 0 && !formData.cardId) return false;
-    if (formData.paymentMethod === 'bank' && banks.length > 0 && !formData.bankId) return false;
+    if (formData.paymentMethod === 'bank' && !banks.some((bank) => bank.id === formData.bankId)) return false;
     return true;
   };
 

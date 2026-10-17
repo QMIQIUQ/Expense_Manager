@@ -67,6 +67,7 @@ interface ExpenseListProps {
   onReloadRepayments?: () => void; // Callback to reload repayments
   onCreateCard?: () => void;
   onCreateEWallet?: () => void;
+  onCreateBank?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   focusExpenseId?: string; // when set, scroll and highlight
   // Quick expense related
@@ -99,6 +100,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onReloadRepayments,
   onCreateCard,
   onCreateEWallet,
+  onCreateBank,
   onAddTransfer,
   focusExpenseId,
   quickExpensePresets = [],
@@ -1418,6 +1420,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             onCancel={() => setEditingExpense(null)}
             onCreateCard={onCreateCard}
             onCreateEWallet={onCreateEWallet}
+            onCreateBank={onCreateBank}
             onAddTransfer={onAddTransfer}
             dateFormat={dateFormat}
           />
