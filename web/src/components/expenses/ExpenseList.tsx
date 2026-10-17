@@ -28,8 +28,20 @@ import { sortCategories } from '../../utils/categoryOrder';
 import type { ExpensePeriodMode } from '../../types/expensePeriod';
 import CatIllustration from '../CatIllustration';
 import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
+import { dataService } from '../../services/dataService';
+import { offlineQueue } from '../../utils/offlineQueue';
 
 const EMPTY_REPAYMENTS: Repayment[] = [];
+const EMPTY_QUICK_EXPENSE_PRESETS: QuickExpensePreset[] = [];
+
+const isRetryableNetworkError = (error: unknown): boolean => {
+  const code = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : '';
+  if (['permission-denied', 'invalid-argument', 'failed-precondition'].includes(code || '')) return false;
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine);
+};
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -103,7 +115,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onCreateBank,
   onAddTransfer,
   focusExpenseId,
-  quickExpensePresets = [],
+  quickExpensePresets = EMPTY_QUICK_EXPENSE_PRESETS,
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   onManageQuickExpenses,
@@ -123,6 +135,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const oneMonthAgoStr = formatDateLocal(oneMonthAgo);
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [localRepayments, setLocalRepayments] = useState(repayments);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(oneMonthAgoStr);
@@ -137,6 +150,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showQuickExpenseForm, setShowQuickExpenseForm] = useState(false);
+  const [localQuickExpensePresets, setLocalQuickExpensePresets] = useState(quickExpensePresets);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [quickExpenseFormData, setQuickExpenseFormData] = useState<{
     name: string;
@@ -159,6 +173,25 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     icon: '💰',
   });
   const quickExpenseCurrencyDigits = getCurrencyMinorDigits(quickExpenseFormData.currency);
+
+  useEffect(() => {
+    setLocalQuickExpensePresets(quickExpensePresets);
+  }, [quickExpensePresets]);
+
+  useEffect(() => {
+    setLocalRepayments(repayments);
+  }, [repayments]);
+
+  useEffect(() => {
+    const handlePresetSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
+      if (detail?.entity === 'quickExpensePreset' && detail.userId === currentUser?.uid) {
+        onQuickExpensePresetsChange?.();
+      }
+    };
+    window.addEventListener('offline-operation-synced', handlePresetSynced);
+    return () => window.removeEventListener('offline-operation-synced', handlePresetSynced);
+  }, [currentUser?.uid, onQuickExpensePresetsChange]);
 
   const {
     isSelectionMode: multiSelectEnabled,
@@ -292,13 +325,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   // Calculate repayment totals per expense
   const repaymentTotals = useMemo(() => {
     const totals: { [expenseId: string]: number } = {};
-    repayments.forEach((repayment) => {
+    localRepayments.forEach((repayment) => {
       if (repayment.expenseId) {
         totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + getRepaymentBaseAmount(repayment);
       }
     });
     return totals;
-  }, [repayments]);
+  }, [localRepayments]);
 
   const expenseById = useMemo(() => {
     return new Map(expenses.map((expense) => [expense.id || '', expense]));
@@ -321,7 +354,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const repaymentDisplayEntries = useMemo(() => {
     if (!displayCurrency) return [];
-    return repayments
+    return localRepayments
       .filter((repayment) => !!repayment.id)
       .map((repayment) => {
         const linkedExpense = expenseById.get(repayment.expenseId || '');
@@ -332,7 +365,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           date: repayment.date,
         };
       });
-  }, [displayCurrency, expenseById, repayments]);
+  }, [displayCurrency, expenseById, localRepayments]);
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
   const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
@@ -357,9 +390,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   // Handle adding a repayment
   const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
     if (!currentUser) return;
-    
+    let pendingPayload: Repayment | null = null;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
-    
     try {
       const expense = expenses.find((item) => item.id === expenseId);
       const currencyFields = await resolveAmountCurrencyFields({
@@ -368,12 +400,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         baseCurrency: DEFAULT_BASE_CURRENCY,
         date: repaymentData.date,
       });
-      await repaymentService.create({
+      const repaymentId = repaymentService.createId();
+      const payload: Repayment = {
         ...repaymentData,
         ...currencyFields,
+        id: repaymentId,
         userId: currentUser.uid,
         expenseId: expenseId,
-      });
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      pendingPayload = payload;
+      setLocalRepayments((previous) => [...previous, payload]);
+      dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => [...previous, payload]);
+      await repaymentService.create(payload);
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
       setShowRepaymentFormForExpenseId(null);
@@ -383,6 +423,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to add repayment:', error);
+      const queuedId = isRetryableNetworkError(error) && pendingPayload
+        ? offlineQueue.enqueue({ type: 'create', entity: 'repayment', payload: pendingPayload })
+        : null;
+      if (queuedId) {
+        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
+        setShowRepaymentFormForExpenseId(null);
+        return;
+      }
+      if (pendingPayload) {
+        setLocalRepayments((previous) => previous.filter((item) => item.id !== pendingPayload?.id));
+        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.filter((item) => item.id !== pendingPayload?.id));
+      }
       updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment'), duration: 3000 });
     }
   };
@@ -390,11 +442,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   // Handle updating a repayment
   const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>) => {
     if (!currentUser) return;
-    
+    const original = localRepayments.find((item) => item.id === repaymentId);
+    let queuedUpdates: Partial<Repayment> = updates;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
     
     try {
-      const existing = repayments.find((item) => item.id === repaymentId);
+      const existing = localRepayments.find((item) => item.id === repaymentId);
       const expense = expenses.find((item) => item.id === existing?.expenseId);
       const needsRevaluation = updates.amount !== undefined || updates.currency !== undefined || updates.date !== undefined;
       const currencyFields = needsRevaluation ? await resolveAmountCurrencyFields({
@@ -404,7 +457,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         date: updates.date || existing?.date || new Date().toISOString().slice(0, 10),
         existing,
       }) : {};
-      await repaymentService.update(repaymentId, { ...updates, ...currencyFields });
+      const normalizedUpdates = { ...updates, ...currencyFields };
+      queuedUpdates = normalizedUpdates;
+      if (existing) {
+        const optimistic = { ...existing, ...normalizedUpdates, updatedAt: new Date() };
+        setLocalRepayments((previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
+        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
+      }
+      await repaymentService.update(repaymentId, normalizedUpdates);
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
       setEditingRepayment(null);
@@ -414,6 +474,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to update repayment:', error);
+      const queuedId = isRetryableNetworkError(error) ? offlineQueue.enqueue({ type: 'update', entity: 'repayment', payload: {
+        ...queuedUpdates,
+        id: repaymentId,
+        userId: currentUser.uid,
+      } }) : null;
+      if (queuedId) {
+        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
+        setEditingRepayment(null);
+        return;
+      }
+      if (original) {
+        setLocalRepayments((previous) => previous.map((item) => item.id === repaymentId ? original : item));
+        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.map((item) => item.id === repaymentId ? original : item));
+      }
       updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment'), duration: 3000 });
     }
   };
@@ -422,8 +496,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const handleDeleteRepayment = async (repaymentId: string) => {
     if (!currentUser) return;
     
+    const original = localRepayments.find((item) => item.id === repaymentId);
+    setLocalRepayments((previous) => previous.filter((item) => item.id !== repaymentId));
+    dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.filter((item) => item.id !== repaymentId));
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
-    
     try {
       await repaymentService.delete(repaymentId);
       
@@ -435,6 +511,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete repayment:', error);
+      const queuedId = isRetryableNetworkError(error) ? offlineQueue.enqueue({ type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
+      if (queuedId) {
+        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
+        setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
+        return;
+      }
+      if (original) {
+        setLocalRepayments((previous) => [...previous, original]);
+        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => [...previous, original]);
+      }
       updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment'), duration: 3000 });
     }
   };
@@ -651,20 +737,38 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     if (quickExpenseFormData.bankId) cleanedData.bankId = quickExpenseFormData.bankId;
 
     const isEditing = !!editingPresetId;
+    const previousPresets = localQuickExpensePresets;
+    const existingPreset = isEditing ? localQuickExpensePresets.find((preset) => preset.id === editingPresetId) : undefined;
+    const presetId = isEditing ? editingPresetId! : quickExpenseService.createId();
+    const nextOrder = isEditing
+      ? existingPreset?.order ?? 0
+      : localQuickExpensePresets.reduce((maxOrder, preset) => Math.max(maxOrder, preset.order), -1) + 1;
+    const optimisticPreset: QuickExpensePreset = {
+      ...(existingPreset || {} as QuickExpensePreset),
+      ...cleanedData,
+      id: presetId,
+      userId: currentUser.uid,
+      order: nextOrder,
+      createdAt: existingPreset?.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    setLocalQuickExpensePresets(isEditing
+      ? previousPresets.map((preset) => preset.id === presetId ? optimisticPreset : preset)
+      : [...previousPresets, optimisticPreset]);
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
 
     resetQuickExpenseForm();
 
     try {
       if (isEditing) {
-        await quickExpenseService.update(editingPresetId, cleanedData);
+        await quickExpenseService.update(presetId, cleanedData);
         updateNotification(notificationId, {
           type: 'success',
           message: t('updateSuccess'),
           duration: 3000,
         });
       } else {
-        await quickExpenseService.create(currentUser.uid, cleanedData);
+        await quickExpenseService.create(currentUser.uid, { ...cleanedData, id: presetId, order: nextOrder });
         updateNotification(notificationId, {
           type: 'success',
           message: t('createSuccess'),
@@ -674,6 +778,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       onQuickExpensePresetsChange?.();
     } catch (error) {
       console.error('Failed to save preset:', error);
+      if (isRetryableNetworkError(error)) {
+        const queuedId = offlineQueue.enqueue({
+          type: isEditing ? 'update' : 'create',
+          entity: 'quickExpensePreset',
+          payload: isEditing
+            ? { ...cleanedData, id: presetId, userId: currentUser.uid }
+            : { ...cleanedData, id: presetId, userId: currentUser.uid, order: nextOrder },
+        });
+        if (queuedId) {
+          updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
+          return;
+        }
+      }
+      setLocalQuickExpensePresets(previousPresets);
       updateNotification(notificationId, {
         type: 'error',
         message: t('errorSavingData'),
@@ -684,7 +802,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   // Delete quick expense preset
   const handleDeleteQuickExpensePreset = async (presetId: string) => {
+    if (!currentUser) return;
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
+    const previousPresets = localQuickExpensePresets;
+    setLocalQuickExpensePresets(previousPresets.filter((preset) => preset.id !== presetId));
 
     try {
       await quickExpenseService.delete(presetId);
@@ -697,6 +818,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       resetQuickExpenseForm();
     } catch (error) {
       console.error('Failed to delete preset:', error);
+      if (isRetryableNetworkError(error)) {
+        const queuedId = offlineQueue.enqueue({
+          type: 'delete',
+          entity: 'quickExpensePreset',
+          payload: { id: presetId, userId: currentUser.uid },
+        });
+        if (queuedId) {
+          updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
+          return;
+        }
+      }
+      setLocalQuickExpensePresets(previousPresets);
       updateNotification(notificationId, {
         type: 'error',
         message: t('errorDeletingData'),
@@ -838,7 +971,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       {onQuickExpenseAdd && (
         <div className="quick-expense-scroll-container">
           <div className="quick-expense-scroll-bar">
-            {quickExpensePresets.map((preset) => {
+            {localQuickExpensePresets.map((preset) => {
               // Compact quick expense button: no category chip; derive aria-label with placeholder replacement
               const ariaLabel = (t('quickAddPresetAria') || 'Quick add {name}').replace('{name}', preset.name);
               return (
@@ -948,7 +1081,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const expenseDisplayCurrency = getDisplayCurrencyForExpense(expense);
                 const expenseDisplayAmount = getDisplayExpenseAmount(expense);
-                const expenseRepayments = repayments.filter((repayment) => repayment.expenseId === expense.id);
+                const expenseRepayments = localRepayments.filter((repayment) => repayment.expenseId === expense.id);
                 const repaid = repaymentTotals[expense.id!] || 0;
                 const repaidDisplay = displayCurrency
                   ? expenseRepayments.reduce((sum, repayment) => sum + getDisplayRepaymentAmount(repayment), 0)
@@ -1297,7 +1430,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
                     {expense.needsRepaymentTracking && (() => {
-                      const expenseRepayments = repayments.filter(r => r.expenseId === expense.id);
+                      const expenseRepayments = localRepayments.filter(r => r.expenseId === expense.id);
                       return (
                         <div style={styles.detailsSubsection}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -1697,12 +1830,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           </div>
 
           {/* Existing Presets List */}
-          {quickExpensePresets.length > 0 && (
+          {localQuickExpensePresets.length > 0 && (
             <>
               <div className="quick-expense-form-divider"></div>
               <div className="quick-expense-presets-list">
                 <h4>{t('quickExpenses')}</h4>
-                {quickExpensePresets.map((preset) => {
+                {localQuickExpensePresets.map((preset) => {
                   const category = categories.find((c) => c.id === preset.categoryId);
                   return (
                     <div key={preset.id} className="quick-expense-preset-item">

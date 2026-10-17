@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -8,6 +7,8 @@ import {
   query,
   where,
   Timestamp,
+  setDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
@@ -54,23 +55,28 @@ export const calculateRemainingAmount = (
 };
 
 export const scheduledPaymentService = {
+  createId(): string {
+    return doc(collection(db, SCHEDULED_PAYMENTS_COLLECTION)).id;
+  },
+
   // ===============================================
   // Scheduled Payment CRUD
   // ===============================================
 
   // Create a new scheduled payment
   async create(
-    scheduledPayment: Omit<ScheduledPayment, 'id' | 'createdAt' | 'updatedAt'>
+    scheduledPayment: Omit<ScheduledPayment, 'createdAt' | 'updatedAt'> & { id?: string }
   ): Promise<string> {
+    const { id, ...fields } = scheduledPayment;
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
-      ...scheduledPayment,
+      ...fields,
       createdAt: now,
       updatedAt: now,
     });
-    
-    const docRef = await addDoc(collection(db, SCHEDULED_PAYMENTS_COLLECTION), dataToSave);
-    return docRef.id;
+    const paymentRef = id ? doc(db, SCHEDULED_PAYMENTS_COLLECTION, id) : doc(collection(db, SCHEDULED_PAYMENTS_COLLECTION));
+    await setDoc(paymentRef, dataToSave);
+    return paymentRef.id;
   },
 
   // Get all scheduled payments for a user
@@ -149,17 +155,34 @@ export const scheduledPaymentService = {
 
   // Create a payment record
   async createPaymentRecord(
-    record: Omit<ScheduledPaymentRecord, 'id' | 'createdAt' | 'updatedAt'>
+    record: Omit<ScheduledPaymentRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
   ): Promise<string> {
+    const { id, ...recordFields } = record;
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
-      ...record,
+      ...recordFields,
       createdAt: now,
       updatedAt: now,
     });
     
-    const docRef = await addDoc(collection(db, PAYMENT_RECORDS_COLLECTION), dataToSave);
+    const docRef = id
+      ? doc(db, PAYMENT_RECORDS_COLLECTION, id)
+      : doc(collection(db, PAYMENT_RECORDS_COLLECTION));
+    await runTransaction(db, async (transaction) => {
+      const existingRecord = await transaction.get(docRef);
+      if (existingRecord.exists()) {
+        if (existingRecord.data().userId !== record.userId) {
+          throw new Error('Scheduled payment record ID is already owned by another user');
+        }
+        return;
+      }
+      transaction.set(docRef, dataToSave);
+    });
     return docRef.id;
+  },
+
+  createPaymentRecordId(): string {
+    return doc(collection(db, PAYMENT_RECORDS_COLLECTION)).id;
   },
 
   // Get all payment records for a scheduled payment

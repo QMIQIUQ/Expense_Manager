@@ -2,8 +2,8 @@ import {
   collection,
   runTransaction,
   updateDoc,
-  deleteDoc,
   doc,
+  getDocFromServer,
   getDocs,
   query,
   where,
@@ -91,6 +91,32 @@ export const transferService = {
     return docRef.id;
   },
 
+  async deleteWithBalanceReversal(id: string, expectedUserId?: string): Promise<void> {
+    const transferRef = doc(db, COLLECTION_NAME, id);
+    const snapshot = await getDocFromServer(transferRef);
+    if (!snapshot.exists()) return;
+    const transfer = { id, ...snapshot.data() } as Transfer;
+    if (expectedUserId && transfer.userId !== expectedUserId) throw new Error('Transfer is owned by another user');
+    const adjustments = await prepareBalanceAdjustments(transfer.userId, [{
+      type: 'transfer',
+      transfer,
+      sourceDirection: 1,
+      destinationDirection: -1,
+    }]);
+
+    await runTransaction(db, async (transaction) => {
+      const current = await transaction.get(transferRef);
+      if (!current.exists()) return;
+      if (current.data().userId !== transfer.userId) throw new Error('Transfer is owned by another user');
+      const balanceFields = ['userId', 'date', 'fromPaymentMethod', 'fromPaymentMethodName', 'fromBankId', 'toPaymentMethod', 'toPaymentMethodName', 'toBankId', 'amount', 'currency', 'baseAmount', 'baseCurrency', 'toAmount', 'toCurrency', 'toBaseAmount'];
+      if (balanceFields.some((field) => JSON.stringify(current.data()[field] ?? null) !== JSON.stringify((transfer as unknown as Record<string, unknown>)[field] ?? null))) {
+        throw new Error('Transfer changed while preparing deletion. Please retry.');
+      }
+      await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
+      transaction.delete(transferRef);
+    });
+  },
+
   // Get all transfers for a user
   async getAll(userId: string): Promise<Transfer[]> {
     const q = query(
@@ -117,9 +143,8 @@ export const transferService = {
   },
 
   // Delete a transfer
-  async delete(id: string): Promise<void> {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
+  async delete(id: string, expectedUserId?: string): Promise<void> {
+    await this.deleteWithBalanceReversal(id, expectedUserId);
   },
 
   // Get transfers by date range

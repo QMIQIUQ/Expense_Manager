@@ -126,6 +126,11 @@ export const expenseService = {
       if (nextExpense.userId !== previousExpense.userId) {
         throw new Error('Expense owner cannot be changed');
       }
+      const balanceAdjustments = await prepareBalanceAdjustments(previousExpense.userId, [
+        { type: 'expense', expense: previousExpense, direction: 1 },
+        { type: 'expense', expense: nextExpense, direction: -1 },
+      ]);
+      await applyBalanceAdjustmentsInTransaction(transaction, balanceAdjustments);
       if (isFriendSpendingSummaryReady(summaryState.data())) {
         applyExpenseSummaryChange(transaction, previousExpense, nextExpense);
       }

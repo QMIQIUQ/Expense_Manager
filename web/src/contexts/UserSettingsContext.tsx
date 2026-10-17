@@ -2,6 +2,19 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod } from '../types';
+import { offlineQueue } from '../utils/offlineQueue';
+
+const isRetryableNetworkError = (error: unknown): boolean => {
+  const code = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : '';
+  if (['permission-denied', 'invalid-argument', 'failed-precondition'].includes(code || '')) return false;
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine);
+};
+
+const enqueueSettingsUpdate = (userId: string, updates: Partial<UserSettings>): boolean =>
+  offlineQueue.enqueue({ type: 'update', entity: 'userSettings', payload: { userId, updates } }) !== null;
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -45,6 +58,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const currencyWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const currencyWriteIdRef = useRef(0);
   const overallBudgetWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const overallBudgetWriteIdRef = useRef(0);
+  const overallBudgetRequestIdsRef = useRef(new Map<BudgetPeriod, number>());
   latestUserIdRef.current = userId;
 
   useEffect(() => {
@@ -75,6 +90,22 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     return () => { cancelled = true; };
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) return;
+    const handleSettingsSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
+      if (detail?.entity !== 'userSettings' || detail.userId !== userId) return;
+      void userSettingsService.getOrCreate(userId, true).then((syncedSettings) => {
+        if (latestUserIdRef.current === userId) {
+          latestSettingsRef.current = syncedSettings;
+          setSettings(syncedSettings);
+        }
+      }).catch((error) => console.error('Failed to refresh synced user settings:', error));
+    };
+    window.addEventListener('offline-operation-synced', handleSettingsSynced);
+    return () => window.removeEventListener('offline-operation-synced', handleSettingsSynced);
+  }, [userId]);
+
   const displayCurrencyReady = Boolean(
     userId && !loading && settings && (settings.userId === userId || settings.id === userId)
   );
@@ -101,63 +132,48 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
-  const setTimeFormat = async (format: TimeFormat) => {
-    if (!currentUser || !settings) return;
-
+  const updateSettingOptimistically = async <K extends keyof UserSettings,>(key: K, value: UserSettings[K]): Promise<void> => {
+    if (!userId) return;
+    const baseline = latestSettingsRef.current;
+    if (!baseline || (baseline.userId !== userId && baseline.id !== userId)) return;
+    const optimistic = { ...baseline, [key]: value };
+    latestSettingsRef.current = optimistic;
+    setSettings(optimistic);
     try {
-      await userSettingsService.update(currentUser.uid, { timeFormat: format });
-      setSettings(prev => prev ? { ...prev, timeFormat: format } : null);
+      await userSettingsService.update(userId, { [key]: value });
     } catch (error) {
-      console.error('Error updating time format:', error);
+      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(userId, { [key]: value } as Partial<UserSettings>)) return;
+      const latest = latestSettingsRef.current;
+      if (latest && latest[key] === value) {
+        const restored = { ...latest, [key]: baseline[key] };
+        latestSettingsRef.current = restored;
+        setSettings(restored);
+      }
       throw error;
     }
+  };
+
+  const setTimeFormat = async (format: TimeFormat) => {
+    if (!currentUser || !settings) return;
+    await updateSettingOptimistically('timeFormat', format);
   };
 
   const setDateFormat = async (format: DateFormat) => {
     if (!currentUser || !settings) return;
 
-    try {
-      await userSettingsService.update(currentUser.uid, { dateFormat: format });
-      setSettings(prev => prev ? { ...prev, dateFormat: format } : null);
-    } catch (error) {
-      console.error('Error updating date format:', error);
-      throw error;
-    }
+    await updateSettingOptimistically('dateFormat', format);
   };
 
   const setUseStepByStepForm = async (value: boolean) => {
     if (!currentUser || !settings) return;
 
-    // Optimistic update - set local state immediately
-    setSettings(prev => prev ? { ...prev, useStepByStepForm: value } : null);
-    
-    try {
-      await userSettingsService.update(currentUser.uid, { useStepByStepForm: value });
-    } catch (error) {
-      // Rollback on error
-      setSettings(prev => prev ? { ...prev, useStepByStepForm: !value } : null);
-      console.error('Error updating step-by-step form setting:', error);
-      throw error;
-    }
+    await updateSettingOptimistically('useStepByStepForm', value);
   };
 
   const setDateShortcuts = async (shortcuts: DateShortcut[]) => {
     if (!currentUser || !settings) return;
 
-    // Capture previous value before optimistic update to allow accurate rollback
-    const previousShortcuts = settings.dateShortcuts;
-
-    // Optimistic update
-    setSettings(prev => prev ? { ...prev, dateShortcuts: shortcuts } : null);
-
-    try {
-      await userSettingsService.update(currentUser.uid, { dateShortcuts: shortcuts });
-    } catch (error) {
-      // Rollback to the captured previous value
-      setSettings(prev => prev ? { ...prev, dateShortcuts: previousShortcuts } : null);
-      console.error('Error updating date shortcuts:', error);
-      throw error;
-    }
+    await updateSettingOptimistically('dateShortcuts', shortcuts);
   };
 
   const setDisplayCurrency = async (currency: CurrencyCode) => {
@@ -167,7 +183,9 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     const uid = userId;
     const previousCurrency = settings.displayCurrency || 'MYR';
     const requestId = ++currencyWriteIdRef.current;
-    setSettings((prev) => prev ? { ...prev, displayCurrency: currency } : null);
+    const optimisticSettings = { ...settings, displayCurrency: currency };
+    latestSettingsRef.current = optimisticSettings;
+    setSettings(optimisticSettings);
 
     const write = currencyWriteQueueRef.current
       .catch(() => undefined)
@@ -177,10 +195,14 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     try {
       await write;
     } catch (error) {
+      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(uid, { displayCurrency: currency })) return;
       if (currencyWriteIdRef.current === requestId && latestUserIdRef.current === uid) {
-        setSettings((prev) => prev && (prev.userId === uid || prev.id === uid)
-          ? { ...prev, displayCurrency: previousCurrency }
-          : prev);
+        const latest = latestSettingsRef.current;
+        if (latest && (latest.userId === uid || latest.id === uid)) {
+          const restored = { ...latest, displayCurrency: previousCurrency };
+          latestSettingsRef.current = restored;
+          setSettings(restored);
+        }
       }
       console.error('Error updating display currency:', error);
       throw error;
@@ -194,43 +216,40 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
 
     const uid = userId;
+    const currentSettings = latestSettingsRef.current;
+    if (!currentSettings || (currentSettings.userId !== uid && currentSettings.id !== uid)) {
+      throw new Error('User settings are not ready');
+    }
+    const previousLimit = currentSettings.overallBudgetLimits?.[period];
+    const nextLimits = { ...currentSettings.overallBudgetLimits };
+    if (amount === undefined) delete nextLimits[period];
+    else nextLimits[period] = amount;
+    const requestId = ++overallBudgetWriteIdRef.current;
+    overallBudgetRequestIdsRef.current.set(period, requestId);
+    const optimisticSettings = { ...currentSettings, overallBudgetLimits: nextLimits };
+    latestSettingsRef.current = optimisticSettings;
+    setSettings(optimisticSettings);
+
     const write = overallBudgetWriteQueueRef.current
       .catch(() => undefined)
-      .then(async () => {
-        const currentSettings = latestSettingsRef.current;
-        if (!currentSettings || (currentSettings.userId !== uid && currentSettings.id !== uid)) {
-          throw new Error('User settings are not ready');
-        }
-
-        const previousLimits = currentSettings.overallBudgetLimits;
-        const nextLimits = { ...previousLimits };
-        if (amount === undefined) {
-          delete nextLimits[period];
-        } else {
-          nextLimits[period] = amount;
-        }
-        latestSettingsRef.current = { ...currentSettings, overallBudgetLimits: nextLimits };
-        setSettings((previous) => previous && (previous.userId === uid || previous.id === uid)
-          ? { ...previous, overallBudgetLimits: nextLimits }
-          : previous);
-
-        try {
-          await userSettingsService.setOverallBudgetLimit(uid, period, amount);
-        } catch (error) {
-          if (latestUserIdRef.current === uid) {
-            const current = latestSettingsRef.current;
-            latestSettingsRef.current = current && (current.userId === uid || current.id === uid)
-              ? { ...current, overallBudgetLimits: previousLimits }
-              : current;
-            setSettings((previous) => previous && (previous.userId === uid || previous.id === uid)
-              ? { ...previous, overallBudgetLimits: previousLimits }
-              : previous);
-          }
-          throw error;
-        }
-    });
+      .then(() => userSettingsService.setOverallBudgetLimit(uid, period, amount));
     overallBudgetWriteQueueRef.current = write.then(() => undefined, () => undefined);
-    await write;
+    try {
+      await write;
+    } catch (error) {
+      if (latestUserIdRef.current === uid && overallBudgetRequestIdsRef.current.get(period) === requestId) {
+        const latest = latestSettingsRef.current;
+        if (latest && (latest.userId === uid || latest.id === uid)) {
+          const restoredLimits = { ...latest.overallBudgetLimits };
+          if (previousLimit === undefined) delete restoredLimits[period];
+          else restoredLimits[period] = previousLimit;
+          const restored = { ...latest, overallBudgetLimits: restoredLimits };
+          latestSettingsRef.current = restored;
+          setSettings(restored);
+        }
+      }
+      throw error;
+    }
   };
 
   const refreshSettings = async () => {

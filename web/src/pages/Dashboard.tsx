@@ -25,7 +25,6 @@ import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
-import { balanceService } from '../services/balanceService';
 import { resolveAmountCurrencyFields, resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
 import ExpensesTab from './tabs/ExpensesTab';
@@ -60,7 +59,7 @@ import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache } from '../utils/sessionCache';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
-import { type BudgetAllocationInput, validateBudgetAllocationChange, validateOverallBudgetLimit } from '../utils/budgetAllocation';
+import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
 import { withBudgetMutationLock } from '../utils/budgetMutationLock';
 import { clearExpenseCreateFailure, hasExpenseBeenDeleted, hasExpenseCreateFailed, markExpenseCreateFailed, markExpenseDeleted, withExpenseMutationLock } from '../utils/expenseMutationLock';
 
@@ -147,6 +146,34 @@ const applyPendingExpenseOperations = (
   }
 
   return result.sort((a, b) => b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''));
+};
+
+const applyPendingCategoryOperations = (
+  initialCategories: Category[],
+  operations: QueuedOperation[],
+  userId: string,
+): Category[] => {
+  let result = [...initialCategories];
+  for (const operation of operations) {
+    if (operation.entity !== 'category') continue;
+    const payload = operation.payload as Partial<Category>;
+    if (payload.userId !== userId || typeof payload.id !== 'string') continue;
+    const id = payload.id;
+    if (operation.type === 'create') {
+      const category = { ...payload, id, userId, createdAt: payload.createdAt || new Date(operation.timestamp) } as Category;
+      const index = result.findIndex((item) => item.id === id);
+      if (index >= 0) result[index] = { ...result[index], ...category };
+      else result.push(category);
+    } else if (operation.type === 'update') {
+      const updates = { ...payload };
+      delete updates.id;
+      delete updates.userId;
+      result = result.map((category) => category.id === id ? { ...category, ...updates, id } : category);
+    } else {
+      result = result.filter((category) => category.id !== id);
+    }
+  }
+  return sortCategories(result);
 };
 
 const rollbackRejectedBudgetOperation = (budgets: Budget[], rejection: BudgetOfflineRejection): Budget[] => {
@@ -393,12 +420,17 @@ const Dashboard: React.FC = () => {
         sessionCache.set('budgets', currentUser.uid, reconciled);
         setBudgets(reconciled);
       };
+      const setCategoriesWithPendingOperations = (loadedCategories: Category[]) => {
+        const reconciled = applyPendingCategoryOperations(loadedCategories, offlineQueue.getAll(), currentUser.uid);
+        sessionCache.set('categories', currentUser.uid, reconciled);
+        setCategories(reconciled);
+      };
 
       // Phase 1: Load cached data first (instant display)
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
         dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpensesWithPendingOperations),
         dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
-        dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategories),
+        dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations),
         dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
         dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
         dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
@@ -409,7 +441,7 @@ const Dashboard: React.FC = () => {
       // Set initial data (from cache or fresh)
       setExpensesWithPendingOperations(expensesData);
       setIncomes(incomesData);
-      setCategories(categoriesData);
+      setCategoriesWithPendingOperations(categoriesData);
       setBudgetsWithPendingOperations(budgetsData);
       setRepayments(repaymentsData);
       setTransfers(transfersData);
@@ -532,6 +564,43 @@ const Dashboard: React.FC = () => {
       showNotification('error', t('errorLoadingData'));
     }
   }, [currentUser, showNotification, t]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    const handleOfflineOperationNeedsAttention = (event: Event) => {
+      const detail = (event as CustomEvent<{ operationId?: string; userId?: string }>).detail;
+      if (detail?.userId !== currentUserId || !detail.operationId) return;
+      const operation = offlineQueue.getAll().find((item) => item.id === detail.operationId);
+      if (!operation || operation.entity === 'expense' || operation.entity === 'budget') return;
+
+      void loadData();
+      showNotification('error', t('offlineOperationNeedsAttention'), {
+        duration: 0,
+        actions: [{
+          label: t('retry'),
+          onClick: () => {
+            if (!offlineQueue.retry(operation.id)) {
+              showNotification('error', t('offlineQueueSaveFailed'));
+              return;
+            }
+            void syncService.syncOfflineQueue();
+          },
+        }],
+      });
+    };
+    window.addEventListener('offline-operation-needs-attention', handleOfflineOperationNeedsAttention);
+    return () => window.removeEventListener('offline-operation-needs-attention', handleOfflineOperationNeedsAttention);
+  }, [currentUserId, loadData, showNotification, t]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    const handleOfflineOperationSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId === currentUserId) void loadData();
+    };
+    window.addEventListener('offline-operation-synced', handleOfflineOperationSynced);
+    return () => window.removeEventListener('offline-operation-synced', handleOfflineOperationSynced);
+  }, [currentUserId, loadData]);
   //#endregion
 
   //#region Budget Notifications
@@ -1211,21 +1280,22 @@ const Dashboard: React.FC = () => {
     const newCategoryData = nextOrder === undefined ? categoryData : { ...categoryData, order: nextOrder };
 
     // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const categoryId = categoryService.createId();
     const optimisticCategory: Category = {
       ...newCategoryData,
-      id: tempId,
+      id: categoryId,
       userId: currentUser.uid,
       createdAt: new Date(),
     };
+    const createPayload = { ...newCategoryData, id: categoryId, userId: currentUser.uid };
     setCategories((prev) => sortCategories([...prev, optimisticCategory]));
 
     // Update cache optimistically
     dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => sortCategories([...data, optimisticCategory]));
 
     await optimisticCRUD.run(
-      { type: 'create', data: newCategoryData },
-      () => categoryService.create({ ...newCategoryData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => categoryService.create(createPayload),
       {
         entityType: 'category',
         retryToQueueOnFail: true,
@@ -1236,16 +1306,16 @@ const Dashboard: React.FC = () => {
             ...optimisticCategory,
             id: newId,
           };
-          setCategories((prev) => prev.map((c) => (c.id === tempId ? realCategory : c)));
+          setCategories((prev) => prev.map((c) => (c.id === categoryId ? realCategory : c)));
           // Update cache with real ID
           dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
-            data.map((c) => (c.id === tempId ? realCategory : c))
+            data.map((c) => (c.id === categoryId ? realCategory : c))
           );
         },
         onError: () => {
-          setCategories((prev) => prev.filter((c) => c.id !== tempId));
+          setCategories((prev) => prev.filter((c) => c.id !== categoryId));
           // Rollback cache
-          dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== tempId));
+          dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== categoryId));
         },
       }
     );
@@ -1260,6 +1330,22 @@ const Dashboard: React.FC = () => {
     const reordered = orderedIds.map((id, index) => ({ ...byId.get(id)!, order: index }));
     setCategories(reordered);
     dataService.updateCache<Category[]>('categories', currentUser.uid, () => reordered);
+
+    if (!networkStatus.isOnline) {
+      const queuedIds = offlineQueue.enqueueMany(orderedIds.map((id, order) => ({
+        type: 'update' as const,
+        entity: 'category' as const,
+        payload: { id, userId: currentUser.uid, order },
+      })));
+      if (queuedIds) {
+        showNotification('info', t('operationSavedOffline'));
+        return;
+      }
+      setCategories(previousCategories);
+      dataService.updateCache<Category[]>('categories', currentUser.uid, () => previousCategories);
+      showNotification('error', t('offlineQueueSaveFailed'));
+      return;
+    }
 
     try {
       await categoryService.updateOrder(orderedIds);
@@ -1286,7 +1372,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalCategory },
+      { type: 'update', data: { ...updates, id, userId: originalCategory?.userId || currentUser?.uid }, originalData: originalCategory },
       () => categoryService.update(id, updates),
       {
         entityType: 'category',
@@ -1323,7 +1409,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: categoryToDelete },
+      { type: 'delete', data: { id, userId: categoryToDelete?.userId || currentUser?.uid }, originalData: categoryToDelete },
       () => categoryService.delete(id),
       {
         entityType: 'category',
@@ -1426,17 +1512,8 @@ const Dashboard: React.FC = () => {
       exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
     };
 
-    const allocationBudgets = await loadBudgetsForAllocationCheck();
-    if (!allocationBudgets) return false;
-    if (!allocationBudgets.isOffline && !await makeRoomForBudgetAllocation(
-      allocationBudgets.budgets,
-      normalizedBudgetData,
-      allocationBudgets.limits,
-    )) return false;
     const budgetId = budgetService.createId();
     const createPayload = { ...normalizedBudgetData, userId: currentUser.uid, id: budgetId };
-
-    // Optimistic update
     const optimisticBudget: Budget = {
       ...normalizedBudgetData,
       id: budgetId,
@@ -1444,17 +1521,38 @@ const Dashboard: React.FC = () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    const rollbackOptimisticBudget = () => {
+      setBudgets((prev) => prev.filter((budget) => budget.id !== budgetId));
+      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((budget) => budget.id !== budgetId));
+    };
     setBudgets((prev) => [...prev, optimisticBudget]);
-
-    // Update cache optimistically
     dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
 
+    const allocationBudgets = await loadBudgetsForAllocationCheck();
+    if (!allocationBudgets) {
+      rollbackOptimisticBudget();
+      return false;
+    }
+    if (!allocationBudgets.isOffline && !await makeRoomForBudgetAllocation(
+      allocationBudgets.budgets,
+      normalizedBudgetData,
+      allocationBudgets.limits,
+    )) {
+      rollbackOptimisticBudget();
+      return false;
+    }
+
     if (allocationBudgets.isOffline) {
-      offlineQueue.enqueue({
+      const queuedId = offlineQueue.enqueue({
         type: 'create',
         entity: 'budget',
         payload: createPayload,
       });
+      if (!queuedId) {
+        rollbackOptimisticBudget();
+        showNotification('error', t('offlineQueueSaveFailed'));
+        return false;
+      }
       showNotification('info', t('operationSavedOffline'));
       return true;
     }
@@ -1480,8 +1578,7 @@ const Dashboard: React.FC = () => {
         },
         onError: () => {
           if (queuedForRetry) return;
-          setBudgets((prev) => prev.filter((b) => b.id !== budgetId));
-          dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((b) => b.id !== budgetId));
+          rollbackOptimisticBudget();
         },
       }
     );
@@ -1495,36 +1592,52 @@ const Dashboard: React.FC = () => {
   const performUpdateBudget = async (id: string, updates: Partial<Budget>) => {
     const originalBudget = budgets.find((b) => b.id === id);
     if (!originalBudget) return false;
+    const hasPendingOperation = currentUser
+      ? offlineQueue.hasPendingBudgetOperations(id, originalBudget.userId)
+      : false;
+    const optimisticBudget = { ...originalBudget, ...updates };
+    const rollbackOptimisticBudget = () => {
+      setBudgets((prev) => prev.map((budget) => budget.id === id ? originalBudget : budget));
+      if (currentUser) {
+        dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) =>
+          data.map((budget) => budget.id === id ? originalBudget : budget)
+        );
+      }
+    };
+    setBudgets((prev) => prev.map((budget) => budget.id === id ? optimisticBudget : budget));
+    if (currentUser) {
+      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) =>
+        data.map((budget) => budget.id === id ? optimisticBudget : budget)
+      );
+    }
+
     const proposedBudget = { ...originalBudget, ...updates, id };
     const allocationBudgets = await loadBudgetsForAllocationCheck();
-    if (!allocationBudgets) return false;
+    if (!allocationBudgets) {
+      rollbackOptimisticBudget();
+      return false;
+    }
     if (!allocationBudgets.isOffline && !await makeRoomForBudgetAllocation(
       allocationBudgets.budgets,
       proposedBudget,
       allocationBudgets.limits,
       id,
-    )) return false;
-    const hasPendingOperation = currentUser
-      ? offlineQueue.hasPendingBudgetOperations(id, originalBudget.userId)
-      : false;
-    // Optimistic update
-    setBudgets((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
-    );
-
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
-        data.map((b) => (b.id === id ? { ...b, ...updates } : b))
-      );
+    )) {
+      rollbackOptimisticBudget();
+      return false;
     }
 
     if (allocationBudgets.isOffline || hasPendingOperation) {
-      offlineQueue.enqueue({
+      const queuedId = offlineQueue.enqueue({
         type: 'update',
         entity: 'budget',
         payload: { ...updates, id, userId: originalBudget.userId, previousBudget: originalBudget },
       });
+      if (!queuedId) {
+        rollbackOptimisticBudget();
+        showNotification('error', t('offlineQueueSaveFailed'));
+        return false;
+      }
       showNotification('info', t('operationSavedOffline'));
       return true;
     }
@@ -1542,17 +1655,7 @@ const Dashboard: React.FC = () => {
         },
         onError: () => {
           if (queuedForRetry) return;
-          if (originalBudget) {
-            setBudgets((prev) =>
-              prev.map((b) => (b.id === id ? originalBudget : b))
-            );
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => 
-                data.map((b) => (b.id === id ? originalBudget : b))
-              );
-            }
-          }
+          rollbackOptimisticBudget();
         },
       }
     );
@@ -1566,22 +1669,6 @@ const Dashboard: React.FC = () => {
   const performSaveOverallBudgetLimit = async (period: BudgetPeriod, amount: number): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const latestBudgets = await budgetService.getAll(currentUser.uid, true);
-      const validation = validateOverallBudgetLimit(latestBudgets, period, amount);
-      if (!validation.valid) {
-        if (validation.reason === 'limit-below-allocation' && validation.allocatedMinorUnits !== undefined && validation.limitMinorUnits !== undefined) {
-          showNotification(
-            'error',
-            `${t('overallBudgetBelowAllocation')} ${formatMoney(validation.allocatedMinorUnits / 100, DEFAULT_BASE_CURRENCY)} / ${formatMoney(validation.limitMinorUnits / 100, DEFAULT_BASE_CURRENCY)}`,
-          );
-        } else if (validation.reason === 'invalid-allocation') {
-          showNotification('error', t('budgetAllocationCannotBeCompared'));
-        } else {
-          showNotification('error', t('budgetLimitSaveFailed'));
-        }
-        return false;
-      }
-
       await saveOverallBudgetLimit(period, amount);
       showNotification('success', t('saveSuccess'));
       return true;
@@ -1655,10 +1742,10 @@ const Dashboard: React.FC = () => {
   const handleAddScheduledPayment = async (paymentData: Omit<ScheduledPayment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
 
-    const tempId = `temp-${Date.now()}`;
+    const paymentId = scheduledPaymentService.createId();
+    const createPayload = { ...paymentData, id: paymentId, userId: currentUser.uid };
     const optimisticPayment: ScheduledPayment = {
-      ...paymentData,
-      id: tempId,
+      ...createPayload,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1666,10 +1753,10 @@ const Dashboard: React.FC = () => {
     setScheduledPayments((prev) => [...prev, optimisticPayment]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: paymentData },
-      () => scheduledPaymentService.create({ ...paymentData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => scheduledPaymentService.create(createPayload),
       {
-        entityType: 'recurring',
+        entityType: 'scheduledPayment',
         retryToQueueOnFail: true,
         onSuccess: (result) => {
           const newId = result as string;
@@ -1677,10 +1764,10 @@ const Dashboard: React.FC = () => {
             ...optimisticPayment,
             id: newId,
           };
-          setScheduledPayments((prev) => prev.map((p) => (p.id === tempId ? realPayment : p)));
+          setScheduledPayments((prev) => prev.map((p) => (p.id === paymentId ? realPayment : p)));
         },
         onError: () => {
-          setScheduledPayments((prev) => prev.filter((p) => p.id !== tempId));
+          setScheduledPayments((prev) => prev.filter((p) => p.id !== paymentId));
         },
       }
     );
@@ -1694,10 +1781,10 @@ const Dashboard: React.FC = () => {
     );
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: original },
+      { type: 'update', data: { ...updates, id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.update(id, updates),
       {
-        entityType: 'recurring',
+        entityType: 'scheduledPayment',
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
@@ -1717,10 +1804,10 @@ const Dashboard: React.FC = () => {
     setScheduledPayments((prev) => prev.filter((p) => p.id !== id));
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: original },
+      { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.delete(id),
       {
-        entityType: 'recurring',
+        entityType: 'scheduledPayment',
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
@@ -1740,10 +1827,10 @@ const Dashboard: React.FC = () => {
     );
 
     await optimisticCRUD.run(
-      { type: 'update', data: { isActive }, originalData: original },
+      { type: 'update', data: { id, userId: original?.userId || currentUser?.uid, isActive }, originalData: original },
       () => scheduledPaymentService.toggleActive(id, isActive),
       {
-        entityType: 'recurring',
+        entityType: 'scheduledPayment',
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
@@ -1766,6 +1853,17 @@ const Dashboard: React.FC = () => {
     // Find the scheduled payment to check if autoGenerateExpense is enabled
     const scheduledPayment = scheduledPayments.find(p => p.id === scheduledPaymentId);
     const paymentCurrency = scheduledPayment?.currency || DEFAULT_BASE_CURRENCY;
+    const recordId = scheduledPaymentService.createPaymentRecordId();
+    const provisionalRecord: ScheduledPaymentRecord = {
+      ...recordData,
+      id: recordId,
+      userId: currentUser.uid,
+      scheduledPaymentId,
+      currency: paymentCurrency,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setScheduledPaymentRecords((prev) => [provisionalRecord, ...prev]);
     let actualCurrencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
     let expectedCurrencyFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
     try {
@@ -1783,6 +1881,7 @@ const Dashboard: React.FC = () => {
       });
     } catch (error) {
       console.error('[Scheduled Payment] Unable to resolve currency snapshot:', error);
+      setScheduledPaymentRecords((prev) => prev.filter((record) => record.id !== recordId));
       showNotification('error', t('exchangeRateLookupFailed'));
       return;
     }
@@ -1803,81 +1902,91 @@ const Dashboard: React.FC = () => {
       expectedExchangeRateProvider: expectedCurrencyFields.exchangeRateProvider,
     };
 
-    const tempId = `temp-${Date.now()}`;
     const optimisticRecord: ScheduledPaymentRecord = {
       ...savedRecordData,
-      id: tempId,
+      id: recordId,
       userId: currentUser.uid,
       scheduledPaymentId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    setScheduledPaymentRecords((prev) => [optimisticRecord, ...prev]);
+    setScheduledPaymentRecords((prev) => prev.map((record) => record.id === recordId ? optimisticRecord : record));
+
+    const generatedExpensePayload: (Omit<Expense, 'createdAt' | 'updatedAt'>) | undefined = scheduledPayment?.autoGenerateExpense
+      ? {
+          id: expenseService.createId(),
+          userId: currentUser.uid,
+          description: scheduledPayment.name,
+          amount: recordData.actualAmount,
+          ...actualCurrencyFields,
+          category: scheduledPayment.category,
+          date: recordData.paidDate,
+          time: getCurrentTimeLocal(),
+          notes: recordData.note || `${t('scheduledPayment')}: ${scheduledPayment.name}`,
+          paymentMethod: recordData.paymentMethod || scheduledPayment.paymentMethod,
+          cardId: recordData.cardId || scheduledPayment.cardId,
+          paymentMethodName: recordData.paymentMethodName || scheduledPayment.paymentMethodName,
+          bankId: recordData.bankId || scheduledPayment.bankId,
+        }
+      : undefined;
+    if (generatedExpensePayload) {
+      const optimisticExpense: Expense = {
+        ...generatedExpensePayload,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setExpenses((prev) => [optimisticExpense, ...prev]);
+      dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [optimisticExpense, ...data]);
+    }
+
+    const queuedRecordPayload = {
+      ...savedRecordData,
+      id: recordId,
+      userId: currentUser.uid,
+      scheduledPaymentId,
+      generatedExpensePayload,
+    };
 
     await optimisticCRUD.run(
-      { type: 'create', data: { ...savedRecordData, scheduledPaymentId } },
+      { type: 'create', data: queuedRecordPayload },
       () => scheduledPaymentService.createPaymentRecord({
         ...savedRecordData,
         userId: currentUser.uid,
         scheduledPaymentId,
+        id: recordId,
       }),
       {
-        entityType: 'recurring',
-        retryToQueueOnFail: true,
         onSuccess: async (result) => {
           const newId = result as string;
           const realRecord: ScheduledPaymentRecord = {
             ...optimisticRecord,
             id: newId,
           };
-          setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === tempId ? realRecord : r)));
+          setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === recordId ? realRecord : r)));
 
-          // Auto-generate expense if enabled
-          if (scheduledPayment?.autoGenerateExpense) {
-            try {
-              const expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> = {
-                userId: currentUser.uid,
-                description: scheduledPayment.name,
-                amount: recordData.actualAmount,
-                ...actualCurrencyFields,
-                category: scheduledPayment.category,
-                date: recordData.paidDate,
-                time: getCurrentTimeLocal(),
-                notes: recordData.note || `${t('scheduledPayment')}: ${scheduledPayment.name}`,
-                paymentMethod: recordData.paymentMethod || scheduledPayment.paymentMethod,
-                cardId: recordData.cardId || scheduledPayment.cardId,
-                paymentMethodName: recordData.paymentMethodName || scheduledPayment.paymentMethodName,
-                bankId: recordData.bankId || scheduledPayment.bankId,
-              };
-
-              const expenseId = await expenseService.create(expenseData, { updateAccountBalances: true });
-
-              // Create expense with real ID from server
-              const newExpense: Expense = {
-                ...expenseData,
-                id: expenseId,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              };
-
-              // Update state
-              setExpenses((prev) => [newExpense, ...prev]);
-
-              // Update cache to ensure expense persists
-              dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [newExpense, ...data]);
-
-              // Reload e-wallets and banks to reflect updated balances
-              loadData();
-
-              showNotification('success', t('expenseGenerated') || 'Expense record created');
-            } catch (error) {
-              console.error('[Auto-Generate Expense] Failed to auto-generate expense:', error);
-              showNotification('error', t('errorCreatingExpense') || 'Failed to create expense');
-            }
+          if (generatedExpensePayload) {
+            await optimisticCRUD.run(
+              { type: 'create', data: generatedExpensePayload },
+              () => expenseService.create(generatedExpensePayload, { updateAccountBalances: true }),
+              {
+                entityType: 'expense',
+                retryToQueueOnFail: true,
+                successMessage: t('expenseGenerated') || 'Expense record created',
+                onSuccess: () => { loadData(); },
+                onError: () => {
+                  setExpenses((prev) => prev.filter((expense) => expense.id !== generatedExpensePayload.id));
+                  dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== generatedExpensePayload.id));
+                },
+              }
+            );
           }
         },
         onError: () => {
-          setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== tempId));
+          setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== recordId));
+          if (generatedExpensePayload) {
+            setExpenses((prev) => prev.filter((expense) => expense.id !== generatedExpensePayload.id));
+            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== generatedExpensePayload.id));
+          }
         },
       }
     );
@@ -1889,10 +1998,10 @@ const Dashboard: React.FC = () => {
     setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: original },
+      { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.deletePaymentRecord(id),
       {
-        entityType: 'recurring',
+        entityType: 'scheduledPaymentRecord',
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
@@ -1941,10 +2050,10 @@ const Dashboard: React.FC = () => {
     const normalizedIncomeData = { ...incomeData, ...currencyFields };
 
     // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const incomeId = incomeService.createId();
+    const createPayload = { ...normalizedIncomeData, id: incomeId, userId: currentUser.uid };
     const optimisticIncome: Income = {
-      ...normalizedIncomeData,
-      id: tempId,
+      ...createPayload,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1955,8 +2064,8 @@ const Dashboard: React.FC = () => {
     dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [optimisticIncome, ...data]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: normalizedIncomeData },
-      () => incomeService.create({ ...normalizedIncomeData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => incomeService.create(createPayload),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
@@ -1967,20 +2076,18 @@ const Dashboard: React.FC = () => {
             ...optimisticIncome,
             id: newId,
           };
-          setIncomes((prev) => prev.map((i) => (i.id === tempId ? realIncome : i)));
+          setIncomes((prev) => prev.map((i) => (i.id === incomeId ? realIncome : i)));
           // Update cache with real ID
           dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
-            data.map((i) => (i.id === tempId ? realIncome : i))
+            data.map((i) => (i.id === incomeId ? realIncome : i))
           );
-          // Update balance for the payment method
-          await balanceService.handleIncomeCreated(realIncome);
-          // Reload to reflect updated balances
+          // Income and account balances are committed in one service transaction.
           loadData();
         },
         onError: () => {
-          setIncomes((prev) => prev.filter((i) => i.id !== tempId));
+          setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
           // Rollback cache
-          dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== tempId));
+          dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== incomeId));
         },
       }
     );
@@ -2019,14 +2126,12 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: normalizedUpdates, originalData: originalIncome },
+      { type: 'update', data: { ...normalizedUpdates, id, userId: originalIncome.userId }, originalData: originalIncome },
       () => incomeService.update(id, normalizedUpdates),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => {
-          // Cache already updated optimistically, no need to reload
-        },
+        onSuccess: () => { loadData(); },
         onError: () => {
           if (originalIncome) {
             setIncomes((prev) => prev.map((i) => (i.id === id ? originalIncome : i)));
@@ -2054,19 +2159,12 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: incomeToDelete },
-      () => incomeService.delete(id),
+      { type: 'delete', data: { id, userId: incomeToDelete?.userId || currentUser?.uid }, originalData: incomeToDelete },
+      () => incomeService.delete(id, currentUser?.uid),
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: async () => {
-          // Update balance for the payment method (deduct the income amount)
-          if (incomeToDelete) {
-            await balanceService.handleIncomeDeleted(incomeToDelete);
-            // Reload to reflect updated balances
-            loadData();
-          }
-        },
+        onSuccess: () => { loadData(); },
         onError: () => {
           if (incomeToDelete) {
             setIncomes((prev) => [...prev, incomeToDelete]);
@@ -2084,6 +2182,18 @@ const Dashboard: React.FC = () => {
   //#region Event Handlers - Transfers
   const handleAddTransfer = async (transferData: Omit<Transfer, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, silent = false) => {
     if (!currentUser) return;
+    const transferId = transferService.createId();
+    const optimisticTransfer: Transfer = {
+      ...transferData,
+      id: transferId,
+      userId: currentUser.uid,
+      baseCurrency: transferData.baseCurrency || DEFAULT_BASE_CURRENCY,
+      baseAmount: transferData.baseAmount ?? transferData.amount,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setTransfers((prev) => [optimisticTransfer, ...prev]);
+
     let sourceFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
     let destinationFields: Awaited<ReturnType<typeof resolveAmountCurrencyFields>>;
     try {
@@ -2101,6 +2211,7 @@ const Dashboard: React.FC = () => {
       });
     } catch (error) {
       console.error('Failed to resolve transfer currency:', error);
+      setTransfers((prev) => prev.filter((transfer) => transfer.id !== transferId));
       if (!silent) showNotification('error', t('exchangeRateLookupFailed') || t('errorSavingData'));
       return;
     }
@@ -2117,25 +2228,23 @@ const Dashboard: React.FC = () => {
 
     // Use the final document ID immediately so expense deletion can target the
     // exact linked transfer even while the create request is settling.
-    const transferId = transferService.createId();
-    const optimisticTransfer: Transfer = {
+    const normalizedOptimisticTransfer: Transfer = {
+      ...optimisticTransfer,
       ...normalizedTransferData,
-      id: transferId,
-      userId: currentUser.uid,
-      createdAt: new Date(),
       updatedAt: new Date(),
     };
     const transferPayload = { ...normalizedTransferData, id: transferId, userId: currentUser.uid };
-    setTransfers((prev) => [optimisticTransfer, ...prev]);
+    setTransfers((prev) => prev.map((transfer) => transfer.id === transferId ? normalizedOptimisticTransfer : transfer));
 
     const saveTransfer = () => optimisticCRUD.run(
       { type: 'create', data: transferPayload },
       () => transferService.create(transferPayload),
       {
+        entityType: 'transfer',
         retryToQueueOnFail: true,
         suppressNotification: silent, // Don't show notification if silent mode
         onSuccess: (result) => {
-          const savedTransfer = { ...optimisticTransfer, id: result as string };
+          const savedTransfer = { ...normalizedOptimisticTransfer, id: result as string };
           setTransfers((prev) => prev.map((transfer) => transfer.id === transferId ? savedTransfer : transfer));
           loadData();
         },
@@ -2168,15 +2277,12 @@ const Dashboard: React.FC = () => {
     setTransfers((prev) => prev.filter((t) => t.id !== id));
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: transferToDelete },
-      () => transferService.delete(id),
+      { type: 'delete', data: { id, userId: transferToDelete?.userId || currentUser?.uid }, originalData: transferToDelete },
+      () => transferService.delete(id, currentUser?.uid),
       {
+        entityType: 'transfer',
         retryToQueueOnFail: true,
-        onSuccess: async () => {
-          // Update balances for both source and destination (reverse the transfer)
-          if (transferToDelete) {
-            await balanceService.handleTransferDeleted(transferToDelete);
-          }
+        onSuccess: () => {
           loadData();
           showNotification('success', t('transferDeleted'));
         },
@@ -2195,10 +2301,10 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const cardId = cardService.createId();
+    const createPayload = { ...cardData, id: cardId, userId: currentUser.uid };
     const optimisticCard: Card = {
-      ...cardData,
-      id: tempId,
+      ...createPayload,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -2209,8 +2315,8 @@ const Dashboard: React.FC = () => {
     dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [optimisticCard, ...data]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: cardData },
-      () => cardService.create({ ...cardData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => cardService.create(createPayload),
       {
         entityType: 'card',
         retryToQueueOnFail: true,
@@ -2221,16 +2327,16 @@ const Dashboard: React.FC = () => {
             ...optimisticCard,
             id: newId,
           };
-          setCards((prev) => prev.map((c) => (c.id === tempId ? realCard : c)));
+          setCards((prev) => prev.map((c) => (c.id === cardId ? realCard : c)));
           // Update cache with real ID
           dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
-            data.map((c) => (c.id === tempId ? realCard : c))
+            data.map((c) => (c.id === cardId ? realCard : c))
           );
         },
         onError: () => {
-          setCards((prev) => prev.filter((c) => c.id !== tempId));
+          setCards((prev) => prev.filter((c) => c.id !== cardId));
           // Rollback cache
-          dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== tempId));
+          dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== cardId));
         },
       }
     );
@@ -2239,16 +2345,17 @@ const Dashboard: React.FC = () => {
   // Banks CRUD
   const handleAddBank = async (bankData: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!currentUser) return;
-    const tempId = `temp-${Date.now()}`;
-    const optimisticBank: Bank = { ...bankData, id: tempId, userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date() };
+    const bankId = bankService.createId();
+    const createPayload = { ...bankData, id: bankId, userId: currentUser.uid };
+    const optimisticBank: Bank = { ...createPayload, createdAt: new Date(), updatedAt: new Date() };
     setBanks(prev => [...prev, optimisticBank]);
 
     // Update cache optimistically
     dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, optimisticBank]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: bankData },
-      () => bankService.create({ ...bankData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => bankService.create(createPayload),
       {
         entityType: 'bank',
         retryToQueueOnFail: true,
@@ -2259,16 +2366,16 @@ const Dashboard: React.FC = () => {
             ...optimisticBank,
             id: newId,
           };
-          setBanks((prev) => prev.map((b) => (b.id === tempId ? realBank : b)));
+          setBanks((prev) => prev.map((b) => (b.id === bankId ? realBank : b)));
           // Update cache with real ID
           dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
-            data.map((b) => (b.id === tempId ? realBank : b))
+            data.map((b) => (b.id === bankId ? realBank : b))
           );
         },
         onError: () => {
-          setBanks(prev => prev.filter(b => b.id !== tempId));
+          setBanks(prev => prev.filter(b => b.id !== bankId));
           // Rollback cache
-          dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== tempId));
+          dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== bankId));
         },
       }
     );
@@ -2288,7 +2395,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: original },
+      { type: 'update', data: { ...updates, id, userId: original.userId }, originalData: original },
       () => bankService.update(id, updates),
       {
         entityType: 'bank',
@@ -2320,7 +2427,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: original },
+      { type: 'delete', data: { id, userId: original.userId }, originalData: original },
       () => bankService.delete(id),
       {
         entityType: 'bank',
@@ -2355,7 +2462,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: updates, originalData: originalCard },
+      { type: 'update', data: { ...updates, id, userId: originalCard?.userId || currentUser?.uid }, originalData: originalCard },
       () => cardService.update(id, updates),
       {
         entityType: 'card',
@@ -2392,7 +2499,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: cardToDelete },
+      { type: 'delete', data: { id, userId: cardToDelete?.userId || currentUser?.uid }, originalData: cardToDelete },
       () => cardService.delete(id),
       {
         entityType: 'card',
@@ -2418,10 +2525,10 @@ const Dashboard: React.FC = () => {
   const handleAddEWallet = async (walletData: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!currentUser) return;
 
-    const tempId = `temp-${Date.now()}`;
+    const walletId = ewalletService.createId();
+    const createPayload = { ...walletData, id: walletId, userId: currentUser.uid };
     const optimisticWallet: EWallet = {
-      ...walletData,
-      id: tempId,
+      ...createPayload,
       userId: currentUser.uid,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -2432,8 +2539,8 @@ const Dashboard: React.FC = () => {
     dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, optimisticWallet]);
 
     await optimisticCRUD.run(
-      { type: 'create', data: walletData },
-      () => ewalletService.create({ ...walletData, userId: currentUser.uid }),
+      { type: 'create', data: createPayload },
+      () => ewalletService.create(createPayload),
       {
         entityType: 'ewallet',
         retryToQueueOnFail: true,
@@ -2445,16 +2552,16 @@ const Dashboard: React.FC = () => {
             ...optimisticWallet,
             id: newId,
           };
-          setEWallets((prev) => prev.map((w) => (w.id === tempId ? realWallet : w)));
+          setEWallets((prev) => prev.map((w) => (w.id === walletId ? realWallet : w)));
           // Update cache with real ID
           dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
-            data.map((w) => (w.id === tempId ? realWallet : w))
+            data.map((w) => (w.id === walletId ? realWallet : w))
           );
         },
         onError: () => {
-          setEWallets((prev) => prev.filter((w) => w.id !== tempId));
+          setEWallets((prev) => prev.filter((w) => w.id !== walletId));
           // Rollback cache
-          dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== tempId));
+          dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== walletId));
         },
       }
     );
@@ -2476,7 +2583,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'update', data: { id, updates }, originalData: originalWallet },
+      { type: 'update', data: { ...updates, id, userId: originalWallet?.userId || currentUser?.uid }, originalData: originalWallet },
       () => ewalletService.update(id, updates),
       {
         entityType: 'ewallet',
@@ -2512,7 +2619,7 @@ const Dashboard: React.FC = () => {
     }
 
     await optimisticCRUD.run(
-      { type: 'delete', data: { id }, originalData: walletToDelete },
+      { type: 'delete', data: { id, userId: walletToDelete?.userId || currentUser?.uid }, originalData: walletToDelete },
       () => ewalletService.delete(id),
       {
         entityType: 'ewallet',
@@ -2560,10 +2667,10 @@ const Dashboard: React.FC = () => {
     );
 
     await optimisticCRUD.run(
-      { type: 'update', data: { enabledFeatures, tabFeatures, hamburgerFeatures }, originalData: originalSettings },
+      { type: 'update', data: { userId: currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures }, originalData: originalSettings },
       () => featureSettingsService.update(currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures),
       {
-        entityType: 'budget', // Using budget type as settings is configuration-like
+        entityType: 'featureSettings',
         retryToQueueOnFail: true,
         successMessage: t('featuresUpdated'),
         onSuccess: () => {
@@ -2581,17 +2688,28 @@ const Dashboard: React.FC = () => {
   const handleResetFeatureSettings = async () => {
     if (!currentUser) return;
 
+    const originalSettings = featureSettings;
+    setFeatureSettings((current) => current ? {
+      ...current,
+      enabledFeatures: [...DEFAULT_FEATURES],
+      tabFeatures: [...DEFAULT_FEATURES],
+      hamburgerFeatures: [...DEFAULT_FEATURES],
+      updatedAt: new Date(),
+    } : current);
+
     await optimisticCRUD.run(
-      { type: 'update', data: {} },
+      { type: 'update', data: { userId: currentUser.uid, reset: true }, originalData: originalSettings },
       () => featureSettingsService.resetToDefaults(currentUser.uid),
       {
-        entityType: 'budget', // Using budget type as settings is configuration-like
+        entityType: 'featureSettings',
         retryToQueueOnFail: true,
         successMessage: t('featuresReset'),
         onSuccess: () => {
           loadData();
         },
-        onError: () => {},
+        onError: () => {
+          if (originalSettings) setFeatureSettings(originalSettings);
+        },
       }
     );
   };
@@ -3090,15 +3208,17 @@ const Dashboard: React.FC = () => {
                               setIsUploadingQueue(true);
                               showNotification('info', t('processing') || '处理中...', { duration: 0 });
 
-                              // 模拟清除队列显示（乐观更新）
-                              setQueueCount(0);
-
-                              // 实际重新加载数据，触发同步
-                              await loadData();
-
-                              // 成功后显示通知
-                              showNotification('success', t('queueCleared') || '数据同步成功');
-                              setShowHamburgerMenu(false);
+                              const result = await syncService.syncOfflineQueue();
+                              const remaining = offlineQueue.count();
+                              setQueueCount(remaining);
+                              if (remaining === 0) {
+                                showNotification('success', t('syncSuccess') || '資料同步完成');
+                                setShowHamburgerMenu(false);
+                              } else if (result.failed > 0) {
+                                showNotification('error', t('syncPartialFail') || '部分資料同步失敗，請檢查待同步項目。');
+                              } else {
+                                showNotification('info', t('pendingUploadsDesc') || '待同步資料會在網路恢復後繼續同步。');
+                              }
                             } catch (error) {
                               console.error('Failed to retry upload:', error);
                               // 失败后恢复队列计数
@@ -3455,9 +3575,9 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={async (data) => {
-              const result = await handleAddExpense(data);
-              if (result.status !== 'failed') closeExpenseEntry();
+            onSubmit={(data) => {
+              const result = handleAddExpense(data);
+              closeExpenseEntry();
               return result;
             }}
             onSubmitAndAddAnother={async (data) => {
@@ -3520,9 +3640,9 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={async (data) => {
-              const result = await handleAddExpense(data);
-              if (result.status !== 'failed') closeExpenseEntry();
+            onSubmit={(data) => {
+              const result = handleAddExpense(data);
+              closeExpenseEntry();
               return result;
             }}
             onSubmitAndAddAnother={async (data) => {

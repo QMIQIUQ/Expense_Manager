@@ -647,6 +647,7 @@ export const translations = {
   receiptDraftImageSaveFailed: { en: 'The receipt image could not be saved on this device. You can continue, but the image may not be available later.', zh: '無法在此裝置儲存收據圖片。你仍可繼續，但之後可能無法恢復圖片。', 'zh-CN': '无法在此设备保存收据图片。你仍可继续，但之后可能无法恢复图片。' },
   receiptDraftSaveFailed: { en: 'This receipt draft could not be saved on this device. Keep this screen open or finish the expense before closing it.', zh: '無法在此裝置儲存收據草稿。請保持此畫面開啟，或先完成支出再關閉。', 'zh-CN': '无法在此设备保存收据草稿。请保持此画面打开，或先完成支出再关闭。' },
   offlineQueueSaveFailed: { en: 'This operation could not be saved for retry. Please try again when your connection is available.', zh: '無法將此操作儲存到待重試佇列，請在網路恢復後再試一次。', 'zh-CN': '无法将此操作保存到待重试队列，请在网络恢复后再试一次。' },
+  offlineOperationNeedsAttention: { en: 'A saved offline change could not sync. Your local view was refreshed; retry the change when ready.', zh: '有一筆離線變更無法同步。畫面已重新載入，可在確認後重試。', 'zh-CN': '有一笔离线更改无法同步。页面已重新加载，可在确认后重试。' },
   offlineExpenseNeedsAttention: { en: 'An offline expense still needs to sync. It remains saved on this device; check your connection or account, then retry.', zh: '有一筆離線支出仍未同步，資料已保留在此裝置。請檢查網路或帳號後重試。', 'zh-CN': '有一笔离线支出仍未同步，数据已保留在此设备。请检查网络或账号后重试。' },
   expensePendingDelete: { en: 'This expense is already queued for deletion.', zh: '這筆支出已排入刪除佇列。', 'zh-CN': '这笔支出已排入删除队列。' },
   relatedTransferNotLinked: { en: 'A possible related transfer has no direct link to this expense, so it was left untouched. Review it in Transfers.', zh: '有一筆可能相關的轉帳沒有直接連結到這筆支出，因此保留未刪除。請到「轉帳」檢查。', 'zh-CN': '有一笔可能相关的转账没有直接关联到这笔支出，因此保留未删除。请到“转账”检查。' },

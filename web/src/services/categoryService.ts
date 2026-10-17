@@ -18,6 +18,10 @@ import { sortCategories } from '../utils/categoryOrder';
 const COLLECTION_NAME = 'categories';
 
 export const categoryService = {
+  createId(): string {
+    return doc(collection(db, COLLECTION_NAME)).id;
+  },
+
   // Seed new accounts and return categories after any one-time default migration.
   async initializeDefaults(userId: string, migrateSavingsCategory = false): Promise<Category[]> {
     const existing = await this.getAll(userId);
@@ -53,12 +57,16 @@ export const categoryService = {
   },
 
   // Create a new category
-  async create(category: Omit<Category, 'id' | 'createdAt'>): Promise<string> {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...category,
+  async create(category: Omit<Category, 'createdAt'> & { id?: string }): Promise<string> {
+    const { id, ...categoryData } = category;
+    const categoryRef = id
+      ? doc(db, COLLECTION_NAME, id)
+      : doc(collection(db, COLLECTION_NAME));
+    await setDoc(categoryRef, {
+      ...categoryData,
       createdAt: Timestamp.now(),
     });
-    return docRef.id;
+    return categoryRef.id;
   },
 
   // Get all categories for a user

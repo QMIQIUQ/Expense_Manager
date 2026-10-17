@@ -1,7 +1,7 @@
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment';
+  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout';
   payload: unknown;
   timestamp: number;
   retryCount: number;
@@ -24,6 +24,19 @@ export const offlineQueue = {
     };
     queue.push(queuedOp);
     return this.save(queue) ? id : null;
+  },
+
+  enqueueMany(operations: Array<Omit<QueuedOperation, 'id' | 'timestamp' | 'retryCount'>>): string[] | null {
+    if (operations.length === 0) return [];
+    const queue = this.getAll();
+    const timestamp = Date.now();
+    const queuedOperations = operations.map((operation, index): QueuedOperation => ({
+      ...operation,
+      id: `op-${timestamp}-${index}-${Math.random().toString(36).substring(2, 11)}`,
+      timestamp,
+      retryCount: 0,
+    }));
+    return this.save([...queue, ...queuedOperations]) ? queuedOperations.map((operation) => operation.id) : null;
   },
 
   // Get all queued operations
@@ -115,15 +128,11 @@ export const offlineQueue = {
 
     operation.retryCount += 1;
 
-    if (operation.entity === 'expense') {
-      if (operation.retryCount >= MAX_RETRY) operation.status = 'needs-attention';
-      if (!this.save(queue)) return true;
-      return operation.status !== 'needs-attention';
-    }
-
-    // If max retries exceeded, remove from queue
+    // Keep exhausted operations visible and retryable. Removing an operation
+    // here would leave its optimistic UI state with no way to reconcile it.
     if (operation.retryCount >= MAX_RETRY) {
-      this.dequeue(id);
+      operation.status = 'needs-attention';
+      this.save(queue);
       return false;
     }
 

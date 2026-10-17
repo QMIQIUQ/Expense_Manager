@@ -15,7 +15,7 @@ interface UseOptimisticCRUDOptions {
   onError?: (error: unknown) => void;
   onQueued?: () => void;
   retryToQueueOnFail?: boolean;
-  entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment';
+  entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout';
   suppressNotification?: boolean;
   successMessage?: string;
 }
