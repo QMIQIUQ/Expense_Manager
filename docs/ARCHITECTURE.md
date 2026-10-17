@@ -1,522 +1,57 @@
-# Expense Manager - System Architecture
+# 系統架構
 
-> **UI 架構更新（2026-10-09）**：現行畫面路由、Dashboard 頁籤與導覽排列請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準。早期系統圖是簡化示意，不能用來推斷目前所有功能入口。
+> 本文件按目前程式碼描述執行時架構。功能入口以 [`FEATURES_AND_PAGES.md`](FEATURES_AND_PAGES.md) 為準；主要 method、業務流程與靜態檢查發現集中在 [`LOGIC_METHOD_FLOW.md`](LOGIC_METHOD_FLOW.md)；離線保存和 Firebase 同步細節見 [`OFFLINE_SYNC_ARCHITECTURE.md`](OFFLINE_SYNC_ARCHITECTURE.md)。最後核對：2026-10-17。
 
-## System Overview
+## 執行層次
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Expense Manager Web App                      │
-│                   (React + TypeScript + Firebase)                │
-└─────────────────────────────────────────────────────────────────┘
-```
+| 層 | 主要位置 | 職責 |
+|---|---|---|
+| 啟動與共用 Provider | `web/src/main.tsx` | 註冊 PWA Service Worker，掛載 Theme、Language、Auth、Notification、UserSettings Provider。 |
+| PWA 外殼與路由 | `web/src/App.tsx`, `contexts/PWAContext.tsx` | 提供安裝/更新能力；`/` 登入、`/login` 轉回 `/`、`/dashboard` 經 `PrivateRoute` 保護，其餘路徑轉回 `/`。 |
+| 應用外殼與事件協調 | `web/src/pages/Dashboard.tsx` | 保存共用資料狀態、主頁籤、頁首選單、表單狀態；將 UI 操作接到 service、樂觀更新、快取和離線佇列。 |
+| 頁面與功能元件 | `web/src/pages/tabs/`, `web/src/components/` | 顯示財務紀錄、預算、支付方式、定期付款、分析、設定、管理等 UI。 |
+| 應用服務與領域邏輯 | `web/src/services/`, `web/src/domain/`, `web/src/utils/` | 執行 Firestore CRUD/transactions、金額與匯率計算、快取與重播、OCR、匯入匯出、摘要資料。 |
+| 雲端及權限邊界 | `web/src/config/firebase.ts`, `web/firestore.rules`, `web/functions/` | 初始化 Firebase Auth、Firestore、Functions；Security Rules 限定用戶資料存取，Callable Functions 執行需伺服器權限的管理工作。 |
 
-## Application Structure
+## 啟動、身份與資料讀取
 
-```
-┌───────────────────────────────────────────────────────────────────┐
-│                         USER INTERFACE                             │
-├───────────────────────────────────────────────────────────────────┤
-│  Main tabs (user-configurable order and visibility)                  │
-│  Dashboard · Expenses · Incomes · Categories · Budgets               │
-│  Recurring · Payment Methods · Settings                               │
-│  Profile and Admin are opened from the header utility menu            │
-│  activeTab selects one view inside the shared Dashboard content area  │
-│                              │                                      │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼──────────────────────────────────────┐
-│                       COMPONENT LAYER                               │
-├──────────────────────────────┼──────────────────────────────────────┤
-│                              ▼                                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐   │
-│  │ ExpenseForm     │  │ CategoryManager │  │ BudgetManager   │   │
-│  │ ExpenseList     │  │                 │  │                 │   │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘   │
-│                                                                     │
-│  ┌─────────────────┐  ┌─────────────────┐                         │
-│  │ Scheduled Pmts  │  │ CustomizableDash │                         │
-│  └─────────────────┘  └─────────────────┘                         │
-│                              │                                      │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼──────────────────────────────────────┐
-│                        SERVICE LAYER                                │
-├──────────────────────────────┼──────────────────────────────────────┤
-│                              ▼                                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐   │
-│  │ expenseService  │  │ categoryService │  │ budgetService   │   │
-│  │                 │  │                 │  │                 │   │
-│  │ - create()      │  │ - create()      │  │ - create()      │   │
-│  │ - getAll()      │  │ - getAll()      │  │ - getAll()      │   │
-│  │ - update()      │  │ - update()      │  │ - update()      │   │
-│  │ - delete()      │  │ - delete()      │  │ - delete()      │   │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘   │
-│                                                                     │
-│  ┌──────────────────────────┐                                      │
-│  │ recurringExpenseService  │                                      │
-│  │                          │                                      │
-│  │ - create()               │                                      │
-│  │ - getAll()               │                                      │
-│  │ - update()               │                                      │
-│  │ - delete()               │                                      │
-│  │ - toggleActive()         │                                      │
-│  └──────────────────────────┘                                      │
-│                              │                                      │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼──────────────────────────────────────┐
-│                         FIREBASE LAYER                              │
-├──────────────────────────────┼──────────────────────────────────────┤
-│                              ▼                                      │
-│  ┌─────────────────────────────────────────────────────┐           │
-│  │              Firebase Configuration                  │           │
-│  │  - Authentication (Email/Password, Google)          │           │
-│  │  - Firestore Database                               │           │
-│  └─────────────────────────────────────────────────────┘           │
-│                              │                                      │
-│  ┌───────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │  Collection:  │  │ Collection:  │  │ Collection:  │            │
-│  │   expenses    │  │  categories  │  │   budgets    │            │
-│  └───────────────┘  └──────────────┘  └──────────────┘            │
-│                                                                     │
-│  ┌─────────────────────┐                                           │
-│  │    Collection:      │                                           │
-│  │ recurringExpenses   │                                           │
-│  └─────────────────────┘                                           │
-│                              │                                      │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │
-                               ▼
-                    ┌────────────────────┐
-                    │   Firebase Cloud   │
-                    │  (Data Storage &   │
-                    │  Synchronization)  │
-                    └────────────────────┘
+1. `main.tsx` 註冊 Service Worker 並掛載全域 Provider。
+2. `AuthProvider` 監聽 `onAuthStateChanged`；登入、註冊後確保 `users/{uid}` metadata 存在。`PrivateRoute` 決定是否可進入 Dashboard。
+3. Dashboard 的 `loadData()` 對支出、收入、分類、預算、還款、轉帳、定期付款及付款紀錄呼叫 `dataService.getDataWithRevalidate()`。
+4. 有應用快取且在線時，先回傳快取並在背景讀 Firestore；資料有變時才更新快取和 React state。離線時使用快取；無快取時此讀取路徑回傳空陣列。
+5. Dashboard 對支出與預算載入結果套用尚未同步的 app queue，再更新快取和畫面。
+
+## 資料保存層次
+
+資料有兩種不同的瀏覽器端保存：
+
+- **Firestore SDK 持久快取**：`config/firebase.ts` 使用 `initializeFirestore()`、`persistentLocalCache()` 和 `persistentMultipleTabManager()`。Firestore SDK 可在 IndexedDB 本機維護 Firestore 文件快取和待確認寫入，並在連線恢復後自行同步。SDK 寫入 Promise 可能等到雲端確認後才完成。
+- **應用資料快取與重播佇列**：`sessionCache` 將讀取資料寫入 `sessionStorage`，並嘗試複製到 `localStorage`；`offlineQueue` 將特定 CRUD 操作寫入 `localStorage`。這是應用層快取/佇列，和 Firestore SDK 的 IndexedDB 快取分開管理。
+
+因此「先在畫面/本機看到資料」不等於「Firebase 已確認」。目前寫入路徑可能由 Firestore SDK 本機持久化承接，也可能在 API 以可辨識的網路錯誤拒絕後進入應用佇列；是否走 app queue 取決於各 handler 是否傳入支援的 `entityType` 與 `retryToQueueOnFail`。詳情和已知缺口見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)。
+
+## 一般寫入資料流
+
+```text
+表單/列表
+  → Dashboard handler
+  → React state + sessionCache/localStorage 快取的樂觀更新
+  → domain service / Firestore SDK
+       ├─ 雲端確認 → 清除 pending 狀態、必要時刷新資料/帳戶餘額
+       ├─ SDK 本機持久化 → 連線恢復後由 Firestore SDK 自行送出
+       └─ 可辨識網路錯誤 + handler 有設定 app queue → offlineQueue
+                                               → syncService 重播 → Firestore service
 ```
 
-## Data Flow
+## 主要資料集合
 
-### Adding an Expense
+以各 service、`web/src/constants/collections.ts`、Security Rules 與 Functions 為準。常用集合包括 `expenses`、`incomes`、`categories`、`budgets`、`transfers`、`repayments`、`cards`、`banks`、`ewallets`、`scheduledPayments`、`scheduledPaymentRecords`、`userSettings`、`featureSettings`、`dashboardLayouts`、`quickExpensePresets`。朋友支出使用 `friendConnections`、`friendRequests`、`friendSpendingSummaries`、`friendSpendingSummaryStates` 等集合/子集合。
 
-```
-User Action (Fill Form)
-        │
-        ▼
-ExpenseForm Component
-        │
-        ▼
-Dashboard Handler (handleAddExpense)
-        │
-        ▼
-expenseService.create()
-        │
-        ▼
-Firebase Firestore
-        │
-        ▼
-Data Persisted in Cloud
-        │
-        ▼
-loadData() Refreshes UI
-        │
-        ▼
-ExpenseList Updates
-```
+`userId` 欄位、Firestore Rules 和必要時的 transaction 一起決定所有權及跨文件一致性。任何文件上的集合名稱都應回到 service 與 Rules 核對，不要只依 UI 名稱推斷。
 
-### Budget Tracking
+## 進一步閱讀
 
-```
-User Views Budget
-        │
-        ▼
-BudgetManager Component
-        │
-        ├─── Fetches Budget Data
-        │    (from budgets collection)
-        │
-        └─── Calculates Spending
-             (from expenses collection)
-        │
-        ▼
-Displays Progress Bar
-  - Green (< threshold)
-  - Orange (>= threshold)
-  - Red (>= 100%)
-```
-
-### Dashboard Analytics
-
-```
-Dashboard Tab
-        │
-        ▼
-DashboardSummary Component
-        │
-        ├─── Calculate Total Expenses
-        ├─── Calculate Monthly Expenses
-        ├─── Calculate Daily Expenses
-        └─── Calculate Category Breakdown
-        │
-        ▼
-Display Summary Cards
-        │
-        ▼
-Display Top Categories
-```
-
-## Component Hierarchy
-
-```
-App.tsx
-└── PWAProvider
-   ├── Router
-   │   ├── /                         Login
-   │   ├── /login                    redirect to /
-   │   └── /dashboard [PrivateRoute]
-   │       └── Dashboard.tsx
-   │           ├── Dashboard header
-   │           │   ├── Brand / greeting
-   │           │   ├── CompactNavigation (tabFeatures)
-   │           │   └── Header actions
-   │           │       ├── NotificationBell
-   │           │       └── Hamburger → dashboard-menu-panel
-   │           │           ├── DashboardMenuSection accordions
-   │           │           ├── Profile action
-   │           │           ├── Admin action (admin only)
-   │           │           └── Logout action
-   │           ├── HeaderStatusBar
-   │           ├── Shared content card (activeTab state)
-   │           │   ├── Dashboard → CustomizableDashboard → widgets
-   │           │   ├── Expenses → ExpensesTab
-   │           │   ├── Incomes → IncomesTab
-   │           │   ├── Categories → CategoryManager
-   │           │   ├── Budgets → BudgetManager
-   │           │   ├── Recurring → ScheduledPaymentManager
-   │           │   │   └── list / calendar / analytics views
-   │           │   ├── Payment Methods → cards / e-wallets / banks / transfers
-   │           │   └── Settings → FeatureManager
-   │           ├── FloatingExpenseActions
-   │           │   ├── Add expense (tap; long-press opens date shortcuts)
-   │           │   └── Scan receipt
-   │           └── Modal / Bottom Sheet / date shortcut overlays
-   └── PWAInstallPrompt
-```
-
-### Current UI implementation (As-is)
-
-`CompactNavigation`, `DashboardMenuSection`, and `FloatingExpenseActions` are the three mounted navigation/action components. `CompactNavigation` renders the user-configured `tabFeatures`; `DashboardMenuSection` owns each full-width accordion trigger inside the hamburger menu; and `FloatingExpenseActions` keeps separate add-expense and receipt-scan actions. Main tabs and hamburger utilities share the `/dashboard` shell and `activeTab` state, while Profile and Admin are opened from the menu rather than listed as main tabs.
-
-The `Recurring` main tab currently renders `ScheduledPaymentManager`; `RecurringTab` and `RecurringExpenseManager` remain in the source tree but are not mounted from `Dashboard.tsx`. Responsive layout, menu contents, and recommended desktop/mobile arrangements are documented separately in the [UI navigation audit](UI_NAVIGATION_AUDIT.md), with the current implementation clearly separated from proposed changes.
-
-## State Management
-
-### Authentication State
-```
-AuthContext (React Context)
-  │
-  ├─── currentUser
-  ├─── login()
-  ├─── logout()
-  └─── register()
-```
-
-### Application State
-```
-Dashboard Component (Local State)
-  │
-  ├─── expenses: Expense[]
-  ├─── categories: Category[]
-  ├─── budgets: Budget[]
-  ├─── recurringExpenses: RecurringExpense[]
-  ├─── activeTab: string
-  ├─── editingExpense: Expense | null
-  └─── loading: boolean
-```
-
-## Data Models
-
-### Core Entities
-
-```
-┌──────────────────┐
-│     Expense      │
-├──────────────────┤
-│ id               │
-│ userId           │
-│ description      │
-│ amount           │
-│ category         │
-│ date             │
-│ notes            │
-│ createdAt        │
-│ updatedAt        │
-└──────────────────┘
-
-┌──────────────────┐         ┌──────────────────┐
-│    Category      │         │      Budget      │
-├──────────────────┤         ├──────────────────┤
-│ id               │         │ id               │
-│ userId           │         │ userId           │
-│ name             │◄────────│ categoryName     │
-│ icon             │         │ amount           │
-│ color            │         │ period           │
-│ isDefault        │         │ alertThreshold   │
-│ createdAt        │         │ createdAt        │
-└──────────────────┘         └──────────────────┘
-
-┌──────────────────────┐
-│  RecurringExpense    │
-├──────────────────────┤
-│ id                   │
-│ userId               │
-│ description          │
-│ amount               │
-│ category             │
-│ frequency            │
-│ startDate            │
-│ endDate              │
-│ isActive             │
-│ createdAt            │
-└──────────────────────┘
-```
-
-## Security Model
-
-```
-┌────────────────────────────────────────────┐
-│         Firebase Authentication             │
-│  - Email/Password                          │
-│  - Google Sign-in                          │
-└────────────────────────────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────────┐
-│         Firestore Security Rules           │
-│  - All reads/writes require auth          │
-│  - Users can only access their own data   │
-│  - Data scoped by userId                  │
-└────────────────────────────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────────┐
-│         Application Security               │
-│  - Input validation                        │
-│  - XSS protection                          │
-│  - Type safety (TypeScript)                │
-│  - Error handling                          │
-└────────────────────────────────────────────┘
-```
-
-## File Organization
-
-```
-web/
-├── src/
-│   ├── components/
-│   │   ├── budgets/
-│   │   │   └── BudgetManager.tsx
-│   │   ├── categories/
-│   │   │   └── CategoryManager.tsx
-│   │   ├── dashboard/
-│   │   │   └── DashboardSummary.tsx
-│   │   ├── expenses/
-│   │   │   ├── ExpenseForm.tsx
-│   │   │   └── ExpenseList.tsx
-│   │   ├── recurring/
-│   │   │   └── RecurringExpenseManager.tsx
-│   │   └── PrivateRoute.tsx
-│   │
-│   ├── services/
-│   │   ├── expenseService.ts
-│   │   ├── categoryService.ts
-│   │   ├── budgetService.ts
-│   │   └── recurringExpenseService.ts
-│   │
-│   ├── types/
-│   │   └── index.ts
-│   │
-│   ├── utils/
-│   │   ├── dateUtils.ts       # Date/time utilities for local timezone handling
-│   │   └── exportUtils.ts     # CSV export utilities
-│   │
-│   ├── contexts/
-│   │   └── AuthContext.tsx
-│   │
-│   ├── config/
-│   │   └── firebase.ts
-│   │
-│   ├── pages/
-│   │   ├── Home.tsx
-│   │   ├── Login.tsx
-│   │   ├── Register.tsx
-│   │   └── Dashboard.tsx
-│   │
-│   ├── App.tsx
-│   └── main.tsx
-│
-├── public/
-├── .env
-├── package.json
-├── vite.config.ts
-└── tsconfig.json
-```
-
-## Technology Stack
-
-```
-┌─────────────────────────────────────┐
-│         Frontend Framework          │
-│  React 18 + TypeScript              │
-└─────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────┐
-│         Build Tool                  │
-│  Vite                               │
-└─────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────┐
-│         Routing                     │
-│  React Router v6                    │
-└─────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────┐
-│         Backend Services            │
-│  Firebase                           │
-│  - Authentication                   │
-│  - Firestore Database              │
-└─────────────────────────────────────┘
-```
-
-## Feature Integration
-
-```
-┌──────────────┐
-│  Dashboard   │◄──────┐
-│   Summary    │       │
-└──────────────┘       │
-       │               │
-       │  Reads        │
-       ▼               │
-┌──────────────┐       │
-│  Expenses    │───────┤
-│ Collection   │       │
-└──────────────┘       │
-       │               │
-       │               │
-       ▼               │
-┌──────────────┐       │  All Connected
-│  Categories  │───────┤  via Firebase
-│ Collection   │       │  Firestore
-└──────────────┘       │
-       │               │
-       │               │
-       ▼               │
-┌──────────────┐       │
-│   Budgets    │───────┤
-│ Collection   │       │
-└──────────────┘       │
-       │               │
-       │               │
-       ▼               │
-┌──────────────┐       │
-│  Recurring   │───────┘
-│ Collection   │
-└──────────────┘
-```
-
-## Utility Functions
-
-### Date Utilities (`utils/dateUtils.ts`)
-
-The application uses dedicated date utility functions to ensure consistent timezone handling across all components:
-
-```typescript
-// Get today's date in local timezone (YYYY-MM-DD)
-getTodayLocal(): string
-
-// Get current time in local timezone (HH:MM)
-getCurrentTimeLocal(): string
-
-// Format a date to YYYY-MM-DD in local timezone
-formatDateLocal(date: Date | string): string
-```
-
-**Purpose:**
-- Avoid timezone bugs caused by UTC conversions
-- Provide consistent date/time formatting across the application
-- Ensure users see dates in their local timezone
-
-**Used in:**
-- ExpenseForm - Default date/time for new expenses
-- IncomeForm - Default date/time for new income entries
-- BudgetForm - Date handling for budget periods
-- RecurringForm - Date scheduling for recurring expenses
-- RepaymentForm - Repayment date handling
-- DashboardSummary - Filtering expenses by today's date
-- ExpenseList - Date filtering and display
-
-**See:** [DATE_TIME_FORMAT_GUIDE.md](DATE_TIME_FORMAT_GUIDE.md) for date and time format details
-
-### Export Utilities (`utils/exportUtils.ts`)
-
-Handles CSV export functionality for expenses and other data.
-
-## Deployment Flow
-
-```
-Development
-     │
-     ▼
-┌─────────────┐
-│ npm run dev │ ──► Vite Dev Server (localhost:3000)
-└─────────────┘
-     │
-     ▼
-Testing
-     │
-     ▼
-┌──────────────┐
-│ npm run build│ ──► TypeScript Compilation + Vite Build
-└──────────────┘
-     │
-     ▼
-Production Build
-     │
-     ▼
-┌──────────────┐
-│ dist/ folder │ ──► Static files ready for deployment
-└──────────────┘
-     │
-     ▼
-Deploy to:
-  - Firebase Hosting
-  - Netlify
-  - Vercel
-  - etc.
-```
-
-## Performance Optimization
-
-### Current Optimizations
-- Type-safe code (TypeScript)
-- Component-based architecture
-- Service layer abstraction
-- Efficient Firebase queries
-- Memory management (URL revocation)
-
-### Future Optimizations
-- Code splitting with React.lazy()
-- Virtual scrolling for large lists
-- Real-time listeners with Firebase
-- Caching strategies
-- PWA features (service workers)
-- Image optimization
-
----
-
-**Architecture Version**: 1.0.0
-**Last Updated**: 2024
+- [功能入口與頁面掛載](FEATURES_AND_PAGES.md)
+- [主要 method 與端到端流程](LOGIC_METHOD_FLOW.md)
+- [離線操作、佇列與 Firebase 同步](OFFLINE_SYNC_ARCHITECTURE.md)
+- [離線狀態使用說明](OFFLINE_SYNC_GUIDE.md)
