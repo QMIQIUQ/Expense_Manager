@@ -4,9 +4,14 @@ import { BudgetPeriod, OverallBudgetLimits, UserSettings, TimeFormat, DateFormat
 import { COLLECTIONS } from '../constants/collections';
 import { validateOverallBudgetLimit } from '../utils/budgetAllocation';
 import { runBudgetMutationTransaction } from '../utils/budgetMutationTransaction';
+import { sessionCache } from '../utils/sessionCache';
+import { applyPendingOperations } from '../utils/pendingOperations';
+import { networkStatus } from '../utils/networkStatus';
+import { offlineQueue } from '../utils/offlineQueue';
 
 export const userSettingsService = {
   async get(userId: string, forceRefresh: boolean = false, requireServer: boolean = false): Promise<UserSettings | null> {
+    const revision = offlineQueue.revision;
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
     // Force refresh from server to bypass Firestore cache
     // Fall back to cached read if server fetch fails (e.g., offline)
@@ -29,7 +34,7 @@ export const userSettingsService = {
     
     const data = docSnap.data();
     
-    return {
+    const settings: UserSettings = {
       id: docSnap.id,
       userId: data.userId,
       billingCycleDay: data.billingCycleDay || 1,
@@ -43,6 +48,11 @@ export const userSettingsService = {
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };
+    if (requireServer) return settings;
+    const local = applyPendingOperations('userSettings', userId, revision === offlineQueue.revision
+      ? settings : sessionCache.get<UserSettings>('userSettings', userId) ?? settings);
+    sessionCache.set('userSettings', userId, local);
+    return local;
   },
 
   async create(settings: Omit<UserSettings, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
@@ -60,6 +70,8 @@ export const userSettingsService = {
       ...updates,
       updatedAt: Timestamp.now(),
     });
+    const cached = sessionCache.get<UserSettings>('userSettings', userId);
+    if (cached) sessionCache.set('userSettings', userId, { ...cached, ...updates });
   },
 
   async setOverallBudgetLimit(userId: string, period: BudgetPeriod, amount?: number): Promise<void> {
@@ -83,6 +95,8 @@ export const userSettingsService = {
   },
 
   async getOrCreate(userId: string, forceRefresh: boolean = false): Promise<UserSettings> {
+    const cached = sessionCache.get<UserSettings>('userSettings', userId);
+    if (cached && (!forceRefresh || !networkStatus.isOnline)) return applyPendingOperations('userSettings', userId, cached);
     const existing = await this.get(userId, forceRefresh);
     
     if (existing) {
@@ -103,11 +117,13 @@ export const userSettingsService = {
     await this.create(defaultSettings);
     
     // Return the created settings
-    return {
+    const created: UserSettings = {
       id: userId,
       ...defaultSettings,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    sessionCache.set('userSettings', userId, created);
+    return created;
   },
 };

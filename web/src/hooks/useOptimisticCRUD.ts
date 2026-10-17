@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { offlineQueue } from '../utils/offlineQueue';
+import type { QueuedOperation } from '../utils/offlineQueue';
+import { getQueuedWriteId, writeLocalFirst } from '../utils/localFirstMutation';
 
 export interface OptimisticOperation<T> {
   id: string;
@@ -15,7 +16,7 @@ interface UseOptimisticCRUDOptions {
   onError?: (error: unknown) => void;
   onQueued?: () => void;
   retryToQueueOnFail?: boolean;
-  entityType?: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout';
+  entityType?: QueuedOperation['entity'];
   suppressNotification?: boolean;
   successMessage?: string;
 }
@@ -79,7 +80,9 @@ export const useOptimisticCRUD = <T,>() => {
 
       try {
         // Execute API call
-        const result = await apiCall();
+        const result = options?.retryToQueueOnFail && options.entityType
+          ? await writeLocalFirst({ type: operation.type, entity: options.entityType, payload: operation.data }, apiCall)
+          : await apiCall();
 
         // Success: remove pending operation
         setPendingOperations((prev) => {
@@ -99,12 +102,14 @@ export const useOptimisticCRUD = <T,>() => {
 
         // Call success callback
         if (options?.onSuccess) {
-          options.onSuccess(result);
+          try { void Promise.resolve(options.onSuccess(result)).catch((error) => console.error('Post-save refresh failed:', error)); }
+          catch (error) { console.error('Post-save refresh failed:', error); }
         }
 
         return result;
       } catch (error) {
-        console.error('Operation failed:', error);
+        const operationQueued = getQueuedWriteId(error) !== null;
+        if (!operationQueued) console.error('Operation failed:', error);
 
         // Remove from pending
         setPendingOperations((prev) => {
@@ -113,34 +118,11 @@ export const useOptimisticCRUD = <T,>() => {
           return newMap;
         });
 
-        // Check if it's a network error
-        const isNetworkError = isOfflineError(error);
-        let errorForCallback = error;
-        let operationQueued = false;
-
-        if (isNetworkError && options?.retryToQueueOnFail && options?.entityType) {
-          // Queue the operation for later retry
-          const queuedId = offlineQueue.enqueue({
-            type: operation.type,
-            entity: options.entityType,
-            payload: operation.data,
+        if (operationQueued) {
+          options?.onQueued?.();
+          if (notificationId) updateNotification(notificationId, {
+            type: 'info', message: t('operationSavedOffline'), duration: 5000,
           });
-
-          if (queuedId) {
-            operationQueued = true;
-            options.onQueued?.();
-            if (notificationId) {
-              updateNotification(notificationId, {
-                type: 'info',
-                message: t('operationSavedOffline'),
-                duration: 5000,
-              });
-            }
-          } else {
-            errorForCallback = new Error(t('offlineQueueSaveFailed'));
-            if (notificationId) hideNotification(notificationId);
-            showNotification('error', t('offlineQueueSaveFailed'), { duration: 0 });
-          }
         } else {
           // Show error notification with retry option
           if (notificationId) {
@@ -153,32 +135,13 @@ export const useOptimisticCRUD = <T,>() => {
                 label: t('retry'),
                 onClick: () => run(operation, apiCall, options),
               },
-              ...(options?.entityType
-                ? [
-                    {
-                      label: t('saveOffline'),
-                      onClick: () => {
-                        const queuedId = offlineQueue.enqueue({
-                          type: operation.type,
-                          entity: options.entityType!,
-                          payload: operation.data,
-                        });
-                        showNotification(
-                          queuedId ? 'info' : 'error',
-                          queuedId ? t('operationSavedOffline') : t('offlineQueueSaveFailed'),
-                          { duration: queuedId ? 5000 : 0 }
-                        );
-                      },
-                    },
-                  ]
-                : []),
             ],
           });
         }
 
         // Call error callback
         if (options?.onError && !operationQueued) {
-          options.onError(errorForCallback);
+          options.onError(error);
         }
 
         return null;
@@ -216,33 +179,3 @@ export const useOptimisticCRUD = <T,>() => {
     pendingCount: pendingOperations.size,
   };
 };
-
-// Helper function for checking offline errors
-function isOfflineError(error: unknown): boolean {
-  const errorCode = error && typeof error === 'object' && 'code' in error
-    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
-    : undefined;
-  if (errorCode === 'permission-denied' || errorCode === 'invalid-argument' || errorCode === 'failed-precondition') {
-    return false;
-  }
-  if (errorCode === 'unavailable' || errorCode === 'deadline-exceeded' || errorCode === 'network-request-failed') {
-    return true;
-  }
-
-  if (error instanceof Error) {
-    if (/invalid-allocation|invalid-limit|limit-below-allocation|budget-(?:owner-mismatch|id-conflict|not-found|owner-missing)|user-settings-not-found/i.test(error.message)) {
-      return false;
-    }
-    // Don't treat permission errors as offline errors
-    if (error.message.includes('Missing or insufficient permissions') || error.message.includes('permission-denied')) {
-      return false;
-    }
-    return (
-      error.message.includes('network') ||
-      error.message.includes('offline') ||
-      error.message.includes('Failed to fetch') ||
-      !navigator.onLine
-    );
-  }
-  return !navigator.onLine;
-}

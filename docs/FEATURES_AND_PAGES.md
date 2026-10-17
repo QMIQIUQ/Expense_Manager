@@ -85,7 +85,7 @@ main.tsx
       ↑                                  ↓
       └──── 更新 React 狀態 / 快取 ←─────┘
 
-離線時需分開看兩條路：Firestore SDK IndexedDB 持久快取自行同步其待寫入；只有 handler 設定支援的 entity/payload 且錯誤符合條件時，操作才進 app `offlineQueue`，由 `syncService` 重播。各 entity 支援範圍和已知缺口見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)。
+一般資料異動先更新 React state/cache，透過共用 helper 在呼叫 Firebase 前保存 app `offlineQueue`。已知離線時即完成本機提交；線上寫入失敗則保留 queue，交由 `syncService` 依帳戶順序重播。Firestore SDK IndexedDB 另行維護自己的快取與待確認寫入。各 entity 支援範圍見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)及[逐功能驗收](LOCAL_FIRST_ACCEPTANCE.md)。
 ```
 
 不是所有操作都會經過同一個 Hook。新增功能時，請沿用該領域既有 service，並檢查其 Firestore Rules、離線支援與同步行為；資料隔離及授權以 `web/firestore.rules` 和 Functions 驗證為準。

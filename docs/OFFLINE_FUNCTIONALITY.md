@@ -6,14 +6,14 @@
 
 - Dashboard 透過網路狀態指示器顯示 browser online/offline 狀態、app queue 筆數和 app queue 同步進度。
 - Dashboard 載入時會先用應用快取顯示資料，並在網路可用時背景 revalidate。
-- `useOptimisticCRUD` 接入的部分功能會先更新畫面；特定網路錯誤發生後，如該 handler 有正確設定 queue entity，才會顯示已儲存離線並等待 app queue 重播。
+- 所有一般資料異動都必須先更新畫面，並在呼叫 Firebase 前保存完整操作至 app queue。已知離線時不會等待 SDK 寫入 Promise；重新載入或背景讀取仍會套用待同步資料。
 - Firestore Web SDK 另有 IndexedDB 持久快取，維護其本機讀取資料及待同步寫入。這些 SDK pending writes 不會列入 Dashboard app queue 筆數。
 - 頁首 pending badge 可手動執行 app queue 同步。佇列項目需在連線恢復且登入對應帳戶後才可重播。
 - 「清除離線操作」會清除全部 app queue；無法復原該佇列內容，且不會清除 Firestore SDK 自己管理的 IndexedDB 寫入。
 
 ## 限制
 
-目前 app queue 只涵蓋部分 entity，不保證每個離線操作都走同一種保存方式。個別 handler 的 queue payload/重播目標也有待修正的差異；重試達上限時，Expense 會保留並標示需注意，Budget 有拒絕回滾流程，其餘 entity 可能會從 app queue 移除。請勿把 queue 筆數為 0 當作所有 Firebase 寫入均已確認。
+app queue 涵蓋主要 CRUD、排序及一般偏好設定。重試達上限的操作保留為 needs-attention，較晚操作等待前序完成；Budget 另有伺服器驗證拒絕回復。認證、管理員/好友授權、整體預算限額與缺少必要匯率仍需前置驗證。請勿把 app queue 筆數為 0 當作 Firestore SDK 的全部寫入都已確認。逐項範圍與測試證據見[逐功能驗收](LOCAL_FIRST_ACCEPTANCE.md)。
 
 相關文件：
 

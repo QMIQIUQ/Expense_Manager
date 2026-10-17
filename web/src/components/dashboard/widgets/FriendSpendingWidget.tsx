@@ -14,6 +14,7 @@ import { getFriendSpendingDateRange, presentFriendSpending } from '../../../util
 import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
 import type { CurrencyCode } from '../../../types';
 import type { WidgetProps } from './types';
+import { getQueuedWriteId, writeLocalFirst } from '../../../utils/localFirstMutation';
 
 const todayLocal = (): string => {
   const today = new Date();
@@ -93,7 +94,7 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
     }
     let cancelled = false;
     setPreferenceReadyFor('');
-    friendSpendingService.getPreference(currentUser.uid, selectedFriendUid)
+    friendSpendingService.getPreference(currentUser.uid, selectedFriendUid, (fresh) => { if (!cancelled) setPreference(fresh); })
       .then((savedPreference) => {
         if (cancelled) return;
         setPreference(savedPreference);
@@ -199,10 +200,12 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
     if (!currentUser || !selectedFriendUid) return;
     setBusyAction(`save:${selectedFriendUid}`);
     try {
-      await friendSpendingService.savePreference(currentUser.uid, selectedFriendUid, preference);
+      await writeLocalFirst({ type: 'update', entity: 'friendPreference',
+        payload: { id: selectedFriendUid, userId: currentUser.uid, preference } },
+        () => friendSpendingService.savePreference(currentUser.uid, selectedFriendUid, preference));
       showNotification('success', t('preferencesSaved'));
-    } catch {
-      showNotification('error', t('saveFailed'));
+    } catch (error) {
+      showNotification(getQueuedWriteId(error) ? 'info' : 'error', t(getQueuedWriteId(error) ? 'operationSavedOffline' : 'saveFailed'));
     } finally {
       setBusyAction('');
     }

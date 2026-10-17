@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { userSettingsService } from '../services/userSettingsService';
-import { offlineQueue } from '../utils/offlineQueue';
+import { queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
 import { useNotification } from '../contexts/NotificationContext';
 import { TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
 import PWAInstallButton from '../components/PWAInstallButton';
@@ -93,11 +93,12 @@ const UserProfile: React.FC = () => {
     
     setSaving(true);
     try {
-      await userSettingsService.update(currentUser.uid, { billingCycleDay });
+      await writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId: currentUser.uid, updates: { billingCycleDay } } },
+        () => userSettingsService.update(currentUser.uid, { billingCycleDay }));
       setSavedBillingCycleDay(billingCycleDay);
       showNotification('success', t('settingsSaved'));
     } catch (error) {
-      const queued = isRetryableNetworkError(error) && offlineQueue.enqueue({
+      const queued = isRetryableNetworkError(error) && queueFailedWrite(error, {
         type: 'update',
         entity: 'userSettings',
         payload: { userId: currentUser.uid, updates: { billingCycleDay } },

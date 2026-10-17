@@ -1,7 +1,7 @@
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout';
+  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout' | 'friendPreference';
   payload: unknown;
   timestamp: number;
   retryCount: number;
@@ -10,8 +10,23 @@ export interface QueuedOperation {
 
 const QUEUE_KEY = 'offline_operations_queue';
 const MAX_RETRY = 3;
+let revision = 0;
+const undefinedMarker = '__expense_manager_undefined__';
+const restoreUndefined = (value: unknown): unknown => {
+  if (!value || typeof value !== 'object') return value;
+  if (!Array.isArray(value) && Object.keys(value).length === 1 && undefinedMarker in value) return undefined;
+  for (const key of Object.keys(value)) {
+    (value as Record<string, unknown>)[key] = restoreUndefined((value as Record<string, unknown>)[key]);
+  }
+  return value;
+};
+const notifyChange = () => {
+  revision++;
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('offline-queue-changed'));
+};
 
 export const offlineQueue = {
+  get revision(): number { return revision; },
   // Add operation to queue
   enqueue(operation: Omit<QueuedOperation, 'id' | 'timestamp' | 'retryCount'>): string | null {
     const queue = this.getAll();
@@ -43,7 +58,8 @@ export const offlineQueue = {
   getAll(): QueuedOperation[] {
     try {
       const data = localStorage.getItem(QUEUE_KEY);
-      return data ? JSON.parse(data) : [];
+      const parsed = data ? restoreUndefined(JSON.parse(data)) : [];
+      return Array.isArray(parsed) ? parsed as QueuedOperation[] : [];
     } catch (error) {
       console.error('Error reading offline queue:', error);
       return [];
@@ -120,6 +136,11 @@ export const offlineQueue = {
     this.save(queue);
   },
 
+  dequeueMany(ids: string[]): void {
+    const removed = new Set(ids);
+    this.save(this.getAll().filter((operation) => !removed.has(operation.id)));
+  },
+
   // Update retry count
   incrementRetry(id: string): boolean {
     const queue = this.getAll();
@@ -132,17 +153,18 @@ export const offlineQueue = {
     // here would leave its optimistic UI state with no way to reconcile it.
     if (operation.retryCount >= MAX_RETRY) {
       operation.status = 'needs-attention';
-      this.save(queue);
+      this.save(queue, false);
       return false;
     }
 
-    this.save(queue);
+    this.save(queue, false);
     return true;
   },
 
   // Clear entire queue
   clear(): void {
     localStorage.removeItem(QUEUE_KEY);
+    notifyChange();
   },
 
   // Get count of queued operations
@@ -151,9 +173,11 @@ export const offlineQueue = {
   },
 
   // Save queue to localStorage
-  save(queue: QueuedOperation[]): boolean {
+  save(queue: QueuedOperation[], notify = true): boolean {
     try {
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(queue, (_key, value) =>
+        value === undefined ? { [undefinedMarker]: true } : value));
+      if (notify) notifyChange();
       return true;
     } catch (error) {
       console.error('Error saving offline queue:', error);

@@ -23,6 +23,8 @@ import { featureSettingsService } from './featureSettingsService';
 import { quickExpenseService } from './quickExpenseService';
 import { userSettingsService } from './userSettingsService';
 import { dashboardLayoutService } from './dashboardLayoutService';
+import { isLocalWriteActive } from '../utils/localFirstMutation';
+import { friendSpendingService } from './friendSpendingService';
 
 export interface SyncProgress {
   total: number;
@@ -44,8 +46,14 @@ class SyncService {
   private isSyncing = false;
   private syncCallbacks: Set<SyncProgressCallback> = new Set();
   private autoSyncEnabled = true;
+  private queueSyncTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
+    if (typeof window !== 'undefined') window.addEventListener('offline-queue-changed', () => {
+      if (this.isSyncing || !this.autoSyncEnabled || !networkStatus.isOnline) return;
+      clearTimeout(this.queueSyncTimer);
+      this.queueSyncTimer = setTimeout(() => { void this.syncOfflineQueue(); }, 250);
+    });
     // Subscribe to network status changes
     networkStatus.subscribe((isOnline) => {
       if (isOnline && this.autoSyncEnabled) {
@@ -157,6 +165,7 @@ class SyncService {
     const rejectedBudgetOperations: QueuedOperation[] = [];
     const blockedBudgetKeys = new Set<string>();
     const blockedExpenseKeys = new Set<string>();
+    const blockedUsers = new Set<string>();
 
     this.notifyProgress({
       total: queue.length,
@@ -170,6 +179,12 @@ class SyncService {
 
       // A prior terminal create rejection may have removed this dependent write.
       if (!offlineQueue.getAll().some((queuedOperation) => queuedOperation.id === operation.id)) continue;
+      const owner = (operation.payload as { userId?: unknown } | null)?.userId;
+      if (typeof owner !== 'string' || owner !== auth.currentUser?.uid || blockedUsers.has(owner)) continue;
+      if (isLocalWriteActive(operation.id) || operation.status === 'needs-attention') {
+        blockedUsers.add(owner);
+        continue;
+      }
 
       let expenseKey: string | undefined;
       if (operation.entity === 'expense') {
@@ -234,6 +249,7 @@ class SyncService {
             }));
           }
         } else {
+          blockedUsers.add(owner);
           if (expenseKey) blockedExpenseKeys.add(expenseKey);
           if (operation.entity === 'budget') {
             const payload = operation.payload as { userId?: unknown };
@@ -260,6 +276,7 @@ class SyncService {
           }
         }
       } catch (error) {
+        blockedUsers.add(owner);
         console.error('Error executing queued operation:', error);
         if (expenseKey) blockedExpenseKeys.add(expenseKey);
         if (operation.entity === 'budget') {
@@ -347,6 +364,14 @@ class SyncService {
           return await this.executeUserSettingsOperation(operation);
         case 'dashboardLayout':
           return await this.executeDashboardLayoutOperation(operation);
+        case 'friendPreference': {
+          const payload = asSyncPayload(operation.payload);
+          if (operation.type !== 'update' || payload?.userId !== auth.currentUser?.uid ||
+              typeof payload?.userId !== 'string' || typeof payload.id !== 'string' || !asSyncPayload(payload.preference)) return false;
+          await friendSpendingService.savePreference(payload.userId, payload.id,
+            payload.preference as Parameters<typeof friendSpendingService.savePreference>[2]);
+          return true;
+        }
         default:
           console.warn('Unknown entity type:', operation.entity);
           return false;

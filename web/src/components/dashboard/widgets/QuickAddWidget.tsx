@@ -15,7 +15,8 @@ import { sortCategories } from '../../../utils/categoryOrder';
 import { getCurrencyMinorDigits, roundMoney } from '../../../domain/money';
 import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
 import { getTodayLocal } from '../../../utils/dateUtils';
-import { offlineQueue } from '../../../utils/offlineQueue';
+import { queueFailedWrite, writeLocalFirst } from '../../../utils/localFirstMutation';
+import { applyPendingOperations } from '../../../utils/pendingOperations';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -95,12 +96,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({ anchorId, children, onClose
   );
 };
 
+const EMPTY_PRESETS: QuickExpensePreset[] = [];
 const QuickAddWidget: React.FC<WidgetProps> = ({
   categories,
   cards,
   ewallets,
   banks,
-  quickExpensePresets = [],
+  quickExpensePresets = EMPTY_PRESETS,
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
   displayCurrency,
@@ -134,8 +136,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
   // Sync local presets with props
   useEffect(() => {
-    setLocalPresets(quickExpensePresets);
-  }, [quickExpensePresets]);
+    setLocalPresets(applyPendingOperations('quickExpensePresets', currentUser?.uid || '', quickExpensePresets));
+  }, [quickExpensePresets, currentUser?.uid]);
 
   useEffect(() => {
     const handlePresetSynced = (event: Event) => {
@@ -242,7 +244,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
 
     try {
       if (isEditing) {
-        await quickExpenseService.update(presetId, cleanedData);
+        await writeLocalFirst({ type: 'update', entity: 'quickExpensePreset', payload: { ...cleanedData, id: presetId, userId: currentUser.uid } },
+          () => quickExpenseService.update(presetId, cleanedData));
         // 4. Update notification to success
         updateNotification(notificationId, {
           type: 'success',
@@ -250,7 +253,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
           duration: 3000,
         });
       } else {
-        await quickExpenseService.create(currentUser.uid, { ...cleanedData, id: presetId, order: maxOrder + 1 });
+        await writeLocalFirst({ type: 'create', entity: 'quickExpensePreset', payload: { ...cleanedData, id: presetId, order: maxOrder + 1, userId: currentUser.uid } },
+          () => quickExpenseService.create(currentUser.uid, { ...cleanedData, id: presetId, order: maxOrder + 1 }));
         // 4. Update notification to success
         updateNotification(notificationId, {
           type: 'success',
@@ -263,7 +267,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     } catch (error) {
       console.error('Failed to save preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = offlineQueue.enqueue({
+        const queuedId = queueFailedWrite(error, {
           type: isEditing ? 'update' : 'create',
           entity: 'quickExpensePreset',
           payload: isEditing
@@ -309,7 +313,8 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
 
     try {
-      await quickExpenseService.delete(presetId);
+      await writeLocalFirst({ type: 'delete', entity: 'quickExpensePreset', payload: { id: presetId, userId: currentUser.uid } },
+        () => quickExpenseService.delete(presetId));
       // 4. Update notification to success
       updateNotification(notificationId, {
         type: 'success',
@@ -320,7 +325,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     } catch (error) {
       console.error('Failed to delete preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = offlineQueue.enqueue({
+        const queuedId = queueFailedWrite(error, {
           type: 'delete',
           entity: 'quickExpensePreset',
           payload: { id: presetId, userId: currentUser.uid },

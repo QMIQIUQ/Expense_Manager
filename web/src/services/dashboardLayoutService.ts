@@ -11,6 +11,8 @@ import { db } from '../config/firebase';
 import { DashboardLayout, DashboardWidget, DEFAULT_DASHBOARD_LAYOUT, generateWidgetId } from '../types/dashboard';
 import { sessionCache } from '../utils/sessionCache';
 import { networkStatus } from '../utils/networkStatus';
+import { applyPendingOperations } from '../utils/pendingOperations';
+import { offlineQueue } from '../utils/offlineQueue';
 
 const COLLECTION_NAME = 'dashboardLayouts';
 
@@ -58,7 +60,14 @@ export const dashboardLayoutService = {
 
   // Internal method to fetch from Firebase
   async fetchFromFirebase(userId: string): Promise<DashboardLayout> {
+    const revision = offlineQueue.revision;
     const existing = await this.get(userId);
+    const local = sessionCache.get<DashboardLayout>('dashboardLayout', userId);
+    if (revision !== offlineQueue.revision && local) return applyPendingOperations('dashboardLayout', userId, local);
+    if (existing && offlineQueue.getAll().some((operation) => operation.entity === 'dashboardLayout' &&
+        (operation.payload as { userId?: unknown } | null)?.userId === userId)) {
+      return applyPendingOperations('dashboardLayout', userId, existing);
+    }
     
     if (existing) {
       let widgets = [...existing.widgets];
@@ -96,10 +105,12 @@ export const dashboardLayoutService = {
   },
 
   // Get or create default layout with caching (Stale-While-Revalidate)
-  async getOrCreate(userId: string): Promise<DashboardLayout> {
+  async getOrCreate(userId: string, onUpdate?: (layout: DashboardLayout) => void): Promise<DashboardLayout> {
     try {
       // Check cache first
-      const cached = sessionCache.get<DashboardLayout>('dashboardLayout', userId);
+      const cachedData = sessionCache.get<DashboardLayout>('dashboardLayout', userId);
+      const cached = cachedData ? applyPendingOperations('dashboardLayout', userId, cachedData) : null;
+      const revision = offlineQueue.revision;
       
       // If we have cached data and we're online, return it immediately
       // and fetch fresh data in the background
@@ -113,12 +124,15 @@ export const dashboardLayoutService = {
         // Fetch fresh data in background (non-blocking)
         this.fetchFromFirebase(userId)
           .then((freshLayout) => {
+            if (revision !== offlineQueue.revision) return;
+            const local = applyPendingOperations('dashboardLayout', userId, freshLayout);
             // Only update cache if data actually changed
             const cachedStr = JSON.stringify(cachedWithDefaults);
-            const freshStr = JSON.stringify(freshLayout);
+            const freshStr = JSON.stringify(local);
             
             if (cachedStr !== freshStr) {
-              sessionCache.set('dashboardLayout', userId, freshLayout);
+              sessionCache.set('dashboardLayout', userId, local);
+              onUpdate?.(local);
               console.log('Background revalidation complete for dashboard layout (data changed)');
             } else {
               console.log('Background revalidation complete for dashboard layout (no changes)');
@@ -139,7 +153,9 @@ export const dashboardLayoutService = {
       
       // No cache or need fresh data - fetch from Firebase
       console.log('Fetching dashboard layout from Firebase...');
-      const layout = await this.fetchFromFirebase(userId);
+      const fetched = await this.fetchFromFirebase(userId);
+      const layout = applyPendingOperations('dashboardLayout', userId, revision === offlineQueue.revision
+        ? fetched : sessionCache.get<DashboardLayout>('dashboardLayout', userId) ?? fetched);
       
       // Cache the result
       sessionCache.set('dashboardLayout', userId, layout);
@@ -152,7 +168,7 @@ export const dashboardLayoutService = {
       const cached = sessionCache.get<DashboardLayout>('dashboardLayout', userId);
       if (cached) {
         console.log('Using cached dashboard layout as fallback after error');
-        return cached;
+        return applyPendingOperations('dashboardLayout', userId, cached);
       }
       
       // No cache and fetch failed - re-throw error

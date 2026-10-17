@@ -4,16 +4,17 @@
 
 ## 1. 必要原則
 
-所有使用者可見的新增、編輯、刪除與排序，都必須先反映在目前畫面及應用快取，再等待 Firebase 完成同步。成功同步時以伺服器資料校正畫面；可重試的網路錯誤必須將完整操作存入 app queue 並保留樂觀結果；永久錯誤或無法保存 queue 時必須回復原狀並清楚告知使用者。
+所有一般使用者資料的新增、編輯、刪除與排序，都必須先反映在目前畫面及應用快取。完整操作在呼叫 Firebase 前就必須保存到 durable app queue；成功同步後才移除。網路錯誤保留操作與樂觀結果；永久錯誤或無法保存 queue 時必須回復原狀並清楚告知使用者。此規則也已加入根目錄 `AGENTS.md`，適用於後續新功能。
 
 新增操作使用先產生的固定 document ID，並將同一 ID 用於 UI、queue 和 Firebase。這可讓重播保持冪等，避免重試時產生重複資料。交易型副作用（例如支出/收入/轉帳與帳戶餘額）必須和主文件一起在 Firestore transaction 中處理，不可只依賴 Dashboard 成功 callback。
 
 ```text
 使用者送出
   → 立刻更新 React state / 本機資料快取
-  → 使用固定 ID 呼叫領域 service
-      ├─ Firebase 成功：保留資料並校正相關畫面/餘額
-      ├─ 可重試網路錯誤：保存完整操作至 localStorage app queue，保留樂觀結果
+  → writeLocalFirst / writeLocalFirstBatch：將完整 owner / ID / payload 保存到 localStorage
+      ├─ 已知離線或前面還有未完成寫入：本機接受，保留 queue，立即解除等待
+      ├─ 線上：領域 service 成功後移除 queue，校正相關畫面/餘額
+      ├─ 可重試網路錯誤：保留已保存的 queue 與樂觀結果
       └─ 永久錯誤或 queue 寫入失敗：回復樂觀結果並顯示錯誤
   → 網路恢復或使用者手動同步
       → 依序重播對應 entity service
@@ -36,7 +37,9 @@
 
 ## 3. 載入與本機先顯示
 
-Dashboard `loadData()` 對主要資料使用 `dataService.getDataWithRevalidate()`：有快取時先顯示，再背景讀取 Firebase；讀取結果不同時更新快取和 React state。離線時使用可用快取，沒有資料時可能顯示空集合。支出/預算載入後會再套用尚未同步的 app queue 操作，避免背景 revalidate 蓋掉本機變更。
+Dashboard `loadData()` 與 `dataService.getDataWithRevalidate()` 有快取時先顯示，再背景讀取 Firebase。所有 collection（包含收入、轉帳、帳戶、還款、定期付款、付款紀錄、快速預設）都經 `applyPendingOperations()` 套用尚未同步的新增/編輯/刪除；偏好設定與 layout 也有對應的 singleton projection。沒有快取時仍可由 queue 恢復尚未同步的新增資料。
+
+讀取開始時記下 queue revision；若等待期間發生本機寫入或確認同步，較早的背景回應不會覆蓋較新的本機快取。資料比較也會檢查欄位和順序，不再只比較 ID/updatedAt，因此沒有 updatedAt 的分類改名或排序仍能更新。
 
 每次成功重播會送出 `offline-operation-synced` 事件。Dashboard 依使用者重新載入資料；快速支出預設及使用者設定也會更新其擁有的本機狀態。queue 項目只會由目前登入帳戶重播；其他帳戶或無法驗證 owner 的舊項目保留待原帳戶處理。
 
@@ -56,21 +59,27 @@ Dashboard `loadData()` 對主要資料使用 `dataService.getDataWithRevalidate(
 | `quickExpensePreset` | `quickExpenseService.create/update/delete` | Widget 與支出清單共用此 entity，Firebase 成功重播後刷新預設清單。 |
 | `userSettings` | `userSettingsService.update` | 一般偏好和帳單週期日可排隊；整體預算限額仍需線上伺服器 transaction 驗證。 |
 | `dashboardLayout` | `dashboardLayoutService.updateWidgets` | Widget 排序/配置立即更新；失敗時可排隊，重播後重新載入 layout。 |
+| `friendPreference` | `friendSpendingService.savePreference` | 自己的好友摘要顯示偏好可先保存本機；不涉及好友邀請或分享授權。 |
 | `card` / `bank` / `ewallet` | 對應 payment method service | queue 含 owner/ID；帳戶金額的支出、收入、轉帳副作用由相關交易處理。 |
 | `repayment` | `repaymentService.create/update/delete` | repayment CRUD 可本機先更新並排隊；未掛載在主 Dashboard 的舊 `RepaymentManager` 仍有額外收入對帳流程，見第 7 節。 |
 | `featureSettings` | `featureSettingsService.update/resetToDefaults` | 功能選單偏好以獨立 entity 重播。 |
 | `recurring` | `recurringExpenseService.create/update/delete` | 僅供舊式 recurring expense model；目前主 Recurring 頁籤使用 `scheduledPayment`。 |
 
-重播成功後操作自 queue 移除。重試三次仍失敗時，操作留在 queue 並標記 `needs-attention`；使用者會看到重試入口。Budget 伺服器驗證拒絕時則走 budget 專用回復處理，可能移除同一 budget 的依賴操作。
+重播成功後操作自 queue 移除。同一帳戶依送出順序執行；較早的操作失敗、正在直接寫入或需要處理時，後面的操作先保留，避免新增尚未成功就先編輯/刪除，或使用尚未建立的帳戶。直接寫入中的 outbox 項目不會同時由 SyncService 再執行。重新載入後記憶體中的執行標記消失，durable queue 可繼續重播。
+
+重試三次仍失敗時，操作留在 queue 並標記 `needs-attention`；重開頁面也會恢復通知與重試入口。Budget 伺服器驗證拒絕時則走 budget 專用回復處理，可能移除同一 budget 的依賴操作。queue 序列化保留明確的 undefined 欄位，避免離線更新遺失原本要求清除的可選值。
 
 ## 5. 同步觸發與使用者操作
 
 - `SyncService` 訂閱 browser online/offline；恢復 online 後延遲約一秒啟動 queue sync。
+- 登入及 queue 變更也會安排同步；同一帳戶直接寫入與 queue 重播互相避開，重試次數更新不會造成無限自動重試。
 - 頁首 `NetworkStatusIndicator` 可顯示/手動啟動 app queue 同步。
 - Dashboard 漢堡選單的「重新上傳」也直接呼叫 `syncOfflineQueue()`，並依 queue 剩餘數量回報結果，不以重新載入資料冒充同步成功。
 - 同一時間僅執行一個 queue sync。操作依 queue 快照順序逐項處理；同步期間新增的操作會安排下一輪。
 - queue 寫入 localStorage 若失敗，UI 不應假稱「已離線保存」；需提示保存失敗並回復尚未能持久化的本機修改。
 - 「清除佇列」會移除整個 app queue，不會清除 Firestore SDK IndexedDB 資料，且無法復原。只應在確認待處理操作都可丟棄後使用。
+
+定期付款摘要與本期已付款判斷直接使用目前畫面的付款紀錄，包含尚未同步的紀錄，不再等待第二次 Firebase 查詢。帳戶餘額的正式數值仍由支出/收入/轉帳的領域 transaction 確認。
 
 ## 6. 線上驗證的例外
 
@@ -90,3 +99,5 @@ Dashboard `loadData()` 對主要資料使用 `dataService.getDataWithRevalidate(
 - 舊式 `RepaymentManager` 有「超額還款對帳收入」的多次 Firestore 寫入流程，但未接入目前主 Dashboard 的還款 UI。若重新掛載，應改為可重試的領域交易/工作流程後再啟用。
 
 更多 service/method 和業務流程見 [`LOGIC_METHOD_FLOW.md`](LOGIC_METHOD_FLOW.md)。使用者操作說明見 [`OFFLINE_SYNC_GUIDE.md`](OFFLINE_SYNC_GUIDE.md)。
+
+功能對照與驗收證據見 [`LOCAL_FIRST_ACCEPTANCE.md`](LOCAL_FIRST_ACCEPTANCE.md)。

@@ -29,7 +29,8 @@ import type { ExpensePeriodMode } from '../../types/expensePeriod';
 import CatIllustration from '../CatIllustration';
 import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 import { dataService } from '../../services/dataService';
-import { offlineQueue } from '../../utils/offlineQueue';
+import { getQueuedWriteId, queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
+import { applyPendingOperations } from '../../utils/pendingOperations';
 
 const EMPTY_REPAYMENTS: Repayment[] = [];
 const EMPTY_QUICK_EXPENSE_PRESETS: QuickExpensePreset[] = [];
@@ -175,12 +176,12 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const quickExpenseCurrencyDigits = getCurrencyMinorDigits(quickExpenseFormData.currency);
 
   useEffect(() => {
-    setLocalQuickExpensePresets(quickExpensePresets);
-  }, [quickExpensePresets]);
+    setLocalQuickExpensePresets(applyPendingOperations('quickExpensePresets', currentUser?.uid || '', quickExpensePresets));
+  }, [quickExpensePresets, currentUser?.uid]);
 
   useEffect(() => {
-    setLocalRepayments(repayments);
-  }, [repayments]);
+    setLocalRepayments(applyPendingOperations('repayments', currentUser?.uid || '', repayments));
+  }, [repayments, currentUser?.uid]);
 
   useEffect(() => {
     const handlePresetSynced = (event: Event) => {
@@ -413,7 +414,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       pendingPayload = payload;
       setLocalRepayments((previous) => [...previous, payload]);
       dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => [...previous, payload]);
-      await repaymentService.create(payload);
+      setShowRepaymentFormForExpenseId(null);
+      await writeLocalFirst({ type: 'create', entity: 'repayment', payload }, () => repaymentService.create(payload));
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
       setShowRepaymentFormForExpenseId(null);
@@ -424,7 +426,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to add repayment:', error);
       const queuedId = isRetryableNetworkError(error) && pendingPayload
-        ? offlineQueue.enqueue({ type: 'create', entity: 'repayment', payload: pendingPayload })
+        ? queueFailedWrite(error, { type: 'create', entity: 'repayment', payload: pendingPayload })
         : null;
       if (queuedId) {
         updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
@@ -443,7 +445,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>) => {
     if (!currentUser) return;
     const original = localRepayments.find((item) => item.id === repaymentId);
-    let queuedUpdates: Partial<Repayment> = updates;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
     
     try {
@@ -458,13 +459,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         existing,
       }) : {};
       const normalizedUpdates = { ...updates, ...currencyFields };
-      queuedUpdates = normalizedUpdates;
       if (existing) {
         const optimistic = { ...existing, ...normalizedUpdates, updatedAt: new Date() };
         setLocalRepayments((previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
         dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
       }
-      await repaymentService.update(repaymentId, normalizedUpdates);
+      setEditingRepayment(null);
+      await writeLocalFirst({ type: 'update', entity: 'repayment', payload: { ...normalizedUpdates, id: repaymentId, userId: currentUser.uid } },
+        () => repaymentService.update(repaymentId, normalizedUpdates));
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
       setEditingRepayment(null);
@@ -474,11 +476,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to update repayment:', error);
-      const queuedId = isRetryableNetworkError(error) ? offlineQueue.enqueue({ type: 'update', entity: 'repayment', payload: {
-        ...queuedUpdates,
-        id: repaymentId,
-        userId: currentUser.uid,
-      } }) : null;
+      const queuedId = getQueuedWriteId(error);
       if (queuedId) {
         updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
         setEditingRepayment(null);
@@ -501,7 +499,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.filter((item) => item.id !== repaymentId));
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
     try {
-      await repaymentService.delete(repaymentId);
+      setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
+      await writeLocalFirst({ type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } },
+        () => repaymentService.delete(repaymentId));
       
       updateNotification(notificationId, { type: 'success', message: t('repaymentDeleted'), duration: 3000 });
       setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
@@ -511,7 +511,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete repayment:', error);
-      const queuedId = isRetryableNetworkError(error) ? offlineQueue.enqueue({ type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
+      const queuedId = isRetryableNetworkError(error) ? queueFailedWrite(error, { type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
       if (queuedId) {
         updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
         setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
@@ -761,14 +761,16 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
     try {
       if (isEditing) {
-        await quickExpenseService.update(presetId, cleanedData);
+        await writeLocalFirst({ type: 'update', entity: 'quickExpensePreset', payload: { ...cleanedData, id: presetId, userId: currentUser.uid } },
+          () => quickExpenseService.update(presetId, cleanedData));
         updateNotification(notificationId, {
           type: 'success',
           message: t('updateSuccess'),
           duration: 3000,
         });
       } else {
-        await quickExpenseService.create(currentUser.uid, { ...cleanedData, id: presetId, order: nextOrder });
+        await writeLocalFirst({ type: 'create', entity: 'quickExpensePreset', payload: { ...cleanedData, id: presetId, order: nextOrder, userId: currentUser.uid } },
+          () => quickExpenseService.create(currentUser.uid, { ...cleanedData, id: presetId, order: nextOrder }));
         updateNotification(notificationId, {
           type: 'success',
           message: t('createSuccess'),
@@ -779,7 +781,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to save preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = offlineQueue.enqueue({
+        const queuedId = queueFailedWrite(error, {
           type: isEditing ? 'update' : 'create',
           entity: 'quickExpensePreset',
           payload: isEditing
@@ -808,7 +810,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     setLocalQuickExpensePresets(previousPresets.filter((preset) => preset.id !== presetId));
 
     try {
-      await quickExpenseService.delete(presetId);
+      await writeLocalFirst({ type: 'delete', entity: 'quickExpensePreset', payload: { id: presetId, userId: currentUser.uid } },
+        () => quickExpenseService.delete(presetId));
       updateNotification(notificationId, {
         type: 'success',
         message: t('deleteSuccess'),
@@ -819,7 +822,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to delete preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = offlineQueue.enqueue({
+        const queuedId = queueFailedWrite(error, {
           type: 'delete',
           entity: 'quickExpensePreset',
           payload: { id: presetId, userId: currentUser.uid },

@@ -56,7 +56,9 @@ import { offlineQueue, type QueuedOperation } from '../utils/offlineQueue';
 import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
-import { sessionCache } from '../utils/sessionCache';
+import { sessionCache, type CacheableEntity } from '../utils/sessionCache';
+import { applyPendingOperations } from '../utils/pendingOperations';
+import { getQueuedWriteId, writeLocalFirstBatch } from '../utils/localFirstMutation';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
@@ -410,6 +412,19 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      const loadRevision = offlineQueue.revision + dataService.localRevision;
+      const currentData = <T,>(entity: CacheableEntity, data: T): T => applyPendingOperations(entity, currentUser.uid,
+        loadRevision === offlineQueue.revision + dataService.localRevision ? data : sessionCache.get<T>(entity, currentUser.uid) ?? data);
+      const cachedCards = sessionCache.get<Card[]>('cards', currentUser.uid);
+      const cachedBanks = sessionCache.get<Bank[]>('banks', currentUser.uid);
+      const cachedWallets = sessionCache.get<EWallet[]>('ewallets', currentUser.uid);
+      const cachedFeatures = sessionCache.get<FeatureSettings>('featureSettings', currentUser.uid);
+      const cachedPresets = sessionCache.get<QuickExpensePreset[]>('quickExpensePresets', currentUser.uid);
+      if (cachedCards) setCards(currentData('cards', cachedCards));
+      if (cachedBanks) setBanks(currentData('banks', cachedBanks));
+      if (cachedWallets) setEWallets(currentData('ewallets', cachedWallets));
+      if (cachedFeatures) setFeatureSettings(currentData('featureSettings', cachedFeatures));
+      if (cachedPresets) setQuickExpensePresets(currentData('quickExpensePresets', cachedPresets));
       const setExpensesWithPendingOperations = (loadedExpenses: Expense[]) => {
         const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('expenses', currentUser.uid, reconciled);
@@ -439,14 +454,14 @@ const Dashboard: React.FC = () => {
       ]);
 
       // Set initial data (from cache or fresh)
-      setExpensesWithPendingOperations(expensesData);
-      setIncomes(incomesData);
-      setCategoriesWithPendingOperations(categoriesData);
-      setBudgetsWithPendingOperations(budgetsData);
-      setRepayments(repaymentsData);
-      setTransfers(transfersData);
-      setScheduledPayments(scheduledPaymentsData);
-      setScheduledPaymentRecords(scheduledPaymentRecordsData);
+      setExpensesWithPendingOperations(currentData('expenses', expensesData));
+      setIncomes(currentData('incomes', incomesData));
+      setCategoriesWithPendingOperations(currentData('categories', categoriesData));
+      setBudgetsWithPendingOperations(currentData('budgets', budgetsData));
+      setRepayments(currentData('repayments', repaymentsData));
+      setTransfers(currentData('transfers', transfersData));
+      setScheduledPayments(currentData('scheduledPayments', scheduledPaymentsData));
+      setScheduledPaymentRecords(currentData('scheduledPaymentRecords', scheduledPaymentRecordsData));
 
       // Initial UI now rendered; no blocking loader needed
 
@@ -529,32 +544,32 @@ const Dashboard: React.FC = () => {
           }),
 
           // Load quick expense presets
-          quickExpenseService.getPresets(currentUser.uid).catch(err => {
+          quickExpenseService.getPresets(currentUser.uid, (data) => setQuickExpensePresets(currentData('quickExpensePresets', data))).catch(err => {
             console.warn('Could not load quick expense presets:', err);
             return [];
           }),
         ]).then(([categoriesData, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
           // Apply all state updates together (single render cycle)
-          if (Array.isArray(categoriesData)) setCategories(categoriesData);
+          if (Array.isArray(categoriesData)) setCategoriesWithPendingOperations(currentData('categories', categoriesData));
           if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
           if (userSettings) setBillingCycleDay(userSettings.billingCycleDay);
-          if (Array.isArray(cardsData) && cardsData.length > 0) {
-            setCards(cardsData);
+          if (Array.isArray(cardsData)) {
+            setCards(currentData('cards', cardsData));
             const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
             if (bankNames.length > 0) {
               localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
             }
           }
-          if (Array.isArray(ewalletsData) && ewalletsData.length > 0) setEWallets(ewalletsData);
-          if (Array.isArray(banksData) && banksData.length > 0) {
-            setBanks(banksData);
+          if (Array.isArray(ewalletsData)) setEWallets(currentData('ewallets', ewalletsData));
+          if (Array.isArray(banksData)) {
+            setBanks(currentData('banks', banksData));
             const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
             if (bankNames.length > 0) {
               localStorage.setItem('cardBankNames', JSON.stringify(bankNames));
             }
           }
-          if (featSettings) setFeatureSettings(featSettings);
-          if (Array.isArray(quickPresets)) setQuickExpensePresets(quickPresets);
+          if (featSettings) setFeatureSettings(currentData('featureSettings', featSettings));
+          if (Array.isArray(quickPresets)) setQuickExpensePresets(currentData('quickExpensePresets', quickPresets));
         }).finally(() => {
           setIsRevalidating(false);
         });
@@ -566,6 +581,40 @@ const Dashboard: React.FC = () => {
   }, [currentUser, showNotification, t]);
 
   useEffect(() => {
+    if (currentUserId) void syncService.syncOfflineQueue();
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    let active = true;
+    const refreshLocal = () => queueMicrotask(() => {
+      if (!active) return;
+      const apply = <T,>(entity: CacheableEntity, setter: (data: T) => void) => {
+        const cached = sessionCache.get<T>(entity, currentUserId);
+        if (cached) setter(applyPendingOperations(entity, currentUserId, cached));
+      };
+      apply('expenses', setExpenses);
+      apply('incomes', setIncomes);
+      apply('categories', setCategories);
+      apply('budgets', setBudgets);
+      apply('repayments', setRepayments);
+      apply('transfers', setTransfers);
+      apply('scheduledPayments', setScheduledPayments);
+      apply('scheduledPaymentRecords', setScheduledPaymentRecords);
+      apply('cards', setCards);
+      apply('banks', setBanks);
+      apply('ewallets', setEWallets);
+      apply('featureSettings', setFeatureSettings);
+      apply('quickExpensePresets', setQuickExpensePresets);
+      const cachedSettings = sessionCache.get<import('../types').UserSettings>('userSettings', currentUserId);
+      if (cachedSettings) setBillingCycleDay(applyPendingOperations('userSettings', currentUserId, cachedSettings).billingCycleDay);
+      setQueueCount(offlineQueue.count());
+    });
+    window.addEventListener('offline-queue-changed', refreshLocal);
+    return () => { active = false; window.removeEventListener('offline-queue-changed', refreshLocal); };
+  }, [currentUserId]);
+
+  useEffect(() => {
     if (!currentUserId) return;
     const handleOfflineOperationNeedsAttention = (event: Event) => {
       const detail = (event as CustomEvent<{ operationId?: string; userId?: string }>).detail;
@@ -575,6 +624,7 @@ const Dashboard: React.FC = () => {
 
       void loadData();
       showNotification('error', t('offlineOperationNeedsAttention'), {
+        id: `offline-needs-attention-${operation.id}`,
         duration: 0,
         actions: [{
           label: t('retry'),
@@ -589,6 +639,12 @@ const Dashboard: React.FC = () => {
       });
     };
     window.addEventListener('offline-operation-needs-attention', handleOfflineOperationNeedsAttention);
+    offlineQueue.getAll().filter((operation) => operation.status === 'needs-attention').forEach((operation) => {
+      const owner = (operation.payload as { userId?: string } | null)?.userId;
+      handleOfflineOperationNeedsAttention(new CustomEvent('offline-operation-needs-attention', {
+        detail: { operationId: operation.id, userId: owner },
+      }));
+    });
     return () => window.removeEventListener('offline-operation-needs-attention', handleOfflineOperationNeedsAttention);
   }, [currentUserId, loadData, showNotification, t]);
 
@@ -648,7 +704,7 @@ const Dashboard: React.FC = () => {
   const reloadRepayments = React.useCallback(async () => {
     if (!currentUser) return;
     try {
-      const repaymentsData = await repaymentService.getAll(currentUser.uid);
+      const repaymentsData = await dataService.getRepayments(currentUser.uid, true);
       setRepayments(repaymentsData);
     } catch (error) {
       console.error('Failed to reload repayments:', error);
@@ -1293,7 +1349,7 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => sortCategories([...data, optimisticCategory]));
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => categoryService.create(createPayload),
       {
@@ -1331,25 +1387,12 @@ const Dashboard: React.FC = () => {
     setCategories(reordered);
     dataService.updateCache<Category[]>('categories', currentUser.uid, () => reordered);
 
-    if (!networkStatus.isOnline) {
-      const queuedIds = offlineQueue.enqueueMany(orderedIds.map((id, order) => ({
-        type: 'update' as const,
-        entity: 'category' as const,
-        payload: { id, userId: currentUser.uid, order },
-      })));
-      if (queuedIds) {
-        showNotification('info', t('operationSavedOffline'));
-        return;
-      }
-      setCategories(previousCategories);
-      dataService.updateCache<Category[]>('categories', currentUser.uid, () => previousCategories);
-      showNotification('error', t('offlineQueueSaveFailed'));
-      return;
-    }
-
     try {
-      await categoryService.updateOrder(orderedIds);
+      await writeLocalFirstBatch(orderedIds.map((id, order) => ({
+        type: 'update', entity: 'category', payload: { id, userId: currentUser.uid, order },
+      })), () => categoryService.updateOrder(orderedIds));
     } catch (error) {
+      if (getQueuedWriteId(error)) { showNotification('info', t('operationSavedOffline')); return; }
       setCategories(previousCategories);
       dataService.updateCache<Category[]>('categories', currentUser.uid, () => previousCategories);
       throw error;
@@ -1371,7 +1414,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...updates, id, userId: originalCategory?.userId || currentUser?.uid }, originalData: originalCategory },
       () => categoryService.update(id, updates),
       {
@@ -1408,7 +1451,7 @@ const Dashboard: React.FC = () => {
       dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== id));
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: categoryToDelete?.userId || currentUser?.uid }, originalData: categoryToDelete },
       () => categoryService.delete(id),
       {
@@ -1752,7 +1795,7 @@ const Dashboard: React.FC = () => {
     };
     setScheduledPayments((prev) => [...prev, optimisticPayment]);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => scheduledPaymentService.create(createPayload),
       {
@@ -1780,7 +1823,7 @@ const Dashboard: React.FC = () => {
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...updates, id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.update(id, updates),
       {
@@ -1803,7 +1846,7 @@ const Dashboard: React.FC = () => {
 
     setScheduledPayments((prev) => prev.filter((p) => p.id !== id));
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.delete(id),
       {
@@ -1826,7 +1869,7 @@ const Dashboard: React.FC = () => {
       prev.map((p) => (p.id === id ? { ...p, isActive } : p))
     );
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { id, userId: original?.userId || currentUser?.uid, isActive }, originalData: original },
       () => scheduledPaymentService.toggleActive(id, isActive),
       {
@@ -1947,7 +1990,7 @@ const Dashboard: React.FC = () => {
       generatedExpensePayload,
     };
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: queuedRecordPayload },
       () => scheduledPaymentService.createPaymentRecord({
         ...savedRecordData,
@@ -1956,6 +1999,8 @@ const Dashboard: React.FC = () => {
         id: recordId,
       }),
       {
+        entityType: 'scheduledPaymentRecord',
+        retryToQueueOnFail: true,
         onSuccess: async (result) => {
           const newId = result as string;
           const realRecord: ScheduledPaymentRecord = {
@@ -1997,7 +2042,7 @@ const Dashboard: React.FC = () => {
 
     setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid }, originalData: original },
       () => scheduledPaymentService.deletePaymentRecord(id),
       {
@@ -2022,12 +2067,13 @@ const Dashboard: React.FC = () => {
         paymentCount: 0,
       };
     }
-    return scheduledPaymentService.getPaymentSummary(currentUser.uid, payment);
+    return scheduledPaymentService.getPaymentSummary(currentUser.uid, payment, scheduledPaymentRecords);
   };
 
   const isScheduledPaymentPeriodPaid = async (paymentId: string, year: number, month: number): Promise<boolean> => {
     if (!currentUser) return false;
-    return scheduledPaymentService.isPeriodPaid(currentUser.uid, paymentId, year, month);
+    return scheduledPaymentRecords.some((record) => record.userId === currentUser.uid &&
+      record.scheduledPaymentId === paymentId && record.periodYear === year && record.periodMonth === month);
   };
   //#endregion
 
@@ -2063,7 +2109,7 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [optimisticIncome, ...data]);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => incomeService.create(createPayload),
       {
@@ -2125,7 +2171,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...normalizedUpdates, id, userId: originalIncome.userId }, originalData: originalIncome },
       () => incomeService.update(id, normalizedUpdates),
       {
@@ -2158,7 +2204,7 @@ const Dashboard: React.FC = () => {
       dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== id));
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: incomeToDelete?.userId || currentUser?.uid }, originalData: incomeToDelete },
       () => incomeService.delete(id, currentUser?.uid),
       {
@@ -2266,7 +2312,7 @@ const Dashboard: React.FC = () => {
       });
       void result;
     } else {
-      await saveTransfer();
+      void saveTransfer();
     }
   };
 
@@ -2276,7 +2322,7 @@ const Dashboard: React.FC = () => {
     // Optimistic update
     setTransfers((prev) => prev.filter((t) => t.id !== id));
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: transferToDelete?.userId || currentUser?.uid }, originalData: transferToDelete },
       () => transferService.delete(id, currentUser?.uid),
       {
@@ -2314,7 +2360,7 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [optimisticCard, ...data]);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => cardService.create(createPayload),
       {
@@ -2353,7 +2399,7 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, optimisticBank]);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => bankService.create(createPayload),
       {
@@ -2394,7 +2440,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...updates, id, userId: original.userId }, originalData: original },
       () => bankService.update(id, updates),
       {
@@ -2426,7 +2472,7 @@ const Dashboard: React.FC = () => {
       dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== id));
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: original.userId }, originalData: original },
       () => bankService.delete(id),
       {
@@ -2461,7 +2507,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...updates, id, userId: originalCard?.userId || currentUser?.uid }, originalData: originalCard },
       () => cardService.update(id, updates),
       {
@@ -2498,7 +2544,7 @@ const Dashboard: React.FC = () => {
       dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== id));
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: cardToDelete?.userId || currentUser?.uid }, originalData: cardToDelete },
       () => cardService.delete(id),
       {
@@ -2538,7 +2584,7 @@ const Dashboard: React.FC = () => {
     // Update cache optimistically
     dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, optimisticWallet]);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'create', data: createPayload },
       () => ewalletService.create(createPayload),
       {
@@ -2582,7 +2628,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { ...updates, id, userId: originalWallet?.userId || currentUser?.uid }, originalData: originalWallet },
       () => ewalletService.update(id, updates),
       {
@@ -2618,7 +2664,7 @@ const Dashboard: React.FC = () => {
       dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== id));
     }
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'delete', data: { id, userId: walletToDelete?.userId || currentUser?.uid }, originalData: walletToDelete },
       () => ewalletService.delete(id),
       {
@@ -2666,7 +2712,7 @@ const Dashboard: React.FC = () => {
           }
     );
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { userId: currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures }, originalData: originalSettings },
       () => featureSettingsService.update(currentUser.uid, enabledFeatures, tabFeatures, hamburgerFeatures),
       {
@@ -2697,7 +2743,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     } : current);
 
-    await optimisticCRUD.run(
+    void optimisticCRUD.run(
       { type: 'update', data: { userId: currentUser.uid, reset: true }, originalData: originalSettings },
       () => featureSettingsService.resetToDefaults(currentUser.uid),
       {

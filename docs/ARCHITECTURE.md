@@ -28,7 +28,7 @@
 - **Firestore SDK 持久快取**：`config/firebase.ts` 使用 `initializeFirestore()`、`persistentLocalCache()` 和 `persistentMultipleTabManager()`。Firestore SDK 可在 IndexedDB 本機維護 Firestore 文件快取和待確認寫入，並在連線恢復後自行同步。SDK 寫入 Promise 可能等到雲端確認後才完成。
 - **應用資料快取與重播佇列**：`sessionCache` 將讀取資料寫入 `sessionStorage`，並嘗試複製到 `localStorage`；`offlineQueue` 將特定 CRUD 操作寫入 `localStorage`。這是應用層快取/佇列，和 Firestore SDK 的 IndexedDB 快取分開管理。
 
-因此「先在畫面/本機看到資料」不等於「Firebase 已確認」。目前寫入路徑可能由 Firestore SDK 本機持久化承接，也可能在 API 以可辨識的網路錯誤拒絕後進入應用佇列；是否走 app queue 取決於各 handler 是否傳入支援的 `entityType` 與 `retryToQueueOnFail`。詳情和已知缺口見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)。
+因此「先在畫面/本機看到資料」不等於「Firebase 已確認」。一般資料異動必須先更新畫面，並透過 `writeLocalFirst` / `writeLocalFirstBatch`（或包裝它的 `useOptimisticCRUD`）將完整操作持久化，再呼叫 Firebase。所有資料讀取都會套用 pending operations，並防止較早的背景回應覆蓋本機變更。這是根目錄 `AGENTS.md` 的必要規則；詳情見[離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)及[逐功能驗收](LOCAL_FIRST_ACCEPTANCE.md)。
 
 ## 一般寫入資料流
 
@@ -36,11 +36,12 @@
 表單/列表
   → Dashboard handler
   → React state + sessionCache/localStorage 快取的樂觀更新
-  → domain service / Firestore SDK
-       ├─ 雲端確認 → 清除 pending 狀態、必要時刷新資料/帳戶餘額
-       ├─ SDK 本機持久化 → 連線恢復後由 Firestore SDK 自行送出
-       └─ 可辨識網路錯誤 + handler 有設定 app queue → offlineQueue
-                                               → syncService 重播 → Firestore service
+  → writeLocalFirst / writeLocalFirstBatch → durable offlineQueue
+       ├─ 已知離線或前序操作未完成 → 本機接受，保留 queue
+       └─ domain service / Firestore SDK
+            ├─ 雲端確認 → 移除 queue、必要時刷新資料/帳戶餘額
+            ├─ 可重試網路錯誤 → 保留 queue → syncService 依帳戶順序重播
+            └─ 永久錯誤 → 移除失敗操作並回復畫面/快取
 ```
 
 ## 主要資料集合

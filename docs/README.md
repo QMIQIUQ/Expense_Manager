@@ -11,6 +11,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系统分层、路由和 Firebase 资料保存 | 开发者 |
 | [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) | 主要 service methods、端到端流程和静态逻辑检查结果 | 开发者 |
 | [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md) | Firestore IndexedDB 快取、app queue、重试和同步流程 | 开发者 |
+| [LOCAL_FIRST_ACCEPTANCE.md](LOCAL_FIRST_ACCEPTANCE.md) | 本机优先必要规则、逐功能对照及回归验证范围 | 开发者 / QA |
 | [OFFLINE_SYNC_GUIDE.md](OFFLINE_SYNC_GUIDE.md) | 离线状态、手动同步和清除佇列说明 | 使用者 / 开发者 |
 | [OFFLINE_FUNCTIONALITY.md](OFFLINE_FUNCTIONALITY.md) | 离线功能摘要及限制 | 使用者 / 开发者 |
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架构、现行导航盘点与桌机/手机排列方案 | 产品 / 设计 / 开发 |

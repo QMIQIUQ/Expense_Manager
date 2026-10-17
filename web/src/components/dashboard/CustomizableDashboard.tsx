@@ -7,7 +7,7 @@ import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
 import { quickExpenseService } from '../../services/quickExpenseService';
-import { offlineQueue } from '../../utils/offlineQueue';
+import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -100,7 +100,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       if (!currentUser) return;
       
       try {
-        const layout = await dashboardLayoutService.getOrCreate(currentUser.uid);
+        const layout = await dashboardLayoutService.getOrCreate(currentUser.uid,
+          (fresh) => setWidgets([...fresh.widgets].sort((a, b) => a.order - b.order)));
         setWidgets([...layout.widgets].sort((a, b) => a.order - b.order));
       } catch (error) {
         console.error('Failed to load dashboard layout:', error);
@@ -128,7 +129,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   const loadQuickExpensePresets = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const presets = await quickExpenseService.getPresets(currentUser.uid);
+      const presets = await quickExpenseService.getPresets(currentUser.uid, setQuickExpensePresets);
       setQuickExpensePresets(presets);
     } catch (error) {
       console.error('Failed to load quick expense presets:', error);
@@ -152,7 +153,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     
     try {
       // 2. Save to Firebase in background
-      await dashboardLayoutService.updateWidgets(currentUser.uid, orderedWidgets);
+      await writeLocalFirst({ type: 'update', entity: 'dashboardLayout', payload: { userId: currentUser.uid, widgets: orderedWidgets } },
+        () => dashboardLayoutService.updateWidgets(currentUser.uid, orderedWidgets));
       
       // 3. Notify success
       showNotification('success', t('saveSuccess') || '已保存自定義列表');
@@ -160,7 +162,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       console.error('Failed to save dashboard layout:', error);
 
       if (isRetryableNetworkError(error)) {
-        const queuedId = offlineQueue.enqueue({
+        const queuedId = queueFailedWrite(error, {
           type: 'update',
           entity: 'dashboardLayout',
           payload: { userId: currentUser.uid, widgets: orderedWidgets },

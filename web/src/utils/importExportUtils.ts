@@ -7,7 +7,7 @@ import { categoryService } from '../services/categoryService';
 import { expenseService } from '../services/expenseService';
 import { DEFAULT_BASE_CURRENCY } from './currencyUtils';
 import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
-import { offlineQueue } from './offlineQueue';
+import { queueFailedWrite, writeLocalFirst } from './localFirstMutation';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -373,10 +373,10 @@ export const importData = async (
       const id = categoryService.createId();
       const payload = { ...category, id };
       try {
-        return await categoryService.create(payload);
+        return await writeLocalFirst({ type: 'create', entity: 'category', payload }, () => categoryService.create(payload));
       } catch (error) {
         const queuedId = isRetryableNetworkError(error)
-          ? offlineQueue.enqueue({ type: 'create', entity: 'category', payload })
+          ? queueFailedWrite(error, { type: 'create', entity: 'category', payload })
           : null;
         if (queuedId) return id;
         throw error;
@@ -572,10 +572,11 @@ export const importData = async (
           // Use a stable ID so the local queue can replay this row without duplicates.
           const expensePayload = { ...expenseData, id: expenseService.createId() };
           try {
-            await expenseService.create(expensePayload, { updateAccountBalances: true });
+            await writeLocalFirst({ type: 'create', entity: 'expense', payload: expensePayload },
+              () => expenseService.create(expensePayload, { updateAccountBalances: true }));
           } catch (error) {
             const queuedId = isRetryableNetworkError(error)
-              ? offlineQueue.enqueue({ type: 'create', entity: 'expense', payload: expensePayload })
+              ? queueFailedWrite(error, { type: 'create', entity: 'expense', payload: expensePayload })
               : null;
             if (!queuedId) throw error;
           }

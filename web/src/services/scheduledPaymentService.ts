@@ -246,9 +246,13 @@ export const scheduledPaymentService = {
   // Get payment summary for a scheduled payment
   async getPaymentSummary(
     userId: string,
-    scheduledPayment: ScheduledPayment
+    scheduledPayment: ScheduledPayment,
+    localRecords?: ScheduledPaymentRecord[],
   ): Promise<ScheduledPaymentSummary> {
-    const records = await this.getPaymentRecords(userId, scheduledPayment.id!);
+    const records = localRecords
+      ? localRecords.filter((record) => record.userId === userId && record.scheduledPaymentId === scheduledPayment.id)
+        .sort((a, b) => b.paidDate.localeCompare(a.paidDate))
+      : await this.getPaymentRecords(userId, scheduledPayment.id!);
     
     const totalPaid = records.reduce((sum, r) => sum + r.actualAmount, 0);
     const totalExpected = records.reduce((sum, r) => sum + r.expectedAmount, 0);

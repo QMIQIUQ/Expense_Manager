@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod } from '../types';
-import { offlineQueue } from '../utils/offlineQueue';
+import { queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
+import { sessionCache } from '../utils/sessionCache';
+import { applyPendingOperations } from '../utils/pendingOperations';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -13,8 +15,8 @@ const isRetryableNetworkError = (error: unknown): boolean => {
     (typeof navigator !== 'undefined' && !navigator.onLine);
 };
 
-const enqueueSettingsUpdate = (userId: string, updates: Partial<UserSettings>): boolean =>
-  offlineQueue.enqueue({ type: 'update', entity: 'userSettings', payload: { userId, updates } }) !== null;
+const enqueueSettingsUpdate = (error: unknown, userId: string, updates: Partial<UserSettings>): boolean =>
+  queueFailedWrite(error, { type: 'update', entity: 'userSettings', payload: { userId, updates } }) !== null;
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -73,6 +75,14 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
       return () => { cancelled = true; };
     }
 
+    const cached = sessionCache.get<UserSettings>('userSettings', userId);
+    if (cached) {
+      const local = applyPendingOperations('userSettings', userId, cached);
+      latestSettingsRef.current = local;
+      setSettings(local);
+      setLoading(false);
+    }
+
     userSettingsService.getOrCreate(userId, true)
       .then((userSettings) => {
         if (!cancelled) {
@@ -92,6 +102,15 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
 
   useEffect(() => {
     if (!userId) return;
+    const handleLocalSettings = () => {
+      queueMicrotask(() => {
+        if (latestUserIdRef.current !== userId || !latestSettingsRef.current) return;
+        const cached = sessionCache.get<UserSettings>('userSettings', userId);
+        const local = applyPendingOperations('userSettings', userId, cached ?? latestSettingsRef.current);
+        latestSettingsRef.current = local;
+        setSettings(local);
+      });
+    };
     const handleSettingsSynced = (event: Event) => {
       const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
       if (detail?.entity !== 'userSettings' || detail.userId !== userId) return;
@@ -103,7 +122,11 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
       }).catch((error) => console.error('Failed to refresh synced user settings:', error));
     };
     window.addEventListener('offline-operation-synced', handleSettingsSynced);
-    return () => window.removeEventListener('offline-operation-synced', handleSettingsSynced);
+    window.addEventListener('offline-queue-changed', handleLocalSettings);
+    return () => {
+      window.removeEventListener('offline-operation-synced', handleSettingsSynced);
+      window.removeEventListener('offline-queue-changed', handleLocalSettings);
+    };
   }, [userId]);
 
   const displayCurrencyReady = Boolean(
@@ -140,9 +163,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     latestSettingsRef.current = optimistic;
     setSettings(optimistic);
     try {
-      await userSettingsService.update(userId, { [key]: value });
+      await writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId, updates: { [key]: value } } },
+        () => userSettingsService.update(userId, { [key]: value }));
     } catch (error) {
-      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(userId, { [key]: value } as Partial<UserSettings>)) return;
+      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(error, userId, { [key]: value } as Partial<UserSettings>)) return;
       const latest = latestSettingsRef.current;
       if (latest && latest[key] === value) {
         const restored = { ...latest, [key]: baseline[key] };
@@ -189,13 +213,14 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
 
     const write = currencyWriteQueueRef.current
       .catch(() => undefined)
-      .then(() => userSettingsService.update(uid, { displayCurrency: currency }));
+      .then(() => writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId: uid, updates: { displayCurrency: currency } } },
+        () => userSettingsService.update(uid, { displayCurrency: currency })));
     currencyWriteQueueRef.current = write.catch(() => undefined);
 
     try {
       await write;
     } catch (error) {
-      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(uid, { displayCurrency: currency })) return;
+      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(error, uid, { displayCurrency: currency })) return;
       if (currencyWriteIdRef.current === requestId && latestUserIdRef.current === uid) {
         const latest = latestSettingsRef.current;
         if (latest && (latest.userId === uid || latest.id === uid)) {

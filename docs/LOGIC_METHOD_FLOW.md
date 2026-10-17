@@ -1,6 +1,6 @@
 # 主要 Method 與端到端流程
 
-> 核對範圍：`web/src`、Firestore rules 與 Functions。文件描述目前程式行為，包含 app queue 與 Firestore SDK 離線持久化兩條不同路徑。最後核對：2026-10-18。TypeScript production build 通過；Vitest 單一 worker 全套 32 個測試檔、156 個測試通過。尚未執行 Firebase 實機同步驗證。
+> 核對範圍：`web/src`、Firestore rules 與 Functions。文件描述目前程式行為，包含 app queue 與 Firestore SDK 離線持久化兩條不同路徑。最後核對：2026-10-18。Vitest 單一 worker 全套 36 個測試檔、215 個測試通過；production build 與 lint 通過。驗收範圍見 `LOCAL_FIRST_ACCEPTANCE.md`。尚未執行 Firebase 正式資料的端到端同步驗證。
 
 ## 1. 程式職責與狀態擁有者
 
@@ -36,7 +36,7 @@
 | `offlineQueue` (`utils/offlineQueue.ts`) | `enqueue`, `enqueueMany`, `getAll`, `count`, `save`, `dequeue`, `incrementRetry`, `retry`, `retryExpenseOperationsForId`, `updatePayload`, `hasPendingExpenseOperations`, `hasPendingExpenseDelete`, `hasPendingBudgetOperations`, `removeBudgetOperationsForId`, `clear`, `processQueue` | `localStorage` app outbox；操作類型為 create/update/delete，最多重試 3 次。到達上限時保留並標為 `needs-attention`，budget 拒絕另走專用回復流程。 |
 | `syncService` (`services/syncService.ts`) | `onSyncProgress`, `setAutoSync`, `isSyncInProgress`, `pendingCount`, `syncOfflineQueue`, `refreshCache`, `refreshAllCaches` | app queue 協調器。網路恢復且 auto-sync 開啟時延遲 1 秒執行；也由狀態元件手動觸發。 |
 | `useSyncStatus` (`hooks/useSyncStatus.ts`) | `syncProgress`, `isSyncing`, `pendingCount`, `syncNow` | `NetworkStatusIndicator` 使用的 React adapter；每秒更新佇列/同步數量並暴露手動同步。 |
-| `useOptimisticCRUD` (`hooks/useOptimisticCRUD.ts`) | `run`, `isPending`, `getPendingOperation`, `pendingCount` | 先登記 UI pending 狀態，再呼叫 service；錯誤依 error code 判斷是否放入 app queue，否則顯示重試/儲存離線操作並呼叫 rollback callback。 |
+| `useOptimisticCRUD` (`hooks/useOptimisticCRUD.ts`) | `run`, `isPending`, `getPendingOperation`, `pendingCount` | 先登記 UI pending 狀態、保存 durable queue，再呼叫 service；網路錯誤保留 queue，永久錯誤呼叫 rollback callback。 |
 
 ### 財務紀錄、帳戶與預算
 
@@ -105,9 +105,9 @@ Login → AuthContext.signup/login/loginWithGoogle
 ### 3.2 新增支出
 
 1. `handleAddExpense` 先呼叫 `expenseService.createId()`，建立固定 document ID，並立即更新 Dashboard state 和 `dataService` 快取。
-2. `useOptimisticCRUD.run()` 呼叫 `expenseService.create(payload, { updateAccountBalances: true })`。
+2. `useOptimisticCRUD.run()` 先透過 `writeLocalFirst()` 保存完整操作，再呼叫 `expenseService.create(payload, { updateAccountBalances: true })`。已知離線或已有前序操作時只保存 queue，不等待 SDK 寫入 Promise。
 3. `expenseService.create` 將支出、銀行/電子錢包餘額增減，以及已啟用的朋友支出 summary 更新放進 Firestore transaction。
-4. 成功後保留固定 ID、更新 pending 狀態並刷新資料/帳戶餘額；可辨識網路錯誤時，將同一 ID 和完整支出 payload 放入 `offlineQueue`，保留樂觀列項等待重播；其他失敗會 rollback 並標示建立失敗。
+4. 成功後移除已保存的 queue 項目、保留固定 ID、更新 pending 狀態並刷新資料/帳戶餘額；可辨識網路錯誤時保留同一 queue 項目等待重播；其他失敗移除失敗操作並 rollback，標示建立失敗。
 5. app queue 重播支出 create 時再次使用 `expenseService.create(..., { updateAccountBalances: true })`。固定 ID 和 create 的重複檢查避免同筆重播建立兩張支出。
 
 ### 3.3 編輯、刪除支出與關聯轉帳
@@ -135,7 +135,7 @@ Login → AuthContext.signup/login/loginWithGoogle
 
 ### 3.7 定期付款與付款紀錄
 
-`ScheduledPaymentManager` 管理 `scheduledPayments` 和 `scheduledPaymentRecords`。確認付款先以固定 ID 在列表建立 provisional record，解析金額匯率快照後更新本機資料，再呼叫 `scheduledPaymentService.createPaymentRecord`。可重試網路錯誤會以 `scheduledPaymentRecord` queue 保存 record 和可選的固定 ID 自動生成 expense payload；重播先建立 record，再以冪等 expense create 處理支出和帳戶餘額。兩份文件不是同一 Firestore transaction，因此若第二步永久失敗，需留意 record 已保存但支出未生成的部分完成狀態。
+`ScheduledPaymentManager` 管理 `scheduledPayments` 和 `scheduledPaymentRecords`。確認付款先以固定 ID 在列表建立 provisional record，解析金額匯率快照後更新本機資料，再以 `scheduledPaymentRecord` durable queue 保存 record 和可選的固定 ID 自動生成 expense payload，最後呼叫 `scheduledPaymentService.createPaymentRecord`。摘要與本期已付款判斷使用目前畫面的本機紀錄。重播先建立 record，再以冪等 expense create 處理支出和帳戶餘額。兩份文件不是同一 Firestore transaction，因此若第二步永久失敗，需留意 record 已保存但支出未生成的部分完成狀態。
 
 ### 3.8 幣別、收據、好友、匯入匯出
 
@@ -148,7 +148,7 @@ Login → AuthContext.signup/login/loginWithGoogle
 
 | 項目 | 已落實的行為 |
 |---|---|
-| 本機先顯示 | Dashboard 主要資料變更及付款偏好先更新本機 state/cache。新增以固定 ID 去重；可重試網路錯誤會保存完整 owner/ID/payload，成功同步後發事件重新載入資料。 |
+| 本機先顯示 | 一般資料變更及偏好先更新本機 state/cache，完整 owner/ID/payload 在呼叫 Firebase 前保存；成功同步後移除操作並發事件重新載入資料。 |
 | Queue 路由 | scheduled payment、payment record、transfer、feature settings、quick expense preset、user settings 和 dashboard layout 有專用 executor。一般失敗重試三次後保留 `needs-attention`；budget 驗證拒絕走專用回復。 |
 | 財務交易 | expense/income/transfer service 在同一 transaction 維護相關帳戶餘額。支出編輯先反向調整舊付款資料，再套用新值；轉帳刪除也在交易內回復餘額。 |
 | 手動同步 | 頁首和漢堡選單都呼叫 `syncOfflineQueue()`，並依 queue 剩餘數量顯示結果。 |
@@ -170,3 +170,11 @@ Login → AuthContext.signup/login/loginWithGoogle
 - 離線：`web/src/config/firebase.ts`, `web/src/utils/offlineQueue.ts`, `web/src/utils/networkStatus.ts`, `web/src/services/syncService.ts`, `web/src/hooks/useOptimisticCRUD.ts`
 - 金額/交易：`web/src/services/expenseService.ts`, `incomeService.ts`, `transferService.ts`, `balanceService.ts`, `budgetService.ts`, `web/src/utils/budgetMutationTransaction.ts`
 - 權限/伺服器：`web/firestore.rules`, `web/functions/`
+
+## 7. 共用本機保存與讀取防護
+
+- `utils/localFirstMutation.ts`：`writeLocalFirst`, `writeLocalFirstBatch`, `getQueuedWriteId`, `isLocalWriteActive`；先持久化操作，已知離線時結束本機提交，線上成功才 dequeue，永久失敗則回復快取並交由 UI rollback。
+- `utils/pendingOperations.ts`：`applyPendingOperations`, `cacheEntityFor`；涵蓋全部 collection 與偏好 singleton，並將待確認排程付款中的自動支出投影到支出清單。
+- `dataService`、設定/layout/preference services 會保護讀取開始後新增的本機變更；Dashboard 與各功能元件不再讓舊 props 或背景回應移除待同步資料。
+- `syncService` 按帳戶保存的順序重播，等待直接寫入完成；較早操作未成功時保留後續操作，不會先執行依賴的編輯或刪除。
+- 逐功能對照與實際測試範圍見 [`LOCAL_FIRST_ACCEPTANCE.md`](LOCAL_FIRST_ACCEPTANCE.md)。

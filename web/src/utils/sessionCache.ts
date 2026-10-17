@@ -24,6 +24,8 @@ export type CacheableEntity =
   | 'transfers'
   | 'scheduledPayments'
   | 'scheduledPaymentRecords'
+  | 'quickExpensePresets'
+  | 'friendPreferences'
   | 'featureSettings'
   | 'userSettings'
   | 'dashboardLayout';
