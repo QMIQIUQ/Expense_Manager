@@ -38,7 +38,8 @@ import DashboardMenuSection from '../components/navigation/DashboardMenuSection'
 import { getNavigationFeatures } from '../components/navigation/navigationConfig';
 
 // Lazy load heavy components
-const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
+const loadCategoryManager = () => import('../components/categories/CategoryManager');
+const CategoryManager = lazy(loadCategoryManager);
 const BudgetManager = lazy(() => import('../components/budgets/BudgetManager'));
 const ScheduledPaymentManager = lazy(() => import('../components/scheduledPayments/ScheduledPaymentManager'));
 const IncomesTab = lazy(() => import('./tabs/IncomesTab'));
@@ -188,6 +189,13 @@ const Dashboard: React.FC = () => {
     initialData: { name: string; icon: string; color: string };
   } | null>(null);
   const categoryCreationRequestIdRef = useRef(0);
+
+  // Warm the category screen while the user is in budgets so creating a missing
+  // template category does not have to wait for the lazy-loaded screen bundle.
+  useEffect(() => {
+    if (activeTab === 'budgets') void loadCategoryManager().catch(() => undefined);
+  }, [activeTab]);
+
   const orderedCategories = React.useMemo(() => sortCategories(categories), [categories]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);

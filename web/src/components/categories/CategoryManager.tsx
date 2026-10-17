@@ -62,8 +62,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 }) => {
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
-  const [isAdding, setIsAdding] = useState(false);
-  const [addingCategoryInitialData, setAddingCategoryInitialData] = useState<{ name: string; icon: string; color: string } | undefined>();
+  const [isAdding, setIsAdding] = useState(() => Boolean(categoryCreationRequest));
+  const [addingCategoryInitialData, setAddingCategoryInitialData] = useState<{ name: string; icon: string; color: string } | undefined>(
+    () => categoryCreationRequest?.initialData,
+  );
   const [addCategoryFormKey, setAddCategoryFormKey] = useState(0);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
