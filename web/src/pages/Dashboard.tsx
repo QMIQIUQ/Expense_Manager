@@ -3279,6 +3279,7 @@ const Dashboard: React.FC = () => {
             onReloadRepayments={reloadRepayments}
             onCreateCard={() => setActiveTab('paymentMethods')}
             onCreateEWallet={() => setActiveTab('paymentMethods')}
+            onCreateBank={() => setActiveTab('paymentMethods')}
             onAddTransfer={handleAddTransfer}
             focusExpenseId={focusExpenseId || undefined}
             quickExpensePresets={quickExpensePresets}
@@ -3479,6 +3480,10 @@ const Dashboard: React.FC = () => {
               closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}
+            onCreateBank={() => {
+              closeExpenseEntry();
+              setActiveTab('paymentMethods');
+            }}
             onAddTransfer={handleAddTransfer}
             initialDate={expensePeriod.anchorDate}
             dateFormat={dateFormat}
@@ -3538,6 +3543,10 @@ const Dashboard: React.FC = () => {
               setActiveTab('paymentMethods');
             }}
             onCreateCard={() => {
+              closeExpenseEntry();
+              setActiveTab('paymentMethods');
+            }}
+            onCreateBank={() => {
               closeExpenseEntry();
               setActiveTab('paymentMethods');
             }}

@@ -36,6 +36,7 @@ interface ExpensesTabProps {
   onReloadRepayments: () => void;
   onCreateCard: () => void;
   onCreateEWallet: () => void;
+  onCreateBank?: () => void;
   onAddTransfer: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   focusExpenseId?: string;
   quickExpensePresets: QuickExpensePreset[];
@@ -62,6 +63,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   onReloadRepayments,
   onCreateCard,
   onCreateEWallet,
+  onCreateBank,
   onAddTransfer,
   focusExpenseId,
   quickExpensePresets,
@@ -124,6 +126,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         onReloadRepayments={onReloadRepayments}
         onCreateCard={onCreateCard}
         onCreateEWallet={onCreateEWallet}
+        onCreateBank={onCreateBank}
         onAddTransfer={onAddTransfer}
         focusExpenseId={focusExpenseId}
         quickExpensePresets={quickExpensePresets}
