@@ -20,7 +20,7 @@ The application has production and preview deployments. GitHub Pages and Firebas
 - **Testing URL**: use the action's `channel_url` shown in the workflow run summary; this URL is temporary and expires after 7 days
 - **Auto-deploy**: ✅ Enabled (triggers on push to `main` or `firebase-testing`)
 
-The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database. Friend spending is disabled in the preview build. On `main`, changes to Firestore rules or indexes deploy those resources before Hosting; the live build enables the feature. The friend dashboard uses Firestore directly and adds no Cloud Functions dependency. The separate admin account-deletion action still uses the app's existing callable Cloud Function, and this workflow does not deploy Functions.
+The Firebase Hosting preview channel changes the deployed frontend only. Both `main` and `firebase-testing` builds use the configured Firebase project and backend; a preview is not an isolated database. Friend spending is disabled in the `firebase-testing` preview. The `main` Firebase Hosting and GitHub Pages builds enable it, and both sites use the same Firebase data. On `main`, changes to Firestore rules or indexes deploy those resources before Hosting; the live build enables the feature. The friend dashboard uses Firestore directly and adds no Cloud Functions dependency. The separate admin account-deletion action still uses the app's existing callable Cloud Function, and this workflow does not deploy Functions.
 
 ### 3. Firebase Preview (Pull Requests)
 - **Trigger**: Pull requests to `main` branch
