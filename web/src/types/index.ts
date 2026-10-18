@@ -64,6 +64,7 @@ export interface AmountItem {
 }
 
 export interface Expense {
+  scheduledPaymentRecordId?: string;
   id?: string;
   userId: string;
   relatedTransferIds?: string[];
@@ -525,6 +526,7 @@ export interface ScheduledPayment {
 
 // Payment Record - tracks individual payments made for a scheduled payment
 export interface ScheduledPaymentRecord {
+  generatedExpenseId?: string;
   id?: string;
   userId: string;
   scheduledPaymentId: string; // FK to ScheduledPayment

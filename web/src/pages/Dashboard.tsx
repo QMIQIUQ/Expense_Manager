@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
+import { dataEqual } from '../utils/dataEquality';
+import { publishCurrentGeneration } from '../services/readGeneration';
+import { financialScopeCovered, financialScopeKey, markFinancialScopeCovered, invalidateFinancialReads, readHistoryRange, readScopedExpenses, readScopedIncomes, readScopedRepayments, readScopedTransfers, readRepaymentsForExpenses, readTransfersForExpenses, type FinancialScope } from '../services/historyService';
+import { affectedEntities, createRefreshCoordinator } from '../services/refreshCoordinator';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -20,7 +24,6 @@ import { bankService } from '../services/bankService';
 import { adminService } from '../services/adminService';
 import { ewalletService } from '../services/ewalletService';
 import { featureSettingsService } from '../services/featureSettingsService';
-import { repaymentService } from '../services/repaymentService';
 import { userSettingsService } from '../services/userSettingsService';
 import { transferService } from '../services/transferService';
 import { quickExpenseService } from '../services/quickExpenseService';
@@ -37,7 +40,8 @@ import DashboardMenuSection from '../components/navigation/DashboardMenuSection'
 import { getNavigationFeatures } from '../components/navigation/navigationConfig';
 
 // Lazy load heavy components
-const CategoryManager = lazy(() => import('../components/categories/CategoryManager'));
+const loadCategoryManager = () => import('../components/categories/CategoryManager');
+const CategoryManager = lazy(loadCategoryManager);
 const BudgetManager = lazy(() => import('../components/budgets/BudgetManager'));
 const ScheduledPaymentManager = lazy(() => import('../components/scheduledPayments/ScheduledPaymentManager'));
 const IncomesTab = lazy(() => import('./tabs/IncomesTab'));
@@ -84,6 +88,11 @@ const applyPendingBudgetOperations = (
     const payload = operation.payload as BudgetQueuePayload;
     if (payload.userId !== userId) continue;
     const id = typeof payload.id === 'string' ? payload.id : undefined;
+    if (operation.status === 'needs-attention') {
+      if (operation.type === 'create') result = result.filter((row) => row.id !== id);
+      else if (payload.previousBudget) result = [...result.filter((row) => row.id !== id), payload.previousBudget];
+      continue;
+    }
 
     if (operation.type === 'create' && id) {
       const pendingBudget = {
@@ -206,24 +215,32 @@ const Dashboard: React.FC = () => {
   const { dateFormat, timeFormat, dateShortcuts, displayCurrency, displayCurrencyReady, settings, setDisplayCurrency: saveDisplayCurrency, setOverallBudgetLimit: saveOverallBudgetLimit, refreshSettings } = useUserSettings();
   const optimisticCRUD = useOptimisticCRUD();
 
+  const initialRows = <T,>(entity: CacheableEntity): T[] => currentUser ? applyPendingOperations(entity, currentUser.uid, sessionCache.get<T[]>(entity, currentUser.uid) ?? []) : [];
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [repayments, setRepayments] = useState<Repayment[]>([]);
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>(() => initialRows<Expense>('expenses'));
+  const [incomes, setIncomes] = useState<Income[]>(() => initialRows<Income>('incomes'));
+  const [repayments, setRepayments] = useState<Repayment[]>(() => initialRows<Repayment>('repayments'));
+  const [transfers, setTransfers] = useState<Transfer[]>(() => initialRows<Transfer>('transfers'));
+  const [categories, setCategories] = useState<Category[]>(() => initialRows<Category>('categories'));
   const [pendingCategoryCreationRequest, setPendingCategoryCreationRequest] = useState<{
     id: number;
     initialData: { name: string; icon: string; color: string };
   } | null>(null);
   const categoryCreationRequestIdRef = useRef(0);
+
+  // Warm the category screen while the user is in budgets so creating a missing
+  // template category does not have to wait for the lazy-loaded screen bundle.
+  useEffect(() => {
+    if (activeTab === 'budgets') void loadCategoryManager().catch(() => undefined);
+  }, [activeTab]);
+
   const orderedCategories = React.useMemo(() => sortCategories(categories), [categories]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
-  const [scheduledPaymentRecords, setScheduledPaymentRecords] = useState<ScheduledPaymentRecord[]>([]);
-  const [cards, setCards] = useState<Card[]>([]);
-  const [ewallets, setEWallets] = useState<EWallet[]>([]);
-  const [banks, setBanks] = useState<Bank[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>(() => initialRows<Budget>('budgets'));
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>(() => initialRows<ScheduledPayment>('scheduledPayments'));
+  const [scheduledPaymentRecords, setScheduledPaymentRecords] = useState<ScheduledPaymentRecord[]>(() => initialRows<ScheduledPaymentRecord>('scheduledPaymentRecords'));
+  const [cards, setCards] = useState<Card[]>(() => initialRows<Card>('cards'));
+  const [ewallets, setEWallets] = useState<EWallet[]>(() => initialRows<EWallet>('ewallets'));
+  const [banks, setBanks] = useState<Bank[]>(() => initialRows<Bank>('banks'));
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
@@ -340,6 +357,111 @@ const Dashboard: React.FC = () => {
   };
 
   const currentUserId = currentUser?.uid;
+  const liveUserIdRef = React.useRef(currentUserId);
+  liveUserIdRef.current = currentUserId;
+  const initializationUserRef = React.useRef<string>();
+  const loadedUserRef = React.useRef<string>();
+  const financialScope: FinancialScope = ['categories', 'budgets', 'paymentMethods'].includes(activeTab) ? 'all' : 'dashboard';
+  const rememberExpenseHistory = useCallback((rows: Expense[]) => {
+    if (!currentUserId || liveUserIdRef.current !== currentUserId) return;
+    dataService.updateCache<Expense[]>('expenses', currentUserId, (previous) => applyPendingOperations('expenses', currentUserId, [...new Map([...previous, ...rows].map((row) => [row.id, row])).values()]));
+    setExpenses(sessionCache.get<Expense[]>('expenses', currentUserId) ?? []);
+    const ids = new Set(rows.map((row) => row.id));
+    const current = () => liveUserIdRef.current === currentUserId;
+    void Promise.all([
+      publishCurrentGeneration(() => readRepaymentsForExpenses(currentUserId, rows), () => dataService.generation('repayments', currentUserId), current, (payments) => {
+        dataService.updateCache<Repayment[]>('repayments', currentUserId, (previous) => applyPendingOperations('repayments', currentUserId, [...previous.filter((row) => !ids.has(row.expenseId)), ...payments]));
+        setRepayments(sessionCache.get<Repayment[]>('repayments', currentUserId) ?? []);
+      }),
+      publishCurrentGeneration(() => readTransfersForExpenses(currentUserId, rows), () => dataService.generation('transfers', currentUserId), current, (movements) => {
+        dataService.updateCache<Transfer[]>('transfers', currentUserId, (previous) => applyPendingOperations('transfers', currentUserId, [...previous.filter((row) => !ids.has(row.expenseId)), ...movements]));
+        setTransfers(sessionCache.get<Transfer[]>('transfers', currentUserId) ?? []);
+      }),
+    ]).catch((error) => {
+      console.error('Historical related payments could not load:', error);
+      if (current()) window.dispatchEvent(new CustomEvent('data-revalidation-failed', { detail: { entity: 'repayments', userId: currentUserId } }));
+    });
+  }, [currentUserId]);
+  const rememberIncomeHistory = useCallback((rows: Income[]) => {
+    if (!currentUserId || liveUserIdRef.current !== currentUserId) return;
+    dataService.updateCache<Income[]>('incomes', currentUserId, (previous) => applyPendingOperations('incomes', currentUserId, [...new Map([...previous, ...rows].map((row) => [row.id, row])).values()]));
+    setIncomes(sessionCache.get<Income[]>('incomes', currentUserId) ?? []);
+  }, [currentUserId]);
+  const financialScopeRef = React.useRef<FinancialScope>(financialScope);
+  financialScopeRef.current = financialScope;
+  const financialScopeId = financialScopeKey(financialScope);
+  const [financialScopeComplete, setFinancialScopeComplete] = useState(false);
+  const refreshCoordinatorRef = React.useRef<ReturnType<typeof createRefreshCoordinator>>();
+  const requestDataRefresh = React.useCallback((entities: CacheableEntity[], invalidate = true) => {
+    const uid = liveUserIdRef.current;
+    if (uid) {
+      if (invalidate && entities.some((entity) => ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity))) invalidateFinancialReads(uid);
+      for (const entity of entities) dataService.markStale(entity, uid);
+    }
+    refreshCoordinatorRef.current?.request(entities);
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    let cancelled = false;
+    const refresh = async (entities: Set<CacheableEntity>) => {
+      const scope = financialScopeRef.current;
+      const scopeId = financialScopeKey(scope);
+      const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: (data: T) => void) => {
+        dataService.markStale(entity, currentUserId);
+        const data = await dataService.getData(entity, currentUserId, true, fetch, () => {
+          if (['expenses', 'incomes', 'repayments', 'transfers'].includes(entity)) markFinancialScopeCovered(currentUserId, entity as import('../services/historyService').HistoryCollection, scope);
+        }, ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity) ? scopeId : 'collection');
+        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set(data);
+      };
+      const targets: Partial<Record<CacheableEntity, () => Promise<void>>> = {
+        expenses: () => load('expenses', () => readScopedExpenses(currentUserId, scope), setExpenses),
+        incomes: () => load('incomes', () => readScopedIncomes(currentUserId, scope), setIncomes),
+        categories: () => load('categories', () => categoryService.getAll(currentUserId), setCategories),
+        budgets: () => load('budgets', () => budgetService.getAll(currentUserId), setBudgets),
+        banks: () => load('banks', () => bankService.getAll(currentUserId), setBanks),
+        ewallets: () => load('ewallets', () => ewalletService.getAll(currentUserId), setEWallets),
+        cards: () => load('cards', () => cardService.getAll(currentUserId), setCards),
+        repayments: () => load('repayments', () => readScopedRepayments(currentUserId, scope), setRepayments),
+        transfers: () => load('transfers', () => readScopedTransfers(currentUserId, scope), setTransfers),
+        scheduledPayments: () => load('scheduledPayments', () => scheduledPaymentService.getAll(currentUserId), setScheduledPayments),
+        scheduledPaymentRecords: () => load('scheduledPaymentRecords', () => scheduledPaymentService.getAllPaymentRecords(currentUserId), setScheduledPaymentRecords),
+        featureSettings: async () => { const settings = await featureSettingsService.getOrCreate(currentUserId); if (!cancelled && liveUserIdRef.current === currentUserId) setFeatureSettings(settings); },
+        quickExpensePresets: async () => {
+          const update = (data: QuickExpensePreset[]) => { if (!cancelled && liveUserIdRef.current === currentUserId) setQuickExpensePresets(data); };
+          dataService.markStale('quickExpensePresets', currentUserId);
+          update(await quickExpenseService.getPresets(currentUserId, update));
+        },
+      };
+      await Promise.allSettled([...entities].map((entity) => targets[entity]?.()));
+    };
+    const coordinator = createRefreshCoordinator(refresh);
+    refreshCoordinatorRef.current = coordinator;
+    return () => {
+      cancelled = true;
+      coordinator.dispose();
+      if (refreshCoordinatorRef.current === coordinator) refreshCoordinatorRef.current = undefined;
+    };
+  }, [currentUserId]);
+  useEffect(() => {
+    if (!currentUserId) return;
+    const updateCoverage = () => {
+      const complete = (['expenses', 'incomes', 'repayments', 'transfers'] as const).every((entity) =>
+        sessionCache.has(entity, currentUserId) && financialScopeCovered(currentUserId, entity, financialScopeRef.current));
+      setFinancialScopeComplete(complete);
+    };
+    updateCoverage();
+    window.addEventListener('financial-scope-loaded', updateCoverage);
+    if (loadedUserRef.current === currentUserId) requestDataRefresh(['expenses', 'incomes', 'repayments', 'transfers'], false);
+    return () => window.removeEventListener('financial-scope-loaded', updateCoverage);
+  }, [currentUserId, financialScopeId, requestDataRefresh]);
+
+  useEffect(() => {
+    if (!financialScopeComplete || !focusExpenseId || !expenses.some((expense) => expense.id === focusExpenseId)) return;
+    const timer = setTimeout(() => setFocusExpenseId(null), 2500);
+    return () => clearTimeout(timer);
+  }, [expenses, financialScopeComplete, focusExpenseId]);
+
   const notifyOfflineExpenseNeedsAttention = React.useCallback((operationId: string) => {
     if (!currentUserId) return;
     const operation = offlineQueue.getAll().find((item) => item.id === operationId);
@@ -350,14 +472,20 @@ const Dashboard: React.FC = () => {
     const notificationKey = `${currentUserId}:${operationId}`;
     if (notifiedOfflineExpenseAttentionRef.current.has(notificationKey)) return;
     notifiedOfflineExpenseAttentionRef.current.add(notificationKey);
-    showNotification('error', t('offlineExpenseNeedsAttention'), {
+    showNotification('error', t('offlineExpenseNeedsAttention') + (operation.legacyAmbiguous ? ' '+operation.lastError : ''), {
       duration: 0,
       actions: [{
-        label: t('retry'),
-        onClick: () => {
+        label: operation.legacyAmbiguous ? '檢查雲端後復原 / Review cloud & recover' : t('retry'),
+        onClick: async () => {
+          if (operation.legacyAmbiguous) {
+            if (!window.confirm('此舊版操作可能已在雲端完成。請先檢查雲端紀錄。繼續重送可能產生重複支出及扣款。\nThis legacy change may already exist in the cloud. I have checked cloud records and accept the risk of a duplicate expense and charge. Continue?')) return;
+            if (await offlineQueue.recoverAmbiguous(operation.id, currentUserId, { duplicateRiskAccepted: true })) { notifiedOfflineExpenseAttentionRef.current.delete(notificationKey); void syncService.syncOfflineQueue(); }
+            else showNotification('error', t('offlineQueueSaveFailed'));
+            return;
+          }
           const operationPayload = operation.payload as { id?: unknown; userId?: unknown };
           const expenseId = typeof operationPayload.id === 'string' ? operationPayload.id : undefined;
-          if (!expenseId || !offlineQueue.retryExpenseOperationsForId(expenseId, currentUserId)) {
+          if (!expenseId || !await offlineQueue.retryExpenseOperationsForId(expenseId, currentUserId)) {
             showNotification('error', t('offlineQueueSaveFailed'));
             return;
           }
@@ -385,15 +513,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const updateQueueCount = () => {
-      setQueueCount(offlineQueue.count());
+      setQueueCount(syncService.pendingCount);
     };
 
     updateQueueCount();
 
-    // Update queue count every 5 seconds (reduced from 1 second for better performance)
-    const interval = setInterval(updateQueueCount, 5000);
-
-    return () => clearInterval(interval);
+    window.addEventListener('offline-queue-changed', updateQueueCount);
+    return () => window.removeEventListener('offline-queue-changed', updateQueueCount);
   }, []);
 
   useEffect(() => {
@@ -412,6 +538,9 @@ const Dashboard: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      const scope = financialScopeRef.current;
+      const scopeId = financialScopeKey(scope);
+      const safeUpdate = <T,>(setter: (data: T) => void) => (data: T) => { if (liveUserIdRef.current === currentUser.uid && scopeId === financialScopeKey(financialScopeRef.current)) setter(data); };
       const loadRevision = offlineQueue.revision + dataService.localRevision;
       const currentData = <T,>(entity: CacheableEntity, data: T): T => applyPendingOperations(entity, currentUser.uid,
         loadRevision === offlineQueue.revision + dataService.localRevision ? data : sessionCache.get<T>(entity, currentUser.uid) ?? data);
@@ -426,16 +555,19 @@ const Dashboard: React.FC = () => {
       if (cachedFeatures) setFeatureSettings(currentData('featureSettings', cachedFeatures));
       if (cachedPresets) setQuickExpensePresets(currentData('quickExpensePresets', cachedPresets));
       const setExpensesWithPendingOperations = (loadedExpenses: Expense[]) => {
+        if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('expenses', currentUser.uid, reconciled);
         setExpenses(reconciled);
       };
       const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
+        if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingBudgetOperations(loadedBudgets, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('budgets', currentUser.uid, reconciled);
         setBudgets(reconciled);
       };
       const setCategoriesWithPendingOperations = (loadedCategories: Category[]) => {
+        if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingCategoryOperations(loadedCategories, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('categories', currentUser.uid, reconciled);
         setCategories(reconciled);
@@ -443,16 +575,17 @@ const Dashboard: React.FC = () => {
 
       // Phase 1: Load cached data first (instant display)
       const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
-        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => expenseService.getAll(currentUser.uid), setExpensesWithPendingOperations),
-        dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => incomeService.getAll(currentUser.uid), setIncomes),
+        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId),
+        dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId),
         dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations),
         dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
-        dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => repaymentService.getAll(currentUser.uid), setRepayments),
-        dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => transferService.getAll(currentUser.uid), setTransfers),
-        dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), setScheduledPayments),
-        dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), setScheduledPaymentRecords),
+        dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => readScopedRepayments(currentUser.uid, scope), safeUpdate(setRepayments), () => markFinancialScopeCovered(currentUser.uid, 'repayments', scope), scopeId),
+        dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => readScopedTransfers(currentUser.uid, scope), safeUpdate(setTransfers), () => markFinancialScopeCovered(currentUser.uid, 'transfers', scope), scopeId),
+        dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), safeUpdate(setScheduledPayments)),
+        dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), safeUpdate(setScheduledPaymentRecords)),
       ]);
 
+      if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
       // Set initial data (from cache or fresh)
       setExpensesWithPendingOperations(currentData('expenses', expensesData));
       setIncomes(currentData('incomes', incomesData));
@@ -466,10 +599,13 @@ const Dashboard: React.FC = () => {
       // Initial UI now rendered; no blocking loader needed
 
       // Phase 2: Initialize and load additional data in background (only if online)
-      if (networkStatus.isOnline) {
+      if (networkStatus.isOnline && initializationUserRef.current !== currentUser.uid) {
+        initializationUserRef.current = currentUser.uid;
+        let initializationFailed = false;
         setIsRevalidating(true);
 
         const userSettingsPromise = userSettingsService.getOrCreate(currentUser.uid).catch(err => {
+          initializationFailed = true;
           console.warn('User settings load failed:', err);
           return { billingCycleDay: 1, defaultCategoryMigrationVersion: 0 };
         });
@@ -487,6 +623,7 @@ const Dashboard: React.FC = () => {
 
           return initializedCategories;
         }).catch(err => {
+          initializationFailed = true;
           console.warn('Background category init failed:', err);
           return null;
         });
@@ -506,6 +643,7 @@ const Dashboard: React.FC = () => {
 
           // Load cards
           dataService.getDataWithRevalidate('cards', currentUser.uid, () => cardService.getAll(currentUser.uid), (cardsData) => {
+            if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
             setCards(cardsData);
             const bankNames = [...new Set(cardsData.map(card => card.bankName).filter(Boolean) as string[])];
             if (bankNames.length > 0) {
@@ -518,8 +656,8 @@ const Dashboard: React.FC = () => {
 
           // Initialize and load e-wallets
           ewalletService.initializeDefaults(currentUser.uid)
-            .catch(() => null)
-            .then(() => dataService.getDataWithRevalidate('ewallets', currentUser.uid, () => ewalletService.getAll(currentUser.uid), setEWallets))
+            .catch(() => { initializationFailed = true; return null; })
+            .then(() => dataService.getDataWithRevalidate('ewallets', currentUser.uid, () => ewalletService.getAll(currentUser.uid), safeUpdate(setEWallets)))
             .catch(err => {
               console.warn('Could not load e-wallets:', err);
               return [];
@@ -527,6 +665,7 @@ const Dashboard: React.FC = () => {
 
           // Load banks
           dataService.getDataWithRevalidate('banks', currentUser.uid, () => bankService.getAll(currentUser.uid), (banksData) => {
+            if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
             setBanks(banksData);
             const bankNames = [...new Set(banksData.map(b => b.name).filter(Boolean))];
             if (bankNames.length > 0) {
@@ -549,6 +688,7 @@ const Dashboard: React.FC = () => {
             return [];
           }),
         ]).then(([categoriesData, adminStatus, userSettings, cardsData, ewalletsData, banksData, featSettings, quickPresets]) => {
+          if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
           // Apply all state updates together (single render cycle)
           if (Array.isArray(categoriesData)) setCategoriesWithPendingOperations(currentData('categories', categoriesData));
           if (typeof adminStatus === 'boolean') setIsAdmin(adminStatus);
@@ -571,7 +711,8 @@ const Dashboard: React.FC = () => {
           if (featSettings) setFeatureSettings(currentData('featureSettings', featSettings));
           if (Array.isArray(quickPresets)) setQuickExpensePresets(currentData('quickExpensePresets', quickPresets));
         }).finally(() => {
-          setIsRevalidating(false);
+          if (initializationFailed && initializationUserRef.current === currentUser.uid) initializationUserRef.current = undefined;
+          if (liveUserIdRef.current === currentUser.uid) setIsRevalidating(false);
         });
       }
     } catch (error) {
@@ -581,17 +722,55 @@ const Dashboard: React.FC = () => {
   }, [currentUser, showNotification, t]);
 
   useEffect(() => {
+    if (!currentUserId) return;
+    let lastFocus = Date.now();
+    const revalidate = (event: Event) => {
+      if (!networkStatus.isOnline || (event.type === 'focus' && Date.now() - lastFocus < 30_000)) return;
+      lastFocus = Date.now();
+      if (initializationUserRef.current !== currentUserId) void loadData();
+      else requestDataRefresh(['expenses', 'incomes', 'repayments', 'transfers', 'categories', 'budgets', 'cards', 'banks', 'ewallets', 'scheduledPayments', 'scheduledPaymentRecords', 'quickExpensePresets', 'featureSettings']);
+    };
+    const stale = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId !== currentUserId) return;
+      showNotification('error', isEnglish ? 'Data could not refresh. Showing the saved local version.' : '資料暫時無法更新，目前顯示本機保存的版本。', { id: 'stale-data:' + currentUserId, duration: 8000 });
+    };
+    window.addEventListener('focus', revalidate);
+    window.addEventListener('online', revalidate);
+    window.addEventListener('data-revalidation-failed', stale);
+    return () => {
+      window.removeEventListener('focus', revalidate);
+      window.removeEventListener('online', revalidate);
+      window.removeEventListener('data-revalidation-failed', stale);
+    };
+  }, [currentUserId, isEnglish, loadData, requestDataRefresh, showNotification]);
+
+  useEffect(() => {
     if (currentUserId) void syncService.syncOfflineQueue();
   }, [currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) return;
     let active = true;
-    const refreshLocal = () => queueMicrotask(() => {
+    let frame: number | undefined;
+    const dirty = new Set<CacheableEntity>();
+    const refreshLocal = (event: Event) => {
+      const entities = (event as CustomEvent<{ entities?: QueuedOperation['entity'][] }>).detail?.entities;
+      const changes = affectedEntities((entities ?? ['expense', 'income', 'category', 'budget', 'bank', 'ewallet', 'card', 'repayment', 'transfer', 'scheduledPayment', 'scheduledPaymentRecord', 'featureSettings', 'quickExpensePreset', 'userSettings']).map((entity) => ({ entity })));
+      for (const entity of changes) dirty.add(entity);
+      if (frame !== undefined || !dirty.size) return;
+      frame = requestAnimationFrame(() => {
+      frame = undefined;
       if (!active) return;
       const apply = <T,>(entity: CacheableEntity, setter: (data: T) => void) => {
+        if (!dirty.has(entity)) return;
         const cached = sessionCache.get<T>(entity, currentUserId);
-        if (cached) setter(applyPendingOperations(entity, currentUserId, cached));
+        if (cached) {
+          const projected = applyPendingOperations(entity, currentUserId, cached);
+          const stable = dataEqual(cached, projected) ? cached : projected;
+          sessionCache.set(entity, currentUserId, stable);
+          setter(stable);
+        }
       };
       apply('expenses', setExpenses);
       apply('incomes', setIncomes);
@@ -608,10 +787,12 @@ const Dashboard: React.FC = () => {
       apply('quickExpensePresets', setQuickExpensePresets);
       const cachedSettings = sessionCache.get<import('../types').UserSettings>('userSettings', currentUserId);
       if (cachedSettings) setBillingCycleDay(applyPendingOperations('userSettings', currentUserId, cachedSettings).billingCycleDay);
-      setQueueCount(offlineQueue.count());
-    });
+      setQueueCount(syncService.pendingCount);
+      dirty.clear();
+      });
+    };
     window.addEventListener('offline-queue-changed', refreshLocal);
-    return () => { active = false; window.removeEventListener('offline-queue-changed', refreshLocal); };
+    return () => { active = false; if (frame !== undefined) cancelAnimationFrame(frame); window.removeEventListener('offline-queue-changed', refreshLocal); };
   }, [currentUserId]);
 
   useEffect(() => {
@@ -622,14 +803,20 @@ const Dashboard: React.FC = () => {
       const operation = offlineQueue.getAll().find((item) => item.id === detail.operationId);
       if (!operation || operation.entity === 'expense' || operation.entity === 'budget') return;
 
-      void loadData();
-      showNotification('error', t('offlineOperationNeedsAttention'), {
+      requestDataRefresh([...affectedEntities([operation])]);
+      showNotification('error', t('offlineOperationNeedsAttention') + (operation.legacyAmbiguous ? ' '+operation.lastError : ''), {
         id: `offline-needs-attention-${operation.id}`,
         duration: 0,
         actions: [{
-          label: t('retry'),
-          onClick: () => {
-            if (!offlineQueue.retry(operation.id)) {
+          label: operation.legacyAmbiguous ? '檢查雲端後復原 / Review cloud & recover' : t('retry'),
+          onClick: async () => {
+            if (operation.legacyAmbiguous) {
+              if (!window.confirm('此舊版操作可能已同步。請檢查雲端後再決定，重送可能重複新增及扣款。\nI checked cloud records and accept the risk that replaying this legacy change may duplicate records and charges. Continue?')) return;
+              if (currentUserId && await offlineQueue.recoverAmbiguous(operation.id, currentUserId, { duplicateRiskAccepted: true })) void syncService.syncOfflineQueue();
+              else showNotification('error', t('offlineQueueSaveFailed'));
+              return;
+            }
+            if (!await offlineQueue.retry(operation.id)) {
               showNotification('error', t('offlineQueueSaveFailed'));
               return;
             }
@@ -646,17 +833,17 @@ const Dashboard: React.FC = () => {
       }));
     });
     return () => window.removeEventListener('offline-operation-needs-attention', handleOfflineOperationNeedsAttention);
-  }, [currentUserId, loadData, showNotification, t]);
+  }, [currentUserId, requestDataRefresh, showNotification, t]);
 
   useEffect(() => {
     if (!currentUserId) return;
-    const handleOfflineOperationSynced = (event: Event) => {
-      const detail = (event as CustomEvent<{ userId?: string }>).detail;
-      if (detail?.userId === currentUserId) void loadData();
+    const handleOfflineOperationsSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; operations?: QueuedOperation[] }>).detail;
+      if (detail?.userId === currentUserId && detail.operations) requestDataRefresh([...affectedEntities(detail.operations)]);
     };
-    window.addEventListener('offline-operation-synced', handleOfflineOperationSynced);
-    return () => window.removeEventListener('offline-operation-synced', handleOfflineOperationSynced);
-  }, [currentUserId, loadData]);
+    window.addEventListener('offline-operations-synced', handleOfflineOperationsSynced);
+    return () => window.removeEventListener('offline-operations-synced', handleOfflineOperationsSynced);
+  }, [currentUserId, requestDataRefresh]);
   //#endregion
 
   //#region Budget Notifications
@@ -713,6 +900,8 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      if (loadedUserRef.current === currentUser.uid) return;
+      loadedUserRef.current = currentUser.uid;
       // 如果已有缓存，先关闭初始加载占位，随后再异步刷新
       const uid = currentUser.uid;
       const hasCached = !!(
@@ -731,31 +920,27 @@ const Dashboard: React.FC = () => {
   }, [currentUser, loadData]);
 
   useEffect(() => {
-    const unsubscribe = syncService.onSyncProgress((progress) => {
-      if (progress.currentOperation === 'Sync complete' && progress.completed > 0 && !progress.budgetRejections) {
-        void loadData();
-      }
-    });
+
     const handleOfflineExpenseNeedsAttention = (event: Event) => {
       const detail = (event as CustomEvent<{ operationId: string; userId?: string }>).detail;
       if (!detail?.operationId || (detail.userId && detail.userId !== currentUserId)) return;
       notifyOfflineExpenseNeedsAttention(detail.operationId);
-      void loadData();
+      requestDataRefresh(['expenses', 'banks', 'ewallets']);
     };
     const handleOfflineBudgetOperationRejected = (event: Event) => {
       const detail = (event as CustomEvent<BudgetOfflineRejection & { userId?: string }>).detail;
-      if (detail?.userId && detail.userId !== currentUser?.uid) return;
+      if (detail?.userId && detail.userId !== currentUserId) return;
       showNotification('error', t('offlineBudgetMutationRejected'));
-      const userId = detail?.userId || currentUser?.uid;
+      const userId = detail?.userId || currentUserId;
       if (!userId) return;
 
       void budgetService.getAll(userId, true).then((serverBudgets) => {
-        if (currentUser?.uid !== userId) return;
+        if (currentUserId !== userId) return;
         const reconciled = applyPendingBudgetOperations(serverBudgets, offlineQueue.getAll(), userId);
         setBudgets(reconciled);
         sessionCache.set('budgets', userId, reconciled);
       }).catch(() => {
-        if (currentUser?.uid !== userId) return;
+        if (currentUserId !== userId) return;
         setBudgets((currentBudgets) => {
           const reconciled = applyPendingBudgetOperations(
             rollbackRejectedBudgetOperation(currentBudgets, detail),
@@ -771,14 +956,13 @@ const Dashboard: React.FC = () => {
     window.addEventListener('expense-offline-operation-needs-attention', handleOfflineExpenseNeedsAttention);
     window.addEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
     return () => {
-      unsubscribe();
       window.removeEventListener('expense-offline-operation-needs-attention', handleOfflineExpenseNeedsAttention);
       window.removeEventListener('budget-offline-operation-rejected', handleOfflineBudgetOperationRejected);
     };
-  }, [currentUser?.uid, currentUserId, loadData, notifyOfflineExpenseNeedsAttention, showNotification, t]);
+  }, [currentUserId, requestDataRefresh, notifyOfflineExpenseNeedsAttention, showNotification, t]);
 
   // Tab switching now instant - no refetch, uses cached data + optimistic updates
-  // Background revalidation happens only on initial load via loadData()
+  // Initial hydration and subsequent scoped revalidation use separate paths.
   //#endregion
 
   //#region Click Outside Handlers
@@ -918,8 +1102,7 @@ const Dashboard: React.FC = () => {
             dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
               data.map((e) => (e.id === expenseId ? realExpense : e))
             );
-            // Reload e-wallets and banks to reflect updated balances
-            loadData();
+            requestDataRefresh(['expenses', 'banks', 'ewallets']);
           },
           onError: () => {
             // Rollback optimistic update
@@ -1045,7 +1228,7 @@ const Dashboard: React.FC = () => {
         ...(relatedTransferIds.length > 0 ? { relatedTransferIds } : {}),
       };
       if (offlineQueue.hasPendingExpenseOperations(id, userId)) {
-        const queuedId = offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
+        const queuedId = await offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
         if (queuedId) {
           markExpenseDeleted(userId, id);
           showNotification('info', t('operationSavedOffline'));
@@ -1079,7 +1262,7 @@ const Dashboard: React.FC = () => {
               setTransfers((prev) => prev.filter((transfer) => !deletedTransferIds.has(transfer.id || '')));
             }
             if (expenseToDelete) {
-              loadData();
+              requestDataRefresh(['expenses', 'transfers', 'banks', 'ewallets']);
             }
           },
           onError: () => {
@@ -1130,7 +1313,7 @@ const Dashboard: React.FC = () => {
       }
 
       if (offlineQueue.hasPendingExpenseOperations(id, currentUser.uid)) {
-        const queuedId = offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: updatePayload });
+        const queuedId = await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: updatePayload });
         if (queuedId) {
           showNotification('info', t('operationSavedOffline'));
           return;
@@ -1228,7 +1411,7 @@ const Dashboard: React.FC = () => {
           ...(relatedTransferIds.length > 0 ? { relatedTransferIds } : {}),
         };
         if (offlineQueue.hasPendingExpenseOperations(id, currentUser.uid)) {
-          const queuedId = offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
+          const queuedId = await offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: deletePayload });
           if (queuedId) {
             markExpenseDeleted(currentUser.uid, id);
             mutationResult = 'queued';
@@ -1308,8 +1491,7 @@ const Dashboard: React.FC = () => {
 
     if (queuedCount > 0) showNotification('info', t('operationSavedOffline'));
 
-    // Refresh to ensure server state is in sync
-    loadData();
+    requestDataRefresh(['expenses', 'transfers', 'banks', 'ewallets']);
   };
   //#endregion
 
@@ -1586,7 +1768,7 @@ const Dashboard: React.FC = () => {
     }
 
     if (allocationBudgets.isOffline) {
-      const queuedId = offlineQueue.enqueue({
+      const queuedId = await offlineQueue.enqueue({
         type: 'create',
         entity: 'budget',
         payload: createPayload,
@@ -1671,7 +1853,7 @@ const Dashboard: React.FC = () => {
     }
 
     if (allocationBudgets.isOffline || hasPendingOperation) {
-      const queuedId = offlineQueue.enqueue({
+      const queuedId = await offlineQueue.enqueue({
         type: 'update',
         entity: 'budget',
         payload: { ...updates, id, userId: originalBudget.userId, previousBudget: originalBudget },
@@ -1745,7 +1927,7 @@ const Dashboard: React.FC = () => {
       }
 
       if (currentUser && offlineQueue.hasPendingBudgetOperations(id, currentUser.uid)) {
-        offlineQueue.enqueue({
+        await offlineQueue.enqueue({
           type: 'delete',
           entity: 'budget',
           payload: { id, userId: currentUser.uid, previousBudget: budgetToDelete },
@@ -1887,16 +2069,18 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  const handleConfirmScheduledPayment = async (
+  const paymentConfirmationsRef = useRef(new Map<string, Promise<boolean>>());
+  const performConfirmScheduledPayment = async (
     scheduledPaymentId: string,
     recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>
   ) => {
-    if (!currentUser) return;
+    if (!currentUser) return false;
 
-    // Find the scheduled payment to check if autoGenerateExpense is enabled
+    // One stable confirmation identity across tabs, restarts and retries.
     const scheduledPayment = scheduledPayments.find(p => p.id === scheduledPaymentId);
     const paymentCurrency = scheduledPayment?.currency || DEFAULT_BASE_CURRENCY;
-    const recordId = scheduledPaymentService.createPaymentRecordId();
+    const recordId = scheduledPaymentService.createPaymentRecordId(currentUser.uid, scheduledPaymentId, recordData.periodYear, recordData.periodMonth);
+    if (sessionCache.get<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid)?.some((record) => record.id === recordId)) return true;
     const provisionalRecord: ScheduledPaymentRecord = {
       ...recordData,
       id: recordId,
@@ -1926,7 +2110,7 @@ const Dashboard: React.FC = () => {
       console.error('[Scheduled Payment] Unable to resolve currency snapshot:', error);
       setScheduledPaymentRecords((prev) => prev.filter((record) => record.id !== recordId));
       showNotification('error', t('exchangeRateLookupFailed'));
-      return;
+      return false;
     }
 
     const savedRecordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'> = {
@@ -1957,7 +2141,8 @@ const Dashboard: React.FC = () => {
 
     const generatedExpensePayload: (Omit<Expense, 'createdAt' | 'updatedAt'>) | undefined = scheduledPayment?.autoGenerateExpense
       ? {
-          id: expenseService.createId(),
+          id: `payment-${recordId}`,
+          scheduledPaymentRecordId: recordId,
           userId: currentUser.uid,
           description: scheduledPayment.name,
           amount: recordData.actualAmount,
@@ -1988,44 +2173,23 @@ const Dashboard: React.FC = () => {
       userId: currentUser.uid,
       scheduledPaymentId,
       generatedExpensePayload,
+      generatedExpenseId: generatedExpensePayload?.id,
     };
 
-    void optimisticCRUD.run(
+    let accepted = false;
+    await optimisticCRUD.run(
       { type: 'create', data: queuedRecordPayload },
       () => scheduledPaymentService.createPaymentRecord({
         ...savedRecordData,
         userId: currentUser.uid,
         scheduledPaymentId,
         id: recordId,
-      }),
+      }, generatedExpensePayload),
       {
         entityType: 'scheduledPaymentRecord',
         retryToQueueOnFail: true,
-        onSuccess: async (result) => {
-          const newId = result as string;
-          const realRecord: ScheduledPaymentRecord = {
-            ...optimisticRecord,
-            id: newId,
-          };
-          setScheduledPaymentRecords((prev) => prev.map((r) => (r.id === recordId ? realRecord : r)));
-
-          if (generatedExpensePayload) {
-            await optimisticCRUD.run(
-              { type: 'create', data: generatedExpensePayload },
-              () => expenseService.create(generatedExpensePayload, { updateAccountBalances: true }),
-              {
-                entityType: 'expense',
-                retryToQueueOnFail: true,
-                successMessage: t('expenseGenerated') || 'Expense record created',
-                onSuccess: () => { loadData(); },
-                onError: () => {
-                  setExpenses((prev) => prev.filter((expense) => expense.id !== generatedExpensePayload.id));
-                  dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== generatedExpensePayload.id));
-                },
-              }
-            );
-          }
-        },
+        onQueued: () => { accepted = true; },
+        onSuccess: () => { accepted = true; },
         onError: () => {
           setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== recordId));
           if (generatedExpensePayload) {
@@ -2035,6 +2199,18 @@ const Dashboard: React.FC = () => {
         },
       }
     );
+    return accepted;
+  };
+
+  const handleConfirmScheduledPayment = (paymentId: string, record: Parameters<typeof performConfirmScheduledPayment>[1]): Promise<boolean> => {
+    const key = `${currentUserId}:${paymentId}:${record.periodYear}:${record.periodMonth}`;
+    const existing = paymentConfirmationsRef.current.get(key);
+    if (existing) return existing;
+    const pending = performConfirmScheduledPayment(paymentId, record).finally(() => {
+      if (paymentConfirmationsRef.current.get(key) === pending) paymentConfirmationsRef.current.delete(key);
+    });
+    paymentConfirmationsRef.current.set(key, pending);
+    return pending;
   };
 
   const handleDeleteScheduledPaymentRecord = async (id: string) => {
@@ -2043,7 +2219,7 @@ const Dashboard: React.FC = () => {
     setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== id));
 
     void optimisticCRUD.run(
-      { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid }, originalData: original },
+      { type: 'delete', data: { id, userId: original?.userId || currentUser?.uid, generatedExpenseId: original?.generatedExpenseId }, originalData: original },
       () => scheduledPaymentService.deletePaymentRecord(id),
       {
         entityType: 'scheduledPaymentRecord',
@@ -2127,8 +2303,7 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
             data.map((i) => (i.id === incomeId ? realIncome : i))
           );
-          // Income and account balances are committed in one service transaction.
-          loadData();
+          requestDataRefresh(['incomes', 'banks', 'ewallets']);
         },
         onError: () => {
           setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
@@ -2177,7 +2352,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => { loadData(); },
+        onSuccess: () => { requestDataRefresh(['incomes', 'banks', 'ewallets']); },
         onError: () => {
           if (originalIncome) {
             setIncomes((prev) => prev.map((i) => (i.id === id ? originalIncome : i)));
@@ -2210,7 +2385,7 @@ const Dashboard: React.FC = () => {
       {
         entityType: 'income',
         retryToQueueOnFail: true,
-        onSuccess: () => { loadData(); },
+        onSuccess: () => { requestDataRefresh(['incomes', 'banks', 'ewallets']); },
         onError: () => {
           if (incomeToDelete) {
             setIncomes((prev) => [...prev, incomeToDelete]);
@@ -2292,7 +2467,7 @@ const Dashboard: React.FC = () => {
         onSuccess: (result) => {
           const savedTransfer = { ...normalizedOptimisticTransfer, id: result as string };
           setTransfers((prev) => prev.map((transfer) => transfer.id === transferId ? savedTransfer : transfer));
-          loadData();
+          requestDataRefresh(['transfers', 'expenses', 'banks', 'ewallets']);
         },
         onError: () => {
           setTransfers((prev) => prev.filter((transfer) => transfer.id !== transferId));
@@ -2329,7 +2504,7 @@ const Dashboard: React.FC = () => {
         entityType: 'transfer',
         retryToQueueOnFail: true,
         onSuccess: () => {
-          loadData();
+          requestDataRefresh(['transfers', 'expenses', 'banks', 'ewallets']);
           showNotification('success', t('transferDeleted'));
         },
         onError: () => {
@@ -2720,7 +2895,7 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         successMessage: t('featuresUpdated'),
         onSuccess: () => {
-          loadData();
+          requestDataRefresh(['featureSettings']);
         },
         onError: () => {
           if (originalSettings) {
@@ -2751,7 +2926,7 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         successMessage: t('featuresReset'),
         onSuccess: () => {
-          loadData();
+          requestDataRefresh(['featureSettings']);
         },
         onError: () => {
           if (originalSettings) setFeatureSettings(originalSettings);
@@ -2761,24 +2936,41 @@ const Dashboard: React.FC = () => {
   };
 
   // Export handlers
-  const handleExportExcel = () => {
-    exportToExcel(expenses, categories);
+  const handleExportExcel = async () => {
+    if (!currentUserId) return;
+    try {
+      if (!networkStatus.isOnline && !financialScopeCovered(currentUserId, 'expenses', 'all')) {
+        showNotification('error', isEnglish ? 'Full history is not cached. Reconnect before exporting.' : '本機未保存完整歷史資料，請連線後再匯出。');
+        return;
+      }
+      const completeSnapshot = sessionCache.getSnapshot<Expense[]>('expenses', currentUserId);
+      if (!networkStatus.isOnline && (!completeSnapshot || completeSnapshot.coverage !== 'all' || !Array.isArray(completeSnapshot.data))) {
+        throw new Error(isEnglish ? 'Complete history is unavailable on this device.' : '此裝置沒有完整歷史資料，無法匯出。');
+      }
+      const history = networkStatus.isOnline
+        ? await readHistoryRange<Expense>('expenses', currentUserId)
+        : completeSnapshot!.data;
+      await exportToExcel(applyPendingOperations('expenses', currentUserId, history), categories);
+    } catch (error) {
+      showNotification('error', error instanceof Error ? error.message : t('errorLoadingData'));
+    }
   };
 
-  const handleDownloadTemplate = () => {
-    downloadExpenseTemplate();
+  const handleDownloadTemplate = () => { downloadExpenseTemplate(); };
+
+  const handleClearOfflineQueue = async () => {
+    try {
+      if (!currentUserId) return;
+      await offlineQueue.discardUserPending(currentUserId);
+      showNotification('success', 'Offline queue cleared');
+    } catch (error) {
+      showNotification('error', error instanceof Error ? error.message : t('offlineQueueSaveFailed'));
+    }
   };
 
-  const handleClearOfflineQueue = () => {
-    offlineQueue.clear();
-    showNotification('success', 'Offline queue cleared');
-  };
-  //#endregion
-
-  //#region Import/Export Handlers
   const handleImportComplete = () => {
     // Reload data after import
-    loadData();
+    requestDataRefresh(['expenses', 'incomes', 'repayments', 'transfers', 'categories', 'budgets', 'banks', 'ewallets', 'cards']);
 
     // Update import progress to complete using functional update
     setImportProgress(prev => {
@@ -3255,7 +3447,7 @@ const Dashboard: React.FC = () => {
                               showNotification('info', t('processing') || '处理中...', { duration: 0 });
 
                               const result = await syncService.syncOfflineQueue();
-                              const remaining = offlineQueue.count();
+                              const remaining = syncService.pendingCount;
                               setQueueCount(remaining);
                               if (remaining === 0) {
                                 showNotification('success', t('syncSuccess') || '資料同步完成');
@@ -3268,7 +3460,7 @@ const Dashboard: React.FC = () => {
                             } catch (error) {
                               console.error('Failed to retry upload:', error);
                               // 失败后恢复队列计数
-                              setQueueCount(offlineQueue.count());
+                              setQueueCount(syncService.pendingCount);
                               showNotification('error', t('errorSavingData') || '同步失败，请重试。');
                             } finally {
                               setIsUploadingQueue(false);
@@ -3378,9 +3570,24 @@ const Dashboard: React.FC = () => {
         isRevalidating={isRevalidating}
       />
 
-      <div className="dashboard-card content-pad">
+      <div className="dashboard-card content-pad" aria-busy={!financialScopeComplete}>
+        {!financialScopeComplete && <p role="status" className="text-muted">
+          {networkStatus.isOnline
+            ? (isEnglish ? 'Loading the complete period. Financial totals are updating…' : '正在載入完整期間資料，財務統計更新中…')
+            : (isEnglish ? 'This period is not completely cached. Reconnect to complete its totals.' : '本機尚未保存此期間的完整資料，連線後才能完成統計。')}
+        </p>}
         {activeTab === 'dashboard' && (
           <CustomizableDashboard
+            completeness={{
+              expenses: !!currentUserId && financialScopeCovered(currentUserId, 'expenses', financialScope),
+              incomes: !!currentUserId && financialScopeCovered(currentUserId, 'incomes', financialScope),
+              repayments: !!currentUserId && financialScopeCovered(currentUserId, 'repayments', financialScope),
+              userSettings: !!currentUserId && settings?.userId === currentUserId && displayCurrencyReady,
+              budgets: !!currentUserId && sessionCache.has('budgets', currentUserId),
+              cards: !!currentUserId && sessionCache.has('cards', currentUserId),
+              scheduledPayments: !!currentUserId && sessionCache.has('scheduledPayments', currentUserId),
+              scheduledPaymentRecords: !!currentUserId && sessionCache.has('scheduledPaymentRecords', currentUserId),
+            }}
             expenses={expenses}
             incomes={incomes}
             repayments={repayments}
@@ -3410,7 +3617,7 @@ const Dashboard: React.FC = () => {
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
               // Clear focus highlight after animation completes
-              setTimeout(() => setFocusExpenseId(null), 2500);
+
             }}
             onNavigateToScheduledPayment={(scheduledPaymentId) => {
               setFocusScheduledPaymentId(scheduledPaymentId);
@@ -3428,6 +3635,9 @@ const Dashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <ExpensesTab
+            userId={currentUserId}
+            onHistoryRows={rememberExpenseHistory}
+            totalsComplete={financialScopeComplete}
             expenses={expenses}
             categories={orderedCategories}
             cards={cards}
@@ -3458,6 +3668,8 @@ const Dashboard: React.FC = () => {
         {activeTab === 'incomes' && (
           <Suspense fallback={<></>}>
             <IncomesTab
+              userId={currentUserId}
+              onHistoryRows={rememberIncomeHistory}
               incomes={incomes}
               expenses={expenses}
               cards={cards}
@@ -3466,7 +3678,7 @@ const Dashboard: React.FC = () => {
               onAddIncome={handleAddIncome}
               onInlineUpdate={handleInlineUpdateIncome}
               onDeleteIncome={handleDeleteIncome}
-              onOpenExpenseById={(id) => { setExpensePeriod((current) => ({ mode: 'all', anchorDate: current.anchorDate })); setActiveTab('expenses'); setFocusExpenseId(id); setTimeout(() => setFocusExpenseId(null), 2500); }}
+              onOpenExpenseById={(id) => { setExpensePeriod((current) => ({ mode: 'all', anchorDate: current.anchorDate })); setActiveTab('expenses'); setFocusExpenseId(id); }}
             />
           </Suspense>
         )}

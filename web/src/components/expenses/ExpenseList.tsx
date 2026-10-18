@@ -426,7 +426,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to add repayment:', error);
       const queuedId = isRetryableNetworkError(error) && pendingPayload
-        ? queueFailedWrite(error, { type: 'create', entity: 'repayment', payload: pendingPayload })
+        ? await queueFailedWrite(error, { type: 'create', entity: 'repayment', payload: pendingPayload })
         : null;
       if (queuedId) {
         updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
@@ -511,7 +511,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete repayment:', error);
-      const queuedId = isRetryableNetworkError(error) ? queueFailedWrite(error, { type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
+      const queuedId = isRetryableNetworkError(error) ? await queueFailedWrite(error, { type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
       if (queuedId) {
         updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
         setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
@@ -781,7 +781,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to save preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = queueFailedWrite(error, {
+        const queuedId = await queueFailedWrite(error, {
           type: isEditing ? 'update' : 'create',
           entity: 'quickExpensePreset',
           payload: isEditing
@@ -822,7 +822,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Failed to delete preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = queueFailedWrite(error, {
+        const queuedId = await queueFailedWrite(error, {
           type: 'delete',
           entity: 'quickExpensePreset',
           payload: { id: presetId, userId: currentUser.uid },

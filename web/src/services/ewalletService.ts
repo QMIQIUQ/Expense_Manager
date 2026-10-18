@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -13,6 +12,7 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   setDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EWallet, DEFAULT_EWALLETS } from '../types';
@@ -40,15 +40,13 @@ export const ewalletService = {
     if (existing.length === 0) {
       const now = Timestamp.now();
       const promises = DEFAULT_EWALLETS.map((wallet) =>
-        addDoc(collection(db, COLLECTION_NAME), {
-          userId,
-          name: wallet.name,
-          icon: wallet.icon,
-          color: wallet.color,
-          provider: wallet.provider,
-          isDefault: true,
-          createdAt: now,
-          updatedAt: now,
+        runTransaction(db, async (transaction) => {
+          const reference = doc(db, COLLECTION_NAME, `default_${userId}_${encodeURIComponent(wallet.name)}`);
+          const current = await transaction.get(reference);
+          if (!current.exists()) transaction.set(reference, {
+            userId, name: wallet.name, icon: wallet.icon, color: wallet.color, provider: wallet.provider,
+            isDefault: true, balance: 0, createdAt: now, updatedAt: now,
+          });
         })
       );
       await Promise.all(promises);

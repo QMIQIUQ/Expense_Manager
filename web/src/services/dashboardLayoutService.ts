@@ -1,8 +1,8 @@
+import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
 // Dashboard Layout Service - Manages user's dashboard widget configuration
 import { 
   doc, 
   getDoc, 
-  setDoc, 
   updateDoc,
   serverTimestamp,
   Timestamp 
@@ -70,22 +70,21 @@ export const dashboardLayoutService = {
     }
     
     if (existing) {
-      let widgets = [...existing.widgets];
-      const monthWidget = DEFAULT_DASHBOARD_LAYOUT.find((widget) => widget.type === 'month-over-month');
-      if (monthWidget && !widgets.some((widget) => widget.type === 'month-over-month')) {
-        const nextOrder = widgets.reduce((maxOrder, widget) => Math.max(maxOrder, widget.order), -1) + 1;
-        widgets.push({ ...monthWidget, id: generateWidgetId(), order: nextOrder });
-      }
-
-      const withFriendWidget = ensureDefaultFriendWidget({ ...existing, widgets });
-      if (withFriendWidget.widgets.length !== existing.widgets.length) {
-        widgets = withFriendWidget.widgets;
-        await this.updateWidgets(userId, widgets);
-        return { ...existing, widgets };
-      }
-      return withFriendWidget;
+      const migrated = await runFinancialTransaction(db, undefined, async (transaction) => {
+        const reference = doc(db, COLLECTION_NAME, userId);
+        const current = await transaction.get(reference);
+        const latest = current.exists() ? convertTimestamps({ id: current.id, ...current.data() }) : existing;
+        const widgets = [...latest.widgets];
+        const month = DEFAULT_DASHBOARD_LAYOUT.find((widget) => widget.type === 'month-over-month');
+        if (month && !widgets.some((widget) => widget.type === month.type)) {
+          widgets.push({ ...month, id: generateWidgetId(), order: widgets.reduce((max, widget) => Math.max(max, widget.order), -1) + 1 });
+        }
+        const next = ensureDefaultFriendWidget({ ...latest, widgets });
+        if (current.exists() && next.widgets.length !== latest.widgets.length) transaction.update(reference, { widgets: next.widgets, updatedAt: serverTimestamp() });
+        return next;
+      });
+      return applyPendingOperations('dashboardLayout', userId, migrated);
     }
-    
     // Create default layout
     const defaultLayout: Omit<DashboardLayout, 'id' | 'createdAt' | 'updatedAt'> = {
       userId,
@@ -94,10 +93,9 @@ export const dashboardLayoutService = {
     };
     
     const docRef = doc(db, COLLECTION_NAME, userId);
-    await setDoc(docRef, {
-      ...defaultLayout,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    await runFinancialTransaction(db, undefined, async (transaction) => {
+      const existing = await transaction.get(docRef);
+      if (!existing.exists()) transaction.set(docRef, { ...defaultLayout, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     });
     
     const created = await getDoc(docRef);
@@ -194,20 +192,16 @@ export const dashboardLayoutService = {
   },
 
   // Update widgets only
-  async updateWidgets(userId: string, widgets: DashboardWidget[]): Promise<void> {
-    try {
-      const docRef = doc(db, COLLECTION_NAME, userId);
-      await updateDoc(docRef, {
-        widgets,
-        updatedAt: serverTimestamp(),
-      });
-      
-      // Invalidate cache after update
-      sessionCache.remove('dashboardLayout', userId);
-    } catch (error) {
-      console.error('Error updating widgets:', error);
-      throw error;
-    }
+  async updateWidgets(userId: string, widgets: DashboardWidget[], operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
+    const reference = doc(db, COLLECTION_NAME, userId);
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const current = await transaction.get(reference);
+      if (!current.exists() || current.data().userId !== userId) throw new Error('Dashboard layout is unavailable');
+      transaction.update(reference, { widgets, updatedAt: serverTimestamp() });
+    });
+    const cached = sessionCache.get<DashboardLayout>('dashboardLayout', userId);
+    if (cached) sessionCache.set('dashboardLayout', userId, applyPendingOperations('dashboardLayout', userId, { ...cached, widgets }));
   },
 
   // Toggle widget visibility

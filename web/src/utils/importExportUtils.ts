@@ -376,7 +376,7 @@ export const importData = async (
         return await writeLocalFirst({ type: 'create', entity: 'category', payload }, () => categoryService.create(payload));
       } catch (error) {
         const queuedId = isRetryableNetworkError(error)
-          ? queueFailedWrite(error, { type: 'create', entity: 'category', payload })
+          ? await queueFailedWrite(error, { type: 'create', entity: 'category', payload })
           : null;
         if (queuedId) return id;
         throw error;
@@ -576,7 +576,7 @@ export const importData = async (
               () => expenseService.create(expensePayload, { updateAccountBalances: true }));
           } catch (error) {
             const queuedId = isRetryableNetworkError(error)
-              ? queueFailedWrite(error, { type: 'create', entity: 'expense', payload: expensePayload })
+              ? await queueFailedWrite(error, { type: 'create', entity: 'expense', payload: expensePayload })
               : null;
             if (!queuedId) throw error;
           }

@@ -1,3 +1,4 @@
+import { hasFinancialReceipt, type FinancialOperation } from './financialMutation';
 import {
   collection,
   deleteDoc,
@@ -95,7 +96,8 @@ export const budgetService = {
   },
 
   // Create a new budget
-  async create(budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+  async create(budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }, operation?: FinancialOperation): Promise<string> {
+    if (await hasFinancialReceipt(operation)) return budget.id!;
     const { id, ...budgetData } = budget;
     const budgetRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
     const increases = await runBudgetMutationTransaction(budget.userId, async (transaction, snapshot, settingsRef) => {
@@ -132,7 +134,7 @@ export const budgetService = {
         updatedAt: now,
       });
       return allocation.increases;
-    });
+    }, operation);
     notifyBudgetLimitIncreases(budget.userId, increases);
     return budgetRef.id;
   },
@@ -150,7 +152,8 @@ export const budgetService = {
   },
 
   // Update a budget
-  async update(id: string, updates: Partial<Budget>): Promise<void> {
+  async update(id: string, updates: Partial<Budget>, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTION_NAME, id);
     const ownerSnapshot = await getDocFromServer(docRef);
     if (!ownerSnapshot.exists()) throw new Error('budget-not-found');
@@ -191,12 +194,13 @@ export const budgetService = {
         updatedAt: now,
       });
       return { userId, increases: allocation.increases };
-    });
+    }, operation);
     notifyBudgetLimitIncreases(increases.userId, increases.increases);
   },
 
   // Delete a budget
-  async delete(id: string): Promise<void> {
+  async delete(id: string, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTION_NAME, id);
     const ownerSnapshot = await getDocFromServer(docRef);
     if (!ownerSnapshot.exists()) return;
@@ -218,7 +222,7 @@ export const budgetService = {
         transaction.set(settingsRef, buildDefaultUserSettings(userId, {}, nextRevision, now));
       }
       transaction.delete(docRef);
-    });
+    }, operation);
   },
 
   // Get budget by category

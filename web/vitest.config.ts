@@ -10,6 +10,8 @@ export default defineConfig({
     // Some jsdom versions require newer Node and can lead to missing DOM globals.
     environment: 'happy-dom',
     setupFiles: './src/test/setup.ts',
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    exclude: ['**/node_modules/**', 'dist/**', 'src/test/integration/**'],
     css: true,
     coverage: {
       provider: 'v8',

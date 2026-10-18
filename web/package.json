@@ -12,6 +12,8 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:friend-emulator": "node scripts/friend-spending-emulator-test.mjs",
+    "test:financial-emulator": "vitest run --config vitest.emulator.config.ts",
+    "test:browser": "playwright test",
     "emulators:start": "npx --yes firebase-tools emulators:start --only auth,firestore,functions --project demo-expense-manager",
     "test:coverage": "vitest run --coverage",
     "generate:icons": "node scripts/generate-theme-icons.mjs",
@@ -31,6 +33,7 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -45,6 +48,7 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "fake-indexeddb": "^6.2.6",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.2.0",
     "postcss": "^8.5.6",

@@ -3,52 +3,48 @@ import { dataService } from './dataService';
 import { sessionCache } from '../utils/sessionCache';
 import { offlineQueue } from '../utils/offlineQueue';
 import { writeLocalFirst } from '../utils/localFirstMutation';
-
 vi.mock('../utils/networkStatus', () => ({ networkStatus: { isOnline: true } }));
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true); });
+beforeEach(async () => { sessionCache.clearAll(); await offlineQueue.clear(); vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true); });
 afterEach(() => vi.restoreAllMocks());
-
-describe('data reads concurrent with local writes', () => {
-  it('does not let a background snapshot erase an in-flight local create', async () => {
+describe('reads concurrent with durable local writes', () => {
+  it('rejects a background snapshot older than a durable local create', async () => {
     sessionCache.set('incomes', 'user', []);
-    let finishRead!: (rows: unknown[]) => void;
-    const onUpdate = vi.fn();
-    await dataService.getDataWithRevalidate('incomes', 'user', () => new Promise<unknown[]>((resolve) => { finishRead = resolve; }), onUpdate);
-    let finishWrite!: () => void;
-    const pending = writeLocalFirst({ type: 'create', entity: 'income', payload: { id: 'local', userId: 'user', amount: 20 } },
-      () => new Promise<void>((resolve) => { finishWrite = resolve; }));
-    finishRead([]);
+    let finish!: (rows: unknown[]) => void;
+    const update = vi.fn();
+    await dataService.getDataWithRevalidate('incomes', 'user', () => new Promise<unknown[]>((resolve) => { finish = resolve; }), update);
+    await writeLocalFirst({ type: 'create', entity: 'income', payload: { id: 'local', userId: 'user', amount: 20 } }, vi.fn()).catch(() => undefined);
+    finish([]); await vi.waitFor(() => expect(sessionCache.get('incomes', 'user')).toEqual([expect.objectContaining({ id: 'local' })]));
+    expect(update).not.toHaveBeenCalled();
+  });
+  it('keeps a newer cache when a forced read arrives late', async () => {
+    let finish!: (rows: unknown[]) => void;
+    const pending = dataService.getData('banks', 'user', true, () => new Promise<unknown[]>((resolve) => { finish = resolve; }));
     await Promise.resolve();
-    expect(onUpdate).not.toHaveBeenCalled();
-    expect(sessionCache.get('incomes', 'user')).toEqual([expect.objectContaining({ id: 'local' })]);
-    finishWrite();
-    await pending;
+    await writeLocalFirst({ type: 'create', entity: 'bank', payload: { id: 'bank', userId: 'user', balance: 100 } }, vi.fn()).catch(() => undefined);
+    finish([]);
+    expect(await pending).toEqual([expect.objectContaining({ id: 'bank', balance: 100 })]);
+    expect(offlineQueue.count()).toBe(1);
   });
-
-  it('preserves the latest cache even when the local write completes before an older forced read', async () => {
-    let finishRead!: (rows: unknown[]) => void;
-    const pendingRead = dataService.getData('banks', 'user', true, () => new Promise<unknown[]>((resolve) => { finishRead = resolve; }));
-    await writeLocalFirst({ type: 'create', entity: 'bank', payload: { id: 'bank', userId: 'user', balance: 100 } }, async () => 'bank');
-    expect(offlineQueue.count()).toBe(0);
-    finishRead([]);
-    expect(await pendingRead).toEqual([expect.objectContaining({ id: 'bank', balance: 100 })]);
+  it('never republishes stale data if a newer generation has no cache', async () => {
+    let finish!: (rows: unknown[]) => void;
+    const pending = dataService.getData('banks', 'user', true, () => new Promise<unknown[]>((resolve) => { finish = resolve; }));
+    const check = expect(pending).rejects.toMatchObject({ code: 'stale-read' });
+    await Promise.resolve();
+    dataService.invalidateCache('banks', 'user'); finish([{ id: 'old' }]);
+    await check;
+    expect(sessionCache.get('banks', 'user')).toBeNull();
   });
-
-  it('detects category content and sort changes even without updatedAt timestamps', () => {
+  it('shares a fetch only within the same owner, collection, scope and generation', async () => {
+    const fetch = vi.fn(async () => [{ id: 'a' }]);
+    await Promise.all([dataService.getData('incomes', 'user', true, fetch, undefined, 'all'), dataService.getData('incomes', 'user', true, fetch, undefined, 'all')]);
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(sessionCache.getCoverage('incomes', 'user')).toBe('all');
+    await dataService.getData('incomes', 'other', true, fetch, undefined, 'all');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it('compares content, ordering and normalized dates without serializing the dataset', () => {
     expect(dataService.areDataEqual([{ id: 'a', name: 'Old' }], [{ id: 'a', name: 'New' }])).toBe(false);
     expect(dataService.areDataEqual([{ id: 'a' }, { id: 'b' }], [{ id: 'b' }, { id: 'a' }])).toBe(false);
-  });
-
-  it('also protects a local edit before its serialized Firebase operation starts', async () => {
-    sessionCache.set('incomes', 'user', [{ id: 'income', amount: 10 }]);
-    let finishRead!: (rows: { id: string; amount: number }[]) => void;
-    const onUpdate = vi.fn();
-    await dataService.getDataWithRevalidate('incomes', 'user',
-      () => new Promise<{ id: string; amount: number }[]>((resolve) => { finishRead = resolve; }), onUpdate);
-    dataService.updateCache<{ id: string; amount: number }[]>('incomes', 'user', (rows) => rows.map((row) => ({ ...row, amount: 20 })));
-    finishRead([{ id: 'income', amount: 10 }]);
-    await Promise.resolve();
-    expect(onUpdate).not.toHaveBeenCalled();
-    expect(sessionCache.get('incomes', 'user')).toEqual([{ id: 'income', amount: 20 }]);
+    expect(dataService.areDataEqual([{ createdAt: new Date('2026-01-01') }], [{ createdAt: '2026-01-01T00:00:00.000Z' }])).toBe(true);
   });
 });

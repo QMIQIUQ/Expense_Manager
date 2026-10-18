@@ -21,6 +21,7 @@ import { WidgetContainer, WidgetProps } from './widgets';
 import DashboardCustomizer from './DashboardCustomizer';
 
 interface CustomizableDashboardProps {
+  completeness?: import('./widgets/completeness').WidgetCompleteness;
   expenses: Expense[];
   incomes: Income[];
   repayments: Repayment[];
@@ -54,6 +55,7 @@ interface CustomizableDashboardProps {
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
+  completeness,
   expenses,
   incomes,
   repayments,
@@ -162,7 +164,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       console.error('Failed to save dashboard layout:', error);
 
       if (isRetryableNetworkError(error)) {
-        const queuedId = queueFailedWrite(error, {
+        const queuedId = await queueFailedWrite(error, {
           type: 'update',
           entity: 'dashboardLayout',
           payload: { userId: currentUser.uid, widgets: orderedWidgets },
@@ -183,6 +185,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
 
   // Widget data props
   const widgetData: WidgetProps = {
+    completeness,
     expenses,
     incomes,
     repayments,

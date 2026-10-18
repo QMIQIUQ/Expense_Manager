@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
 import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod } from '../types';
-import { queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
+import { getQueuedWriteId, queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
 import { sessionCache } from '../utils/sessionCache';
 import { applyPendingOperations } from '../utils/pendingOperations';
 
@@ -15,8 +15,8 @@ const isRetryableNetworkError = (error: unknown): boolean => {
     (typeof navigator !== 'undefined' && !navigator.onLine);
 };
 
-const enqueueSettingsUpdate = (error: unknown, userId: string, updates: Partial<UserSettings>): boolean =>
-  queueFailedWrite(error, { type: 'update', entity: 'userSettings', payload: { userId, updates } }) !== null;
+const enqueueSettingsUpdate = async (error: unknown, userId: string, updates: Partial<UserSettings>): Promise<boolean> =>
+  (await queueFailedWrite(error, { type: 'update', entity: 'userSettings', payload: { userId, updates } })) !== null;
 
 interface UserSettingsContextType {
   settings: UserSettings | null;
@@ -166,7 +166,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
       await writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId, updates: { [key]: value } } },
         () => userSettingsService.update(userId, { [key]: value }));
     } catch (error) {
-      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(error, userId, { [key]: value } as Partial<UserSettings>)) return;
+      if (isRetryableNetworkError(error) && await enqueueSettingsUpdate(error, userId, { [key]: value } as Partial<UserSettings>)) return;
       const latest = latestSettingsRef.current;
       if (latest && latest[key] === value) {
         const restored = { ...latest, [key]: baseline[key] };
@@ -220,7 +220,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     try {
       await write;
     } catch (error) {
-      if (isRetryableNetworkError(error) && enqueueSettingsUpdate(error, uid, { displayCurrency: currency })) return;
+      if (isRetryableNetworkError(error) && await enqueueSettingsUpdate(error, uid, { displayCurrency: currency })) return;
       if (currencyWriteIdRef.current === requestId && latestUserIdRef.current === uid) {
         const latest = latestSettingsRef.current;
         if (latest && (latest.userId === uid || latest.id === uid)) {
@@ -257,11 +257,12 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
 
     const write = overallBudgetWriteQueueRef.current
       .catch(() => undefined)
-      .then(() => userSettingsService.setOverallBudgetLimit(uid, period, amount));
+      .then(() => writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId: uid, updates: {}, overallBudgetLimit: { period, amount }, previousOverallBudgetLimit: { period, amount: previousLimit } } }, () => userSettingsService.setOverallBudgetLimit(uid, period, amount)));
     overallBudgetWriteQueueRef.current = write.then(() => undefined, () => undefined);
     try {
       await write;
     } catch (error) {
+      if (getQueuedWriteId(error)) return;
       if (latestUserIdRef.current === uid && overallBudgetRequestIdsRef.current.get(period) === requestId) {
         const latest = latestSettingsRef.current;
         if (latest && (latest.userId === uid || latest.id === uid)) {

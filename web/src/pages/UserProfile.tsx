@@ -98,7 +98,7 @@ const UserProfile: React.FC = () => {
       setSavedBillingCycleDay(billingCycleDay);
       showNotification('success', t('settingsSaved'));
     } catch (error) {
-      const queued = isRetryableNetworkError(error) && queueFailedWrite(error, {
+      const queued = isRetryableNetworkError(error) && await queueFailedWrite(error, {
         type: 'update',
         entity: 'userSettings',
         payload: { userId: currentUser.uid, updates: { billingCycleDay } },

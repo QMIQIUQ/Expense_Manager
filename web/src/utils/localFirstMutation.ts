@@ -1,11 +1,9 @@
 import { offlineQueue, type QueuedOperation } from './offlineQueue';
 import { sessionCache, type CacheableEntity } from './sessionCache';
 import { applyPendingOperations, cacheEntityFor } from './pendingOperations';
+import { dataService } from '../services/dataService';
 
 export type LocalMutation = Pick<QueuedOperation, 'type' | 'entity' | 'payload'>;
-const activeWrites = new Set<string>();
-
-export const isLocalWriteActive = (operationId: string): boolean => activeWrites.has(operationId);
 
 class QueuedWrite extends Error {
   readonly code = 'unavailable';
@@ -17,7 +15,7 @@ class QueuedWrite extends Error {
 export const getQueuedWriteId = (error: unknown): string | null =>
   error instanceof QueuedWrite ? error.operationId : null;
 
-export const queueFailedWrite = (error: unknown, mutation: LocalMutation): string | null =>
+export const queueFailedWrite = async (error: unknown, mutation: LocalMutation): Promise<string | null> =>
   getQueuedWriteId(error) ?? (isRetryableWriteError(error) ? offlineQueue.enqueue(mutation) : null);
 
 export const isRetryableWriteError = (error: unknown): boolean => {
@@ -25,10 +23,10 @@ export const isRetryableWriteError = (error: unknown): boolean => {
     ? String(error.code).toLowerCase().split('/').pop()
     : '';
   if (['permission-denied', 'unauthenticated', 'invalid-argument', 'failed-precondition', 'local-persistence-failed'].includes(code || '')) return false;
-  if (['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '')) return true;
+  if (['unavailable', 'deadline-exceeded', 'network-request-failed', 'aborted', 'resource-exhausted'].includes(code || '')) return true;
   const message = error instanceof Error ? error.message : '';
   if (/permission|invalid-allocation|invalid-limit|limit-below-allocation|budget-(?:owner|id|not-found)|user-settings-not-found/i.test(message)) return false;
-  return /network|offline|Failed to fetch/i.test(message) || (typeof navigator !== 'undefined' && !navigator.onLine);
+  return /network|offline|Failed to fetch|changed while preparing/i.test(message) || (typeof navigator !== 'undefined' && !navigator.onLine);
 };
 
 /** Persist before calling Firebase, so closing or reloading the page cannot lose an accepted write. */
@@ -47,31 +45,19 @@ export const writeLocalFirstBatch = async <T>(mutations: LocalMutation[], write:
     }
     const entity = cacheEntityFor(mutation.entity);
     if (!baselines.has(entity)) baselines.set(entity, sessionCache.get(entity, owner) ?? (singleton ? null : []));
+    if (mutation.entity === 'scheduledPaymentRecord' && !baselines.has('expenses')) baselines.set('expenses', sessionCache.get('expenses', owner) ?? []);
   }
   const userId = owner as string;
 
-  // Keep chronological order for one account, including writes to dependent accounts/categories.
-  const hasEarlierWrite = offlineQueue.getAll().some((operation) =>
-    (operation.payload as { userId?: unknown } | null)?.userId === userId);
-  const operationIds = offlineQueue.enqueueMany(mutations);
+  // One execution owner: every accepted write is drained by the leased sync worker.
+  // A foreground callback must never race another tab draining the same outbox.
+  const operationIds = await offlineQueue.enqueueMany(mutations);
   if (!operationIds) {
     throw Object.assign(new Error('Unable to save the pending operation on this device'), { code: 'local-persistence-failed' });
   }
-  for (const [entity, baseline] of baselines) sessionCache.set(entity, userId, applyPendingOperations(entity, userId, baseline));
-  if (hasEarlierWrite || (typeof navigator !== 'undefined' && !navigator.onLine)) throw new QueuedWrite(operationIds[0]);
-
-  operationIds.forEach((id) => activeWrites.add(id));
-  try {
-    const result = await write();
-    offlineQueue.dequeueMany(operationIds);
-    return result;
-  } catch (error) {
-    if (isRetryableWriteError(error)) throw new QueuedWrite(operationIds[0]);
-    offlineQueue.dequeueMany(operationIds);
-    for (const [entity, baseline] of baselines) sessionCache.set(entity, userId, applyPendingOperations(entity, userId, baseline));
-    throw error;
-  } finally {
-    operationIds.forEach((id) => activeWrites.delete(id));
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('offline-queue-changed'));
+  for (const [entity, baseline] of baselines) {
+    dataService.markStale(entity, userId);
+    sessionCache.set(entity, userId, applyPendingOperations(entity, userId, baseline));
   }
+  throw new QueuedWrite(operationIds[0]);
 };

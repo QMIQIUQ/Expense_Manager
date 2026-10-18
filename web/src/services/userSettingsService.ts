@@ -1,5 +1,6 @@
+import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import { db } from '../config/firebase';
-import { deleteField, doc, getDoc, getDocFromServer, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { deleteField, doc, getDoc, getDocFromServer, Timestamp } from 'firebase/firestore';
 import { BudgetPeriod, OverallBudgetLimits, UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 import { validateOverallBudgetLimit } from '../utils/budgetAllocation';
@@ -57,28 +58,30 @@ export const userSettingsService = {
 
   async create(settings: Omit<UserSettings, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, settings.userId);
-    await setDoc(docRef, {
-      ...settings,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    await runFinancialTransaction(db, undefined, async (transaction) => {
+      const current = await transaction.get(docRef);
+      if (!current.exists()) transaction.set(docRef, { ...settings, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
     });
   },
 
-  async update(userId: string, updates: Partial<UserSettings>): Promise<void> {
+  async update(userId: string, updates: Partial<UserSettings>, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const current = await transaction.get(docRef);
+      if (!current.exists() || current.data().userId !== userId) throw new Error('User settings are missing or owned by another user');
+      transaction.update(docRef, { ...updates, updatedAt: Timestamp.now() });
     });
     const cached = sessionCache.get<UserSettings>('userSettings', userId);
     if (cached) sessionCache.set('userSettings', userId, { ...cached, ...updates });
   },
 
-  async setOverallBudgetLimit(userId: string, period: BudgetPeriod, amount?: number): Promise<void> {
+  async setOverallBudgetLimit(userId: string, period: BudgetPeriod, amount?: number, operation?: FinancialOperation): Promise<void> {
     if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
       throw new Error('Overall budget limit must be a non-negative number');
     }
 
+    if (await hasFinancialReceipt(operation)) return;
     await runBudgetMutationTransaction(userId, async (transaction, snapshot, settingsRef) => {
       if (!snapshot.hasSettingsDocument) throw new Error('user-settings-not-found');
       if (amount !== undefined) {
@@ -91,7 +94,7 @@ export const userSettingsService = {
         updatedAt: Timestamp.now(),
         budgetAllocationRevision: snapshot.budgetAllocationRevision + 1,
       });
-    });
+    }, operation);
   },
 
   async getOrCreate(userId: string, forceRefresh: boolean = false): Promise<UserSettings> {
@@ -115,6 +118,8 @@ export const userSettingsService = {
     };
     
     await this.create(defaultSettings);
+      const actual = await this.get(userId, true, true);
+      if (actual) return actual;
     
     // Return the created settings
     const created: UserSettings = {

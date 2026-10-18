@@ -17,6 +17,8 @@ export const translations = {
   confirm: { en: 'Confirm', zh: '確認', 'zh-CN': '确认' },
   confirmEdit: { en: 'Confirm Edit', zh: '確認編輯', 'zh-CN': '确认编辑' },
   loading: { en: 'Loading...', zh: '載入中...', 'zh-CN': '加载中...' },
+  incompleteFinancialData: { en: 'The required period data is not complete. Reconnect or retry to finish the totals.', zh: '此統計所需的期間資料尚未完整，請連線或重試以完成統計。', 'zh-CN': '此统计所需的期间资料尚未完整，请连线或重试以完成统计。' },
+  cachedHistoryIncomplete: { en: 'Showing saved records. This device does not contain the complete requested history.', zh: '目前顯示本機保存的紀錄，此裝置未保存所選期間的完整歷史。', 'zh-CN': '目前显示本机保存的记录，此装置未保存所选期间的完整历史。' },
   processing: { en: 'Processing...', zh: '處理中...', 'zh-CN': '处理中...' },
   search: { en: 'Search', zh: '搜尋', 'zh-CN': '搜索' },
   filter: { en: 'Filter', zh: '篩選', 'zh-CN': '筛选' },
@@ -45,7 +47,7 @@ export const translations = {
   configureFirebaseRules: { en: 'Please configure Firebase security rules', zh: '請配置 Firebase 安全規則', 'zh-CN': '请配置 Firebase 安全规则' },
   retry: { en: 'Retry', zh: '重試', 'zh-CN': '重试' },
   saveOffline: { en: 'Save Offline', zh: '離線保存', 'zh-CN': '离线保存' },
-  operationSavedOffline: { en: 'Operation saved offline. Will retry when connection is restored.', zh: '操作已離線保存，將在連線恢復後重試。', 'zh-CN': '操作已离线保存，将在连接恢复后重试。' },
+  operationSavedOffline: { en: 'Saved on this device. Changes sync in the background when connected.', zh: '已儲存於本機，連線時會在背景同步。', 'zh-CN': '已保存到本机，联网时会在后台同步。' },
   
   usageHighToLow: { en: 'Usage: High → Low', zh: '使用率：高→低', 'zh-CN': '使用率：高→低' },
   usageLowToHigh: { en: 'Usage: Low → High', zh: '使用率：低→高', 'zh-CN': '使用率：低→高' },

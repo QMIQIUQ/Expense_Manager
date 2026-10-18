@@ -8,10 +8,13 @@ import {
   where,
   Timestamp,
   setDoc,
-  runTransaction,
+  getDocsFromServer,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
+import { Expense, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
+import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
+import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import { applyExpenseSummaryChange, friendSpendingSummaryStateRef, isFriendSpendingSummaryReady } from './friendSpendingSummaryService';
 import { getCurrencyMinorDigits } from '../domain/money';
 
 const SCHEDULED_PAYMENTS_COLLECTION = 'scheduledPayments';
@@ -155,34 +158,72 @@ export const scheduledPaymentService = {
 
   // Create a payment record
   async createPaymentRecord(
-    record: Omit<ScheduledPaymentRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+    record: Omit<ScheduledPaymentRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+    generatedExpense?: Omit<Expense, 'createdAt' | 'updatedAt'>,
+    operation?: FinancialOperation,
   ): Promise<string> {
+    if (await hasFinancialReceipt(operation)) return record.id!;
     const { id, ...recordFields } = record;
-    const now = Timestamp.now();
-    const dataToSave = removeUndefinedFields({
+    const recordRef = id ? doc(db, PAYMENT_RECORDS_COLLECTION, id) : doc(collection(db, PAYMENT_RECORDS_COLLECTION));
+    if (generatedExpense && (!generatedExpense.id || generatedExpense.userId !== record.userId)) {
+      throw Object.assign(new Error('Generated expense requires a stable ID and the same owner'), { code: 'invalid-argument' });
+    }
+    if (generatedExpense && (generatedExpense.amount !== record.actualAmount || generatedExpense.date !== record.paidDate ||
+        (generatedExpense.currency ?? 'MYR') !== (record.currency ?? 'MYR'))) throw Object.assign(new Error('Payment and expense valuations must agree'), { code: 'invalid-argument' });
+    const effectiveRecord = {
       ...recordFields,
-      createdAt: now,
-      updatedAt: now,
-    });
-    
-    const docRef = id
-      ? doc(db, PAYMENT_RECORDS_COLLECTION, id)
-      : doc(collection(db, PAYMENT_RECORDS_COLLECTION));
-    await runTransaction(db, async (transaction) => {
-      const existingRecord = await transaction.get(docRef);
-      if (existingRecord.exists()) {
-        if (existingRecord.data().userId !== record.userId) {
-          throw new Error('Scheduled payment record ID is already owned by another user');
-        }
-        return;
+      paymentMethod: recordFields.paymentMethod ?? generatedExpense?.paymentMethod,
+      bankId: recordFields.bankId ?? generatedExpense?.bankId,
+      cardId: recordFields.cardId ?? generatedExpense?.cardId,
+      paymentMethodName: recordFields.paymentMethodName ?? generatedExpense?.paymentMethodName,
+    };
+    const expenseRef = generatedExpense ? doc(db, 'expenses', generatedExpense.id!) : undefined;
+    const adjustments = generatedExpense ? await prepareBalanceAdjustments(record.userId, [{
+      type: 'expense', expense: generatedExpense as Expense, direction: -1,
+    }]) : [];
+    const now = Timestamp.now();
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const [existingRecord, existingExpense, summary, parent] = await Promise.all([
+        transaction.get(recordRef),
+        expenseRef ? transaction.get(expenseRef) : Promise.resolve(undefined),
+        generatedExpense ? transaction.get(friendSpendingSummaryStateRef(record.userId)) : Promise.resolve(undefined),
+        transaction.get(doc(db, SCHEDULED_PAYMENTS_COLLECTION, record.scheduledPaymentId)),
+      ]);
+      if (!existingRecord.exists() && (!parent.exists() || parent.data().userId !== record.userId)) throw Object.assign(new Error('Scheduled payment is no longer available'), { code: 'failed-precondition' });
+      if (existingRecord.exists() && existingRecord.data().userId !== record.userId) throw new Error('Payment record is owned by another user');
+      if (existingExpense?.exists() && existingExpense.data().userId !== record.userId) throw new Error('Generated expense is owned by another user');
+      if (existingExpense?.exists() && existingExpense.data().scheduledPaymentRecordId !== recordRef.id) throw Object.assign(new Error('An existing expense cannot be attached to this payment'), { code: 'already-exists' });
+      if (existingRecord.exists() && ['scheduledPaymentId', 'periodYear', 'periodMonth', 'actualAmount', 'paidDate', 'currency', 'paymentMethod', 'bankId', 'cardId', 'paymentMethodName'].some((field) =>
+        existingRecord.data()[field] !== undefined && existingRecord.data()[field] !== (effectiveRecord as Record<string, unknown>)[field])) throw Object.assign(new Error('This period was already confirmed with different payment details'), { code: 'already-exists' });
+      const linkedId = existingRecord.data()?.generatedExpenseId;
+      if (linkedId && linkedId !== generatedExpense?.id) throw new Error('Payment record already links a different expense');
+      if (generatedExpense && expenseRef && !existingExpense?.exists()) {
+        await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
+        if (isFriendSpendingSummaryReady(summary?.data())) applyExpenseSummaryChange(transaction, null, generatedExpense as Expense);
+        const { id: expenseId, ...expenseFields } = generatedExpense;
+        void expenseId;
+        transaction.set(expenseRef, removeUndefinedFields({
+          ...expenseFields, scheduledPaymentRecordId: recordRef.id, createdAt: now, updatedAt: now,
+        }));
       }
-      transaction.set(docRef, dataToSave);
+      if (!existingRecord.exists()) {
+        transaction.set(recordRef, removeUndefinedFields({
+          ...effectiveRecord, generatedExpenseId: generatedExpense?.id, createdAt: now, updatedAt: now,
+        }));
+      } else if (generatedExpense && !linkedId) {
+        // Repair a payment partially committed by an older client.
+        transaction.update(recordRef, { generatedExpenseId: generatedExpense.id, updatedAt: now });
+      }
     });
-    return docRef.id;
+    return recordRef.id;
   },
 
-  createPaymentRecordId(): string {
-    return doc(collection(db, PAYMENT_RECORDS_COLLECTION)).id;
+  createPaymentRecordId(userId?: string, paymentId?: string, year?: number, month?: number): string {
+    // Confirmation means one payment per scheduled period. Extra payments require
+    // a distinct period/intention, never a second random ID for the same click.
+    return userId && paymentId && year && month
+      ? `period-${encodeURIComponent(JSON.stringify([userId, paymentId, year, month]))}`
+      : doc(collection(db, PAYMENT_RECORDS_COLLECTION)).id;
   },
 
   // Get all payment records for a scheduled payment
@@ -223,20 +264,84 @@ export const scheduledPaymentService = {
   },
 
   // Update a payment record
-  async updatePaymentRecord(id: string, updates: Partial<ScheduledPaymentRecord>): Promise<void> {
-    const docRef = doc(db, PAYMENT_RECORDS_COLLECTION, id);
-    const dataToUpdate = removeUndefinedFields({
-      ...updates,
-      updatedAt: Timestamp.now(),
+  async updatePaymentRecord(id: string, updates: Partial<ScheduledPaymentRecord>, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
+    const recordRef = doc(db, PAYMENT_RECORDS_COLLECTION, id);
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const record = await transaction.get(recordRef);
+      if (!record.exists()) throw new Error('Payment record not found');
+      const previous = record.data() as ScheduledPaymentRecord;
+      if ((operation && previous.userId !== operation.userId) ||
+          (updates.userId && updates.userId !== previous.userId) ||
+          (updates.scheduledPaymentId && updates.scheduledPaymentId !== previous.scheduledPaymentId) ||
+          (updates.generatedExpenseId && updates.generatedExpenseId !== previous.generatedExpenseId) ||
+          (updates.periodYear && updates.periodYear !== previous.periodYear) ||
+          (updates.periodMonth && updates.periodMonth !== previous.periodMonth)) throw new Error('Payment identity cannot be changed');
+      const next = { ...previous, ...updates };
+      const valuationChanged = ['actualAmount', 'currency', 'baseCurrency', 'paidDate'].some((field) =>
+        field in updates && (updates as Record<string, unknown>)[field] !== (previous as unknown as Record<string, unknown>)[field]);
+      if (valuationChanged && updates.baseAmount === undefined) {
+        if ((next.currency ?? 'MYR') !== (next.baseCurrency ?? 'MYR')) throw Object.assign(new Error('An updated payment amount requires a new currency snapshot'), { code: 'invalid-argument' });
+        next.baseAmount = next.actualAmount;
+        next.exchangeRate = 1;
+      }
+      if (!Number.isFinite(next.actualAmount) || next.actualAmount < 0) throw new Error('Invalid payment amount');
+      const expenseRef = previous.generatedExpenseId ? doc(db, 'expenses', previous.generatedExpenseId) : undefined;
+      const expense = expenseRef ? await transaction.get(expenseRef) : undefined;
+      if (expenseRef && !expense?.exists()) throw new Error('Linked expense is missing; reconcile the payment before editing');
+      if (expense?.exists() && expenseRef) {
+        const before = { ...expense.data(), id: expense.id } as Expense;
+        if (before.userId !== previous.userId || before.scheduledPaymentRecordId !== id) throw new Error('Invalid payment expense link');
+        const after: Expense = { ...before, amount: next.actualAmount, date: next.paidDate,
+          currency: next.currency, baseCurrency: next.baseCurrency, baseAmount: next.baseAmount,
+          exchangeRate: next.exchangeRate, exchangeRateDate: next.exchangeRateDate,
+          paymentMethod: next.paymentMethod, bankId: next.bankId, cardId: next.cardId,
+          paymentMethodName: next.paymentMethodName, notes: 'note' in next ? next.note : before.notes };
+        const summary = await transaction.get(friendSpendingSummaryStateRef(previous.userId));
+        const adjustments = await prepareBalanceAdjustments(previous.userId, [
+          { type: 'expense', expense: before, direction: 1 }, { type: 'expense', expense: after, direction: -1 },
+        ]);
+        await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
+        if (isFriendSpendingSummaryReady(summary.data())) applyExpenseSummaryChange(transaction, before, after);
+        const { id: ignored, ...fields } = after; void ignored;
+        transaction.set(expenseRef, removeUndefinedFields({ ...fields, updatedAt: Timestamp.now() }));
+      }
+      const { id: ignored, ...fields } = next; void ignored;
+      transaction.set(recordRef, removeUndefinedFields({ ...fields, difference: next.actualAmount - next.expectedAmount, updatedAt: Timestamp.now() }));
     });
-    
-    await updateDoc(docRef, dataToUpdate);
   },
 
   // Delete a payment record
-  async deletePaymentRecord(id: string): Promise<void> {
-    const docRef = doc(db, PAYMENT_RECORDS_COLLECTION, id);
-    await deleteDoc(docRef);
+  async deletePaymentRecord(id: string, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
+    const recordRef = doc(db, PAYMENT_RECORDS_COLLECTION, id);
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const record = await transaction.get(recordRef);
+      if (!record.exists()) return;
+      const previous = record.data() as ScheduledPaymentRecord;
+      if (operation && previous.userId !== operation.userId) throw new Error('Payment belongs to another user');
+      const expenseRef = previous.generatedExpenseId ? doc(db, 'expenses', previous.generatedExpenseId) : undefined;
+      const expense = expenseRef ? await transaction.get(expenseRef) : undefined;
+      if (expense?.exists() && expenseRef) {
+        const before = { ...expense.data(), id: expense.id } as Expense;
+        if (before.userId !== previous.userId || before.scheduledPaymentRecordId !== id) throw new Error('Invalid payment expense link');
+        const linked = await getDocsFromServer(query(collection(db, 'transfers'), where('userId', '==', previous.userId), where('expenseId', '==', expense.id)));
+        const ids = new Set([...linked.docs.map((row) => row.id), ...(before.relatedTransferIds ?? [])]);
+        if (ids.size > 150) throw new Error('Too many linked transfers for atomic deletion');
+        const transfers = await Promise.all([...ids].map((transferId) => transaction.get(doc(db, 'transfers', transferId))));
+        const owned = transfers.filter((row) => row.exists() && row.data().userId === previous.userId && row.data().expenseId === expense.id);
+        const summary = await transaction.get(friendSpendingSummaryStateRef(previous.userId));
+        const adjustments = await prepareBalanceAdjustments(previous.userId, [
+          { type: 'expense', expense: before, direction: 1 },
+          ...owned.map((row) => ({ type: 'transfer' as const, transfer: { ...row.data(), id: row.id } as Transfer, sourceDirection: 1 as const, destinationDirection: -1 as const })),
+        ]);
+        await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
+        if (isFriendSpendingSummaryReady(summary.data())) applyExpenseSummaryChange(transaction, before, null);
+        owned.forEach((row) => transaction.delete(row.ref));
+        transaction.delete(expenseRef);
+      }
+      transaction.delete(recordRef);
+    });
   },
 
   // ===============================================

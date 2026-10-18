@@ -22,16 +22,20 @@ export const useSyncStatus = () => {
       setPendingCount(syncService.pendingCount);
     });
 
-    // Update sync status periodically
-    const interval = setInterval(() => {
+    const updateStatus = () => {
       setIsSyncing(syncService.isSyncInProgress);
       setPendingCount(syncService.pendingCount);
-    }, 1000);
+    };
+    window.addEventListener('offline-queue-changed', updateStatus);
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
 
     // Cleanup
     return () => {
       unsubscribe();
-      clearInterval(interval);
+      window.removeEventListener('offline-queue-changed', updateStatus);
+      window.removeEventListener('online', updateStatus);
+      window.removeEventListener('offline', updateStatus);
     };
   }, []);
 
