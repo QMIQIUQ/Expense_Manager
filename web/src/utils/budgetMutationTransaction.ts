@@ -1,10 +1,10 @@
+import { runFinancialTransaction, type FinancialOperation } from '../services/financialMutation';
 import {
   collection,
   doc,
   getDocFromServer,
   getDocsFromServer,
   query,
-  runTransaction,
   where,
   type DocumentReference,
   type QueryDocumentSnapshot,
@@ -45,7 +45,7 @@ const toBudget = (snapshot: QueryDocumentSnapshot): Budget => {
   } as Budget;
 };
 
-export async function runBudgetMutationTransaction<T>(userId: string, mutation: BudgetMutation<T>): Promise<T> {
+export async function runBudgetMutationTransaction<T>(userId: string, mutation: BudgetMutation<T>, operation?: FinancialOperation): Promise<T> {
   const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
   const budgetQuery = query(collection(db, COLLECTION_NAME), where('userId', '==', userId));
 
@@ -66,7 +66,7 @@ export async function runBudgetMutationTransaction<T>(userId: string, mutation: 
     const budgetReferences = serverBudgets.docs.map((budgetDocument) => budgetDocument.ref);
 
     try {
-      return await runTransaction(db, async (transaction) => {
+      return await runFinancialTransaction(db, operation, async (transaction) => {
         const transactionSettings = await transaction.get(settingsRef);
         const transactionSettingsData = transactionSettings.exists() ? transactionSettings.data() : undefined;
         if (

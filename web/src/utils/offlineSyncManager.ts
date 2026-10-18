@@ -8,7 +8,8 @@
  * 4. Provides hooks for UI updates during sync
  */
 
-import { offlineQueue, QueuedOperation } from './offlineQueue';
+import { QueuedOperation } from './offlineQueue';
+import { syncService } from '../services/syncService';
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -25,12 +26,12 @@ class OfflineSyncManager {
   private isSyncing: boolean = false;
   private lastSyncTime: number | null = null;
   private syncCallbacks: Set<SyncCallback> = new Set();
-  private operationExecutor: OperationExecutor | null = null;
-  private autoSyncInterval: number | null = null;
-  private syncInProgress: boolean = false;
   
+
+  private syncInProgress: boolean = false;
+
   // Configuration
-  private readonly AUTO_SYNC_INTERVAL_MS = 30000; // 30 seconds when online
+
   private readonly SESSION_CACHE_PREFIX = 'expense_cache_';
 
   constructor() {
@@ -44,6 +45,12 @@ class OfflineSyncManager {
     // Listen to online/offline events
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
+    window.addEventListener('offline-queue-changed', () => this.notifyStatusChange());
+    syncService.onSyncProgress((progress) => {
+      this.isSyncing = syncService.isSyncInProgress;
+      if (progress.completed > 0) this.lastSyncTime = Date.now();
+      this.notifyStatusChange();
+    });
     
     // Initial sync check if online
     if (this.isOnline) {
@@ -61,7 +68,7 @@ class OfflineSyncManager {
    * Set the operation executor function
    */
   setOperationExecutor(executor: OperationExecutor): void {
-    this.operationExecutor = executor;
+    void executor; // Execution is centralized in syncService.
   }
 
   /**
@@ -126,25 +133,12 @@ class OfflineSyncManager {
    * Start automatic sync interval
    */
   private startAutoSync(): void {
-    if (this.autoSyncInterval) {
-      return; // Already running
-    }
-    
-    this.autoSyncInterval = window.setInterval(() => {
-      if (this.isOnline && !this.isSyncing) {
-        this.syncQueuedOperations();
-      }
-    }, this.AUTO_SYNC_INTERVAL_MS);
+    // Queue execution and retry timers belong exclusively to syncService.
+    void syncService.syncOfflineQueue().catch(console.error);
   }
 
-  /**
-   * Stop automatic sync interval
-   */
   private stopAutoSync(): void {
-    if (this.autoSyncInterval) {
-      clearInterval(this.autoSyncInterval);
-      this.autoSyncInterval = null;
-    }
+    // The shared service subscribes to network status and durable queue changes.
   }
 
   /**
@@ -156,15 +150,11 @@ class OfflineSyncManager {
       return { success: 0, failed: 0 };
     }
 
-    const queueCount = offlineQueue.count();
+    const queueCount = syncService.pendingCount;
     if (queueCount === 0) {
       return { success: 0, failed: 0 };
     }
 
-    if (!this.operationExecutor) {
-      console.warn('[OfflineSyncManager] No operation executor set');
-      return { success: 0, failed: 0 };
-    }
 
     if (!this.isOnline) {
       console.log('[OfflineSyncManager] Offline, skipping sync');
@@ -178,7 +168,7 @@ class OfflineSyncManager {
     console.log(`[OfflineSyncManager] Starting sync of ${queueCount} operations...`);
 
     try {
-      const result = await offlineQueue.processQueue(this.operationExecutor);
+      const result = await syncService.syncOfflineQueue();
       
       this.lastSyncTime = Date.now();
       localStorage.setItem('lastSyncTime', this.lastSyncTime.toString());
@@ -240,7 +230,7 @@ class OfflineSyncManager {
       isOnline: this.isOnline,
       isSyncing: this.isSyncing,
       lastSyncTime: this.lastSyncTime,
-      queuedOperations: offlineQueue.count(),
+      queuedOperations: syncService.pendingCount,
     };
   }
 

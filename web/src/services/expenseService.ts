@@ -1,6 +1,6 @@
+import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import {
   collection,
-  runTransaction,
   doc,
   getDoc,
   getDocs,
@@ -9,6 +9,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Expense, Transfer } from '../types';
@@ -41,7 +42,9 @@ export const expenseService = {
   async create(
     expense: Omit<Expense, 'createdAt' | 'updatedAt'>,
     options: { updateAccountBalances?: boolean } = {},
+    operation?: FinancialOperation,
   ): Promise<string> {
+    if (await hasFinancialReceipt(operation)) return expense.id!;
     const { id, ...expenseFields } = expense;
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
@@ -59,7 +62,7 @@ export const expenseService = {
           direction: -1,
         }])
       : [];
-    await runTransaction(db, async (transaction) => {
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const [existingExpense, summaryState] = await Promise.all([
         transaction.get(docRef),
         transaction.get(friendSpendingSummaryStateRef(expense.userId)),
@@ -111,18 +114,24 @@ export const expenseService = {
   },
 
   // Update an expense
-  async update(id: string, updates: Partial<Expense>): Promise<void> {
+  async update(id: string, updates: Partial<Expense>, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTION_NAME, id);
-    const dataToUpdate = removeUndefinedFields({
-      ...updates,
-      updatedAt: Timestamp.now(),
-    });
-    await runTransaction(db, async (transaction) => {
+    const dataToUpdate: Record<string, unknown> = { updatedAt: Timestamp.now() };
+    for (const [field, value] of Object.entries(updates)) {
+      if (['id', 'userId', 'createdAt', 'updatedAt'].includes(field)) continue;
+      dataToUpdate[field] = value === undefined ? deleteField() : value;
+    }
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const expenseSnapshot = await transaction.get(docRef);
       if (!expenseSnapshot.exists()) throw new Error('Expense not found');
       const previousExpense = { id, ...expenseSnapshot.data() } as Expense;
       const summaryState = await transaction.get(friendSpendingSummaryStateRef(previousExpense.userId));
       const nextExpense = { ...previousExpense, ...updates, id } as Expense;
+      if (updates.scheduledPaymentRecordId !== undefined && updates.scheduledPaymentRecordId !== previousExpense.scheduledPaymentRecordId) throw new Error('Payment expense link cannot be changed');
+      const paymentRef = previousExpense.scheduledPaymentRecordId ? doc(db, 'scheduledPaymentRecords', previousExpense.scheduledPaymentRecordId) : undefined;
+      const payment = paymentRef ? await transaction.get(paymentRef) : undefined;
+      if (paymentRef && (!payment?.exists() || payment.data().generatedExpenseId !== id || payment.data().userId !== previousExpense.userId)) throw new Error('Invalid scheduled payment link');
       if (nextExpense.userId !== previousExpense.userId) {
         throw new Error('Expense owner cannot be changed');
       }
@@ -135,13 +144,23 @@ export const expenseService = {
         applyExpenseSummaryChange(transaction, previousExpense, nextExpense);
       }
       transaction.update(docRef, dataToUpdate);
+      if (paymentRef && payment?.exists()) transaction.set(paymentRef, removeUndefinedFields({
+        ...payment.data(),
+        actualAmount: nextExpense.amount, baseAmount: nextExpense.baseAmount,
+        currency: nextExpense.currency, baseCurrency: nextExpense.baseCurrency,
+        exchangeRate: nextExpense.exchangeRate, exchangeRateDate: nextExpense.exchangeRateDate,
+        paidDate: nextExpense.date, paymentMethod: nextExpense.paymentMethod,
+        bankId: nextExpense.bankId, cardId: nextExpense.cardId, paymentMethodName: nextExpense.paymentMethodName,
+        note: nextExpense.notes, difference: nextExpense.amount - payment.data().expectedAmount, updatedAt: Timestamp.now(),
+      }));
     });
   },
 
   // Delete an expense
-  async delete(id: string): Promise<void> {
+  async delete(id: string, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTION_NAME, id);
-    await runTransaction(db, async (transaction) => {
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const expenseSnapshot = await transaction.get(docRef);
       if (!expenseSnapshot.exists()) {
         return;
@@ -155,11 +174,13 @@ export const expenseService = {
     });
   },
 
-  async deleteWithRelatedTransfers(id: string, userId: string, candidateTransferIds: string[] = []): Promise<Transfer[]> {
+  async deleteWithRelatedTransfers(id: string, userId: string, candidateTransferIds: string[] = [], operation?: FinancialOperation): Promise<Transfer[]> {
+    if (await hasFinancialReceipt(operation)) return [];
     const expenseRef = doc(db, COLLECTION_NAME, id);
     const userTransfersQuery = query(
       collection(db, 'transfers'),
       where('userId', '==', userId),
+      where('expenseId', '==', id),
     );
     const [preflightExpense, preflightTransfers] = await Promise.all([
       getDoc(expenseRef),
@@ -210,7 +231,7 @@ export const expenseService = {
       }]));
     }));
 
-    return runTransaction(db, async (transaction) => {
+    return runFinancialTransaction(db, operation, async (transaction) => {
       const [expenseSnapshot, summaryState] = await Promise.all([
         transaction.get(expenseRef),
         transaction.get(friendSpendingSummaryStateRef(userId)),
@@ -221,6 +242,9 @@ export const expenseService = {
       }
 
       const currentExpenseData = expenseSnapshot.exists() ? expenseSnapshot.data() : undefined;
+      const paymentRef = typeof currentExpenseData?.scheduledPaymentRecordId === 'string' ? doc(db, 'scheduledPaymentRecords', currentExpenseData.scheduledPaymentRecordId) : undefined;
+      const payment = paymentRef ? await transaction.get(paymentRef) : undefined;
+      if (payment?.exists() && (payment.data().generatedExpenseId !== id || payment.data().userId !== userId)) throw new Error('Invalid scheduled payment link');
       const currentTransferIds = new Set<string>([
         ...preflightTransferIds,
         ...(Array.isArray(currentExpenseData?.relatedTransferIds)
@@ -262,6 +286,7 @@ export const expenseService = {
         applyExpenseSummaryChange(transaction, { id, ...currentExpenseData } as Expense, null);
       }
       if (expenseSnapshot.exists()) transaction.delete(expenseRef);
+      if (paymentRef && payment?.exists()) transaction.delete(paymentRef);
       const deletedTransfers = currentLinkedTransfers.map((snapshot) => toTransfer(snapshot.id, snapshot.data));
       currentLinkedTransfers.forEach((snapshot) => {
         if (snapshot.data.expenseId === id && snapshot.data.userId === userId) {

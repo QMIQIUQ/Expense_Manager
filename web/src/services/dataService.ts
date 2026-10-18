@@ -1,3 +1,4 @@
+import { dataEqual } from '../utils/dataEquality';
 /**
  * Data Service
  * Unified service for data operations with caching and offline support
@@ -14,7 +15,6 @@ import { bankService } from './bankService';
 import { repaymentService } from './repaymentService';
 import { sessionCache, CacheableEntity } from '../utils/sessionCache';
 import { networkStatus } from '../utils/networkStatus';
-import { offlineQueue } from '../utils/offlineQueue';
 import { applyPendingOperations } from '../utils/pendingOperations';
 import { 
   Expense, 
@@ -44,8 +44,24 @@ type EntityData =
   | ScheduledPaymentRecord[]
   | unknown[];
 let localRevision = 0;
+const generations = new Map<string, number>();
+const inFlight = new Map<string, Promise<EntityData>>();
+const dataKey = (entity: CacheableEntity, userId: string) => userId + ':' + entity;
+const generationFor = (entity: CacheableEntity, userId: string) => generations.get(dataKey(entity, userId)) ?? 0;
+const notifyReadFailure = (entity: CacheableEntity, userId: string) => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('data-revalidation-failed', { detail: { entity, userId } }));
+};
+const fetchShared = <T extends EntityData>(entity: CacheableEntity, userId: string, fetch: () => Promise<T>, queryScope = 'collection'): Promise<T> => {
+  const key = dataKey(entity, userId) + ':' + queryScope + ':' + generationFor(entity, userId);
+  const running = inFlight.get(key);
+  if (running) return running as Promise<T>;
+  const pending = Promise.resolve().then(fetch).finally(() => { if (inFlight.get(key) === pending) inFlight.delete(key); });
+  inFlight.set(key, pending);
+  return pending;
+};
 
 export const dataService = {
+  generation(entity: CacheableEntity, userId: string): number { return generationFor(entity, userId); },
   get localRevision(): number { return localRevision; },
   /**
    * Get expenses with caching
@@ -118,7 +134,9 @@ export const dataService = {
     entity: CacheableEntity,
     userId: string,
     forceRefresh: boolean,
-    fetchFn: () => Promise<T>
+    fetchFn: () => Promise<T>,
+    onCommit?: () => void,
+    queryScope = 'collection'
   ): Promise<T> {
     // If offline, always use cache
     if (!networkStatus.isOnline) {
@@ -136,15 +154,21 @@ export const dataService = {
     if (forceRefresh || !sessionCache.has(entity, userId)) {
       try {
         console.log(`Fetching ${entity} from server...`);
-        const revision = offlineQueue.revision + localRevision;
-        const fetched = await fetchFn();
-        // A response started before a local write may predate its server commit.
-        const data = applyPendingOperations(entity, userId, revision === offlineQueue.revision + localRevision
-          ? fetched : sessionCache.get<T>(entity, userId) ?? fetched);
+        const revision = generationFor(entity, userId);
+        const fetched = await fetchShared(entity, userId, fetchFn, queryScope);
+        if (revision !== generationFor(entity, userId)) {
+          const current = sessionCache.get<T>(entity, userId);
+          if (current) return applyPendingOperations(entity, userId, current);
+          throw Object.assign(new Error('Read was superseded by a newer mutation'), { code: 'stale-read' });
+        }
+        const data = applyPendingOperations(entity, userId, fetched);
         // Cache the data
-        sessionCache.set(entity, userId, data);
+        sessionCache.set(entity, userId, data, { coverage: queryScope === 'collection' ? undefined : queryScope });
+        if (revision === generationFor(entity, userId)) onCommit?.();
         return data;
       } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'stale-read') throw error;
+        notifyReadFailure(entity, userId);
         console.error(`Error fetching ${entity}:`, error);
         // If fetch fails, try to use cache as fallback
         const cached = sessionCache.get<T>(entity, userId);
@@ -169,7 +193,7 @@ export const dataService = {
    */
   areDataEqual<T extends EntityData>(data1: T, data2: T): boolean {
     // Categories have no updatedAt; field changes and ordering must also be compared.
-    return JSON.stringify(data1) === JSON.stringify(data2);
+    return dataEqual(data1, data2);
   },
 
   /**
@@ -181,7 +205,9 @@ export const dataService = {
     entity: CacheableEntity,
     userId: string,
     fetchFn: () => Promise<T>,
-    onUpdate?: (data: T) => void
+    onUpdate?: (data: T) => void,
+    onCommit?: () => void,
+    queryScope = 'collection'
   ): Promise<T> {
     const cached = sessionCache.get<T>(entity, userId);
     
@@ -189,25 +215,21 @@ export const dataService = {
     // and fetch fresh data in the background
     if (cached && networkStatus.isOnline) {
       console.log(`Using cached ${entity}, revalidating in background...`);
-      const revision = offlineQueue.revision + localRevision;
+      const revision = generationFor(entity, userId);
       
       // Fetch fresh data in background (non-blocking)
-      fetchFn()
+      fetchShared(entity, userId, fetchFn, queryScope)
         .then((freshData) => {
-          if (revision !== offlineQueue.revision + localRevision) return;
+          if (revision !== generationFor(entity, userId)) return;
           const reconciled = applyPendingOperations(entity, userId, freshData);
-          // Only update if data actually changed (prevents unnecessary re-renders)
-          if (!this.areDataEqual(sessionCache.get<T>(entity, userId) ?? cached, reconciled)) {
-            sessionCache.set(entity, userId, reconciled);
-            console.log(`Background revalidation complete for ${entity} (data changed)`);
-            if (onUpdate) {
-              onUpdate(reconciled);
-            }
-          } else {
-            console.log(`Background revalidation complete for ${entity} (no changes)`);
-          }
+          const previous = sessionCache.get<T>(entity, userId) ?? cached;
+          const stable = this.areDataEqual(previous, reconciled) ? previous : reconciled;
+          sessionCache.set(entity, userId, stable, { coverage: queryScope === 'collection' ? undefined : queryScope });
+          onUpdate?.(stable);
+          onCommit?.();
         })
         .catch((error) => {
+          notifyReadFailure(entity, userId);
           console.warn(`Background revalidation failed for ${entity}:`, error);
         });
       
@@ -215,14 +237,14 @@ export const dataService = {
     }
     
     // No cache or offline - use regular getData
-    return this.getData(entity, userId, false, fetchFn);
+    return this.getData(entity, userId, false, fetchFn, onCommit, queryScope);
   },
 
   /**
    * Update cache after local modification
    */
   updateCache<T extends EntityData>(entity: CacheableEntity, userId: string, updater: (data: T) => T): void {
-    localRevision++;
+    this.markStale(entity, userId);
     const cached = sessionCache.get<T>(entity, userId) ?? [] as unknown as T;
     const updated = updater(cached);
     sessionCache.set(entity, userId, updated);
@@ -231,7 +253,14 @@ export const dataService = {
   /**
    * Invalidate cache for an entity
    */
+  markStale(entity: CacheableEntity, userId: string): void {
+    localRevision++;
+    const key = dataKey(entity, userId);
+    generations.set(key, generationFor(entity, userId) + 1);
+  },
+
   invalidateCache(entity: CacheableEntity, userId: string): void {
+    this.markStale(entity, userId);
     sessionCache.remove(entity, userId);
   },
 
@@ -239,6 +268,7 @@ export const dataService = {
    * Clear all caches for a user
    */
   clearUserCache(userId: string): void {
+    for (const entity of ['expenses', 'incomes', 'categories', 'budgets', 'banks', 'ewallets', 'cards', 'repayments', 'transfers', 'scheduledPayments', 'scheduledPaymentRecords'] as CacheableEntity[]) this.markStale(entity, userId);
     sessionCache.clearUser(userId);
   },
 };

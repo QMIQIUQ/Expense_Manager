@@ -9,8 +9,10 @@ import type { ExpensePeriodSelection } from '../../types/expensePeriod';
 import { countInclusiveDays, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
 import { getTodayLocal } from '../../utils/dateUtils';
 import { sortCategoryEntries } from '../../utils/categoryOrder';
+import type { ExpenseAggregate } from '../../services/expenseAggregateService';
 
 interface ExpensePeriodSummaryProps {
+  aggregate?: ExpenseAggregate;
   expenses: Expense[];
   categories: Category[];
   period: ExpensePeriodSelection;
@@ -57,6 +59,7 @@ const getPeriodDays = (period: ExpensePeriodSelection, expenses: Expense[]): num
 };
 
 const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
+  aggregate,
   expenses,
   categories,
   period,
@@ -89,11 +92,15 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
     () => expenses.reduce((sum, expense, index) => sum + getConvertedAmount(expense, index), 0),
     [expenses, getConvertedAmount]
   );
-  const averageDaily = total / getPeriodDays(period, expenses);
+  const displayedTotal = aggregate?.total ?? total;
+  const days = aggregate && period.mode === 'all' && aggregate.startDate && aggregate.endDate
+    ? countInclusiveDays(aggregate.startDate, aggregate.endDate) : getPeriodDays(period, expenses);
+  const averageDaily = displayedTotal / days;
 
   const categoryTotals = useMemo<CategoryTotal[]>(() => {
     const totals = new Map<string, number>();
-    expenses.forEach((expense, index) => {
+    if (aggregate) Object.entries(aggregate.categories).forEach(([category, amount]) => totals.set(category, amount));
+    else expenses.forEach((expense, index) => {
       totals.set(expense.category, (totals.get(expense.category) || 0) + getConvertedAmount(expense, index));
     });
 
@@ -103,13 +110,13 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
         return {
           name,
           amount,
-          percentage: total > 0 ? (amount / total) * 100 : 0,
+          percentage: displayedTotal > 0 ? (amount / displayedTotal) * 100 : 0,
           icon: category?.icon || '💰',
           color: category?.color || 'var(--accent-primary)',
         };
       })
       .sort((a, b) => b.amount - a.amount);
-  }, [categories, expenses, getConvertedAmount, total]);
+  }, [aggregate, categories, displayedTotal, expenses, getConvertedAmount]);
 
   const orderedTopCategories = useMemo(() =>
     sortCategoryEntries(
@@ -125,13 +132,13 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
       const key = `${year}-${String(month + 1).padStart(2, '0')}`;
       return {
         month: new Intl.DateTimeFormat(language === 'en' ? 'en' : language === 'zh-CN' ? 'zh-CN' : 'zh-TW', { month: 'short' }).format(new Date(2020, month, 1)),
-        amount: expenses
+        amount: aggregate ? aggregate.months[key] ?? 0 : expenses
           .map((expense, index) => ({ expense, index }))
           .filter(({ expense }) => expense.date.slice(0, 7) === key)
           .reduce((sum, { expense, index }) => sum + getConvertedAmount(expense, index), 0),
       };
     });
-  }, [expenses, getConvertedAmount, language, period.anchorDate, period.mode]);
+  }, [aggregate, expenses, getConvertedAmount, language, period.anchorDate, period.mode]);
 
   return (
     <section style={styles.container} aria-label={t('totalExpenses')}>
@@ -141,7 +148,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
           <span style={styles.subtitle}>{t('totalExpenses')}</span>
         </div>
         <div style={styles.summaryActions}>
-          <strong style={styles.total}>{formatMoney(total, targetCurrency)}</strong>
+          <strong style={styles.total}>{formatMoney(displayedTotal, targetCurrency)}</strong>
           <button
             type="button"
             style={styles.toggleButton}
@@ -161,7 +168,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
           <div style={styles.statsGrid}>
             <div style={styles.statCard}>
               <span style={styles.statLabel}>{t('totalExpensesCount')}</span>
-              <strong style={styles.statValue}>{expenses.length}</strong>
+              <strong style={styles.statValue}>{aggregate?.count ?? expenses.length}</strong>
             </div>
             <div style={styles.statCard}>
               <span style={styles.statLabel}>{t('dailyAverage')}</span>
@@ -205,7 +212,7 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
             </div>
           )}
 
-          {expenses.length === 0 && <p style={styles.empty}>{t('noExpenses')}</p>}
+          {(aggregate?.count ?? expenses.length) === 0 && <p style={styles.empty}>{t('noExpenses')}</p>}
         </div>
       )}
     </section>

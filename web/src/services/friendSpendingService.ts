@@ -1,3 +1,4 @@
+import { runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import {
   collection,
   doc,
@@ -5,7 +6,6 @@ import {
   getDocs,
   runTransaction,
   serverTimestamp,
-  setDoc,
 } from 'firebase/firestore';
 import { db, friendSpendingEnabled } from '../config/firebase';
 import type {
@@ -323,8 +323,11 @@ export const friendSpendingService = {
     userId: string,
     friendUid: string,
     preference: FriendDashboardPreference,
+    operation?: FinancialOperation,
   ): Promise<void> {
     const preferenceRef = doc(db, PREFERENCE_COLLECTION, userId, 'friends', friendUid);
-    await setDoc(preferenceRef, { ...preference, updatedAt: serverTimestamp() });
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      transaction.set(preferenceRef, { ...preference, updatedAt: serverTimestamp() });
+    });
   },
 };

@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -10,6 +9,7 @@ import {
   Timestamp,
   setDoc,
   writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Category, DEFAULT_CATEGORIES, DEFAULT_CATEGORY_NAMES } from '../types';
@@ -27,14 +27,14 @@ export const categoryService = {
     const existing = await this.getAll(userId);
     if (existing.length === 0) {
       const now = Timestamp.now();
-      const promises = DEFAULT_CATEGORIES.map((cat) =>
-        addDoc(collection(db, COLLECTION_NAME), {
-          userId,
-          name: cat.name,
-          icon: cat.icon,
-          color: cat.color,
-          isDefault: true,
-          createdAt: now,
+      const promises = DEFAULT_CATEGORIES.map((category) =>
+        runTransaction(db, async (transaction) => {
+          const reference = doc(db, COLLECTION_NAME, `default_${userId}_${encodeURIComponent(category.name)}`);
+          const existing = await transaction.get(reference);
+          if (!existing.exists()) transaction.set(reference, {
+            userId, name: category.name, icon: category.icon, color: category.color,
+            isDefault: true, createdAt: now,
+          });
         })
       );
       await Promise.all(promises);
@@ -44,11 +44,10 @@ export const categoryService = {
     ) {
       const savingsCategory = DEFAULT_CATEGORIES.find((category) => category.name === DEFAULT_CATEGORY_NAMES.savings);
       if (savingsCategory) {
-        await setDoc(doc(db, COLLECTION_NAME, `${userId}_default_savings`), {
-          userId,
-          ...savingsCategory,
-          isDefault: true,
-          createdAt: Timestamp.now(),
+        await runTransaction(db, async (transaction) => {
+          const reference = doc(db, COLLECTION_NAME, `${userId}_default_savings`);
+          const current = await transaction.get(reference);
+          if (!current.exists()) transaction.set(reference, { userId, ...savingsCategory, isDefault: true, createdAt: Timestamp.now() });
         });
       }
     }

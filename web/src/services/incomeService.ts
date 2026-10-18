@@ -1,3 +1,4 @@
+import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import {
   collection,
   deleteField,
@@ -5,7 +6,6 @@ import {
   getDocs,
   getDocFromServer,
   query,
-  runTransaction,
   Timestamp,
   where,
   orderBy,
@@ -26,13 +26,14 @@ export const incomeService = {
   },
 
   // Create is idempotent when the caller supplies the stable ID used by the local view/offline queue.
-  async create(income: Omit<Income, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+  async create(income: Omit<Income, 'createdAt' | 'updatedAt'> & { id?: string }, operation?: FinancialOperation): Promise<string> {
+    if (await hasFinancialReceipt(operation)) return income.id!;
     const { id, ...incomeData } = income;
     const incomeRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
     const adjustments = await prepareBalanceAdjustments(income.userId, [{ type: 'income', income: { ...income, id: incomeRef.id } as Income, direction: 1 }]);
     const now = Timestamp.now();
 
-    await runTransaction(db, async (transaction) => {
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const existing = await transaction.get(incomeRef);
       if (existing.exists()) {
         if (existing.data().userId !== income.userId) throw new Error('Income ID is already owned by another user');
@@ -88,7 +89,8 @@ export const incomeService = {
     })) as Income[];
   },
 
-  async update(id: string, updates: Partial<Income>): Promise<void> {
+  async update(id: string, updates: Partial<Income>, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const incomeRef = doc(db, COLLECTION_NAME, id);
     const before = await getDocFromServer(incomeRef);
     if (!before.exists()) throw new Error('Income not found');
@@ -105,7 +107,7 @@ export const incomeService = {
       cleanedUpdates[key] = value === undefined ? deleteField() : value;
     });
 
-    await runTransaction(db, async (transaction) => {
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const current = await transaction.get(incomeRef);
       if (!current.exists()) throw new Error('Income not found');
       if (current.data().userId !== previousIncome.userId) throw new Error('Income owner cannot be changed');
@@ -115,7 +117,8 @@ export const incomeService = {
     });
   },
 
-  async delete(id: string, expectedUserId?: string): Promise<void> {
+  async delete(id: string, expectedUserId?: string, operation?: FinancialOperation): Promise<void> {
+    if (await hasFinancialReceipt(operation)) return;
     const incomeRef = doc(db, COLLECTION_NAME, id);
     const before = await getDocFromServer(incomeRef);
     if (!before.exists()) return;
@@ -123,7 +126,7 @@ export const incomeService = {
     if (expectedUserId && income.userId !== expectedUserId) throw new Error('Income is owned by another user');
     const adjustments = await prepareBalanceAdjustments(income.userId, [{ type: 'income', income, direction: -1 }]);
 
-    await runTransaction(db, async (transaction) => {
+    await runFinancialTransaction(db, operation, async (transaction) => {
       const current = await transaction.get(incomeRef);
       if (!current.exists()) return;
       if (current.data().userId !== income.userId) throw new Error('Income is owned by another user');

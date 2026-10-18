@@ -4,7 +4,7 @@
 
 本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
 
-> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；service method 與主要資料流程見 [邏輯與 Method 流程](LOGIC_METHOD_FLOW.md)；Firestore IndexedDB 快取和 app queue 的差異見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)。
+> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層細節另見 [系統架構](ARCHITECTURE.md)。
 
 ## 目錄 Table of Contents
 
@@ -81,12 +81,20 @@ main.tsx
 ### 一般資料操作流程
 
 ```text
-頁面 / 元件 → handler 或 hook → 對應 service → Firestore
-      ↑                                  ↓
-      └──── 更新 React 狀態 / 快取 ←─────┘
-
-一般資料異動先更新 React state/cache，透過共用 helper 在呼叫 Firebase 前保存 app `offlineQueue`。已知離線時即完成本機提交；線上寫入失敗則保留 queue，交由 `syncService` 依帳戶順序重播。Firestore SDK IndexedDB 另行維護自己的快取與待確認寫入。各 entity 支援範圍見 [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md)及[逐功能驗收](LOCAL_FIRST_ACCEPTANCE.md)。
+頁面 / 元件 → 穩定 ID → 即時更新 React 狀態與快取
+                           ↓
+                  IndexedDB outbox 提交
+                           ↓
+                  回報已儲存於本機
+                           ↓
+               syncService 背景取得操作執行權
+                           ↓
+             Firestore transaction：資料 + receipt
+                           ↓
+                完成佇列操作 / 刷新受影響範圍
 ```
+
+線上與離線操作使用相同的本機提交流程；Firebase 同步不阻擋本機完成。儲存失敗必須顯示錯誤，遠端拒絕保留可檢查的操作。完整的佇列、交易、分頁和快取合約見 [效能與可靠性實作](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md)。既有 method 盤點見 [邏輯與 Method 流程](LOGIC_METHOD_FLOW.md)。
 
 不是所有操作都會經過同一個 Hook。新增功能時，請沿用該領域既有 service，並檢查其 Firestore Rules、離線支援與同步行為；資料隔離及授權以 `web/firestore.rules` 和 Functions 驗證為準。
 

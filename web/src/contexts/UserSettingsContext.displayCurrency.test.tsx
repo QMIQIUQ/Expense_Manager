@@ -1,6 +1,8 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { offlineQueue } from '../utils/offlineQueue';
+import { sessionCache } from '../utils/sessionCache';
 import { LanguageProvider } from './LanguageContext';
 import { UserSettingsProvider, useUserSettings } from './UserSettingsContext';
 import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
@@ -52,12 +54,14 @@ const renderSettings = () => render(
 );
 
 describe('UserSettingsContext display currency', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    sessionCache.clearAll(); await offlineQueue.clear();
     vi.clearAllMocks();
     mockUseAuth.mockReturnValue({ currentUser: { uid: 'user-1' } });
     mockGetOrCreate.mockResolvedValue(makeSettings('user-1', 'MYR'));
     mockUpdate.mockResolvedValue(undefined);
   });
+  afterEach(() => vi.restoreAllMocks());
 
   it('keeps the header selector and profile preference in sync and persists the choice', async () => {
     renderSettings();
@@ -68,11 +72,12 @@ describe('UserSettingsContext display currency', () => {
     fireEvent.click(await screen.findByRole('option', { name: /twd/i }));
 
     await waitFor(() => expect(screen.getByTestId('profile-currency')).toHaveTextContent('TWD'));
-    expect(mockUpdate).toHaveBeenCalledWith('user-1', { displayCurrency: 'TWD' });
+    await waitFor(() => expect(offlineQueue.getAll()).toEqual([expect.objectContaining({ entity: 'userSettings', payload: { userId: 'user-1', updates: { displayCurrency: 'TWD' } } })]));
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('rolls the selected currency back when saving fails', async () => {
-    mockUpdate.mockRejectedValueOnce(new Error('save failed'));
+    vi.spyOn(offlineQueue, 'enqueueMany').mockResolvedValueOnce(null);
     renderSettings();
 
     const selector = await screen.findByRole('button', { name: /display currency/i });

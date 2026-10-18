@@ -267,7 +267,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     } catch (error) {
       console.error('Failed to save preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = queueFailedWrite(error, {
+        const queuedId = await queueFailedWrite(error, {
           type: isEditing ? 'update' : 'create',
           entity: 'quickExpensePreset',
           payload: isEditing
@@ -325,7 +325,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     } catch (error) {
       console.error('Failed to delete preset:', error);
       if (isRetryableNetworkError(error)) {
-        const queuedId = queueFailedWrite(error, {
+        const queuedId = await queueFailedWrite(error, {
           type: 'delete',
           entity: 'quickExpensePreset',
           payload: { id: presetId, userId: currentUser.uid },

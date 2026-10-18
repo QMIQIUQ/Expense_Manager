@@ -9,7 +9,7 @@ interface PrivateRouteProps {
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { currentUser } = useAuth();
 
-  return currentUser ? <>{children}</> : <Navigate to="/login" />;
+  return currentUser ? <React.Fragment key={currentUser.uid}>{children}</React.Fragment> : <Navigate to="/login" />;
 };
 
 export default PrivateRoute;

@@ -57,7 +57,7 @@ interface ScheduledPaymentManagerProps {
   onUpdate: (id: string, updates: Partial<ScheduledPayment>) => void;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, isActive: boolean) => void;
-  onConfirmPayment: (scheduledPaymentId: string, record: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>) => void;
+  onConfirmPayment: (scheduledPaymentId: string, record: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>) => Promise<boolean>;
   onDeletePaymentRecord: (recordId: string) => void;
   getSummary: (payment: ScheduledPayment) => Promise<ScheduledPaymentSummary>;
   isPeriodPaid: (paymentId: string, year: number, month: number) => Promise<boolean>;
@@ -192,7 +192,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     }
   };
 
-  const handleConfirmPayment = (paymentId: string, recordData: {
+  const handleConfirmPayment = async (paymentId: string, recordData: {
     expectedAmount: number;
     actualAmount: number;
     difference: number;
@@ -206,7 +206,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     bankId?: string;
     note?: string;
   }) => {
-    onConfirmPayment(paymentId, {
+    const accepted = await onConfirmPayment(paymentId, {
       expectedAmount: recordData.expectedAmount,
       actualAmount: recordData.actualAmount,
       difference: recordData.difference,
@@ -222,18 +222,22 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
     });
     
     // Update period paid status
-    setPeriodPaidStatus(prev => ({ ...prev, [paymentId]: true }));
+    if (accepted) setPeriodPaidStatus(prev => ({ ...prev, [paymentId]: true }));
+    return accepted;
   };
 
   // Handle bulk confirm
-  const handleBulkConfirmPayments = (paymentsToConfirm: Array<{
+  const handleBulkConfirmPayments = async (paymentsToConfirm: Array<{
     scheduledPaymentId: string;
     recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>;
   }>) => {
-    paymentsToConfirm.forEach(({ scheduledPaymentId, recordData }) => {
-      onConfirmPayment(scheduledPaymentId, recordData);
-      setPeriodPaidStatus(prev => ({ ...prev, [scheduledPaymentId]: true }));
-    });
+    let allAccepted = true;
+    for (const { scheduledPaymentId, recordData } of paymentsToConfirm) {
+      const accepted = await onConfirmPayment(scheduledPaymentId, recordData);
+      if (accepted) setPeriodPaidStatus(prev => ({ ...prev, [scheduledPaymentId]: true }));
+      else allAccepted = false;
+    }
+    return allAccepted;
   };
 
   return (
