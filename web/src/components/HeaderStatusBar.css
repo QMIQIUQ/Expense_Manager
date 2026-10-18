@@ -1,7 +1,7 @@
 .header-status-floating-container {
   position: fixed;
   left: 50%;
-  z-index: 1100;
+  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: 8px;
