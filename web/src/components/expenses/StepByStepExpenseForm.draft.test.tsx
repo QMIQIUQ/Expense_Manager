@@ -171,6 +171,7 @@ describe('StepByStepExpenseForm draft controls', () => {
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
         categories={[]}
+        startAtReceiptStep
       />
     );
 

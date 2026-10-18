@@ -19,7 +19,7 @@ interface BulkPaymentConfirmProps {
   onConfirmPayments: (paymentData: Array<{
     scheduledPaymentId: string;
     recordData: Omit<ScheduledPaymentRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'scheduledPaymentId'>;
-  }>) => void;
+  }>) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -133,9 +133,9 @@ const BulkPaymentConfirm: React.FC<BulkPaymentConfirmProps> = ({
         },
       }));
 
-    onConfirmPayments(paymentsToConfirm);
+    const accepted = await onConfirmPayments(paymentsToConfirm);
     setIsConfirming(false);
-    onClose();
+    if (accepted) onClose();
   };
 
   return (

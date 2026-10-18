@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -10,6 +9,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Bank } from '../types';
@@ -17,15 +17,21 @@ import { Bank } from '../types';
 const COLLECTION_NAME = 'banks';
 
 export const bankService = {
-  async create(bank: Omit<Bank, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  createId(): string {
+    return doc(collection(db, COLLECTION_NAME)).id;
+  },
+
+  async create(bank: Omit<Bank, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+    const { id, ...fields } = bank;
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...bank,
+    const bankRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
+    await setDoc(bankRef, {
+      ...fields,
       balance: bank.balance ?? 0, // Default balance to 0
       createdAt: now,
       updatedAt: now,
     });
-    return docRef.id;
+    return bankRef.id;
   },
 
   async getAll(userId: string): Promise<Bank[]> {

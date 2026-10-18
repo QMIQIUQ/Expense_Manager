@@ -2,16 +2,21 @@ import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
+import * as NotificationContext from '../contexts/NotificationContext';
 
 interface AllTheProvidersProps {
   children: React.ReactNode;
 }
 
 function AllTheProviders({ children }: AllTheProvidersProps) {
+  const notificationContent = NotificationContext.NotificationProvider ? (
+    <NotificationContext.NotificationProvider>{children}</NotificationContext.NotificationProvider>
+  ) : children;
+
   return (
     <BrowserRouter>
       <LanguageProvider>
-        {children}
+        {notificationContent}
       </LanguageProvider>
     </BrowserRouter>
   );

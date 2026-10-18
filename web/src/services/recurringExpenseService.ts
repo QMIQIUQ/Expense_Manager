@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -8,6 +7,7 @@ import {
   query,
   where,
   Timestamp,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RecurringExpense } from '../types';
@@ -26,19 +26,24 @@ const removeUndefinedFields = (data: Record<string, unknown>): Record<string, un
 };
 
 export const recurringExpenseService = {
+  createId(): string {
+    return doc(collection(db, COLLECTION_NAME)).id;
+  },
+
   // Create a new recurring expense
   async create(
-    recurringExpense: Omit<RecurringExpense, 'id' | 'createdAt' | 'updatedAt'>
+    recurringExpense: Omit<RecurringExpense, 'createdAt' | 'updatedAt'> & { id?: string }
   ): Promise<string> {
+    const { id, ...fields } = recurringExpense;
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
-      ...recurringExpense,
+      ...fields,
       createdAt: now,
       updatedAt: now,
     });
-    
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToSave);
-    return docRef.id;
+    const recurringRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
+    await setDoc(recurringRef, dataToSave);
+    return recurringRef.id;
   },
 
   // Get all recurring expenses for a user

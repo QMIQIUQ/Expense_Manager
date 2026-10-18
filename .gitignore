@@ -46,3 +46,5 @@ web/node_modules/
 # Test data files
 test-data/
 scripts/__pycache__/
+web/test-results/
+web/playwright-report/

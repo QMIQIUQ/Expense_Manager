@@ -42,6 +42,7 @@ const convertForAccount = async (input: {
 
 export type BalanceAdjustmentEvent =
   | { type: 'expense'; expense: Expense; direction: -1 | 1 }
+  | { type: 'income'; income: Income; direction: -1 | 1 }
   | { type: 'transfer'; transfer: Transfer; sourceDirection: -1 | 1; destinationDirection: -1 | 1 };
 
 export interface PreparedBalanceAdjustment {
@@ -85,6 +86,19 @@ export const prepareBalanceAdjustments = async (
       date: expense.date,
     });
   };
+  const addIncomeMovement = (income: Income, direction: -1 | 1) => {
+    movements.push({
+      method: income.paymentMethod,
+      accountId: income.bankId,
+      accountName: income.paymentMethodName,
+      direction,
+      amount: income.amount,
+      currency: income.currency,
+      baseAmount: getIncomeBaseAmount(income),
+      baseCurrency: income.baseCurrency,
+      date: income.date,
+    });
+  };
   const addTransferMovement = (transfer: Transfer, sourceDirection: -1 | 1, destinationDirection: -1 | 1) => {
     movements.push({
       method: transfer.fromPaymentMethod,
@@ -112,6 +126,7 @@ export const prepareBalanceAdjustments = async (
 
   events.forEach((event) => {
     if (event.type === 'expense') addExpenseMovement(event.expense, event.direction);
+    else if (event.type === 'income') addIncomeMovement(event.income, event.direction);
     else addTransferMovement(event.transfer, event.sourceDirection, event.destinationDirection);
   });
 

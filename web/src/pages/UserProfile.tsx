@@ -3,12 +3,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { userSettingsService } from '../services/userSettingsService';
+import { queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
 import { useNotification } from '../contexts/NotificationContext';
 import { TimeFormat, DateFormat, DateShortcut, CurrencyCode } from '../types';
 import PWAInstallButton from '../components/PWAInstallButton';
 import DateShortcutsSettings from '../components/settings/DateShortcutsSettings';
 import CurrencySelector from '../components/common/CurrencySelector';
 import './UserProfile.css';
+
+const isRetryableNetworkError = (error: unknown): boolean => {
+  const code = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : '';
+  if (['permission-denied', 'invalid-argument', 'failed-precondition'].includes(code || '')) return false;
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine);
+};
 
 const UserProfile: React.FC = () => {
   const { currentUser } = useAuth();
@@ -28,6 +38,7 @@ const UserProfile: React.FC = () => {
   } = useUserSettings();
   void _refreshSettings; // Keep for potential future use
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const [savedBillingCycleDay, setSavedBillingCycleDay] = useState<number>(1);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(contextTimeFormat);
   const [dateFormat, setDateFormat] = useState<DateFormat>(contextDateFormat);
   const [loading, setLoading] = useState(true);
@@ -50,6 +61,7 @@ const UserProfile: React.FC = () => {
     try {
       const settings = await userSettingsService.getOrCreate(currentUser.uid);
       setBillingCycleDay(settings.billingCycleDay);
+      setSavedBillingCycleDay(settings.billingCycleDay);
       setTimeFormat(settings.timeFormat || '24h');
       setDateFormat(settings.dateFormat || 'YYYY-MM-DD');
     } catch (error) {
@@ -59,6 +71,17 @@ const UserProfile: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleSettingsSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
+      if (detail?.entity === 'userSettings' && detail.userId === currentUser.uid) void loadSettings();
+    };
+    window.addEventListener('offline-operation-synced', handleSettingsSynced);
+    return () => window.removeEventListener('offline-operation-synced', handleSettingsSynced);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.uid]);
 
   const handleSaveBillingCycle = async () => {
     if (!currentUser) return;
@@ -70,10 +93,24 @@ const UserProfile: React.FC = () => {
     
     setSaving(true);
     try {
-      await userSettingsService.update(currentUser.uid, { billingCycleDay });
+      await writeLocalFirst({ type: 'update', entity: 'userSettings', payload: { userId: currentUser.uid, updates: { billingCycleDay } } },
+        () => userSettingsService.update(currentUser.uid, { billingCycleDay }));
+      setSavedBillingCycleDay(billingCycleDay);
       showNotification('success', t('settingsSaved'));
     } catch (error) {
+      const queued = isRetryableNetworkError(error) && await queueFailedWrite(error, {
+        type: 'update',
+        entity: 'userSettings',
+        payload: { userId: currentUser.uid, updates: { billingCycleDay } },
+      });
+      if (queued) {
+        setSavedBillingCycleDay(billingCycleDay);
+        showNotification('info', t('operationSavedOffline'));
+        setSaving(false);
+        return;
+      }
       console.error('Error saving billing cycle day:', error);
+      setBillingCycleDay(savedBillingCycleDay);
       showNotification('error', t('errorSavingSettings'));
     } finally {
       setSaving(false);
