@@ -25,7 +25,6 @@ service cloud.firestore {
               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminStatus == true));
     }
 
-    // Friend spending requires both an accepted connection and the owner's sharing consent.
     function hasAcceptedConnection(ownerUid, friendUid) {
       let connectionPath = /databases/$(database)/documents/friendConnections/$(ownerUid)/friends/$(friendUid);
       return exists(connectionPath) &&
@@ -160,6 +159,7 @@ service cloud.firestore {
     
     // Categories collection
     match /categories/{categoryId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/categories/$(categoryId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -176,6 +176,7 @@ service cloud.firestore {
     
     // Budgets collection
     match /budgets/{budgetId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/budgets/$(budgetId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
@@ -222,6 +223,7 @@ service cloud.firestore {
     
     // Recurring expenses collection
     match /recurringExpenses/{recurringId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/recurringExpenses/$(recurringId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -229,6 +231,7 @@ service cloud.firestore {
     
     // Cards collection (credit cards)
     match /cards/{cardId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/cards/$(cardId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -236,6 +239,7 @@ service cloud.firestore {
     
     // Incomes collection
     match /incomes/{incomeId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/incomes/$(incomeId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
@@ -250,6 +254,7 @@ service cloud.firestore {
     
     // E-Wallets collection (electronic payment methods)
     match /ewallets/{ewalletId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/ewallets/$(ewalletId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -257,6 +262,7 @@ service cloud.firestore {
     
     // Banks collection (bank account management)
     match /banks/{bankId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/banks/$(bankId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -264,6 +270,7 @@ service cloud.firestore {
     
     // Feature Settings collection (tab visibility and ordering)
     match /featureSettings/{settingsId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/featureSettings/$(settingsId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
@@ -272,6 +279,7 @@ service cloud.firestore {
     
     // Repayments collection (tracks repayments against expenses)
     match /repayments/{repaymentId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/repayments/$(repaymentId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
@@ -471,6 +479,7 @@ service cloud.firestore {
     
     // Quick Expense Presets collection (stores user's quick expense shortcuts)
     match /quickExpensePresets/{presetId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/quickExpensePresets/$(presetId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
@@ -482,8 +491,19 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
+    // Immutable receipts make replayed financial operations harmless after a crash.
+    match /mutationReceipts/{userId}/operations/{operationId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId) &&
+        request.resource.data.keys().hasOnly(['userId', 'result', 'committedAt']) &&
+        request.resource.data.userId == userId &&
+        request.resource.data.committedAt == request.time;
+      allow update, delete: if false;
+    }
+
     // Scheduled Payments collection (subscriptions, installments, debts)
     match /scheduledPayments/{paymentId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/scheduledPayments/$(paymentId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
@@ -501,6 +521,7 @@ service cloud.firestore {
     
     // Scheduled Payment Records collection (tracks individual payment confirmations)
     match /scheduledPaymentRecords/{recordId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/scheduledPaymentRecords/$(recordId));
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.userId) &&
