@@ -1,0 +1,27 @@
+.header-status-floating-container {
+  position: fixed;
+  left: 50%;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(calc(100vw - 32px), 1280px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.header-status-floating-item {
+  flex: 0 0 auto;
+  margin: 0 16px;
+  box-shadow: 0 8px 24px var(--shadow-md, rgba(0, 0, 0, 0.2));
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .header-status-floating-item {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}
