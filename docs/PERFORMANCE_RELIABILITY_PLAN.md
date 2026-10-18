@@ -25,4 +25,4 @@ Preserve local-first interaction: commit the pending operation locally before ac
 
 ## Current status
 
-The plan was completed before implementation. The local-first web changes have been ported, and the six improvement areas have an initial implementation. See `PERFORMANCE_RELIABILITY_IMPLEMENTATION.md` for the current methods, flows and outstanding acceptance/deployment gates. This file is not evidence of runtime acceptance.
+The plan was completed before implementation. The local-first web changes and all six improvement areas are implemented and independently accepted. Verification passed 235 unit tests, 17 Firebase emulator cases and 2 real-browser cases, plus build and lint. See `PERFORMANCE_RELIABILITY_IMPLEMENTATION.md` for the methods, flows, deployment prerequisites and release evidence. Local test success alone does not establish live index readiness or Hosting deployment success.

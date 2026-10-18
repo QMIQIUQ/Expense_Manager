@@ -1,6 +1,6 @@
 # Performance and reliability implementation
 
-Status: code readiness accepted by independent review after iteration 4. Shared-backend deployment and frontend publication await authorization.
+Status: code readiness accepted by independent review after iteration 4. The user authorized the shared-backend prerequisites and publication to `firebase-testing` on 2026-10-18. Release evidence is tracked in backend PR #117 and feature PR #118.
 
 ## Mutation lifecycle
 
@@ -55,6 +55,6 @@ Reproduction from `web/`: `npm run test:run`; start demo Auth/Firestore emulator
 
 The receipt rules and history indexes must exist before this frontend is published. The existing workflow deploys Firestore only from `main`; `firebase-testing` publishes a Hosting preview using the shared production Firebase project. Shared-backend changes require explicit authorization under the project's production rule, plus backward-compatibility/index readiness checks. Do not publish an incompatible frontend first or claim deployment from build success.
 
-Target: `origin/firebase-testing`. Live index definitions were inspected; six existing untracked indexes are now included in the additive index manifest to preserve them. No backend deployment has been performed.
+Target: `origin/firebase-testing`. Live index definitions were inspected; six existing untracked indexes are included in the additive index manifest to preserve them. Backend PR [#117](https://github.com/QMIQIUQ/Expense_Manager/pull/117) merged into `main` as `6379434bc84efc7f0f8a2de1eff2cd45a62c04eb`. The deployed rules were read back and matched the approved source. The main workflow published the rules but failed its Firebase CLI index preflight with a Service Usage permission error; the authenticated local Firebase CLI subsequently deployed the same additive index manifest successfully. This does not change the failed workflow's recorded status or resolve its service-account permission issue.
 
-Independent code review and local validation are complete. Controlled task-only publication and verified Hosting deployment remain required. Pre-existing modified architecture/offline documents, review artifacts and attachments remain outside the task's commits.
+Independent code review and local validation are complete. Feature PR [#118](https://github.com/QMIQIUQ/Expense_Manager/pull/118) tracks the testing release; publication requires the live indexes to be READY, followed by a successful testing Hosting workflow and verification of its actual preview URL. The root `expense-manager-41afb.web.app` URL is the live channel; testing uses the workflow's `compact-navigation-v2` preview URL. Pre-existing modified architecture/offline documents, review artifacts and attachments remain outside the task's commits.
