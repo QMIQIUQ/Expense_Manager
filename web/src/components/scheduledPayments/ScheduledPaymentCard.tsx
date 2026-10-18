@@ -59,7 +59,7 @@ interface ScheduledPaymentCardProps {
     paymentMethodName?: string;
     bankId?: string;
     note?: string;
-  }) => void;
+  }) => Promise<boolean>;
   onDeletePaymentRecord?: (recordId: string) => void;
   isPeriodPaid?: boolean;
 }
@@ -156,7 +156,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
   const progress = getProgress();
   const categoryStyle = getCategoryColor(payment.category);
 
-  const handlePaymentSubmit = (data: {
+  const handlePaymentSubmit = async (data: {
     expectedAmount: number;
     actualAmount: number;
     difference?: number;
@@ -170,11 +170,11 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
     bankId?: string;
     note?: string;
   }) => {
-    onConfirmPayment({
+    const accepted = await onConfirmPayment({
       ...data,
       difference: data.actualAmount - data.expectedAmount,
     });
-    setShowPaymentForm(false);
+    if (accepted) setShowPaymentForm(false);
   };
 
   return (

@@ -39,21 +39,21 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
     setIsSelectionMode
   } = useMultiSelect<Bank>();
 
-  const handleAdd = async (data: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-    await onAdd(data);
+  const handleAdd = (data: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    void onAdd(data);
     setIsAdding(false);
   };
 
-  const handleUpdate = async (data: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleUpdate = (data: Omit<Bank, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!editingBank) return;
-    await onUpdate(editingBank.id!, data);
+    void onUpdate(editingBank.id!, data);
     setEditingBank(null);
   };
 
   const confirmDelete = (id: string) => setDeleteConfirm({ isOpen: true, bankId: id });
-  const doDelete = async () => {
+  const doDelete = () => {
     if (deleteConfirm.bankId) {
-      await onDelete(deleteConfirm.bankId);
+      void onDelete(deleteConfirm.bankId);
       setDeleteConfirm({ isOpen: false, bankId: null });
     }
   };
@@ -394,13 +394,11 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
         isOpen={deleteConfirm.isOpen}
         title={t('delete') + ' ' + t('bank')}
         message={deleteConfirm.bankId ? t('confirmDelete') : t('confirmDeleteSelected')}
-        onConfirm={async () => {
+        onConfirm={() => {
             if (deleteConfirm.bankId) {
-                await doDelete();
+                doDelete();
             } else if (isSelectionMode) {
-                for (const id of selectedIds) {
-                    await onDelete(id);
-                }
+                selectedIds.forEach((id) => { void onDelete(id); });
                 clearSelection();
                 setIsSelectionMode(false);
                 setDeleteConfirm({ isOpen: false, bankId: null });

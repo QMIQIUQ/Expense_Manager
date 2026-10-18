@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -12,6 +11,8 @@ import {
   limit,
   startAfter,
   QueryDocumentSnapshot,
+  setDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EWallet, DEFAULT_EWALLETS } from '../types';
@@ -29,21 +30,23 @@ const sanitizePayload = <T extends Record<string, unknown>>(data: T): T => {
 };
 
 export const ewalletService = {
+  createId(): string {
+    return doc(collection(db, COLLECTION_NAME)).id;
+  },
+
   // Initialize default e-wallets for a new user
   async initializeDefaults(userId: string): Promise<void> {
     const existing = await this.getAll(userId);
     if (existing.length === 0) {
       const now = Timestamp.now();
       const promises = DEFAULT_EWALLETS.map((wallet) =>
-        addDoc(collection(db, COLLECTION_NAME), {
-          userId,
-          name: wallet.name,
-          icon: wallet.icon,
-          color: wallet.color,
-          provider: wallet.provider,
-          isDefault: true,
-          createdAt: now,
-          updatedAt: now,
+        runTransaction(db, async (transaction) => {
+          const reference = doc(db, COLLECTION_NAME, `default_${userId}_${encodeURIComponent(wallet.name)}`);
+          const current = await transaction.get(reference);
+          if (!current.exists()) transaction.set(reference, {
+            userId, name: wallet.name, icon: wallet.icon, color: wallet.color, provider: wallet.provider,
+            isDefault: true, balance: 0, createdAt: now, updatedAt: now,
+          });
         })
       );
       await Promise.all(promises);
@@ -51,18 +54,20 @@ export const ewalletService = {
   },
 
   // Create a new e-wallet
-  async create(ewallet: Omit<EWallet, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async create(ewallet: Omit<EWallet, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+    const { id, ...fields } = ewallet;
     const now = Timestamp.now();
-    const docRef = await addDoc(
-      collection(db, COLLECTION_NAME),
+    const walletRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
+    await setDoc(
+      walletRef,
       sanitizePayload({
-        ...ewallet,
+        ...fields,
         balance: ewallet.balance ?? 0, // Default balance to 0
         createdAt: now,
         updatedAt: now,
       })
     );
-    return docRef.id;
+    return walletRef.id;
   },
 
   // Get all e-wallets for a user

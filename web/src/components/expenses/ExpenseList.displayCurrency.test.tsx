@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '../../test/test-utils';
 import type { Category, Expense } from '../../types';
@@ -9,9 +10,10 @@ vi.mock('../../contexts/AuthContext', () => ({
 }));
 
 vi.mock('../../contexts/NotificationContext', () => ({
+  NotificationProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useNotification: () => ({
-    showNotification: vi.fn(),
-    updateNotification: vi.fn(),
+      showNotification: vi.fn(),
+      updateNotification: vi.fn(),
   }),
 }));
 

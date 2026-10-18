@@ -177,9 +177,10 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
 
 
 
-  const handleAdd = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    await onAdd(payload);
+  const handleAdd = (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    void onAdd(payload);
     setIsAdding(false);
+    return Promise.resolve();
   };
 
   const startEdit = (wallet: EWallet) => {
@@ -190,10 +191,11 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
     setEditingWallet(null);
   };
 
-  const saveEdit = async (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (!editingWallet) return;
-    await onUpdate(editingWallet.id!, payload);
+  const saveEdit = (payload: Omit<EWallet, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    if (!editingWallet) return Promise.resolve();
+    void onUpdate(editingWallet.id!, payload);
     setEditingWallet(null);
+    return Promise.resolve();
   };
 
   const styles = {
@@ -483,13 +485,11 @@ const EWalletManager: React.FC<EWalletManagerProps> = ({
         confirmText={t('delete')}
         cancelText={t('cancel')}
         danger={true}
-        onConfirm={async () => {
+        onConfirm={() => {
           if (deleteConfirm.walletId) {
-            await onDelete(deleteConfirm.walletId);
+            void onDelete(deleteConfirm.walletId);
           } else if (isSelectionMode) {
-             for (const id of selectedIds) {
-                 await onDelete(id);
-             }
+             selectedIds.forEach((id) => { void onDelete(id); });
              clearSelection();
              setIsSelectionMode(false);
           }

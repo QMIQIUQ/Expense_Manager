@@ -1,6 +1,5 @@
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -10,6 +9,7 @@ import {
   orderBy,
   Timestamp,
   deleteField,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Repayment } from '../types';
@@ -17,15 +17,21 @@ import { Repayment } from '../types';
 const COLLECTION_NAME = 'repayments';
 
 export const repaymentService = {
+  createId(): string {
+    return doc(collection(db, COLLECTION_NAME)).id;
+  },
+
   // Create a new repayment
-  async create(repayment: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async create(repayment: Omit<Repayment, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> {
+    const { id, ...fields } = repayment;
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...repayment,
+    const repaymentRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
+    await setDoc(repaymentRef, {
+      ...fields,
       createdAt: now,
       updatedAt: now,
     });
-    return docRef.id;
+    return repaymentRef.id;
   },
 
   // Get all repayments for a user

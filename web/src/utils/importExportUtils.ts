@@ -7,6 +7,16 @@ import { categoryService } from '../services/categoryService';
 import { expenseService } from '../services/expenseService';
 import { DEFAULT_BASE_CURRENCY } from './currencyUtils';
 import { resolveExpenseCurrencyFields } from '../services/currencyRateService';
+import { queueFailedWrite, writeLocalFirst } from './localFirstMutation';
+
+const isRetryableNetworkError = (error: unknown): boolean => {
+  const code = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : '';
+  if (['permission-denied', 'invalid-argument', 'failed-precondition'].includes(code || '')) return false;
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine);
+};
 
 // Types for import operations
 export interface ImportOptions {
@@ -359,6 +369,20 @@ export const importData = async (
   };
   
   try {
+    const createCategory = async (category: Omit<Category, 'createdAt'>): Promise<string> => {
+      const id = categoryService.createId();
+      const payload = { ...category, id };
+      try {
+        return await writeLocalFirst({ type: 'create', entity: 'category', payload }, () => categoryService.create(payload));
+      } catch (error) {
+        const queuedId = isRetryableNetworkError(error)
+          ? await queueFailedWrite(error, { type: 'create', entity: 'category', payload })
+          : null;
+        if (queuedId) return id;
+        throw error;
+      }
+    };
+
     // Step 1: Process categories first
     const categoryMap = new Map<string, string>(); // name (lowercase) -> id mapping
     const categoryIdToName = new Map<string, string>(); // id -> original name mapping
@@ -380,7 +404,7 @@ export const importData = async (
         
         if (!categoryMap.has(normalizedName)) {
           try {
-            const newCatId = await categoryService.create({
+            const newCatId = await createCategory({
               userId,
               name: catRow.name,
               icon: '📦',
@@ -430,7 +454,7 @@ export const importData = async (
             e => e.category.toLowerCase().trim() === catName
           )?.category || catName;
           
-          const newCatId = await categoryService.create({
+          const newCatId = await createCategory({
             userId,
             name: originalName,
             icon: '📦',
@@ -545,8 +569,17 @@ export const importData = async (
             expenseData.notes = String(expRow.notes);
           }
 
-          // Create expense
-          await expenseService.create(expenseData);
+          // Use a stable ID so the local queue can replay this row without duplicates.
+          const expensePayload = { ...expenseData, id: expenseService.createId() };
+          try {
+            await writeLocalFirst({ type: 'create', entity: 'expense', payload: expensePayload },
+              () => expenseService.create(expensePayload, { updateAccountBalances: true }));
+          } catch (error) {
+            const queuedId = isRetryableNetworkError(error)
+              ? await queueFailedWrite(error, { type: 'create', entity: 'expense', payload: expensePayload })
+              : null;
+            if (!queuedId) throw error;
+          }
           
                     // Update progress after each successful import
                     onProgress?.(

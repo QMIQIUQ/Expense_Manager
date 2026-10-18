@@ -7,10 +7,21 @@ import { DashboardWidget, DEFAULT_DASHBOARD_LAYOUT } from '../../types/dashboard
 import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
 import { quickExpenseService } from '../../services/quickExpenseService';
+import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
+
+const isRetryableNetworkError = (error: unknown): boolean => {
+  const code = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code).toLowerCase().split('/').pop()
+    : '';
+  if (['permission-denied', 'invalid-argument', 'failed-precondition'].includes(code || '')) return false;
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine);
+};
 import { WidgetContainer, WidgetProps } from './widgets';
 import DashboardCustomizer from './DashboardCustomizer';
 
 interface CustomizableDashboardProps {
+  completeness?: import('./widgets/completeness').WidgetCompleteness;
   expenses: Expense[];
   incomes: Income[];
   repayments: Repayment[];
@@ -44,6 +55,7 @@ interface CustomizableDashboardProps {
 }
 
 const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
+  completeness,
   expenses,
   incomes,
   repayments,
@@ -90,8 +102,9 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       if (!currentUser) return;
       
       try {
-        const layout = await dashboardLayoutService.getOrCreate(currentUser.uid);
-        setWidgets(layout.widgets.sort((a, b) => a.order - b.order));
+        const layout = await dashboardLayoutService.getOrCreate(currentUser.uid,
+          (fresh) => setWidgets([...fresh.widgets].sort((a, b) => a.order - b.order)));
+        setWidgets([...layout.widgets].sort((a, b) => a.order - b.order));
       } catch (error) {
         console.error('Failed to load dashboard layout:', error);
         // Keep using DEFAULT_DASHBOARD_LAYOUT to maintain functionality even if custom layout fails to load
@@ -101,11 +114,24 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     loadLayout();
   }, [currentUser]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleLayoutSynced = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
+      if (detail?.entity !== 'dashboardLayout' || detail.userId !== currentUser.uid) return;
+      void dashboardLayoutService.getOrCreate(currentUser.uid)
+        .then((layout) => setWidgets([...layout.widgets].sort((a, b) => a.order - b.order)))
+        .catch((error) => console.error('Failed to refresh synced dashboard layout:', error));
+    };
+    window.addEventListener('offline-operation-synced', handleLayoutSynced);
+    return () => window.removeEventListener('offline-operation-synced', handleLayoutSynced);
+  }, [currentUser]);
+
   // Load quick expense presets
   const loadQuickExpensePresets = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const presets = await quickExpenseService.getPresets(currentUser.uid);
+      const presets = await quickExpenseService.getPresets(currentUser.uid, setQuickExpensePresets);
       setQuickExpensePresets(presets);
     } catch (error) {
       console.error('Failed to load quick expense presets:', error);
@@ -124,16 +150,30 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     const previousWidgets = [...widgets];
     
     // 1. Optimistic Update: Update UI immediately
-    setWidgets(newWidgets.sort((a, b) => a.order - b.order));
+    const orderedWidgets = [...newWidgets].sort((a, b) => a.order - b.order);
+    setWidgets(orderedWidgets);
     
     try {
       // 2. Save to Firebase in background
-      await dashboardLayoutService.updateWidgets(currentUser.uid, newWidgets);
+      await writeLocalFirst({ type: 'update', entity: 'dashboardLayout', payload: { userId: currentUser.uid, widgets: orderedWidgets } },
+        () => dashboardLayoutService.updateWidgets(currentUser.uid, orderedWidgets));
       
       // 3. Notify success
       showNotification('success', t('saveSuccess') || '已保存自定義列表');
     } catch (error) {
       console.error('Failed to save dashboard layout:', error);
+
+      if (isRetryableNetworkError(error)) {
+        const queuedId = await queueFailedWrite(error, {
+          type: 'update',
+          entity: 'dashboardLayout',
+          payload: { userId: currentUser.uid, widgets: orderedWidgets },
+        });
+        if (queuedId) {
+          showNotification('info', t('operationSavedOffline'));
+          return;
+        }
+      }
       
       // 4. Rollback on failure
       setWidgets(previousWidgets);
@@ -145,6 +185,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
 
   // Widget data props
   const widgetData: WidgetProps = {
+    completeness,
     expenses,
     incomes,
     repayments,

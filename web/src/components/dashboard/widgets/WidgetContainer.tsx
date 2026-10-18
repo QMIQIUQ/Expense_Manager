@@ -19,6 +19,7 @@ import TagCloudWidget from './TagCloudWidget';
 import UpcomingBillsWidget from './UpcomingBillsWidget';
 import InstallmentTrackerWidget from './InstallmentTrackerWidget';
 import FriendSpendingWidget from './FriendSpendingWidget';
+import { widgetDataComplete } from './completeness';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -187,7 +188,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
       )}
 
       <div className="widget-content">
-        {widget.enabled ? (
+        {widget.enabled && !widgetDataComplete(widget.type, data.completeness ?? {}) ? <p role="status">{t('incompleteFinancialData')}</p> : widget.enabled ? (
           renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment, onNavigateToIncomes, onNavigateToBudgets, onNavigateToPaymentMethods, onNavigateToExpenseMonth)
         ) : (
           <div className="widget-placeholder">

@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useHistoryPages } from '../../hooks/useHistoryPages';
+import { readHistoryRange } from '../../services/historyService';
+import { applyPendingOperations } from '../../utils/pendingOperations';
 import IncomeForm from '../../components/income/IncomeForm';
 import IncomeList from '../../components/income/IncomeList';
 import { SearchBar } from '../../components/common/SearchBar';
@@ -8,6 +11,8 @@ import { PlusIcon } from '../../components/icons';
 import PopupModal from '../../components/common/PopupModal';
 
 interface Props {
+  userId?: string;
+  onHistoryRows?: (rows: Income[]) => void;
   incomes: Income[];
   expenses: Expense[];
   cards: Card[];
@@ -20,6 +25,8 @@ interface Props {
 }
 
 const IncomesTab: React.FC<Props> = ({
+  userId,
+  onHistoryRows,
   incomes,
   expenses,
   cards,
@@ -33,6 +40,20 @@ const IncomesTab: React.FC<Props> = ({
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(100);
+  const history = useHistoryPages('incomes', userId, undefined, incomes, onHistoryRows);
+  const [searchRows, setSearchRows] = useState<Income[]>();
+  const [searchError, setSearchError] = useState<string>();
+  useEffect(() => {
+    setSearchRows(undefined); setSearchError(undefined);
+    if (!userId || !searchTerm.trim()) return;
+    let current = true;
+    void readHistoryRange<Income>('incomes', userId).then((rows) => {
+      if (current) { setSearchRows(rows); onHistoryRows?.(rows); }
+    }).catch((error) => { if (current) setSearchError(String(error)); });
+    return () => { current = false; };
+  }, [onHistoryRows, searchTerm, userId]);
+  useEffect(() => { setVisibleCount(100); }, [searchTerm]);
 
   const handleSubmit = (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     onAddIncome(data);
@@ -40,14 +61,15 @@ const IncomesTab: React.FC<Props> = ({
   };
   
   const filteredIncomes = useMemo(() => {
-    if (!searchTerm.trim()) return incomes;
+    const rows = userId ? searchRows ? applyPendingOperations('incomes', userId, searchRows) : history.rows : incomes;
+    if (!searchTerm.trim()) return rows;
     const q = searchTerm.toLowerCase();
-    return incomes.filter((inc) => {
+    return rows.filter((inc) => {
       const title = (inc.title || '').toLowerCase();
       const payer = (inc.payerName || '').toLowerCase();
       return title.includes(q) || payer.includes(q);
     });
-  }, [incomes, searchTerm]);
+  }, [history.rows, incomes, searchRows, searchTerm, userId]);
 
   return (
     <div style={styles.container}>
@@ -60,6 +82,7 @@ const IncomesTab: React.FC<Props> = ({
       </div>
 
       {/* Search by name */}
+      {history.incomplete && <p role="status">{t('cachedHistoryIncomplete')}</p>}
       <SearchBar
         placeholder={t('searchByName')}
         value={searchTerm}
@@ -88,7 +111,7 @@ const IncomesTab: React.FC<Props> = ({
       </PopupModal>
 
       <IncomeList
-        incomes={filteredIncomes}
+        incomes={filteredIncomes.slice(0, visibleCount)}
         expenses={expenses}
         cards={cards}
         ewallets={ewallets}
@@ -97,6 +120,10 @@ const IncomesTab: React.FC<Props> = ({
         onInlineUpdate={onInlineUpdate}
         onOpenExpenseById={onOpenExpenseById}
       />
+      {(history.error || searchError) && <p role="alert">{history.error || searchError} <button onClick={history.retry}>{t('retry')}</button></p>}
+      {(visibleCount < filteredIncomes.length || (!searchTerm.trim() && history.hasMore)) && <button type="button" disabled={history.loading} className="btn btn-secondary" onClick={() => { setVisibleCount((count) => count + 100); if (!searchTerm.trim() && visibleCount >= filteredIncomes.length) void history.loadMore(); }}>
+        {t('showMore')} ({Math.min(visibleCount, filteredIncomes.length)} / {!searchTerm.trim() && history.hasMore ? '…' : filteredIncomes.length})
+      </button>}
     </div>
   );
 };

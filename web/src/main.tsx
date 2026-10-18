@@ -1,4 +1,5 @@
 import React from 'react';
+import { offlineQueue } from './utils/offlineQueue';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -83,7 +84,8 @@ setupPWADebug();
 
 // Centralize all top-level providers here to guarantee `useLanguage` and others
 // are available to every route/component, avoiding hook usage outside provider trees.
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+const renderApplication = () => root.render(
   <React.StrictMode>
     <ThemeProvider>
       <LanguageProvider>
@@ -98,3 +100,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </React.StrictMode>
 );
+
+void offlineQueue.initialize().then(renderApplication).catch((error: unknown) => {
+  root.render(<main role="alert" style={{ padding: 24 }}><h1>Local storage needs attention / 本機儲存需要處理</h1><p>{error instanceof Error ? error.message : String(error)}</p><p>Pending changes are retained. Close older tabs, allow site storage, then retry. / 待同步資料已保留，請關閉舊分頁、允許網站儲存後重試。</p><button onClick={() => window.location.reload()}>Retry / 重試</button></main>);
+});

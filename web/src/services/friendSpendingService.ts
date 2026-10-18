@@ -1,3 +1,4 @@
+import { runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import {
   collection,
   doc,
@@ -5,7 +6,6 @@ import {
   getDocs,
   runTransaction,
   serverTimestamp,
-  setDoc,
 } from 'firebase/firestore';
 import { db, friendSpendingEnabled } from '../config/firebase';
 import type {
@@ -14,6 +14,10 @@ import type {
   FriendSpendingSummaryRequest,
 } from '../types/friendSpending';
 import { expenseService } from './expenseService';
+import { sessionCache } from '../utils/sessionCache';
+import { applyPendingOperations } from '../utils/pendingOperations';
+import { offlineQueue } from '../utils/offlineQueue';
+import { networkStatus } from '../utils/networkStatus';
 import {
   friendSpendingSummaryStateRef,
   isFriendSpendingSummaryReady,
@@ -25,6 +29,7 @@ const PREFERENCE_COLLECTION = 'friendDashboardPreferences';
 const REQUEST_COLLECTION = 'friendRequests';
 const CONNECTION_COLLECTION = 'friendConnections';
 const SHARING_COLLECTION = 'friendSharing';
+type PreferenceEntry = { id: string; userId: string; preference: FriendDashboardPreference };
 
 const createDefaultPreference = (): FriendDashboardPreference => {
   const today = new Date();
@@ -287,28 +292,42 @@ export const friendSpendingService = {
     throw new Error('invalid-argument');
   },
 
-  async getPreference(userId: string, friendUid: string): Promise<FriendDashboardPreference> {
-    const preferenceRef = doc(db, PREFERENCE_COLLECTION, userId, 'friends', friendUid);
-    const snapshot = await getDoc(preferenceRef);
-    if (!snapshot.exists()) return createDefaultPreference();
-    const data = snapshot.data();
-    return {
-      mode: data.mode === 'categories' ? 'categories' : 'total',
-      period: ['all', 'rolling-three-months', 'current-month', 'day'].includes(data.period)
-        ? data.period
-        : 'current-month',
-      selectedDate: typeof data.selectedDate === 'string'
-        ? data.selectedDate
-        : createDefaultPreference().selectedDate,
+  async getPreference(userId: string, friendUid: string, onUpdate?: (preference: FriendDashboardPreference) => void): Promise<FriendDashboardPreference> {
+    const cached = applyPendingOperations('friendPreferences', userId,
+      sessionCache.get<PreferenceEntry[]>('friendPreferences', userId) ?? []);
+    const local = cached.find((item) => item.id === friendUid)?.preference;
+    const revision = offlineQueue.revision;
+    const fetchPreference = async () => {
+      const snapshot = await getDoc(doc(db, PREFERENCE_COLLECTION, userId, 'friends', friendUid));
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const preference: FriendDashboardPreference = {
+        mode: data.mode === 'categories' ? 'categories' : 'total',
+        period: ['all', 'rolling-three-months', 'current-month', 'day'].includes(data.period) ? data.period : 'current-month',
+        selectedDate: typeof data.selectedDate === 'string' ? data.selectedDate : createDefaultPreference().selectedDate,
+      };
+      const latest = sessionCache.get<PreferenceEntry[]>('friendPreferences', userId) ?? cached;
+      const entries = revision !== offlineQueue.revision && latest.some((item) => item.id === friendUid)
+        ? latest : [...latest.filter((item) => item.id !== friendUid), { id: friendUid, userId, preference }];
+      const reconciled = applyPendingOperations('friendPreferences', userId, entries);
+      sessionCache.set('friendPreferences', userId, reconciled);
+      return reconciled.find((item) => item.id === friendUid)!.preference;
     };
+    if (local) {
+      if (networkStatus.isOnline) void fetchPreference().then(onUpdate).catch((error) => console.warn('Preference refresh failed:', error));
+      return local;
+    }
+    return networkStatus.isOnline ? fetchPreference() : createDefaultPreference();
   },
 
   async savePreference(
     userId: string,
     friendUid: string,
     preference: FriendDashboardPreference,
+    operation?: FinancialOperation,
   ): Promise<void> {
     const preferenceRef = doc(db, PREFERENCE_COLLECTION, userId, 'friends', friendUid);
-    await setDoc(preferenceRef, { ...preference, updatedAt: serverTimestamp() });
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      transaction.set(preferenceRef, { ...preference, updatedAt: serverTimestamp() });
+    });
   },
 };

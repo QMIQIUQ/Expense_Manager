@@ -1,3 +1,4 @@
+import { commitQueuedEntity } from './queuedEntityMutation';
 /**
  * Sync Service
  * Handles background synchronization of offline data with Firestore
@@ -17,6 +18,14 @@ import { offlineQueue, QueuedOperation } from '../utils/offlineQueue';
 import { networkStatus } from '../utils/networkStatus';
 import { sessionCache, CacheableEntity } from '../utils/sessionCache';
 import { withBudgetMutationLock } from '../utils/budgetMutationLock';
+import { scheduledPaymentService } from './scheduledPaymentService';
+import { transferService } from './transferService';
+import { featureSettingsService } from './featureSettingsService';
+import { userSettingsService } from './userSettingsService';
+import { dashboardLayoutService } from './dashboardLayoutService';
+import { isRetryableWriteError } from '../utils/localFirstMutation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { friendSpendingService } from './friendSpendingService';
 
 export interface SyncProgress {
   total: number;
@@ -27,19 +36,30 @@ export interface SyncProgress {
 }
 
 type SyncProgressCallback = (progress: SyncProgress) => void;
+type SyncPayload = Record<string, unknown>;
+
+const asSyncPayload = (value: unknown): SyncPayload | null =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as SyncPayload
+    : null;
 
 class SyncService {
   private isSyncing = false;
   private syncCallbacks: Set<SyncProgressCallback> = new Set();
   private autoSyncEnabled = true;
+  private queueSyncTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
+    if (typeof window !== 'undefined') window.addEventListener('offline-queue-changed', () => {
+      this.scheduleNextSync();
+    });
+    if (auth) onAuthStateChanged(auth, () => this.scheduleNextSync());
     // Subscribe to network status changes
     networkStatus.subscribe((isOnline) => {
       if (isOnline && this.autoSyncEnabled) {
         // Delay sync slightly to ensure connection is stable
         setTimeout(() => {
-          this.syncOfflineQueue();
+          void this.syncOfflineQueue().catch(console.error);
         }, 1000);
       }
     });
@@ -90,222 +110,171 @@ class SyncService {
     }));
   }
 
+  private notifyOperationNeedsAttention(operation: QueuedOperation) {
+    if (operation.entity === 'expense' || operation.entity === 'budget' || typeof window === 'undefined') return;
+    const payload = operation.payload as { userId?: unknown } | null;
+    window.dispatchEvent(new CustomEvent('offline-operation-needs-attention', {
+      detail: { operationId: operation.id, userId: payload?.userId, entity: operation.entity },
+    }));
+  }
+
   /**
    * Enable/disable automatic sync when connection is restored
    */
   setAutoSync(enabled: boolean) {
     this.autoSyncEnabled = enabled;
+    clearTimeout(this.queueSyncTimer);
+    if (enabled) this.scheduleNextSync();
   }
 
   /**
    * Check if sync is currently in progress
    */
   get isSyncInProgress(): boolean {
-    return this.isSyncing;
+    const uid = auth.currentUser?.uid;
+    return !!uid && (this.isSyncing || offlineQueue.getAll().some((row) => (row.payload as { userId?: unknown })?.userId === uid && !!row.lease && row.lease.expiresAt > Date.now()));
   }
 
   /**
    * Get pending operations count
    */
   get pendingCount(): number {
-    return offlineQueue.count();
+    return auth.currentUser?.uid ? offlineQueue.count(auth.currentUser.uid) : 0;
   }
 
   /**
    * Sync offline queue with server
    */
   async syncOfflineQueue(): Promise<{ success: number; failed: number }> {
-    if (this.isSyncing) {
-      console.log('Sync already in progress, skipping...');
-      return { success: 0, failed: 0 };
-    }
-
-    if (!networkStatus.isOnline) {
-      console.log('Device is offline, cannot sync');
-      return { success: 0, failed: 0 };
-    }
-
-    const queue = offlineQueue.getAll();
-    if (queue.length === 0) {
-      console.log('No pending operations to sync');
-      return { success: 0, failed: 0 };
-    }
-
+    const userId = auth.currentUser?.uid;
+    if (this.isSyncing || !networkStatus.isOnline || !userId) return { success: 0, failed: 0 };
     this.isSyncing = true;
     let success = 0;
     let failed = 0;
-    const rejectedBudgetOperations: QueuedOperation[] = [];
-    const blockedBudgetKeys = new Set<string>();
-    const blockedExpenseKeys = new Set<string>();
-
-    this.notifyProgress({
-      total: queue.length,
-      completed: 0,
-      failed: 0,
-      currentOperation: 'Starting sync...',
-    });
-
-    for (let i = 0; i < queue.length; i++) {
-      const operation = queue[i];
-
-      // A prior terminal create rejection may have removed this dependent write.
-      if (!offlineQueue.getAll().some((queuedOperation) => queuedOperation.id === operation.id)) continue;
-
-      let expenseKey: string | undefined;
-      if (operation.entity === 'expense') {
-        const payload = operation.payload as { id?: unknown; userId?: unknown } | null;
-        const signedInUserId = auth.currentUser?.uid;
-        // Leave legacy and other-account entries untouched without consuming retries.
-        if (!signedInUserId || !payload || typeof payload.userId !== 'string' || payload.userId !== signedInUserId) continue;
-
-        if (operation.type === 'create' && (typeof payload.id !== 'string' || !payload.id)) {
-          const updatedPayload = { ...payload, id: expenseService.createId() };
-          if (!offlineQueue.updatePayload(operation.id, updatedPayload)) continue;
-          operation.payload = updatedPayload;
-          payload.id = updatedPayload.id;
-        }
-        if (typeof payload.id !== 'string' || !payload.id) continue;
-
-        expenseKey = `${signedInUserId}:${payload.id}`;
-        if (blockedExpenseKeys.has(expenseKey)) continue;
-        if (operation.status === 'needs-attention') {
-          blockedExpenseKeys.add(expenseKey);
-          continue;
-        }
-      } else if (operation.status === 'needs-attention') {
-        continue;
-      }
-
-      let budgetKey: string | undefined;
-      if (operation.entity === 'budget') {
-        const payload = operation.payload as { id?: unknown; userId?: unknown };
-        const signedInUserId = auth.currentUser?.uid;
-        // Leave legacy and other-account operations queued without consuming retries.
-        if (!signedInUserId || typeof payload?.userId !== 'string' || payload.userId !== signedInUserId) continue;
-        if (typeof payload.id === 'string') {
-          budgetKey = `${payload.userId}:${payload.id}`;
-          if (blockedBudgetKeys.has(budgetKey)) continue;
-        }
-      }
-      
-      this.notifyProgress({
-        total: queue.length,
-        completed: success,
-        failed,
-        currentOperation: `Syncing ${operation.entity} (${operation.type})...`,
-      });
-
-      try {
-        const result = await this.executeOperation(operation);
-        if (result) {
-          offlineQueue.dequeue(operation.id);
-          success++;
-        } else {
-          if (expenseKey) blockedExpenseKeys.add(expenseKey);
-          if (operation.entity === 'budget') {
-            const payload = operation.payload as { userId?: unknown };
-            if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
-          }
-          const canRetry = offlineQueue.incrementRetry(operation.id);
-          if (budgetKey) blockedBudgetKeys.add(budgetKey);
-          if (!canRetry) {
-            failed++;
-            if (operation.entity === 'expense') {
-              const retainedOperation = offlineQueue.getAll().find((queuedOperation) => queuedOperation.id === operation.id);
-              if (retainedOperation?.status === 'needs-attention') {
-                this.notifyExpenseOperationNeedsAttention(retainedOperation);
+    const synchronized: QueuedOperation[] = [];
+    try {
+      await offlineQueue.initialize();
+      await offlineQueue.refresh();
+      const drain = async () => {
+        const total = offlineQueue.getAll().filter((row) => (row.payload as { userId?: unknown })?.userId === userId).length;
+        this.notifyProgress({ total, completed: 0, failed: 0, currentOperation: 'Starting sync...' });
+        while (networkStatus.isOnline && auth.currentUser?.uid === userId) {
+          const operation = await offlineQueue.claimNext(userId);
+          if (!operation?.lease) break;
+          const token = operation.lease.token;
+          let leaseLost = false;
+          const heartbeat = setInterval(() => {
+            void offlineQueue.renew(operation.id, token).then((owned) => { if (!owned) leaseLost = true; })
+              .catch(() => { leaseLost = true; });
+          }, 15_000);
+          this.notifyProgress({ total, completed: success, failed, currentOperation: `Syncing ${operation.entity} (${operation.type})...` });
+          try {
+            const result = await this.executeOperation(operation);
+            if (!result) throw Object.assign(new Error('Unsupported or invalid queued operation'), { code: 'invalid-argument' });
+            if (!leaseLost && await offlineQueue.complete(operation.id, token)) {
+              success++;
+              synchronized.push(operation);
+            }
+          } catch (error) {
+            const code = error && typeof error === 'object' && 'code' in error ? String(error.code).split('/').pop() : '';
+            if (!networkStatus.isOnline || auth.currentUser?.uid !== userId || code === 'unauthenticated') {
+              await offlineQueue.release(operation.id, token, code === 'unauthenticated' ? 30_000 : 0);
+              break;
+            }
+            const retrying = await offlineQueue.fail(operation.id, token, error, isRetryableWriteError(error));
+            if (retrying === false) {
+              failed++;
+              const retained = offlineQueue.getAll().find((row) => row.id === operation.id);
+              if (retained?.status === 'needs-attention') {
+                this.notifyExpenseOperationNeedsAttention(retained);
+                this.notifyOperationNeedsAttention(retained);
+                if (retained.entity === 'budget') this.notifyBudgetOperationRejected(retained);
               }
             }
-            if (operation.entity === 'budget') {
-              rejectedBudgetOperations.push(operation);
-              if (operation.type === 'create' && budgetKey) {
-                const payload = operation.payload as { id: string; userId: string };
-                offlineQueue.removeBudgetOperationsForId(payload.id, payload.userId);
-              }
-            }
+          } finally {
+            clearInterval(heartbeat);
           }
         }
-      } catch (error) {
-        console.error('Error executing queued operation:', error);
-        if (expenseKey) blockedExpenseKeys.add(expenseKey);
-        if (operation.entity === 'budget') {
-          const payload = operation.payload as { userId?: unknown };
-          if (!auth.currentUser?.uid || payload?.userId !== auth.currentUser.uid) continue;
-        }
-        const canRetry = offlineQueue.incrementRetry(operation.id);
-        if (budgetKey) blockedBudgetKeys.add(budgetKey);
-        if (!canRetry) {
-          failed++;
-          if (operation.entity === 'expense') {
-            const retainedOperation = offlineQueue.getAll().find((queuedOperation) => queuedOperation.id === operation.id);
-            if (retainedOperation?.status === 'needs-attention') {
-              this.notifyExpenseOperationNeedsAttention(retainedOperation);
-            }
-          }
-          if (operation.entity === 'budget') {
-            rejectedBudgetOperations.push(operation);
-            if (operation.type === 'create' && budgetKey) {
-              const payload = operation.payload as { id: string; userId: string };
-              offlineQueue.removeBudgetOperationsForId(payload.id, payload.userId);
-            }
-          }
-        }
+      };
+      if (typeof navigator !== 'undefined' && navigator.locks) {
+        await navigator.locks.request(`expense-outbox-sync:${userId}`, { ifAvailable: true }, async (lock) => { if (lock) await drain(); });
+      } else {
+        // Atomic per-operation leases also coordinate browsers without Web Locks.
+        await drain();
       }
+    } finally {
+      this.isSyncing = false;
+      offlineQueue.notifyCompleted(synchronized);
+      this.notifyProgress({ total: offlineQueue.count(userId), completed: success, failed, currentOperation: 'Sync complete' });
+      this.scheduleNextSync();
     }
-
-    this.isSyncing = false;
-
-    rejectedBudgetOperations.forEach((operation) => this.notifyBudgetOperationRejected(operation));
-
-    this.notifyProgress({
-      total: queue.length,
-      completed: success,
-      failed,
-      currentOperation: 'Sync complete',
-      budgetRejections: rejectedBudgetOperations.length,
-    });
-
-    const initialOperationIds = new Set(queue.map((operation) => operation.id));
-    const hasOperationsAddedDuringSync = offlineQueue.getAll().some((operation) => !initialOperationIds.has(operation.id));
-    if (hasOperationsAddedDuringSync) {
-      setTimeout(() => { void this.syncOfflineQueue(); }, 0);
-    }
-
     return { success, failed };
   }
 
-  /**
-   * Execute a queued operation
-   */
+  private scheduleNextSync(): void {
+    clearTimeout(this.queueSyncTimer);
+    const userId = auth.currentUser?.uid;
+    if (!userId || !this.autoSyncEnabled || !networkStatus.isOnline || this.isSyncing) return;
+    const next = offlineQueue.nextWakeAt(userId);
+    if (next !== undefined) this.queueSyncTimer = setTimeout(() => {
+      void this.syncOfflineQueue().catch((error) => console.error('Background synchronization failed:', error));
+    }, Math.min(2_147_483_647, Math.max(250, next - Date.now())));
+  }
+
   private async executeOperation(operation: QueuedOperation): Promise<boolean> {
-    try {
-      switch (operation.entity) {
+    switch (operation.entity) {
         case 'expense':
           return await this.executeExpenseOperation(operation);
         case 'category':
-          return await this.executeCategoryOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
         case 'budget':
           return await this.executeBudgetOperation(operation);
         case 'recurring':
-          return await this.executeRecurringOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
+        case 'scheduledPayment':
+          await commitQueuedEntity(operation);
+          return true;
+        case 'scheduledPaymentRecord':
+          return await this.executeScheduledPaymentRecordOperation(operation);
         case 'income':
           return await this.executeIncomeOperation(operation);
         case 'card':
-          return await this.executeCardOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
         case 'bank':
-          return await this.executeBankOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
         case 'ewallet':
-          return await this.executeEWalletOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
         case 'repayment':
-          return await this.executeRepaymentOperation(operation);
+          await commitQueuedEntity(operation);
+          return true;
+        case 'transfer':
+          return await this.executeTransferOperation(operation);
+        case 'featureSettings':
+          return await this.executeFeatureSettingsOperation(operation);
+        case 'quickExpensePreset':
+          await commitQueuedEntity(operation);
+          return true;
+        case 'userSettings':
+          return await this.executeUserSettingsOperation(operation);
+        case 'dashboardLayout':
+          return await this.executeDashboardLayoutOperation(operation);
+        case 'friendPreference': {
+          const payload = asSyncPayload(operation.payload);
+          if (operation.type !== 'update' || payload?.userId !== auth.currentUser?.uid ||
+              typeof payload?.userId !== 'string' || typeof payload.id !== 'string' || !asSyncPayload(payload.preference)) return false;
+          await friendSpendingService.savePreference(payload.userId, payload.id,
+            payload.preference as Parameters<typeof friendSpendingService.savePreference>[2], { userId: payload.userId, operationId: operation.id });
+          return true;
+        }
         default:
           console.warn('Unknown entity type:', operation.entity);
           return false;
       }
-    } catch (error) {
-      console.error('Error executing operation:', error);
-      return false;
-    }
   }
 
   private async executeExpenseOperation(operation: QueuedOperation): Promise<boolean> {
@@ -321,6 +290,7 @@ class SyncService {
         await expenseService.create(
           { ...payload, id: payload.id, userId: signedInUserId },
           { updateAccountBalances: true },
+          { userId: signedInUserId, operationId: operation.id },
         );
         return true;
       case 'update':
@@ -328,7 +298,7 @@ class SyncService {
           const updates = { ...payload };
           delete updates.id;
           delete updates.userId;
-          await expenseService.update(payload.id, updates);
+          await expenseService.update(payload.id, updates, { userId: signedInUserId, operationId: operation.id });
         }
         return true;
       case 'delete':
@@ -338,29 +308,8 @@ class SyncService {
           Array.isArray(payload.relatedTransferIds)
             ? payload.relatedTransferIds.filter((transferId: unknown): transferId is string => typeof transferId === 'string')
             : [],
+          { userId: signedInUserId, operationId: operation.id },
         );
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  private async executeCategoryOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await categoryService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await categoryService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await categoryService.delete(payload.id);
         return true;
       default:
         return false;
@@ -379,16 +328,16 @@ class SyncService {
       switch (operation.type) {
         case 'delete':
           if (!payload.id) return false;
-          await budgetService.delete(payload.id);
+          await budgetService.delete(payload.id, { userId: signedInUserId, operationId: operation.id });
           return true;
         case 'create':
-          await budgetService.create({ ...payload, userId: signedInUserId });
+          await budgetService.create({ ...payload, userId: signedInUserId }, { userId: signedInUserId, operationId: operation.id });
           return true;
         case 'update': {
           if (!payload.id) return false;
           const updates = { ...payload };
           delete updates.previousBudget;
-          await budgetService.update(payload.id, { ...updates, userId: signedInUserId });
+          await budgetService.update(payload.id, { ...updates, userId: signedInUserId }, { userId: signedInUserId, operationId: operation.id });
           return true;
         }
         default:
@@ -397,136 +346,131 @@ class SyncService {
     });
   }
 
-  private async executeRecurringOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await recurringExpenseService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await recurringExpenseService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await recurringExpenseService.delete(payload.id);
-        return true;
-      default:
-        return false;
+  private async executeScheduledPaymentRecordOperation(operation: QueuedOperation): Promise<boolean> {
+    const payload = asSyncPayload(operation.payload);
+    const signedInUserId = auth.currentUser?.uid;
+    if (!signedInUserId || payload?.userId !== signedInUserId || typeof payload.id !== 'string') return false;
+    if (operation.type === 'delete') {
+      await scheduledPaymentService.deletePaymentRecord(payload.id, { userId: signedInUserId, operationId: operation.id });
+      return true;
     }
+    if (operation.type === 'update') {
+      await scheduledPaymentService.updatePaymentRecord(payload.id, payload, { userId: signedInUserId, operationId: operation.id });
+      return true;
+    }
+    if (operation.type === 'create') {
+      const { generatedExpensePayload, ...recordFields } = payload;
+      const expensePayload = generatedExpensePayload ? asSyncPayload(generatedExpensePayload) : undefined;
+      if (generatedExpensePayload && (!expensePayload || expensePayload.userId !== signedInUserId || typeof expensePayload.id !== 'string')) return false;
+      await scheduledPaymentService.createPaymentRecord(
+        recordFields as Parameters<typeof scheduledPaymentService.createPaymentRecord>[0],
+        expensePayload as Parameters<typeof scheduledPaymentService.createPaymentRecord>[1],
+        { userId: signedInUserId, operationId: operation.id },
+      );
+      return true;
+    }
+    return false;
   }
 
   private async executeIncomeOperation(operation: QueuedOperation): Promise<boolean> {
     // Type assertion needed as payload can be any entity type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = operation.payload as any;
+    const signedInUserId = auth.currentUser?.uid;
+    if (!signedInUserId || payload?.userId !== signedInUserId) return false;
     
     switch (operation.type) {
       case 'create':
-        await incomeService.create(payload);
+        await incomeService.create(payload, { userId: signedInUserId, operationId: operation.id });
         return true;
       case 'update':
         if (!payload.id) return false;
-        await incomeService.update(payload.id, payload);
+        {
+          const updates = { ...payload };
+          delete updates.id;
+          delete updates.userId;
+          await incomeService.update(payload.id, updates, { userId: signedInUserId, operationId: operation.id });
+        }
         return true;
       case 'delete':
         if (!payload.id) return false;
-        await incomeService.delete(payload.id);
+        await incomeService.delete(payload.id, signedInUserId, { userId: signedInUserId, operationId: operation.id });
         return true;
       default:
         return false;
     }
   }
 
-  private async executeCardOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
+  private async executeTransferOperation(operation: QueuedOperation): Promise<boolean> {
+    const payload = asSyncPayload(operation.payload);
+    const signedInUserId = auth.currentUser?.uid;
+    if (!signedInUserId || payload?.userId !== signedInUserId || typeof payload.id !== 'string') return false;
+
     switch (operation.type) {
       case 'create':
-        await cardService.create(payload);
+        await transferService.create(payload as Parameters<typeof transferService.create>[0], { userId: signedInUserId, operationId: operation.id });
         return true;
-      case 'update':
-        if (!payload.id) return false;
-        await cardService.update(payload.id, payload);
+      case 'update': {
+        const updates = { ...payload };
+        delete updates.id;
+        delete updates.userId;
+        await transferService.update(payload.id, updates as Parameters<typeof transferService.update>[1], { userId: signedInUserId, operationId: operation.id });
         return true;
+      }
       case 'delete':
-        if (!payload.id) return false;
-        await cardService.delete(payload.id);
+        await transferService.deleteWithBalanceReversal(payload.id, signedInUserId, { userId: signedInUserId, operationId: operation.id });
         return true;
       default:
         return false;
     }
   }
 
-  private async executeBankOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await bankService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await bankService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await bankService.delete(payload.id);
-        return true;
-      default:
-        return false;
+  private async executeFeatureSettingsOperation(operation: QueuedOperation): Promise<boolean> {
+    const payload = asSyncPayload(operation.payload);
+    const signedInUserId = auth.currentUser?.uid;
+    if (!signedInUserId || payload?.userId !== signedInUserId) return false;
+    if (operation.type !== 'update') return false;
+    if (payload.reset === true) {
+      await featureSettingsService.resetToDefaults(signedInUserId, { userId: signedInUserId, operationId: operation.id });
+      return true;
     }
+    await featureSettingsService.update(
+      signedInUserId,
+      Array.isArray(payload.enabledFeatures)
+        ? payload.enabledFeatures as Parameters<typeof featureSettingsService.update>[1]
+        : [],
+      Array.isArray(payload.tabFeatures)
+        ? payload.tabFeatures as NonNullable<Parameters<typeof featureSettingsService.update>[2]>
+        : undefined,
+      Array.isArray(payload.hamburgerFeatures)
+        ? payload.hamburgerFeatures as NonNullable<Parameters<typeof featureSettingsService.update>[3]>
+        : undefined,
+      { userId: signedInUserId, operationId: operation.id },
+    );
+    return true;
   }
 
-  private async executeEWalletOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await ewalletService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await ewalletService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await ewalletService.delete(payload.id);
-        return true;
-      default:
-        return false;
-    }
+  private async executeUserSettingsOperation(operation: QueuedOperation): Promise<boolean> {
+    const payload = operation.payload as { userId?: unknown; updates?: unknown; overallBudgetLimit?: { period?: unknown; amount?: unknown } } | null;
+    const signedInUserId = auth.currentUser?.uid;
+    if (operation.type !== 'update' || !signedInUserId || payload?.userId !== signedInUserId ||
+        !payload.updates || typeof payload.updates !== 'object' || Array.isArray(payload.updates)) return false;
+    await userSettingsService.getOrCreate(signedInUserId);
+    const identity = { userId: signedInUserId, operationId: operation.id };
+    if (payload.overallBudgetLimit) {
+      const { period, amount } = payload.overallBudgetLimit;
+      if (!['weekly', 'monthly', 'yearly'].includes(String(period)) || (amount !== undefined && typeof amount !== 'number')) return false;
+      await userSettingsService.setOverallBudgetLimit(signedInUserId, period as import('../types').BudgetPeriod, amount as number | undefined, identity);
+    } else await userSettingsService.update(signedInUserId, payload.updates as Record<string, unknown>, identity);
+    return true;
   }
 
-  private async executeRepaymentOperation(operation: QueuedOperation): Promise<boolean> {
-    // Type assertion needed as payload can be any entity type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = operation.payload as any;
-    
-    switch (operation.type) {
-      case 'create':
-        await repaymentService.create(payload);
-        return true;
-      case 'update':
-        if (!payload.id) return false;
-        await repaymentService.update(payload.id, payload);
-        return true;
-      case 'delete':
-        if (!payload.id) return false;
-        await repaymentService.delete(payload.id);
-        return true;
-      default:
-        return false;
-    }
+  private async executeDashboardLayoutOperation(operation: QueuedOperation): Promise<boolean> {
+    const payload = operation.payload as { userId?: unknown; widgets?: unknown } | null;
+    const signedInUserId = auth.currentUser?.uid;
+    if (operation.type !== 'update' || !signedInUserId || payload?.userId !== signedInUserId || !Array.isArray(payload.widgets)) return false;
+    await dashboardLayoutService.updateWidgets(signedInUserId, payload.widgets as import('../types/dashboard').DashboardWidget[], { userId: signedInUserId, operationId: operation.id });
+    return true;
   }
 
   /**
