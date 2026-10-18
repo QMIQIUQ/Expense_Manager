@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import './HeaderStatusBar.css';
 
 interface ImportProgress {
   id: string;
@@ -33,18 +34,50 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   isRevalidating,
 }) => {
   const { t } = useLanguage();
+  const hasStatus = Boolean(importProgress || deleteProgress || isRevalidating);
+  const [floatingTop, setFloatingTop] = useState(8);
+
+  useLayoutEffect(() => {
+    if (!hasStatus) return;
+
+    const header = document.querySelector<HTMLElement>('.dashboard-header-modern');
+    if (!header) return;
+
+    const updatePosition = () => {
+      const nextTop = Math.max(8, Math.round(header.getBoundingClientRect().bottom + 8));
+      setFloatingTop((currentTop) => (currentTop === nextTop ? currentTop : nextTop));
+    };
+
+    updatePosition();
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? undefined
+      : new ResizeObserver(updatePosition);
+    resizeObserver?.observe(header);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [hasStatus]);
 
   // Only show for import/delete progress and background revalidation
-  if (!importProgress && !deleteProgress && !isRevalidating) {
+  if (!hasStatus) {
     return null;
   }
 
   return (
-    <>
+    <div
+      className="header-status-floating-container"
+      style={{ top: `${floatingTop}px` }}
+      aria-live="polite"
+    >
       {importProgress && (
         <div
+          className="header-status-floating-item"
           style={{
-            ...styles.stickyWrapper,
             ...styles.statusItem,
             ...(importProgress.status === 'importing'
               ? styles.statusItemImporting
@@ -97,8 +130,8 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
       {/* 刪除進度 */}
       {deleteProgress && (
         <div
+          className="header-status-floating-item"
           style={{
-            ...styles.stickyWrapper,
             ...styles.statusItem,
             ...(deleteProgress.status === 'deleting'
               ? styles.statusItemDeleting
@@ -151,8 +184,8 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
       {/* 背景更新指示器 */}
       {isRevalidating && (
         <div
+          className="header-status-floating-item"
           style={{
-            ...styles.stickyWrapper,
             ...styles.statusItem,
             ...styles.statusItemImporting,
           }}
@@ -165,17 +198,11 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
 const styles = {
-  stickyWrapper: {
-    position: 'sticky' as const,
-    top: '8px',
-    zIndex: 1000,
-    margin: '8px 16px',
-  },
   statusItem: {
     borderRadius: '8px',
     padding: '8px 16px',
