@@ -14,6 +14,7 @@ import { db } from '../config/firebase';
 import { Budget, OverallBudgetLimits } from '../types';
 import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
 import { runBudgetMutationTransaction } from '../utils/budgetMutationTransaction';
+import { allocationLimitsForSettings } from '../utils/incomeLinkedBudget';
 
 const COLLECTION_NAME = 'budgets';
 
@@ -110,7 +111,7 @@ export const budgetService = {
         throw new Error('budget-id-conflict');
       }
 
-      const allocation = prepareAllocationLimits(snapshot.budgets, budgetData, snapshot.overallBudgetLimits);
+      const allocation = prepareAllocationLimits(snapshot.budgets, budgetData, allocationLimitsForSettings(snapshot));
       const now = Timestamp.now();
       const cleanedBudget = removeUndefinedValues(budgetData as unknown as Record<string, unknown>);
       const nextRevision = snapshot.budgetAllocationRevision + 1;
@@ -166,7 +167,7 @@ export const budgetService = {
       if (!existingBudget) throw new Error('budget-not-found');
 
       const proposedBudget = { ...existingBudget, ...updates, id } as Budget;
-      const allocation = prepareAllocationLimits(snapshot.budgets, proposedBudget, snapshot.overallBudgetLimits, id);
+      const allocation = prepareAllocationLimits(snapshot.budgets, proposedBudget, allocationLimitsForSettings(snapshot), id);
       const now = Timestamp.now();
       const nextRevision = snapshot.budgetAllocationRevision + 1;
       const budgetUpdates = { ...updates };

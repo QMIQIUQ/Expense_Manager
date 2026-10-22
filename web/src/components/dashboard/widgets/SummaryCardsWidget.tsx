@@ -1,3 +1,5 @@
+import { parseISO } from 'date-fns';
+import { getBillingCyclePeriod } from '../../../utils/budgetRollover';
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Expense } from '../../../types';
@@ -28,19 +30,10 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   const isCompact = size === 'small' || size === 'medium';
 
   const { cycleStart, cycleEnd } = React.useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDate();
-
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
+    const { start: cycleStart, end } = getBillingCyclePeriod(billingCycleDay);
+    const cycleEnd = new Date(end);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
+    cycleEnd.setHours(23, 59, 59, 999);
 
     return { cycleStart, cycleEnd };
   }, [billingCycleDay]);
@@ -117,21 +110,21 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
 
     const monthlyBase = expenses
       .filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
       .reduce((sum, exp) => sum + getMonthlyBaseAmount(exp), 0);
 
     const monthlyDisplay = expenses
       .filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
       .reduce((sum, exp) => sum + getMonthlyDisplayAmount(exp), 0);
 
     const monthlyIncome = incomes
       .filter((inc) => {
-        const incDate = new Date(inc.date);
+        const incDate = parseISO(inc.date);
         return incDate >= cycleStart && incDate <= cycleEnd;
       })
         .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
@@ -176,7 +169,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   const monthlyIncomeDisplay = React.useMemo(() => {
     if (!displayCurrency) return stats.monthlyIncome;
     return incomes.filter((income) => {
-      const incomeDate = new Date(income.date);
+      const incomeDate = parseISO(income.date);
       return incomeDate >= cycleStart && incomeDate <= cycleEnd;
     }).reduce((sum, income) => sum + (incomeDisplayAmountsById[income.id || ''] ?? Number.NaN), 0);
   }, [cycleEnd, cycleStart, displayCurrency, incomeDisplayAmountsById, incomes, stats.monthlyIncome]);

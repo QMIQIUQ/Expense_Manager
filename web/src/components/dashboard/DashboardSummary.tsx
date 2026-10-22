@@ -1,3 +1,5 @@
+import { parseISO } from 'date-fns';
+import { getBillingCyclePeriod } from '../../utils/budgetRollover';
 import React from 'react';
 import type { Category, Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -38,22 +40,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
   
   // Memoize billing cycle calculation (only recalculates when billingCycleDay changes)
   const { cycleStart, cycleEnd } = React.useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDate();
-    
-    let cycleStart: Date;
-    let cycleEnd: Date;
-    
-    if (currentDay >= billingCycleDay) {
-      // Current cycle: billingCycleDay of this month to (billingCycleDay - 1) of next month
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      // Previous cycle: billingCycleDay of last month to (billingCycleDay - 1) of this month
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
-    
+    const { start: cycleStart, end } = getBillingCyclePeriod(billingCycleDay);
+    const cycleEnd = new Date(end);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
+    cycleEnd.setHours(23, 59, 59, 999);
+
     return { cycleStart, cycleEnd };
   }, [billingCycleDay]);
 
@@ -142,7 +133,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     // Calculate monthly expenses based on billing cycle (deducting repayments)
     const monthly = expenses
       .filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
       .reduce((sum, exp) => sum + getNetAmount(exp), 0);
@@ -150,7 +141,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     // Calculate monthly income based on billing cycle
     const monthlyIncome = incomes
       .filter((inc) => {
-        const incDate = new Date(inc.date);
+        const incDate = parseISO(inc.date);
         return incDate >= cycleStart && incDate <= cycleEnd;
       })
       .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
@@ -197,7 +188,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
   const displayMonthlyIncome = React.useMemo(() => {
     if (!displayCurrency) return stats.monthlyIncome;
     return incomes.filter((income) => {
-      const incomeDate = new Date(income.date);
+      const incomeDate = parseISO(income.date);
       return incomeDate >= cycleStart && incomeDate <= cycleEnd;
     }).reduce((sum, income) => sum + (incomeDisplayAmountsById[income.id || ''] ?? Number.NaN), 0);
   }, [cycleEnd, cycleStart, displayCurrency, incomeDisplayAmountsById, incomes, stats.monthlyIncome]);
@@ -206,7 +197,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     if (!displayCurrency) return stats.monthly;
     return expenses
       .filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
       .reduce((sum, exp) => sum + Math.max(0, getDisplayExpenseAmount(exp) - getDisplayRepaymentTotal(exp.id || '')), 0);

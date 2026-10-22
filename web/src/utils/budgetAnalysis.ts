@@ -1,3 +1,4 @@
+import { parseISO } from 'date-fns';
 /**
  * Budget Analysis - Automatic budget adjustment suggestions
  * Phase 3.3 Implementation
@@ -8,7 +9,7 @@
  */
 
 import { Budget, CurrencyCode, Expense, Repayment } from '../types';
-import { getBillingCyclePeriod } from './budgetRollover';
+import { getBillingCyclePeriod, getPreviousBillingCyclePeriod } from './budgetRollover';
 import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 import { getBudgetCurrency, toBudgetBaseAmount, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
 
@@ -52,16 +53,17 @@ export function getSpendingHistory(
   });
 
   // Calculate for each month
+  let cycle = getBillingCyclePeriod(billingCycleDay, now);
   for (let i = 0; i < months; i++) {
-    const refDate = new Date(now.getFullYear(), now.getMonth() - i, billingCycleDay);
-    const { start, end } = getBillingCyclePeriod(billingCycleDay, refDate);
+    const { start, end } = cycle;
+    cycle = getPreviousBillingCyclePeriod(billingCycleDay, start);
 
     // Calculate spending in this period
     let spent = 0;
     expenses
       .filter((exp) => exp.category === categoryName)
       .forEach((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         if (expDate >= start && expDate < end) {
           const repaid = repaymentsByExpense[exp.id!] || 0;
           spent += Math.max(0, getExpenseBaseAmount(exp) - repaid);

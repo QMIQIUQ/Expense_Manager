@@ -1,9 +1,13 @@
+import { parseISO } from 'date-fns';
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
-import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
+import { getEffectiveBudgetAmount, getBillingCyclePeriod } from '../../../utils/budgetRollover';
+import { incomeLinkEnabled, validIncomeLink } from '../../../utils/incomeLinkedBudget';
+import { useIncomeBudget } from '../../../hooks/useIncomeBudget';
+import IncomeBudgetSummary from '../../budgets/IncomeBudgetSummary';
 import { formatDateRangeShort, getTodayLocal } from '../../../utils/dateUtils';
 import { Expense } from '../../../types';
 import { getExpenseBaseAmount, getRepaymentBaseAmount } from '../../../utils/currencyUtils';
@@ -14,7 +18,9 @@ import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
 
 const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', displayCurrency, onNavigateToBudgets }) => {
   const { t } = useLanguage();
-  const { dateFormat } = useUserSettings();
+  const { dateFormat, settings } = useUserSettings();
+  const linked = incomeLinkEnabled(settings?.incomeLinkedBudget) || settings?.incomeLinkedBudget !== undefined && !validIncomeLink(settings.incomeLinkedBudget);
+  const incomeBudget = useIncomeBudget(budgets, linked, billingCycleDay);
   const [showAll, setShowAll] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -70,19 +76,11 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
   // Calculate billing cycle
   const { cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining } = React.useMemo(() => {
     const now = new Date();
-    const currentDay = now.getDate();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
+    const { start: cycleStart, end } = getBillingCyclePeriod(billingCycleDay, now);
+    const cycleEnd = new Date(end);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
 
     // Calculate days in cycle
     const daysInCycle = Math.ceil((cycleEnd.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -126,7 +124,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
       
       // Filter expenses for this category in the cycle
       const categoryExpenses = expenses.filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         const matchesCategory = exp.category === budget.categoryName;
         const inCycle = expDate >= cycleStart && expDate <= cycleEnd;
         return matchesCategory && inCycle;
@@ -138,7 +136,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
       // Calculate today's spending
       const todaySpentBase = categoryExpenses
         .filter((exp) => {
-          const expDate = new Date(exp.date);
+          const expDate = parseISO(exp.date);
           return expDate >= today && expDate < tomorrow;
         })
         .reduce((sum, exp) => sum + getNetBaseAmount(exp), 0);
@@ -228,7 +226,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
     return [...budgetProgress].sort((a, b) => b.percentage - a.percentage);
   }, [budgetProgress]);
 
-  if (sortedBudgetProgress.length === 0) {
+  if (sortedBudgetProgress.length === 0 && !linked) {
     return (
       <div className="widget-empty-state">
         <span>🎯</span>
@@ -242,6 +240,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
 
   return (
     <div className="budget-progress-list">
+      {linked ? <IncomeBudgetSummary state={incomeBudget} compact /> : (
       <div className="budget-progress-summary" aria-label={t('budgetProgress')}>
         <div className="budget-progress-summary-metric">
           <span className="budget-progress-summary-label">{t('totalBudget')}</span>
@@ -267,6 +266,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
           </span>
         )}
       </div>
+      )}
       {displayBudgets.map((budget) => (
         <div
           key={budget.id}

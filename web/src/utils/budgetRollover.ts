@@ -23,22 +23,16 @@ export function getBillingCyclePeriod(
   billingCycleDay: number,
   referenceDate: Date = new Date()
 ): { start: Date; end: Date } {
-  const currentDay = referenceDate.getDate();
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
-
-  let cycleStart: Date;
-  let cycleEnd: Date;
-
-  if (currentDay >= billingCycleDay) {
-    cycleStart = new Date(year, month, billingCycleDay);
-    cycleEnd = new Date(year, month + 1, billingCycleDay);
-  } else {
-    cycleStart = new Date(year, month - 1, billingCycleDay);
-    cycleEnd = new Date(year, month, billingCycleDay);
+  if (!Number.isInteger(billingCycleDay) || billingCycleDay < 1 || billingCycleDay > 31 || !Number.isFinite(referenceDate.getTime())) {
+    throw new Error('Invalid billing cycle');
   }
-
-  return { start: cycleStart, end: cycleEnd };
+  const boundary = (offset: number) => new Date(year, month + offset,
+    Math.min(billingCycleDay, new Date(year, month + offset + 1, 0).getDate()));
+  return referenceDate >= boundary(0)
+    ? { start: boundary(0), end: boundary(1) }
+    : { start: boundary(-1), end: boundary(0) };
 }
 
 /**
@@ -49,15 +43,9 @@ export function getPreviousBillingCyclePeriod(
   referenceDate: Date = new Date()
 ): { start: Date; end: Date } {
   const current = getBillingCyclePeriod(billingCycleDay, referenceDate);
-  
-  // Previous cycle ends when current cycle starts
-  const prevEnd = new Date(current.start);
-  
-  // Previous cycle starts one month before
-  const prevStart = new Date(prevEnd);
-  prevStart.setMonth(prevStart.getMonth() - 1);
-  
-  return { start: prevStart, end: prevEnd };
+  const previousDay = new Date(current.start);
+  previousDay.setDate(previousDay.getDate() - 1);
+  return getBillingCyclePeriod(billingCycleDay, previousDay);
 }
 
 /**

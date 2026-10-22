@@ -25,6 +25,7 @@ import { incomeService } from '../../services/incomeService';
 import { transferService } from '../../services/transferService';
 import { budgetService } from '../../services/budgetService';
 import { userSettingsService } from '../../services/userSettingsService';
+import { DEFAULT_INCOME_LINK } from '../../utils/incomeLinkedBudget';
 import type { Expense, ScheduledPaymentRecord } from '../../types';
 let uid: string;
 const scoped = (id: string) => `${uid}-${id}`;
@@ -52,6 +53,68 @@ beforeAll(async () => {
   await setDoc(doc(db, 'banks', bankId), { userId: uid, name: 'Test bank', balance: 1000, currency: 'MYR' });
   await setDoc(doc(db, 'scheduledPayments', scoped('scheduled')), { userId: uid, name: 'Scheduled test', amount: 100, type: 'subscription', frequency: 'monthly', dueDay: 18 });
   await setDoc(doc(db, 'friendSpendingSummaryStates', uid), { ready: true, version: 1, updatedAt: serverTimestamp() });
+});
+
+describe('income-linked budget transactions and rules', () => {
+  it('serializes a manual restoration racing a new monthly allocation', async () => {
+    await userSettingsService.create({ userId: uid, billingCycleDay: 1, displayCurrency: 'MYR' });
+    const linked = { ...DEFAULT_INCOME_LINK, enabled: true };
+    await userSettingsService.setIncomeLinkedBudget(uid, linked, undefined, operation('race-enable'));
+    const budget = { id: scoped('race-budget'), userId: uid, categoryId: scoped('food'), categoryName: 'Food', amount: 700,
+      currency: 'MYR' as const, period: 'monthly' as const, startDate: '2026-10-01', alertThreshold: 80 };
+    const outcomes = await Promise.allSettled([
+      userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, 500, operation('race-disable')),
+      budgetService.create(budget, operation('race-create')),
+    ]);
+    if (outcomes[1].status === 'rejected') throw outcomes[1].reason;
+    const settings = (await getDocFromServer(doc(db, 'userSettings', uid))).data()!;
+    const created = (await getDocFromServer(doc(db, 'budgets', budget.id))).exists();
+    expect(created).toBe(true);
+    if (!settings.incomeLinkedBudget.enabled) expect(settings.overallBudgetLimits.monthly).toBeGreaterThanOrEqual(700);
+    await budgetService.delete(budget.id, operation('race-clean'));
+    await userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, 500, operation('race-reset'));
+  });
+  it('preserves the manual cap, bypasses only monthly auto-increase, and restores manual mode atomically', async () => {
+    const settingsRef = doc(db, 'userSettings', uid);
+    await userSettingsService.create({ userId: uid, billingCycleDay: 1, displayCurrency: 'MYR' });
+    await userSettingsService.setOverallBudgetLimit(uid, 'monthly', 500, operation('linked-manual-baseline'));
+    await userSettingsService.setOverallBudgetLimit(uid, 'weekly', 50, operation('linked-weekly-baseline'));
+    const linked = { ...DEFAULT_INCOME_LINK, enabled: true, percentage: 33.33 };
+    await userSettingsService.setIncomeLinkedBudget(uid, linked, undefined, operation('enable-linked'));
+    const revision = (await getDocFromServer(settingsRef)).data()?.budgetAllocationRevision;
+    await userSettingsService.setIncomeLinkedBudget(uid, linked, undefined, operation('enable-linked'));
+    expect((await getDocFromServer(settingsRef)).data()?.budgetAllocationRevision).toBe(revision);
+    await expect(userSettingsService.setOverallBudgetLimit(uid, 'monthly', 5000, operation('old-client-limit'))).rejects.toThrow('income-linked-budget-active');
+    const value = { id: scoped('linked-monthly'), userId: uid, categoryId: scoped('food'), categoryName: 'Food', amount: 700, currency: 'MYR' as const,
+      period: 'monthly' as const, startDate: '2026-10-01', alertThreshold: 80 };
+    await budgetService.create(value, operation('linked-budget-create'));
+    expect((await getDocFromServer(settingsRef)).data()?.overallBudgetLimits.monthly).toBe(500);
+    await budgetService.create({ ...value, id: scoped('linked-weekly'), period: 'weekly', amount: 100 }, operation('linked-weekly-create'));
+    expect((await getDocFromServer(settingsRef)).data()?.overallBudgetLimits.weekly).toBe(100);
+    await expect(userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, undefined, operation('restore-too-small'))).rejects.toThrow();
+    expect((await getDocFromServer(settingsRef)).data()?.incomeLinkedBudget.enabled).toBe(true);
+    await userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, 1000, operation('restore-valid'));
+    await userSettingsService.setIncomeLinkedBudget(uid, linked, undefined, operation('enable-newer'));
+    await userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, 1000, operation('restore-valid'));
+    expect((await getDocFromServer(settingsRef)).data()).toMatchObject({ incomeLinkedBudget: linked, overallBudgetLimits: { monthly: 1000 } });
+    await budgetService.delete(value.id, operation('linked-clean-monthly'));
+    await budgetService.delete(scoped('linked-weekly'), operation('linked-clean-weekly'));
+    await userSettingsService.setIncomeLinkedBudget(uid, { ...linked, enabled: false }, 1000, operation('linked-clean-mode'));
+  });
+  it('rejects malformed policies and old clients changing the saved cap while linked', async () => {
+    const ref = doc(db, 'userSettings', uid);
+    const current = (await getDocFromServer(ref)).data()!;
+    const revision = current.budgetAllocationRevision;
+    for (const config of [{ ...DEFAULT_INCOME_LINK, enabled: 'yes' }, { ...DEFAULT_INCOME_LINK, percentage: 100.01 }, { ...DEFAULT_INCOME_LINK, percentage: 1.001 }]) {
+      await expect(setDoc(ref, { incomeLinkedBudget: config, budgetAllocationRevision: revision + 1 }, { merge: true })).rejects.toThrow();
+    }
+    const enabled = { ...DEFAULT_INCOME_LINK, enabled: true };
+    await userSettingsService.setIncomeLinkedBudget(uid, enabled, undefined, operation('rules-enable'));
+    const latest = (await getDocFromServer(ref)).data()!;
+    await expect(setDoc(ref, { 'overallBudgetLimits': { monthly: 5000 }, budgetAllocationRevision: latest.budgetAllocationRevision + 1 }, { merge: true })).rejects.toThrow();
+    await expect(setDoc(ref, { incomeLinkedBudget: { ...enabled, percentage: 50 } }, { merge: true })).rejects.toThrow();
+    await userSettingsService.setIncomeLinkedBudget(uid, { ...enabled, enabled: false }, 1000, operation('rules-clean'));
+  });
 });
 afterAll(async () => { await deleteApp(firebaseAppInstance!); });
 describe('actual Firebase atomic financial mutations', () => {

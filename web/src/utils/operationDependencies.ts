@@ -8,7 +8,7 @@ export const dependencyKeys = (operation: Pick<QueuedOperation, 'entity' | 'payl
   const owner = String(payload.userId ?? '');
   const add = (kind: string, id: unknown) => { if (typeof id === 'string' && id) keys.add(`${owner}:${kind}:${id}`); };
   add(operation.entity, payload.id ?? owner);
-  if (operation.entity === 'budget' || (operation.entity === 'userSettings' && ('overallBudgetLimit' in payload || 'overallBudgetLimits' in (payload.updates as object ?? {})))) keys.add(`${owner}:budget-allocation`);
+  if (operation.entity === 'budget' || (operation.entity === 'userSettings' && ('incomeLinkedBudgetChange' in payload || 'overallBudgetLimit' in payload || 'overallBudgetLimits' in (payload.updates as object ?? {})))) keys.add(`${owner}:budget-allocation`);
   const visit = (data: Record<string, unknown>) => {
     for (const field of ['bankId', 'fromBankId', 'toBankId']) add('bank', data[field]);
     for (const field of ['cardId', 'fromCardId', 'toCardId']) add('card', data[field]);

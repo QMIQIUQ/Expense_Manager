@@ -37,6 +37,14 @@ export interface CurrencyRateSnapshot {
 export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly';
 export type OverallBudgetLimits = Partial<Record<BudgetPeriod, number>>;
 
+export interface IncomeLinkedBudgetSettings {
+  version: 1;
+  enabled: boolean;
+  percentage: number;
+  includeReimbursements: boolean;
+  includeRepayments: boolean;
+}
+
 // User settings
 export interface UserSettings {
   id?: string;
@@ -48,6 +56,7 @@ export interface UserSettings {
   displayCurrency?: CurrencyCode; // Preferred currency for converted summaries
   dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
   overallBudgetLimits?: OverallBudgetLimits; // Per-period limits, stored in MYR
+  incomeLinkedBudget?: IncomeLinkedBudgetSettings;
   budgetAllocationRevision?: number; // Internal revision used to serialize budget mutations
   defaultCategoryMigrationVersion?: number; // Tracks one-time default category additions
   createdAt: Date;

@@ -1,7 +1,7 @@
 import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
 import { db } from '../config/firebase';
 import { deleteField, doc, getDoc, getDocFromServer, Timestamp } from 'firebase/firestore';
-import { BudgetPeriod, OverallBudgetLimits, UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
+import { BudgetPeriod, IncomeLinkedBudgetSettings, OverallBudgetLimits, UserSettings, TimeFormat, DateFormat, CurrencyCode } from '../types';
 import { COLLECTIONS } from '../constants/collections';
 import { validateOverallBudgetLimit } from '../utils/budgetAllocation';
 import { runBudgetMutationTransaction } from '../utils/budgetMutationTransaction';
@@ -9,6 +9,7 @@ import { sessionCache } from '../utils/sessionCache';
 import { applyPendingOperations } from '../utils/pendingOperations';
 import { networkStatus } from '../utils/networkStatus';
 import { offlineQueue } from '../utils/offlineQueue';
+import { incomeLinkEnabled, validIncomeLink } from '../utils/incomeLinkedBudget';
 
 export const userSettingsService = {
   async get(userId: string, forceRefresh: boolean = false, requireServer: boolean = false): Promise<UserSettings | null> {
@@ -45,6 +46,7 @@ export const userSettingsService = {
       displayCurrency: (data.displayCurrency as CurrencyCode) || 'MYR',
       dateShortcuts: data.dateShortcuts,
       overallBudgetLimits: (data.overallBudgetLimits as OverallBudgetLimits | undefined) || undefined,
+      incomeLinkedBudget: data.incomeLinkedBudget as IncomeLinkedBudgetSettings | undefined,
       defaultCategoryMigrationVersion: data.defaultCategoryMigrationVersion ?? 0,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -65,6 +67,7 @@ export const userSettingsService = {
   },
 
   async update(userId: string, updates: Partial<UserSettings>, operation?: FinancialOperation): Promise<void> {
+    if ('incomeLinkedBudget' in updates || 'overallBudgetLimits' in updates) throw new Error('Use the dedicated budget settings command');
     if (await hasFinancialReceipt(operation)) return;
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
     await runFinancialTransaction(db, operation, async (transaction) => {
@@ -84,6 +87,7 @@ export const userSettingsService = {
     if (await hasFinancialReceipt(operation)) return;
     await runBudgetMutationTransaction(userId, async (transaction, snapshot, settingsRef) => {
       if (!snapshot.hasSettingsDocument) throw new Error('user-settings-not-found');
+      if (period === 'monthly' && incomeLinkEnabled(snapshot.incomeLinkedBudget)) throw new Error('income-linked-budget-active');
       if (amount !== undefined) {
         const validation = validateOverallBudgetLimit(snapshot.budgets, period, amount);
         if (!validation.valid) throw new Error(validation.reason);
@@ -94,6 +98,28 @@ export const userSettingsService = {
         updatedAt: Timestamp.now(),
         budgetAllocationRevision: snapshot.budgetAllocationRevision + 1,
       });
+    }, operation);
+  },
+
+  async setIncomeLinkedBudget(userId: string, config: IncomeLinkedBudgetSettings, manualMonthlyLimit?: number, operation?: FinancialOperation): Promise<void> {
+    if (!validIncomeLink(config)) throw new Error('invalid-income-budget-configuration');
+    if (manualMonthlyLimit !== undefined && (config.enabled || !Number.isFinite(manualMonthlyLimit) || manualMonthlyLimit < 0)) {
+      throw new Error('invalid-limit');
+    }
+    if (await hasFinancialReceipt(operation)) return;
+    await runBudgetMutationTransaction(userId, async (transaction, snapshot, settingsRef) => {
+      if (!snapshot.hasSettingsDocument) throw new Error('user-settings-not-found');
+      const updates: Record<string, unknown> = { incomeLinkedBudget: config,
+        updatedAt: Timestamp.now(), budgetAllocationRevision: snapshot.budgetAllocationRevision + 1 };
+      if (!config.enabled) {
+        const amount = manualMonthlyLimit ?? snapshot.overallBudgetLimits?.monthly;
+        if (amount !== undefined) {
+          const validation = validateOverallBudgetLimit(snapshot.budgets, 'monthly', amount);
+          if (!validation.valid) throw new Error(validation.reason);
+        }
+        if (manualMonthlyLimit !== undefined) updates['overallBudgetLimits.monthly'] = manualMonthlyLimit;
+      }
+      transaction.update(settingsRef, updates);
     }, operation);
   },
 

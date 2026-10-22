@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { userSettingsService } from '../services/userSettingsService';
-import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod } from '../types';
+import { UserSettings, TimeFormat, DateFormat, DateShortcut, CurrencyCode, BudgetPeriod, IncomeLinkedBudgetSettings } from '../types';
 import { getQueuedWriteId, queueFailedWrite, writeLocalFirst } from '../utils/localFirstMutation';
 import { sessionCache } from '../utils/sessionCache';
 import { applyPendingOperations } from '../utils/pendingOperations';
+import { validIncomeLink } from '../utils/incomeLinkedBudget';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -33,6 +34,7 @@ interface UserSettingsContextType {
   setDateShortcuts: (shortcuts: DateShortcut[]) => Promise<void>;
   setDisplayCurrency: (currency: CurrencyCode) => Promise<void>;
   setOverallBudgetLimit: (period: BudgetPeriod, amount?: number) => Promise<void>;
+  setIncomeLinkedBudget: (config: IncomeLinkedBudgetSettings, manualMonthlyLimit?: number) => Promise<void>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -62,6 +64,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const overallBudgetWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const overallBudgetWriteIdRef = useRef(0);
   const overallBudgetRequestIdsRef = useRef(new Map<BudgetPeriod, number>());
+  const incomeBudgetWriteIdRef = useRef(0);
   latestUserIdRef.current = userId;
 
   useEffect(() => {
@@ -123,9 +126,15 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     };
     window.addEventListener('offline-operation-synced', handleSettingsSynced);
     window.addEventListener('offline-queue-changed', handleLocalSettings);
+    const handleCachedSettings = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string; entity?: string }>).detail;
+      if (detail?.userId === userId && detail.entity === 'userSettings') handleLocalSettings();
+    };
+    window.addEventListener('session-cache-updated', handleCachedSettings);
     return () => {
       window.removeEventListener('offline-operation-synced', handleSettingsSynced);
       window.removeEventListener('offline-queue-changed', handleLocalSettings);
+      window.removeEventListener('session-cache-updated', handleCachedSettings);
     };
   }, [userId]);
 
@@ -278,6 +287,42 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     }
   };
 
+  const setIncomeLinkedBudget = async (config: IncomeLinkedBudgetSettings, manualMonthlyLimit?: number) => {
+    const baseline = latestSettingsRef.current;
+    if (!userId || !baseline || baseline.userId !== userId) throw new Error('User settings are not ready');
+    if (!validIncomeLink(config) || manualMonthlyLimit !== undefined &&
+      (config.enabled || !Number.isFinite(manualMonthlyLimit) || manualMonthlyLimit < 0)) throw new Error('invalid-income-budget-configuration');
+    const uid = userId;
+    const request = ++incomeBudgetWriteIdRef.current;
+    const optimistic = { ...baseline, incomeLinkedBudget: config,
+      overallBudgetLimits: manualMonthlyLimit === undefined ? baseline.overallBudgetLimits : { ...baseline.overallBudgetLimits, monthly: manualMonthlyLimit } };
+    latestSettingsRef.current = optimistic;
+    setSettings(optimistic);
+    const write = overallBudgetWriteQueueRef.current.catch(() => undefined).then(() => writeLocalFirst({
+      type: 'update', entity: 'userSettings', payload: { id: uid, userId: uid, updates: {},
+        incomeLinkedBudgetChange: { config, ...(manualMonthlyLimit === undefined ? {} : { manualMonthlyLimit }) } },
+    }, () => userSettingsService.setIncomeLinkedBudget(uid, config, manualMonthlyLimit)));
+    overallBudgetWriteQueueRef.current = write.catch(() => undefined);
+    try { await write; }
+    catch (error) {
+      if (getQueuedWriteId(error)) return;
+      if (latestUserIdRef.current === uid && request === incomeBudgetWriteIdRef.current) {
+        const latest = latestSettingsRef.current;
+        if (latest) {
+          const limits = { ...latest.overallBudgetLimits };
+          if (manualMonthlyLimit !== undefined) {
+            if (baseline.overallBudgetLimits?.monthly === undefined) delete limits.monthly;
+            else limits.monthly = baseline.overallBudgetLimits.monthly;
+          }
+          const restored = { ...latest, incomeLinkedBudget: baseline.incomeLinkedBudget, overallBudgetLimits: limits };
+          latestSettingsRef.current = restored;
+          setSettings(restored);
+        }
+      }
+      throw error;
+    }
+  };
+
   const refreshSettings = async () => {
     await loadSettings(true); // Force refresh from server
   };
@@ -297,6 +342,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     setDateShortcuts,
     setDisplayCurrency,
     setOverallBudgetLimit,
+    setIncomeLinkedBudget,
     refreshSettings,
   };
 

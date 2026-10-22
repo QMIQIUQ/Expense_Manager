@@ -121,6 +121,30 @@ service cloud.firestore {
          get(/databases/$(database)/documents/expenses/$(data.expenseId)).data.userId == data.userId);
     }
 
+    function hasValidIncomeBudget(data) {
+      return !('incomeLinkedBudget' in data) ||
+        (data.incomeLinkedBudget is map &&
+         data.incomeLinkedBudget.keys().hasOnly(['version', 'enabled', 'percentage', 'includeReimbursements', 'includeRepayments']) &&
+         data.incomeLinkedBudget.keys().hasAll(['version', 'enabled', 'percentage', 'includeReimbursements', 'includeRepayments']) &&
+         data.incomeLinkedBudget.version == 1 &&
+         data.incomeLinkedBudget.enabled is bool &&
+         data.incomeLinkedBudget.includeReimbursements is bool &&
+         data.incomeLinkedBudget.includeRepayments is bool &&
+         data.incomeLinkedBudget.percentage is number &&
+         data.incomeLinkedBudget.percentage >= 0 && data.incomeLinkedBudget.percentage <= 100 &&
+         data.incomeLinkedBudget.percentage * 100 >= int(data.incomeLinkedBudget.percentage * 100 + 0.5) - 0.00000001 &&
+         data.incomeLinkedBudget.percentage * 100 <= int(data.incomeLinkedBudget.percentage * 100 + 0.5) + 0.00000001);
+    }
+
+    function incomeBudgetEnabled(data) {
+      return data.get('incomeLinkedBudget', {}).get('enabled', false) == true;
+    }
+
+    function preservesLinkedManualLimit(before, after) {
+      return !(incomeBudgetEnabled(before) && incomeBudgetEnabled(after)) ||
+        before.get('overallBudgetLimits', {}).get('monthly', null) == after.get('overallBudgetLimits', {}).get('monthly', null);
+    }
+
     function hasValidOverallBudgetLimits(data) {
       return (!('overallBudgetLimits' in data) ||
         (data.overallBudgetLimits is map &&
@@ -301,14 +325,17 @@ service cloud.firestore {
                       request.resource.data.billingCycleDay is number &&
                       request.resource.data.billingCycleDay >= 1 &&
                       request.resource.data.billingCycleDay <= 31 &&
-                      hasValidOverallBudgetLimits(request.resource.data);
+                      hasValidOverallBudgetLimits(request.resource.data) &&
+                      hasValidIncomeBudget(request.resource.data);
       allow update: if isAuthenticated() && 
                        (isOwner(userId) || isAdmin()) &&
                        request.resource.data.billingCycleDay is number &&
                        request.resource.data.billingCycleDay >= 1 &&
                        request.resource.data.billingCycleDay <= 31 &&
                        hasValidOverallBudgetLimits(request.resource.data) &&
-                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['overallBudgetLimits']) ||
+                       hasValidIncomeBudget(request.resource.data) &&
+                       preservesLinkedManualLimit(resource.data, request.resource.data) &&
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['overallBudgetLimits', 'incomeLinkedBudget']) ||
                          hasAdvancedBudgetAllocationRevision(userId));
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }

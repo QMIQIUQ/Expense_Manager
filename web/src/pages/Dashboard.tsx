@@ -1,3 +1,4 @@
+import { parseISO } from 'date-fns';
 import { dataEqual } from '../utils/dataEquality';
 import { publishCurrentGeneration } from '../services/readGeneration';
 import { financialScopeCovered, financialScopeKey, markFinancialScopeCovered, invalidateFinancialReads, readHistoryRange, readScopedExpenses, readScopedIncomes, readScopedRepayments, readScopedTransfers, readRepaymentsForExpenses, readTransfersForExpenses, type FinancialScope } from '../services/historyService';
@@ -67,6 +68,11 @@ import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
 import { withBudgetMutationLock } from '../utils/budgetMutationLock';
+import { getAllocatedBudgetMinorUnits } from '../utils/budgetAllocation';
+import { allocationLimitsForSettings, calculateIncomeFunding, incomeAllocationImpact, incomeLinkEnabled } from '../utils/incomeLinkedBudget';
+import type { UserSettings } from '../types';
+import { getBillingCyclePeriod } from '../utils/budgetRollover';
+import { useIncomeBudget } from '../hooks/useIncomeBudget';
 import { clearExpenseCreateFailure, hasExpenseBeenDeleted, hasExpenseCreateFailed, markExpenseCreateFailed, markExpenseDeleted, withExpenseMutationLock } from '../utils/expenseMutationLock';
 
 //#region Helper Functions
@@ -243,6 +249,21 @@ const Dashboard: React.FC = () => {
   const [banks, setBanks] = useState<Bank[]>(() => initialRows<Bank>('banks'));
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const incomeBudgetState = useIncomeBudget(budgets, incomeLinkEnabled(settings?.incomeLinkedBudget), billingCycleDay);
+  const [incomeAllocationMessage, setIncomeAllocationMessage] = useState<string | null>(null);
+  const incomeAllocationResolver = useRef<((accepted: boolean) => void) | null>(null);
+  const incomeAllocationOwner = useRef(currentUser?.uid);
+  incomeAllocationOwner.current = currentUser?.uid;
+  const settleIncomeAllocation = (accepted: boolean) => {
+    const resolve = incomeAllocationResolver.current;
+    incomeAllocationResolver.current = null;
+    setIncomeAllocationMessage(null);
+    resolve?.(accepted);
+  };
+  useEffect(() => () => {
+    incomeAllocationResolver.current?.(false);
+    incomeAllocationResolver.current = null;
+  }, [currentUser?.uid]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -1660,6 +1681,12 @@ const Dashboard: React.FC = () => {
   const loadBudgetsForAllocationCheck = async (): Promise<{ budgets: Budget[]; limits: OverallBudgetLimits | undefined; isOffline: boolean } | null> => {
     if (!currentUser) return null;
 
+    // The durable outbox and transaction enforce allocation order. Linked funding is
+    // a preview, never a saved manual cap, so it needs no foreground server roundtrip.
+    if (incomeLinkEnabled(settings?.incomeLinkedBudget)) {
+      return { budgets, limits: allocationLimitsForSettings(settings), isOffline: false };
+    }
+
     try {
       const [latestSettings, latestBudgets] = await Promise.all([
         userSettingsService.get(currentUser.uid, true, true),
@@ -1667,17 +1694,45 @@ const Dashboard: React.FC = () => {
       ]);
       return {
         budgets: latestBudgets,
-        limits: latestSettings?.overallBudgetLimits,
+        limits: allocationLimitsForSettings(applyPendingOperations('userSettings', currentUser.uid, latestSettings)),
         isOffline: false,
       };
     } catch (error) {
       const networkFailure = error instanceof Error && /network|offline|unavailable|failed to fetch|deadline/i.test(error.message);
       if (!navigator.onLine || !networkStatus.isOnline || networkFailure) {
-        return { budgets, limits: settings?.overallBudgetLimits, isOffline: true };
+        return { budgets, limits: allocationLimitsForSettings(settings), isOffline: true };
       }
       showNotification('error', t('budgetAllocationCannotBeCompared'));
       return null;
     }
+  };
+
+  const confirmIncomeAllocation = async (proposed: BudgetAllocationInput, previousId?: string): Promise<boolean> => {
+    if (!currentUser) return false;
+    const owner = currentUser.uid;
+    const localSettings = applyPendingOperations('userSettings', owner, sessionCache.get<UserSettings>('userSettings', owner) ?? settings);
+    if (!incomeLinkEnabled(localSettings?.incomeLinkedBudget)) return true;
+    const localBudgets = applyPendingOperations('budgets', owner, sessionCache.get<Budget[]>('budgets', owner) ?? budgets);
+    const before = getAllocatedBudgetMinorUnits(localBudgets, 'monthly');
+    const after = getAllocatedBudgetMinorUnits([
+      ...localBudgets.filter((budget) => budget.id !== previousId), proposed as Budget,
+    ], 'monthly');
+    if (before === null || after === null) {
+      showNotification('error', t('budgetAllocationCannotBeCompared'));
+      return false;
+    }
+    const funding = incomeBudgetState.status === 'ready' && localSettings?.incomeLinkedBudget
+      ? calculateIncomeFunding(owner, applyPendingOperations('incomes', owner, incomeBudgetState.incomes), localBudgets, localSettings.incomeLinkedBudget, incomeBudgetState.range) : null;
+    const impact = incomeAllocationImpact(before, after, funding);
+    if (impact.kind === 'none') return true;
+    const message = impact.kind === 'shortfall'
+      ? `${t('incomeBudgetAllocationConfirm')} ${formatMoney(impact.shortfallMinor / 100, 'MYR')}`
+      : t('incomeBudgetUnknownFundingConfirm');
+    const accepted = await new Promise<boolean>((resolve) => {
+      incomeAllocationResolver.current = resolve;
+      setIncomeAllocationMessage(message);
+    });
+    return accepted && incomeAllocationOwner.current === owner;
   };
 
   const showAllocationValidationError = (validation: ReturnType<typeof validateBudgetAllocationChange>) => {
@@ -1736,6 +1791,7 @@ const Dashboard: React.FC = () => {
       exchangeRateFetchedAt: budgetData.exchangeRateFetchedAt || new Date(),
       exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
     };
+    if (!await confirmIncomeAllocation(normalizedBudgetData)) return false;
 
     const budgetId = budgetService.createId();
     const createPayload = { ...normalizedBudgetData, userId: currentUser.uid, id: budgetId };
@@ -1817,6 +1873,7 @@ const Dashboard: React.FC = () => {
   const performUpdateBudget = async (id: string, updates: Partial<Budget>) => {
     const originalBudget = budgets.find((b) => b.id === id);
     if (!originalBudget) return false;
+    if (!await confirmIncomeAllocation({ ...originalBudget, ...updates }, id)) return false;
     const hasPendingOperation = currentUser
       ? offlineQueue.hasPendingBudgetOperations(id, originalBudget.userId)
       : false;
@@ -3042,18 +3099,7 @@ const Dashboard: React.FC = () => {
   // Calculate spending by category (with repayment deduction and billing cycle filtering)
   const getSpentByCategory = () => {
     // Calculate billing cycle period
-    const now = new Date();
-    const currentDay = now.getDate();
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-    }
+    const { start: cycleStart, end: cycleEnd } = getBillingCyclePeriod(billingCycleDay);
 
     // Build repayment lookup map
     const repaymentsByExpense: { [expenseId: string]: number } = {};
@@ -3070,7 +3116,7 @@ const Dashboard: React.FC = () => {
     const spent: { [key: string]: number } = {};
     expenses.forEach((exp) => {
       // Only count expenses within current billing cycle
-      const expDate = new Date(exp.date);
+      const expDate = parseISO(exp.date);
       if (expDate >= cycleStart && expDate < cycleEnd) {
         if (!spent[exp.category]) {
           spent[exp.category] = 0;
@@ -3117,6 +3163,11 @@ const Dashboard: React.FC = () => {
   //#region Render
   return (
     <>
+      <PopupModal isOpen={incomeAllocationMessage !== null} title={t('incomeLinkedBudgetMode')}
+        onClose={() => settleIncomeAllocation(false)} primaryButtonLabel={t('confirm')}
+        onPrimaryAction={() => settleIncomeAllocation(true)}>
+        <p>{incomeAllocationMessage}</p>
+      </PopupModal>
       <div className="dashboard-page max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
@@ -3717,6 +3768,7 @@ const Dashboard: React.FC = () => {
                 onDelete={handleDeleteBudget}
                 onCreateCategory={handleNavigateToCreateCategory}
                 overallBudgetLimits={settings?.overallBudgetLimits}
+                spendingComplete={financialScopeComplete}
                 onSaveOverallBudgetLimit={handleSaveOverallBudgetLimit}
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}

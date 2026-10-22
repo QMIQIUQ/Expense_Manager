@@ -1,9 +1,11 @@
+import { parseISO } from 'date-fns';
 import React, { useCallback, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CurrencyCode, Expense, Repayment } from '../../types';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
 import { getTodayLocal } from '../../utils/dateUtils';
+import { getBillingCyclePeriod, getPreviousBillingCyclePeriod } from '../../utils/budgetRollover';
 import { ChartBarIcon, BarChartSimpleIcon } from '../icons';
 import {
   BarChart,
@@ -88,16 +90,16 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
     const periods: PeriodBaseData[] = [];
     const now = new Date();
 
+    let cycle = getBillingCyclePeriod(billingCycleDay, now);
     for (let i = 1; i <= periodsToShow; i++) {
       // Calculate cycle start for past month i
-      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, billingCycleDay);
-      const cycleStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), billingCycleDay);
-      const cycleEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, billingCycleDay);
+      cycle = getPreviousBillingCyclePeriod(billingCycleDay, cycle.start);
+      const { start: cycleStart, end: cycleEnd } = cycle;
 
       // Calculate spending for this period (cycleEnd is exclusive)
       const spentBase = expenses
         .filter((exp) => {
-          const expDate = new Date(exp.date);
+          const expDate = parseISO(exp.date);
           return (
             exp.category === categoryName &&
             expDate >= cycleStart &&

@@ -35,6 +35,7 @@ export function getAllocatedBudgetMinorUnits(
     const baseAmount = getValidBaseAmount(budget.amount, budget);
     if (baseAmount === null) return null;
     total += toMinorUnits(baseAmount);
+    if (!Number.isSafeInteger(total)) return null;
   }
   return total;
 }
@@ -44,7 +45,7 @@ export function validateOverallBudgetLimit(
   period: BudgetPeriod,
   proposedLimit: number,
 ): BudgetAllocationValidation {
-  if (!Number.isFinite(proposedLimit) || proposedLimit < 0) {
+  if (!Number.isFinite(proposedLimit) || proposedLimit < 0 || !Number.isSafeInteger(toMinorUnits(proposedLimit))) {
     return { valid: false, reason: 'invalid-limit' };
   }
 
@@ -65,6 +66,8 @@ export function validateBudgetAllocationChange(
   limits: OverallBudgetLimits | undefined,
   previousBudgetId?: string,
 ): BudgetAllocationValidation {
+  const proposedBase = getValidBaseAmount(proposedBudget.amount, proposedBudget);
+  if (proposedBase === null || !Number.isSafeInteger(toMinorUnits(proposedBase))) return { valid: false, reason: 'invalid-allocation' };
   const affectedPeriods = new Set<BudgetPeriod>([proposedBudget.period]);
   const previousBudget = previousBudgetId ? budgets.find((budget) => budget.id === previousBudgetId) : undefined;
   if (previousBudget) affectedPeriods.add(previousBudget.period);
@@ -81,6 +84,7 @@ export function validateBudgetAllocationChange(
         return { valid: false, reason: 'invalid-allocation' };
       }
       total += toMinorUnits(baseAmount);
+      if (!Number.isSafeInteger(total)) return { valid: false, reason: 'invalid-allocation' };
     }
 
     if (proposedBudget.period === period) {
@@ -89,6 +93,7 @@ export function validateBudgetAllocationChange(
         return { valid: false, reason: 'invalid-allocation' };
       }
       total += toMinorUnits(proposedBaseAmount);
+      if (!Number.isSafeInteger(total)) return { valid: false, reason: 'invalid-allocation' };
     }
 
     proposedAllocatedMinorUnits = total;

@@ -76,6 +76,13 @@ export const applyPendingOperations = <T>(entity: CacheableEntity, userId: strin
     if (!result) result = { ...operation.localSnapshot, id: userId, userId };
     if (entity === 'userSettings') {
       Object.assign(result, payload.updates);
+      const incomeLinkChange = payload.incomeLinkedBudgetChange as { config?: unknown; manualMonthlyLimit?: number } | undefined;
+      if (incomeLinkChange) {
+        result.incomeLinkedBudget = incomeLinkChange.config;
+        if (incomeLinkChange.manualMonthlyLimit !== undefined) {
+          result.overallBudgetLimits = { ...(result.overallBudgetLimits as Record<string, number> | undefined), monthly: incomeLinkChange.manualMonthlyLimit };
+        }
+      }
       const desiredLimit = payload.overallBudgetLimit as { period?: string; amount?: number } | undefined;
       const limit = operation.status === 'needs-attention' && desiredLimit
         ? (payload.previousOverallBudgetLimit as { period?: string; amount?: number } | undefined) ?? {
