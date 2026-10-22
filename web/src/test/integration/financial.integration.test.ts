@@ -19,7 +19,9 @@ import { expenseService as actualExpenseService } from '../../services/expenseSe
 import { commitQueuedEntity } from '../../services/queuedEntityMutation';
 import { getHistoryPage } from '../../services/historyService';
 import { getConsistentHistoryPage } from '../../services/financialSnapshotService';
-import { readExpenseAggregate } from '../../services/expenseAggregateService';
+import { readExpenseAggregate, summarizeCompleteExpensePeriod } from '../../services/expenseAggregateService';
+import { readCompleteExpensePeriod } from '../../services/expensePeriodReadService';
+import { filterExpenses } from '../../utils/expensePeriodUtils';
 import { offlineQueue } from '../../utils/offlineQueue';
 import { incomeService } from '../../services/incomeService';
 import { transferService } from '../../services/transferService';
@@ -207,6 +209,27 @@ describe('actual Firebase atomic financial mutations', () => {
     expect(aggregate.count).toBe(1105);
     expect(aggregate.total).toBe(1105 + 11 + 4 - 1 + 7);
     expect(aggregate.categories.Food).toBe(aggregate.total);
+    // Both real multi-page paths must agree, including a pending generated payment expense.
+    await offlineQueue.enqueue({ type: 'create', entity: 'scheduledPaymentRecord', payload: {
+      id: scoped('history-payment'), userId: uid, scheduledPaymentId: scoped('history-schedule'),
+      generatedExpensePayload: { id: scoped('history-generated'), userId: uid, amount: 300, currency: 'JPY', baseCurrency: 'MYR', baseAmount: 10,
+        category: 'Bills', description: 'Generated payment', paymentMethod: 'bank', bankId, date: '2025-01-01' },
+    } });
+    const period = await readCompleteExpensePeriod(uid);
+    localStorage.setItem('expense_manager_currency_rate_2025-01-01:MYR:JPY', JSON.stringify({
+      fromCurrency: 'MYR', toCurrency: 'JPY', rate: 31.25, rateDate: '2025-01-01', provider: 'emulator-fixture', fetchedAt: new Date().toISOString(),
+    }));
+    for (const currency of ['MYR', 'JPY'] as const) for (const filter of [
+      { query: '', category: '', paymentMethod: 'all' as const, sort: 'date-desc' as const },
+      { query: 'Historical', category: 'Food', paymentMethod: 'all' as const, sort: 'date-desc' as const },
+      { query: '', category: 'Bills', paymentMethod: 'bank' as const, sort: 'date-desc' as const },
+    ]) {
+      const select = (rows: Expense[]) => filterExpenses(rows, filter);
+      const streamed = await readExpenseAggregate(uid, currency, undefined, select, () => true);
+      const shared = await summarizeCompleteExpensePeriod(uid, period.rows, currency, undefined, select, () => true);
+      expect(shared).toEqual(streamed);
+      if (filter.category === 'Bills') { expect(shared.count).toBe(1); expect(shared.total).toBe(currency === 'MYR' ? 10 : 300); }
+    }
     await offlineQueue.clear();
   });
   it('retains the effective default bank source through later payment edits', async () => {

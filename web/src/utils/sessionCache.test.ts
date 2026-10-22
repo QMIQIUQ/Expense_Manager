@@ -2,6 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sessionCache } from './sessionCache';
 beforeEach(() => { sessionCache.clearAll(); localStorage.clear(); sessionStorage.clear(); });
 describe('atomic data and completeness snapshots', () => {
+  it('restores week-old data after closing the session without declaring its scope broader', async () => {
+    sessionCache.set('expenses', 'user', [{ id: 'saved' }], { coverage: 'dashboard:2026-01-01:2027-01-31' });
+    const savedAt = sessionCache.getMetadata('expenses', 'user')!.timestamp;
+    sessionStorage.clear();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(savedAt + 7 * 24 * 60 * 60 * 1000);
+    vi.resetModules();
+    try {
+      const reopened = (await import('./sessionCache')).sessionCache;
+      expect(reopened.get('expenses', 'user')).toEqual([{ id: 'saved' }]);
+      expect(reopened.getCoverage('expenses', 'user')).toBe('dashboard:2026-01-01:2027-01-31');
+      expect(reopened.get('expenses', 'other')).toBeNull();
+    } finally { clock.mockRestore(); }
+  });
   it('never trusts a detached old completeness marker without its dataset', () => {
     localStorage.setItem('expense-financial-coverage:user:expenses', 'all');
     expect(sessionCache.getSnapshot('expenses', 'user')).toBeNull();

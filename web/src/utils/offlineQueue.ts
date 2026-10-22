@@ -26,6 +26,8 @@ type Mutation = Pick<QueuedOperation, 'type' | 'entity' | 'payload'>;
 const MAX_RETRY = 5;
 const LEASE_MS = 60_000;
 let revision = 0;
+const expenseVersions = new Map<string, number>();
+let expenseViews = new Map<string, unknown[]>();
 let snapshot: QueuedOperation[] = [];
 let initialization: Promise<void> | undefined;
 let refreshGeneration = 0;
@@ -60,6 +62,21 @@ const notifyCompleted = (operations: QueuedOperation[], broadcast = true): void 
   }, 75);
 };
 const notify = (broadcast = true, entities?: QueuedOperation['entity'][]) => {
+  // Claims, leases and identical storage refreshes do not change expense query content.
+  const nextViews = new Map<string, unknown[]>();
+  for (const operation of snapshot) {
+    if (!['expense', 'scheduledPaymentRecord'].includes(operation.entity)) continue;
+    const owner = ownerOf(operation);
+    if (typeof owner !== 'string') continue;
+    const rows = nextViews.get(owner) ?? [];
+    rows.push({ id: operation.id, entity: operation.entity, type: operation.type, payload: operation.payload,
+      localSnapshot: operation.localSnapshot, status: operation.status });
+    nextViews.set(owner, rows);
+  }
+  for (const owner of new Set([...expenseViews.keys(), ...nextViews.keys()])) {
+    if (!dataEqual(expenseViews.get(owner) ?? [], nextViews.get(owner) ?? [])) expenseVersions.set(owner, (expenseVersions.get(owner) ?? 0) + 1);
+  }
+  expenseViews = nextViews;
   revision++;
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('offline-queue-changed', { detail: { entities } }));
   if (broadcast) channel?.postMessage('changed');
@@ -134,6 +151,7 @@ if (typeof window !== 'undefined') window.addEventListener('focus', () => { void
 
 export const offlineQueue = {
   get revision(): number { return revision; },
+  expenseRevision(userId: string): number { return expenseVersions.get(userId) ?? 0; },
   initialize(): Promise<void> {
     if (!initialization) {
       initialization = (async () => {

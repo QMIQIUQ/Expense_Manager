@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { indexBy } from '../../utils/indexBy';
 import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer, CurrencyCode } from '../../types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../types/quickExpense';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -137,6 +138,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   
   const [searchTerm, setSearchTerm] = useState('');
   const [localRepayments, setLocalRepayments] = useState(repayments);
+  const repaymentsByExpense = useMemo(() => indexBy(localRepayments, (row) => row.expenseId), [localRepayments]);
+  const transfersByDate = useMemo(() => indexBy(transfers, (row) => row.date), [transfers]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(oneMonthAgoStr);
@@ -275,7 +278,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   // Transfer.fromPaymentMethod should match expense.paymentMethod (money comes from expense's payment method)
   const findRelatedTransfer = (expense: Expense): Transfer | undefined => {
     const expenseBaseAmount = getExpenseBaseAmount(expense);
-    return transfers.find(t => {
+    return transfersByDate.get(expense.date)?.find(t => {
       // Match by date and amount
       const dateMatch = t.date === expense.date;
       const amountMatch = Math.abs(t.amount - expenseBaseAmount) < 0.01;
@@ -376,17 +379,26 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY;
   };
 
-  const getDisplayExpenseAmount = (expense: Expense): number => {
+  const getDisplayExpenseAmount = useCallback((expense: Expense): number => {
     if (!displayCurrency) return getExpenseBaseAmount(expense);
     const displaySource = getExpenseDisplaySource(expense, displayCurrency);
     if (displaySource.sourceCurrency === displayCurrency) return displaySource.amount;
     return expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN;
-  };
+  }, [displayCurrency, expenseDisplayAmountsById]);
 
   const getDisplayRepaymentAmount = (repayment: Repayment): number => {
     if (!displayCurrency) return getRepaymentBaseAmount(repayment);
     return repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN;
   };
+  const displayRepaymentTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const repayment of localRepayments) {
+      if (!repayment.expenseId) continue;
+      const amount = displayCurrency ? repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN : getRepaymentBaseAmount(repayment);
+      totals.set(repayment.expenseId, (totals.get(repayment.expenseId) ?? 0) + amount);
+    }
+    return totals;
+  }, [localRepayments, repaymentDisplayAmountsById, displayCurrency]);
 
   // Handle adding a repayment
   const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
@@ -525,7 +537,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     }
   };
 
-  const filteredAndSortedExpenses = () => {
+  const filteredAndSortedExpenses = useMemo(() => {
     if (prefiltered) return expenses;
     const filtered = expenses.filter((expense) => {
       const matchesSearch = expense.description
@@ -576,7 +588,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     }
 
     return sorted;
-  };
+  }, [prefiltered, expenses, searchTerm, categoryFilter, viewMode, monthFilter, allDates, dateFrom, dateTo, sortBy]);
 
   const formatDate = (dateString: string, time?: string) => {
     const formatted = formatDateWithUserFormat(dateString, dateFormat);
@@ -633,8 +645,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   // Group expenses by date for display
-  const groupExpensesByDate = () => {
-    const sorted = filteredAndSortedExpenses();
+  const groupedExpenses = useMemo(() => {
+    const sorted = filteredAndSortedExpenses;
     const grouped: { [date: string]: Expense[] } = {};
     
     sorted.forEach((expense) => {
@@ -656,13 +668,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       }
       return b.date.localeCompare(a.date);
     });
-  };
+  }, [filteredAndSortedExpenses, getDisplayExpenseAmount, sortBy]);
 
   // Use unique category names to avoid duplicate option keys
-  const categoryNames = Array.from(new Set(sortCategories(categories).map((c) => c.name))).filter((n) => n);
+  const categoryNames = useMemo(() => Array.from(new Set(sortCategories(categories).map((c) => c.name))).filter((n) => n), [categories]);
 
   // Generate available months from expenses
-  const getAvailableMonths = () => {
+  const availableMonths = useMemo(() => {
     const monthSet = new Set<string>();
     expenses.forEach(expense => {
       const date = new Date(expense.date);
@@ -670,9 +682,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       monthSet.add(monthKey);
     });
     return Array.from(monthSet).sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
-  };
-
-  const availableMonths = getAvailableMonths();
+  }, [expenses]);
 
   // Format month for display
   const formatMonthDisplay = (monthKey: string) => {
@@ -689,7 +699,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
 
 
-  const groupedExpenses = groupExpensesByDate();
 
   // Handle quick expense click
   const handleQuickExpenseClick = async (preset: QuickExpensePreset) => {
@@ -1019,7 +1028,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           isSelectionMode={multiSelectEnabled}
           selectedCount={selectedIds.size}
           onToggleSelectionMode={toggleSelectionMode}
-          onSelectAll={() => selectAll(filteredAndSortedExpenses())}
+          onSelectAll={() => selectAll(filteredAndSortedExpenses)}
           onDeleteSelected={() => {
             const ids = Array.from(selectedIds);
             if (ids.length === 0) return;
@@ -1084,10 +1093,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               {!isCollapsed && dayExpenses.map((expense) => {
                 const expenseDisplayCurrency = getDisplayCurrencyForExpense(expense);
                 const expenseDisplayAmount = getDisplayExpenseAmount(expense);
-                const expenseRepayments = localRepayments.filter((repayment) => repayment.expenseId === expense.id);
                 const repaid = repaymentTotals[expense.id!] || 0;
                 const repaidDisplay = displayCurrency
-                  ? expenseRepayments.reduce((sum, repayment) => sum + getDisplayRepaymentAmount(repayment), 0)
+                  ? displayRepaymentTotals.get(expense.id || '') ?? 0
                   : repaid;
                 const netAmount = expenseDisplayAmount - repaidDisplay;
                 const hasExcess = netAmount < 0;
@@ -1433,7 +1441,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
                     {expense.needsRepaymentTracking && (() => {
-                      const expenseRepayments = localRepayments.filter(r => r.expenseId === expense.id);
+                      const expenseRepayments = repaymentsByExpense.get(expense.id || '') ?? EMPTY_REPAYMENTS;
                       return (
                         <div style={styles.detailsSubsection}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

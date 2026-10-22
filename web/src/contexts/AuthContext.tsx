@@ -174,12 +174,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        await ensureUserMetadata(user);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
+      // Restored identity is sufficient for local hydration. Metadata does not gate the UI.
+      if (user) void ensureUserMetadata(user);
     });
 
     return unsubscribe;

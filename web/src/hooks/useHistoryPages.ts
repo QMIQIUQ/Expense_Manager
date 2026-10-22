@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getHistoryPage, type HistoryCollection, type HistoryCursor, type HistoryRange } from '../services/historyService';
 import { applyPendingOperations } from '../utils/pendingOperations';
-import type { QueuedOperation } from '../utils/offlineQueue';
+import { offlineQueue, type QueuedOperation } from '../utils/offlineQueue';
 import { sessionCache } from '../utils/sessionCache';
 
 /** The default history path reads exactly one page, and advances only on demand. */
@@ -11,7 +11,7 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   const [state, setState] = useState<{ key: string; rows: T[]; hasMore: boolean; complete: boolean }>({ key: '', rows: [], hasMore: true, complete: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const [, setRevision] = useState(0);
+  const [pendingOperations, setPendingOperations] = useState(() => offlineQueue.getAll());
   const generation = useRef(0);
   const cursor = useRef<HistoryCursor>();
   const snapshot = useRef<{ cached: boolean; version?: string }>();
@@ -53,7 +53,7 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
     return () => { counter.current++; busy.current = false; };
   }, [load]);
   useEffect(() => {
-    const projected = () => setRevision((revision) => revision + 1);
+    const projected = () => setPendingOperations(offlineQueue.getAll());
     const synced = (event: Event) => {
       const detail = (event as CustomEvent<{ userId?: string; operations?: QueuedOperation[] }>).detail;
       if (detail?.userId !== userId || !detail.operations?.some((operation) =>
@@ -86,9 +86,11 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
       window.removeEventListener('session-cache-updated', cacheChanged);
     };
   }, [key, load, name, userId]);
-  const rows = state.key === key ? state.rows : fallback.filter((row) => !userId || (row as { userId?: string }).userId === userId).slice(0, 100);
-  const projected = userId ? applyPendingOperations(name, userId, rows) : rows;
-  return { rows: projected.filter((row) => !range || row.date >= range.startDate && row.date <= range.endDate),
+  const rows = useMemo(() => state.key === key ? state.rows : fallback.filter((row) => !userId || (row as { userId?: string }).userId === userId).slice(0, 100), [state.key, state.rows, key, fallback, userId]);
+  const projected = useMemo(() => userId ? applyPendingOperations(name, userId, rows, pendingOperations) : rows, [name, userId, rows, pendingOperations]);
+  const start = range?.startDate; const end = range?.endDate;
+  const visible = useMemo(() => projected.filter((row) => !start || !end || row.date >= start && row.date <= end), [projected, start, end]);
+  return { rows: visible,
     hasMore: !!userId && (state.key !== key || state.hasMore), loading, error, incomplete: state.key === key && !state.complete,
     loadMore: () => load(false), retry: () => load(true) };
 };

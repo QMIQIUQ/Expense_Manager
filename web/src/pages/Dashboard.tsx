@@ -50,8 +50,10 @@ const AdminTab = lazy(() => import('./tabs/AdminTab'));
 const UserProfile = lazy(() => import('./UserProfile'));
 const FeatureManager = lazy(() => import('../components/settings/FeatureManager'));
 const PaymentMethodsTab = lazy(() => import('../components/payment/PaymentMethodsTab'));
-import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
-import ImportExportModal from '../components/importexport/ImportExportModal';
+const downloadExpenseTemplate = async () => (await import('../utils/importExportUtils')).downloadExpenseTemplate();
+const exportToExcel: typeof import('../utils/importExportUtils').exportToExcel = async (...args) =>
+  (await import('../utils/importExportUtils')).exportToExcel(...args);
+const ImportExportModal = lazy(() => import('../components/importexport/ImportExportModal'));
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import NotificationBell from '../components/NotificationBell';
 import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
@@ -273,6 +275,8 @@ const Dashboard: React.FC = () => {
   const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [hasOpenedImportModal, setHasOpenedImportModal] = useState(false);
+  useEffect(() => { if (showImportModal) setHasOpenedImportModal(true); }, [showImportModal]);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   // Controlled period state is shared with dashboard deep-links and the Expenses tab.
@@ -428,12 +432,12 @@ const Dashboard: React.FC = () => {
     const refresh = async (entities: Set<CacheableEntity>) => {
       const scope = financialScopeRef.current;
       const scopeId = financialScopeKey(scope);
-      const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: (data: T) => void) => {
+      const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: React.Dispatch<React.SetStateAction<T>>) => {
         dataService.markStale(entity, currentUserId);
         const data = await dataService.getData(entity, currentUserId, true, fetch, () => {
           if (['expenses', 'incomes', 'repayments', 'transfers'].includes(entity)) markFinancialScopeCovered(currentUserId, entity as import('../services/historyService').HistoryCollection, scope);
         }, ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity) ? scopeId : 'collection');
-        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set(data);
+        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set((previous) => dataEqual(previous, data) ? previous : data);
       };
       const targets: Partial<Record<CacheableEntity, () => Promise<void>>> = {
         expenses: () => load('expenses', () => readScopedExpenses(currentUserId, scope), setExpenses),
@@ -579,43 +583,39 @@ const Dashboard: React.FC = () => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('expenses', currentUser.uid, reconciled);
-        setExpenses(reconciled);
+        setExpenses((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
       const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingBudgetOperations(loadedBudgets, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('budgets', currentUser.uid, reconciled);
-        setBudgets(reconciled);
+        setBudgets((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
       const setCategoriesWithPendingOperations = (loadedCategories: Category[]) => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingCategoryOperations(loadedCategories, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('categories', currentUser.uid, reconciled);
-        setCategories(reconciled);
+        setCategories((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
 
       // Phase 1: Load cached data first (instant display)
-      const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
-        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId),
-        dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId),
-        dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations),
-        dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
-        dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => readScopedRepayments(currentUser.uid, scope), safeUpdate(setRepayments), () => markFinancialScopeCovered(currentUser.uid, 'repayments', scope), scopeId),
-        dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => readScopedTransfers(currentUser.uid, scope), safeUpdate(setTransfers), () => markFinancialScopeCovered(currentUser.uid, 'transfers', scope), scopeId),
-        dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), safeUpdate(setScheduledPayments)),
-        dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), safeUpdate(setScheduledPaymentRecords)),
-      ]);
-
-      if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
-      // Set initial data (from cache or fresh)
-      setExpensesWithPendingOperations(currentData('expenses', expensesData));
-      setIncomes(currentData('incomes', incomesData));
-      setCategoriesWithPendingOperations(currentData('categories', categoriesData));
-      setBudgetsWithPendingOperations(currentData('budgets', budgetsData));
-      setRepayments(currentData('repayments', repaymentsData));
-      setTransfers(currentData('transfers', transfersData));
-      setScheduledPayments(currentData('scheduledPayments', scheduledPaymentsData));
-      setScheduledPaymentRecords(currentData('scheduledPaymentRecords', scheduledPaymentRecordsData));
+      const initial = <T extends unknown[]>(entity: CacheableEntity, read: Promise<T>, publish: (data: T) => void) =>
+        read.then((data) => safeUpdate(publish)(currentData(entity, data)));
+      // Publish each collection as it settles. A missing/slow collection cannot gate the others.
+      void Promise.allSettled([
+        initial('expenses', dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId), setExpensesWithPendingOperations),
+        initial('incomes', dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId), setIncomes),
+        initial('categories', dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations), setCategoriesWithPendingOperations),
+        initial('budgets', dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations), setBudgetsWithPendingOperations),
+        initial('repayments', dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => readScopedRepayments(currentUser.uid, scope), safeUpdate(setRepayments), () => markFinancialScopeCovered(currentUser.uid, 'repayments', scope), scopeId), setRepayments),
+        initial('transfers', dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => readScopedTransfers(currentUser.uid, scope), safeUpdate(setTransfers), () => markFinancialScopeCovered(currentUser.uid, 'transfers', scope), scopeId), setTransfers),
+        initial('scheduledPayments', dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), safeUpdate(setScheduledPayments)), setScheduledPayments),
+        initial('scheduledPaymentRecords', dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), safeUpdate(setScheduledPaymentRecords)), setScheduledPaymentRecords),
+      ]).then((results) => {
+        if (results.some((result) => result.status === 'rejected') && liveUserIdRef.current === currentUser.uid) {
+          showNotification('error', t('errorLoadingData'));
+        }
+      });
 
       // Initial UI now rendered; no blocking loader needed
 
@@ -1375,14 +1375,15 @@ const Dashboard: React.FC = () => {
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (!currentUser || ids.length === 0) return;
-
-    const originals = expenses.filter((e) => ids.includes(e.id!));
-    const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && ids.includes(transfer.expenseId));
+    const selectedIds = new Set(ids);
+    const originals = expenses.filter((e) => selectedIds.has(e.id!));
+    const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && selectedIds.has(transfer.expenseId));
+    const linkedTransferIds = new Set(linkedTransfers.map((transfer) => transfer.id));
 
     // Optimistic update: remove selected expenses
-    setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
-    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !ids.includes(expense.id!)));
-    setTransfers((prev) => prev.filter((transfer) => !linkedTransfers.some((linked) => linked.id === transfer.id)));
+    setExpenses((prev) => prev.filter((e) => !selectedIds.has(e.id!)));
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !selectedIds.has(expense.id!)));
+    setTransfers((prev) => prev.filter((transfer) => !linkedTransferIds.has(transfer.id)));
 
     // 設置刪除進度狀態
     const deleteId = `delete-${Date.now()}`;
@@ -3924,7 +3925,8 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Import/Export Modal */}
-      {currentUser && (
+      {currentUser && (showImportModal || hasOpenedImportModal) && (
+        <Suspense fallback={<p role="status">{t('loading')}</p>}>
         <ImportExportModal
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
@@ -3935,6 +3937,7 @@ const Dashboard: React.FC = () => {
           onUpdateProgress={handleUpdateImportProgress}
           onImportError={handleImportError}
         />
+        </Suspense>
       )}
     </div>
       {/* Bottom Sheet for adding expense */}

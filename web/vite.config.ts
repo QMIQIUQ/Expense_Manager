@@ -35,6 +35,25 @@ export default defineConfig(({ command }) => {
           'manifest-warm-kitty-light.webmanifest', 'manifest-warm-kitty-dark.webmanifest',
         ],
         injectManifest: {
+          // Keep installation on the entry's static graph. Optional modules are cached on use.
+          manifestTransforms: [async (entries) => {
+            const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'dist/.vite/manifest.json'), 'utf8')) as
+              Record<string, { file: string; isEntry?: boolean; imports?: string[]; css?: string[]; assets?: string[] }>;
+            const initial = new Set<string>();
+            const visited = new Set<string>();
+            const visit = (key: string) => {
+              if (visited.has(key)) return;
+              visited.add(key);
+              const chunk = manifest[key];
+              if (!chunk) return;
+              initial.add(chunk.file);
+              chunk.css?.forEach((file) => initial.add(file));
+              chunk.assets?.forEach((file) => initial.add(file));
+              chunk.imports?.forEach(visit);
+            };
+            Object.keys(manifest).filter((key) => manifest[key].isEntry).forEach(visit);
+            return { manifest: entries.filter((entry) => !/\.(?:js|css)$/.test(entry.url) || initial.has(entry.url)), warnings: [] };
+          }],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,webmanifest}'],
           globIgnores: ['**/*.wasm', '**/ort-wasm*'],
           maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
@@ -155,50 +174,8 @@ export default defineConfig(({ command }) => {
       port: 3000,
     },
     build: {
-      rollupOptions: {
-        output: {
-          manualChunks: (id) => {
-            // Split vendor code
-            if (id.includes('node_modules')) {
-              // Group React and React-dependent libraries together
-              // Use more specific path matching to avoid false positives
-              if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') ||
-                  id.includes('node_modules/react-router') || id.includes('node_modules/recharts/') ||
-                  id.includes('node_modules/@reduxjs/toolkit/') || id.includes('node_modules/react-redux/') ||
-                  id.includes('node_modules/use-sync-external-store/')) {
-                return 'react-vendor'
-              }
-              if (id.includes('node_modules/firebase/') || id.includes('node_modules/@firebase/')) {
-                return 'firebase'
-              }
-              if (id.includes('node_modules/exceljs/')) {
-                return 'exceljs.min'
-              }
-              // Other node_modules
-              return 'vendor'
-            }
-            // Split large components by feature
-            if (id.includes('/components/dashboard/')) {
-              return 'dashboard-components'
-            }
-            if (id.includes('/components/cards/')) {
-              return 'cards-components'
-            }
-            if (id.includes('/components/recurring/')) {
-              return 'recurring-components'
-            }
-            if (id.includes('/components/budgets/')) {
-              return 'budget-components'
-            }
-            if (id.includes('/components/income/')) {
-              return 'income-components'
-            }
-            if (id.includes('/components/scheduledPayments/')) {
-              return 'scheduled-payments-components'
-            }
-          },
-        },
-      },
+      manifest: true,
+      // Automatic dependency-aware splitting preserves lazy boundaries without CJS cycles.
       chunkSizeWarningLimit: 1000,
       minify: 'esbuild',
       target: 'es2015',

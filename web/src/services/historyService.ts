@@ -156,6 +156,7 @@ export const financialScopeKey = (scope: FinancialScope): string => typeof scope
 
 const scopedRequests = new Map<string, Promise<unknown[]>>();
 const generations = new Map<string, number>();
+export const financialReadGeneration = (userId: string): number => generations.get(userId) ?? 0;
 const snapshots = new Map<string, { rows: unknown[]; timestamp: number }>();
 export const invalidateFinancialReads = (userId: string): void => {
   generations.set(userId, (generations.get(userId) ?? 0) + 1);

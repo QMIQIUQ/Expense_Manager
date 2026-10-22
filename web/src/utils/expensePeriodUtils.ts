@@ -65,13 +65,16 @@ const getPaymentSourceName = (expense: Expense, context: ExpenseFilterContext): 
   return expense.paymentMethod || '';
 };
 
-export const filterAndSortExpenses = (
+export const filterExpenses = (
   expenses: Expense[],
   filters: ExpenseFilterState,
   context: ExpenseFilterContext = {},
 ): Expense[] => {
   const query = filters.query.trim().toLocaleLowerCase();
-  const filtered = expenses.filter((expense) => {
+  return expenses.filter((expense) => {
+    if (filters.category && expense.category !== filters.category) return false;
+    if (filters.paymentMethod !== 'all' && expense.paymentMethod !== filters.paymentMethod) return false;
+    if (!query) return true;
     const searchable = [
       expense.description,
       expense.notes,
@@ -84,20 +87,18 @@ export const filterAndSortExpenses = (
       .join(' ')
       .toLocaleLowerCase();
 
-    const matchesQuery = !query || searchable.includes(query);
-    const matchesCategory = !filters.category || expense.category === filters.category;
-    const matchesPayment = filters.paymentMethod === 'all' || expense.paymentMethod === filters.paymentMethod;
-    return matchesQuery && matchesCategory && matchesPayment;
-  });
-
-  return [...filtered].sort((left, right) => {
-    if (filters.sort === 'amount-desc') return getExpenseBaseAmount(right) - getExpenseBaseAmount(left);
-    if (filters.sort === 'amount-asc') return getExpenseBaseAmount(left) - getExpenseBaseAmount(right);
-    const leftTime = new Date(`${left.date}T${left.time || '00:00'}:00`).getTime();
-    const rightTime = new Date(`${right.date}T${right.time || '00:00'}:00`).getTime();
-    return filters.sort === 'date-asc' ? leftTime - rightTime : rightTime - leftTime;
+    return searchable.includes(query);
   });
 };
+
+export const filterAndSortExpenses = (
+  expenses: Expense[], filters: ExpenseFilterState, context: ExpenseFilterContext = {},
+): Expense[] => filterExpenses(expenses, filters, context).sort((left, right) => {
+    if (filters.sort === 'amount-desc') return getExpenseBaseAmount(right) - getExpenseBaseAmount(left);
+    if (filters.sort === 'amount-asc') return getExpenseBaseAmount(left) - getExpenseBaseAmount(right);
+    const order = left.date.localeCompare(right.date) || (left.time || '00:00').localeCompare(right.time || '00:00');
+    return filters.sort === 'date-asc' ? order : -order;
+  });
 
 export const countInclusiveDays = (startDate: string, endDate: string): number => {
   const start = parseLocalDate(startDate);

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cachedHistoryCovers, getHistoryPage, readHistoryRange } from './historyService';
-import { readExpenseAggregate } from './expenseAggregateService';
+import { readExpenseAggregate, summarizeCompleteExpensePeriod } from './expenseAggregateService';
+import { readCompleteExpensePeriod, expensePeriodReadKey } from './expensePeriodReadService';
 import { sessionCache } from '../utils/sessionCache';
 import { offlineQueue } from '../utils/offlineQueue';
 import type { Expense } from '../types';
@@ -12,6 +13,17 @@ const range = { startDate: '2026-10-01', endDate: '2026-10-31' };
 const makeRows = () => Array.from({ length: 205 }, (_, index) => ({ id: `row-${String(index).padStart(3, '0')}`, userId: 'user', amount: 1, category: 'Food', date: '2026-10-18' } as Expense));
 beforeEach(async () => { mode.isOnline = false; vi.mocked(convertAmountToCurrency).mockImplementation(async (amount) => amount); sessionCache.clearAll(); await offlineQueue.clear(); });
 describe('offline exact summaries and cached navigation', () => {
+  it('does not publish the shared summary if the snapshot changes during its final conversion batch', async () => {
+    sessionCache.set('expenses', 'user', makeRows().slice(0, 5), { coverage: 'all' });
+    const period = await readCompleteExpensePeriod('user');
+    let converted = 0;
+    vi.mocked(convertAmountToCurrency).mockImplementation(async (amount) => {
+      if (++converted === 5) sessionCache.set('expenses', 'user', [], { coverage: 'all' });
+      return amount;
+    });
+    await expect(summarizeCompleteExpensePeriod('user', period.rows, 'MYR', undefined, (rows) => rows,
+      () => expensePeriodReadKey('user') === period.key)).rejects.toMatchObject({ code: 'stale-read' });
+  });
   it('shows exact covered-period totals including pending mutations without a server read', async () => {
     sessionCache.set('expenses', 'user', makeRows(), { coverage: 'dashboard:2026-01-01:2027-01-31' });
     await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: { id: 'row-000', userId: 'user', amount: 5 } });

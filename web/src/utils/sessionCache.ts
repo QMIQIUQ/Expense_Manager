@@ -15,7 +15,6 @@ export interface CacheSnapshot<T> extends CacheMetadata {
 }
 const SESSION = 'expense_snapshot_session_v2_';
 const PERSIST = 'expense_snapshot_v2_';
-const TTL = 24 * 60 * 60 * 1000;
 const memory = new Map<string, CacheSnapshot<unknown>>();
 const singleton = new Set<CacheableEntity>(['featureSettings', 'userSettings', 'dashboardLayout']);
 const keyFor = (entity: CacheableEntity, userId: string) => entity + '_' + userId;
@@ -30,7 +29,7 @@ const readEnvelope = <T,>(raw: string | null, entity: CacheableEntity, userId: s
   try {
     const value = JSON.parse(raw) as CacheSnapshot<T>;
     if (value.schemaVersion !== 2 || value.entity !== entity || value.userId !== userId ||
-      typeof value.version !== 'string' || !Number.isFinite(value.timestamp) || Date.now() - value.timestamp >= TTL ||
+      typeof value.version !== 'string' || !Number.isFinite(value.timestamp) ||
       !validData(entity, value.data) || (Array.isArray(value.data) && value.rowCount !== value.data.length)) return null;
     return value;
   } catch { return null; }
@@ -47,7 +46,7 @@ const readLegacy = <T,>(entity: CacheableEntity, userId: string): CacheSnapshot<
       if (!raw || !metadata) continue;
       const data = JSON.parse(raw) as T;
       const meta = JSON.parse(metadata) as CacheMetadata;
-      if (meta.userId !== userId || !Number.isFinite(meta.timestamp) || Date.now() - meta.timestamp >= TTL || !validData(entity, data)) continue;
+      if (meta.userId !== userId || !Number.isFinite(meta.timestamp) || !validData(entity, data)) continue;
       // Legacy data may be displayed, but has no trustworthy full-history coverage.
       return { schemaVersion: 2, entity, userId, version: 'legacy', timestamp: meta.timestamp, data,
         rowCount: Array.isArray(data) ? data.length : undefined };
@@ -69,8 +68,8 @@ export const sessionCache = {
   getSnapshot<T>(entity: CacheableEntity, userId: string): CacheSnapshot<T> | null {
     const key = keyFor(entity, userId);
     const hot = memory.get(key);
-    if (hot && Date.now() - hot.timestamp < TTL) return hot as CacheSnapshot<T>;
-    if (hot) memory.delete(key);
+    // Age determines whether to refresh, never whether saved data may be displayed.
+    if (hot) return hot as CacheSnapshot<T>;
     const candidates: CacheSnapshot<T>[] = [];
     try {
       const session = readEnvelope<T>(sessionStorage.getItem(SESSION + key), entity, userId);
