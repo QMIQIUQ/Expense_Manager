@@ -69,4 +69,3 @@ describe('income budget settings dialog', () => {
     expect(screen.getByLabelText('overallBudgetAmount')).toHaveValue(1500);
   });
 });
-
