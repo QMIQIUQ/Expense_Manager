@@ -10,6 +10,7 @@
 | [FEATURES_AND_PAGES.md](FEATURES_AND_PAGES.md) | 功能入口、目前頁面掛載與主要資料結構 | 開發者 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系統分層、資料流與 Firebase 架構 | 開發者 |
 | [PERFORMANCE_RELIABILITY_IMPLEMENTATION.md](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md) | IndexedDB outbox、交易防重送、分頁、快取與驗證紀錄 | 開發者 / 維運 |
+| [OFFLINE_STORAGE_STARTUP.md](implementation-plans/OFFLINE_STORAGE_STARTUP.md) | 離線快照、啟動載入與 IndexedDB 遷移優化計畫（尚未實作） | 開發者 / QA |
 | [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) | 既有功能的 method 與流程盤點 | 開發者 |
 | [LOCAL_FIRST_ACCEPTANCE.md](LOCAL_FIRST_ACCEPTANCE.md) | 既有逐功能本機優先驗收紀錄 | 開發者 / QA |
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
