@@ -504,6 +504,8 @@ describe('large and concurrent reconciliation finalization', () => {
     await offlineQueue.clear();
   });
   it('traverses and finalizes 1005 movements with paged marks and safe interrupted/replayed intents', async () => {
+    const started = performance.now(); let lastStage = started;
+    const stage = (name: string) => { const now = performance.now(); console.info('reconciliation-1005-phase', JSON.stringify({ name, elapsedMs: Math.round(now - lastStage), totalMs: Math.round(now - started) })); lastStage = now; };
     await offlineQueue.clear();
     const account: ReconciliationAccount = { type: 'bank', id: scoped('large-bank'), name: 'Large statement', currency: 'MYR' };
     await setDoc(doc(db, 'banks', account.id), { userId: uid, name: account.name, balance: 995, currency: 'MYR' });
@@ -512,16 +514,20 @@ describe('large and concurrent reconciliation finalization', () => {
       for (let index = start; index < Math.min(1005, start + 400); index++) batch.set(doc(db, 'expenses', scoped(`large-${index}`)), { userId: uid, description: `Statement ${index}`, category: 'Food', date: '2026-02-01', amount: 1, currency: 'MYR', paymentMethod: 'bank', bankId: account.id });
       await batch.commit();
     }
+    stage('seed');
     const report = await readReconciliationReport(uid, account, '2026-02-01', '2026-02-01');
-    expect(report.movements).toHaveLength(1005);
+    expect(report.movements).toHaveLength(1005); stage('full-period-read');
     const id = await reconciliationId(uid, account, '2026-02-01', '2026-02-01');
     await saveReconciliation({ id, userId: uid, accountType: 'bank', accountId: account.id, accountName: account.name, currency: 'MYR', periodStart: '2026-02-01', periodEnd: '2026-02-01', openingBalanceMinor: 200000, statementClosingMinor: 99500, calculatedClosingMinor: 99500, sourceFingerprint: report.sourceFingerprint, status: 'complete', revision: 2 }, undefined, report, new Set(report.movements.map((row) => row.key)));
+    stage('durable-local-batch');
     const operations = offlineQueue.getAll(); expect(operations).toHaveLength(1007);
-    await commitQueuedEntity(operations[0]);
+    await commitQueuedEntity(operations[0]); stage('draft-commit');
     await expect(commitQueuedEntity({ ...operations[1], id: 'interrupted-mark', payload: { ...(operations[1].payload as object), reconciliationId: 'missing' } })).rejects.toThrow();
     for (const operation of operations.slice(1, -1)) await commitQueuedEntity(operation);
+    stage('1005-mark-transactions');
     await commitQueuedEntity(operations[1]);
     await commitQueuedEntity(operations[operations.length - 1]); await commitQueuedEntity(operations[operations.length - 1]);
+    stage('finalization-and-replay');
     expect((await getDocFromServer(doc(db, 'accountReconciliations', id))).data()!.status).toBe('complete');
     await offlineQueue.clear();
   }, 120000);
