@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { acceptLocalMutation } from '../../services/acceptLocalMutation';
 import { prepareRepaymentSettlement } from '../../services/splitSettlementService';
+const ReceiptAttachmentPanel = React.lazy(() => import('./ReceiptAttachmentPanel'));
 import { ExpenseSplitSummary } from './ExpenseSplitSummary';
 import { indexBy } from '../../utils/indexBy';
 import { useExpenseTags } from '../../hooks/useExpenseTags';
@@ -1282,15 +1283,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </div>
                 </div>
 
-                {/* More Details Button - Only show if there are details to show */}
-                {(expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || expense.needsRepaymentTracking) && (
+                {/* Every saved expense can receive permanent receipt attachments. */}
+                {(expense.id || expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || expense.needsRepaymentTracking) && (
                   <div style={styles.moreDetailsRow}>
                     <button
                       onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
                       style={styles.moreDetailsBtn}
                     >
                       <span style={{ flex: 1, textAlign: 'center' }}>
-                        ────── {t('showMore')} {expandedDetailsId === expense.id ? '▲' : '▼'} ──────
+                        ────── {t('receiptArchiveTitle')} · {t('showMore')} {expandedDetailsId === expense.id ? '▲' : '▼'} ──────
                       </span>
                     </button>
                   </div>
@@ -1299,6 +1300,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 {/* Expanded Details Section */}
                 {expandedDetailsId === expense.id && (
                   <div style={styles.detailsSection}>
+                    <React.Suspense fallback={null}><ReceiptAttachmentPanel expense={expense} /></React.Suspense>
                     {/* Amount Items (if any) */}
                     {expense.amountItems && expense.amountItems.length > 0 && (
                       <div style={styles.detailsSubsection}>

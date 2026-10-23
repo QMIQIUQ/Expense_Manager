@@ -251,6 +251,48 @@ service cloud.firestore {
     function validSplitRepaymentWrite(repaymentId, before, after) {
       return before.get('splitParticipantId', '') == '' && after.get('splitParticipantId', '') == '' || splitRepaymentCoupledWrite(repaymentId, before, after);
     }
+    function validReceiptMutation(data) {
+      let receipt = /databases/$(database)/documents/mutationReceipts/$(request.auth.uid)/operations/$(data.lastMutationId);
+      return data.lastMutationId is string && data.lastMutationId.size() > 0 && !exists(receipt) && existsAfter(receipt) &&
+        getAfter(receipt).data.userId == request.auth.uid && getAfter(receipt).data.committedAt == request.time;
+    }
+    function validReceiptMetadata(data) {
+      return data.keys().hasOnly(['userId', 'expenseId', 'name', 'originalName', 'contentType', 'byteSize', 'originalByteSize', 'optimized', 'sha256', 'provider', 'archived', 'lastMutationId', 'createdAt', 'updatedAt']) &&
+        data.userId == request.auth.uid && data.expenseId is string && data.name is string && data.name.size() > 0 && data.name.size() <= 125 &&
+        data.originalName is string && data.originalName.size() <= 120 && data.provider == 'firestore' && data.archived is bool && data.optimized is bool &&
+        data.byteSize is int && data.byteSize > 0 && data.byteSize <= 614400 && data.originalByteSize is int && data.originalByteSize > 0 && data.originalByteSize <= 10485760 &&
+        data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] && data.sha256 is string && data.sha256.matches('^[a-f0-9]{64}$') &&
+        data.createdAt is timestamp && data.updatedAt == request.time && validReceiptMutation(data);
+    }
+    match /receiptAttachments/{attachmentId} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && validReceiptMetadata(request.resource.data) && !request.resource.data.archived &&
+        getAfter(/databases/$(database)/documents/expenses/$(request.resource.data.expenseId)).data.userId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.sha256 == request.resource.data.sha256 &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.expenseId == request.resource.data.expenseId &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && validReceiptMetadata(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['archived', 'lastMutationId', 'updatedAt']) &&
+        getAfter(/databases/$(database)/documents/expenses/$(resource.data.expenseId)).data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    match /receiptAttachmentContents/{attachmentId} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list: if false;
+      allow create: if isAuthenticated() && request.resource.data.keys().hasOnly(['userId', 'expenseId', 'contentBase64', 'sha256', 'byteSize', 'contentType']) &&
+        isOwner(request.resource.data.userId) && request.resource.data.contentBase64 is string && request.resource.data.contentBase64.size() > 0 && request.resource.data.contentBase64.size() <= 819200 &&
+        request.resource.data.byteSize is int && request.resource.data.byteSize > 0 && request.resource.data.byteSize <= 614400 &&
+        request.resource.data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.sha256 == request.resource.data.sha256 &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.byteSize == request.resource.data.byteSize &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.contentType == request.resource.data.contentType &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.expenseId == request.resource.data.expenseId &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.userId == request.auth.uid &&
+        !exists(/databases/$(database)/documents/receiptAttachments/$(attachmentId));
+      allow update, delete: if false;
+    }
+
     // Expenses collection
     match /expenses/{expenseId} {
       // Allow an authenticated transaction to check whether its stable create ID is unused.

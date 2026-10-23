@@ -14,6 +14,9 @@ import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, BudgetPeriod, OverallBudgetLimits, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES, DEFAULT_CATEGORIES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
+import type { PreparedReceiptContent } from '../types/receiptAttachment';
+import { createReceiptAttachmentMutation } from '../services/receiptAttachmentService';
+import { acceptLocalMutationBatch } from '../services/acceptLocalMutation';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { sortCategories } from '../utils/categoryOrder';
@@ -1084,7 +1087,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Expenses
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<{ status: 'saved' | 'queued' | 'failed'; expenseId?: string }> => {
+  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, receipt?: PreparedReceiptContent): Promise<{ status: 'saved' | 'queued' | 'failed'; expenseId?: string; attachmentAccepted?: boolean }> => {
     if (!currentUser) return { status: 'failed' };
 
     const expenseId = expenseService.createId();
@@ -1093,6 +1096,27 @@ const Dashboard: React.FC = () => {
       id: expenseId,
       userId: currentUser.uid,
     };
+
+    if (receipt) {
+      const userId = currentUser.uid;
+      try {
+        return await withExpenseMutationLock(userId, expenseId, async () => {
+          const attachment = await createReceiptAttachmentMutation(userId, expenseId, receipt);
+          if (liveUserIdRef.current !== userId) return { status: 'failed' as const };
+          await acceptLocalMutationBatch([{ entity: 'expense', type: 'create', payload: expensePayload }, attachment]);
+          clearExpenseCreateFailure(userId, expenseId);
+          if (liveUserIdRef.current === userId) {
+            setExpenses((previous) => applyPendingOperations('expenses', userId, previous));
+            showNotification('info', t('ledgerSavedLocally'));
+          }
+          return { status: 'queued' as const, expenseId, attachmentAccepted: true };
+        });
+      } catch (error) {
+        markExpenseCreateFailed(userId, expenseId);
+        if (liveUserIdRef.current === userId) showNotification('error', error instanceof Error ? error.message : t('saveFailed'));
+        return { status: 'failed' };
+      }
+    }
 
     // Keep the stable document ID in the optimistic list and offline queue.
     const optimisticExpense: Expense = {
@@ -3890,13 +3914,13 @@ const Dashboard: React.FC = () => {
           <StepByStepExpenseForm
             key={receiptEntryKey}
             onReviewDuplicates={duplicateGuard.confirm}
-            onSubmit={async (data) => {
-              const result = await handleAddExpense(data);
-              if (result.status !== 'failed') closeExpenseEntry();
+            onSubmit={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
+              if (result.status !== 'failed' && liveUserIdRef.current === currentUser?.uid) closeExpenseEntry();
               return result;
             }}
-            onSubmitAndAddAnother={async (data) => {
-              const result = await handleAddExpense(data);
+            onSubmitAndAddAnother={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
               // Don't close modal - form will reset itself
               return result;
             }}
@@ -3958,13 +3982,13 @@ const Dashboard: React.FC = () => {
           <StepByStepExpenseForm
             key={receiptEntryKey}
             onReviewDuplicates={duplicateGuard.confirm}
-            onSubmit={async (data) => {
-              const result = await handleAddExpense(data);
-              if (result.status !== 'failed') closeExpenseEntry();
+            onSubmit={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
+              if (result.status !== 'failed' && liveUserIdRef.current === currentUser?.uid) closeExpenseEntry();
               return result;
             }}
-            onSubmitAndAddAnother={async (data) => {
-              const result = await handleAddExpense(data);
+            onSubmitAndAddAnother={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
               // Don't close modal - form will reset itself
               return result;
             }}

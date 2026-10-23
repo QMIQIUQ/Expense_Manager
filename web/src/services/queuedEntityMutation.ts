@@ -2,6 +2,7 @@ import { doc, deleteField, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { QueuedOperation } from '../utils/offlineQueue';
 import { runFinancialTransaction } from './financialMutation';
+import { commitReceiptAttachmentMutation } from './receiptAttachmentService';
 import { commitTagMutation } from './tagMutation';
 import { commitRepaymentMutation } from './splitSettlementService';
 import { commitReconciliationMutation } from './accountReconciliationService';
@@ -16,6 +17,7 @@ export type QueuedEntity = keyof typeof collectionFor;
 
 /** Generic document writes share the same immutable replay receipt as financial writes. */
 export const commitQueuedEntity = async (operation: QueuedOperation): Promise<void> => {
+  if (operation.entity === 'receiptAttachment') return commitReceiptAttachmentMutation(operation);
   if (operation.entity === 'expenseTag') return commitTagMutation(operation);
   if (operation.entity === 'repayment') return commitRepaymentMutation(operation);
   if (operation.entity === 'accountReconciliation' || operation.entity === 'reconciliationMark') return commitReconciliationMutation(operation);

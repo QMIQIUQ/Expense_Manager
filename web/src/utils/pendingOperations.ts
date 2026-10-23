@@ -14,6 +14,7 @@ const entities: Record<CacheableEntity, QueuedOperation['entity']> = {
   expenseTags: 'expenseTag',
   accountReconciliations: 'accountReconciliation',
   reconciliationMarks: 'reconciliationMark',
+  receiptAttachments: 'receiptAttachment',
 };
 export const cacheEntityFor = (entity: QueuedOperation['entity']): CacheableEntity =>
   (Object.keys(entities) as CacheableEntity[]).find((key) => entities[key] === entity)!;
@@ -49,6 +50,7 @@ export const applyPendingOperations = <T>(entity: CacheableEntity, userId: strin
       delete fields.id;
       delete fields.previousBudget;
       delete fields.generatedExpensePayload;
+      if (entity === 'receiptAttachments') delete fields.contentBase64;
       if (typeof id !== 'string' || !id) continue;
       if (entity === 'budgets' && operation.status === 'needs-attention') {
         const previous = payload.previousBudget as Record<string, unknown> | undefined;

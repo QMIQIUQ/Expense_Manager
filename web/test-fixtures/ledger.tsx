@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createUserWithEmailAndPassword, onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDocFromServer, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDocFromServer, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { auth, db, usingFirebaseEmulators } from '../src/config/firebase';
 import { AuthContext, type AuthContextType } from '../src/contexts/AuthContext';
 import { UserSettingsProvider } from '../src/contexts/UserSettingsContext';
@@ -10,6 +10,7 @@ import { LanguageProvider } from '../src/contexts/LanguageContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
 import SpendingAnomalyWidget from '../src/components/dashboard/widgets/SpendingAnomalyWidget';
 import type { WidgetProps } from '../src/components/dashboard/widgets/types';
+import ReceiptAttachmentPanel from '../src/components/expenses/ReceiptAttachmentPanel';
 import { ExpenseTagPicker } from '../src/components/expenses/ExpenseTagPicker';
 import { ExpenseSavedViews } from '../src/components/expenses/ExpenseSavedViews';
 import { ExpenseSplitEditor } from '../src/components/expenses/ExpenseSplitEditor';
@@ -51,8 +52,9 @@ function Fixture() {
   const [participants, setParticipants] = useState<ExpenseSplitParticipant[]>([]);
   const guard = useExpenseDuplicateGuard(current.uid); const [accepted, setAccepted] = useState(0);
   return <main style={{ maxWidth: 800, margin: '16px auto', padding: 12 }}><h1>Ledger features</h1>
-    <nav>{['repayments','reconciliation','views','duplicates','split','insights'].map((name) => <button key={name} onClick={() => setTab(name)}>{name}</button>)}</nav>
+    <nav>{['repayments','reconciliation','views','duplicates','split','insights','receipts'].map((name) => <button key={name} onClick={() => setTab(name)}>{name}</button>)}</nav>
     <button onClick={() => { void syncService.syncOfflineQueue().then((result) => setStatus(JSON.stringify({ ...result, remaining: offlineQueue.count(current.uid) }))); }}>Sync pending ledger</button><output id="ledger-sync">{status}</output>
+    {tab === 'receipts' && <><ReceiptAttachmentPanel expense={expense} /><button onClick={() => { void deleteDoc(doc(db, 'expenses', expense.id!)).then(() => setStatus('parent removed')); }}>Remove receipt parent remotely</button><button onClick={() => { void setDoc(doc(db, 'expenses', expense.id!), expense).then(() => setStatus('parent restored')); }}>Restore receipt parent remotely</button></>}
     {tab === 'insights' && <SpendingAnomalyWidget {...({} as WidgetProps)} />}
     {tab === 'repayments' && <RepaymentManager expense={expense} banks={[bank]} />}
     {tab === 'reconciliation' && <AccountReconciliationManager banks={[bank]} cards={[]} ewallets={[]} />}

@@ -229,6 +229,7 @@ class SyncService {
         case 'expenseTag':
         case 'accountReconciliation':
         case 'reconciliationMark':
+        case 'receiptAttachment':
           await commitQueuedEntity(operation);
           return true;
         case 'budget':

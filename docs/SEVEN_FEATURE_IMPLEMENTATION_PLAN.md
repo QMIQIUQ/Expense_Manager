@@ -10,7 +10,7 @@ All seven requested features are in scope. Release target: main, as explicitly r
 | One-time expense splits | Store stable participant IDs and original-currency owed amounts. Equal split includes the owner; the owner's share is excluded from receivables. Associate existing repayment records explicitly with a participant. | Financial increment undergoing independent review. Repayment, per-person counter, account delta and immutable receipt commit together. Legacy unassigned repayments remain visible. |
 | Spending anomaly hints | Explicit analysis of complete current month-to-date versus the median of the previous three matched month-to-date periods. Apply minimum sample and increase thresholds; exclude generated scheduled-payment expenses. | First increment committed as 6f13f63. Gross booked MYR basis is disclosed. Analysis does not run on every dashboard render. |
 | Custom transaction tags | Actual owner-scoped tags with stable IDs, atomic unique-name reservations, rename/archive/restore, expense editing and filtering. | First increment committed as 6f13f63. No inference from ordinary category names. |
-| Permanent receipt attachments | Retain receipt evidence after the expense has been accepted, including later viewing and offline pending uploads. | Storage provider decision pending. No billing upgrade or provider selection has been performed. |
+| Permanent receipt attachments | Retain receipt evidence after the expense has been accepted, including later viewing and offline pending uploads. | User selected existing-plan Firestore storage. Implementation and receipt-specific emulator/browser tests pass; final integrated review remains. |
 
 ## Financial safeguards
 
@@ -20,12 +20,9 @@ All seven requested features are in scope. Release target: main, as explicitly r
 - Save actual account-currency movements at financial mutation time. Verify the source fields before using those amounts. Do not substitute a later exchange quote for an unknown legacy booked value; mark that reconciliation incomplete.
 - Traverse all pages for exact period totals. Render a bounded list separately from the full-period calculation. Share matching concurrent reads and reject incomplete offline scopes.
 
-## Receipt provider decision
+## Selected receipt provider
 
-The Firebase project currently has no active Storage bucket and billing was not enabled during inspection. The user has been asked to choose between:
-
-1. Firebase Cloud Storage. The user completes the required billing setup personally. Files and metadata are stored separately, with owner-only access and immutable content IDs. Upload first, then atomically commit metadata and receipt. Interrupted uploads retain their outbox intent; orphan cleanup must be retryable.
-2. Existing-plan Firestore storage for small receipts. Compress images and impose a conservative per-file limit below the document limit. Store immutable content in separate documents, not inside expense rows. Commit content, metadata and receipt in one transaction. This consumes Firestore storage and read/write quotas and supports smaller files.
+The user selected Firestore storage under the existing Firebase plan; no billing upgrade is required. Store immutable content in separate documents and atomically commit content, metadata and the mutation receipt. Metadata lists never load the file bytes. Each stored receipt is limited to 600 KiB; input files are limited to 10 MiB. JPEG, PNG and WebP images can be compressed; PDFs must already meet the stored limit. Actual file signatures, byte lengths and SHA-256 checksums are validated. Archive/restore retains content and continues consuming Firestore quota. Locally cached receipts remain viewable offline; uncached remote content requires a connection.
 
 Shared requirements: stable attachment IDs; owner and expense binding; actual file-type validation; checksum and byte size; pending/synchronized/error status; content remains recoverable after storage or remote failure; OCR draft cleanup waits for durable expense and attachment acceptance. Provider-specific limits and deployment configuration must be settled before implementation is finalized.
 
