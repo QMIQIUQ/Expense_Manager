@@ -1991,18 +1991,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {/* Toggle options - tap to toggle like settings page */}
             <div style={styles.toggleOptionsContainer}>
               <div
-                onClick={() => setFormData(prev => ({ ...prev, needsRepaymentTracking: !prev.needsRepaymentTracking }))}
-                style={{
-                  ...styles.toggleOption,
-                  ...(formData.needsRepaymentTracking ? styles.toggleOptionActive : {}),
-                }}
-              >
-                <span style={styles.toggleOptionIcon}>🔄</span>
-                <span style={styles.toggleOptionText}>{t('repayment')}</span>
-                <span style={styles.toggleIndicator}>{formData.needsRepaymentTracking ? '✓' : ''}</span>
-              </div>
-
-              <div
                 onClick={() => setEnableTransfer(!enableTransfer)}
                 style={{
                   ...styles.toggleOption,
@@ -2010,7 +1998,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 }}
               >
                 <span style={styles.toggleOptionIcon}>↔️</span>
-                <span style={styles.toggleOptionText}>{t('transfer')}</span>
+                <span style={styles.toggleOptionText}>{t('ledgerRecordTransfer')}</span>
                 <span style={styles.toggleIndicator}>{enableTransfer ? '✓' : ''}</span>
               </div>
             </div>
@@ -2098,6 +2086,19 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 )}
               </div>
             )}
+
+            <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
+            <ExpenseSplitEditor
+              value={splitParticipants}
+              onChange={(participants) => {
+                setSplitParticipants(participants);
+                if (participants.length > 0) setFormData((previous) => ({ ...previous, needsRepaymentTracking: true }));
+              }}
+              totalMinor={formData.amount}
+              currency={formData.currency as CurrencyCode}
+              trackingEnabled={formData.needsRepaymentTracking}
+              onTrackingEnabledChange={(enabled) => setFormData((previous) => ({ ...previous, needsRepaymentTracking: enabled }))}
+            />
           </div>
         );
 
@@ -2197,9 +2198,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       )}
       {renderProgressSummary()}
       {renderStepContent()}
-      {currentStep === STEP_PAYMENT && <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />}
-      {currentStep === STEP_PAYMENT && <ExpenseSplitEditor value={splitParticipants} onChange={setSplitParticipants}
-        totalMinor={formData.amount} currency={formData.currency as CurrencyCode} />}
     </div>
   </> 
   );
