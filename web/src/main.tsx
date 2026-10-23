@@ -1,4 +1,5 @@
 import React from 'react';
+import './styles/ledger.css';
 import { offlineQueue } from './utils/offlineQueue';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';

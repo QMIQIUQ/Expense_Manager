@@ -1,4 +1,16 @@
 // Type definitions for Expense Manager
+import type { ExpenseViewPreferences } from './expensePeriod';
+
+export interface ExpenseTag {
+  id: string;
+  userId: string;
+  name: string;
+  normalizedName: string;
+  color: string;
+  archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // Time format type
 export type TimeFormat = '12h' | '24h';
@@ -47,6 +59,7 @@ export interface IncomeLinkedBudgetSettings {
 
 // User settings
 export interface UserSettings {
+  expenseViewPreferences?: ExpenseViewPreferences;
   id?: string;
   userId: string;
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
@@ -73,6 +86,7 @@ export interface AmountItem {
 }
 
 export interface Expense {
+  tagIds?: string[];
   scheduledPaymentRecordId?: string;
   id?: string;
   userId: string;

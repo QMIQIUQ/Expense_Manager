@@ -1,5 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useHistoryPages } from '../../hooks/useHistoryPages';
+import { useExpenseTags } from '../../hooks/useExpenseTags';
+import { ExpenseSavedViews } from '../../components/expenses/ExpenseSavedViews';
+import { ExpenseTagManager } from '../../components/categories/ExpenseTagManager';
 import { readExpenseAggregate, summarizeCompleteExpensePeriod, type ExpenseAggregate } from '../../services/expenseAggregateService';
 import { readCompleteExpensePeriod, expensePeriodReadKey, invalidateExpensePeriodReads, type CompleteExpensePeriod } from '../../services/expensePeriodReadService';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
@@ -85,6 +88,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   onManageQuickExpenses,
 }) => {
   const { t } = useLanguage();
+  const { rows: tags } = useExpenseTags(userId);
   const [filters, setFilters] = useState<ExpenseFilterState>(() => ({
     ...DEFAULT_EXPENSE_FILTERS,
     category: initialCategory,
@@ -100,11 +104,11 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   const [revision, setRevision] = useState(0);
   const settledQuery = useDebouncedValue(filters.query);
   const committedQuery = userId ? settledQuery : filters.query;
-  const membership = useMemo(() => ({ query: committedQuery, category: filters.category,
+  const membership = useMemo(() => ({ query: committedQuery, category: filters.category, tagId: filters.tagId, accountKey: filters.accountKey,
     paymentMethod: filters.paymentMethod, sort: 'date-desc' as const }),
-  [committedQuery, filters.category, filters.paymentMethod]);
+  [committedQuery, filters.category, filters.paymentMethod, filters.tagId, filters.accountKey]);
   // Sort order changes presentation, never the membership or total of a period.
-  const requiresFullSearch = !!membership.query || !!membership.category || membership.paymentMethod !== 'all' || filters.sort !== 'date-desc';
+  const requiresFullSearch = !!membership.query || !!membership.category || !!membership.tagId || !!membership.accountKey || membership.paymentMethod !== 'all' || filters.sort !== 'date-desc';
   let readKey: string;
   try { readKey = userId ? expensePeriodReadKey(userId, range) : ''; }
   catch { readKey = JSON.stringify([userId, range, revision, 'incomplete']); }
@@ -121,7 +125,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       revision: offlineQueue.expenseRevision(userId), rows: applyPendingOperations('expenses', userId, completeRows ?? displayed!.rows) };
   }
   const savedPeriodRows = displayPeriod.current?.rows;
-  const aggregateKey = JSON.stringify([readKey, displayCurrency, membership.query, membership.category, membership.paymentMethod, !!completeRows, revision]);
+  const aggregateKey = JSON.stringify([readKey, displayCurrency, membership, tags, !!completeRows, revision]);
   const aggregate = aggregateState?.key === aggregateKey ? aggregateState.value : undefined;
   const resultFilters = useMemo(() => ({ ...membership, sort: filters.sort }), [membership, filters.sort]);
   const historyCallback = useRef(onHistoryRows); historyCallback.current = onHistoryRows;
@@ -168,7 +172,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
     let current = true;
     setSummaryError(undefined);
     if (requiresFullSearch && !completeRows) return;
-    const select = (rows: Expense[]) => filterExpenses(rows, membership, { cards, ewallets, banks });
+    const select = (rows: Expense[]) => filterExpenses(rows, membership, { cards, ewallets, banks, tags });
     const isCurrent = () => {
       if (!current) return false;
       try { return expensePeriodReadKey(userId, range) === readKey; } catch { return false; }
@@ -180,22 +184,26 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       .catch((error) => { if (current) setSummaryError(error instanceof Error ? error.message : String(error)); });
     return () => { current = false; };
   // Sorting is deliberately absent: it cannot change the financial total.
-  }, [userId, range, readKey, aggregateKey, membership, requiresFullSearch, cards, ewallets, banks, displayCurrency, completeRows]);
+  }, [userId, range, readKey, aggregateKey, membership, requiresFullSearch, cards, ewallets, banks, tags, displayCurrency, completeRows]);
   useEffect(() => { setVisibleCount(100); }, [period, filters]);
 
   const sourceRows = userId ? savedPeriodRows ?? history.rows : expenses;
   const periodExpenses = useMemo(() => filterExpensesByPeriod(sourceRows, period), [sourceRows, period]);
   const visibleExpenses = useMemo(
-    () => filterAndSortExpenses(periodExpenses, resultFilters, { cards, ewallets, banks }),
-    [banks, cards, ewallets, resultFilters, periodExpenses],
+    () => filterAndSortExpenses(periodExpenses, resultFilters, { cards, ewallets, banks, tags }),
+    [banks, cards, ewallets, tags, resultFilters, periodExpenses],
   );
   const hasActiveFilters = !!filters.query
+    || !!filters.tagId || !!filters.accountKey
     || !!filters.category
     || filters.paymentMethod !== 'all';
 
   return (
     <div className="expense-page-workspace">
       <DateNavigator value={period} onChange={onPeriodChange} />
+      <ExpenseSavedViews userId={userId} filters={filters} period={period} restoreLast={!initialCategory}
+        onApply={(view) => { setFilters(view.filters); onPeriodChange(view.period); }} />
+      {userId && <details className="ledger-panel"><summary>{t('ledgerManageTags')}</summary><ExpenseTagManager userId={userId} /></details>}
       {(userId ? !!aggregate : totalsComplete) && <ExpensePeriodSummary
         aggregate={aggregate}
         expenses={userId ? [] : visibleExpenses}
@@ -211,6 +219,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       {history.incomplete && <p role="status">{t('cachedHistoryIncomplete')}</p>}
 
       <ExpenseFiltersBar
+        tags={tags} cards={cards} banks={banks} ewallets={ewallets}
         value={filters}
         onChange={setFilters}
         categories={categories}

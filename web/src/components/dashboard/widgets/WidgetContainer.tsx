@@ -19,6 +19,7 @@ import TagCloudWidget from './TagCloudWidget';
 import UpcomingBillsWidget from './UpcomingBillsWidget';
 import InstallmentTrackerWidget from './InstallmentTrackerWidget';
 import FriendSpendingWidget from './FriendSpendingWidget';
+const SpendingAnomalyWidget = lazy(() => import('./SpendingAnomalyWidget'));
 import { widgetDataComplete, widgetFinancialDependencies } from './completeness';
 import { widgetRenderDependencies } from './renderDependencies';
 import FeatureLoadBoundary from '../../common/FeatureLoadBoundary';
@@ -73,6 +74,8 @@ const renderWidget = (
 ): React.ReactNode => {
   const propsWithSize = { ...data, size };
   switch (type) {
+    case 'spending-anomaly':
+      return <SpendingAnomalyWidget {...propsWithSize} />;
     case 'summary-cards':
       return <SummaryCardsWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} onNavigateToIncomes={onNavigateToIncomes} />;
     case 'expense-chart':

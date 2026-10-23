@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Expense } from '../../types';
 import ExpensesTab from './ExpensesTab';
 
-const fake = vi.hoisted(() => ({ read: vi.fn(), convert: vi.fn(), revision: 0, pending: [] as unknown[] }));
+const fake = vi.hoisted(() => ({ read: vi.fn(), convert: vi.fn(), revision: 0, pending: [] as unknown[], tags: [] }));
+vi.mock('../../hooks/useExpenseTags', () => ({ useExpenseTags: () => ({ rows: fake.tags }) }));
+vi.mock('../../components/expenses/ExpenseSavedViews', () => ({ ExpenseSavedViews: () => null }));
 vi.mock('../../contexts/LanguageContext', () => ({ useLanguage: () => ({ t: (key: string) => key }) }));
 vi.mock('../../components/expenses/DateNavigator', () => ({ default: () => <div /> }));
 vi.mock('../../components/expenses/ExpensePeriodSummary', () => ({ default: ({ aggregate }: { aggregate?: { total: number; count: number } }) => <p data-testid="total">{aggregate?.count}:{aggregate?.total}</p> }));

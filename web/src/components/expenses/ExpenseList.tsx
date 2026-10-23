@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { indexBy } from '../../utils/indexBy';
+import { useExpenseTags } from '../../hooks/useExpenseTags';
 import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer, CurrencyCode } from '../../types';
 import { QuickExpensePreset, QuickExpensePresetInput } from '../../types/quickExpense';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -130,6 +131,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const { currentUser } = useAuth();
+  const { rows: expenseTags } = useExpenseTags(currentUser?.uid);
   const { showNotification, updateNotification } = useNotification();
   const today = getTodayLocal();
   const oneMonthAgo = new Date();
@@ -1126,6 +1128,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         />
                       )}
                       <span style={styles.timeDisplay}>{expense.time}</span>
+                      {(expense.tagIds ?? []).map((id) => {
+                        const tag = expenseTags.find((item) => item.id === id);
+                        return tag ? <span key={id} style={{ ...styles.category, color: tag.color }}>#{tag.name}</span> : null;
+                      })}
                       <span style={{
                         ...styles.category,
                         backgroundColor: getCategoryColor(expense.category).background,

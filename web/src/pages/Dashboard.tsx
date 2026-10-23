@@ -31,6 +31,7 @@ import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { resolveAmountCurrencyFields, resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
+import { useExpenseDuplicateGuard } from '../hooks/useExpenseDuplicateGuard';
 import ExpensesTab from './tabs/ExpensesTab';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
@@ -216,6 +217,7 @@ const rollbackRejectedBudgetOperation = (budgets: Budget[], rejection: BudgetOff
 const Dashboard: React.FC = () => {
   //#region State and Hooks
   const { currentUser, logout } = useAuth();
+  const duplicateGuard = useExpenseDuplicateGuard(currentUser?.uid);
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
@@ -376,6 +378,7 @@ const Dashboard: React.FC = () => {
   };
 
   const closeExpenseEntry = () => {
+    duplicateGuard.cancel();
     setStartReceiptEntry(false);
     setShowAddExpenseForm(false);
     setShowAddSheet(false);
@@ -3886,9 +3889,10 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              const result = handleAddExpense(data);
-              closeExpenseEntry();
+            onReviewDuplicates={duplicateGuard.confirm}
+            onSubmit={async (data) => {
+              const result = await handleAddExpense(data);
+              if (result.status !== 'failed') closeExpenseEntry();
               return result;
             }}
             onSubmitAndAddAnother={async (data) => {
@@ -3953,9 +3957,10 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              const result = handleAddExpense(data);
-              closeExpenseEntry();
+            onReviewDuplicates={duplicateGuard.confirm}
+            onSubmit={async (data) => {
+              const result = await handleAddExpense(data);
+              if (result.status !== 'failed') closeExpenseEntry();
               return result;
             }}
             onSubmitAndAddAnother={async (data) => {
@@ -3990,6 +3995,7 @@ const Dashboard: React.FC = () => {
           />
         </PopupModal>
       )}
+      {duplicateGuard.dialog}
     </>
   );
 };

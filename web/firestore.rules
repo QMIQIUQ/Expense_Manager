@@ -301,6 +301,36 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
+    // Tags are archived instead of deleting historical references.
+    match /expenseTags/{tagId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/expenseTags/$(tagId));
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && validTag(request.resource.data, tagId);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId && validTag(request.resource.data, tagId);
+      allow delete: if false;
+    }
+    function validTag(data, tagId) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 40 &&
+        data.normalizedName is string && data.normalizedName.size() > 0 && data.normalizedName.size() <= 40 &&
+        !data.normalizedName.matches('.*/.*') && data.normalizedName == data.name.lower() &&
+        data.color is string && data.color.matches('^#[0-9a-fA-F]{6}$') && data.archived is bool &&
+        (data.archived || getAfter(/databases/$(database)/documents/expenseTagNames/$(data.userId + ':' + data.normalizedName)).data.tagId == tagId);
+    }
+    match /expenseTagNames/{nameId} {
+      allow get: if isAuthenticated() && (!exists(/databases/$(database)/documents/expenseTagNames/$(nameId)) || isOwner(resource.data.userId));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) &&
+        request.resource.data.tagId is string &&
+        nameId == request.auth.uid + ':' + request.resource.data.normalizedName &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.userId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.normalizedName == request.resource.data.normalizedName &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.archived == false;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && request.resource.data == resource.data;
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId) &&
+        (getAfter(/databases/$(database)/documents/expenseTags/$(resource.data.tagId)).data.archived == true ||
+         getAfter(/databases/$(database)/documents/expenseTags/$(resource.data.tagId)).data.normalizedName != resource.data.normalizedName);
+    }
+
     // Repayments collection (tracks repayments against expenses)
     match /repayments/{repaymentId} {
       allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/repayments/$(repaymentId));

@@ -1,4 +1,4 @@
-import type { Expense, Card, EWallet, Bank } from '../types';
+import type { Expense, Card, EWallet, Bank, ExpenseTag } from '../types';
 import type { ExpenseFilterState, ExpensePeriodSelection } from '../types/expensePeriod';
 import { formatDateLocal } from './dateUtils';
 import { getExpenseBaseAmount } from './currencyUtils';
@@ -45,6 +45,7 @@ export const filterExpensesByPeriod = (
 };
 
 interface ExpenseFilterContext {
+  tags?: ExpenseTag[];
   cards?: Card[];
   ewallets?: EWallet[];
   banks?: Bank[];
@@ -72,6 +73,8 @@ export const filterExpenses = (
 ): Expense[] => {
   const query = filters.query.trim().toLocaleLowerCase();
   return expenses.filter((expense) => {
+    if (filters.tagId && !expense.tagIds?.includes(filters.tagId)) return false;
+    if (filters.accountKey && filters.accountKey !== `${expense.paymentMethod}:${expense.bankId || expense.cardId || expense.paymentMethodName || ''}`) return false;
     if (filters.category && expense.category !== filters.category) return false;
     if (filters.paymentMethod !== 'all' && expense.paymentMethod !== filters.paymentMethod) return false;
     if (!query) return true;
@@ -82,6 +85,7 @@ export const filterExpenses = (
       expense.paymentMethod,
       expense.paymentMethodName,
       getPaymentSourceName(expense, context),
+      ...(expense.tagIds ?? []).map((id) => context.tags?.find((tag) => tag.id === id)?.name || ''),
     ]
       .filter(Boolean)
       .join(' ')

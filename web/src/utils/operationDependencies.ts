@@ -19,6 +19,7 @@ export const dependencyKeys = (operation: Pick<QueuedOperation, 'entity' | 'payl
     add('scheduledPaymentRecord', data.scheduledPaymentRecordId);
     add('scheduledPayment', data.scheduledPaymentId);
     add('category-name', data.category);
+    if (Array.isArray(data.tagIds)) data.tagIds.forEach((id) => add('expenseTag', id));
     if (Array.isArray(data.relatedTransferIds)) data.relatedTransferIds.forEach((id) => add('transfer', id));
   };
   visit(payload);

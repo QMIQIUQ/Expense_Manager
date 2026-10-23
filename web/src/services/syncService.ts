@@ -226,6 +226,7 @@ class SyncService {
         case 'expense':
           return await this.executeExpenseOperation(operation);
         case 'category':
+        case 'expenseTag':
           await commitQueuedEntity(operation);
           return true;
         case 'budget':
@@ -451,13 +452,15 @@ class SyncService {
   }
 
   private async executeUserSettingsOperation(operation: QueuedOperation): Promise<boolean> {
-    const payload = operation.payload as { userId?: unknown; updates?: unknown; incomeLinkedBudgetChange?: { config: import('../types').IncomeLinkedBudgetSettings; manualMonthlyLimit?: number }; overallBudgetLimit?: { period?: unknown; amount?: unknown } } | null;
+    const payload = operation.payload as { userId?: unknown; updates?: unknown; expenseViewChange?: import('../utils/expenseViewPreferences').ExpenseViewChange; incomeLinkedBudgetChange?: { config: import('../types').IncomeLinkedBudgetSettings; manualMonthlyLimit?: number }; overallBudgetLimit?: { period?: unknown; amount?: unknown } } | null;
     const signedInUserId = auth.currentUser?.uid;
     if (operation.type !== 'update' || !signedInUserId || payload?.userId !== signedInUserId ||
         !payload.updates || typeof payload.updates !== 'object' || Array.isArray(payload.updates)) return false;
     await userSettingsService.getOrCreate(signedInUserId);
     const identity = { userId: signedInUserId, operationId: operation.id };
-    if (payload.incomeLinkedBudgetChange) {
+    if (payload.expenseViewChange) {
+      await userSettingsService.changeExpenseView(signedInUserId, payload.expenseViewChange, identity);
+    } else if (payload.incomeLinkedBudgetChange) {
       const { config, manualMonthlyLimit } = payload.incomeLinkedBudgetChange;
       await userSettingsService.setIncomeLinkedBudget(signedInUserId, config, manualMonthlyLimit, identity);
     } else if (payload.overallBudgetLimit) {

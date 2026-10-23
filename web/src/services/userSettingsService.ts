@@ -10,8 +10,17 @@ import { applyPendingOperations } from '../utils/pendingOperations';
 import { networkStatus } from '../utils/networkStatus';
 import { offlineQueue } from '../utils/offlineQueue';
 import { incomeLinkEnabled, validIncomeLink } from '../utils/incomeLinkedBudget';
+import { applyExpenseViewChange, readExpenseViews, type ExpenseViewChange } from '../utils/expenseViewPreferences';
 
 export const userSettingsService = {
+  async changeExpenseView(userId: string, change: ExpenseViewChange, operation: FinancialOperation): Promise<void> {
+    await runFinancialTransaction(db, operation, async (transaction) => {
+      const reference = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+      const current = await transaction.get(reference);
+      if (!current.exists() || current.data().userId !== userId) throw new Error('User settings are missing or owned by another user');
+      transaction.update(reference, { expenseViewPreferences: applyExpenseViewChange(current.data().expenseViewPreferences, change), updatedAt: Timestamp.now() });
+    });
+  },
   async get(userId: string, forceRefresh: boolean = false, requireServer: boolean = false): Promise<UserSettings | null> {
     const revision = offlineQueue.revision;
     const docRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
@@ -45,6 +54,7 @@ export const userSettingsService = {
       useStepByStepForm: data.useStepByStepForm ?? false,
       displayCurrency: (data.displayCurrency as CurrencyCode) || 'MYR',
       dateShortcuts: data.dateShortcuts,
+      expenseViewPreferences: readExpenseViews(data.expenseViewPreferences),
       overallBudgetLimits: (data.overallBudgetLimits as OverallBudgetLimits | undefined) || undefined,
       incomeLinkedBudget: data.incomeLinkedBudget as IncomeLinkedBudgetSettings | undefined,
       defaultCategoryMigrationVersion: data.defaultCategoryMigrationVersion ?? 0,

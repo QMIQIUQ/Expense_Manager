@@ -26,6 +26,8 @@ import {
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 import { getRecentlyUsedCategories, sortCategories } from '../../utils/categoryOrder';
 import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
+import { ExpenseTagPicker } from './ExpenseTagPicker';
+import type { DuplicateExpenseInput } from '../../utils/expenseDuplicateCandidates';
 
 const formatOcrDuration = (elapsedMs?: number): string => {
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
@@ -101,6 +103,7 @@ const buildReceiptReviewFormData = (
 };
 
 interface StepByStepExpenseFormProps {
+  onReviewDuplicates?: (input: DuplicateExpenseInput) => Promise<boolean>;
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
   onCancel?: () => void;
   onSubmitAndAddAnother?: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
@@ -125,6 +128,7 @@ interface StepByStepExpenseFormProps {
 }
 
 const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
+  onReviewDuplicates,
   onSubmit,
   onCancel,
   onSubmitAndAddAnother,
@@ -149,6 +153,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
+  const [tagIds, setTagIds] = useState<string[]>(initialData?.tagIds ?? []);
+  const submittingRef = useRef(false);
   const { showNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState<Step>(startAtReceiptStep && !initialData ? STEP_RECEIPT : STEP_DATE);
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -896,6 +902,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       delete submitData.paymentMethodName;
     }
 
+    submitData.tagIds = tagIds;
     return submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>;
   };
 
@@ -977,11 +984,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting || !isStep6Valid()) return;
+    if (submittingRef.current || isSubmitting || !isStep6Valid()) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setCurrencyError('');
     try {
       const submitData = await buildSubmitData();
+      if (!initialData && onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
       const accepted = await onSubmit(submitData);
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
@@ -996,18 +1005,21 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       console.error('Failed to resolve expense currency:', error);
       setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const handleSubmitAndAddAnother = async () => {
     if (!onSubmitAndAddAnother) return;
-    if (isSubmitting || !isStep6Valid()) return;
+    if (submittingRef.current || isSubmitting || !isStep6Valid()) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setCurrencyError('');
     
     try {
       const submitData = await buildSubmitData();
+      if (onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
       const accepted = await onSubmitAndAddAnother(submitData);
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
@@ -1019,10 +1031,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       }
       await resetReceiptDraftState();
       resetFormForNewExpense();
+      setTagIds([]);
     } catch (error) {
       console.error('Failed to resolve expense currency:', error);
       setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -2112,6 +2126,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       )}
       {renderProgressSummary()}
       {renderStepContent()}
+      {currentStep === STEP_PAYMENT && <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />}
     </div>
   </> 
   );

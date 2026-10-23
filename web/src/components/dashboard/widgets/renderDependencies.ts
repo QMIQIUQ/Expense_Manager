@@ -3,6 +3,7 @@ import type { WidgetProps } from './types';
 
 /** Actual render inputs, distinct from the collections needed for complete financial totals. */
 export const widgetRenderDependencies: Record<DashboardWidgetType, (keyof WidgetProps)[]> = {
+  'spending-anomaly': ['onNavigateToExpenseCategory'],
   'summary-cards': ['expenses', 'incomes', 'repayments', 'billingCycleDay', 'displayCurrency'],
   'expense-chart': ['expenses', 'categories', 'billingCycleDay', 'displayCurrency'],
   'spending-trend': ['expenses', 'billingCycleDay', 'displayCurrency'],

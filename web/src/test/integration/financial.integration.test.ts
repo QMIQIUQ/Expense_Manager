@@ -12,7 +12,7 @@ vi.mock('../../config/firebase', async () => {
 });
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { deleteApp } from 'firebase/app';
-import { doc, getDocFromServer, setDoc, serverTimestamp, getDocsFromServer, collection, query, where, writeBatch } from 'firebase/firestore';
+import { doc, getDocFromServer, setDoc, deleteDoc, serverTimestamp, getDocsFromServer, collection, query, where, writeBatch } from 'firebase/firestore';
 import { auth, db, firebaseAppInstance } from '../../config/firebase';
 import { scheduledPaymentService as actualScheduledPaymentService } from '../../services/scheduledPaymentService';
 import { expenseService as actualExpenseService } from '../../services/expenseService';
@@ -28,6 +28,7 @@ import { transferService } from '../../services/transferService';
 import { budgetService } from '../../services/budgetService';
 import { userSettingsService } from '../../services/userSettingsService';
 import { DEFAULT_INCOME_LINK } from '../../utils/incomeLinkedBudget';
+import { DEFAULT_EXPENSE_FILTERS } from '../../types/expensePeriod';
 import type { Expense, ScheduledPaymentRecord } from '../../types';
 let uid: string;
 const scoped = (id: string) => `${uid}-${id}`;
@@ -55,6 +56,50 @@ beforeAll(async () => {
   await setDoc(doc(db, 'banks', bankId), { userId: uid, name: 'Test bank', balance: 1000, currency: 'MYR' });
   await setDoc(doc(db, 'scheduledPayments', scoped('scheduled')), { userId: uid, name: 'Scheduled test', amount: 100, type: 'subscription', frequency: 'monthly', dueDay: 18 });
   await setDoc(doc(db, 'friendSpendingSummaryStates', uid), { ready: true, version: 1, updatedAt: serverTimestamp() });
+});
+
+describe('tags and cross-device view transactions', () => {
+  const tag = (id: string, name: string) => ({ id: scoped(id), userId: uid, name, normalizedName: name.toLowerCase(), color: '#64748b', archived: false });
+  it('reserves tag names across competing creates and replays do not overwrite newer names', async () => {
+    const first = { id: 'tag-create-one', type: 'create' as const, entity: 'expenseTag' as const, payload: tag('tag-one', 'Travel'), timestamp: Date.now(), retryCount: 0 };
+    const second = { ...first, id: 'tag-create-two', payload: tag('tag-two', 'Travel') };
+    const results = await Promise.allSettled([commitQueuedEntity(first), commitQueuedEntity(second)]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const winner = results[0].status === 'fulfilled' ? first : second;
+    await commitQueuedEntity({ ...winner, id: 'tag-rename', type: 'update', payload: { ...winner.payload, name: 'Trip', normalizedName: 'trip' } });
+    await commitQueuedEntity(winner);
+    expect((await getDocFromServer(doc(db, 'expenseTags', winner.payload.id))).data()?.name).toBe('Trip');
+    expect((await getDocFromServer(doc(db, 'mutationReceipts', uid, 'operations', winner.id))).exists()).toBe(true);
+  });
+  it('merges a last view racing a named preset and fences old replays', async () => {
+    await userSettingsService.create({ userId: uid, billingCycleDay: 1 });
+    const view = { filters: DEFAULT_EXPENSE_FILTERS, period: { mode: 'month' as const, anchorDate: '2026-10-23' } };
+    await Promise.all([
+      userSettingsService.changeExpenseView(uid, { action: 'upsert', view: { ...view, id: 'food', name: 'Food' } }, operation('view-preset')),
+      userSettingsService.changeExpenseView(uid, { action: 'lastView', view }, operation('view-last')),
+    ]);
+    const preference = (await getDocFromServer(doc(db, 'userSettings', uid))).data()?.expenseViewPreferences;
+    expect(preference.savedFilters).toHaveLength(1); expect(preference.lastView).toEqual(view);
+    await userSettingsService.changeExpenseView(uid, { action: 'remove', id: 'food' }, operation('view-delete'));
+    await userSettingsService.changeExpenseView(uid, { action: 'upsert', view: { ...view, id: 'food', name: 'Food' } }, operation('view-preset'));
+    expect((await getDocFromServer(doc(db, 'userSettings', uid))).data()?.expenseViewPreferences.savedFilters).toHaveLength(0);
+  });
+  it('rejects direct reservation stealing/deletion and permits rename/archive/restore', async () => {
+    const payload = tag('protected-tag', 'Protected');
+    const queued = { id: 'protected-create', entity: 'expenseTag' as const, type: 'create' as const, payload, timestamp: Date.now(), retryCount: 0 };
+    await commitQueuedEntity(queued);
+    const reservation = doc(db, 'expenseTagNames', `${uid}:protected`);
+    await expect(setDoc(reservation, { userId: uid, tagId: scoped('other-tag'), normalizedName: 'protected' })).rejects.toThrow();
+    await expect(setDoc(doc(db, 'expenseTagNames', `${uid}:wrong-name`), { userId: uid, tagId: payload.id, normalizedName: 'wrong-name' })).rejects.toThrow();
+    await expect(deleteDoc(reservation)).rejects.toThrow();
+    await expect(setDoc(doc(db, 'expenseTags', scoped('direct-no-lock')), { ...tag('direct-no-lock', 'Missinglock'), createdAt: serverTimestamp(), updatedAt: serverTimestamp() })).rejects.toThrow();
+    await commitQueuedEntity({ ...queued, id: 'protected-archive', type: 'update', payload: { ...payload, archived: true } });
+    expect((await getDocFromServer(reservation)).exists()).toBe(false);
+    await commitQueuedEntity({ ...queued, id: 'protected-restore', type: 'update' });
+    expect((await getDocFromServer(reservation)).exists()).toBe(true);
+    await commitQueuedEntity({ ...queued, id: 'protected-rename', type: 'update', payload: { ...payload, name: 'Renamed', normalizedName: 'renamed' } });
+    expect((await getDocFromServer(reservation)).exists()).toBe(false);
+  });
 });
 
 describe('income-linked budget transactions and rules', () => {
