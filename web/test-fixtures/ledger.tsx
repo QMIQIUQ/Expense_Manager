@@ -50,6 +50,7 @@ function Fixture() {
   const [tags, setTags] = useState<string[]>([]); const [filters, setFilters] = useState(DEFAULT_EXPENSE_FILTERS);
   const [period, setPeriod] = useState<ExpensePeriodSelection>({ mode: 'month', anchorDate: getTodayLocal() });
   const [participants, setParticipants] = useState<ExpenseSplitParticipant[]>([]);
+  const [trackingEnabled, setTrackingEnabled] = useState(false);
   const guard = useExpenseDuplicateGuard(current.uid); const [accepted, setAccepted] = useState(0);
   return <main style={{ maxWidth: 800, margin: '16px auto', padding: 12 }}><h1>Ledger features</h1>
     <nav>{['repayments','reconciliation','views','duplicates','split','insights','receipts'].map((name) => <button key={name} onClick={() => setTab(name)}>{name}</button>)}</nav>
@@ -58,7 +59,7 @@ function Fixture() {
     {tab === 'insights' && <SpendingAnomalyWidget {...({} as WidgetProps)} />}
     {tab === 'repayments' && <RepaymentManager expense={expense} banks={[bank]} />}
     {tab === 'reconciliation' && <AccountReconciliationManager banks={[bank]} cards={[]} ewallets={[]} />}
-    {tab === 'split' && <ExpenseSplitEditor totalMinor={12000} currency="MYR" value={participants} onChange={setParticipants} />}
+    {tab === 'split' && <ExpenseSplitEditor totalMinor={12000} currency="MYR" value={participants} onChange={setParticipants} trackingEnabled={trackingEnabled} onTrackingChange={setTrackingEnabled} />}
     {tab === 'views' && <><input aria-label="Search fixture" value={filters.query} onChange={(event) => setFilters({ ...filters, query: event.target.value })} />
       <ExpenseTagPicker userId={current.uid} value={tags} onChange={setTags} />
       <ExpenseSavedViews userId={current.uid} filters={filters} period={period} onApply={(view) => { setFilters(view.filters); setPeriod(view.period); }} /></>}

@@ -35,10 +35,11 @@ test('saved views and new tags persist through offline reload and remote sync', 
   await expect(page.getByRole('button', { name: 'Food trip view', exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'New tag', exact: true }).fill('Trip');
   await page.getByRole('button', { name: 'New tag', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: 'Trip', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove tag Trip', exact: true })).toBeVisible();
   await context.setOffline(false); await page.reload();
   await page.getByRole('button', { name: 'views', exact: true }).click();
   await page.getByText('Saved views', { exact: true }).click();
+  await page.getByText('Choose from existing tags', { exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Trip', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Food trip view', exact: true }).click();
   await expect(page.getByLabel('Search fixture')).toHaveValue('Food trip');
@@ -58,6 +59,7 @@ test('duplicate reminder requires an explicit choice, and equal split leaves my 
   await page.getByRole('button', { name: 'Add anyway', exact: true }).click();
   await expect(page.locator('#accepted')).toHaveText('1');
   await page.getByRole('button', { name: 'split', exact: true }).click();
+  await page.getByLabel('Track money owed to me', { exact: true }).check();
   for (const person of ['Amy','Bob']) {
     await page.getByLabel('New participant name').fill(person);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
