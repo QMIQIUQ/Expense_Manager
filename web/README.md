@@ -97,7 +97,7 @@ See [the friend-spending guide](../docs/FRIEND_SPENDING.md) and [local Emulator 
 
 ### Prerequisites
 
-- Node.js 20 or newer for the web app; Cloud Functions use Node.js 22
+- Node.js 24.x for the web app (see the repository's `.nvmrc`); Cloud Functions separately use Node.js 22
 - npm or yarn
 - A Firebase project (for authentication)
 

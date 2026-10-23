@@ -287,14 +287,16 @@ name: Test
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: '18'
-      - run: npm install
+          node-version-file: .nvmrc
+      - run: npm ci
+        working-directory: web
       - run: npm run test:run
+        working-directory: web
 ```
 
 ---

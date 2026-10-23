@@ -57,11 +57,11 @@ permissions:
 
 jobs:
   bridge:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Create or update the task container
         id: bridge
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             const owner = context.repo.owner;
