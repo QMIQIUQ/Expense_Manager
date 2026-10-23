@@ -1,4 +1,6 @@
 import React from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useExpenseTags } from '../../../hooks/useExpenseTags';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { WidgetProps } from './types';
 import { getBillingCycleRange } from './utils';
@@ -10,6 +12,8 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
   onNavigateToExpenses,
 }) => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
+  const { rows: definitions } = useExpenseTags(currentUser?.uid);
   const isCompact = size === 'small';
 
   const tags = React.useMemo(() => {
@@ -19,23 +23,21 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
       return expDate >= cycleStart && expDate <= cycleEnd;
     });
 
-    const freq = new Map<string, { category: string; description: string; count: number }>();
+    const freq = new Map<string, { category: string; count: number; color: string }>();
     cycleExpenses.forEach((exp) => {
-      const desc = exp.description || exp.category;
-      const key = `${exp.category}:${desc}`;
-      const existing = freq.get(key);
-      if (existing) {
-        existing.count++;
-      } else {
-        freq.set(key, { category: exp.category, description: desc, count: 1 });
-      }
+      (exp.tagIds ?? []).forEach((id) => {
+        const tag = definitions.find((item) => item.id === id);
+        if (!tag) return;
+        const previous = freq.get(id);
+        freq.set(id, { category: tag.name, count: (previous?.count ?? 0) + 1, color: tag.color });
+      });
     });
 
     const maxTags = isCompact ? 6 : 10;
     return Array.from(freq.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, maxTags);
-  }, [expenses, billingCycleDay, isCompact]);
+  }, [expenses, definitions, billingCycleDay, isCompact]);
 
   if (tags.length === 0) {
     return (
@@ -78,7 +80,7 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
             borderRadius: '20px',
             padding: '4px 12px',
             fontSize: `${getFontSize(tag.count)}px`,
-            color: 'var(--text-primary)',
+            color: tag.color,
             cursor: onNavigateToExpenses ? 'pointer' : 'default',
             transition: 'transform 0.2s',
           }}

@@ -1,6 +1,6 @@
 import { Budget, Expense, Repayment } from '../types';
 import { NotificationType } from '../contexts/NotificationContext';
-import { getEffectiveBudgetAmount } from './budgetRollover';
+import { getEffectiveBudgetAmount, getBillingCyclePeriod } from './budgetRollover';
 import { parseISO } from 'date-fns';
 import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
 import { formatBudgetMoney, toBudgetCurrencyAmount } from './budgetCurrencyUtils';
@@ -37,14 +37,9 @@ export function calculateBudgetPeriod(
     }
     case 'monthly': {
       // Monthly budgets use billingCycleDay for consistency with Dashboard
-      const currentDay = now.getDate();
-      if (currentDay >= billingCycleDay) {
-        periodStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-        periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay);
-      } else {
-        periodStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-        periodEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      }
+      const cycle = getBillingCyclePeriod(billingCycleDay, now);
+      periodStart = cycle.start;
+      periodEnd = cycle.end;
       break;
     }
     case 'yearly': {

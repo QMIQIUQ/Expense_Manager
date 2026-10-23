@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { convertAmountToCurrency } from '../services/currencyRateService';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { convertAmountShared, peekConvertedAmount } from '../services/sharedCurrencyConversion';
+import { roundMoney } from '../domain/money';
 import { normalizeCurrencyCode } from '../utils/currencyUtils';
 
 export interface CurrencyConversionEntry {
@@ -23,134 +24,65 @@ interface StoredCurrencyConversionMapState extends CurrencyConversionMapState {
 }
 
 export const useCurrencyConversionMapState = (
-  entries: CurrencyConversionEntry[],
-  targetCurrency?: string | null,
-  fallbackToSource = false,
+  entries: CurrencyConversionEntry[], targetCurrency?: string | null, fallbackToSource = false,
 ): CurrencyConversionMapState => {
-  const [storedState, setStoredState] = useState<StoredCurrencyConversionMapState>({
-    entries: [],
-    targetCurrency: null,
-    fallbackToSource,
-    amountsByKey: {},
-    failedKeys: [],
-    isLoading: false,
-  });
-
-  const canResolveWithoutFx = entries.every((entry) => {
-    const entryTarget = entry.targetCurrency
-      ? normalizeCurrencyCode(entry.targetCurrency)
-      : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
-    return !entryTarget || normalizeCurrencyCode(entry.sourceCurrency) === entryTarget;
-  });
+  const stableEntries = useRef(entries);
+  const previous = stableEntries.current;
+  if (previous.length !== entries.length || entries.some((entry, index) => {
+    const old = previous[index];
+    return !old || old.key !== entry.key || !Object.is(old.amount, entry.amount) || old.sourceCurrency !== entry.sourceCurrency || old.date !== entry.date || old.targetCurrency !== entry.targetCurrency;
+  })) stableEntries.current = entries;
+  entries = stableEntries.current;
+  const [storedState, setStoredState] = useState<StoredCurrencyConversionMapState>();
+  const immediate = useMemo(() => {
+    const amountsByKey: Record<string, number> = {};
+    let missing = false;
+    for (const entry of entries) {
+      const target = entry.targetCurrency ? normalizeCurrencyCode(entry.targetCurrency)
+        : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
+      if (!target) continue;
+      const source = normalizeCurrencyCode(entry.sourceCurrency);
+      const value = source === target && Number.isFinite(entry.amount) ? roundMoney(entry.amount, target)
+        : peekConvertedAmount(entry.amount, entry.sourceCurrency ?? undefined, target, entry.date);
+      if (value !== undefined) amountsByKey[entry.key] = value; else missing = true;
+    }
+    return { amountsByKey, failedKeys: [] as string[], isLoading: missing };
+  }, [entries, targetCurrency]);
 
   useEffect(() => {
-    let cancelled = false;
-    const hasTarget = Boolean(targetCurrency || entries.some((entry) => entry.targetCurrency));
-
-    setStoredState({
-      entries,
-      targetCurrency,
-      fallbackToSource,
-      amountsByKey: {},
-      failedKeys: [],
-      isLoading: Boolean(hasTarget && entries.length > 0),
-    });
-
-    const resolveConversions = async () => {
-      if (!hasTarget) {
-        if (!cancelled) {
-          setStoredState({
-            entries,
-            targetCurrency,
-            fallbackToSource,
-            amountsByKey: {},
-            failedKeys: [],
-            isLoading: false,
-          });
-        }
-        return;
-      }
-
-      const nextMap: Record<string, number> = {};
-      const failedKeys: string[] = [];
-      await Promise.all(entries.map(async (entry) => {
-        try {
-          const entryTarget = entry.targetCurrency
-            ? normalizeCurrencyCode(entry.targetCurrency)
-            : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
-          if (!entryTarget) return;
-          if (normalizeCurrencyCode(entry.sourceCurrency) === entryTarget) {
-            nextMap[entry.key] = Math.round(entry.amount * 100) / 100;
-            return;
-          }
-
-          nextMap[entry.key] = await convertAmountToCurrency(
-            entry.amount,
-            entry.sourceCurrency ?? undefined,
-            entryTarget,
-            entry.date
-          );
-        } catch (error) {
-          console.error('Failed to convert currency amount:', error);
-          failedKeys.push(entry.key);
-          if (fallbackToSource) {
-            nextMap[entry.key] = entry.amount;
-          }
-        }
-      }));
-
-      if (!cancelled) {
-        setStoredState({
-          entries,
-          targetCurrency,
-          fallbackToSource,
-          amountsByKey: nextMap,
-          failedKeys,
-          isLoading: false,
-        });
-      }
-    };
-
-    void resolveConversions();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [entries, targetCurrency, fallbackToSource]);
-
-  if (canResolveWithoutFx) {
-    const amountsByKey: Record<string, number> = {};
-    entries.forEach((entry) => {
-      const entryTarget = entry.targetCurrency
-        ? normalizeCurrencyCode(entry.targetCurrency)
+    // Same-currency and already resolved values need no asynchronous state churn.
+    if (!immediate.isLoading) return;
+    let active = true;
+    setStoredState({ ...immediate, entries, targetCurrency, fallbackToSource });
+    const amountsByKey = { ...immediate.amountsByKey };
+    const failedKeys: string[] = [];
+    const resolveEntry = async (entry: CurrencyConversionEntry) => {
+      if (Object.prototype.hasOwnProperty.call(amountsByKey, entry.key)) return;
+      const target = entry.targetCurrency ? normalizeCurrencyCode(entry.targetCurrency)
         : targetCurrency ? normalizeCurrencyCode(targetCurrency) : null;
-      if (entryTarget) amountsByKey[entry.key] = Math.round(entry.amount * 100) / 100;
-    });
-    return { amountsByKey, failedKeys: [], isLoading: false };
-  }
-
-  if (
-    storedState.entries !== entries ||
-    storedState.targetCurrency !== targetCurrency ||
-    storedState.fallbackToSource !== fallbackToSource
-  ) {
-    return {
-      amountsByKey: {},
-      failedKeys: [],
-      isLoading: Boolean((targetCurrency || entries.some((entry) => entry.targetCurrency)) && entries.length > 0),
+      if (!target) return;
+      try {
+        amountsByKey[entry.key] = await convertAmountShared(entry.amount, entry.sourceCurrency ?? undefined, target, entry.date);
+      } catch (error) {
+        console.error('Failed to convert currency amount:', error);
+        failedKeys.push(entry.key);
+        if (fallbackToSource) amountsByKey[entry.key] = entry.amount;
+      }
     };
-  }
+    void (async () => {
+      for (let offset = 0; offset < entries.length && active; offset += 64) {
+        await Promise.all(entries.slice(offset, offset + 64).map(resolveEntry));
+      }
+    })().then(() => {
+      if (active) setStoredState({ entries, targetCurrency, fallbackToSource, amountsByKey, failedKeys, isLoading: false });
+    });
+    return () => { active = false; };
+  }, [entries, targetCurrency, fallbackToSource, immediate]);
 
-  return {
-    amountsByKey: storedState.amountsByKey,
-    failedKeys: storedState.failedKeys,
-    isLoading: storedState.isLoading,
-  };
+  if (!immediate.isLoading) return immediate;
+  return storedState?.entries === entries && storedState.targetCurrency === targetCurrency && storedState.fallbackToSource === fallbackToSource
+    ? storedState : immediate;
 };
 
-export const useCurrencyConversionMap = (
-  entries: CurrencyConversionEntry[],
-  targetCurrency?: string | null
-): Record<string, number> => {
-  return useCurrencyConversionMapState(entries, targetCurrency, false).amountsByKey;
-};
+export const useCurrencyConversionMap = (entries: CurrencyConversionEntry[], targetCurrency?: string | null): Record<string, number> =>
+  useCurrencyConversionMapState(entries, targetCurrency, false).amountsByKey;

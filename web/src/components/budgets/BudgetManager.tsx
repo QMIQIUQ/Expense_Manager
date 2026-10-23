@@ -11,7 +11,7 @@ import { MultiSelectToolbar } from '../common/MultiSelectToolbar';
 import { getAllBudgetSuggestions } from '../../utils/budgetSuggestions';
 import BudgetSuggestionCard from './BudgetSuggestionCard';
 import BudgetHistory from './BudgetHistory';
-import { getEffectiveBudgetAmount } from '../../utils/budgetRollover';
+import { getEffectiveBudgetAmount, getBillingCyclePeriod } from '../../utils/budgetRollover';
 import BudgetTemplates from './BudgetTemplates';
 import SubTabs from '../common/SubTabs';
 import { getTodayLocal, formatDateRangeShort } from '../../utils/dateUtils';
@@ -30,6 +30,10 @@ import {
   toBudgetCurrencyAmount,
 } from '../../utils/budgetCurrencyUtils';
 import { getAllocatedBudgetMinorUnits, validateBudgetAllocationBatch } from '../../utils/budgetAllocation';
+import { allocationLimitsForSettings, incomeLinkEnabled, validIncomeLink } from '../../utils/incomeLinkedBudget';
+import { useIncomeBudget } from '../../hooks/useIncomeBudget';
+import IncomeBudgetSummary from './IncomeBudgetSummary';
+import IncomeBudgetSettingsModal from './IncomeBudgetSettingsModal';
 
 // Add responsive styles for action buttons
 const responsiveStyles = `
@@ -79,6 +83,7 @@ interface BudgetManagerProps {
   displayCurrency?: CurrencyCode;
   overallBudgetLimits?: OverallBudgetLimits;
   onSaveOverallBudgetLimit: (period: BudgetPeriod, amount: number) => Promise<boolean>;
+  spendingComplete?: boolean;
 }
 
 const BudgetManager: React.FC<BudgetManagerProps> = ({
@@ -95,9 +100,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   displayCurrency = DEFAULT_BASE_CURRENCY,
   overallBudgetLimits,
   onSaveOverallBudgetLimit,
+  spendingComplete = false,
 }) => {
   const { t } = useLanguage();
-  const { dateFormat } = useUserSettings();
+  const { dateFormat, settings } = useUserSettings();
   const { showNotification } = useNotification();
   const [isAdding, setIsAdding] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
@@ -120,6 +126,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const [pendingBudgetDraft, setPendingBudgetDraft] = useState<BudgetFormData | undefined>();
   const [resumeAddBudgetAfterOverallModal, setResumeAddBudgetAfterOverallModal] = useState(false);
   const shouldOpenAddModalRef = React.useRef(false);
+  const linkedMonthly = summaryPeriod === 'monthly' && incomeLinkEnabled(settings?.incomeLinkedBudget);
+  const invalidIncomeConfig = summaryPeriod === 'monthly' && settings?.incomeLinkedBudget !== undefined && !validIncomeLink(settings.incomeLinkedBudget);
+  const incomeBudget = useIncomeBudget(budgets, linkedMonthly || invalidIncomeConfig, billingCycleDay);
+  const enforcedLimits = allocationLimitsForSettings({ overallBudgetLimits, incomeLinkedBudget: settings?.incomeLinkedBudget });
 
 
   // Get budget adjustment suggestions
@@ -161,7 +171,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         exchangeRate: 1,
       }));
 
-    const validation = validateBudgetAllocationBatch(budgets, newBudgets, overallBudgetLimits);
+    const validation = validateBudgetAllocationBatch(budgets, newBudgets, enforcedLimits);
     if (!validation.valid && validation.reason !== 'limit-below-allocation') {
       showNotification('error', t('budgetAllocationCannotBeCompared'));
       return;
@@ -472,18 +482,9 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
   const getPeriodRange = (period: string): string => {
     if (period !== 'monthly') return '';
     
-    const now = new Date();
-    const currentDay = now.getDate();
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
+    const { start: cycleStart, end } = getBillingCyclePeriod(billingCycleDay);
+    const cycleEnd = new Date(end);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
 
     // Convert dates to YYYY-MM-DD format for the utility function
     const startStr = `${cycleStart.getFullYear()}-${String(cycleStart.getMonth() + 1).padStart(2, '0')}-${String(cycleStart.getDate()).padStart(2, '0')}`;
@@ -695,7 +696,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         <div style={styles.overallBudgetHeader}>
           <div>
             <h3 style={styles.totalBudgetTitle}>{t('totalBudget')}</h3>
-            <p style={styles.overallBudgetHint}>{t('overallBudgetHint')}</p>
+            <p style={styles.overallBudgetHint}>{linkedMonthly ? t('incomeBudgetSourceHint') : t('overallBudgetHint')}</p>
           </div>
           <div style={styles.overallBudgetControls}>
             <label style={styles.budgetPeriodLabel} htmlFor="overall-budget-period">{t('budgetPeriodSummary')}</label>
@@ -710,11 +711,11 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               <option value="yearly">{t('periodYearly')}</option>
             </select>
             <button type="button" style={styles.overallBudgetButton} onClick={() => openOverallBudgetModal()}>
-              {overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
+              {overallBudgetLimit === undefined && !linkedMonthly ? t('setOverallBudget') : t('editOverallBudget')}
             </button>
           </div>
         </div>
-        <div style={styles.overallBudgetMetrics}>
+        {linkedMonthly || invalidIncomeConfig ? <IncomeBudgetSummary state={incomeBudget} expenses={expenses} repayments={repayments} spendingComplete={spendingComplete} /> : <div style={styles.overallBudgetMetrics}>
           <div style={styles.overallBudgetMetric}>
             <span style={styles.overallBudgetMetricLabel}>{t('overallBudgetLimit')}</span>
             <strong style={styles.totalBudgetValue}>
@@ -741,6 +742,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             <span style={styles.overallBudgetMetricHint}>{t('unallocatedBudgetHint')}</span>
           </div>
         </div>
+        }
         {allocatedMinorUnits === null && (
           <span role="alert" style={styles.overallBudgetError}>{t('budgetAllocationCannotBeCompared')}</span>
         )}
@@ -1020,8 +1022,10 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       </>
       )}
       
+      <IncomeBudgetSettingsModal isOpen={showOverallBudgetModal && summaryPeriod === 'monthly'} onClose={closeOverallBudgetModal} budgets={budgets}
+        onSaveManual={(amount) => onSaveOverallBudgetLimit('monthly', amount)} />
       <PopupModal
-        isOpen={showOverallBudgetModal}
+        isOpen={showOverallBudgetModal && summaryPeriod !== 'monthly'}
         onClose={closeOverallBudgetModal}
         title={overallBudgetLimit === undefined ? t('setOverallBudget') : t('editOverallBudget')}
         isForm
@@ -1141,6 +1145,12 @@ const styles = {
     border: '1px solid var(--border-color, #e9ecef)',
     borderRadius: '12px',
   },
+  totalBudgetMetric: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    minWidth: 0,
+  },
   totalBudgetTitle: {
     margin: 0,
     color: 'var(--text-secondary)',
@@ -1212,6 +1222,7 @@ const styles = {
   conversionError: {
     color: 'var(--error-text, #dc2626)',
     fontSize: '12px',
+    textAlign: 'right' as const,
   },
   allPeriodsBudgetNote: {
     margin: '0 2px',

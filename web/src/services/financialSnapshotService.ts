@@ -1,15 +1,15 @@
 import { auth, db, usingFirebaseEmulators } from '../config/firebase';
 import type { HistoryCollection, HistoryCursor, HistoryPage, HistoryRange } from './historyService';
 interface WireValue { nullValue?: unknown; stringValue?: string; integerValue?: string; doubleValue?: number | string; booleanValue?: boolean; timestampValue?: string; arrayValue?: { values?: WireValue[] }; mapValue?: { fields?: Record<string, WireValue> }; referenceValue?: string }
-const decode = (value: WireValue): unknown => {
+export const decodeFirestoreValue = (value: WireValue): unknown => {
   if ('nullValue' in value) return null;
   if ('stringValue' in value) return value.stringValue;
   if ('integerValue' in value) return Number(value.integerValue);
   if ('doubleValue' in value) return Number(value.doubleValue);
   if ('booleanValue' in value) return value.booleanValue;
   if (value.timestampValue) return new Date(value.timestampValue);
-  if (value.arrayValue) return (value.arrayValue.values ?? []).map(decode);
-  if (value.mapValue) return Object.fromEntries(Object.entries(value.mapValue.fields ?? {}).map(([key, field]) => [key, decode(field)]));
+  if (value.arrayValue) return (value.arrayValue.values ?? []).map(decodeFirestoreValue);
+  if (value.mapValue) return Object.fromEntries(Object.entries(value.mapValue.fields ?? {}).map(([key, field]) => [key, decodeFirestoreValue(field)]));
   return value.referenceValue;
 };
 /** All pages of an exact traversal use the first response's read time.
@@ -17,7 +17,7 @@ const decode = (value: WireValue): unknown => {
  * Firebase user ID tokens retain Firestore Security Rules enforcement.
  */
 export const getConsistentHistoryPage = async <T,>(name: HistoryCollection, userId: string, range?: HistoryRange,
-  cursor?: HistoryCursor, readTime?: string): Promise<HistoryPage<T> & { readTime: string }> => {
+  cursor?: HistoryCursor, readTime?: string, expenseId?: string, transaction?: string): Promise<HistoryPage<T> & { readTime: string }> => {
   const user = auth.currentUser;
   if (!user || user.uid !== userId) throw Object.assign(new Error('History owner is no longer signed in'), { code: 'unauthenticated' });
   const project = db.app.options.projectId;
@@ -25,6 +25,7 @@ export const getConsistentHistoryPage = async <T,>(name: HistoryCollection, user
   const parent = `projects/${project}/databases/(default)/documents`;
   const field = (path: string, op: string, value: string) => ({ fieldFilter: { field: { fieldPath: path }, op, value: { stringValue: value } } });
   const filters = [field('userId', 'EQUAL', userId), ...(range ? [field('date', 'GREATER_THAN_OR_EQUAL', range.startDate), field('date', 'LESS_THAN_OR_EQUAL', range.endDate)] : [])];
+  if (expenseId) filters.push(field('expenseId', 'EQUAL', expenseId));
   const token = await user.getIdToken();
   if (auth.currentUser?.uid !== userId) throw Object.assign(new Error('History account changed'), { code: 'unauthenticated' });
   const controller = new AbortController();
@@ -36,7 +37,7 @@ export const getConsistentHistoryPage = async <T,>(name: HistoryCollection, user
       body: JSON.stringify({ structuredQuery: { from: [{ collectionId: name }], where: { compositeFilter: { op: 'AND', filters } },
         orderBy: [{ field: { fieldPath: 'date' }, direction: 'DESCENDING' }, { field: { fieldPath: '__name__' }, direction: 'DESCENDING' }],
         limit: 100, ...(cursor ? { startAt: { before: false, values: [{ stringValue: cursor.date }, { referenceValue: `${parent}/${name}/${cursor.id}` }] } } : {}) },
-        ...(readTime ? { readTime } : {}) }),
+        ...(transaction ? { transaction } : readTime ? { readTime } : {}) }),
     });
     const wire = await response.json();
     if (!response.ok) throw Object.assign(new Error(wire.error?.message ?? 'History snapshot failed'), { code: String(wire.error?.status ?? 'unavailable').toLowerCase().replace(/_/g, '-') });
@@ -45,7 +46,7 @@ export const getConsistentHistoryPage = async <T,>(name: HistoryCollection, user
     const timestamp = readTime ?? times[times.length - 1];
     if (!timestamp) throw new Error('History response has no consistency timestamp');
     const rows = messages.flatMap((row) => row.document ? [{
-      ...Object.fromEntries(Object.entries(row.document.fields).map(([key, value]) => [key, decode(value)])), id: row.document.name.substring(row.document.name.lastIndexOf('/') + 1),
+      ...Object.fromEntries(Object.entries(row.document.fields).map(([key, value]) => [key, decodeFirestoreValue(value)])), id: row.document.name.substring(row.document.name.lastIndexOf('/') + 1),
     }] : []) as T[];
     const last = rows[rows.length - 1] as { id: string; date: string } | undefined;
     return { rows, hasMore: rows.length === 100, cursor: last ? { id: last.id, date: last.date } : undefined, readTime: timestamp, complete: true };

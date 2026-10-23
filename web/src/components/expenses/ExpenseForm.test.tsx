@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '../../test/test-utils';
 import ExpenseForm from './ExpenseForm';
 import { Category } from '../../types';
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ currentUser: { uid: 'test-user' } }) }));
+vi.mock('../../hooks/useExpenseTags', () => { const rows: never[] = []; return { useExpenseTags: () => ({ rows }) }; });
 
 describe('ExpenseForm', () => {
   const mockCategories: Category[] = [

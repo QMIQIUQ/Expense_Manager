@@ -1,7 +1,9 @@
 import type { DashboardWidgetType } from '../../../types/dashboard';
 import type { CacheableEntity } from '../../../utils/sessionCache';
 export type WidgetCompleteness = Partial<Record<CacheableEntity, boolean>>;
-const dependencies: Partial<Record<DashboardWidgetType, CacheableEntity[]>> = {
+export const widgetFinancialDependencies: Partial<Record<DashboardWidgetType, CacheableEntity[]>> = {
+  // This widget explicitly reads and verifies its own complete historical scope.
+  'spending-anomaly': [],
   'summary-cards': ['expenses', 'incomes', 'repayments', 'userSettings'],
   'expense-chart': ['expenses', 'repayments', 'userSettings'],
   'spending-trend': ['expenses', 'repayments', 'userSettings'],
@@ -17,4 +19,4 @@ const dependencies: Partial<Record<DashboardWidgetType, CacheableEntity[]>> = {
   'installment-tracker': ['scheduledPayments', 'scheduledPaymentRecords'],
 };
 export const widgetDataComplete = (type: DashboardWidgetType, completeness: WidgetCompleteness): boolean =>
-  (dependencies[type] ?? []).every((entity) => completeness[entity] === true);
+  (widgetFinancialDependencies[type] ?? []).every((entity) => completeness[entity] === true);

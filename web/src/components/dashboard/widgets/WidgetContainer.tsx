@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { DashboardWidget, DashboardWidgetType, WIDGET_METADATA, WidgetSize } from '../../../types/dashboard';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { TranslationKey } from '../../../locales/translations';
 import { WidgetProps } from './types';
 import SummaryCardsWidget from './SummaryCardsWidget';
-import ExpenseChartWidget from './ExpenseChartWidget';
-import SpendingTrendWidget from './SpendingTrendWidget';
+const ExpenseChartWidget = lazy(() => import('./ExpenseChartWidget'));
+const SpendingTrendWidget = lazy(() => import('./SpendingTrendWidget'));
 import CategoryBreakdownWidget from './CategoryBreakdownWidget';
 import RecentExpensesWidget from './RecentExpensesWidget';
 import BudgetProgressWidget from './BudgetProgressWidget';
@@ -19,7 +19,10 @@ import TagCloudWidget from './TagCloudWidget';
 import UpcomingBillsWidget from './UpcomingBillsWidget';
 import InstallmentTrackerWidget from './InstallmentTrackerWidget';
 import FriendSpendingWidget from './FriendSpendingWidget';
-import { widgetDataComplete } from './completeness';
+const SpendingAnomalyWidget = lazy(() => import('./SpendingAnomalyWidget'));
+import { widgetDataComplete, widgetFinancialDependencies } from './completeness';
+import { widgetRenderDependencies } from './renderDependencies';
+import FeatureLoadBoundary from '../../common/FeatureLoadBoundary';
 
 // Re-export WidgetProps for backward compatibility
 export type { WidgetProps } from './types';
@@ -71,6 +74,8 @@ const renderWidget = (
 ): React.ReactNode => {
   const propsWithSize = { ...data, size };
   switch (type) {
+    case 'spending-anomaly':
+      return <SpendingAnomalyWidget {...propsWithSize} />;
     case 'summary-cards':
       return <SummaryCardsWidget {...propsWithSize} onNavigateToExpenses={onNavigateToExpenses} onNavigateToIncomes={onNavigateToIncomes} />;
     case 'expense-chart':
@@ -188,6 +193,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
       )}
 
       <div className="widget-content">
+        <FeatureLoadBoundary>
+        <Suspense fallback={<p role="status">{t('loading')}</p>}>
         {widget.enabled && !widgetDataComplete(widget.type, data.completeness ?? {}) ? <p role="status">{t('incompleteFinancialData')}</p> : widget.enabled ? (
           renderWidget(widget.type, data, effectiveSize, onNavigateToExpenses, onNavigateToExpense, onNavigateToScheduledPayment, onNavigateToIncomes, onNavigateToBudgets, onNavigateToPaymentMethods, onNavigateToExpenseMonth)
         ) : (
@@ -196,9 +203,32 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             <span className="widget-placeholder-text">{t('widgetHidden')}</span>
           </div>
         )}
+        </Suspense>
+        </FeatureLoadBoundary>
       </div>
     </div>
   );
 };
 
-export default WidgetContainer;
+const navigationDependencies: Partial<Record<DashboardWidgetType, (keyof WidgetContainerProps)[]>> = {
+  'summary-cards': ['onNavigateToExpenses', 'onNavigateToIncomes'],
+  'recent-expenses': ['onNavigateToExpenses', 'onNavigateToExpense'],
+  'budget-progress': ['onNavigateToBudgets'],
+  'tracked-expenses': ['onNavigateToExpense'],
+  'cards-summary': ['onNavigateToPaymentMethods'],
+  'month-over-month': ['onNavigateToExpenseMonth'],
+  'tag-cloud': ['onNavigateToExpenses'],
+  'pending-payments': ['onNavigateToScheduledPayment'],
+  'upcoming-bills': ['onNavigateToScheduledPayment'],
+  'installment-tracker': ['onNavigateToScheduledPayment'],
+};
+export const widgetPropsEqual = (previous: WidgetContainerProps, next: WidgetContainerProps): boolean => {
+  if (previous.widget !== next.widget || previous.isEditing !== next.isEditing) return false;
+  const type = next.widget.type;
+  const fields = widgetRenderDependencies[type];
+  if (!fields || fields.some((key) => previous.data[key] !== next.data[key])) return false;
+  if ((widgetFinancialDependencies[type] ?? []).some((key) => previous.data.completeness?.[key] !== next.data.completeness?.[key])) return false;
+  const callbacks = [...(navigationDependencies[type] ?? []), ...(next.isEditing ? ['onToggle', 'onMoveUp', 'onMoveDown'] as const : [])];
+  return callbacks.every((key) => previous[key] === next[key]);
+};
+export default React.memo(WidgetContainer, widgetPropsEqual);

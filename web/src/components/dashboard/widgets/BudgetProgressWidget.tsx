@@ -1,18 +1,26 @@
+import { parseISO } from 'date-fns';
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { WidgetProps } from './types';
 import ShowMoreButton from './ShowMoreButton';
-import { getEffectiveBudgetAmount } from '../../../utils/budgetRollover';
-import { formatDateRangeShort } from '../../../utils/dateUtils';
+import { getEffectiveBudgetAmount, getBillingCyclePeriod } from '../../../utils/budgetRollover';
+import { incomeLinkEnabled, validIncomeLink } from '../../../utils/incomeLinkedBudget';
+import { useIncomeBudget } from '../../../hooks/useIncomeBudget';
+import IncomeBudgetSummary from '../../budgets/IncomeBudgetSummary';
+import { formatDateRangeShort, getTodayLocal } from '../../../utils/dateUtils';
 import { Expense } from '../../../types';
 import { getExpenseBaseAmount, getRepaymentBaseAmount } from '../../../utils/currencyUtils';
-import { getBudgetCurrency, toBudgetCurrencyAmount } from '../../../utils/budgetCurrencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney } from '../../../utils/currencyUtils';
+import { getBudgetCurrency, toBudgetBaseAmount, toBudgetCurrencyAmount } from '../../../utils/budgetCurrencyUtils';
+import { useCurrencyConversionMapState } from '../../../hooks/useCurrencyConversionMap';
 import DisplayCurrencyAmount from '../../common/DisplayCurrencyAmount';
 
-const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', onNavigateToBudgets }) => {
+const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () => void }> = ({ budgets, expenses, repayments, billingCycleDay = 1, size = 'medium', displayCurrency, onNavigateToBudgets }) => {
   const { t } = useLanguage();
-  const { dateFormat } = useUserSettings();
+  const { dateFormat, settings } = useUserSettings();
+  const linked = incomeLinkEnabled(settings?.incomeLinkedBudget) || settings?.incomeLinkedBudget !== undefined && !validIncomeLink(settings.incomeLinkedBudget);
+  const incomeBudget = useIncomeBudget(budgets, linked, billingCycleDay);
   const [showAll, setShowAll] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -68,19 +76,11 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
   // Calculate billing cycle
   const { cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining } = React.useMemo(() => {
     const now = new Date();
-    const currentDay = now.getDate();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay - 1);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay - 1);
-    }
+    const { start: cycleStart, end } = getBillingCyclePeriod(billingCycleDay, now);
+    const cycleEnd = new Date(end);
+    cycleEnd.setDate(cycleEnd.getDate() - 1);
 
     // Calculate days in cycle
     const daysInCycle = Math.ceil((cycleEnd.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -124,7 +124,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
       
       // Filter expenses for this category in the cycle
       const categoryExpenses = expenses.filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         const matchesCategory = exp.category === budget.categoryName;
         const inCycle = expDate >= cycleStart && expDate <= cycleEnd;
         return matchesCategory && inCycle;
@@ -136,7 +136,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
       // Calculate today's spending
       const todaySpentBase = categoryExpenses
         .filter((exp) => {
-          const expDate = new Date(exp.date);
+          const expDate = parseISO(exp.date);
           return expDate >= today && expDate < tomorrow;
         })
         .reduce((sum, exp) => sum + getNetBaseAmount(exp), 0);
@@ -170,6 +170,7 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
       return {
         ...budget,
         effectiveAmount,
+        spentBase,
         spent,
         remaining,
         percentage,
@@ -186,12 +187,46 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
     });
   }, [budgets, expenses, cycleStart, cycleEnd, daysInCycle, daysPassed, daysRemaining, getNetBaseAmount, formatPeriodRange]);
 
+  const budgetSummaryRows = React.useMemo(() => budgetProgress.map((budget) => ({
+    budgetId: budget.id || `${budget.categoryId}-${budget.categoryName}`,
+    rateDate: budget.exchangeRateDate || budget.startDate || getTodayLocal(),
+    totalBudget: toBudgetBaseAmount(budget.effectiveAmount, budget),
+    spent: budget.spentBase,
+    remaining: toBudgetBaseAmount(budget.remaining, budget),
+  })), [budgetProgress]);
+  const budgetSummaryConversionEntries = React.useMemo(() => budgetSummaryRows.flatMap((row) => ([
+    { key: `${row.budgetId}:totalBudget`, amount: row.totalBudget, sourceCurrency: DEFAULT_BASE_CURRENCY, date: row.rateDate },
+    { key: `${row.budgetId}:spent`, amount: row.spent, sourceCurrency: DEFAULT_BASE_CURRENCY, date: row.rateDate },
+    { key: `${row.budgetId}:remaining`, amount: row.remaining, sourceCurrency: DEFAULT_BASE_CURRENCY, date: row.rateDate },
+  ])), [budgetSummaryRows]);
+  const summaryCurrency = displayCurrency || DEFAULT_BASE_CURRENCY;
+  const budgetSummaryConversion = useCurrencyConversionMapState(budgetSummaryConversionEntries, summaryCurrency);
+  const budgetSummaryTotals = React.useMemo(() => {
+    const sumMetric = (metric: 'totalBudget' | 'spent' | 'remaining'): number | null => {
+      let total = 0;
+      for (const row of budgetSummaryRows) {
+        const amount = summaryCurrency === DEFAULT_BASE_CURRENCY
+          ? row[metric]
+          : budgetSummaryConversion.amountsByKey[`${row.budgetId}:${metric}`];
+        if (amount === undefined) return null;
+        total += amount;
+      }
+      return total;
+    };
+
+    return {
+      totalBudget: sumMetric('totalBudget'),
+      spent: sumMetric('spent'),
+      remaining: sumMetric('remaining'),
+    };
+  }, [budgetSummaryRows, budgetSummaryConversion.amountsByKey, summaryCurrency]);
+
   // Sort budget progress by percentage (high to low)
   const sortedBudgetProgress = React.useMemo(() => {
     return [...budgetProgress].sort((a, b) => b.percentage - a.percentage);
   }, [budgetProgress]);
 
-  if (sortedBudgetProgress.length === 0) {
+  if (sortedBudgetProgress.length === 0 && !linked) {
     return (
       <div className="widget-empty-state">
         <span>🎯</span>
@@ -205,6 +240,33 @@ const BudgetProgressWidget: React.FC<WidgetProps & { onNavigateToBudgets?: () =>
 
   return (
     <div className="budget-progress-list">
+      {linked ? <IncomeBudgetSummary state={incomeBudget} compact /> : (
+      <div className="budget-progress-summary" aria-label={t('budgetProgress')}>
+        <div className="budget-progress-summary-metric">
+          <span className="budget-progress-summary-label">{t('totalBudget')}</span>
+          <strong className="budget-progress-summary-value total-budget-value">
+            {budgetSummaryTotals.totalBudget === null ? '—' : formatMoney(budgetSummaryTotals.totalBudget, summaryCurrency)}
+          </strong>
+        </div>
+        <div className="budget-progress-summary-metric">
+          <span className="budget-progress-summary-label">{t('spent')}</span>
+          <strong className="budget-progress-summary-value spent-budget-value">
+            {budgetSummaryTotals.spent === null ? '—' : formatMoney(budgetSummaryTotals.spent, summaryCurrency)}
+          </strong>
+        </div>
+        <div className="budget-progress-summary-metric">
+          <span className="budget-progress-summary-label">{t('remaining')}</span>
+          <strong className="budget-progress-summary-value remaining-budget-value">
+            {budgetSummaryTotals.remaining === null ? '—' : formatMoney(budgetSummaryTotals.remaining, summaryCurrency)}
+          </strong>
+        </div>
+        {!budgetSummaryConversion.isLoading && budgetSummaryConversion.failedKeys.length > 0 && (
+          <span className="budget-summary-conversion-error" role="alert">
+            {t('exchangeRateLookupFailed') || 'Unable to get the exchange rate. Please try again.'}
+          </span>
+        )}
+      </div>
+      )}
       {displayBudgets.map((budget) => (
         <div
           key={budget.id}

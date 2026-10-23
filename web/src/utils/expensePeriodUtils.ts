@@ -1,4 +1,4 @@
-import type { Expense, Card, EWallet, Bank } from '../types';
+import type { Expense, Card, EWallet, Bank, ExpenseTag } from '../types';
 import type { ExpenseFilterState, ExpensePeriodSelection } from '../types/expensePeriod';
 import { formatDateLocal } from './dateUtils';
 import { getExpenseBaseAmount } from './currencyUtils';
@@ -45,6 +45,7 @@ export const filterExpensesByPeriod = (
 };
 
 interface ExpenseFilterContext {
+  tags?: ExpenseTag[];
   cards?: Card[];
   ewallets?: EWallet[];
   banks?: Bank[];
@@ -65,13 +66,18 @@ const getPaymentSourceName = (expense: Expense, context: ExpenseFilterContext): 
   return expense.paymentMethod || '';
 };
 
-export const filterAndSortExpenses = (
+export const filterExpenses = (
   expenses: Expense[],
   filters: ExpenseFilterState,
   context: ExpenseFilterContext = {},
 ): Expense[] => {
   const query = filters.query.trim().toLocaleLowerCase();
-  const filtered = expenses.filter((expense) => {
+  return expenses.filter((expense) => {
+    if (filters.tagId && !expense.tagIds?.includes(filters.tagId)) return false;
+    if (filters.accountKey && filters.accountKey !== `${expense.paymentMethod}:${expense.bankId || expense.cardId || expense.paymentMethodName || ''}`) return false;
+    if (filters.category && expense.category !== filters.category) return false;
+    if (filters.paymentMethod !== 'all' && expense.paymentMethod !== filters.paymentMethod) return false;
+    if (!query) return true;
     const searchable = [
       expense.description,
       expense.notes,
@@ -79,25 +85,24 @@ export const filterAndSortExpenses = (
       expense.paymentMethod,
       expense.paymentMethodName,
       getPaymentSourceName(expense, context),
+      ...(expense.tagIds ?? []).map((id) => context.tags?.find((tag) => tag.id === id)?.name || ''),
     ]
       .filter(Boolean)
       .join(' ')
       .toLocaleLowerCase();
 
-    const matchesQuery = !query || searchable.includes(query);
-    const matchesCategory = !filters.category || expense.category === filters.category;
-    const matchesPayment = filters.paymentMethod === 'all' || expense.paymentMethod === filters.paymentMethod;
-    return matchesQuery && matchesCategory && matchesPayment;
-  });
-
-  return [...filtered].sort((left, right) => {
-    if (filters.sort === 'amount-desc') return getExpenseBaseAmount(right) - getExpenseBaseAmount(left);
-    if (filters.sort === 'amount-asc') return getExpenseBaseAmount(left) - getExpenseBaseAmount(right);
-    const leftTime = new Date(`${left.date}T${left.time || '00:00'}:00`).getTime();
-    const rightTime = new Date(`${right.date}T${right.time || '00:00'}:00`).getTime();
-    return filters.sort === 'date-asc' ? leftTime - rightTime : rightTime - leftTime;
+    return searchable.includes(query);
   });
 };
+
+export const filterAndSortExpenses = (
+  expenses: Expense[], filters: ExpenseFilterState, context: ExpenseFilterContext = {},
+): Expense[] => filterExpenses(expenses, filters, context).sort((left, right) => {
+    if (filters.sort === 'amount-desc') return getExpenseBaseAmount(right) - getExpenseBaseAmount(left);
+    if (filters.sort === 'amount-asc') return getExpenseBaseAmount(left) - getExpenseBaseAmount(right);
+    const order = left.date.localeCompare(right.date) || (left.time || '00:00').localeCompare(right.time || '00:00');
+    return filters.sort === 'date-asc' ? order : -order;
+  });
 
 export const countInclusiveDays = (startDate: string, endDate: string): number => {
   const start = parseLocalDate(startDate);

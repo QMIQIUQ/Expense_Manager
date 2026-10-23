@@ -1,4 +1,5 @@
 import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
+import { validateExpenseSplit } from '../utils/expenseSplitCalculator';
 import {
   collection,
   doc,
@@ -13,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Expense, Transfer } from '../types';
-import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import { applyBalanceAdjustmentsInTransaction, bookedAccountMovements, prepareBalanceAdjustments } from './balanceService';
 import {
   applyExpenseSummaryChange,
   friendSpendingSummaryStateRef,
@@ -33,6 +34,15 @@ const removeUndefinedFields = (data: Record<string, unknown>): Record<string, un
 
 const COLLECTION_NAME = 'expenses';
 
+const validateExpenseTags = async (transaction: import('firebase/firestore').Transaction, expense: Expense, previous?: Expense): Promise<void> => {
+  if (!Array.isArray(expense.tagIds ?? []) || (expense.tagIds?.length ?? 0) > 10 || new Set(expense.tagIds).size !== (expense.tagIds?.length ?? 0)) throw Object.assign(new Error('At most 10 unique tags are allowed'), { code: 'invalid-argument' });
+  for (const id of expense.tagIds ?? []) {
+    if (typeof id !== 'string' || !id || id.includes('/')) throw Object.assign(new Error('Invalid tag identity'), { code: 'invalid-argument' });
+    const tag = await transaction.get(doc(db, 'expenseTags', id));
+    if (!tag.exists() || tag.data().userId !== expense.userId || tag.data().archived && !previous?.tagIds?.includes(id)) throw Object.assign(new Error('Tag is unavailable'), { code: 'failed-precondition' });
+  }
+};
+
 export const expenseService = {
   createId(): string {
     return doc(collection(db, COLLECTION_NAME)).id;
@@ -45,6 +55,7 @@ export const expenseService = {
     operation?: FinancialOperation,
   ): Promise<string> {
     if (await hasFinancialReceipt(operation)) return expense.id!;
+    validateExpenseSplit(expense as Expense);
     const { id, ...expenseFields } = expense;
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
@@ -52,16 +63,18 @@ export const expenseService = {
       createdAt: now,
       updatedAt: now,
     });
+    delete dataToSave.splitPaidMinor; delete dataToSave.splitSettlement;
     const docRef = id
       ? doc(db, COLLECTION_NAME, id)
       : doc(collection(db, COLLECTION_NAME));
     const balanceAdjustments = options.updateAccountBalances
       ? await prepareBalanceAdjustments(expense.userId, [{
           type: 'expense',
-          expense: { ...expense, id: docRef.id } as Expense,
+          expense: { ...expense, bookedAccountMovements: undefined, id: docRef.id } as Expense,
           direction: -1,
         }])
       : [];
+    dataToSave.bookedAccountMovements = bookedAccountMovements(balanceAdjustments);
     await runFinancialTransaction(db, operation, async (transaction) => {
       const [existingExpense, summaryState] = await Promise.all([
         transaction.get(docRef),
@@ -73,6 +86,7 @@ export const expenseService = {
         }
         return;
       }
+      await validateExpenseTags(transaction, expense as Expense);
       await applyBalanceAdjustmentsInTransaction(transaction, balanceAdjustments);
       if (isFriendSpendingSummaryReady(summaryState.data())) {
         applyExpenseSummaryChange(transaction, null, { ...expense, id: docRef.id } as Expense);
@@ -119,7 +133,7 @@ export const expenseService = {
     const docRef = doc(db, COLLECTION_NAME, id);
     const dataToUpdate: Record<string, unknown> = { updatedAt: Timestamp.now() };
     for (const [field, value] of Object.entries(updates)) {
-      if (['id', 'userId', 'createdAt', 'updatedAt'].includes(field)) continue;
+      if (['id', 'userId', 'createdAt', 'updatedAt', 'splitPaidMinor', 'splitSettlement', 'bookedAccountMovements'].includes(field)) continue;
       dataToUpdate[field] = value === undefined ? deleteField() : value;
     }
     await runFinancialTransaction(db, operation, async (transaction) => {
@@ -127,7 +141,9 @@ export const expenseService = {
       if (!expenseSnapshot.exists()) throw new Error('Expense not found');
       const previousExpense = { id, ...expenseSnapshot.data() } as Expense;
       const summaryState = await transaction.get(friendSpendingSummaryStateRef(previousExpense.userId));
-      const nextExpense = { ...previousExpense, ...updates, id } as Expense;
+      const nextExpense = { ...previousExpense, ...updates, id, splitPaidMinor: previousExpense.splitPaidMinor, bookedAccountMovements: previousExpense.bookedAccountMovements } as Expense;
+      validateExpenseSplit(nextExpense, previousExpense);
+      await validateExpenseTags(transaction, nextExpense, previousExpense);
       if (updates.scheduledPaymentRecordId !== undefined && updates.scheduledPaymentRecordId !== previousExpense.scheduledPaymentRecordId) throw new Error('Payment expense link cannot be changed');
       const paymentRef = previousExpense.scheduledPaymentRecordId ? doc(db, 'scheduledPaymentRecords', previousExpense.scheduledPaymentRecordId) : undefined;
       const payment = paymentRef ? await transaction.get(paymentRef) : undefined;
@@ -143,6 +159,7 @@ export const expenseService = {
       if (isFriendSpendingSummaryReady(summaryState.data())) {
         applyExpenseSummaryChange(transaction, previousExpense, nextExpense);
       }
+      dataToUpdate.bookedAccountMovements = bookedAccountMovements(balanceAdjustments, 1);
       transaction.update(docRef, dataToUpdate);
       if (paymentRef && payment?.exists()) transaction.set(paymentRef, removeUndefinedFields({
         ...payment.data(),
@@ -166,6 +183,7 @@ export const expenseService = {
         return;
       }
       const expense = { id, ...expenseSnapshot.data() } as Expense;
+      if (Object.values(expense.splitPaidMinor ?? {}).some((paid) => paid > 0)) throw Object.assign(new Error('Reverse split repayments before deleting this expense'), { code: 'failed-precondition' });
       const summaryState = await transaction.get(friendSpendingSummaryStateRef(expense.userId));
       if (isFriendSpendingSummaryReady(summaryState.data())) {
         applyExpenseSummaryChange(transaction, expense, null);
@@ -242,6 +260,7 @@ export const expenseService = {
       }
 
       const currentExpenseData = expenseSnapshot.exists() ? expenseSnapshot.data() : undefined;
+      if (Object.values(currentExpenseData?.splitPaidMinor ?? {}).some((paid) => Number(paid) > 0)) throw Object.assign(new Error('Reverse split repayments before deleting this expense'), { code: 'failed-precondition' });
       const paymentRef = typeof currentExpenseData?.scheduledPaymentRecordId === 'string' ? doc(db, 'scheduledPaymentRecords', currentExpenseData.scheduledPaymentRecordId) : undefined;
       const payment = paymentRef ? await transaction.get(paymentRef) : undefined;
       if (payment?.exists() && (payment.data().generatedExpenseId !== id || payment.data().userId !== userId)) throw new Error('Invalid scheduled payment link');

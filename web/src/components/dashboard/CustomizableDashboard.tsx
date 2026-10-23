@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -17,7 +17,8 @@ const isRetryableNetworkError = (error: unknown): boolean => {
   return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code || '') ||
     (typeof navigator !== 'undefined' && !navigator.onLine);
 };
-import { WidgetContainer, WidgetProps } from './widgets';
+import WidgetContainer from './widgets/WidgetContainer';
+import type { WidgetProps } from './widgets/types';
 import DashboardCustomizer from './DashboardCustomizer';
 
 interface CustomizableDashboardProps {
@@ -184,7 +185,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   };
 
   // Widget data props
-  const widgetData: WidgetProps = {
+  const widgetData: WidgetProps = useMemo(() => ({
     completeness,
     expenses,
     incomes,
@@ -208,12 +209,15 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     scheduledPayments,
     scheduledPaymentRecords,
     onConfirmScheduledPayment,
-  };
+  }), [completeness, expenses, incomes, repayments, budgets, cards, categories, ewallets, banks, billingCycleDay,
+    displayCurrency, onMarkTrackingCompleted, onQuickAdd, onNavigateToExpense, onNavigateToExpenseCategory,
+    onNavigateToExpenseMonth, onNavigateToScheduledPayment, quickExpensePresets, onQuickExpenseAdd,
+    onQuickExpensePresetsChange, loadQuickExpensePresets, scheduledPayments, scheduledPaymentRecords, onConfirmScheduledPayment]);
 
   // Get enabled widgets sorted by order
-  const enabledWidgets = widgets
+  const enabledWidgets = useMemo(() => widgets
     .filter((w) => w.enabled)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => a.order - b.order), [widgets]);
 
   return (
     <div className="customizable-dashboard">

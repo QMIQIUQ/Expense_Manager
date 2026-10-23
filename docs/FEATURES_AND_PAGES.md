@@ -81,12 +81,20 @@ main.tsx
 ### 一般資料操作流程
 
 ```text
-頁面 / 元件 → handler 或 hook → 對應 service → Firestore
-      ↑                                  ↓
-      └──── 更新 React 狀態 / 快取 ←─────┘
-
-離線時：service / hook → 本地佇列與快取 → 網路恢復 → syncService → Firestore
+頁面 / 元件 → 穩定 ID → 即時更新 React 狀態與快取
+                           ↓
+                  IndexedDB outbox 提交
+                           ↓
+                  回報已儲存於本機
+                           ↓
+               syncService 背景取得操作執行權
+                           ↓
+             Firestore transaction：資料 + receipt
+                           ↓
+                完成佇列操作 / 刷新受影響範圍
 ```
+
+線上與離線操作使用相同的本機提交流程；Firebase 同步不阻擋本機完成。儲存失敗必須顯示錯誤，遠端拒絕保留可檢查的操作。完整的佇列、交易、分頁和快取合約見 [效能與可靠性實作](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md)。既有 method 盤點見 [邏輯與 Method 流程](LOGIC_METHOD_FLOW.md)。
 
 不是所有操作都會經過同一個 Hook。新增功能時，請沿用該領域既有 service，並檢查其 Firestore Rules、離線支援與同步行為；資料隔離及授權以 `web/firestore.rules` 和 Functions 驗證為準。
 

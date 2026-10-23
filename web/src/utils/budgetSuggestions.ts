@@ -1,5 +1,7 @@
+import { parseISO } from 'date-fns';
 import { Expense, Repayment } from '../types';
 import { getExpenseBaseAmount, getRepaymentBaseAmount } from './currencyUtils';
+import { getBillingCyclePeriod, getPreviousBillingCyclePeriod } from './budgetRollover';
 
 interface BudgetSuggestion {
   categoryName: string;
@@ -36,17 +38,18 @@ export function calculateBudgetSuggestions(
   // Get spending by month for this category
   const now = new Date();
   const monthlySpending: number[] = [];
+  let cycle = getBillingCyclePeriod(billingCycleDay, now);
 
   for (let i = 1; i <= monthsToAnalyze; i++) {
     // Calculate billing cycle for past months
     // Go back i months from current cycle
-    const cycleStart = new Date(now.getFullYear(), now.getMonth() - i, billingCycleDay);
-    const cycleEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, billingCycleDay);
+    cycle = getPreviousBillingCyclePeriod(billingCycleDay, cycle.start);
+    const { start: cycleStart, end: cycleEnd } = cycle;
 
     // Calculate spending in this period (cycleEnd is exclusive)
     const spent = expenses
       .filter((exp) => {
-        const expDate = new Date(exp.date);
+        const expDate = parseISO(exp.date);
         return (
           exp.category === categoryName &&
           expDate >= cycleStart &&

@@ -38,4 +38,4 @@ The hosted `firebase-testing` preview shares the production Firebase project, so
 ## Deployment behavior
 
 - A push to `main` that changes Firestore rules or indexes deploys those Firestore resources before Hosting. The workflow does not deploy Cloud Functions.
-- The `main` Hosting build enables friend spending; the `firebase-testing` preview keeps it disabled because it shares production data.
+- The `main` Firebase Hosting and GitHub Pages builds enable friend spending. Both use the same Firebase project and data. The `firebase-testing` preview keeps it disabled because it shares production data.

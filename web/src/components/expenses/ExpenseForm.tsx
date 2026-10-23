@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getTodayLocal, getCurrentTimeLocal } from '../../utils/dateUtils';
 import { useToday } from '../../hooks/useToday';
 import {
@@ -15,8 +16,11 @@ import PaymentMethodSelector from '../common/PaymentMethodSelector';
 import CurrencySelector from '../common/CurrencySelector';
 import { sortCategories } from '../../utils/categoryOrder';
 import { fromMinorUnits, getCurrencyMinorDigits, toMinorUnits } from '../../domain/money';
+import { ExpenseTagPicker } from './ExpenseTagPicker';
+import type { DuplicateExpenseInput } from '../../utils/expenseDuplicateCandidates';
 
 interface ExpenseFormProps {
+  onReviewDuplicates?: (input: DuplicateExpenseInput) => Promise<boolean>;
   onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   onCancel?: () => void;
   initialData?: Expense;
@@ -35,6 +39,7 @@ interface ExpenseFormProps {
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({
+  onReviewDuplicates,
   onSubmit,
   onCancel,
   initialData,
@@ -52,6 +57,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   lastUsedCurrency,
 }) => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const today = useToday();
   const [formData, setFormData] = useState({
     description: initialData?.description || '',
@@ -68,6 +74,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     needsRepaymentTracking: initialData?.needsRepaymentTracking || false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tagIds, setTagIds] = useState(initialData?.tagIds ?? []);
+  useEffect(() => { setTagIds(initialData?.userId === currentUser?.uid ? initialData?.tagIds ?? [] : []); }, [currentUser?.uid, initialData?.id, initialData?.userId, initialData?.tagIds]);
   const [currencyError, setCurrencyError] = useState('');
   // Initialize transfer states from initialTransfer if provided
   // transferTo* = where the money goes TO (user selects this)
@@ -80,9 +88,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const currencyDigits = getCurrencyMinorDigits(formData.currency);
+  const mounted = useRef(true);
+  const submitting = useRef(false);
+  const identity = JSON.stringify([currentUser?.uid, initialData?.id, formData, tagIds, enableTransfer, transferToPaymentMethod, transferToCardId, transferToEWalletName, transferToBankId]);
+  const identityRef = useRef(identity); identityRef.current = identity;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current || !currentUser || initialData && initialData.userId !== currentUser.uid) return;
+    const submittedIdentity = identity;
+    const valid = () => mounted.current && identityRef.current === submittedIdentity;
 
     void (async () => {
       const newErrors: { [key: string]: string } = {};
@@ -100,7 +116,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       }
 
       setErrors({});
-      setIsSubmitting(true);
+      submitting.current = true; setIsSubmitting(true);
       setCurrencyError('');
 
       try {
@@ -116,6 +132,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           ),
         });
 
+        if (!valid()) return;
         const submitData: Partial<typeof formData> & {
           amount: number;
           currency: string;
@@ -125,10 +142,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           exchangeRateFetchedAt: Date;
           exchangeRateProvider: string;
           baseAmount: number;
+          tagIds: string[];
         } = {
           ...formData,
           amount: fromMinorUnits(formData.amount, formData.currency),
           ...resolvedCurrency,
+          tagIds,
         };
 
         if (formData.paymentMethod === 'cash') {
@@ -146,6 +165,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           delete submitData.paymentMethodName;
         }
 
+        if (!initialData && onReviewDuplicates && !await onReviewDuplicates(submitData as Expense)) return;
+        if (!valid()) return;
         if (enableTransfer && onAddTransfer) {
           const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
           const toPaymentMethod = transferToPaymentMethod;
@@ -194,8 +215,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           }
         }
 
-        onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+        await onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+        if (!valid()) return;
         if (!initialData) {
+          setTagIds([]);
           setFormData({
             description: '',
             amount: 0,
@@ -218,9 +241,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         }
       } catch (error) {
         console.error('Failed to resolve expense currency:', error);
-        setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+        if (valid()) setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
       } finally {
-        setIsSubmitting(false);
+        submitting.current = false; if (mounted.current) setIsSubmitting(false);
       }
     })();
   };
@@ -573,6 +596,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       </div>
 
       {/* Footer removed - handled by BaseForm */}
+      <ExpenseTagPicker userId={initialData && initialData.userId !== currentUser?.uid ? undefined : currentUser?.uid} value={tagIds} onChange={setTagIds} />
     </BaseForm>
   );
 };

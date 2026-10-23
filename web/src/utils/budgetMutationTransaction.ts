@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { COLLECTIONS } from '../constants/collections';
-import type { Budget, OverallBudgetLimits } from '../types';
+import type { Budget, IncomeLinkedBudgetSettings, OverallBudgetLimits } from '../types';
 
 const COLLECTION_NAME = 'budgets';
 const STALE_BUDGET_SNAPSHOT = 'stale-budget-snapshot';
@@ -20,6 +20,7 @@ const STALE_BUDGET_SNAPSHOT = 'stale-budget-snapshot';
 export interface BudgetMutationSnapshot {
   budgets: Budget[];
   overallBudgetLimits?: OverallBudgetLimits;
+  incomeLinkedBudget?: IncomeLinkedBudgetSettings;
   budgetAllocationRevision: number;
   hasSettingsDocument: boolean;
 }
@@ -79,6 +80,7 @@ export async function runBudgetMutationTransaction<T>(userId: string, mutation: 
         const snapshot: BudgetMutationSnapshot = {
           budgets,
           overallBudgetLimits: transactionSettingsData?.overallBudgetLimits as OverallBudgetLimits | undefined,
+          incomeLinkedBudget: transactionSettingsData?.incomeLinkedBudget as IncomeLinkedBudgetSettings | undefined,
           budgetAllocationRevision: serverRevision,
           hasSettingsDocument: transactionSettings.exists(),
         };
@@ -86,6 +88,14 @@ export async function runBudgetMutationTransaction<T>(userId: string, mutation: 
       });
     } catch (error) {
       if (error instanceof Error && error.message === STALE_BUDGET_SNAPSHOT) continue;
+      // Rules can reject a stale revision before the SDK reports an aborted
+      // transaction. Retry only after proving that another allocation committed;
+      // a genuine authorization error must remain a permanent rejection.
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code).split('/').pop() : '';
+      if (code === 'permission-denied') {
+        const latest = await getDocFromServer(settingsRef);
+        if (latest.exists() !== serverSettings.exists() || getRevision(latest.exists() ? latest.data() : undefined) !== serverRevision) continue;
+      }
       throw error;
     }
   }

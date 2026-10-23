@@ -1,7 +1,9 @@
-import { Expense, Income, Transfer } from '../types';
+import { Expense, Income, Transfer, BookedAccountMovement } from '../types';
 import { ewalletService } from './ewalletService';
 import { bankService } from './bankService';
 import { convertAmountToCurrency } from './currencyRateService';
+import { toMinorUnits, fromMinorUnits } from '../domain/money';
+import { bookedMovementSource } from '../utils/bookedMovementSource';
 import { db } from '../config/firebase';
 import { DocumentReference, Transaction, Timestamp, doc, increment } from 'firebase/firestore';
 import {
@@ -50,6 +52,7 @@ export interface PreparedBalanceAdjustment {
   delta: number;
   userId: string;
   currency: string;
+  bookings: Array<BookedAccountMovement & { eventIndex: number }>;
 }
 
 /**
@@ -61,6 +64,10 @@ export const prepareBalanceAdjustments = async (
   events: BalanceAdjustmentEvent[],
 ): Promise<PreparedBalanceAdjustment[]> => {
   type Movement = {
+    role: BookedAccountMovement['role'];
+    eventIndex: number;
+    booked?: BookedAccountMovement[];
+    normalDirection: -1 | 1;
     method: string | undefined;
     accountId?: string;
     accountName?: string;
@@ -73,8 +80,9 @@ export const prepareBalanceAdjustments = async (
   };
 
   const movements: Movement[] = [];
-  const addExpenseMovement = (expense: Expense, direction: -1 | 1) => {
+  const addExpenseMovement = (expense: Expense, direction: -1 | 1, eventIndex: number) => {
     movements.push({
+      role: 'expense', eventIndex, booked: expense.bookedAccountMovements, normalDirection: -1,
       method: expense.paymentMethod,
       accountId: expense.bankId,
       accountName: expense.paymentMethodName,
@@ -86,8 +94,9 @@ export const prepareBalanceAdjustments = async (
       date: expense.date,
     });
   };
-  const addIncomeMovement = (income: Income, direction: -1 | 1) => {
+  const addIncomeMovement = (income: Income, direction: -1 | 1, eventIndex: number) => {
     movements.push({
+      role: 'income', eventIndex, booked: income.bookedAccountMovements, normalDirection: 1,
       method: income.paymentMethod,
       accountId: income.bankId,
       accountName: income.paymentMethodName,
@@ -99,8 +108,9 @@ export const prepareBalanceAdjustments = async (
       date: income.date,
     });
   };
-  const addTransferMovement = (transfer: Transfer, sourceDirection: -1 | 1, destinationDirection: -1 | 1) => {
+  const addTransferMovement = (transfer: Transfer, sourceDirection: -1 | 1, destinationDirection: -1 | 1, eventIndex: number) => {
     movements.push({
+      role: 'from', eventIndex, booked: transfer.bookedAccountMovements, normalDirection: -1,
       method: transfer.fromPaymentMethod,
       accountId: transfer.fromBankId,
       accountName: transfer.fromPaymentMethodName,
@@ -112,6 +122,7 @@ export const prepareBalanceAdjustments = async (
       date: transfer.date,
     });
     movements.push({
+      role: 'to', eventIndex, booked: transfer.bookedAccountMovements, normalDirection: 1,
       method: transfer.toPaymentMethod,
       accountId: transfer.toBankId,
       accountName: transfer.toPaymentMethodName,
@@ -124,10 +135,10 @@ export const prepareBalanceAdjustments = async (
     });
   };
 
-  events.forEach((event) => {
-    if (event.type === 'expense') addExpenseMovement(event.expense, event.direction);
-    else if (event.type === 'income') addIncomeMovement(event.income, event.direction);
-    else addTransferMovement(event.transfer, event.sourceDirection, event.destinationDirection);
+  events.forEach((event, eventIndex) => {
+    if (event.type === 'expense') addExpenseMovement(event.expense, event.direction, eventIndex);
+    else if (event.type === 'income') addIncomeMovement(event.income, event.direction, eventIndex);
+    else addTransferMovement(event.transfer, event.sourceDirection, event.destinationDirection, eventIndex);
   });
 
   const targetCache = new Map<string, Promise<{ ref: DocumentReference; currency?: string } | null>>();
@@ -160,7 +171,14 @@ export const prepareBalanceAdjustments = async (
   const prepared = await Promise.all(movements.map(async (movement) => {
     const target = await getTarget(movement);
     if (!target) return null;
-    const delta = await convertForAccount({
+    const currency = normalizeCurrencyCode(target.currency || DEFAULT_BASE_CURRENCY);
+    const source = bookedMovementSource(movement);
+    const booked = movement.booked?.find((row) => row.role === movement.role && row.accountId === target.ref.id && row.accountType === movement.method && row.currency === currency && row.source === source);
+    if (booked && (!Number.isSafeInteger(booked.amountMinor) || booked.amountMinor < 0)) throw new Error('Invalid booked account movement');
+    if (!booked && movement.direction !== movement.normalDirection && currency !== normalizeCurrencyCode(movement.currency || 'MYR') &&
+      !(currency === normalizeCurrencyCode(movement.baseCurrency || 'MYR') && Number.isFinite(movement.baseAmount)))
+      throw Object.assign(new Error('The original account-currency movement is unknown; review this legacy transaction first'), { code: 'failed-precondition' });
+    const rawDelta = booked ? movement.direction * fromMinorUnits(booked.amountMinor, currency) : await convertForAccount({
       delta: movement.direction,
       amount: movement.amount,
       currency: movement.currency,
@@ -169,12 +187,14 @@ export const prepareBalanceAdjustments = async (
       accountCurrency: target.currency,
       date: movement.date,
     });
-      return {
-        ref: target.ref,
-        delta,
-        userId,
-        currency: normalizeCurrencyCode(target.currency || DEFAULT_BASE_CURRENCY),
-      };
+    const delta = movement.direction * fromMinorUnits(toMinorUnits(Math.abs(rawDelta), currency), currency);
+    return {
+      ref: target.ref,
+      delta,
+      userId,
+      currency,
+      bookings: [{ role: movement.role, eventIndex: movement.eventIndex, accountType: movement.method as 'bank' | 'e_wallet', accountId: target.ref.id, currency, amountMinor: toMinorUnits(Math.abs(delta), currency), source }],
+    };
   }));
 
   const aggregated = new Map<string, PreparedBalanceAdjustment>();
@@ -182,11 +202,14 @@ export const prepareBalanceAdjustments = async (
     if (!adjustment) return;
     const key = adjustment.ref.path;
     const existing = aggregated.get(key);
-    if (existing) existing.delta += adjustment.delta;
+    if (existing) { existing.delta += adjustment.delta; existing.bookings.push(...adjustment.bookings); }
     else aggregated.set(key, adjustment);
   });
-  return [...aggregated.values()].filter((adjustment) => Math.abs(adjustment.delta) > 0.0000001);
+  return [...aggregated.values()];
 };
+
+export const bookedAccountMovements = (adjustments: PreparedBalanceAdjustment[], eventIndex = 0): BookedAccountMovement[] =>
+  adjustments.flatMap((row) => (row.bookings ?? []).filter((booking) => booking.eventIndex === eventIndex).map(({ eventIndex: _eventIndex, ...booking }) => booking));
 
 export const applyBalanceAdjustmentsInTransaction = async (
   transaction: Transaction,

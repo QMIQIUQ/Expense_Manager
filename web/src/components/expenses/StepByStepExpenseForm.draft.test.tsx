@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '../../test/test-utils';
+import { act, fireEvent, render, screen, waitFor, within } from '../../test/test-utils';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
 import type { Category, Expense } from '../../types';
 import {
@@ -9,8 +9,10 @@ import {
   type ReceiptOcrResult,
 } from '../../services/receiptOcrService';
 import { resolveExpenseCurrencyFields } from '../../services/currencyRateService';
-import { saveReceiptDraft } from '../../utils/receiptDraftStore';
+import { prepareReceiptContent } from '../../utils/receiptAttachmentContent';
+import { saveReceiptDraft, deleteReceiptDraft } from '../../utils/receiptDraftStore';
 
+vi.mock('../../utils/receiptAttachmentContent', () => ({ prepareReceiptContent: vi.fn() }));
 vi.mock('../../services/receiptOcrService', () => ({
   compressReceiptImage: vi.fn(),
   getReceiptOcrMode: vi.fn(() => 'paddle'),
@@ -83,6 +85,7 @@ describe('StepByStepExpenseForm draft controls', () => {
       value: vi.fn(),
     });
 
+    vi.mocked(prepareReceiptContent).mockResolvedValue({ name: 'receipt.jpg', originalName: 'receipt.jpg', contentType: 'image/jpeg', byteSize: 10, originalByteSize: 20, optimized: true, sha256: 'a'.repeat(64), contentBase64: 'synthetic' });
     mockedCompressReceiptImage.mockResolvedValue(compressedReceiptBlob);
     mockedPrepareReceiptImageForOcr.mockResolvedValue(ocrReceiptBlob);
     mockedRecognizeReceiptText.mockResolvedValue(sampleOcrResult);
@@ -351,4 +354,41 @@ describe('StepByStepExpenseForm draft controls', () => {
     expect(names(recent)).toEqual(['Zebra']);
     expect(names(other)).toEqual(['Banana', 'Apple']);
   });
+  const reachPayment = async () => {
+    await screen.findByRole('heading', { name: /receipt review/i });
+    fireEvent.click(screen.getAllByRole('button', { name: /apply to expense/i })[0]);
+    fireEvent.click(await screen.findByRole('button', { name: /next/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sgd.*singapore dollar/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /next/i }));
+    await screen.findByRole('heading', { name: /select a category/i });
+    fireEvent.click(screen.getByRole('button', { name: /Other/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /next/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByPlaceholderText(/grocery shopping/i);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByRole('button', { name: 'Save', exact: true });
+  };
+  it.each(['Save', 'Save & Add Another'])('keeps the OCR draft until %s has accepted both expense and attachment', async (label) => {
+    let finish!: (result: object) => void;
+    const save = vi.fn(() => new Promise<object>((resolve) => { finish = resolve; }));
+    render(<StepByStepExpenseForm onSubmit={save} onSubmitAndAddAnother={save} categories={[makeCategory('Food'), makeCategory('Other')]} initialReceiptFile={sampleReceiptFile()} />);
+    await reachPayment();
+    fireEvent.click(screen.getByRole('button', { name: label, exact: true }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0][1]).toMatchObject({ name: 'receipt.jpg', contentBase64: 'synthetic' });
+    expect(deleteReceiptDraft).not.toHaveBeenCalled();
+    await act(async () => { finish({ status: 'queued', expenseId: 'new-expense', attachmentAccepted: true }); });
+    await waitFor(() => expect(deleteReceiptDraft).toHaveBeenCalledWith('draft-1', 'test-user'));
+  });
+  it('cleans up an accepted OCR draft even when the parent closes the form immediately', async () => {
+    let finish!: (result: object) => void;
+    const save = vi.fn(() => new Promise<object>((resolve) => { finish = resolve; }));
+    const result = render(<StepByStepExpenseForm onSubmit={save} categories={[makeCategory('Food'), makeCategory('Other')]} initialReceiptFile={sampleReceiptFile()} />);
+    await reachPayment(); fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    result.unmount();
+    await act(async () => { finish({ status: 'queued', expenseId: 'new-expense', attachmentAccepted: true }); });
+    expect(deleteReceiptDraft).toHaveBeenCalledWith('draft-1', 'test-user');
+  });
+
 });

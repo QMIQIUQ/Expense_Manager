@@ -2,6 +2,7 @@
 
 // Available widget types for the dashboard
 export type DashboardWidgetType = 
+  | 'spending-anomaly'
   | 'summary-cards'      // Quick stats: today, monthly, income
   | 'expense-chart'      // Pie chart by category
   | 'spending-trend'     // Line chart - 7 day spending trend
@@ -57,6 +58,8 @@ export interface WidgetMetadata {
 // Note: defaultTitle and defaultTitleFallback are used for display
 // defaultTitle is the translation key, defaultTitleFallback is the English text
 export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { defaultTitleFallback: string }> = {
+  'spending-anomaly': { type: 'spending-anomaly', defaultTitle: 'ledgerAnomalyTitle', defaultTitleFallback: 'Spending insights',
+    description: 'ledgerAnomalyExplanation', icon: '🔎', defaultSize: 'full', minSize: 'medium', maxSize: 'full' },
   'summary-cards': {
     type: 'summary-cards',
     defaultTitle: 'summaryCards',
@@ -221,6 +224,7 @@ export const WIDGET_METADATA: Record<DashboardWidgetType, WidgetMetadata & { def
 
 // Default dashboard layout
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidget[] = [
+  { id: 'widget-spending-anomaly', type: 'spending-anomaly', enabled: true, order: 16, size: 'full' },
   { id: 'widget-1', type: 'summary-cards', enabled: true, order: 0, size: 'full' },
   { id: 'widget-2', type: 'expense-chart', enabled: true, order: 1, size: 'medium' },
   { id: 'widget-3', type: 'spending-trend', enabled: true, order: 2, size: 'medium' },

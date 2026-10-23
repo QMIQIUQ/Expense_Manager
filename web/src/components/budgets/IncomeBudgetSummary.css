@@ -1,0 +1,14 @@
+.income-budget-summary { min-width: 0; }
+.income-budget-caption { margin: 6px 0; color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+.income-budget-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+.income-budget-metrics > div { padding: 12px; border-radius: 10px; background: var(--bg-secondary); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.income-budget-metrics span { font-size: 13px; color: var(--text-secondary); }
+.income-budget-metrics strong { font-size: 19px; overflow-wrap: anywhere; color: var(--text-primary); }
+.income-budget-warning, .income-budget-warning strong { color: var(--error-text); }
+.income-budget-notice { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13px; color: var(--text-secondary); padding: 10px 0; }
+.income-budget-compact .income-budget-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.income-budget-compact .income-budget-metrics > div { padding: 8px; }
+.income-budget-compact .income-budget-metrics strong { font-size: 15px; }
+.income-budget-form { display: flex; flex-direction: column; gap: 12px; }
+.income-budget-form > input, .income-budget-form > select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; }
+.income-budget-form .income-budget-checkbox { display: flex; gap: 8px; align-items: center; font-size: 14px; }

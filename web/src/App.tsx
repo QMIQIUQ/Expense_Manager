@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { PWAProvider } from './contexts/PWAContext';
+import FeatureLoadBoundary from './components/common/FeatureLoadBoundary';
 
-const App: React.FC = () => {
-  const router = createBrowserRouter(
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const router = createBrowserRouter(
     [
       { path: '/', element: <Login /> },
       // Redirect legacy /login URL to root (login) to avoid unmatched-route warnings
@@ -16,7 +16,11 @@ const App: React.FC = () => {
         path: '/dashboard',
         element: (
           <PrivateRoute>
-            <Dashboard />
+            <FeatureLoadBoundary>
+              <Suspense fallback={<div role="status" style={{ padding: 24 }}>Loading… / 載入中…</div>}>
+                <Dashboard />
+              </Suspense>
+            </FeatureLoadBoundary>
           </PrivateRoute>
         ),
       },
@@ -29,9 +33,14 @@ const App: React.FC = () => {
     }
   );
 
+const App: React.FC = () => {
   return (
     <PWAProvider>
-      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      <FeatureLoadBoundary>
+        <Suspense fallback={<div role="status" style={{ padding: 24 }}>Loading… / 載入中…</div>}>
+          <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        </Suspense>
+      </FeatureLoadBoundary>
       <PWAInstallPrompt />
     </PWAProvider>
   );

@@ -1,0 +1,7 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "indexes": "firestore.indexes.json"
+  }
+}

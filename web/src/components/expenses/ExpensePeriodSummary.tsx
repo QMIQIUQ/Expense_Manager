@@ -1,9 +1,10 @@
-import React, { useCallback, useId, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useId, useMemo, useState } from 'react';
 import type { Category, CurrencyCode, Expense } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseDisplaySource, getExpenseBaseCurrency } from '../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../hooks/useCurrencyConversionMap';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+const ExpensePeriodChart = lazy(() => import('./ExpensePeriodChart'));
+import FeatureLoadBoundary from '../common/FeatureLoadBoundary';
 import { ChevronDownIcon, ChevronUpIcon } from '../icons';
 import type { ExpensePeriodSelection } from '../../types/expensePeriod';
 import { countInclusiveDays, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
@@ -199,15 +200,9 @@ const ExpensePeriodSummary: React.FC<ExpensePeriodSummaryProps> = ({
             <div style={styles.chartSection}>
               <h4 style={styles.sectionTitle}>{t('monthlyTrend')}</h4>
               <div style={styles.chart}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyTotals} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 10 }} width={48} />
-                    <Tooltip formatter={(value: number) => formatMoney(value, targetCurrency)} />
-                    <Bar dataKey="amount" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <FeatureLoadBoundary><Suspense fallback={<p role="status">{t('loading')}</p>}>
+                  <ExpensePeriodChart rows={monthlyTotals} currency={targetCurrency} />
+                </Suspense></FeatureLoadBoundary>
               </div>
             </div>
           )}

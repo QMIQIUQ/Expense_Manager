@@ -8,17 +8,22 @@ export const dependencyKeys = (operation: Pick<QueuedOperation, 'entity' | 'payl
   const owner = String(payload.userId ?? '');
   const add = (kind: string, id: unknown) => { if (typeof id === 'string' && id) keys.add(`${owner}:${kind}:${id}`); };
   add(operation.entity, payload.id ?? owner);
-  if (operation.entity === 'budget' || (operation.entity === 'userSettings' && ('overallBudgetLimit' in payload || 'overallBudgetLimits' in (payload.updates as object ?? {})))) keys.add(`${owner}:budget-allocation`);
+  if (operation.entity === 'budget' || (operation.entity === 'userSettings' && ('incomeLinkedBudgetChange' in payload || 'overallBudgetLimit' in payload || 'overallBudgetLimits' in (payload.updates as object ?? {})))) keys.add(`${owner}:budget-allocation`);
   const visit = (data: Record<string, unknown>) => {
     for (const field of ['bankId', 'fromBankId', 'toBankId']) add('bank', data[field]);
     for (const field of ['cardId', 'fromCardId', 'toCardId']) add('card', data[field]);
     for (const field of ['paymentMethodName', 'fromPaymentMethodName', 'toPaymentMethodName']) add('ewallet-name', data[field]);
     add('category', data.categoryId);
     add('expense', data.expenseId);
+    add('accountReconciliation', data.reconciliationId);
+    if (data.accountType === 'bank') add('bank', data.accountId);
+    if (data.accountType === 'credit_card') add('card', data.accountId);
+    if (data.accountType === 'e_wallet') { add('ewallet', data.accountId); add('ewallet-name', data.accountName); }
     add('expense', data.generatedExpenseId);
     add('scheduledPaymentRecord', data.scheduledPaymentRecordId);
     add('scheduledPayment', data.scheduledPaymentId);
     add('category-name', data.category);
+    if (Array.isArray(data.tagIds)) data.tagIds.forEach((id) => add('expenseTag', id));
     if (Array.isArray(data.relatedTransferIds)) data.relatedTransferIds.forEach((id) => add('transfer', id));
   };
   visit(payload);
@@ -38,6 +43,12 @@ export const dependencyKeys = (operation: Pick<QueuedOperation, 'entity' | 'payl
 };
 
 export const operationsOverlap = (first: Pick<QueuedOperation, 'entity' | 'payload'> & { dependencies?: string[] }, second: Pick<QueuedOperation, 'entity' | 'payload'> & { dependencies?: string[] }): boolean => {
+  const firstOwner = (first.payload as { userId?: string } | null)?.userId;
+  const secondOwner = (second.payload as { userId?: string } | null)?.userId;
+  const reconciliation = ['accountReconciliation', 'reconciliationMark'];
+  const financial = ['expense', 'income', 'repayment', 'transfer', 'scheduledPaymentRecord'];
+  if (firstOwner && firstOwner === secondOwner &&
+    (reconciliation.includes(first.entity) && financial.includes(second.entity) || reconciliation.includes(second.entity) && financial.includes(first.entity))) return true;
   const left = dependencyKeys(first);
   return [...dependencyKeys(second)].some((key) => left.has(key));
 };

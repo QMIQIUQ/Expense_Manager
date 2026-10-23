@@ -6,6 +6,7 @@ import EWalletManager from '../ewallet/EWalletManager';
 import BankManager from '../banks/BankManager';
 import TransferList from '../transfer/TransferList';
 import SubTabs from '../common/SubTabs';
+const AccountReconciliationManager = React.lazy(() => import('../reconciliation/AccountReconciliationManager'));
 
 interface PaymentMethodsTabProps {
   cards: Card[];
@@ -28,7 +29,7 @@ interface PaymentMethodsTabProps {
   onDeleteTransfer: (id: string) => Promise<void>;
 }
 
-type PaymentMethodView = 'cards' | 'ewallets' | 'banks' | 'transfers';
+type PaymentMethodView = 'cards' | 'ewallets' | 'banks' | 'transfers' | 'reconciliation';
 
 const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   cards,
@@ -61,6 +62,7 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
     { id: 'ewallets', label: t('eWallets'), icon: '📱' },
     { id: 'banks', label: t('banks'), icon: '🏦' },
     { id: 'transfers', label: t('transfers'), icon: '↔️' },
+    { id: 'reconciliation', label: t('ledgerReconciliation'), icon: '✓' },
   ], [t]);
 
   const styles = {
@@ -86,6 +88,7 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
 
       {/* Content based on active view */}
       <div style={styles.content}>
+        {activeView === 'reconciliation' && <React.Suspense fallback={<div>{t('loading')}</div>}><AccountReconciliationManager banks={banks} cards={cards} ewallets={ewallets} /></React.Suspense>}
         {activeView === 'cards' && (
           <CardManager
             cards={cards}

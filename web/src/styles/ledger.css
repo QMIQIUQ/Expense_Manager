@@ -1,0 +1,15 @@
+.ledger-panel { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin: 10px 0; background: var(--card-bg, var(--bg-primary)); color: var(--text-primary); min-width: 0; }
+.ledger-panel summary { cursor: pointer; font-weight: 600; padding: 5px 0; }
+.ledger-row, .ledger-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.ledger-row > input:not([type=color]), .ledger-row > select { min-width: 130px; flex: 1; }
+.ledger-panel input, .ledger-panel select, .ledger-panel button { color: var(--text-primary); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; max-width: 100%; }
+.ledger-panel input[type=checkbox] { min-width: auto; }
+.ledger-panel button { cursor: pointer; }
+.ledger-panel button:disabled { opacity: .55; cursor: default; }
+.ledger-panel label { display: inline-flex; gap: 6px; align-items: center; }
+.ledger-table-wrap { overflow-x: auto; }
+.ledger-panel table { width: 100%; border-collapse: collapse; }
+.ledger-panel th, .ledger-panel td { text-align: start; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+.ledger-panel [role=alert] { color: var(--error-text); overflow-wrap: anywhere; }
+.ledger-panel img { max-width: 100%; max-height: 400px; object-fit: contain; }
+@media (max-width: 600px) { .ledger-panel { padding: 10px; } .ledger-row { align-items: stretch; } .ledger-row > button { min-height: 42px; } }

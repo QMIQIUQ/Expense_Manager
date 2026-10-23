@@ -121,7 +121,7 @@ See [the friend-spending guide](../docs/FRIEND_SPENDING.md) and [local Emulator 
    cp .env.example .env
    ```
 
-Friend spending is enabled in the live Firebase build and disabled on the shared-backend preview channel. The dashboard uses Firestore and does not require Cloud Functions or a Blaze upgrade. For safe end-to-end testing, use the [Firebase Emulator instructions](FIREBASE_EMULATORS.md).
+Friend spending is enabled in the live Firebase and GitHub Pages builds, which share the same Firebase project. It is disabled on the shared-backend preview channel. The dashboard uses Firestore and does not require Cloud Functions or a Blaze upgrade. For safe end-to-end testing, use the [Firebase Emulator instructions](FIREBASE_EMULATORS.md).
 
 ### Development
 

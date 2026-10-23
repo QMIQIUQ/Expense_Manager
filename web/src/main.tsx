@@ -1,4 +1,5 @@
 import React from 'react';
+import './styles/ledger.css';
 import { offlineQueue } from './utils/offlineQueue';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
@@ -9,6 +10,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { UserSettingsProvider } from './contexts/UserSettingsContext';
+import LocalDataBoundary from './components/LocalDataBoundary';
 import { registerSW } from 'virtual:pwa-register';
 
 type PWADebugAPI = {
@@ -85,22 +87,23 @@ setupPWADebug();
 // Centralize all top-level providers here to guarantee `useLanguage` and others
 // are available to every route/component, avoiding hook usage outside provider trees.
 const root = ReactDOM.createRoot(document.getElementById('root')!);
-const renderApplication = () => root.render(
+const localReady = offlineQueue.initialize();
+// The boundary reports failures when an authenticated financial view is requested.
+void localReady.catch(() => undefined);
+root.render(
   <React.StrictMode>
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <UserSettingsProvider>
-              <App />
-            </UserSettingsProvider>
-          </NotificationProvider>
+          <LocalDataBoundary ready={localReady}>
+            <NotificationProvider>
+              <UserSettingsProvider>
+                <App />
+              </UserSettingsProvider>
+            </NotificationProvider>
+          </LocalDataBoundary>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
-
-void offlineQueue.initialize().then(renderApplication).catch((error: unknown) => {
-  root.render(<main role="alert" style={{ padding: 24 }}><h1>Local storage needs attention / 本機儲存需要處理</h1><p>{error instanceof Error ? error.message : String(error)}</p><p>Pending changes are retained. Close older tabs, allow site storage, then retry. / 待同步資料已保留，請關閉舊分頁、允許網站儲存後重試。</p><button onClick={() => window.location.reload()}>Retry / 重試</button></main>);
-});

@@ -6,6 +6,7 @@ import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBas
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
 import { getRepaymentBaseAmount } from '../../../utils/currencyUtils';
 import { WidgetProps } from './types';
+import { splitReceivableRatios } from '../../../utils/expenseSplitCalculator';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   expenses,
@@ -97,17 +98,20 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
       {trackedExpenses.slice(0, maxItems).map((expense) => {
         const repaid = repaymentTotals[expense.id!] || 0;
         const displaySource = getExpenseDisplaySource(expense, displayCurrency);
-        const totalAmount = displayCurrency
+        const fullAmount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
             : expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(expense);
-        const repaidDisplay = displayCurrency
+        const originalRepaidDisplay = displayCurrency
           ? repayments
               .filter((repayment) => repayment.expenseId === expense.id)
               .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN), 0)
           : repaid;
-        const remaining = totalAmount - repaidDisplay;
+        const split = splitReceivableRatios(expense, repayments);
+        const totalAmount = split ? fullAmount * split.expected : fullAmount;
+        const remaining = split ? fullAmount * split.outstanding : totalAmount - originalRepaidDisplay;
+        const repaidDisplay = totalAmount - remaining;
         const percentage = totalAmount > 0 ? (repaidDisplay / totalAmount) * 100 : 0;
 
         return (

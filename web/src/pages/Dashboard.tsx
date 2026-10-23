@@ -1,3 +1,4 @@
+import { parseISO } from 'date-fns';
 import { dataEqual } from '../utils/dataEquality';
 import { publishCurrentGeneration } from '../services/readGeneration';
 import { financialScopeCovered, financialScopeKey, markFinancialScopeCovered, invalidateFinancialReads, readHistoryRange, readScopedExpenses, readScopedIncomes, readScopedRepayments, readScopedTransfers, readRepaymentsForExpenses, readTransfersForExpenses, type FinancialScope } from '../services/historyService';
@@ -13,6 +14,9 @@ import { useOptimisticCRUD } from '../hooks/useOptimisticCRUD';
 import { Expense, Category, Budget, BudgetPeriod, OverallBudgetLimits, Income, Card, EWallet, FeatureSettings, FeatureTab, Repayment, Bank, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary, DEFAULT_FEATURES, DEFAULT_CATEGORIES } from '../types';
 import { QuickExpensePreset } from '../types/quickExpense';
 import type { ExpensePeriodSelection } from '../types/expensePeriod';
+import type { PreparedReceiptContent } from '../types/receiptAttachment';
+import { createReceiptAttachmentMutation } from '../services/receiptAttachmentService';
+import { acceptLocalMutationBatch } from '../services/acceptLocalMutation';
 import { expenseService } from '../services/expenseService';
 import { categoryService } from '../services/categoryService';
 import { sortCategories } from '../utils/categoryOrder';
@@ -30,6 +34,7 @@ import { quickExpenseService } from '../services/quickExpenseService';
 import { scheduledPaymentService } from '../services/scheduledPaymentService';
 import { resolveAmountCurrencyFields, resolveExpenseCurrencyFields } from '../services/currencyRateService';
 import StepByStepExpenseForm from '../components/expenses/StepByStepExpenseForm';
+import { useExpenseDuplicateGuard } from '../hooks/useExpenseDuplicateGuard';
 import ExpensesTab from './tabs/ExpensesTab';
 import CustomizableDashboard from '../components/dashboard/CustomizableDashboard';
 import PopupModal from '../components/common/PopupModal';
@@ -49,8 +54,10 @@ const AdminTab = lazy(() => import('./tabs/AdminTab'));
 const UserProfile = lazy(() => import('./UserProfile'));
 const FeatureManager = lazy(() => import('../components/settings/FeatureManager'));
 const PaymentMethodsTab = lazy(() => import('../components/payment/PaymentMethodsTab'));
-import { downloadExpenseTemplate, exportToExcel } from '../utils/importExportUtils';
-import ImportExportModal from '../components/importexport/ImportExportModal';
+const downloadExpenseTemplate = async () => (await import('../utils/importExportUtils')).downloadExpenseTemplate();
+const exportToExcel: typeof import('../utils/importExportUtils').exportToExcel = async (...args) =>
+  (await import('../utils/importExportUtils')).exportToExcel(...args);
+const ImportExportModal = lazy(() => import('../components/importexport/ImportExportModal'));
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import NotificationBell from '../components/NotificationBell';
 import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
@@ -67,6 +74,11 @@ import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
 import { withBudgetMutationLock } from '../utils/budgetMutationLock';
+import { getAllocatedBudgetMinorUnits } from '../utils/budgetAllocation';
+import { allocationLimitsForSettings, calculateIncomeFunding, incomeAllocationImpact, incomeLinkEnabled } from '../utils/incomeLinkedBudget';
+import type { UserSettings } from '../types';
+import { getBillingCyclePeriod } from '../utils/budgetRollover';
+import { useIncomeBudget } from '../hooks/useIncomeBudget';
 import { clearExpenseCreateFailure, hasExpenseBeenDeleted, hasExpenseCreateFailed, markExpenseCreateFailed, markExpenseDeleted, withExpenseMutationLock } from '../utils/expenseMutationLock';
 
 //#region Helper Functions
@@ -208,6 +220,7 @@ const rollbackRejectedBudgetOperation = (budgets: Budget[], rejection: BudgetOff
 const Dashboard: React.FC = () => {
   //#region State and Hooks
   const { currentUser, logout } = useAuth();
+  const duplicateGuard = useExpenseDuplicateGuard(currentUser?.uid);
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const { t, language, setLanguage } = useLanguage();
@@ -243,6 +256,21 @@ const Dashboard: React.FC = () => {
   const [banks, setBanks] = useState<Bank[]>(() => initialRows<Bank>('banks'));
   const [featureSettings, setFeatureSettings] = useState<FeatureSettings | null>(null);
   const [billingCycleDay, setBillingCycleDay] = useState<number>(1);
+  const incomeBudgetState = useIncomeBudget(budgets, incomeLinkEnabled(settings?.incomeLinkedBudget), billingCycleDay);
+  const [incomeAllocationMessage, setIncomeAllocationMessage] = useState<string | null>(null);
+  const incomeAllocationResolver = useRef<((accepted: boolean) => void) | null>(null);
+  const incomeAllocationOwner = useRef(currentUser?.uid);
+  incomeAllocationOwner.current = currentUser?.uid;
+  const settleIncomeAllocation = (accepted: boolean) => {
+    const resolve = incomeAllocationResolver.current;
+    incomeAllocationResolver.current = null;
+    setIncomeAllocationMessage(null);
+    resolve?.(accepted);
+  };
+  useEffect(() => () => {
+    incomeAllocationResolver.current?.(false);
+    incomeAllocationResolver.current = null;
+  }, [currentUser?.uid]);
   const [quickExpensePresets, setQuickExpensePresets] = useState<QuickExpensePreset[]>([]);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -252,6 +280,8 @@ const Dashboard: React.FC = () => {
   const [isDashboardCustomizing, setIsDashboardCustomizing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [hasOpenedImportModal, setHasOpenedImportModal] = useState(false);
+  useEffect(() => { if (showImportModal) setHasOpenedImportModal(true); }, [showImportModal]);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   // Controlled period state is shared with dashboard deep-links and the Expenses tab.
@@ -351,6 +381,7 @@ const Dashboard: React.FC = () => {
   };
 
   const closeExpenseEntry = () => {
+    duplicateGuard.cancel();
     setStartReceiptEntry(false);
     setShowAddExpenseForm(false);
     setShowAddSheet(false);
@@ -407,12 +438,12 @@ const Dashboard: React.FC = () => {
     const refresh = async (entities: Set<CacheableEntity>) => {
       const scope = financialScopeRef.current;
       const scopeId = financialScopeKey(scope);
-      const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: (data: T) => void) => {
+      const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: React.Dispatch<React.SetStateAction<T>>) => {
         dataService.markStale(entity, currentUserId);
         const data = await dataService.getData(entity, currentUserId, true, fetch, () => {
           if (['expenses', 'incomes', 'repayments', 'transfers'].includes(entity)) markFinancialScopeCovered(currentUserId, entity as import('../services/historyService').HistoryCollection, scope);
         }, ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity) ? scopeId : 'collection');
-        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set(data);
+        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set((previous) => dataEqual(previous, data) ? previous : data);
       };
       const targets: Partial<Record<CacheableEntity, () => Promise<void>>> = {
         expenses: () => load('expenses', () => readScopedExpenses(currentUserId, scope), setExpenses),
@@ -558,43 +589,39 @@ const Dashboard: React.FC = () => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('expenses', currentUser.uid, reconciled);
-        setExpenses(reconciled);
+        setExpenses((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
       const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingBudgetOperations(loadedBudgets, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('budgets', currentUser.uid, reconciled);
-        setBudgets(reconciled);
+        setBudgets((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
       const setCategoriesWithPendingOperations = (loadedCategories: Category[]) => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
         const reconciled = applyPendingCategoryOperations(loadedCategories, offlineQueue.getAll(), currentUser.uid);
         sessionCache.set('categories', currentUser.uid, reconciled);
-        setCategories(reconciled);
+        setCategories((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
       };
 
       // Phase 1: Load cached data first (instant display)
-      const [expensesData, incomesData, categoriesData, budgetsData, repaymentsData, transfersData, scheduledPaymentsData, scheduledPaymentRecordsData] = await Promise.all([
-        dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId),
-        dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId),
-        dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations),
-        dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations),
-        dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => readScopedRepayments(currentUser.uid, scope), safeUpdate(setRepayments), () => markFinancialScopeCovered(currentUser.uid, 'repayments', scope), scopeId),
-        dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => readScopedTransfers(currentUser.uid, scope), safeUpdate(setTransfers), () => markFinancialScopeCovered(currentUser.uid, 'transfers', scope), scopeId),
-        dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), safeUpdate(setScheduledPayments)),
-        dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), safeUpdate(setScheduledPaymentRecords)),
-      ]);
-
-      if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
-      // Set initial data (from cache or fresh)
-      setExpensesWithPendingOperations(currentData('expenses', expensesData));
-      setIncomes(currentData('incomes', incomesData));
-      setCategoriesWithPendingOperations(currentData('categories', categoriesData));
-      setBudgetsWithPendingOperations(currentData('budgets', budgetsData));
-      setRepayments(currentData('repayments', repaymentsData));
-      setTransfers(currentData('transfers', transfersData));
-      setScheduledPayments(currentData('scheduledPayments', scheduledPaymentsData));
-      setScheduledPaymentRecords(currentData('scheduledPaymentRecords', scheduledPaymentRecordsData));
+      const initial = <T extends unknown[]>(entity: CacheableEntity, read: Promise<T>, publish: (data: T) => void) =>
+        read.then((data) => safeUpdate(publish)(currentData(entity, data)));
+      // Publish each collection as it settles. A missing/slow collection cannot gate the others.
+      void Promise.allSettled([
+        initial('expenses', dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId), setExpensesWithPendingOperations),
+        initial('incomes', dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId), setIncomes),
+        initial('categories', dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations), setCategoriesWithPendingOperations),
+        initial('budgets', dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations), setBudgetsWithPendingOperations),
+        initial('repayments', dataService.getDataWithRevalidate<Repayment[]>('repayments', currentUser.uid, () => readScopedRepayments(currentUser.uid, scope), safeUpdate(setRepayments), () => markFinancialScopeCovered(currentUser.uid, 'repayments', scope), scopeId), setRepayments),
+        initial('transfers', dataService.getDataWithRevalidate<Transfer[]>('transfers', currentUser.uid, () => readScopedTransfers(currentUser.uid, scope), safeUpdate(setTransfers), () => markFinancialScopeCovered(currentUser.uid, 'transfers', scope), scopeId), setTransfers),
+        initial('scheduledPayments', dataService.getDataWithRevalidate<ScheduledPayment[]>('scheduledPayments', currentUser.uid, () => scheduledPaymentService.getAll(currentUser.uid), safeUpdate(setScheduledPayments)), setScheduledPayments),
+        initial('scheduledPaymentRecords', dataService.getDataWithRevalidate<ScheduledPaymentRecord[]>('scheduledPaymentRecords', currentUser.uid, () => scheduledPaymentService.getAllPaymentRecords(currentUser.uid), safeUpdate(setScheduledPaymentRecords)), setScheduledPaymentRecords),
+      ]).then((results) => {
+        if (results.some((result) => result.status === 'rejected') && liveUserIdRef.current === currentUser.uid) {
+          showNotification('error', t('errorLoadingData'));
+        }
+      });
 
       // Initial UI now rendered; no blocking loader needed
 
@@ -1060,7 +1087,7 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Expenses
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<{ status: 'saved' | 'queued' | 'failed'; expenseId?: string }> => {
+  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, receipt?: PreparedReceiptContent): Promise<{ status: 'saved' | 'queued' | 'failed'; expenseId?: string; attachmentAccepted?: boolean }> => {
     if (!currentUser) return { status: 'failed' };
 
     const expenseId = expenseService.createId();
@@ -1069,6 +1096,27 @@ const Dashboard: React.FC = () => {
       id: expenseId,
       userId: currentUser.uid,
     };
+
+    if (receipt) {
+      const userId = currentUser.uid;
+      try {
+        return await withExpenseMutationLock(userId, expenseId, async () => {
+          const attachment = await createReceiptAttachmentMutation(userId, expenseId, receipt);
+          if (liveUserIdRef.current !== userId) return { status: 'failed' as const };
+          await acceptLocalMutationBatch([{ entity: 'expense', type: 'create', payload: expensePayload }, attachment]);
+          clearExpenseCreateFailure(userId, expenseId);
+          if (liveUserIdRef.current === userId) {
+            setExpenses((previous) => applyPendingOperations('expenses', userId, previous));
+            showNotification('info', t('ledgerSavedLocally'));
+          }
+          return { status: 'queued' as const, expenseId, attachmentAccepted: true };
+        });
+      } catch (error) {
+        markExpenseCreateFailed(userId, expenseId);
+        if (liveUserIdRef.current === userId) showNotification('error', error instanceof Error ? error.message : t('saveFailed'));
+        return { status: 'failed' };
+      }
+    }
 
     // Keep the stable document ID in the optimistic list and offline queue.
     const optimisticExpense: Expense = {
@@ -1354,14 +1402,15 @@ const Dashboard: React.FC = () => {
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (!currentUser || ids.length === 0) return;
-
-    const originals = expenses.filter((e) => ids.includes(e.id!));
-    const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && ids.includes(transfer.expenseId));
+    const selectedIds = new Set(ids);
+    const originals = expenses.filter((e) => selectedIds.has(e.id!));
+    const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && selectedIds.has(transfer.expenseId));
+    const linkedTransferIds = new Set(linkedTransfers.map((transfer) => transfer.id));
 
     // Optimistic update: remove selected expenses
-    setExpenses((prev) => prev.filter((e) => !ids.includes(e.id!)));
-    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !ids.includes(expense.id!)));
-    setTransfers((prev) => prev.filter((transfer) => !linkedTransfers.some((linked) => linked.id === transfer.id)));
+    setExpenses((prev) => prev.filter((e) => !selectedIds.has(e.id!)));
+    dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !selectedIds.has(expense.id!)));
+    setTransfers((prev) => prev.filter((transfer) => !linkedTransferIds.has(transfer.id)));
 
     // 設置刪除進度狀態
     const deleteId = `delete-${Date.now()}`;
@@ -1660,6 +1709,12 @@ const Dashboard: React.FC = () => {
   const loadBudgetsForAllocationCheck = async (): Promise<{ budgets: Budget[]; limits: OverallBudgetLimits | undefined; isOffline: boolean } | null> => {
     if (!currentUser) return null;
 
+    // The durable outbox and transaction enforce allocation order. Linked funding is
+    // a preview, never a saved manual cap, so it needs no foreground server roundtrip.
+    if (incomeLinkEnabled(settings?.incomeLinkedBudget)) {
+      return { budgets, limits: allocationLimitsForSettings(settings), isOffline: false };
+    }
+
     try {
       const [latestSettings, latestBudgets] = await Promise.all([
         userSettingsService.get(currentUser.uid, true, true),
@@ -1667,17 +1722,45 @@ const Dashboard: React.FC = () => {
       ]);
       return {
         budgets: latestBudgets,
-        limits: latestSettings?.overallBudgetLimits,
+        limits: allocationLimitsForSettings(applyPendingOperations('userSettings', currentUser.uid, latestSettings)),
         isOffline: false,
       };
     } catch (error) {
       const networkFailure = error instanceof Error && /network|offline|unavailable|failed to fetch|deadline/i.test(error.message);
       if (!navigator.onLine || !networkStatus.isOnline || networkFailure) {
-        return { budgets, limits: settings?.overallBudgetLimits, isOffline: true };
+        return { budgets, limits: allocationLimitsForSettings(settings), isOffline: true };
       }
       showNotification('error', t('budgetAllocationCannotBeCompared'));
       return null;
     }
+  };
+
+  const confirmIncomeAllocation = async (proposed: BudgetAllocationInput, previousId?: string): Promise<boolean> => {
+    if (!currentUser) return false;
+    const owner = currentUser.uid;
+    const localSettings = applyPendingOperations('userSettings', owner, sessionCache.get<UserSettings>('userSettings', owner) ?? settings);
+    if (!incomeLinkEnabled(localSettings?.incomeLinkedBudget)) return true;
+    const localBudgets = applyPendingOperations('budgets', owner, sessionCache.get<Budget[]>('budgets', owner) ?? budgets);
+    const before = getAllocatedBudgetMinorUnits(localBudgets, 'monthly');
+    const after = getAllocatedBudgetMinorUnits([
+      ...localBudgets.filter((budget) => budget.id !== previousId), proposed as Budget,
+    ], 'monthly');
+    if (before === null || after === null) {
+      showNotification('error', t('budgetAllocationCannotBeCompared'));
+      return false;
+    }
+    const funding = incomeBudgetState.status === 'ready' && localSettings?.incomeLinkedBudget
+      ? calculateIncomeFunding(owner, applyPendingOperations('incomes', owner, incomeBudgetState.incomes), localBudgets, localSettings.incomeLinkedBudget, incomeBudgetState.range) : null;
+    const impact = incomeAllocationImpact(before, after, funding);
+    if (impact.kind === 'none') return true;
+    const message = impact.kind === 'shortfall'
+      ? `${t('incomeBudgetAllocationConfirm')} ${formatMoney(impact.shortfallMinor / 100, 'MYR')}`
+      : t('incomeBudgetUnknownFundingConfirm');
+    const accepted = await new Promise<boolean>((resolve) => {
+      incomeAllocationResolver.current = resolve;
+      setIncomeAllocationMessage(message);
+    });
+    return accepted && incomeAllocationOwner.current === owner;
   };
 
   const showAllocationValidationError = (validation: ReturnType<typeof validateBudgetAllocationChange>) => {
@@ -1736,6 +1819,7 @@ const Dashboard: React.FC = () => {
       exchangeRateFetchedAt: budgetData.exchangeRateFetchedAt || new Date(),
       exchangeRateProvider: budgetData.exchangeRateProvider || 'local',
     };
+    if (!await confirmIncomeAllocation(normalizedBudgetData)) return false;
 
     const budgetId = budgetService.createId();
     const createPayload = { ...normalizedBudgetData, userId: currentUser.uid, id: budgetId };
@@ -1817,6 +1901,7 @@ const Dashboard: React.FC = () => {
   const performUpdateBudget = async (id: string, updates: Partial<Budget>) => {
     const originalBudget = budgets.find((b) => b.id === id);
     if (!originalBudget) return false;
+    if (!await confirmIncomeAllocation({ ...originalBudget, ...updates }, id)) return false;
     const hasPendingOperation = currentUser
       ? offlineQueue.hasPendingBudgetOperations(id, originalBudget.userId)
       : false;
@@ -3042,18 +3127,7 @@ const Dashboard: React.FC = () => {
   // Calculate spending by category (with repayment deduction and billing cycle filtering)
   const getSpentByCategory = () => {
     // Calculate billing cycle period
-    const now = new Date();
-    const currentDay = now.getDate();
-    let cycleStart: Date;
-    let cycleEnd: Date;
-
-    if (currentDay >= billingCycleDay) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth() + 1, billingCycleDay);
-    } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingCycleDay);
-      cycleEnd = new Date(now.getFullYear(), now.getMonth(), billingCycleDay);
-    }
+    const { start: cycleStart, end: cycleEnd } = getBillingCyclePeriod(billingCycleDay);
 
     // Build repayment lookup map
     const repaymentsByExpense: { [expenseId: string]: number } = {};
@@ -3070,7 +3144,7 @@ const Dashboard: React.FC = () => {
     const spent: { [key: string]: number } = {};
     expenses.forEach((exp) => {
       // Only count expenses within current billing cycle
-      const expDate = new Date(exp.date);
+      const expDate = parseISO(exp.date);
       if (expDate >= cycleStart && expDate < cycleEnd) {
         if (!spent[exp.category]) {
           spent[exp.category] = 0;
@@ -3117,6 +3191,11 @@ const Dashboard: React.FC = () => {
   //#region Render
   return (
     <>
+      <PopupModal isOpen={incomeAllocationMessage !== null} title={t('incomeLinkedBudgetMode')}
+        onClose={() => settleIncomeAllocation(false)} primaryButtonLabel={t('confirm')}
+        onPrimaryAction={() => settleIncomeAllocation(true)}>
+        <p>{incomeAllocationMessage}</p>
+      </PopupModal>
       <div className="dashboard-page max-w-7xl mx-auto min-h-screen px-2 sm:px-4">
       <div className="dashboard-header-modern">
         <div className="header-brand">
@@ -3717,6 +3796,7 @@ const Dashboard: React.FC = () => {
                 onDelete={handleDeleteBudget}
                 onCreateCategory={handleNavigateToCreateCategory}
                 overallBudgetLimits={settings?.overallBudgetLimits}
+                spendingComplete={financialScopeComplete}
                 onSaveOverallBudgetLimit={handleSaveOverallBudgetLimit}
                 spentByCategory={getSpentByCategory()}
                 billingCycleDay={billingCycleDay}
@@ -3833,13 +3913,14 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              const result = handleAddExpense(data);
-              closeExpenseEntry();
+            onReviewDuplicates={duplicateGuard.confirm}
+            onSubmit={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
+              if (result.status !== 'failed' && liveUserIdRef.current === currentUser?.uid) closeExpenseEntry();
               return result;
             }}
-            onSubmitAndAddAnother={async (data) => {
-              const result = await handleAddExpense(data);
+            onSubmitAndAddAnother={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
               // Don't close modal - form will reset itself
               return result;
             }}
@@ -3872,7 +3953,8 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Import/Export Modal */}
-      {currentUser && (
+      {currentUser && (showImportModal || hasOpenedImportModal) && (
+        <Suspense fallback={<p role="status">{t('loading')}</p>}>
         <ImportExportModal
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
@@ -3883,6 +3965,7 @@ const Dashboard: React.FC = () => {
           onUpdateProgress={handleUpdateImportProgress}
           onImportError={handleImportError}
         />
+        </Suspense>
       )}
     </div>
       {/* Bottom Sheet for adding expense */}
@@ -3898,13 +3981,14 @@ const Dashboard: React.FC = () => {
         >
           <StepByStepExpenseForm
             key={receiptEntryKey}
-            onSubmit={(data) => {
-              const result = handleAddExpense(data);
-              closeExpenseEntry();
+            onReviewDuplicates={duplicateGuard.confirm}
+            onSubmit={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
+              if (result.status !== 'failed' && liveUserIdRef.current === currentUser?.uid) closeExpenseEntry();
               return result;
             }}
-            onSubmitAndAddAnother={async (data) => {
-              const result = await handleAddExpense(data);
+            onSubmitAndAddAnother={async (data, receipt) => {
+              const result = await handleAddExpense(data, receipt);
               // Don't close modal - form will reset itself
               return result;
             }}
@@ -3935,6 +4019,7 @@ const Dashboard: React.FC = () => {
           />
         </PopupModal>
       )}
+      {duplicateGuard.dialog}
     </>
   );
 };

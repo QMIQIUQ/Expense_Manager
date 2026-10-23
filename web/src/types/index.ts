@@ -1,4 +1,26 @@
+export interface BookedAccountMovement {
+  role: 'expense' | 'income' | 'from' | 'to'; accountType: 'bank' | 'e_wallet'; accountId: string;
+  currency: string; amountMinor: number; source: string;
+}
 // Type definitions for Expense Manager
+import type { ExpenseViewPreferences } from './expensePeriod';
+
+export interface ExpenseTag {
+  id: string;
+  userId: string;
+  name: string;
+  normalizedName: string;
+  color: string;
+  archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ExpenseSplitParticipant {
+  id: string;
+  name: string;
+  owedMinor: number;
+}
 
 // Time format type
 export type TimeFormat = '12h' | '24h';
@@ -37,8 +59,17 @@ export interface CurrencyRateSnapshot {
 export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly';
 export type OverallBudgetLimits = Partial<Record<BudgetPeriod, number>>;
 
+export interface IncomeLinkedBudgetSettings {
+  version: 1;
+  enabled: boolean;
+  percentage: number;
+  includeReimbursements: boolean;
+  includeRepayments: boolean;
+}
+
 // User settings
 export interface UserSettings {
+  expenseViewPreferences?: ExpenseViewPreferences;
   id?: string;
   userId: string;
   billingCycleDay: number; // Day of month (1-31) when billing cycle resets
@@ -48,6 +79,7 @@ export interface UserSettings {
   displayCurrency?: CurrencyCode; // Preferred currency for converted summaries
   dateShortcuts?: DateShortcut[]; // Custom date shortcuts for long-press menu
   overallBudgetLimits?: OverallBudgetLimits; // Per-period limits, stored in MYR
+  incomeLinkedBudget?: IncomeLinkedBudgetSettings;
   budgetAllocationRevision?: number; // Internal revision used to serialize budget mutations
   defaultCategoryMigrationVersion?: number; // Tracks one-time default category additions
   createdAt: Date;
@@ -64,6 +96,10 @@ export interface AmountItem {
 }
 
 export interface Expense {
+  bookedAccountMovements?: BookedAccountMovement[];
+  tagIds?: string[];
+  splitParticipants?: ExpenseSplitParticipant[];
+  splitPaidMinor?: Record<string, number>;
   scheduledPaymentRecordId?: string;
   id?: string;
   userId: string;
@@ -213,6 +249,11 @@ export interface RecurringExpense {
 
 // Repayment type - tracks repayments against expenses
 export interface Repayment {
+  bookedAccountMovements?: BookedAccountMovement[];
+  splitParticipantId?: string;
+  settledExpenseMinor?: number;
+  settledExpenseCurrency?: CurrencyCode;
+  balanceApplied?: boolean;
   id?: string;
   userId: string;
   expenseId: string; // FK to expenses.id - which expense this repays
@@ -243,6 +284,7 @@ export type IncomeCategory = 'default' | 'ewallet_reload' | 'other';
 export type IncomeType = 'salary' | 'reimbursement' | 'repayment' | 'other';
 
 export interface Income {
+  bookedAccountMovements?: BookedAccountMovement[];
   id?: string;
   userId: string;
   title?: string; // Optional title/source description
@@ -271,6 +313,7 @@ export interface Income {
 
 // Transfer between payment methods
 export interface Transfer {
+  bookedAccountMovements?: BookedAccountMovement[];
   id?: string;
   expenseId?: string; // Explicit link when a transfer is created alongside an expense
   userId: string;

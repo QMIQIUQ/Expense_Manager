@@ -11,6 +11,32 @@ export interface ExpenseAggregate {
   count: number; total: number; categories: Record<string, number>; months: Record<string, number>;
   startDate?: string; endDate?: string;
 }
+/** Reuse a verified complete period; never pass a rendered page to this function. */
+export const summarizeCompleteExpensePeriod = async (userId: string, rows: Expense[], currency: CurrencyCode,
+  range: HistoryRange | undefined, select: (rows: Expense[]) => Expense[], current: () => boolean): Promise<ExpenseAggregate> => {
+  const result: ExpenseAggregate = { count: 0, total: 0, categories: Object.create(null), months: Object.create(null) };
+  const projected = applyPendingOperations('expenses', userId, rows);
+  const selected = select(projected).filter((row) => row.userId === userId && (!range || row.date >= range.startDate && row.date <= range.endDate));
+  for (let offset = 0; offset < selected.length; offset += 100) {
+    if (!current()) throw Object.assign(new Error('Summary superseded'), { code: 'stale-read' });
+    const page = selected.slice(offset, offset + 100);
+    const values = await Promise.all(page.map((row) => {
+      const source = getExpenseDisplaySource(row, currency);
+      return convertAmountToCurrency(source.amount, source.sourceCurrency, currency, row.date);
+    }));
+    page.forEach((row, index) => {
+      const value = values[index];
+      result.count++; result.total += value;
+      result.categories[row.category] = (result.categories[row.category] ?? 0) + value;
+      const month = row.date.slice(0, 7);
+      result.months[month] = (result.months[month] ?? 0) + value;
+      if (!result.startDate || row.date < result.startDate) result.startDate = row.date;
+      if (!result.endDate || row.date > result.endDate) result.endDate = row.date;
+    });
+  }
+  if (!current()) throw Object.assign(new Error('Summary superseded'), { code: 'stale-read' });
+  return result;
+};
 /** Summary traversal retains only a page plus scalar category/month totals.
  * Conversion is per record, preserving currency minor-unit rounding and legacy valuations.
  */

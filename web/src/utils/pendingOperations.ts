@@ -1,6 +1,8 @@
 import { DEFAULT_FEATURES } from '../types';
 import { offlineQueue, type QueuedOperation } from './offlineQueue';
 import type { CacheableEntity } from './sessionCache';
+import { applyExpenseViewChange, type ExpenseViewChange } from './expenseViewPreferences';
+import type { ExpenseViewPreferences } from '../types/expensePeriod';
 
 const entities: Record<CacheableEntity, QueuedOperation['entity']> = {
   expenses: 'expense', categories: 'category', budgets: 'budget', recurring: 'recurring',
@@ -9,6 +11,10 @@ const entities: Record<CacheableEntity, QueuedOperation['entity']> = {
   quickExpensePresets: 'quickExpensePreset', featureSettings: 'featureSettings', userSettings: 'userSettings',
   friendPreferences: 'friendPreference',
   dashboardLayout: 'dashboardLayout',
+  expenseTags: 'expenseTag',
+  accountReconciliations: 'accountReconciliation',
+  reconciliationMarks: 'reconciliationMark',
+  receiptAttachments: 'receiptAttachment',
 };
 export const cacheEntityFor = (entity: QueuedOperation['entity']): CacheableEntity =>
   (Object.keys(entities) as CacheableEntity[]).find((key) => entities[key] === entity)!;
@@ -44,6 +50,7 @@ export const applyPendingOperations = <T>(entity: CacheableEntity, userId: strin
       delete fields.id;
       delete fields.previousBudget;
       delete fields.generatedExpensePayload;
+      if (entity === 'receiptAttachments') delete fields.contentBase64;
       if (typeof id !== 'string' || !id) continue;
       if (entity === 'budgets' && operation.status === 'needs-attention') {
         const previous = payload.previousBudget as Record<string, unknown> | undefined;
@@ -76,6 +83,14 @@ export const applyPendingOperations = <T>(entity: CacheableEntity, userId: strin
     if (!result) result = { ...operation.localSnapshot, id: userId, userId };
     if (entity === 'userSettings') {
       Object.assign(result, payload.updates);
+      if (payload.expenseViewChange) result.expenseViewPreferences = applyExpenseViewChange(result.expenseViewPreferences as ExpenseViewPreferences | undefined, payload.expenseViewChange as ExpenseViewChange);
+      const incomeLinkChange = payload.incomeLinkedBudgetChange as { config?: unknown; manualMonthlyLimit?: number } | undefined;
+      if (incomeLinkChange) {
+        result.incomeLinkedBudget = incomeLinkChange.config;
+        if (incomeLinkChange.manualMonthlyLimit !== undefined) {
+          result.overallBudgetLimits = { ...(result.overallBudgetLimits as Record<string, number> | undefined), monthly: incomeLinkChange.manualMonthlyLimit };
+        }
+      }
       const desiredLimit = payload.overallBudgetLimit as { period?: string; amount?: number } | undefined;
       const limit = operation.status === 'needs-attention' && desiredLimit
         ? (payload.previousOverallBudgetLimit as { period?: string; amount?: number } | undefined) ?? {

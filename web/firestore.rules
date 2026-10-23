@@ -121,6 +121,30 @@ service cloud.firestore {
          get(/databases/$(database)/documents/expenses/$(data.expenseId)).data.userId == data.userId);
     }
 
+    function hasValidIncomeBudget(data) {
+      return !('incomeLinkedBudget' in data) ||
+        (data.incomeLinkedBudget is map &&
+         data.incomeLinkedBudget.keys().hasOnly(['version', 'enabled', 'percentage', 'includeReimbursements', 'includeRepayments']) &&
+         data.incomeLinkedBudget.keys().hasAll(['version', 'enabled', 'percentage', 'includeReimbursements', 'includeRepayments']) &&
+         data.incomeLinkedBudget.version == 1 &&
+         data.incomeLinkedBudget.enabled is bool &&
+         data.incomeLinkedBudget.includeReimbursements is bool &&
+         data.incomeLinkedBudget.includeRepayments is bool &&
+         data.incomeLinkedBudget.percentage is number &&
+         data.incomeLinkedBudget.percentage >= 0 && data.incomeLinkedBudget.percentage <= 100 &&
+         data.incomeLinkedBudget.percentage * 100 >= int(data.incomeLinkedBudget.percentage * 100 + 0.5) - 0.00000001 &&
+         data.incomeLinkedBudget.percentage * 100 <= int(data.incomeLinkedBudget.percentage * 100 + 0.5) + 0.00000001);
+    }
+
+    function incomeBudgetEnabled(data) {
+      return data.get('incomeLinkedBudget', {}).get('enabled', false) == true;
+    }
+
+    function preservesLinkedManualLimit(before, after) {
+      return !(incomeBudgetEnabled(before) && incomeBudgetEnabled(after)) ||
+        before.get('overallBudgetLimits', {}).get('monthly', null) == after.get('overallBudgetLimits', {}).get('monthly', null);
+    }
+
     function hasValidOverallBudgetLimits(data) {
       return (!('overallBudgetLimits' in data) ||
         (data.overallBudgetLimits is map &&
@@ -165,13 +189,118 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
+    function repaymentState(id, after) {
+      let path = /databases/$(database)/documents/repayments/$(id);
+      return after ? (existsAfter(path) ? getAfter(path).data : {}) : (exists(path) ? get(path).data : {});
+    }
+    function splitCounterTransition(before, after, proof) {
+      let oldId = proof.beforeId;
+      let newId = proof.afterId;
+      let oldPaid = before.get('splitPaidMinor', {});
+      let newPaid = after.get('splitPaidMinor', {});
+      return newPaid is map && oldPaid is map &&
+        newPaid.diff(oldPaid).affectedKeys().hasOnly([oldId, newId]) &&
+        proof.beforeMinor is int && proof.beforeMinor >= 0 && proof.afterMinor is int && proof.afterMinor >= 0 &&
+        (oldId == '' ? proof.beforeMinor == 0 : oldPaid.get(oldId, 0) >= proof.beforeMinor &&
+          newPaid.get(oldId, 0) == oldPaid.get(oldId, 0) - proof.beforeMinor + (oldId == newId ? proof.afterMinor : 0)) &&
+        (newId == '' ? proof.afterMinor == 0 :
+          proof.afterIndex is int && proof.afterIndex >= 0 && proof.afterIndex < after.splitParticipants.size() &&
+          after.splitParticipants[proof.afterIndex].id == newId &&
+          newPaid.get(newId, 0) == oldPaid.get(newId, 0) + proof.afterMinor - (oldId == newId ? proof.beforeMinor : 0) &&
+          newPaid.get(newId, 0) <= after.splitParticipants[proof.afterIndex].owedMinor);
+    }
+    function splitCoupledWrite(expenseId, before, after, proof) {
+      let previous = repaymentState(proof.repaymentId, false);
+      let next = repaymentState(proof.repaymentId, true);
+      let receipt = /databases/$(database)/documents/mutationReceipts/$(request.auth.uid)/operations/$(proof.operationId);
+      return after.userId == before.userId && after.get('splitParticipants', []) == before.get('splitParticipants', []) &&
+        after.get('currency', 'MYR') == before.get('currency', 'MYR') &&
+        previous.get('splitParticipantId', '') == proof.beforeId && (proof.beforeId == '' ? 0 : previous.get('settledExpenseMinor', 0)) == proof.beforeMinor &&
+        next.get('splitParticipantId', '') == proof.afterId && (proof.afterId == '' ? 0 : next.get('settledExpenseMinor', 0)) == proof.afterMinor &&
+        (previous == {} || previous.userId == before.userId && previous.expenseId == expenseId) &&
+        (next == {} || next.userId == before.userId && next.expenseId == expenseId &&
+          (proof.afterId == '' || next.settledExpenseCurrency == after.get('currency', 'MYR') &&
+            (next.get('currency', 'MYR') != next.settledExpenseCurrency ||
+              next.settledExpenseMinor >= next.amount * (next.settledExpenseCurrency == 'JPY' ? 1 : 100) - 0.000001 &&
+              next.settledExpenseMinor <= next.amount * (next.settledExpenseCurrency == 'JPY' ? 1 : 100) + 0.000001))) &&
+        !exists(receipt) && existsAfter(receipt) && getAfter(receipt).data.userId == before.userId && getAfter(receipt).data.committedAt == request.time &&
+        splitCounterTransition(before, after, proof);
+    }
+    function validExpenseSplitUpdate(expenseId) {
+      let before = resource.data;
+      let after = request.resource.data;
+      let proof = after.get('splitSettlement', {});
+      return (after.get('splitPaidMinor', {}) == before.get('splitPaidMinor', {}) && proof == before.get('splitSettlement', {}) &&
+          (before.get('splitPaidMinor', {}).size() == 0 || after.get('splitParticipants', []) == before.get('splitParticipants', []) && after.get('currency', 'MYR') == before.get('currency', 'MYR'))) ||
+        (proof.keys().hasAll(['repaymentId', 'operationId', 'beforeId', 'beforeMinor', 'afterId', 'afterMinor', 'afterIndex']) &&
+          proof.repaymentId is string && proof.operationId is string && proof.repaymentId.size() > 0 && proof.operationId.size() > 0 &&
+          proof != before.get('splitSettlement', {}) && splitCoupledWrite(expenseId, before, after, proof));
+    }
+    function splitRepaymentCoupledWrite(repaymentId, before, after) {
+      let expenseId = before.get('expenseId', after.get('expenseId', ''));
+      let expense = /databases/$(database)/documents/expenses/$(expenseId);
+      let nextExpense = getAfter(expense).data;
+      let proof = nextExpense.get('splitSettlement', {});
+      return (existsAfter(expense) && nextExpense.userId == request.auth.uid &&
+          nextExpense.get('splitSettlement', {}) != get(expense).data.get('splitSettlement', {}) &&
+          proof.get('repaymentId', '') == repaymentId && proof.get('beforeId', '') == before.get('splitParticipantId', '') &&
+          proof.get('afterId', '') == after.get('splitParticipantId', '') &&
+          proof.get('beforeMinor', 0) == (before.get('splitParticipantId', '') == '' ? 0 : before.get('settledExpenseMinor', 0)) && proof.get('afterMinor', 0) == (after.get('splitParticipantId', '') == '' ? 0 : after.get('settledExpenseMinor', 0)));
+    }
+
+    function validSplitRepaymentWrite(repaymentId, before, after) {
+      return before.get('splitParticipantId', '') == '' && after.get('splitParticipantId', '') == '' || splitRepaymentCoupledWrite(repaymentId, before, after);
+    }
+    function validReceiptMutation(data) {
+      let receipt = /databases/$(database)/documents/mutationReceipts/$(request.auth.uid)/operations/$(data.lastMutationId);
+      return data.lastMutationId is string && data.lastMutationId.size() > 0 && !exists(receipt) && existsAfter(receipt) &&
+        getAfter(receipt).data.userId == request.auth.uid && getAfter(receipt).data.committedAt == request.time;
+    }
+    function validReceiptMetadata(data) {
+      return data.keys().hasOnly(['userId', 'expenseId', 'name', 'originalName', 'contentType', 'byteSize', 'originalByteSize', 'optimized', 'sha256', 'provider', 'archived', 'lastMutationId', 'createdAt', 'updatedAt']) &&
+        data.userId == request.auth.uid && data.expenseId is string && data.name is string && data.name.size() > 0 && data.name.size() <= 125 &&
+        data.originalName is string && data.originalName.size() <= 120 && data.provider == 'firestore' && data.archived is bool && data.optimized is bool &&
+        data.byteSize is int && data.byteSize > 0 && data.byteSize <= 614400 && data.originalByteSize is int && data.originalByteSize > 0 && data.originalByteSize <= 10485760 &&
+        data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] && data.sha256 is string && data.sha256.matches('^[a-f0-9]{64}$') &&
+        data.createdAt is timestamp && data.updatedAt == request.time && validReceiptMutation(data);
+    }
+    match /receiptAttachments/{attachmentId} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && validReceiptMetadata(request.resource.data) && !request.resource.data.archived &&
+        getAfter(/databases/$(database)/documents/expenses/$(request.resource.data.expenseId)).data.userId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.sha256 == request.resource.data.sha256 &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.expenseId == request.resource.data.expenseId &&
+        getAfter(/databases/$(database)/documents/receiptAttachmentContents/$(attachmentId)).data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && validReceiptMetadata(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['archived', 'lastMutationId', 'updatedAt']) &&
+        getAfter(/databases/$(database)/documents/expenses/$(resource.data.expenseId)).data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    match /receiptAttachmentContents/{attachmentId} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list: if false;
+      allow create: if isAuthenticated() && request.resource.data.keys().hasOnly(['userId', 'expenseId', 'contentBase64', 'sha256', 'byteSize', 'contentType']) &&
+        isOwner(request.resource.data.userId) && request.resource.data.contentBase64 is string && request.resource.data.contentBase64.size() > 0 && request.resource.data.contentBase64.size() <= 819200 &&
+        request.resource.data.byteSize is int && request.resource.data.byteSize > 0 && request.resource.data.byteSize <= 614400 &&
+        request.resource.data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.sha256 == request.resource.data.sha256 &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.byteSize == request.resource.data.byteSize &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.contentType == request.resource.data.contentType &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.expenseId == request.resource.data.expenseId &&
+        getAfter(/databases/$(database)/documents/receiptAttachments/$(attachmentId)).data.userId == request.auth.uid &&
+        !exists(/databases/$(database)/documents/receiptAttachments/$(attachmentId));
+      allow update, delete: if false;
+    }
+
     // Expenses collection
     match /expenses/{expenseId} {
       // Allow an authenticated transaction to check whether its stable create ID is unused.
       // Existing expense documents remain readable only by their owner or an admin.
       allow read: if isAuthenticated() && (resource == null || isOwner(resource.data.userId) || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-      allow update, delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && request.resource.data.get('splitPaidMinor', {}) == {} && !request.resource.data.keys().hasAny(['splitSettlement']);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId && validExpenseSplitUpdate(expenseId);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin()) && resource.data.get('splitPaidMinor', {}).size() == 0;
     }
     
     // Budgets collection
@@ -277,6 +406,143 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
     
+    function reconciliationAccountOwned(data) {
+      let collectionName = data.accountType == 'bank' ? 'banks' : data.accountType == 'e_wallet' ? 'ewallets' : 'cards';
+      let account = get(/databases/$(database)/documents/$(collectionName)/$(data.accountId)).data;
+      return account.userId == request.auth.uid && account.get('currency', 'MYR') == data.currency;
+    }
+    function validReconciliation(data) {
+      return data.accountType in ['bank', 'e_wallet', 'credit_card'] && data.accountId is string && data.accountName is string &&
+        data.currency is string && data.periodStart is string && data.periodEnd is string && data.periodStart <= data.periodEnd &&
+        data.periodStart.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && data.periodEnd.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.openingBalanceMinor is int && data.statementClosingMinor is int && data.calculatedClosingMinor is int &&
+        data.revision is int && data.revision > 0 && data.status in ['draft', 'complete'] && data.sourceFingerprint is string &&
+        (data.status == 'draft' || data.calculatedClosingMinor == data.statementClosingMinor && data.sourceFingerprint.matches('^[a-f0-9]{64}$')) && reconciliationAccountOwned(data);
+    }
+    match /accountReconciliations/{recordId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/accountReconciliations/$(recordId));
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && validReconciliation(request.resource.data) && request.resource.data.revision == 1;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId &&
+        request.resource.data.accountType == resource.data.accountType && request.resource.data.accountId == resource.data.accountId &&
+        request.resource.data.periodStart == resource.data.periodStart && request.resource.data.periodEnd == resource.data.periodEnd &&
+        request.resource.data.revision == resource.data.revision + 1 && validReconciliation(request.resource.data);
+      allow delete: if false;
+    }
+    function validReconciliationMark(data) {
+      let parent = getAfter(/databases/$(database)/documents/accountReconciliations/$(data.reconciliationId)).data;
+      return parent.userId == request.auth.uid && parent.status == 'draft' && parent.sourceFingerprint == data.sourceFingerprint &&
+        data.checked is bool && data.transactionKey is string && data.transactionKey.size() <= 200;
+    }
+    match /reconciliationMarks/{markId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/reconciliationMarks/$(markId));
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && validReconciliationMark(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId &&
+        request.resource.data.reconciliationId == resource.data.reconciliationId && request.resource.data.transactionKey == resource.data.transactionKey && validReconciliationMark(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Tags are archived instead of deleting historical references.
+    match /expenseTags/{tagId} {
+      allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/expenseTags/$(tagId));
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && validTag(request.resource.data, tagId);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId && validTag(request.resource.data, tagId);
+      allow delete: if false;
+    }
+    function validTag(data, tagId) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 40 &&
+        data.normalizedName is string && data.normalizedName.size() > 0 && data.normalizedName.size() <= 40 &&
+        !data.normalizedName.matches('.*/.*') && data.normalizedName == data.name.lower() &&
+        data.color is string && data.color.matches('^#[0-9a-fA-F]{6}$') && data.archived is bool &&
+        (data.archived || getAfter(/databases/$(database)/documents/expenseTagNames/$(data.userId + ':' + data.normalizedName)).data.tagId == tagId);
+    }
+    match /expenseTagNames/{nameId} {
+      allow get: if isAuthenticated() && (!exists(/databases/$(database)/documents/expenseTagNames/$(nameId)) || isOwner(resource.data.userId));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) &&
+        request.resource.data.tagId is string &&
+        nameId == request.auth.uid + ':' + request.resource.data.normalizedName &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.userId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.normalizedName == request.resource.data.normalizedName &&
+        getAfter(/databases/$(database)/documents/expenseTags/$(request.resource.data.tagId)).data.archived == false;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && request.resource.data == resource.data;
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId) &&
+        (getAfter(/databases/$(database)/documents/expenseTags/$(resource.data.tagId)).data.archived == true ||
+         getAfter(/databases/$(database)/documents/expenseTags/$(resource.data.tagId)).data.normalizedName != resource.data.normalizedName);
+    }
+
+    function postsToAccount(row) {
+      return row.get('balanceApplied', false) && row.get('paymentMethod', 'cash') in ['bank', 'e_wallet'];
+    }
+    function postingAccountPath(booking) {
+      return booking.accountType == 'bank' ? /databases/$(database)/documents/banks/$(booking.accountId) : /databases/$(database)/documents/ewallets/$(booking.accountId);
+    }
+    function validPostingBooking(row) {
+      return !postsToAccount(row) ? row.get('bookedAccountMovements', []) == [] :
+        row.get('bookedAccountMovements', []) is list && row.bookedAccountMovements.size() == 1 &&
+        validAccountBooking(row, row.bookedAccountMovements[0]);
+    }
+    function validAccountBooking(row, booking) {
+      let path = postingAccountPath(booking);
+      let before = get(path).data;
+      let after = getAfter(path).data;
+      let scale = booking.currency == 'JPY' ? 1 : 100;
+      return booking.role == 'income' && booking.accountType == row.paymentMethod && booking.accountId is string &&
+        booking.amountMinor is int && booking.amountMinor > 0 && booking.currency in ['MYR', 'USD', 'TWD', 'SGD', 'CNY', 'EUR', 'GBP', 'JPY'] &&
+        before.userId == request.auth.uid && after.userId == request.auth.uid && before.get('currency', 'MYR') == booking.currency && after.get('currency', 'MYR') == booking.currency &&
+        (booking.accountType == 'bank' ? row.bankId == booking.accountId : row.paymentMethodName == before.name) &&
+        (row.get('currency', 'MYR') != booking.currency || booking.amountMinor >= row.amount * scale - 0.000001 && booking.amountMinor <= row.amount * scale + 0.000001);
+    }
+    function samePostingAccount(before, after) {
+      return postsToAccount(before) && postsToAccount(after) && before.bookedAccountMovements[0].accountType == after.bookedAccountMovements[0].accountType && before.bookedAccountMovements[0].accountId == after.bookedAccountMovements[0].accountId;
+    }
+    function postingBalanceDelta(booking, deltaMinor) {
+      let path = postingAccountPath(booking);
+      let before = get(path).data;
+      let after = getAfter(path).data;
+      let scale = booking.currency == 'JPY' ? 1 : 100;
+      return after.get('balance', 0) - before.get('balance', 0) >= deltaMinor / scale - 0.000001 &&
+        after.get('balance', 0) - before.get('balance', 0) <= deltaMinor / scale + 0.000001;
+    }
+    function validPostingBalanceChanges(before, after) {
+      return validPostingBooking(before) && validPostingBooking(after) &&
+        (!postsToAccount(before) || postingBalanceDelta(before.bookedAccountMovements[0], -before.bookedAccountMovements[0].amountMinor + (samePostingAccount(before, after) ? after.bookedAccountMovements[0].amountMinor : 0))) &&
+        (!postsToAccount(after) || samePostingAccount(before, after) || postingBalanceDelta(after.bookedAccountMovements[0], after.bookedAccountMovements[0].amountMinor));
+    }
+
+    function repaymentPostingProof(repaymentId, before, after) {
+      let path = /databases/$(database)/documents/repaymentPostingProofs/$(repaymentId);
+      let proof = getAfter(path).data;
+      let receipt = /databases/$(database)/documents/mutationReceipts/$(request.auth.uid)/operations/$(proof.operationId);
+      return existsAfter(path) && proof.userId == request.auth.uid &&
+        (before == {} || before.userId == request.auth.uid) && (after == {} || after.userId == request.auth.uid) &&
+        proof.expenseId == before.get('expenseId', after.get('expenseId', '')) &&
+        proof.beforeApplied == before.get('balanceApplied', false) && proof.afterApplied == after.get('balanceApplied', false) &&
+        (!exists(path) || proof.operationId != get(path).data.operationId) &&
+        !exists(receipt) && existsAfter(receipt) && getAfter(receipt).data.userId == request.auth.uid && getAfter(receipt).data.committedAt == request.time &&
+        (before == {} || !after.get('balanceApplied', false) || before.get('balanceApplied', false)) && validPostingBalanceChanges(before, after);
+    }
+    function touchedPostingProof(repaymentId) {
+      let path = /databases/$(database)/documents/repaymentPostingProofs/$(repaymentId);
+      return existsAfter(path) && getAfter(path).data.userId == request.auth.uid &&
+        (!exists(path) || getAfter(path).data.operationId != get(path).data.operationId);
+    }
+    function validRepaymentPostingWrite(repaymentId, before, after) {
+      return (!before.get('balanceApplied', false) && !after.get('balanceApplied', false) &&
+          before.get('bookedAccountMovements', []) == [] && after.get('bookedAccountMovements', []) == []) ||
+        touchedPostingProof(repaymentId);
+    }
+    match /repaymentPostingProofs/{repaymentId} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list, delete: if false;
+      allow create, update: if isAuthenticated() && request.resource.data.keys().hasOnly(['userId', 'expenseId', 'operationId', 'beforeApplied', 'afterApplied', 'updatedAt']) &&
+        request.resource.data.userId == request.auth.uid && request.resource.data.updatedAt == request.time &&
+        (resource == null || resource.data.userId == request.auth.uid && resource.data.expenseId == request.resource.data.expenseId) &&
+        repaymentPostingProof(repaymentId, repaymentState(repaymentId, false), repaymentState(repaymentId, true));
+    }
+
     // Repayments collection (tracks repayments against expenses)
     match /repayments/{repaymentId} {
       allow get: if isAuthenticated() && !exists(/databases/$(database)/documents/repayments/$(repaymentId));
@@ -285,12 +551,12 @@ service cloud.firestore {
                       isOwner(request.resource.data.userId) &&
                       request.resource.data.amount is number &&
                       request.resource.data.amount > 0 &&
-                      request.resource.data.expenseId is string;
+                      request.resource.data.expenseId is string && validSplitRepaymentWrite(repaymentId, {}, request.resource.data) && validRepaymentPostingWrite(repaymentId, {}, request.resource.data);
       allow update: if isAuthenticated() && 
                        (isOwner(resource.data.userId) || isAdmin()) &&
                        request.resource.data.amount is number &&
-                       request.resource.data.amount > 0;
-      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+                       request.resource.data.amount > 0 && request.resource.data.userId == resource.data.userId && request.resource.data.expenseId == resource.data.expenseId && validSplitRepaymentWrite(repaymentId, resource.data, request.resource.data) && validRepaymentPostingWrite(repaymentId, resource.data, request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin()) && validSplitRepaymentWrite(repaymentId, resource.data, {}) && validRepaymentPostingWrite(repaymentId, resource.data, {});
     }
     
     // User Settings collection (billing cycle day and other preferences)
@@ -301,14 +567,17 @@ service cloud.firestore {
                       request.resource.data.billingCycleDay is number &&
                       request.resource.data.billingCycleDay >= 1 &&
                       request.resource.data.billingCycleDay <= 31 &&
-                      hasValidOverallBudgetLimits(request.resource.data);
+                      hasValidOverallBudgetLimits(request.resource.data) &&
+                      hasValidIncomeBudget(request.resource.data);
       allow update: if isAuthenticated() && 
                        (isOwner(userId) || isAdmin()) &&
                        request.resource.data.billingCycleDay is number &&
                        request.resource.data.billingCycleDay >= 1 &&
                        request.resource.data.billingCycleDay <= 31 &&
                        hasValidOverallBudgetLimits(request.resource.data) &&
-                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['overallBudgetLimits']) ||
+                       hasValidIncomeBudget(request.resource.data) &&
+                       preservesLinkedManualLimit(resource.data, request.resource.data) &&
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['overallBudgetLimits', 'incomeLinkedBudget']) ||
                          hasAdvancedBudgetAllocationRevision(userId));
       allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }

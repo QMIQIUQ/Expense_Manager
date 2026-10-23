@@ -23,6 +23,8 @@ export interface ReceiptDraftFormState {
 }
 
 export interface ReceiptDraftSnapshot {
+  tagIds?: string[];
+  splitParticipants?: import('../types').ExpenseSplitParticipant[];
   draftId: string;
   userId: string;
   updatedAt: number;

@@ -26,6 +26,12 @@ import {
 import { createReceiptDraftId, cleanupReceiptDrafts, deleteReceiptDraft, loadLatestReceiptDraft, saveReceiptDraft, type LoadedReceiptDraft, type ReceiptDraftSnapshot, type ReceiptDraftFormState, type ReceiptPaymentMethod } from '../../utils/receiptDraftStore';
 import { getRecentlyUsedCategories, sortCategories } from '../../utils/categoryOrder';
 import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
+import { ExpenseTagPicker } from './ExpenseTagPicker';
+import type { DuplicateExpenseInput } from '../../utils/expenseDuplicateCandidates';
+import { ExpenseSplitEditor } from './ExpenseSplitEditor';
+import type { PreparedReceiptContent } from '../../types/receiptAttachment';
+import { prepareReceiptContent } from '../../utils/receiptAttachmentContent';
+import { validateExpenseSplit } from '../../utils/expenseSplitCalculator';
 
 const formatOcrDuration = (elapsedMs?: number): string => {
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
@@ -48,6 +54,7 @@ const EMPTY_RECENT_EXPENSES: Expense[] = [];
 type ExpenseSubmitResult = void | boolean | 'saved' | 'queued' | 'failed' | {
   status: 'saved' | 'queued' | 'failed';
   expenseId?: string;
+  attachmentAccepted?: boolean;
 };
 
 const mapReceiptLineItemsToAmountItems = (lineItems?: ReceiptOcrResult['lineItems'], currency?: string): AmountItem[] => {
@@ -101,9 +108,10 @@ const buildReceiptReviewFormData = (
 };
 
 interface StepByStepExpenseFormProps {
-  onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
+  onReviewDuplicates?: (input: DuplicateExpenseInput) => Promise<boolean>;
+  onSubmit: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, receipt?: PreparedReceiptContent) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
   onCancel?: () => void;
-  onSubmitAndAddAnother?: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
+  onSubmitAndAddAnother?: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, receipt?: PreparedReceiptContent) => ExpenseSubmitResult | Promise<ExpenseSubmitResult>;
   initialData?: Expense;
   initialTransfer?: Transfer;
   initialReceiptFile?: File | null;
@@ -125,6 +133,7 @@ interface StepByStepExpenseFormProps {
 }
 
 const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
+  onReviewDuplicates,
   onSubmit,
   onCancel,
   onSubmitAndAddAnother,
@@ -149,6 +158,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
+  const [tagIds, setTagIds] = useState<string[]>(initialData?.tagIds ?? []);
+  const [splitParticipants, setSplitParticipants] = useState(initialData?.splitParticipants ?? []);
+  const submittingRef = useRef(false);
+  const submissionSerial = useRef(0);
   const { showNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState<Step>(startAtReceiptStep && !initialData ? STEP_RECEIPT : STEP_DATE);
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -156,6 +169,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const receiptCameraInputRef = useRef<HTMLInputElement>(null);
   const initialReceiptProcessedRef = useRef<File | null>(null);
+  const receiptArchiveSource = useRef<{ userId: string; blob: Blob; name: string; optimized?: boolean }>();
+  const [receiptSourceVersion, setReceiptSourceVersion] = useState(0);
+  const receiptOwner = useRef(currentUser?.uid); receiptOwner.current = currentUser?.uid;
+  const ocrSerial = useRef(0);
   const [receiptDraftId, setReceiptDraftId] = useState<string | null>(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [showReceiptSourcePicker, setShowReceiptSourcePicker] = useState(startAtReceiptStep && !initialData && !initialReceiptFile);
@@ -268,6 +285,24 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [transferToCardId, setTransferToCardId] = useState(initialTransfer?.toCardId || '');
   const [transferToEWalletName, setTransferToEWalletName] = useState(initialTransfer?.toPaymentMethodName || '');
   const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
+  const formMounted = useRef(true);
+  const submissionSnapshot = useRef('');
+  submissionSnapshot.current = JSON.stringify([currentUser?.uid, initialData?.id, receiptSourceVersion, formData, tagIds, splitParticipants, amountItems, enableTax, taxRate, enableTransfer, transferToPaymentMethod, transferToCardId, transferToEWalletName, transferToBankId]);
+  useEffect(() => {
+    formMounted.current = true;
+    const markGone = () => { formMounted.current = false; };
+    return () => markGone();
+  }, []);
+
+  useEffect(() => {
+    ocrSerial.current++; submissionSerial.current++; submittingRef.current = false; setIsSubmitting(false);
+    receiptArchiveSource.current = undefined; setReceiptSourceVersion((value) => value + 1);
+    setReceiptDraftId(null); setReceiptPreviewUrl(null); setReceiptOcrBusy(false); setReceiptOcrResult(null);
+    setReceiptOcrText(''); setReceiptOcrError(''); setReceiptOcrSummary(''); setReceiptOcrStatus('');
+    setReceiptReviewFormData(null); setReceiptReviewAmountItems([]);
+    setTagIds(initialData?.userId === currentUser?.uid ? initialData?.tagIds ?? [] : []);
+    setSplitParticipants(initialData?.userId === currentUser?.uid ? initialData?.splitParticipants ?? [] : []);
+  }, [currentUser?.uid, initialData?.id, initialData?.userId, initialData?.tagIds, initialData?.splitParticipants]);
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -342,6 +377,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       flowVersion: CURRENT_DRAFT_FLOW_VERSION,
       currentStep,
       formData: draftFormData,
+      tagIds,
+      splitParticipants,
       amountItems: draftAmountItems,
       currentAmountInput: draftCurrentAmountInput,
       enableTax,
@@ -373,6 +410,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     transferToEWalletName,
     transferToPaymentMethod,
     RECEIPT_DRAFT_TTL_MS,
+    tagIds,
+    splitParticipants,
   ]);
 
   const applyReceiptReviewResult = useCallback(() => {
@@ -452,8 +491,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   };
 
   const restoreDraft = async (loaded: LoadedReceiptDraft | null) => {
-    if (!loaded) return;
+    if (!loaded || loaded.draft.userId !== currentUser?.uid) return;
     const { draft } = loaded;
+    setTagIds(draft.tagIds ?? []);
+    setSplitParticipants(draft.splitParticipants ?? []);
     setReceiptDraftId(draft.draftId);
     setCurrentStep(normalizeDraftStep(draft));
     setFormData({
@@ -505,12 +546,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       setReceiptOcrSummary('');
     }
     if (loaded.imageBlob) {
+      receiptArchiveSource.current = { userId: draft.userId, blob: loaded.imageBlob, name: draft.imageName || 'receipt.jpg', optimized: true }; setReceiptSourceVersion((value) => value + 1);
       const objectUrl = URL.createObjectURL(loaded.imageBlob);
       setReceiptPreviewUrl(objectUrl);
     }
   };
 
   const resetReceiptDraftState = async () => {
+    receiptArchiveSource.current = undefined; setReceiptSourceVersion((value) => value + 1);
     if (receiptDraftId) {
       await deleteReceiptDraft(receiptDraftId, currentUser?.uid);
     }
@@ -531,6 +574,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   const handleDraftedReceiptImage = useCallback(async (file: File) => {
     if (!currentUser) return;
+    const requestedOwner = currentUser.uid; const token = ++ocrSerial.current;
+    const valid = () => formMounted.current && receiptOwner.current === requestedOwner && ocrSerial.current === token;
     if (file.type && !file.type.startsWith('image/')) {
       setCurrentStep(STEP_RECEIPT);
       setShowReceiptSourcePicker(false);
@@ -538,6 +583,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       setReceiptOcrError(receiptTexts.unsupportedFile);
       return;
     }
+    receiptArchiveSource.current = { userId: requestedOwner, blob: file, name: file.name }; setReceiptSourceVersion((value) => value + 1);
     setReceiptOcrError('');
     setReceiptOcrResult(null);
     setReceiptOcrSummary('');
@@ -552,10 +598,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     let compressed: Blob | null = null;
     try {
       compressed = await compressReceiptImage(file, { maxWidth: 1600, quality: 0.78 });
+      if (!valid()) return;
       const previewUrl = URL.createObjectURL(compressed);
       if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
       setReceiptPreviewUrl(previewUrl);
       const ocrImage = await prepareReceiptImageForOcr(file, { maxWidth: 2200, quality: 0.92 });
+      if (!valid()) return;
       setReceiptOcrStatus(receiptTexts.runningPaddle);
 
       const getProgressStatus = (progress: number): string => {
@@ -564,8 +612,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       };
 
       const ocr = await recognizeReceiptText(ocrImage, (progress) => {
-        setReceiptOcrStatus(getProgressStatus(progress));
+        if (valid()) setReceiptOcrStatus(getProgressStatus(progress));
       }, { mode: receiptOcrMode });
+      if (!valid()) return;
       const reviewState = buildReceiptReviewFormData(formData, ocr, receiptTexts.receiptFallbackDescription);
       setReceiptOcrResult(ocr);
       setReceiptOcrText(ocr.text);
@@ -582,6 +631,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           reviewState.amountItems,
         );
       } catch (saveError) {
+        if (!valid()) return;
         console.warn('Receipt OCR succeeded but the local draft could not be saved:', saveError);
         let fallbackDraftSaved = false;
         try {
@@ -593,6 +643,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         setReceiptOcrError(fallbackDraftSaved ? receiptTexts.draftImageSaveFailed : receiptTexts.draftSaveFailed);
       }
     } catch (error) {
+      if (!valid()) return;
       console.warn('Receipt image processing or OCR failed:', error);
       setReceiptOcrResult(null);
       setReceiptOcrSummary('');
@@ -605,6 +656,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       setReceiptOcrStatus(receiptTexts.savedOnly);
       try {
         await saveCurrentDraft(compressed, null, draftId, formData, amountItems);
+        if (!valid()) return;
         setReceiptOcrError(receiptTexts.ocrFailed);
       } catch (saveError) {
         console.warn('Receipt image could not be saved as a local draft:', saveError);
@@ -618,7 +670,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         setReceiptOcrError(`${receiptTexts.ocrFailed} ${fallbackDraftSaved ? receiptTexts.draftImageSaveFailed : receiptTexts.draftSaveFailed}`);
       }
     } finally {
-      setReceiptOcrBusy(false);
+      if (valid()) setReceiptOcrBusy(false);
     }
   }, [
     currentUser,
@@ -896,6 +948,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       delete submitData.paymentMethodName;
     }
 
+    submitData.tagIds = tagIds;
+    submitData.splitParticipants = splitParticipants;
+    if (splitParticipants.length) submitData.needsRepaymentTracking = true;
+    validateExpenseSplit({ amount: submitData.amount as number, currency: submitData.currency as CurrencyCode, splitParticipants }, initialData);
     return submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>;
   };
 
@@ -976,13 +1032,29 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     setCurrentStep(STEP_AMOUNT); // Go back to amount step for quick entry
   };
 
+  const prepareSubmittedReceipt = async (): Promise<PreparedReceiptContent | undefined> => {
+    const source = receiptArchiveSource.current;
+    if (!source || initialData || source.userId !== currentUser?.uid) return undefined;
+    const content = await prepareReceiptContent(source.blob, source.name);
+    return { ...content, optimized: content.optimized || !!source.optimized };
+  };
   const handleSubmit = async () => {
-    if (isSubmitting || !isStep6Valid()) return;
+    if (!currentUser || initialData && initialData.userId !== currentUser.uid || submittingRef.current || isSubmitting || !isStep6Valid()) return;
+    submittingRef.current = true;
+    const requestSerial = ++submissionSerial.current;
+    const requestedSnapshot = submissionSnapshot.current;
     setIsSubmitting(true);
     setCurrencyError('');
     try {
       const submitData = await buildSubmitData();
-      const accepted = await onSubmit(submitData);
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      if (!initialData && onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      const receipt = await prepareSubmittedReceipt();
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      const accepted = receipt ? await onSubmit(submitData, receipt) : await onSubmit(submitData);
+      if (requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current || receiptOwner.current !== currentUser?.uid) return;
+      if (receipt && !(typeof accepted === 'object' && accepted?.attachmentAccepted)) throw new Error('Receipt archiving was not accepted; the draft has been retained');
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
       if (acceptedStatus === false || acceptedStatus === 'failed') return;
@@ -994,21 +1066,31 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       await resetReceiptDraftState();
     } catch (error) {
       console.error('Failed to resolve expense currency:', error);
-      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+      if (requestSerial === submissionSerial.current && receiptOwner.current === currentUser?.uid) setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
     } finally {
-      setIsSubmitting(false);
+      if (requestSerial === submissionSerial.current) { submittingRef.current = false; if (formMounted.current) setIsSubmitting(false); }
     }
   };
 
   const handleSubmitAndAddAnother = async () => {
     if (!onSubmitAndAddAnother) return;
-    if (isSubmitting || !isStep6Valid()) return;
+    if (!currentUser || initialData && initialData.userId !== currentUser.uid || submittingRef.current || isSubmitting || !isStep6Valid()) return;
+    submittingRef.current = true;
+    const requestSerial = ++submissionSerial.current;
+    const requestedSnapshot = submissionSnapshot.current;
     setIsSubmitting(true);
     setCurrencyError('');
     
     try {
       const submitData = await buildSubmitData();
-      const accepted = await onSubmitAndAddAnother(submitData);
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      if (onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      const receipt = await prepareSubmittedReceipt();
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current) return;
+      const accepted = receipt ? await onSubmitAndAddAnother(submitData, receipt) : await onSubmitAndAddAnother(submitData);
+      if (requestedSnapshot !== submissionSnapshot.current || requestSerial !== submissionSerial.current || receiptOwner.current !== currentUser?.uid) return;
+      if (receipt && !(typeof accepted === 'object' && accepted?.attachmentAccepted)) throw new Error('Receipt archiving was not accepted; the draft has been retained');
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
       if (acceptedStatus === false || acceptedStatus === 'failed') return;
@@ -1019,11 +1101,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       }
       await resetReceiptDraftState();
       resetFormForNewExpense();
+      setTagIds([]);
+      setSplitParticipants([]);
     } catch (error) {
       console.error('Failed to resolve expense currency:', error);
-      setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+      if (requestSerial === submissionSerial.current && receiptOwner.current === currentUser?.uid) setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
     } finally {
-      setIsSubmitting(false);
+      if (requestSerial === submissionSerial.current) { submittingRef.current = false; if (formMounted.current) setIsSubmitting(false); }
     }
   };
 
@@ -1191,6 +1275,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           {receiptTexts.receiptFlowSubtitle}
         </div>
 
+        {receiptPreviewUrl && <p>{t('receiptArchiveOcrHint')}</p>}
         {receiptPreviewUrl && (
           <div style={{
             display: 'flex',
@@ -2112,6 +2197,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       )}
       {renderProgressSummary()}
       {renderStepContent()}
+      {currentStep === STEP_PAYMENT && <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />}
+      {currentStep === STEP_PAYMENT && <ExpenseSplitEditor value={splitParticipants} onChange={setSplitParticipants}
+        totalMinor={formData.amount} currency={formData.currency as CurrencyCode} />}
     </div>
   </> 
   );

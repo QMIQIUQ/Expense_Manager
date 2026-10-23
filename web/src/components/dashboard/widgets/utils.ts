@@ -1,36 +1,10 @@
-/**
- * Calculate the current billing cycle range based on the configured billing day (1-31).
- * Handles months with fewer days by clamping to the month's last day and normalizes
- * invalid inputs into the supported range to avoid invalid dates.
- * @param billingCycleDay Day of month the cycle resets (1-31). Values outside this range are clamped.
- */
+import { getBillingCyclePeriod } from '../../../utils/budgetRollover';
+
+/** Date-only ledgers use UTC dates in these widgets; share the calendar boundaries. */
 export const getBillingCycleRange = (billingCycleDay: number) => {
-  const now = new Date();
-  const safeBillingDay = Math.min(Math.max(1, Math.floor(billingCycleDay)), 31);
-
-  const clampDayForMonth = (year: number, monthIndex: number, day: number) => {
-    const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-    return Math.min(day, daysInMonth);
-  };
-
-  const clampedBillingDayThisMonth = clampDayForMonth(now.getFullYear(), now.getMonth(), safeBillingDay);
-  const cycleStartMonthOffset = now.getDate() >= clampedBillingDayThisMonth ? 0 : -1;
-
-  const cycleStartMonthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth() + cycleStartMonthOffset, 1));
-  const cycleStartYear = cycleStartMonthDate.getFullYear();
-  const cycleStartMonth = cycleStartMonthDate.getMonth();
-  const cycleStartDay = clampDayForMonth(cycleStartYear, cycleStartMonth, safeBillingDay);
-  const cycleStart = new Date(Date.UTC(cycleStartYear, cycleStartMonth, cycleStartDay));
-
-  const nextCycleMonthDate = new Date(Date.UTC(cycleStartYear, cycleStartMonth + 1, 1));
-  const nextCycleDay = clampDayForMonth(
-    nextCycleMonthDate.getFullYear(),
-    nextCycleMonthDate.getMonth(),
-    safeBillingDay
-  );
-  const nextCycleStart = new Date(Date.UTC(nextCycleMonthDate.getFullYear(), nextCycleMonthDate.getMonth(), nextCycleDay));
-
-  const cycleEnd = new Date(nextCycleStart.getTime() - 24 * 60 * 60 * 1000);
-
+  const safeDay = Number.isFinite(billingCycleDay) ? Math.min(Math.max(1, Math.floor(billingCycleDay)), 31) : 1;
+  const { start, end } = getBillingCyclePeriod(safeDay);
+  const cycleStart = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()));
+  const cycleEnd = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate() - 1));
   return { cycleStart, cycleEnd };
 };
