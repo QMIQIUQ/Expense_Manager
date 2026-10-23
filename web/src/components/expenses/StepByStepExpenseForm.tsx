@@ -166,6 +166,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const submissionSerial = useRef(0);
   const { showNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState<Step>(startAtReceiptStep && !initialData ? STEP_RECEIPT : STEP_DATE);
+  const [activeEditTab, setActiveEditTab] = useState<'details' | 'description' | 'payment'>('details');
   const amountInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
@@ -810,6 +811,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
   // Handle Enter key to go to next step
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (initialData) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (currentStep === STEP_RECEIPT && receiptReviewFormData) {
@@ -1615,8 +1617,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     </div>
   );
 
-  const renderStepContent = () => {
-    switch (currentStep) {
+  const renderStepContent = (step: Step = currentStep) => {
+    switch (step) {
       case STEP_RECEIPT: {
         return renderReceiptWorkflow();
       }
@@ -1695,7 +1697,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                       type="button"
                       onClick={() => {
                         handleCurrencyChange(currency.code);
-                        window.setTimeout(() => handleNext(), 150);
+                        if (!initialData) window.setTimeout(() => handleNext(), 150);
                       }}
                       aria-pressed={selected}
                       aria-label={`${currency.symbol} ${currency.code} ${currency.name}`}
@@ -1872,7 +1874,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             key={category.id}
             onClick={() => {
               setFormData(prev => ({ ...prev, category: category.name }));
-              setTimeout(() => handleNext(), 150);
+              if (!initialData) setTimeout(() => handleNext(), 150);
             }}
             aria-pressed={formData.category === category.name}
             style={{
@@ -1978,6 +1980,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 }}
               />
             </div>
+            <ExpenseTagPicker compact userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
           </div>
         );
 
@@ -2125,7 +2128,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </>
             )}
             <div className="expense-lower-options">
-              <ExpenseTagPicker compact userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
               <ExpenseSplitEditor
                 value={splitParticipants}
                 onChange={setSplitParticipants}
@@ -2151,6 +2153,17 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     return true;
   };
 
+  const isExpenseFormValid = () => Boolean(
+    formData.description.trim() && formData.amount > 0 && formData.category && formData.date && isStep6Valid()
+  );
+
+  const editTabGroups: Array<{ id: 'details' | 'description' | 'payment'; label: string; steps: Step[] }> = [
+    { id: 'details', label: `${t('date')} · ${t('amount')}`, steps: [STEP_DATE, STEP_CURRENCY, STEP_AMOUNT] },
+    { id: 'description', label: `${t('category')} · ${t('description')}`, steps: [STEP_CATEGORY, STEP_DESCRIPTION] },
+    { id: 'payment', label: `${t('paymentMethod')} · ${t('ledgerReceivableTitle')}`, steps: [STEP_PAYMENT] },
+  ];
+  const selectedEditTab = editTabGroups.find((tab) => tab.id === activeEditTab) ?? editTabGroups[0];
+
   const isReceiptWorkflowStep = currentStep === STEP_RECEIPT;
   const canApplyReceiptReview = isReceiptWorkflowStep && !!receiptReviewFormData && !receiptOcrBusy && !showReceiptSourcePicker;
   const isExpenseEntryStart = currentStep === STEP_DATE || (currentStep === STEP_RECEIPT && startAtReceiptStep);
@@ -2172,27 +2185,27 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         onChange={handleReceiptInputChange}
         style={{ display: 'none' }}
       />
-      <div style={styles.container} onKeyDown={handleKeyDown}>
+      <div className={initialData ? 'expense-edit-form' : undefined} style={styles.container} onKeyDown={handleKeyDown}>
       <div style={styles.header}>
         {/* Navigation buttons in header */}
         <button
-          onClick={isExpenseEntryStart ? onCancel : handlePrevious}
+          onClick={initialData ? onCancel : (isExpenseEntryStart ? onCancel : handlePrevious)}
           style={styles.headerNavBtn}
-          aria-label={isExpenseEntryStart ? t('cancel') : t('back')}
+          aria-label={initialData || isExpenseEntryStart ? t('cancel') : t('back')}
         >
-          {isExpenseEntryStart ? '✕' : '‹'}
+          {initialData || isExpenseEntryStart ? '✕' : '‹'}
         </button>
         
         <div style={styles.headerCenter}>
-          <div style={styles.headerTitle}>
+          <div style={{ ...styles.headerTitle, ...(initialData ? { marginBottom: 0 } : {}) }}>
             {initialData ? (t('editExpense') || '编辑支出') : (t('addExpense') || '新增支出')}
           </div>
-          {renderProgressIndicator()}
+          {!initialData && renderProgressIndicator()}
         </div>
         
         <div style={styles.headerRight}>
           {/* Save & Add Another button - only show in final step when creating new expense */}
-          {currentStep === STEP_PAYMENT && !initialData && onSubmitAndAddAnother && (
+          {!initialData && currentStep === STEP_PAYMENT && onSubmitAndAddAnother && (
             <button
               onClick={handleSubmitAndAddAnother}
               disabled={!isStep6Valid() || isSubmitting}
@@ -2208,7 +2221,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               ➕
             </button>
           )}
-          <button
+          {!initialData && <button
             onClick={isReceiptWorkflowStep ? (receiptReviewFormData ? handleApplyReceiptReview : handleOpenReceiptPicker) : (currentStep === STEP_PAYMENT ? handleSubmit : handleNext)}
             style={styles.headerNavBtn}
             disabled={
@@ -2223,7 +2236,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             aria-label={isReceiptWorkflowStep ? (receiptReviewFormData ? receiptTexts.applyReceipt : receiptTexts.scan) : (currentStep === STEP_PAYMENT ? t('save') : t('next'))}
           >
             {isReceiptWorkflowStep ? (receiptReviewFormData ? '✓' : '›') : (currentStep === STEP_PAYMENT ? '✓' : '›')}
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -2232,8 +2245,45 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           {currencyError}
         </div>
       )}
-      {renderProgressSummary()}
-      {renderStepContent()}
+      {initialData ? (
+        <form className="expense-edit-workspace" onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
+          <div className="expense-edit-tabs" role="tablist" aria-label={t('editExpense')}>
+            {editTabGroups.map((tab) => (
+              <button
+                key={tab.id}
+                id={`expense-edit-tab-${tab.id}`}
+                type="button"
+                role="tab"
+                aria-selected={activeEditTab === tab.id}
+                aria-controls={`expense-edit-panel-${tab.id}`}
+                className="expense-edit-tab"
+                onClick={() => setActiveEditTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div
+            id={`expense-edit-panel-${selectedEditTab.id}`}
+            className="expense-edit-tabpanel"
+            role="tabpanel"
+            aria-labelledby={`expense-edit-tab-${selectedEditTab.id}`}
+            key={selectedEditTab.id}
+          >
+            {selectedEditTab.steps.map((step) => (
+              <div className="expense-edit-section" key={step}>{renderStepContent(step)}</div>
+            ))}
+          </div>
+          <div className="expense-edit-actions">
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>{t('cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting || !isExpenseFormValid()}>
+              {isSubmitting ? t('saving') : t('save')}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>{renderProgressSummary()}{renderStepContent()}</>
+      )}
     </div>
   </> 
   );

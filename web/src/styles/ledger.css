@@ -97,6 +97,25 @@
   font-weight: 600;
 }
 
+.expense-edit-workspace { display: flex; flex-direction: column; min-width: 0; }
+.expense-edit-tabs { display: flex; gap: 6px; max-width: 100%; padding: 10px 12px 6px; overflow-x: auto; scrollbar-width: thin; }
+.expense-edit-tab { flex: 1 0 110px; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); color: var(--text-secondary); font: inherit; line-height: 1.3; white-space: normal; }
+.expense-edit-tab[aria-selected="true"] { border-color: var(--accent-primary); background: var(--accent-light); color: var(--text-primary); font-weight: 650; }
+.expense-edit-tabpanel { min-width: 0; max-height: min(72dvh, 820px); overflow-y: auto; padding: 0 12px 8px; }
+.expense-edit-form .stepContent { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; padding: 14px 4px; }
+.expense-edit-section + .expense-edit-section { margin-top: 8px; border-top: 1px solid var(--border-color); }
+.expense-edit-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
+.expense-edit-actions > button { min-width: 96px; min-height: 42px; }
+.expense-edit-form .expense-tag-picker-compact { margin-top: 8px; }
+
+@media (max-width: 480px) {
+  .expense-edit-tabs { padding-inline: 10px; }
+  .expense-edit-tab { flex-basis: 104px; padding: 7px 8px; font-size: 13px; }
+  .expense-edit-tabpanel { max-height: min(68dvh, 720px); padding-inline: 10px; }
+  .expense-edit-actions { padding: 10px; }
+  .expense-edit-actions > button { flex: 1; }
+}
+
 .expense-editor-receipts {
   margin-top: 12px;
 }

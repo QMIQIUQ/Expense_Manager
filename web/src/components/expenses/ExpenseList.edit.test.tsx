@@ -28,22 +28,28 @@ const expense: Expense = {
   createdAt: new Date('2026-01-01T00:00:00Z'), updatedAt: new Date('2026-01-01T00:00:00Z'),
 };
 
-const reachPaymentStep = async () => {
+const reachPaymentTab = async () => {
   fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
-  await screen.findByRole('heading', { name: /^date$/i });
-  fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
-  fireEvent.click(await screen.findByRole('button', { name: /MYR.*Malaysian Ringgit/i }));
-  await screen.findByRole('heading', { name: /^amount$/i });
-  fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
-  await screen.findByRole('heading', { name: /select a category/i });
-  fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
-  await screen.findByPlaceholderText(/grocery shopping/i);
-  fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+  await screen.findByRole('tablist', { name: /edit expense/i });
+  fireEvent.click(screen.getByRole('tab', { name: /payment method/i }));
   await screen.findByRole('heading', { name: /payment method/i });
 };
 
 describe('ExpenseList edit save status', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('uses editable tabs and keeps tags beside category and description', async () => {
+    render(<ExpenseList expenses={[expense]} categories={[category]} onDelete={vi.fn()} onInlineUpdate={vi.fn().mockResolvedValue('saved')} />);
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+    await screen.findByRole('tablist', { name: /edit expense/i });
+    expect(document.querySelector('form.expense-edit-workspace')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /date.*amount/i })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.click(screen.getByRole('tab', { name: /category.*description/i }));
+    expect(await screen.findByRole('group', { name: 'Tags' })).toBeVisible();
+    expect(screen.getByLabelText('New tag')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: /payment method/i })).not.toBeInTheDocument();
+  });
 
   it('keeps the edit form open when saving fails', async () => {
     vi.mocked(resolveExpenseCurrencyFields).mockResolvedValue({
@@ -51,7 +57,7 @@ describe('ExpenseList edit save status', () => {
     });
     const onInlineUpdate = vi.fn().mockResolvedValue('failed');
     render(<ExpenseList expenses={[expense]} categories={[category]} onDelete={vi.fn()} onInlineUpdate={onInlineUpdate} />);
-    await reachPaymentStep();
+    await reachPaymentTab();
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() => expect(onInlineUpdate).toHaveBeenCalledWith(expense.id, expect.objectContaining({ description: expense.description, tagIds: [], splitParticipants: [] }), 0));
@@ -65,7 +71,7 @@ describe('ExpenseList edit save status', () => {
     });
     const onInlineUpdate = vi.fn().mockResolvedValue(status);
     render(<ExpenseList expenses={[expense]} categories={[category]} onDelete={vi.fn()} onInlineUpdate={onInlineUpdate} />);
-    await reachPaymentStep();
+    await reachPaymentTab();
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() => expect(onInlineUpdate).toHaveBeenCalledOnce());
@@ -88,7 +94,7 @@ describe('ExpenseList edit save status', () => {
       <ExpenseList expenses={[expense]} transfers={[transfer]} categories={[category]} onDelete={vi.fn()}
         onInlineUpdate={onInlineUpdate} onAddTransfer={onAddTransfer} onManageTransferHistory={onManageTransferHistory} />
     );
-    await reachPaymentStep();
+    await reachPaymentTab();
 
     expect(screen.getByRole('button', { name: /open transfer history/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
