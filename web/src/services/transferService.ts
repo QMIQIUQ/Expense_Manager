@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Transfer } from '../types';
-import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import { applyBalanceAdjustmentsInTransaction, bookedAccountMovements, prepareBalanceAdjustments } from './balanceService';
 
 const COLLECTION_NAME = 'transfers';
 
@@ -42,7 +42,7 @@ export const transferService = {
     const docRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
     const balanceAdjustments = await prepareBalanceAdjustments(transfer.userId, [{
       type: 'transfer',
-      transfer: { ...transfer, id: docRef.id } as Transfer,
+      transfer: { ...transfer, id: docRef.id, bookedAccountMovements: undefined } as Transfer,
       sourceDirection: -1,
       destinationDirection: 1,
     }]);
@@ -76,7 +76,7 @@ export const transferService = {
       }
       await applyBalanceAdjustmentsInTransaction(transaction, balanceAdjustments);
       transaction.set(docRef, {
-        ...cleanedTransfer,
+        ...cleanedTransfer, bookedAccountMovements: bookedAccountMovements(balanceAdjustments),
         userId: transfer.userId,
         createdAt: now,
         updatedAt: now,
@@ -143,7 +143,7 @@ export const transferService = {
     const before = await getDocFromServer(transferRef);
     if (!before.exists()) throw new Error('Transfer not found');
     const previous = { id, ...before.data() } as Transfer;
-    const next = { ...previous, ...updates, id };
+    const next = { ...previous, ...updates, id, bookedAccountMovements: previous.bookedAccountMovements };
     if (next.userId !== previous.userId) throw new Error('Transfer owner cannot be changed');
     const adjustments = await prepareBalanceAdjustments(previous.userId, [
       { type: 'transfer', transfer: previous, sourceDirection: 1, destinationDirection: -1 },
@@ -160,7 +160,7 @@ export const transferService = {
       Object.entries(updates).forEach(([key, value]) => {
         if (!['id', 'userId', 'createdAt', 'updatedAt'].includes(key)) fields[key] = value === undefined ? deleteField() : value;
       });
-      transaction.update(transferRef, { ...fields, updatedAt: Timestamp.now() });
+      transaction.update(transferRef, { ...fields, bookedAccountMovements: bookedAccountMovements(adjustments, 1), updatedAt: Timestamp.now() });
       for (const expense of expenses) {
         const links = Array.isArray(expense.data()?.relatedTransferIds) ? expense.data()!.relatedTransferIds as string[] : [];
         const retained = links.filter((transferId) => transferId !== id);

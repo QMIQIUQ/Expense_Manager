@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Repayment, Card, EWallet, Bank, PaymentMethodType, CurrencyCode } from '../../types';
+import React, { useRef, useState } from 'react';
+import { Repayment, Card, EWallet, Bank, PaymentMethodType, CurrencyCode, ExpenseSplitParticipant } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
 import { BaseForm } from '../common/BaseForm';
@@ -13,7 +13,8 @@ import CurrencySelector from '../common/CurrencySelector';
 
 interface RepaymentFormProps {
   expenseId: string;
-  onSubmit: (repayment: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => void;
+  onSubmit: (repayment: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => boolean | void | Promise<boolean | void>;
+  splitParticipants?: ExpenseSplitParticipant[];
   onCancel?: () => void;
   initialData?: Repayment;
   maxAmount?: number; // Maximum amount that can be repaid (for validation)
@@ -29,6 +30,7 @@ interface RepaymentFormProps {
 // visual consistency across light/dark themes.
 
 const RepaymentForm: React.FC<RepaymentFormProps> = ({
+  splitParticipants = [],
   onSubmit,
   onCancel,
   initialData,
@@ -43,6 +45,7 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
   const { dateFormat } = useUserSettings();
   const today = useToday();
   const [formData, setFormData] = useState({
+    splitParticipantId: initialData?.splitParticipantId || '',
     amount: toMinorUnits(initialData?.amount || 0, initialData?.currency || expenseCurrency),
     currency: initialData?.currency || expenseCurrency,
     date: initialData?.date || today,
@@ -54,9 +57,12 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     bankId: initialData?.bankId || '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitting = useRef(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current) return;
 
     // Validation
     const newErrors: { [key: string]: string } = {};
@@ -68,6 +74,9 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
     if (!formData.date) {
       newErrors.date = t('pleaseFillField') || 'Please select a date';
     }
+    if (formData.paymentMethod === 'bank' && !formData.bankId) newErrors.bankId = t('pleaseFillField');
+    if (formData.paymentMethod === 'e_wallet' && !formData.paymentMethodName) newErrors.paymentMethodName = t('pleaseFillField');
+    if (formData.paymentMethod === 'credit_card' && !formData.cardId) newErrors.cardId = t('pleaseFillField');
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -116,10 +125,14 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       }
     }
     
-    onSubmit(submitData as Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>);
+    submitting.current = true; setIsSubmitting(true);
+    try {
+    const accepted = await onSubmit(submitData as Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>);
+    if (accepted === false) return;
     
     if (!initialData) {
       setFormData({
+        splitParticipantId: '',
         amount: 0,
         currency: expenseCurrency,
         date: getTodayLocal(),
@@ -131,6 +144,8 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
         bankId: '',
       });
     }
+    } catch (error) { setErrors((previous) => ({ ...previous, submit: String(error) })); }
+    finally { submitting.current = false; setIsSubmitting(false); }
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,7 +184,15 @@ const RepaymentForm: React.FC<RepaymentFormProps> = ({
       onSubmit={handleSubmit}
       onCancel={onCancel || (() => {})}
       submitLabel={t('save')}
+      submitDisabled={isSubmitting}
     >
+      {Object.keys(errors).length > 0 && <p role="alert">{errors.submit || t('pleaseFillField')}</p>}
+      {splitParticipants.length > 0 && <div className="ledger-panel"><label>{t('ledgerParticipant')}
+        <select aria-label={t('ledgerParticipant')} value={formData.splitParticipantId} onChange={(event) => {
+          const participant = splitParticipants.find((row) => row.id === event.target.value);
+          setFormData((previous) => ({ ...previous, splitParticipantId: event.target.value, payerName: participant?.name ?? previous.payerName }));
+        }}><option value="">{t('ledgerUnassigned')}</option>{splitParticipants.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select>
+      </label><p>{t('ledgerSettlementHint')}</p></div>}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="amount" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>

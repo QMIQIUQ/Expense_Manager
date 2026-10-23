@@ -3,6 +3,8 @@ import { db } from '../config/firebase';
 import type { QueuedOperation } from '../utils/offlineQueue';
 import { runFinancialTransaction } from './financialMutation';
 import { commitTagMutation } from './tagMutation';
+import { commitRepaymentMutation } from './splitSettlementService';
+import { commitReconciliationMutation } from './accountReconciliationService';
 
 const collectionFor = {
   bank: 'banks', ewallet: 'ewallets', card: 'cards', category: 'categories', repayment: 'repayments',
@@ -15,6 +17,8 @@ export type QueuedEntity = keyof typeof collectionFor;
 /** Generic document writes share the same immutable replay receipt as financial writes. */
 export const commitQueuedEntity = async (operation: QueuedOperation): Promise<void> => {
   if (operation.entity === 'expenseTag') return commitTagMutation(operation);
+  if (operation.entity === 'repayment') return commitRepaymentMutation(operation);
+  if (operation.entity === 'accountReconciliation' || operation.entity === 'reconciliationMark') return commitReconciliationMutation(operation);
   const payload = operation.payload as Record<string, unknown>;
   if (typeof payload.id !== 'string' || typeof payload.userId !== 'string') throw Object.assign(new Error('Invalid queued document identity'), { code: 'invalid-argument' });
   const collectionName = collectionFor[operation.entity as QueuedEntity];

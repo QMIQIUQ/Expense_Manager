@@ -28,6 +28,8 @@ import { getRecentlyUsedCategories, sortCategories } from '../../utils/categoryO
 import { fromMinorUnits, getCurrencyMinorDigits, roundMoney, toMinorUnits } from '../../domain/money';
 import { ExpenseTagPicker } from './ExpenseTagPicker';
 import type { DuplicateExpenseInput } from '../../utils/expenseDuplicateCandidates';
+import { ExpenseSplitEditor } from './ExpenseSplitEditor';
+import { validateExpenseSplit } from '../../utils/expenseSplitCalculator';
 
 const formatOcrDuration = (elapsedMs?: number): string => {
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs < 0) return '';
@@ -154,6 +156,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
   const [tagIds, setTagIds] = useState<string[]>(initialData?.tagIds ?? []);
+  const [splitParticipants, setSplitParticipants] = useState(initialData?.splitParticipants ?? []);
   const submittingRef = useRef(false);
   const { showNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState<Step>(startAtReceiptStep && !initialData ? STEP_RECEIPT : STEP_DATE);
@@ -274,6 +277,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const [transferToCardId, setTransferToCardId] = useState(initialTransfer?.toCardId || '');
   const [transferToEWalletName, setTransferToEWalletName] = useState(initialTransfer?.toPaymentMethodName || '');
   const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
+  const formMounted = useRef(true);
+  const submissionSnapshot = useRef('');
+  submissionSnapshot.current = JSON.stringify([formData, tagIds, splitParticipants, amountItems, enableTax, taxRate, enableTransfer, transferToPaymentMethod, transferToCardId, transferToEWalletName, transferToBankId]);
+  useEffect(() => {
+    formMounted.current = true;
+    const markGone = () => { formMounted.current = false; };
+    return () => markGone();
+  }, []);
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -348,6 +359,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       flowVersion: CURRENT_DRAFT_FLOW_VERSION,
       currentStep,
       formData: draftFormData,
+      tagIds,
+      splitParticipants,
       amountItems: draftAmountItems,
       currentAmountInput: draftCurrentAmountInput,
       enableTax,
@@ -379,6 +392,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     transferToEWalletName,
     transferToPaymentMethod,
     RECEIPT_DRAFT_TTL_MS,
+    tagIds,
+    splitParticipants,
   ]);
 
   const applyReceiptReviewResult = useCallback(() => {
@@ -460,6 +475,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const restoreDraft = async (loaded: LoadedReceiptDraft | null) => {
     if (!loaded) return;
     const { draft } = loaded;
+    setTagIds(draft.tagIds ?? []);
+    setSplitParticipants(draft.splitParticipants ?? []);
     setReceiptDraftId(draft.draftId);
     setCurrentStep(normalizeDraftStep(draft));
     setFormData({
@@ -903,6 +920,9 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     }
 
     submitData.tagIds = tagIds;
+    submitData.splitParticipants = splitParticipants;
+    if (splitParticipants.length) submitData.needsRepaymentTracking = true;
+    validateExpenseSplit({ amount: submitData.amount as number, currency: submitData.currency as CurrencyCode, splitParticipants }, initialData);
     return submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>;
   };
 
@@ -986,11 +1006,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   const handleSubmit = async () => {
     if (submittingRef.current || isSubmitting || !isStep6Valid()) return;
     submittingRef.current = true;
+    const requestedSnapshot = submissionSnapshot.current;
     setIsSubmitting(true);
     setCurrencyError('');
     try {
       const submitData = await buildSubmitData();
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current) return;
       if (!initialData && onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current) return;
       const accepted = await onSubmit(submitData);
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
@@ -1014,12 +1037,15 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     if (!onSubmitAndAddAnother) return;
     if (submittingRef.current || isSubmitting || !isStep6Valid()) return;
     submittingRef.current = true;
+    const requestedSnapshot = submissionSnapshot.current;
     setIsSubmitting(true);
     setCurrencyError('');
     
     try {
       const submitData = await buildSubmitData();
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current) return;
       if (onReviewDuplicates && !await onReviewDuplicates(submitData)) return;
+      if (!formMounted.current || requestedSnapshot !== submissionSnapshot.current) return;
       const accepted = await onSubmitAndAddAnother(submitData);
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
@@ -1032,6 +1058,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       await resetReceiptDraftState();
       resetFormForNewExpense();
       setTagIds([]);
+      setSplitParticipants([]);
     } catch (error) {
       console.error('Failed to resolve expense currency:', error);
       setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
@@ -2127,6 +2154,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       {renderProgressSummary()}
       {renderStepContent()}
       {currentStep === STEP_PAYMENT && <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />}
+      {currentStep === STEP_PAYMENT && <ExpenseSplitEditor value={splitParticipants} onChange={setSplitParticipants}
+        totalMinor={formData.amount} currency={formData.currency as CurrencyCode} />}
     </div>
   </> 
   );

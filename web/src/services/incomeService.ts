@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Income } from '../types';
-import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import { applyBalanceAdjustmentsInTransaction, bookedAccountMovements, prepareBalanceAdjustments } from './balanceService';
 
 const COLLECTION_NAME = 'incomes';
 const BALANCE_FIELDS = ['userId', 'paymentMethod', 'paymentMethodName', 'bankId', 'amount', 'currency', 'baseAmount', 'baseCurrency', 'date'];
@@ -30,7 +30,7 @@ export const incomeService = {
     if (await hasFinancialReceipt(operation)) return income.id!;
     const { id, ...incomeData } = income;
     const incomeRef = id ? doc(db, COLLECTION_NAME, id) : doc(collection(db, COLLECTION_NAME));
-    const adjustments = await prepareBalanceAdjustments(income.userId, [{ type: 'income', income: { ...income, id: incomeRef.id } as Income, direction: 1 }]);
+    const adjustments = await prepareBalanceAdjustments(income.userId, [{ type: 'income', income: { ...income, id: incomeRef.id, bookedAccountMovements: undefined } as Income, direction: 1 }]);
     const now = Timestamp.now();
 
     await runFinancialTransaction(db, operation, async (transaction) => {
@@ -40,7 +40,7 @@ export const incomeService = {
         return;
       }
       await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
-      transaction.set(incomeRef, { ...incomeData, userId: income.userId, createdAt: now, updatedAt: now });
+      transaction.set(incomeRef, { ...incomeData, bookedAccountMovements: bookedAccountMovements(adjustments), userId: income.userId, createdAt: now, updatedAt: now });
     });
     return incomeRef.id;
   },
@@ -96,7 +96,7 @@ export const incomeService = {
     if (!before.exists()) throw new Error('Income not found');
     const previousIncome = { id, ...before.data() } as Income;
     if (updates.userId && updates.userId !== previousIncome.userId) throw new Error('Income owner cannot be changed');
-    const nextIncome = { ...previousIncome, ...updates, id } as Income;
+    const nextIncome = { ...previousIncome, ...updates, id, bookedAccountMovements: previousIncome.bookedAccountMovements } as Income;
     const adjustments = await prepareBalanceAdjustments(previousIncome.userId, [
       { type: 'income', income: previousIncome, direction: -1 },
       { type: 'income', income: nextIncome, direction: 1 },
@@ -113,7 +113,7 @@ export const incomeService = {
       if (current.data().userId !== previousIncome.userId) throw new Error('Income owner cannot be changed');
       if (!sameBalanceFields(current.data(), before.data())) throw new Error('Income changed while preparing balance update. Please retry.');
       await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
-      transaction.update(incomeRef, { ...cleanedUpdates, updatedAt: Timestamp.now() });
+      transaction.update(incomeRef, { ...cleanedUpdates, bookedAccountMovements: bookedAccountMovements(adjustments, 1), updatedAt: Timestamp.now() });
     });
   },
 

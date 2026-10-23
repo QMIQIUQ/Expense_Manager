@@ -17,7 +17,7 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
   };
   return <fieldset className="ledger-panel"><legend>{t('ledgerTags')}</legend>
     <div className="ledger-chips">{rows.filter((tag) => !tag.archived || value.includes(tag.id)).map((tag) => <label key={tag.id}>
-      <input type="checkbox" checked={value.includes(tag.id)} disabled={tag.archived && !value.includes(tag.id)}
+      <input type="checkbox" checked={value.includes(tag.id)} disabled={!value.includes(tag.id) && (tag.archived || value.length >= 10)}
         onChange={(event) => onChange(event.target.checked ? [...value, tag.id] : value.filter((id) => id !== tag.id))} />
       <span style={{ color: tag.color }}>{tag.name}{tag.archived ? ` (${t('ledgerArchived')})` : ''}</span>
     </label>)}</div>

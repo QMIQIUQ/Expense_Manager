@@ -1,4 +1,7 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { acceptLocalMutation } from '../../services/acceptLocalMutation';
+import { prepareRepaymentSettlement } from '../../services/splitSettlementService';
+import { ExpenseSplitSummary } from './ExpenseSplitSummary';
 import { indexBy } from '../../utils/indexBy';
 import { useExpenseTags } from '../../hooks/useExpenseTags';
 import { Expense, Category, Card, EWallet, Repayment, Bank, Transfer, CurrencyCode } from '../../types';
@@ -13,7 +16,6 @@ import { quickExpenseService } from '../../services/quickExpenseService';
 import { repaymentService } from '../../services/repaymentService';
 import ConfirmModal from '../ConfirmModal';
 import RepaymentForm from '../repayment/RepaymentForm';
-import { resolveAmountCurrencyFields } from '../../services/currencyRateService';
 import StepByStepExpenseForm from './StepByStepExpenseForm';
 import { EditIcon, DeleteIcon, RepaymentIcon, CircleIcon, CheckIcon, PlusIcon } from '../icons';
 import { SearchBar } from '../common/SearchBar';
@@ -31,7 +33,7 @@ import type { ExpensePeriodMode } from '../../types/expensePeriod';
 import CatIllustration from '../CatIllustration';
 import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 import { dataService } from '../../services/dataService';
-import { getQueuedWriteId, queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
+import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
 import { applyPendingOperations } from '../../utils/pendingOperations';
 
 const EMPTY_REPAYMENTS: Repayment[] = [];
@@ -112,7 +114,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onDelete,
   onInlineUpdate,
   onBulkDelete,
-  onReloadRepayments,
   onCreateCard,
   onCreateEWallet,
   onCreateBank,
@@ -131,6 +132,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const { t } = useLanguage();
   const { dateFormat } = useUserSettings();
   const { currentUser } = useAuth();
+  const repaymentOwner = useRef(currentUser?.uid); repaymentOwner.current = currentUser?.uid;
   const { rows: expenseTags } = useExpenseTags(currentUser?.uid);
   const { showNotification, updateNotification } = useNotification();
   const today = getTodayLocal();
@@ -402,140 +404,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return totals;
   }, [localRepayments, repaymentDisplayAmountsById, displayCurrency]);
 
-  // Handle adding a repayment
-  const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>) => {
-    if (!currentUser) return;
-    let pendingPayload: Repayment | null = null;
+  // Repayment forms acknowledge only durable outbox acceptance.
+  const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>): Promise<boolean> => {
+    const userId = currentUser?.uid; if (!userId) return false;
+    const expense = expenses.find((row) => row.id === expenseId); if (!expense) return false;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    let payload: Repayment | undefined;
     try {
-      const expense = expenses.find((item) => item.id === expenseId);
-      const currencyFields = await resolveAmountCurrencyFields({
-        amount: repaymentData.amount,
-        currency: repaymentData.currency || expense?.currency || DEFAULT_BASE_CURRENCY,
-        baseCurrency: DEFAULT_BASE_CURRENCY,
-        date: repaymentData.date,
-      });
-      const repaymentId = repaymentService.createId();
-      const payload: Repayment = {
-        ...repaymentData,
-        ...currencyFields,
-        id: repaymentId,
-        userId: currentUser.uid,
-        expenseId: expenseId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      pendingPayload = payload;
-      setLocalRepayments((previous) => [...previous, payload]);
-      dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => [...previous, payload]);
+      const settlement = await prepareRepaymentSettlement(repaymentData, expense);
+      if (repaymentOwner.current !== userId) return false;
+      payload = { ...repaymentData, ...settlement, id: repaymentService.createId(), userId, expenseId, createdAt: new Date(), updatedAt: new Date() };
+      const optimistic = payload;
+      setLocalRepayments((previous) => [...previous, optimistic]);
+      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => [...previous, optimistic]);
+      await acceptLocalMutation({ entity: 'repayment', type: 'create', payload });
       setShowRepaymentFormForExpenseId(null);
-      await writeLocalFirst({ type: 'create', entity: 'repayment', payload }, () => repaymentService.create(payload));
-      
-      updateNotification(notificationId, { type: 'success', message: t('repaymentAdded'), duration: 3000 });
-      setShowRepaymentFormForExpenseId(null);
-      
-      if (onReloadRepayments) {
-        onReloadRepayments();
-      }
+      updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
+      return true;
     } catch (error) {
-      console.error('Failed to add repayment:', error);
-      const queuedId = isRetryableNetworkError(error) && pendingPayload
-        ? await queueFailedWrite(error, { type: 'create', entity: 'repayment', payload: pendingPayload })
-        : null;
-      if (queuedId) {
-        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
-        setShowRepaymentFormForExpenseId(null);
-        return;
+      if (payload) {
+        const id = payload.id;
+        setLocalRepayments((previous) => previous.filter((row) => row.id !== id));
+        dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.filter((row) => row.id !== id));
       }
-      if (pendingPayload) {
-        setLocalRepayments((previous) => previous.filter((item) => item.id !== pendingPayload?.id));
-        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.filter((item) => item.id !== pendingPayload?.id));
-      }
-      updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment'), duration: 3000 });
+      updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment') + ': ' + String(error), duration: 5000 });
+      return false;
     }
   };
 
-  // Handle updating a repayment
-  const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>) => {
-    if (!currentUser) return;
-    const original = localRepayments.find((item) => item.id === repaymentId);
+  const handleUpdateRepayment = async (repaymentId: string, updates: Partial<Repayment>): Promise<boolean> => {
+    const userId = currentUser?.uid; if (!userId) return false;
+    const original = localRepayments.find((row) => row.id === repaymentId);
+    const expense = expenses.find((row) => row.id === original?.expenseId);
+    if (!original || !expense) return false;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
-    
     try {
-      const existing = localRepayments.find((item) => item.id === repaymentId);
-      const expense = expenses.find((item) => item.id === existing?.expenseId);
-      const needsRevaluation = updates.amount !== undefined || updates.currency !== undefined || updates.date !== undefined;
-      const currencyFields = needsRevaluation ? await resolveAmountCurrencyFields({
-        amount: updates.amount ?? existing?.amount ?? 0,
-        currency: updates.currency || existing?.currency || expense?.currency || DEFAULT_BASE_CURRENCY,
-        baseCurrency: updates.baseCurrency || existing?.baseCurrency || DEFAULT_BASE_CURRENCY,
-        date: updates.date || existing?.date || new Date().toISOString().slice(0, 10),
-        existing,
-      }) : {};
-      const normalizedUpdates = { ...updates, ...currencyFields };
-      if (existing) {
-        const optimistic = { ...existing, ...normalizedUpdates, updatedAt: new Date() };
-        setLocalRepayments((previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
-        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.map((item) => item.id === repaymentId ? optimistic : item));
-      }
+      const input = { ...original, ...updates };
+      const settlement = await prepareRepaymentSettlement(input, expense, original);
+      if (repaymentOwner.current !== userId) return false;
+      const payload = { ...input, ...settlement, id: repaymentId, userId, expenseId: expense.id!, updatedAt: new Date() };
+      setLocalRepayments((previous) => previous.map((row) => row.id === repaymentId ? payload : row));
+      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.map((row) => row.id === repaymentId ? payload : row));
+      await acceptLocalMutation({ entity: 'repayment', type: 'update', payload });
       setEditingRepayment(null);
-      await writeLocalFirst({ type: 'update', entity: 'repayment', payload: { ...normalizedUpdates, id: repaymentId, userId: currentUser.uid } },
-        () => repaymentService.update(repaymentId, normalizedUpdates));
-      
-      updateNotification(notificationId, { type: 'success', message: t('repaymentUpdated'), duration: 3000 });
-      setEditingRepayment(null);
-      
-      if (onReloadRepayments) {
-        onReloadRepayments();
-      }
+      updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
+      return true;
     } catch (error) {
-      console.error('Failed to update repayment:', error);
-      const queuedId = getQueuedWriteId(error);
-      if (queuedId) {
-        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
-        setEditingRepayment(null);
-        return;
-      }
-      if (original) {
-        setLocalRepayments((previous) => previous.map((item) => item.id === repaymentId ? original : item));
-        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.map((item) => item.id === repaymentId ? original : item));
-      }
-      updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment'), duration: 3000 });
+      setLocalRepayments((previous) => previous.map((row) => row.id === repaymentId ? original : row));
+      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.map((row) => row.id === repaymentId ? original : row));
+      updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment') + ': ' + String(error), duration: 5000 });
+      return false;
     }
   };
 
-  // Handle deleting a repayment
   const handleDeleteRepayment = async (repaymentId: string) => {
-    if (!currentUser) return;
-    
-    const original = localRepayments.find((item) => item.id === repaymentId);
-    setLocalRepayments((previous) => previous.filter((item) => item.id !== repaymentId));
-    dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => previous.filter((item) => item.id !== repaymentId));
+    const userId = currentUser?.uid; if (!userId) return;
+    const original = localRepayments.find((row) => row.id === repaymentId); if (!original) return;
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
+    setLocalRepayments((previous) => previous.filter((row) => row.id !== repaymentId));
+    dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.filter((row) => row.id !== repaymentId));
     try {
+      await acceptLocalMutation({ entity: 'repayment', type: 'delete', payload: { id: repaymentId, userId, expenseId: original.expenseId } });
       setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
-      await writeLocalFirst({ type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } },
-        () => repaymentService.delete(repaymentId));
-      
-      updateNotification(notificationId, { type: 'success', message: t('repaymentDeleted'), duration: 3000 });
-      setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
-      
-      if (onReloadRepayments) {
-        onReloadRepayments();
-      }
+      updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
     } catch (error) {
-      console.error('Failed to delete repayment:', error);
-      const queuedId = isRetryableNetworkError(error) ? await queueFailedWrite(error, { type: 'delete', entity: 'repayment', payload: { id: repaymentId, userId: currentUser.uid } }) : null;
-      if (queuedId) {
-        updateNotification(notificationId, { type: 'info', message: t('operationSavedOffline'), duration: 5000 });
-        setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
-        return;
-      }
-      if (original) {
-        setLocalRepayments((previous) => [...previous, original]);
-        dataService.updateCache<Repayment[]>('repayments', currentUser.uid, (previous) => [...previous, original]);
-      }
-      updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment'), duration: 3000 });
+      setLocalRepayments((previous) => [...previous, original]);
+      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => [...previous, original]);
+      updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment') + ': ' + String(error), duration: 5000 });
     }
   };
 
@@ -1445,6 +1380,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       </div>
                     )}
 
+                    {!!expense.splitParticipants?.length && <ExpenseSplitSummary expense={expense} />}
                     {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
                     {expense.needsRepaymentTracking && (() => {
                       const expenseRepayments = repaymentsByExpense.get(expense.id || '') ?? EMPTY_REPAYMENTS;
@@ -1623,6 +1559,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         {showRepaymentFormForExpenseId && (
           <RepaymentForm
             expenseId={showRepaymentFormForExpenseId}
+            splitParticipants={expenses.find((row) => row.id === showRepaymentFormForExpenseId)?.splitParticipants}
             maxAmount={
               (() => {
                 const exp = expenses.find(e => e.id === showRepaymentFormForExpenseId);
@@ -1654,6 +1591,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         {editingRepayment && (
           <RepaymentForm
             expenseId={editingRepayment.expenseId}
+            splitParticipants={expenses.find((row) => row.id === editingRepayment.expenseId)?.splitParticipants}
             initialData={editingRepayment}
             maxAmount={
               (() => {

@@ -1,6 +1,7 @@
 import { parseISO } from 'date-fns';
 import { getBillingCyclePeriod } from '../../utils/budgetRollover';
 import React from 'react';
+import { outstandingReceivableBase, splitReceivableRatios } from '../../utils/expenseSplitCalculator';
 import type { Category, Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -165,8 +166,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     const totalUnrecovered = expenses
       .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
-        const repaid = repaymentsByExpense[exp.id || ''] || 0;
-        const remaining = Math.max(0, getExpenseBaseAmount(exp) - repaid);
+        const remaining = outstandingReceivableBase(exp, repayments);
         return sum + remaining;
       }, 0);
 
@@ -209,9 +209,10 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
       .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
         const repaid = getDisplayRepaymentTotal(exp.id || '');
-        return sum + Math.max(0, getDisplayExpenseAmount(exp) - repaid);
+        const split = splitReceivableRatios(exp, repayments);
+        return sum + (split ? getDisplayExpenseAmount(exp) * split.outstanding : Math.max(0, getDisplayExpenseAmount(exp) - repaid));
       }, 0);
-  }, [displayCurrency, expenses, getDisplayExpenseAmount, getDisplayRepaymentTotal, stats.totalUnrecovered]);
+  }, [displayCurrency, expenses, repayments, getDisplayExpenseAmount, getDisplayRepaymentTotal, stats.totalUnrecovered]);
 
   const displayByCategory = React.useMemo(() => {
     if (!displayCurrency) return stats.byCategory;
@@ -369,9 +370,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
             </h3>
             <div className="tracked-expenses-list">
               {trackedExpenses.map(expense => {
-        const repaid = getDisplayRepaymentTotal(expense.id || '');
-                const totalAmount = getDisplayExpenseAmount(expense);
-                const remaining = totalAmount - repaid;
+                const fullAmount = getDisplayExpenseAmount(expense);
+                const split = splitReceivableRatios(expense, repayments);
+                const totalAmount = split ? fullAmount * split.expected : fullAmount;
+                const remaining = split ? fullAmount * split.outstanding : totalAmount - getDisplayRepaymentTotal(expense.id || '');
+                const repaid = totalAmount - remaining;
                 const percentage = totalAmount > 0 ? (repaid / totalAmount) * 100 : 0;
                 const displayCurrencyCode = displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY;
                 

@@ -13,7 +13,7 @@ import {
 import { db } from '../config/firebase';
 import { Expense, Transfer, ScheduledPayment, ScheduledPaymentRecord, ScheduledPaymentSummary } from '../types';
 import { hasFinancialReceipt, runFinancialTransaction, type FinancialOperation } from './financialMutation';
-import { applyBalanceAdjustmentsInTransaction, prepareBalanceAdjustments } from './balanceService';
+import { applyBalanceAdjustmentsInTransaction, bookedAccountMovements, prepareBalanceAdjustments } from './balanceService';
 import { applyExpenseSummaryChange, friendSpendingSummaryStateRef, isFriendSpendingSummaryReady } from './friendSpendingSummaryService';
 import { getCurrencyMinorDigits } from '../domain/money';
 
@@ -179,7 +179,7 @@ export const scheduledPaymentService = {
     };
     const expenseRef = generatedExpense ? doc(db, 'expenses', generatedExpense.id!) : undefined;
     const adjustments = generatedExpense ? await prepareBalanceAdjustments(record.userId, [{
-      type: 'expense', expense: generatedExpense as Expense, direction: -1,
+      type: 'expense', expense: { ...generatedExpense, bookedAccountMovements: undefined } as Expense, direction: -1,
     }]) : [];
     const now = Timestamp.now();
     await runFinancialTransaction(db, operation, async (transaction) => {
@@ -203,7 +203,7 @@ export const scheduledPaymentService = {
         const { id: expenseId, ...expenseFields } = generatedExpense;
         void expenseId;
         transaction.set(expenseRef, removeUndefinedFields({
-          ...expenseFields, scheduledPaymentRecordId: recordRef.id, createdAt: now, updatedAt: now,
+          ...expenseFields, bookedAccountMovements: bookedAccountMovements(adjustments), scheduledPaymentRecordId: recordRef.id, createdAt: now, updatedAt: now,
         }));
       }
       if (!existingRecord.exists()) {
@@ -304,7 +304,7 @@ export const scheduledPaymentService = {
         await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
         if (isFriendSpendingSummaryReady(summary.data())) applyExpenseSummaryChange(transaction, before, after);
         const { id: ignored, ...fields } = after; void ignored;
-        transaction.set(expenseRef, removeUndefinedFields({ ...fields, updatedAt: Timestamp.now() }));
+        transaction.set(expenseRef, removeUndefinedFields({ ...fields, bookedAccountMovements: bookedAccountMovements(adjustments, 1), updatedAt: Timestamp.now() }));
       }
       const { id: ignored, ...fields } = next; void ignored;
       transaction.set(recordRef, removeUndefinedFields({ ...fields, difference: next.actualAmount - next.expectedAmount, updatedAt: Timestamp.now() }));

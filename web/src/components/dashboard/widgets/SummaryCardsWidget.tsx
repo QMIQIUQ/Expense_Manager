@@ -1,6 +1,7 @@
 import { parseISO } from 'date-fns';
 import { getBillingCyclePeriod } from '../../../utils/budgetRollover';
 import React from 'react';
+import { outstandingReceivableBase, splitReceivableRatios } from '../../../utils/expenseSplitCalculator';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Expense } from '../../../types';
 import { WidgetProps } from './types';
@@ -132,8 +133,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
     const totalUnrecoveredBase = expenses
       .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
       .reduce((sum, exp) => {
-        const repaid = repaymentsByExpenseBase[exp.id || ''] || 0;
-        return sum + Math.max(0, getExpenseBaseAmount(exp) - repaid);
+        return sum + outstandingReceivableBase(exp, repayments);
       }, 0);
 
     const totalUnrecoveredDisplay = expenses
@@ -146,7 +146,8 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
             ? displaySource.amount
             : expenseDisplayAmountsById[exp.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(exp);
-        return sum + Math.max(0, amount - repaid);
+        const split = splitReceivableRatios(exp, repayments);
+        return sum + (split ? amount * split.outstanding : Math.max(0, amount - repaid));
       }, 0);
 
     const netCashflow = monthlyIncome - monthlyBase;

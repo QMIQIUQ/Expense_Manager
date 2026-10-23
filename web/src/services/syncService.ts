@@ -227,6 +227,8 @@ class SyncService {
           return await this.executeExpenseOperation(operation);
         case 'category':
         case 'expenseTag':
+        case 'accountReconciliation':
+        case 'reconciliationMark':
           await commitQueuedEntity(operation);
           return true;
         case 'budget':

@@ -12,6 +12,8 @@ const entities: Record<CacheableEntity, QueuedOperation['entity']> = {
   friendPreferences: 'friendPreference',
   dashboardLayout: 'dashboardLayout',
   expenseTags: 'expenseTag',
+  accountReconciliations: 'accountReconciliation',
+  reconciliationMarks: 'reconciliationMark',
 };
 export const cacheEntityFor = (entity: QueuedOperation['entity']): CacheableEntity =>
   (Object.keys(entities) as CacheableEntity[]).find((key) => entities[key] === entity)!;

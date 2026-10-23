@@ -6,12 +6,13 @@ export const affectedEntities = (operations: Pick<QueuedOperation, 'entity'>[]):
   const entities = new Set<CacheableEntity>();
   for (const operation of operations) {
     entities.add(cacheEntityFor(operation.entity));
-    if (['expense', 'income', 'transfer', 'scheduledPaymentRecord'].includes(operation.entity)) {
+    if (['expense', 'income', 'repayment', 'transfer', 'scheduledPaymentRecord'].includes(operation.entity)) {
       entities.add('banks');
       entities.add('ewallets');
     }
     if (operation.entity === 'expense') { entities.add('transfers'); entities.add('scheduledPaymentRecords'); }
     if (operation.entity === 'transfer') entities.add('expenses');
+    if (operation.entity === 'repayment') entities.add('expenses');
     if (operation.entity === 'scheduledPaymentRecord') entities.add('expenses');
   }
   return entities;

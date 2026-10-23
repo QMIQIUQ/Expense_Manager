@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Expense, Category, Card, EWallet, Bank, Transfer, TimeFormat, DateFormat, PaymentMethodType } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -88,10 +88,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [transferToBankId, setTransferToBankId] = useState(initialTransfer?.toBankId || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const currencyDigits = getCurrencyMinorDigits(formData.currency);
+  const mounted = useRef(true);
+  const submitting = useRef(false);
+  const identity = JSON.stringify([currentUser?.uid, initialData?.id, formData, tagIds, enableTransfer, transferToPaymentMethod, transferToCardId, transferToEWalletName, transferToBankId]);
+  const identityRef = useRef(identity); identityRef.current = identity;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || initialData && initialData.userId !== currentUser.uid) return;
+    if (submitting.current || !currentUser || initialData && initialData.userId !== currentUser.uid) return;
+    const submittedIdentity = identity;
+    const valid = () => mounted.current && identityRef.current === submittedIdentity;
 
     void (async () => {
       const newErrors: { [key: string]: string } = {};
@@ -109,7 +116,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       }
 
       setErrors({});
-      setIsSubmitting(true);
+      submitting.current = true; setIsSubmitting(true);
       setCurrencyError('');
 
       try {
@@ -125,6 +132,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           ),
         });
 
+        if (!valid()) return;
         const submitData: Partial<typeof formData> & {
           amount: number;
           currency: string;
@@ -158,6 +166,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         }
 
         if (!initialData && onReviewDuplicates && !await onReviewDuplicates(submitData as Expense)) return;
+        if (!valid()) return;
         if (enableTransfer && onAddTransfer) {
           const fromPaymentMethod = formData.paymentMethod as 'cash' | 'credit_card' | 'e_wallet' | 'bank';
           const toPaymentMethod = transferToPaymentMethod;
@@ -207,6 +216,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         }
 
         await onSubmit(submitData as Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'userId'>);
+        if (!valid()) return;
         if (!initialData) {
           setTagIds([]);
           setFormData({
@@ -231,9 +241,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         }
       } catch (error) {
         console.error('Failed to resolve expense currency:', error);
-        setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
+        if (valid()) setCurrencyError(error instanceof Error ? error.message : (t('errorLoadingData') || 'Failed to resolve currency'));
       } finally {
-        setIsSubmitting(false);
+        submitting.current = false; if (mounted.current) setIsSubmitting(false);
       }
     })();
   };

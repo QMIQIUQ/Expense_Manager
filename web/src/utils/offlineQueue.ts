@@ -7,7 +7,7 @@ import { dependencyKeys, operationsOverlap } from './operationDependencies';
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout' | 'friendPreference' | 'expenseTag';
+  entity: 'expense' | 'category' | 'budget' | 'recurring' | 'scheduledPayment' | 'scheduledPaymentRecord' | 'income' | 'card' | 'bank' | 'ewallet' | 'repayment' | 'transfer' | 'featureSettings' | 'quickExpensePreset' | 'userSettings' | 'dashboardLayout' | 'friendPreference' | 'expenseTag' | 'accountReconciliation' | 'reconciliationMark';
   payload: unknown;
   timestamp: number;
   retryCount: number;
@@ -32,7 +32,7 @@ let snapshot: QueuedOperation[] = [];
 let initialization: Promise<void> | undefined;
 let refreshGeneration = 0;
 const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('expense-outbox-v1') : undefined;
-const entities = new Set(['expense', 'category', 'budget', 'recurring', 'scheduledPayment', 'scheduledPaymentRecord', 'income', 'card', 'bank', 'ewallet', 'repayment', 'transfer', 'featureSettings', 'quickExpensePreset', 'userSettings', 'dashboardLayout', 'friendPreference', 'expenseTag']);
+const entities = new Set(['expense', 'category', 'budget', 'recurring', 'scheduledPayment', 'scheduledPaymentRecord', 'income', 'card', 'bank', 'ewallet', 'repayment', 'transfer', 'featureSettings', 'quickExpensePreset', 'userSettings', 'dashboardLayout', 'friendPreference', 'expenseTag', 'accountReconciliation', 'reconciliationMark']);
 const ownerOf = (operation: Mutation): unknown => (operation.payload as { userId?: unknown } | null)?.userId;
 const completedBuffers = new Map<string, Map<string, QueuedOperation>>();
 let completionTimer: ReturnType<typeof setTimeout> | undefined;
