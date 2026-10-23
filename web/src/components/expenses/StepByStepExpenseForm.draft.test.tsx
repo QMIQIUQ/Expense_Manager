@@ -364,7 +364,8 @@ describe('StepByStepExpenseForm draft controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /Other/i }));
     await waitFor(() => expect(screen.getByRole('button', { name: /next/i })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await screen.findByPlaceholderText(/grocery shopping/i);
+    const description = await screen.findByPlaceholderText(/grocery shopping/i);
+    fireEvent.change(description, { target: { value: 'Grocery shopping' } });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByRole('button', { name: 'Save', exact: true });
   };
