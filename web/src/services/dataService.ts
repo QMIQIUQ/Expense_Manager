@@ -43,6 +43,7 @@ type EntityData =
   | ScheduledPayment[]
   | ScheduledPaymentRecord[]
   | unknown[];
+export type DataReadSource = 'cached' | 'server';
 let localRevision = 0;
 const generations = new Map<string, number>();
 const inFlight = new Map<string, Promise<EntityData>>();
@@ -136,17 +137,20 @@ export const dataService = {
     forceRefresh: boolean,
     fetchFn: () => Promise<T>,
     onCommit?: () => void,
-    queryScope = 'collection'
+    queryScope = 'collection',
+    onSource?: (source: DataReadSource) => void,
   ): Promise<T> {
     // If offline, always use cache
     if (!networkStatus.isOnline) {
       const cached = sessionCache.get<T>(entity, userId);
       if (cached) {
         console.log(`Using cached ${entity} (offline mode)`);
+        onSource?.('cached');
         return applyPendingOperations(entity, userId, cached);
       }
       // No cache available and offline - return empty array
       console.warn(`No cached ${entity} available in offline mode`);
+      onSource?.('cached');
       return applyPendingOperations(entity, userId, [] as unknown as T);
     }
 
@@ -158,13 +162,14 @@ export const dataService = {
         const fetched = await fetchShared(entity, userId, fetchFn, queryScope);
         if (revision !== generationFor(entity, userId)) {
           const current = sessionCache.get<T>(entity, userId);
-          if (current) return applyPendingOperations(entity, userId, current);
+          if (current) { onSource?.('cached'); return applyPendingOperations(entity, userId, current); }
           throw Object.assign(new Error('Read was superseded by a newer mutation'), { code: 'stale-read' });
         }
         const data = applyPendingOperations(entity, userId, fetched);
         // Cache the data
         sessionCache.set(entity, userId, data, { coverage: queryScope === 'collection' ? undefined : queryScope });
         if (revision === generationFor(entity, userId)) onCommit?.();
+        onSource?.('server');
         return data;
       } catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'stale-read') throw error;
@@ -174,6 +179,7 @@ export const dataService = {
         const cached = sessionCache.get<T>(entity, userId);
         if (cached) {
           console.log(`Using cached ${entity} as fallback`);
+          onSource?.('cached');
           return applyPendingOperations(entity, userId, cached);
         }
         // No cache and fetch failed - re-throw error
@@ -184,6 +190,7 @@ export const dataService = {
     // Use cached data
     console.log(`Using cached ${entity}`);
     const cached = sessionCache.get<T>(entity, userId);
+    onSource?.('cached');
     return applyPendingOperations(entity, userId, cached || ([] as unknown as T));
   },
 
@@ -207,7 +214,8 @@ export const dataService = {
     fetchFn: () => Promise<T>,
     onUpdate?: (data: T) => void,
     onCommit?: () => void,
-    queryScope = 'collection'
+    queryScope = 'collection',
+    onSource?: (source: DataReadSource) => void,
   ): Promise<T> {
     const cached = sessionCache.get<T>(entity, userId);
     
@@ -215,6 +223,7 @@ export const dataService = {
     // and fetch fresh data in the background
     if (cached && networkStatus.isOnline) {
       console.log(`Using cached ${entity}, revalidating in background...`);
+      onSource?.('cached');
       const revision = generationFor(entity, userId);
       
       // Fetch fresh data in background (non-blocking)
@@ -237,7 +246,7 @@ export const dataService = {
     }
     
     // No cache or offline - use regular getData
-    return this.getData(entity, userId, false, fetchFn, onCommit, queryScope);
+    return this.getData(entity, userId, false, fetchFn, onCommit, queryScope, onSource);
   },
 
   /**

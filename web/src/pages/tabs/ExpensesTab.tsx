@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useHistoryPages } from '../../hooks/useHistoryPages';
+import type { HistoryPageSource } from '../../hooks/useHistoryPages';
 import { useExpenseTags } from '../../hooks/useExpenseTags';
 import { ExpenseSavedViews } from '../../components/expenses/ExpenseSavedViews';
 import { ExpenseTagManager } from '../../components/categories/ExpenseTagManager';
@@ -26,11 +27,11 @@ import type {
 } from '../../types';
 import type { QuickExpensePreset } from '../../types/quickExpense';
 import { DEFAULT_EXPENSE_FILTERS, type ExpenseFilterState, type ExpensePeriodSelection } from '../../types/expensePeriod';
-import { filterAndSortExpenses, filterExpenses, filterExpensesByPeriod, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
+import { filterAndSortExpenses, filterExpenses, filterExpensesByPeriod, getExpensePeriodBounds, includeFocusedExpense } from '../../utils/expensePeriodUtils';
 
 interface ExpensesTabProps {
   userId?: string;
-  onHistoryRows?: (rows: Expense[]) => void;
+  onHistoryRows?: (rows: Expense[], source: HistoryPageSource) => void;
   totalsComplete?: boolean;
   expenses: Expense[];
   categories: Category[];
@@ -44,14 +45,16 @@ interface ExpensesTabProps {
   initialCategory?: string;
   displayCurrency: CurrencyCode;
   onDelete: (id: string) => void;
-  onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
+  onInlineUpdate: (id: string, updates: Partial<Expense>, expectedRevision?: number) => Promise<'saved' | 'queued' | 'failed'>;
   onBulkDelete: (ids: string[]) => void;
   onReloadRepayments: () => void;
   onCreateCard: () => void;
   onCreateEWallet: () => void;
   onCreateBank?: () => void;
   onAddTransfer: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
+  onManageTransferHistory?: () => void;
   focusExpenseId?: string;
+  onClearFocusExpense?: () => void;
   quickExpensePresets: QuickExpensePreset[];
   onQuickExpenseAdd: (preset: QuickExpensePreset) => Promise<void>;
   onQuickExpensePresetsChange: () => void;
@@ -81,7 +84,9 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   onCreateEWallet,
   onCreateBank,
   onAddTransfer,
+  onManageTransferHistory,
   focusExpenseId,
+  onClearFocusExpense,
   quickExpensePresets,
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
@@ -162,7 +167,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       setCompletePeriod(snapshot);
       if (networkStatus.isOnline) {
         publishingHistory.current = true;
-        try { historyCallback.current?.(snapshot.rows); } finally { publishingHistory.current = false; }
+        try { historyCallback.current?.(snapshot.rows, { cached: false }); } finally { publishingHistory.current = false; }
       }
     }).catch((error) => { if (current) setSummaryError(String(error)); });
     return () => { current = false; };
@@ -193,6 +198,11 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
     () => filterAndSortExpenses(periodExpenses, resultFilters, { cards, ewallets, banks, tags }),
     [banks, cards, ewallets, tags, resultFilters, periodExpenses],
   );
+  const displayedExpenses = useMemo(
+    () => includeFocusedExpense(visibleExpenses, [...sourceRows, ...expenses], focusExpenseId, userId),
+    [expenses, focusExpenseId, sourceRows, userId, visibleExpenses],
+  );
+  const focusedExpenseFound = !!focusExpenseId && displayedExpenses.some((expense) => expense.id === focusExpenseId && expense.userId === userId);
   const hasActiveFilters = !!filters.query
     || !!filters.tagId || !!filters.accountKey
     || !!filters.category
@@ -216,6 +226,12 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       <div className="expense-page-heading">
         <h2>{t('expenseHistory')}</h2>
       </div>
+      {focusExpenseId && (
+        <p className="expense-focus-notice" role="status">
+          <span>{t(focusedExpenseFound ? 'dashboardExpenseFocusNotice' : 'dashboardExpenseFocusMissing')}</span>
+          <button type="button" className="btn btn-secondary" onClick={onClearFocusExpense}>{t('close')}</button>
+        </p>
+      )}
       {history.incomplete && <p role="status">{t('cachedHistoryIncomplete')}</p>}
 
       <ExpenseFiltersBar
@@ -228,7 +244,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       {userId && filters.query !== membership.query && <p role="status">{t('loading')}</p>}
 
       <ExpenseList
-        expenses={visibleExpenses.slice(0, visibleCount)}
+        expenses={displayedExpenses.slice(0, visibleCount)}
         allExpenses={expenses}
         categories={categories}
         cards={cards}
@@ -245,6 +261,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         onCreateEWallet={onCreateEWallet}
         onCreateBank={onCreateBank}
         onAddTransfer={onAddTransfer}
+        onManageTransferHistory={onManageTransferHistory}
         focusExpenseId={focusExpenseId}
         quickExpensePresets={quickExpensePresets}
         onQuickExpenseAdd={onQuickExpenseAdd}
@@ -257,8 +274,8 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         onClearFilters={() => setFilters(DEFAULT_EXPENSE_FILTERS)}
       />
       {history.error && <p role="alert">{history.error} <button onClick={history.retry}>{t('retry')}</button></p>}
-      {(visibleCount < visibleExpenses.length || (!requiresFullSearch && history.hasMore)) && <button type="button" disabled={history.loading} className="btn btn-secondary" onClick={() => { setVisibleCount((count) => count + 100); if (!requiresFullSearch && visibleCount >= visibleExpenses.length) void history.loadMore(); }}>
-        {t('showMore')} ({Math.min(visibleCount, visibleExpenses.length)} / {aggregate?.count ?? (history.hasMore ? '…' : visibleExpenses.length)})
+      {(visibleCount < displayedExpenses.length || (!requiresFullSearch && history.hasMore)) && <button type="button" disabled={history.loading} className="btn btn-secondary" onClick={() => { setVisibleCount((count) => count + 100); if (!requiresFullSearch && visibleCount >= displayedExpenses.length) void history.loadMore(); }}>
+        {t('showMore')} ({Math.min(visibleCount, displayedExpenses.length)} / {aggregate?.count ?? (history.hasMore ? '…' : displayedExpenses.length)})
       </button>}
     </div>
   );

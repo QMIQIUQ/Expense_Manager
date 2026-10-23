@@ -4,11 +4,14 @@ import { describe, expect, it, vi } from 'vitest';
 import WidgetContainer from './WidgetContainer';
 import type { WidgetProps } from './types';
 import type { DashboardWidget } from '../../../types/dashboard';
-const draws = vi.hoisted(() => ({ recent: vi.fn(), summary: vi.fn(), chart: vi.fn(), scheduled: vi.fn() }));
+const draws = vi.hoisted(() => ({ recent: vi.fn(), tracked: vi.fn(), summary: vi.fn(), chart: vi.fn(), scheduled: vi.fn() }));
 const language = React.createContext({ t: (key: string) => key });
 vi.mock('../../../contexts/LanguageContext', () => ({ useLanguage: () => React.useContext(language) }));
 vi.mock('./RecentExpensesWidget', () => ({ default: (props: WidgetProps & { onViewAll?: () => void }) => {
   draws.recent(); return <button onClick={props.onViewAll}>Rows {props.expenses.length}</button>;
+} }));
+vi.mock('./TrackedExpensesWidget', () => ({ default: (props: WidgetProps) => {
+  draws.tracked(); return <button onClick={() => props.onNavigateToExpense?.('tracked-expense')}>Tracked expense</button>;
 } }));
 vi.mock('./SummaryCardsWidget', () => ({ default: ({ displayCurrency }: WidgetProps) => { draws.summary(); return <p>Summary {displayCurrency}</p>; } }));
 vi.mock('./ExpenseChartWidget', () => ({ default: ({ displayCurrency }: WidgetProps) => { draws.chart(); return <p>Chart {displayCurrency}</p>; } }));
@@ -18,7 +21,7 @@ describe('widget render isolation', () => {
   it('updates financial dependencies, currency and completeness without repainting for unrelated budgets', () => {
     draws.summary.mockClear();
     const widget: DashboardWidget = { id: 'summary', type: 'summary-cards', enabled: true, order: 0, size: 'full' };
-    const valid = { ...data, completeness: { expenses: true, incomes: true, repayments: true, userSettings: true } };
+    const valid = { ...data, completeness: { expenses: true, incomes: true, repayments: true, receivableExpenses: true, userSettings: true } };
     const view = render(<WidgetContainer widget={widget} data={valid} />);
     view.rerender(<WidgetContainer widget={widget} data={{ ...valid, budgets: [{}] as WidgetProps['budgets'] }} />);
     expect(draws.summary).toHaveBeenCalledTimes(1);
@@ -64,5 +67,13 @@ describe('widget render isolation', () => {
     expect(draws.recent).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByText('Rows 1'));
     expect(navigate).toHaveBeenCalledOnce(); expect(oldNavigate).not.toHaveBeenCalled();
+  });
+  it('forwards exact expense navigation from the receivable tracking widget', () => {
+    const widget: DashboardWidget = { id: 'tracked', type: 'tracked-expenses', enabled: true, order: 0, size: 'medium' };
+    const navigate = vi.fn();
+    const valid = { ...data, completeness: { expenses: true, repayments: true, receivableExpenses: true } };
+    render(<WidgetContainer widget={widget} data={valid} onNavigateToExpense={navigate} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tracked expense' }));
+    expect(navigate).toHaveBeenCalledWith('tracked-expense');
   });
 });

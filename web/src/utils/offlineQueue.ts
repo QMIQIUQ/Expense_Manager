@@ -226,6 +226,66 @@ export const offlineQueue = {
       return { rows: rows.map((row) => selected(row) ? { ...row, retryCount: 0, status: undefined, nextAttemptAt: undefined, lease: undefined, lastError: undefined } : row), result: rows.some(selected) };
     });
   },
+  /** Rebase the saved edit chain onto a freshly read server expense after a version conflict. */
+  async rebaseExpenseUpdateChain(id: string, userId: string, serverExpense: Record<string, unknown>): Promise<boolean> {
+    return changed((rows) => {
+      const ownsExpense = (row: QueuedOperation) => row.entity === 'expense' && ownerOf(row) === userId &&
+        (row.payload as { id?: unknown } | null)?.id === id;
+      const conflict = rows.find((row) => ownsExpense(row) && row.type === 'update' && row.status === 'needs-attention' &&
+        row.lastError?.includes('EXPENSE_VERSION_CONFLICT'));
+      if (!conflict || conflict.lease) return { rows, result: false };
+      const conflictSequence = conflict.sequence ?? conflict.timestamp;
+      const chain = rows.filter((row) => ownsExpense(row) && row.type === 'update' &&
+        (row.sequence ?? row.timestamp) >= conflictSequence).sort((left, right) =>
+        (left.sequence ?? left.timestamp) - (right.sequence ?? right.timestamp) || left.id.localeCompare(right.id));
+      if (!chain.length || chain.some((row) => row.lease || row.legacyAmbiguous || !row.localSnapshot ||
+        (row.localSnapshot as { userId?: unknown }).userId !== userId ||
+        !Number.isInteger((row.payload as { expectedRevision?: unknown }).expectedRevision))) {
+        return { rows, result: false };
+      }
+
+      let current: Record<string, unknown> = { ...serverExpense, id, userId };
+      let revision = Number.isInteger(current.revision) && (current.revision as number) >= 0 ? current.revision as number : 0;
+      const rebased = new Map<string, QueuedOperation>();
+      for (const row of chain) {
+        const payload = row.payload as Record<string, unknown>;
+        const baseline = row.localSnapshot!;
+        const delta: Record<string, unknown> = {};
+        for (const [field, value] of Object.entries(payload)) {
+          if (['id', 'userId', 'expectedRevision', 'revision', 'createdAt', 'updatedAt', 'bookedAccountMovements', 'splitPaidMinor'].includes(field)) continue;
+          if (!dataEqual(value, baseline[field])) delta[field] = value;
+        }
+        rebased.set(row.id, {
+          ...row,
+          payload: { ...delta, id, userId, revision: revision + 1, expectedRevision: revision },
+          localSnapshot: { ...current },
+          status: undefined,
+          retryCount: 0,
+          nextAttemptAt: undefined,
+          lastError: undefined,
+          lease: undefined,
+        });
+        current = { ...current, ...delta, revision: revision + 1 };
+        revision++;
+      }
+      return { rows: rows.map((row) => rebased.get(row.id) ?? row), result: true };
+    });
+  },
+  /** Explicitly discard conflicted local expense edits after the user chooses the server copy. */
+  async discardExpenseUpdateChain(id: string, userId: string): Promise<boolean> {
+    return changed((rows) => {
+      const ownsExpense = (row: QueuedOperation) => row.entity === 'expense' && ownerOf(row) === userId &&
+        (row.payload as { id?: unknown } | null)?.id === id;
+      const conflict = rows.find((row) => ownsExpense(row) && row.type === 'update' && row.status === 'needs-attention' &&
+        row.lastError?.includes('EXPENSE_VERSION_CONFLICT'));
+      if (!conflict || conflict.lease) return { rows, result: false };
+      const conflictSequence = conflict.sequence ?? conflict.timestamp;
+      const remove = (row: QueuedOperation) => ownsExpense(row) && row.type === 'update' &&
+        (row.sequence ?? row.timestamp) >= conflictSequence;
+      if (rows.some((row) => remove(row) && row.lease)) return { rows, result: false };
+      return { rows: rows.filter((row) => !remove(row)), result: rows.some(remove) };
+    });
+  },
   async clear(userId?: string): Promise<void> { await changed((rows) => ({ rows: userId ? rows.filter((row) => ownerOf(row) !== userId) : [], result: undefined })); },
   async discardUserPending(userId: string): Promise<void> {
     await changed((rows) => {

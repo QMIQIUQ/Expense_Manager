@@ -1,6 +1,6 @@
 import { dataEqual } from './dataEquality';
 
-const ENTITIES = ['expenses', 'categories', 'budgets', 'recurring', 'incomes', 'cards', 'banks', 'ewallets',
+const ENTITIES = ['expenses', 'receivableExpenses', 'categories', 'budgets', 'recurring', 'incomes', 'cards', 'banks', 'ewallets',
   'repayments', 'transfers', 'scheduledPayments', 'scheduledPaymentRecords', 'quickExpensePresets',
   'friendPreferences', 'featureSettings', 'userSettings', 'dashboardLayout', 'expenseTags', 'accountReconciliations', 'reconciliationMarks', 'receiptAttachments'] as const;
 export type CacheableEntity = typeof ENTITIES[number];

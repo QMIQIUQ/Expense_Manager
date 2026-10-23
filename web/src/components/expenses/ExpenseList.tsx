@@ -36,6 +36,7 @@ import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 import { dataService } from '../../services/dataService';
 import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
 import { applyPendingOperations } from '../../utils/pendingOperations';
+import { hasReceivablePlan, isOpenReceivable, receivableProgress } from '../../utils/expenseSplitCalculator';
 
 const EMPTY_REPAYMENTS: Repayment[] = [];
 const EMPTY_QUICK_EXPENSE_PRESETS: QuickExpensePreset[] = [];
@@ -79,7 +80,7 @@ interface ExpenseListProps {
   transfers?: Transfer[];
   displayCurrency?: CurrencyCode;
   onDelete: (id: string) => void;
-  onInlineUpdate: (id: string, updates: Partial<Expense>) => void;
+  onInlineUpdate: (id: string, updates: Partial<Expense>, expectedRevision?: number) => Promise<'saved' | 'queued' | 'failed'>;
   onEdit?: (exp: Expense | null) => void;
   onBulkDelete?: (ids: string[]) => void;
   onReloadRepayments?: () => void; // Callback to reload repayments
@@ -87,6 +88,7 @@ interface ExpenseListProps {
   onCreateEWallet?: () => void;
   onCreateBank?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
+  onManageTransferHistory?: () => void;
   focusExpenseId?: string; // when set, scroll and highlight
   // Quick expense related
   quickExpensePresets?: QuickExpensePreset[];
@@ -119,6 +121,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onCreateEWallet,
   onCreateBank,
   onAddTransfer,
+  onManageTransferHistory,
   focusExpenseId,
   quickExpensePresets = EMPTY_QUICK_EXPENSE_PRESETS,
   onQuickExpenseAdd,
@@ -143,7 +146,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   
   const [searchTerm, setSearchTerm] = useState('');
   const [localRepayments, setLocalRepayments] = useState(repayments);
-  const repaymentsByExpense = useMemo(() => indexBy(localRepayments, (row) => row.expenseId), [localRepayments]);
   const transfersByDate = useMemo(() => indexBy(transfers, (row) => row.date), [transfers]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
@@ -305,6 +307,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   // Scroll to and highlight an expense when focusExpenseId changes
+  useEffect(() => {
+    if (!focusExpenseId || !currentUser?.uid) return;
+    const focusedExpense = expenses.find((expense) => expense.id === focusExpenseId && expense.userId === currentUser.uid);
+    if (!focusedExpense) return;
+    setCollapsedGroups((previous) => {
+      if (!previous.has(focusedExpense.date)) return previous;
+      const next = new Set(previous);
+      next.delete(focusedExpense.date);
+      return next;
+    });
+  }, [currentUser?.uid, expenses, focusExpenseId]);
+
   React.useEffect(() => {
     if (!focusExpenseId) return;
     const highlightEl = (el: HTMLElement) => {
@@ -329,22 +343,27 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     return () => {
       if (timer !== undefined) clearTimeout(timer);
     };
-  }, [focusExpenseId]);
+  }, [expenses, focusExpenseId]);
 
-  // Calculate repayment totals per expense
+  const expenseById = useMemo(() => {
+    return new Map(allExpenses
+      .filter((expense) => expense.userId === currentUser?.uid && !!expense.id)
+      .map((expense) => [expense.id!, expense]));
+  }, [allExpenses, currentUser?.uid]);
+  const ownedRepayments = useMemo(() => localRepayments.filter((repayment) =>
+    !!currentUser?.uid && repayment.userId === currentUser.uid &&
+    expenseById.get(repayment.expenseId || '')?.userId === currentUser.uid), [currentUser?.uid, expenseById, localRepayments]);
+  const repaymentsByExpense = useMemo(() => indexBy(ownedRepayments, (row) => row.expenseId), [ownedRepayments]);
+  // Calculate repayment totals only for expenses and records owned by the active user.
   const repaymentTotals = useMemo(() => {
     const totals: { [expenseId: string]: number } = {};
-    localRepayments.forEach((repayment) => {
+    ownedRepayments.forEach((repayment) => {
       if (repayment.expenseId) {
         totals[repayment.expenseId] = (totals[repayment.expenseId] || 0) + getRepaymentBaseAmount(repayment);
       }
     });
     return totals;
-  }, [localRepayments]);
-
-  const expenseById = useMemo(() => {
-    return new Map(expenses.map((expense) => [expense.id || '', expense]));
-  }, [expenses]);
+  }, [ownedRepayments]);
 
   const expenseDisplayEntries = useMemo(() => {
     if (!displayCurrency) return [];
@@ -363,7 +382,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const repaymentDisplayEntries = useMemo(() => {
     if (!displayCurrency) return [];
-    return localRepayments
+    return ownedRepayments
       .filter((repayment) => !!repayment.id)
       .map((repayment) => {
         const linkedExpense = expenseById.get(repayment.expenseId || '');
@@ -374,7 +393,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           date: repayment.date,
         };
       });
-  }, [displayCurrency, expenseById, localRepayments]);
+  }, [displayCurrency, expenseById, ownedRepayments]);
 
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
   const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
@@ -397,13 +416,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   };
   const displayRepaymentTotals = useMemo(() => {
     const totals = new Map<string, number>();
-    for (const repayment of localRepayments) {
+    for (const repayment of ownedRepayments) {
       if (!repayment.expenseId) continue;
       const amount = displayCurrency ? repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN : getRepaymentBaseAmount(repayment);
       totals.set(repayment.expenseId, (totals.get(repayment.expenseId) ?? 0) + amount);
     }
     return totals;
-  }, [localRepayments, repaymentDisplayAmountsById, displayCurrency]);
+  }, [ownedRepayments, repaymentDisplayAmountsById, displayCurrency]);
 
   // Repayment forms acknowledge only durable outbox acceptance.
   const handleAddRepayment = async (expenseId: string, repaymentData: Omit<Repayment, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'expenseId'>): Promise<boolean> => {
@@ -600,13 +619,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       const dailyTotal = exps.reduce((sum, exp) => sum + getDisplayExpenseAmount(exp), 0);
       return { date, expenses: exps, dailyTotal };
     }).sort((a, b) => {
+      if (focusExpenseId) {
+        const aFocused = a.expenses.some((expense) => expense.id === focusExpenseId);
+        const bFocused = b.expenses.some((expense) => expense.id === focusExpenseId);
+        if (aFocused !== bFocused) return aFocused ? -1 : 1;
+      }
       // Sort descending by default (newest first)
       if (sortBy.includes('asc')) {
         return a.date.localeCompare(b.date);
       }
       return b.date.localeCompare(a.date);
     });
-  }, [filteredAndSortedExpenses, getDisplayExpenseAmount, sortBy]);
+  }, [filteredAndSortedExpenses, focusExpenseId, getDisplayExpenseAmount, sortBy]);
 
   // Use unique category names to avoid duplicate option keys
   const categoryNames = useMemo(() => Array.from(new Set(sortCategories(categories).map((c) => c.name))).filter((n) => n), [categories]);
@@ -1075,15 +1099,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       }}>
                         {getCategoryDisplay(expense.category)}
                       </span>
-                      {expense.needsRepaymentTracking && (
-                        expense.repaymentTrackingCompleted ? (
-                          <span style={styles.completedBadge}>
-                            ✓ {t('completed')}
-                          </span>
+                      {hasReceivablePlan(expense) && (
+                        isOpenReceivable(expense, ownedRepayments) ? (
+                          <span style={styles.pendingBadge}>⏳ {t('pending')}</span>
                         ) : (
-                          <span style={styles.pendingBadge}>
-                            ⏳ {t('pending')}
-                          </span>
+                          <span style={styles.completedBadge}>✓ {t('completed')}</span>
                         )
                       )}
                     </div>
@@ -1186,7 +1206,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           <PlusIcon size={18} />
                         </button>
                         
-                        {expense.needsRepaymentTracking && (
+                        {expense.needsRepaymentTracking && !expense.splitParticipants?.length && (
                           <button
                             onClick={() => {
                               onInlineUpdate(expense.id!, {
@@ -1247,7 +1267,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 <span style={styles.menuIcon}><RepaymentIcon size={16} /></span>
                                 {t('repayments')}
                               </button>
-                              {expense.needsRepaymentTracking && (
+                              {expense.needsRepaymentTracking && !expense.splitParticipants?.length && (
                                 <button
                                   className="menu-item-hover"
                                   style={styles.menuItem}
@@ -1284,7 +1304,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 </div>
 
                 {/* Every saved expense can receive permanent receipt attachments. */}
-                {(expense.id || expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || expense.needsRepaymentTracking) && (
+                {(expense.id || expense.amountItems?.length || expense.notes || findRelatedTransfer(expense) || hasReceivablePlan(expense)) && (
                   <div style={styles.moreDetailsRow}>
                     <button
                       onClick={() => setExpandedDetailsId(expandedDetailsId === expense.id ? null : expense.id!)}
@@ -1357,11 +1377,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     })()}
 
                     {/* Repayment Progress (if tracking) */}
-                    {expense.needsRepaymentTracking && (
+                    {hasReceivablePlan(expense) && !expense.splitParticipants?.length && (
                       <div style={styles.detailsSubsection}>
                         <div style={styles.detailsLabel}>💳 {t('repaymentStatus')}</div>
                         {(() => {
-                          const percentage = expenseDisplayAmount > 0 ? Math.min(100, (repaidDisplay / expenseDisplayAmount) * 100) : 0;
+                          const progress = receivableProgress(expense, ownedRepayments);
+                          const percentage = progress.percent;
+                          const expectedDisplay = expenseDisplayAmount * progress.expectedRatio;
+                          const settledDisplay = expectedDisplay * (percentage / 100);
+                          const excessDisplay = Number.isFinite(repaidDisplay)
+                            ? Math.max(0, repaidDisplay - expectedDisplay)
+                            : 0;
                           return (
                             <div style={styles.repaymentProgress}>
                               <div style={styles.progressBar}>
@@ -1374,7 +1400,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 />
                               </div>
                               <div style={styles.progressText}>
-                                {percentage.toFixed(0)}% {t('repaid')} ({formatMoney(repaidDisplay, expenseDisplayCurrency)} / {formatMoney(expenseDisplayAmount, expenseDisplayCurrency)})
+                                {percentage.toFixed(0)}% {t('repaid')} ({formatMoney(settledDisplay, expenseDisplayCurrency)} / {formatMoney(expectedDisplay, expenseDisplayCurrency)})
+                              </div>
+                              <div style={{ ...styles.progressText, marginTop: '4px' }}>
+                                {t('totalRepaid')}: {formatMoney(repaidDisplay, expenseDisplayCurrency)}
+                                {excessDisplay > 0 && <> · {t('excess')}: {formatMoney(excessDisplay, expenseDisplayCurrency)}</>}
                               </div>
                             </div>
                           );
@@ -1384,7 +1414,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
                     {!!expense.splitParticipants?.length && <ExpenseSplitSummary expense={expense} />}
                     {/* Repayment Records List (if any) with edit/delete - only for expenses with repayment tracking */}
-                    {expense.needsRepaymentTracking && (() => {
+                    {hasReceivablePlan(expense) && (() => {
                       const expenseRepayments = repaymentsByExpense.get(expense.id || '') ?? EMPTY_REPAYMENTS;
                       return (
                         <div style={styles.detailsSubsection}>
@@ -1501,15 +1531,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             cards={cards}
             ewallets={ewallets}
             banks={banks}
-            onSubmit={(data) => {
-              onInlineUpdate(editingExpense.id!, data);
-              setEditingExpense(null);
+            onSubmit={async (data) => {
+              const result = await onInlineUpdate(editingExpense.id!, data, editingExpense.revision ?? 0);
+              if (result === 'saved' || result === 'queued') setEditingExpense(null);
+              return result;
             }}
             onCancel={() => setEditingExpense(null)}
             onCreateCard={onCreateCard}
             onCreateEWallet={onCreateEWallet}
             onCreateBank={onCreateBank}
             onAddTransfer={onAddTransfer}
+            onManageTransferHistory={onManageTransferHistory}
             dateFormat={dateFormat}
           />
         )}

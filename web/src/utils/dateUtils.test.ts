@@ -13,6 +13,12 @@ describe('dateUtils', () => {
       const expected = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
       expect(today).toBe(expected);
     });
+
+    it('formats the date and time from the same local instant around midnight', () => {
+      const now = new Date(2026, 9, 24, 23, 59, 45);
+      expect(getTodayLocal(now)).toBe('2026-10-24');
+      expect(getCurrentTimeLocal(now)).toBe('23:59');
+    });
   });
 
   describe('getCurrentTimeLocal', () => {

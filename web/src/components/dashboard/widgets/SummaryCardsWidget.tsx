@@ -1,7 +1,7 @@
 import { parseISO } from 'date-fns';
 import { getBillingCyclePeriod } from '../../../utils/budgetRollover';
 import React from 'react';
-import { outstandingReceivableBase, splitReceivableRatios } from '../../../utils/expenseSplitCalculator';
+import { isOpenReceivable, outstandingReceivableBase, receivableProgress } from '../../../utils/expenseSplitCalculator';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Expense } from '../../../types';
 import { WidgetProps } from './types';
@@ -59,7 +59,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
   const repaymentConversionEntries = React.useMemo(() => {
     if (!displayCurrency) return [];
     return repayments
-      .filter((repayment) => !!repayment.id)
+      .filter((repayment) => !!repayment.id && expenseById.get(repayment.expenseId || '')?.userId === repayment.userId)
       .map((repayment) => {
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
@@ -86,7 +86,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
     const repaymentsByExpenseDisplay: { [expenseId: string]: number } = {};
 
     repayments.forEach((rep) => {
-      if (!rep.expenseId) return;
+      if (!rep.expenseId || expenseById.get(rep.expenseId)?.userId !== rep.userId) return;
       repaymentsByExpenseBase[rep.expenseId] = (repaymentsByExpenseBase[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       repaymentsByExpenseDisplay[rep.expenseId] = (repaymentsByExpenseDisplay[rep.expenseId] || 0) + (
         displayCurrency ? (repaymentDisplayAmountsById[rep.id || ''] ?? Number.NaN) : getRepaymentBaseAmount(rep)
@@ -131,30 +131,26 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
         .reduce((sum, inc) => sum + getIncomeBaseAmount(inc), 0);
 
     const totalUnrecoveredBase = expenses
-      .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .filter((exp) => isOpenReceivable(exp, repayments))
       .reduce((sum, exp) => {
         return sum + outstandingReceivableBase(exp, repayments);
       }, 0);
 
     const totalUnrecoveredDisplay = expenses
-      .filter((exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .filter((exp) => isOpenReceivable(exp, repayments))
       .reduce((sum, exp) => {
-        const repaid = repaymentsByExpenseDisplay[exp.id || ''] || 0;
         const displaySource = getExpenseDisplaySource(exp, displayCurrency);
         const amount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
             : expenseDisplayAmountsById[exp.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(exp);
-        const split = splitReceivableRatios(exp, repayments);
-        return sum + (split ? amount * split.outstanding : Math.max(0, amount - repaid));
+        return sum + amount * receivableProgress(exp, repayments).outstandingRatio;
       }, 0);
 
     const netCashflow = monthlyIncome - monthlyBase;
 
-    const trackedCount = expenses.filter((exp) =>
-      exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
-    ).length;
+    const trackedCount = expenses.filter((exp) => isOpenReceivable(exp, repayments)).length;
 
     return {
       monthlyBase,
@@ -165,7 +161,7 @@ const SummaryCardsWidget: React.FC<WidgetProps> = ({
       netCashflow,
       trackedCount,
     };
-  }, [cycleEnd, cycleStart, displayCurrency, expenseDisplayAmountsById, incomes, repaymentDisplayAmountsById, repayments, expenses]);
+  }, [cycleEnd, cycleStart, displayCurrency, expenseById, expenseDisplayAmountsById, incomes, repaymentDisplayAmountsById, repayments, expenses]);
 
   const monthlyIncomeDisplay = React.useMemo(() => {
     if (!displayCurrency) return stats.monthlyIncome;

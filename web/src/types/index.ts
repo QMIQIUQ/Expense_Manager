@@ -103,6 +103,8 @@ export interface Expense {
   scheduledPaymentRecordId?: string;
   id?: string;
   userId: string;
+  /** Monotonic edit version used to reject stale cross-device updates. Legacy rows start at 0. */
+  revision?: number;
   relatedTransferIds?: string[];
   description: string;
   amount: number;

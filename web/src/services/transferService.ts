@@ -69,7 +69,7 @@ export const transferService = {
             ? linkedExpense.data().relatedTransferIds.filter((transferId: unknown): transferId is string => typeof transferId === 'string')
             : [];
           if (!relatedTransferIds.includes(docRef.id)) {
-            transaction.update(expenseRef, { relatedTransferIds: [...relatedTransferIds, docRef.id], updatedAt: now });
+            transaction.update(expenseRef, { relatedTransferIds: [...relatedTransferIds, docRef.id], revision: (linkedExpense.data().revision ?? 0) + 1, updatedAt: now });
           }
         }
         return;
@@ -86,7 +86,7 @@ export const transferService = {
           ? linkedExpense.data().relatedTransferIds.filter((transferId: unknown): transferId is string => typeof transferId === 'string')
           : [];
         if (!relatedTransferIds.includes(docRef.id)) {
-          transaction.update(expenseRef, { relatedTransferIds: [...relatedTransferIds, docRef.id], updatedAt: now });
+          transaction.update(expenseRef, { relatedTransferIds: [...relatedTransferIds, docRef.id], revision: (linkedExpense.data().revision ?? 0) + 1, updatedAt: now });
         }
       }
     });
@@ -165,7 +165,7 @@ export const transferService = {
         const links = Array.isArray(expense.data()?.relatedTransferIds) ? expense.data()!.relatedTransferIds as string[] : [];
         const retained = links.filter((transferId) => transferId !== id);
         if (expense.id === next.expenseId) retained.push(id);
-        transaction.update(expense.ref, { relatedTransferIds: retained, updatedAt: Timestamp.now() });
+        transaction.update(expense.ref, { relatedTransferIds: retained, revision: ((expense.data()?.revision as number | undefined) ?? 0) + 1, updatedAt: Timestamp.now() });
       }
     });
   },

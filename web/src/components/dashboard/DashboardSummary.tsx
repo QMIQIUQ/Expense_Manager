@@ -1,7 +1,7 @@
 import { parseISO } from 'date-fns';
 import { getBillingCyclePeriod } from '../../utils/budgetRollover';
 import React from 'react';
-import { outstandingReceivableBase, splitReceivableRatios } from '../../utils/expenseSplitCalculator';
+import { isOpenReceivable, outstandingReceivableBase, receivableProgress, repaymentsForExpense } from '../../utils/expenseSplitCalculator';
 import type { Category, Expense, Income, Repayment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUserSettings } from '../../contexts/UserSettingsContext';
@@ -69,7 +69,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
   const repaymentDisplayEntries = React.useMemo(() => {
     if (!displayCurrency) return [];
     return repayments
-      .filter((repayment) => !!repayment.id)
+      .filter((repayment) => !!repayment.id && expenseById.get(repayment.expenseId || '')?.userId === repayment.userId)
       .map((repayment) => {
         const linkedExpense = expenseById.get(repayment.expenseId || '');
         return {
@@ -98,15 +98,14 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     return expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN;
   }, [displayCurrency, expenseDisplayAmountsById]);
 
-  const getDisplayRepaymentTotal = React.useCallback((expenseId: string): number => {
+  const getDisplayRepaymentTotal = React.useCallback((expense: Expense): number => {
+    if (!expense.id || !expense.userId) return 0;
     if (!displayCurrency) {
-      return repayments
-        .filter((repayment) => repayment.expenseId === expenseId)
+      return repaymentsForExpense(expense, repayments)
         .reduce((sum, repayment) => sum + getRepaymentBaseAmount(repayment), 0);
     }
 
-    return repayments
-      .filter((repayment) => repayment.expenseId === expenseId)
+    return repaymentsForExpense(expense, repayments)
       .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN), 0);
   }, [displayCurrency, repaymentDisplayAmountsById, repayments]);
   
@@ -115,7 +114,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
     // Build repayment totals first (needed for net expense calculations)
     const repaymentsByExpense: { [expenseId: string]: number } = {};
     repayments.forEach((rep) => {
-      if (rep.expenseId) {
+      if (rep.expenseId && expenseById.get(rep.expenseId)?.userId === rep.userId) {
         repaymentsByExpense[rep.expenseId] =
           (repaymentsByExpense[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
       }
@@ -164,7 +163,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
 
     // Total unrecovered from tracked expenses only
     const totalUnrecovered = expenses
-      .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .filter((exp) => isOpenReceivable(exp, repayments))
       .reduce((sum, exp) => {
         const remaining = outstandingReceivableBase(exp, repayments);
         return sum + remaining;
@@ -183,7 +182,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
       totalUnrecovered,
       netCashflow,
     };
-  }, [expenses, incomes, repayments, cycleStart, cycleEnd]);
+  }, [expenses, incomes, repayments, cycleStart, cycleEnd, expenseById]);
 
   const displayMonthlyIncome = React.useMemo(() => {
     if (!displayCurrency) return stats.monthlyIncome;
@@ -200,19 +199,17 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
         const expDate = parseISO(exp.date);
         return expDate >= cycleStart && expDate <= cycleEnd;
       })
-      .reduce((sum, exp) => sum + Math.max(0, getDisplayExpenseAmount(exp) - getDisplayRepaymentTotal(exp.id || '')), 0);
+      .reduce((sum, exp) => sum + Math.max(0, getDisplayExpenseAmount(exp) - getDisplayRepaymentTotal(exp)), 0);
   }, [cycleEnd, cycleStart, displayCurrency, expenses, getDisplayExpenseAmount, getDisplayRepaymentTotal, stats.monthly]);
 
   const displayTotalUnrecovered = React.useMemo(() => {
     if (!displayCurrency) return stats.totalUnrecovered;
     return expenses
-      .filter(exp => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted)
+      .filter((exp) => isOpenReceivable(exp, repayments))
       .reduce((sum, exp) => {
-        const repaid = getDisplayRepaymentTotal(exp.id || '');
-        const split = splitReceivableRatios(exp, repayments);
-        return sum + (split ? getDisplayExpenseAmount(exp) * split.outstanding : Math.max(0, getDisplayExpenseAmount(exp) - repaid));
+        return sum + getDisplayExpenseAmount(exp) * receivableProgress(exp, repayments).outstandingRatio;
       }, 0);
-  }, [displayCurrency, expenses, repayments, getDisplayExpenseAmount, getDisplayRepaymentTotal, stats.totalUnrecovered]);
+  }, [displayCurrency, expenses, repayments, getDisplayExpenseAmount, stats.totalUnrecovered]);
 
   const displayByCategory = React.useMemo(() => {
     if (!displayCurrency) return stats.byCategory;
@@ -221,7 +218,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
       if (!byCategory[exp.category]) {
         byCategory[exp.category] = 0;
       }
-      const repaid = getDisplayRepaymentTotal(exp.id || '');
+      const repaid = getDisplayRepaymentTotal(exp);
       byCategory[exp.category] += Math.max(0, getDisplayExpenseAmount(exp) - repaid);
     });
     return byCategory;
@@ -325,9 +322,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
             </div>
           </div>
           {(() => {
-            const trackedCount = expenses.filter(exp => 
-              exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
-            ).length;
+            const trackedCount = expenses.filter((exp) => isOpenReceivable(exp, repayments)).length;
             if (trackedCount > 0) {
               return (
                 <div style={{
@@ -357,9 +352,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
 
       {/* Tracked Expenses Section - NEW */}
       {(() => {
-        const trackedExpenses = expenses.filter(exp => 
-          exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
-        );
+        const trackedExpenses = expenses.filter((exp) => isOpenReceivable(exp, repayments));
         
         if (trackedExpenses.length === 0) return null;
         
@@ -371,11 +364,11 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
             <div className="tracked-expenses-list">
               {trackedExpenses.map(expense => {
                 const fullAmount = getDisplayExpenseAmount(expense);
-                const split = splitReceivableRatios(expense, repayments);
-                const totalAmount = split ? fullAmount * split.expected : fullAmount;
-                const remaining = split ? fullAmount * split.outstanding : totalAmount - getDisplayRepaymentTotal(expense.id || '');
+                const progress = receivableProgress(expense, repayments);
+                const totalAmount = fullAmount * progress.expectedRatio;
+                const remaining = fullAmount * progress.outstandingRatio;
                 const repaid = totalAmount - remaining;
-                const percentage = totalAmount > 0 ? (repaid / totalAmount) * 100 : 0;
+                const percentage = progress.percent;
                 const displayCurrencyCode = displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY;
                 
                 return (
@@ -385,7 +378,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
                         <span className="tracked-expense-title">{expense.description}</span>
                         <span className="tracked-expense-date">{formatDateWithUserFormat(expense.date, dateFormat)}</span>
                       </div>
-                      {onMarkTrackingCompleted && (
+                      {onMarkTrackingCompleted && !expense.splitParticipants?.length && (
                         <button
                           onClick={() => onMarkTrackingCompleted(expense.id!)}
                           className="btn-complete"

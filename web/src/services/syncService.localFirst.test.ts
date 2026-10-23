@@ -61,4 +61,33 @@ describe('leased background replay', () => {
     expect(incomeService.create).toHaveBeenCalledOnce();
     expect(offlineQueue.count()).toBe(2);
   });
+  it('passes the saved edit-start revision to the expense transaction', async () => {
+    await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: { id: 'expense', userId: 'user', amount: 42, revision: 8, expectedRevision: 7 } });
+    const [queued] = offlineQueue.getAll();
+
+    expect(await syncService.syncOfflineQueue()).toEqual({ success: 1, failed: 0 });
+    expect(expenseService.update).toHaveBeenCalledWith('expense', { amount: 42 }, { userId: 'user', operationId: queued.id }, 7);
+  });
+  it('rebases chained offline edits onto the latest expense version without replaying untouched stale fields', async () => {
+    const original = { id: 'expense', userId: 'user', description: 'Lunch', amount: 100, revision: 0 };
+    sessionCache.set('expenses', 'user', [original]);
+    await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: { ...original, amount: 120, revision: 1, expectedRevision: 0 } });
+    sessionCache.set('expenses', 'user', [{ ...original, amount: 120, revision: 1 }]);
+    await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: { ...original, amount: 120, description: 'Trip lunch', revision: 2, expectedRevision: 1 } });
+    const [first] = offlineQueue.getAll();
+    const claim = await offlineQueue.claimNext('user');
+    expect(claim?.id).toBe(first.id);
+    await offlineQueue.fail(first.id, claim!.lease!.token, new Error('EXPENSE_VERSION_CONFLICT'), false);
+    expect(await syncService.syncOfflineQueue()).toEqual({ success: 0, failed: 0 });
+    expect(expenseService.update).not.toHaveBeenCalled();
+
+    expect(await offlineQueue.rebaseExpenseUpdateChain('expense', 'user', { ...original, amount: 100, description: 'Lunch on cloud', revision: 5 })).toBe(true);
+    const [rebasedFirst, rebasedSecond] = offlineQueue.getAll();
+    expect(rebasedFirst.payload).toEqual({ amount: 120, id: 'expense', userId: 'user', revision: 6, expectedRevision: 5 });
+    expect(rebasedSecond.payload).toEqual({ description: 'Trip lunch', id: 'expense', userId: 'user', revision: 7, expectedRevision: 6 });
+
+    expect(await syncService.syncOfflineQueue()).toEqual({ success: 2, failed: 0 });
+    expect(expenseService.update).toHaveBeenNthCalledWith(1, 'expense', { amount: 120 }, { userId: 'user', operationId: rebasedFirst.id }, 5);
+    expect(expenseService.update).toHaveBeenNthCalledWith(2, 'expense', { description: 'Trip lunch' }, { userId: 'user', operationId: rebasedSecond.id }, 6);
+  });
 });

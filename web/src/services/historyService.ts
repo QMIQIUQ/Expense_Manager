@@ -117,17 +117,52 @@ export const dashboardRange = (now = new Date()): HistoryRange => {
   return { startDate: formatDateLocal(first < previous ? first : previous), endDate: formatDateLocal(new Date(now.getFullYear() + 1, 0, 31)) };
 };
 
+const hasReceivableData = (expense: Expense): boolean => expense.needsRepaymentTracking === true || (expense.splitParticipants?.length ?? 0) > 0;
+const readCompleteExpenseSnapshot = async (userId: string): Promise<{ expenses: Expense[]; receivables: Expense[] }> => {
+  const generation = financialReadGeneration(userId);
+  // Use the existing owner-scoped, read-time-pinned traversal. A split query on
+  // an array field cannot safely claim full coverage until Firestore accepts
+  // its ordering/index semantics and every page shares one read time.
+  const expenses = (await readHistoryRange<Expense>('expenses', userId))
+    .filter((expense) => expense.userId === userId && !!expense.id);
+  if (generation !== financialReadGeneration(userId)) {
+    throw Object.assign(new Error('Expense history changed while the complete snapshot was loading'), { code: 'stale-read' });
+  }
+  const receivables = expenses.filter(hasReceivableData);
+  // Publish coverage only after every page has succeeded and the full snapshot
+  // has been validated for owner and stable document identity.
+  sessionCache.set('receivableExpenses', userId, receivables, { coverage: 'all' });
+  return { expenses, receivables };
+};
+
 export const readDashboardExpenses = async (userId: string): Promise<Expense[]> => {
-  const [recent, tracked, latest] = await Promise.all([
-    readHistoryRange<Expense>('expenses', userId, dashboardRange()),
-    // Includes legacy tracking records whose completed flag is absent.
-    readMatching<Expense>('expenses', userId, [where('needsRepaymentTracking', '==', true)]),
-    getHistoryPage<Expense>('expenses', userId),
-  ]);
-  const all = new Map(recent.map((row) => [row.id, row]));
-  latest.rows.forEach((row) => all.set(row.id, row));
-  tracked.filter((row) => !row.repaymentTrackingCompleted).forEach((row) => all.set(row.id, row));
-  return [...all.values()].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  if (!networkStatus.isOnline) {
+    const [recent, receivables] = await Promise.all([
+      readHistoryRange<Expense>('expenses', userId, dashboardRange()),
+      readReceivableExpenses(userId),
+    ]);
+    return [...new Map([...recent, ...receivables].map((row) => [row.id, row])).values()]
+      .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  }
+  const snapshot = await readCompleteExpenseSnapshot(userId);
+  const range = dashboardRange();
+  const recent = snapshot.expenses.filter((row) => row.date >= range.startDate && row.date <= range.endDate);
+  const latest = snapshot.expenses.slice(0, PAGE_SIZE);
+  return [...new Map([...recent, ...latest, ...snapshot.receivables].map((row) => [row.id, row])).values()]
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+};
+
+/** Complete, owner-scoped candidate set for receivables, including older splits outside the dashboard date range. */
+export const readReceivableExpenses = async (userId: string): Promise<Expense[]> => {
+  if (!userId) return [];
+  if (!networkStatus.isOnline) {
+    const snapshot = sessionCache.getSnapshot<Expense[]>('receivableExpenses', userId);
+    if (!snapshot || snapshot.coverage !== 'all' || snapshot.data.some((row) => row.userId !== userId || !row.id)) {
+      throw Object.assign(new Error('Complete receivable history is not cached on this device'), { code: 'incomplete-cache' });
+    }
+    return snapshot.data;
+  }
+  return (await readCompleteExpenseSnapshot(userId)).receivables;
 };
 
 export const readDashboardIncomes = (userId: string): Promise<Income[]> => readHistoryRange('incomes', userId, dashboardRange());
@@ -188,7 +223,7 @@ const readScoped = <T,>(userId: string, name: HistoryCollection, scope: Financia
 };
 
 export const readScopedExpenses = (userId: string, scope: FinancialScope): Promise<Expense[]> => readScoped(userId, 'expenses', scope, async () => {
-  if (scope === 'all') return readHistoryRange('expenses', userId);
+  if (scope === 'all') return (await readCompleteExpenseSnapshot(userId)).expenses;
   if (scope === 'dashboard') return readDashboardExpenses(userId);
   const dashboard = await readScopedExpenses(userId, 'dashboard');
   const window = dashboardRange();

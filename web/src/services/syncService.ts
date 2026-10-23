@@ -302,7 +302,10 @@ class SyncService {
           const updates = { ...payload };
           delete updates.id;
           delete updates.userId;
-          await expenseService.update(payload.id, updates, { userId: signedInUserId, operationId: operation.id });
+          delete updates.expectedRevision;
+          delete updates.revision;
+          const expectedRevision = Number.isInteger(payload.expectedRevision) ? payload.expectedRevision as number : undefined;
+          await expenseService.update(payload.id, updates, { userId: signedInUserId, operationId: operation.id }, expectedRevision);
         }
         return true;
       case 'delete':
