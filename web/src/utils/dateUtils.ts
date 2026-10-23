@@ -9,8 +9,7 @@ import { DateFormat } from '../types';
  * Get today's date in local timezone formatted as YYYY-MM-DD
  * This is safer than new Date().toISOString().split('T')[0] which uses UTC
  */
-export const getTodayLocal = (): string => {
-  const now = new Date();
+export const getTodayLocal = (now: Date = new Date()): string => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
@@ -20,8 +19,7 @@ export const getTodayLocal = (): string => {
 /**
  * Get current time in local timezone formatted as HH:MM
  */
-export const getCurrentTimeLocal = (): string => {
-  const now = new Date();
+export const getCurrentTimeLocal = (now: Date = new Date()): string => {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;

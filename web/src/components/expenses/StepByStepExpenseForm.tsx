@@ -125,6 +125,7 @@ interface StepByStepExpenseFormProps {
   onCreateCard?: () => void;
   onCreateBank?: () => void;
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
+  onManageTransferHistory?: () => void;
   initialDate?: string;
   timeFormat?: TimeFormat;
   dateFormat?: DateFormat;
@@ -147,6 +148,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
   ewallets = [],
   banks = [],
   onAddTransfer,
+  onManageTransferHistory,
   onCreateEWallet,
   onCreateCard,
   onCreateBank,
@@ -961,7 +963,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     sourceFormData: Pick<ReceiptDraftFormState, 'date' | 'description'> & Partial<ReceiptDraftFormState> = formData,
     expenseId?: string,
   ): Promise<void> => {
-    if (enableTransfer && onAddTransfer) {
+    if (!initialData && enableTransfer && onAddTransfer) {
       const sourcePaymentMethod = sourceFormData.paymentMethod || formData.paymentMethod;
       const sourcePaymentMethodName = sourceFormData.paymentMethodName ?? formData.paymentMethodName;
       const sourceCardId = sourceFormData.cardId ?? formData.cardId;
@@ -1057,7 +1059,10 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       if (receipt && !(typeof accepted === 'object' && accepted?.attachmentAccepted)) throw new Error('Receipt archiving was not accepted; the draft has been retained');
       const acceptedStatus = typeof accepted === 'object' && accepted !== null ? accepted.status : accepted;
       const expenseId = typeof accepted === 'object' && accepted !== null ? accepted.expenseId : undefined;
-      if (acceptedStatus === false || acceptedStatus === 'failed') return;
+      if (acceptedStatus === false || acceptedStatus === 'failed') {
+        setCurrencyError(t('saveFailed'));
+        return;
+      }
       if (acceptedStatus === 'queued') {
         if (enableTransfer) showNotification('info', t('queuedTransferDeferred'));
       } else {
@@ -1630,13 +1635,33 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-              <DatePicker
-                label={t('date')}
-                value={formData.date}
-                onChange={(date) => setFormData(prev => ({ ...prev, date }))}
-                dateFormat={dateFormat}
-                required
-              />
+              <div style={styles.dateInputRow}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <DatePicker
+                    label={t('date')}
+                    value={formData.date}
+                    onChange={(date) => setFormData(prev => ({ ...prev, date }))}
+                    dateFormat={dateFormat}
+                    required
+                  />
+                </div>
+                {isNotToday && (
+                  <button
+                    type="button"
+                    style={styles.setNowButton}
+                    onClick={() => {
+                      const now = new Date();
+                      setFormData((previous) => ({
+                        ...previous,
+                        date: getTodayLocal(now),
+                        time: getCurrentTimeLocal(now),
+                      }));
+                    }}
+                  >
+                    ⏱ {t('now')}
+                  </button>
+                )}
+              </div>
               <TimePicker
                 label={t('time')}
                 value={formData.time}
@@ -1870,7 +1895,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <section aria-label={t('recentlyUsedCategories')} style={styles.recentCategorySection}>
                 <h3 style={styles.categorySectionTitle}>{t('recentlyUsedCategories')}</h3>
                 <div style={styles.categoryScrollContainer}>
-                  <div style={{ ...styles.categoryScroll, gridTemplateRows: '1fr' }}>
+                  <div className="expense-category-grid" style={styles.categoryScroll}>
                     {recentCategories.map(renderCategory)}
                   </div>
                 </div>
@@ -1880,7 +1905,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <section aria-label={recentCategories.length > 0 ? t('otherCategories') : t('selectCategory')}>
                 {recentCategories.length > 0 && <h3 style={styles.categorySectionTitle}>{t('otherCategories')}</h3>}
                 <div style={styles.categoryScrollContainer}>
-                  <div style={styles.categoryScroll}>
+                  <div className="expense-category-grid" style={styles.categoryScroll}>
                     {otherCategories.map(renderCategory)}
                   </div>
                 </div>
@@ -1988,22 +2013,33 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               showLabels={false}
             />
 
-            {/* Toggle options - tap to toggle like settings page */}
-            <div style={styles.toggleOptionsContainer}>
-              <div
-                onClick={() => setEnableTransfer(!enableTransfer)}
-                style={{
-                  ...styles.toggleOption,
-                  ...(enableTransfer ? styles.toggleOptionActive : {}),
-                }}
-              >
-                <span style={styles.toggleOptionIcon}>↔️</span>
-                <span style={styles.toggleOptionText}>{t('ledgerRecordTransfer')}</span>
-                <span style={styles.toggleIndicator}>{enableTransfer ? '✓' : ''}</span>
+            {initialData ? (
+              <div className="expense-transfer-edit-note" role="note">
+                <span>{t('ledgerTransferEditNote')}</span>
+                {onManageTransferHistory && (
+                  <button type="button" className="btn btn-secondary" onClick={() => { onCancel?.(); onManageTransferHistory(); }}>
+                    {t('ledgerOpenTransferHistory')}
+                  </button>
+                )}
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Account transfers are separate from repayments people owe you. */}
+                <div style={styles.toggleOptionsContainer}>
+                  <div
+                    onClick={() => setEnableTransfer(!enableTransfer)}
+                    style={{
+                      ...styles.toggleOption,
+                      ...(enableTransfer ? styles.toggleOptionActive : {}),
+                    }}
+                  >
+                    <span style={styles.toggleOptionIcon}>↔️</span>
+                    <span style={styles.toggleOptionText}>{t('transfer')}</span>
+                    <span style={styles.toggleIndicator}>{enableTransfer ? '✓' : ''}</span>
+                  </div>
+                </div>
 
-            {enableTransfer && (
+                {enableTransfer && (
               <div style={styles.transferOptions}>
                 <label style={styles.fieldLabel}>{t('transferTo')}</label>
                 <div style={styles.paymentMethodGrid}>
@@ -2086,19 +2122,19 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 )}
               </div>
             )}
-
-            <ExpenseTagPicker userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
-            <ExpenseSplitEditor
-              value={splitParticipants}
-              onChange={(participants) => {
-                setSplitParticipants(participants);
-                if (participants.length > 0) setFormData((previous) => ({ ...previous, needsRepaymentTracking: true }));
-              }}
-              totalMinor={formData.amount}
-              currency={formData.currency as CurrencyCode}
-              trackingEnabled={formData.needsRepaymentTracking}
-              onTrackingEnabledChange={(enabled) => setFormData((previous) => ({ ...previous, needsRepaymentTracking: enabled }))}
-            />
+              </>
+            )}
+            <div className="expense-lower-options">
+              <ExpenseTagPicker compact userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
+              <ExpenseSplitEditor
+                value={splitParticipants}
+                onChange={setSplitParticipants}
+                totalMinor={formData.amount}
+                currency={formData.currency as CurrencyCode}
+                trackingEnabled={formData.needsRepaymentTracking}
+                onTrackingChange={(enabled) => setFormData((previous) => ({ ...previous, needsRepaymentTracking: enabled }))}
+              />
+            </div>
           </div>
         );
 
@@ -2352,24 +2388,19 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
   },
   categoryScrollContainer: {
-    overflowX: 'auto',
-    WebkitOverflowScrolling: 'touch',
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px',
+    width: '100%',
+    minWidth: 0,
   },
   categoryScroll: {
     display: 'grid',
-    gridTemplateRows: 'repeat(2, 1fr)',
-    gridAutoFlow: 'column',
-    gridAutoColumns: 'minmax(80px, 100px)',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))',
     gap: '8px',
     paddingBottom: '8px',
-    paddingRight: '16px',
+    width: '100%',
   },
   categoryCard: {
-    padding: '12px 8px',
+    minHeight: '76px',
+    padding: '8px 6px',
     background: 'var(--bg-secondary, #f8f9fa)',
     borderRadius: '8px',
     textAlign: 'center',
@@ -2378,6 +2409,10 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
     overflow: 'hidden',
     minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryCardActive: {
     background: 'var(--accent-light)',
@@ -2393,7 +2428,30 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    lineHeight: 1.2,
+    overflowWrap: 'anywhere',
+    maxWidth: '100%',
+  },
+  dateInputRow: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: '8px',
+    width: '100%',
+  },
+  setNowButton: {
+    flex: '0 0 auto',
+    minHeight: '42px',
+    padding: '8px 12px',
+    border: '1px solid var(--accent-primary)',
+    borderRadius: '10px',
+    background: 'var(--accent-light)',
+    color: 'var(--accent-primary)',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
     maxWidth: '100%',
   },
   fieldContainer: {

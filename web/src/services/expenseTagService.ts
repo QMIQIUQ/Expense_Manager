@@ -12,7 +12,7 @@ export const expenseTagService = {
       return result.docs.map((row) => ({ ...row.data(), id: row.id } as ExpenseTag));
     }, onUpdate);
   },
-  async save(userId: string, name: string, color: string, existing?: ExpenseTag): Promise<void> {
+  async save(userId: string, name: string, color: string, existing?: ExpenseTag): Promise<string> {
     const displayName = name.normalize('NFKC').trim().replace(/\s+/g, ' ');
     const normalizedName = normalizeTagName(displayName);
     if (!normalizedName || normalizedName.includes('/') || normalizedName.length > 40 || !/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Invalid tag (1–40 characters, no /)');
@@ -22,6 +22,7 @@ export const expenseTagService = {
     await acceptLocalMutation({ entity: 'expenseTag', type: existing ? 'update' : 'create', payload: {
       id, userId, name: displayName, normalizedName, color, archived: existing?.archived ?? false,
     } });
+    return id;
   },
   async archive(userId: string, tag: ExpenseTag, archived: boolean): Promise<void> {
     await acceptLocalMutation({ entity: 'expenseTag', type: 'update', payload: { id: tag.id, userId, archived } });

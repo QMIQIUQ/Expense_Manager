@@ -203,7 +203,7 @@ export const scheduledPaymentService = {
         const { id: expenseId, ...expenseFields } = generatedExpense;
         void expenseId;
         transaction.set(expenseRef, removeUndefinedFields({
-          ...expenseFields, bookedAccountMovements: bookedAccountMovements(adjustments), scheduledPaymentRecordId: recordRef.id, createdAt: now, updatedAt: now,
+          ...expenseFields, revision: 1, bookedAccountMovements: bookedAccountMovements(adjustments), scheduledPaymentRecordId: recordRef.id, createdAt: now, updatedAt: now,
         }));
       }
       if (!existingRecord.exists()) {
@@ -304,7 +304,8 @@ export const scheduledPaymentService = {
         await applyBalanceAdjustmentsInTransaction(transaction, adjustments);
         if (isFriendSpendingSummaryReady(summary.data())) applyExpenseSummaryChange(transaction, before, after);
         const { id: ignored, ...fields } = after; void ignored;
-        transaction.set(expenseRef, removeUndefinedFields({ ...fields, bookedAccountMovements: bookedAccountMovements(adjustments, 1), updatedAt: Timestamp.now() }));
+        const currentRevision = Number.isInteger(before.revision) && (before.revision ?? 0) >= 0 ? before.revision! : 0;
+        transaction.set(expenseRef, removeUndefinedFields({ ...fields, revision: currentRevision + 1, bookedAccountMovements: bookedAccountMovements(adjustments, 1), updatedAt: Timestamp.now() }));
       }
       const { id: ignored, ...fields } = next; void ignored;
       transaction.set(recordRef, removeUndefinedFields({ ...fields, difference: next.actualAmount - next.expectedAmount, updatedAt: Timestamp.now() }));

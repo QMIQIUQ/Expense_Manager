@@ -9,6 +9,7 @@ import SubTabs from '../common/SubTabs';
 const AccountReconciliationManager = React.lazy(() => import('../reconciliation/AccountReconciliationManager'));
 
 interface PaymentMethodsTabProps {
+  initialView?: 'cards' | 'ewallets' | 'banks' | 'transfers' | 'reconciliation';
   cards: Card[];
   ewallets: EWallet[];
   banks?: Bank[];
@@ -32,6 +33,7 @@ interface PaymentMethodsTabProps {
 type PaymentMethodView = 'cards' | 'ewallets' | 'banks' | 'transfers' | 'reconciliation';
 
 const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
+  initialView = 'cards',
   cards,
   ewallets,
   banks = [],
@@ -52,7 +54,7 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
   onDeleteTransfer,
 }) => {
   const { t } = useLanguage();
-  const [activeView, setActiveView] = useState<PaymentMethodView>('cards');
+  const [activeView, setActiveView] = useState<PaymentMethodView>(initialView);
   
   // TODO: onAddTransfer will be used for adding transfers from the TransferList view
   void onAddTransfer;

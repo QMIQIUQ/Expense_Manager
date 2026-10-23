@@ -5,7 +5,10 @@ const fake = vi.hoisted(() => ({ owner: 'one', save: vi.fn().mockResolvedValue(u
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ currentUser: { uid: fake.owner } }) }));
 vi.mock('../../hooks/useExpenseTags', () => ({ useExpenseTags: (userId: string) => ({ rows: [{ id: `${userId}-tag`, userId, name: `${userId} tag`, archived: false, color: '#64748b' }] }) }));
 vi.mock('../../services/currencyRateService', () => ({ resolveExpenseCurrencyFields: fake.currency }));
-vi.mock('../../services/expenseTagService', () => ({ expenseTagService: { save: fake.save } }));
+vi.mock('../../services/expenseTagService', () => ({
+  expenseTagService: { save: fake.save },
+  normalizeTagName: (name: string) => name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase(),
+}));
 describe('expense tag identity comes from authentication', () => {
   it('allows empty-category accounts to create tags and resets selected tags after an owner switch', async () => {
     fake.owner = 'one'; const result = render(<ExpenseForm categories={[]} onSubmit={vi.fn()} />);

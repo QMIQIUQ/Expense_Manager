@@ -16,7 +16,7 @@ const TagRow: React.FC<{ userId: string; tag: ExpenseTag }> = ({ userId, tag }) 
   return <div className="ledger-panel"><div className="ledger-row">
     <input aria-label={t('ledgerTagName')} maxLength={40} value={name} onChange={(event) => setName(event.target.value)} />
     <input aria-label={t('color')} type="color" value={color} onChange={(event) => setColor(event.target.value)} />
-    <button type="button" disabled={busy || !name.trim()} onClick={() => { void run(() => expenseTagService.save(userId, name, color, tag)); }}>{t('save')}</button>
+    <button type="button" disabled={busy || !name.trim()} onClick={() => { void run(async () => { await expenseTagService.save(userId, name, color, tag); }); }}>{t('save')}</button>
     <button type="button" disabled={busy} onClick={() => { void run(() => expenseTagService.archive(userId, tag, !tag.archived)); }}>{t(tag.archived ? 'ledgerRestore' : 'ledgerArchive')}</button>
   </div>{error && <p role="alert">{error}</p>}</div>;
 };

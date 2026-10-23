@@ -68,7 +68,8 @@ import { dataService } from '../services/dataService';
 import { networkStatus } from '../utils/networkStatus';
 import NetworkStatusIndicator from '../components/NetworkStatusIndicator';
 import { sessionCache, type CacheableEntity } from '../utils/sessionCache';
-import { applyPendingOperations } from '../utils/pendingOperations';
+import { applyPendingOperations, mergeExpenseRows, mergeReceivableCandidatesFromSource } from '../utils/pendingOperations';
+import { hasReceivablePlan } from '../utils/expenseSplitCalculator';
 import { getQueuedWriteId, writeLocalFirstBatch } from '../utils/localFirstMutation';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
@@ -132,45 +133,6 @@ const applyPendingBudgetOperations = (
   return result;
 };
 
-type ExpenseQueuePayload = Partial<Expense> & { userId?: string };
-
-const applyPendingExpenseOperations = (
-  initialExpenses: Expense[],
-  operations: QueuedOperation[],
-  userId: string,
-): Expense[] => {
-  let result = [...initialExpenses];
-
-  for (const operation of operations) {
-    if (operation.entity !== 'expense') continue;
-    const payload = operation.payload as ExpenseQueuePayload;
-    const id = typeof payload.id === 'string' ? payload.id : undefined;
-    if (!id || payload.userId !== userId) continue;
-
-    if (operation.type === 'create') {
-      // The server copy may already include later edits from another device. Do not replace it.
-      if (!result.some((expense) => expense.id === id)) {
-        result.push({
-          ...payload,
-          id,
-          userId,
-          createdAt: payload.createdAt || new Date(operation.timestamp),
-          updatedAt: payload.updatedAt || new Date(operation.timestamp),
-        } as Expense);
-      }
-    } else if (operation.type === 'update') {
-      const updates = { ...payload };
-      delete updates.id;
-      delete updates.userId;
-      result = result.map((expense) => expense.id === id ? { ...expense, ...updates, id } as Expense : expense);
-    } else if (operation.type === 'delete') {
-      result = result.filter((expense) => expense.id !== id);
-    }
-  }
-
-  return result.sort((a, b) => b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''));
-};
-
 const applyPendingCategoryOperations = (
   initialCategories: Category[],
   operations: QueuedOperation[],
@@ -229,8 +191,36 @@ const Dashboard: React.FC = () => {
   const optimisticCRUD = useOptimisticCRUD();
 
   const initialRows = <T,>(entity: CacheableEntity): T[] => currentUser ? applyPendingOperations(entity, currentUser.uid, sessionCache.get<T[]>(entity, currentUser.uid) ?? []) : [];
+  const initialExpenses = (): Expense[] => {
+    if (!currentUser) return [];
+    const cached = sessionCache.get<Expense[]>('expenses', currentUser.uid) ?? [];
+    const receivables = sessionCache.getSnapshot<Expense[]>('receivableExpenses', currentUser.uid);
+    const validReceivables = receivables?.coverage === 'all' &&
+      receivables.data.every((row) => row?.userId === currentUser.uid && typeof row.id === 'string' && !!row.id)
+      ? receivables.data
+      : [];
+    const authoritativeReceivableIds = receivables?.coverage === 'all' && validReceivables.length === receivables.data.length
+      ? new Set(validReceivables.map((row) => row.id!))
+      : undefined;
+    return mergeExpenseRows(cached, validReceivables, currentUser.uid, offlineQueue.getAll(), { authoritativeReceivableIds });
+  };
   const [activeTab, setActiveTab] = useState<FeatureTab>('dashboard');
-  const [expenses, setExpenses] = useState<Expense[]>(() => initialRows<Expense>('expenses'));
+  const [paymentMethodsInitialView, setPaymentMethodsInitialView] = useState<'cards' | 'ewallets' | 'banks' | 'transfers' | 'reconciliation'>('cards');
+  const navigateToPaymentMethods = useCallback((view: 'cards' | 'ewallets' | 'banks' | 'transfers' | 'reconciliation' = 'cards') => {
+    setPaymentMethodsInitialView(view);
+    setActiveTab('paymentMethods');
+  }, []);
+  useEffect(() => {
+    if (activeTab !== 'paymentMethods') setPaymentMethodsInitialView('cards');
+  }, [activeTab]);
+  const [expenses, setExpensesState] = useState<Expense[]>(initialExpenses);
+  const expensesRef = useRef(expenses);
+  expensesRef.current = expenses;
+  const setExpenses: React.Dispatch<React.SetStateAction<Expense[]>> = useCallback((update) => {
+    const next = typeof update === 'function' ? update(expensesRef.current) : update;
+    expensesRef.current = next;
+    setExpensesState(next);
+  }, []);
   const [incomes, setIncomes] = useState<Income[]>(() => initialRows<Income>('incomes'));
   const [repayments, setRepayments] = useState<Repayment[]>(() => initialRows<Repayment>('repayments'));
   const [transfers, setTransfers] = useState<Transfer[]>(() => initialRows<Transfer>('transfers'));
@@ -393,10 +383,65 @@ const Dashboard: React.FC = () => {
   const initializationUserRef = React.useRef<string>();
   const loadedUserRef = React.useRef<string>();
   const financialScope: FinancialScope = ['categories', 'budgets', 'paymentMethods'].includes(activeTab) ? 'all' : 'dashboard';
-  const rememberExpenseHistory = useCallback((rows: Expense[]) => {
+  const refreshCoordinatorRef = React.useRef<ReturnType<typeof createRefreshCoordinator>>();
+  const requestDataRefresh = React.useCallback((entities: CacheableEntity[], invalidate = true) => {
+    const uid = liveUserIdRef.current;
+    if (uid) {
+      if (invalidate && entities.some((entity) => ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity))) invalidateFinancialReads(uid);
+      for (const entity of entities) dataService.markStale(entity, uid);
+    }
+    refreshCoordinatorRef.current?.request(entities);
+  }, []);
+  const mergeAndPublishExpenseRows = useCallback((
+    incomingRows: Expense[],
+    userId: string,
+    mode: 'partial' | 'complete',
+    operations = offlineQueue.getAll(),
+    incomingSource: 'cached' | 'verified-partial' | 'verified-complete' = 'cached',
+  ): Expense[] => {
+    const receivableSnapshot = sessionCache.getSnapshot<Expense[]>('receivableExpenses', userId);
+    const hasCompleteCandidates = receivableSnapshot?.coverage === 'all' && receivableSnapshot.data.every((row) =>
+      row?.userId === userId && typeof row.id === 'string' && !!row.id);
+    const cachedReceivableRows = receivableSnapshot
+      ? applyPendingOperations('receivableExpenses', userId, receivableSnapshot.data, operations)
+        .filter((row): row is Expense => !!row && row.userId === userId && !!row.id && hasReceivablePlan(row))
+      : [];
+    const authoritativeReceivableIds = hasCompleteCandidates
+      ? new Set(cachedReceivableRows.map((row) => row.id!))
+      : undefined;
+    const mergedIncomingRows = incomingSource === 'cached'
+      ? [...incomingRows, ...cachedReceivableRows]
+      : [...cachedReceivableRows, ...incomingRows];
+    const reconciled = mergeExpenseRows(
+      expensesRef.current,
+      mergedIncomingRows,
+      userId,
+      operations,
+      { mode, authoritativeReceivableIds, incomingSource },
+    );
+    const current = expensesRef.current;
+    const stable = dataEqual(current, reconciled) ? current : reconciled;
+    sessionCache.set('expenses', userId, stable);
+    if (stable !== current) setExpenses(stable);
+    return stable;
+  }, [setExpenses]);
+  const rememberExpenseHistory = useCallback((rows: Expense[], source: { cached: boolean }) => {
     if (!currentUserId || liveUserIdRef.current !== currentUserId) return;
-    dataService.updateCache<Expense[]>('expenses', currentUserId, (previous) => applyPendingOperations('expenses', currentUserId, [...new Map([...previous, ...rows].map((row) => [row.id, row])).values()]));
-    setExpenses(sessionCache.get<Expense[]>('expenses', currentUserId) ?? []);
+    const validRows = rows.filter((row) => row?.userId === currentUserId && typeof row.id === 'string' && !!row.id);
+    const receivableSnapshot = sessionCache.getSnapshot<Expense[]>('receivableExpenses', currentUserId);
+    const cachedCandidates = receivableSnapshot?.data ?? [];
+    const candidateSource = source.cached ? 'cached' : 'verified-partial';
+    const reconciledCandidates = mergeReceivableCandidatesFromSource(cachedCandidates, validRows, currentUserId, candidateSource);
+    const isVerifiedPage = candidateSource !== 'cached';
+    const candidateSetChanged = isVerifiedPage && !dataEqual(cachedCandidates, reconciledCandidates);
+    if (candidateSetChanged) {
+      // History pages can be newer than the last full candidate scan. Keep
+      // their useful rows, but drop the "all" claim until a full revalidation.
+      sessionCache.set('receivableExpenses', currentUserId, reconciledCandidates, { coverage: 'history-page' });
+    }
+    mergeAndPublishExpenseRows(validRows, currentUserId, 'partial', offlineQueue.getAll(),
+      isVerifiedPage ? 'verified-partial' : 'cached');
+    if (candidateSetChanged) requestDataRefresh(['expenses']);
     const ids = new Set(rows.map((row) => row.id));
     const current = () => liveUserIdRef.current === currentUserId;
     void Promise.all([
@@ -412,7 +457,7 @@ const Dashboard: React.FC = () => {
       console.error('Historical related payments could not load:', error);
       if (current()) window.dispatchEvent(new CustomEvent('data-revalidation-failed', { detail: { entity: 'repayments', userId: currentUserId } }));
     });
-  }, [currentUserId]);
+  }, [currentUserId, mergeAndPublishExpenseRows, requestDataRefresh]);
   const rememberIncomeHistory = useCallback((rows: Income[]) => {
     if (!currentUserId || liveUserIdRef.current !== currentUserId) return;
     dataService.updateCache<Income[]>('incomes', currentUserId, (previous) => applyPendingOperations('incomes', currentUserId, [...new Map([...previous, ...rows].map((row) => [row.id, row])).values()]));
@@ -422,15 +467,28 @@ const Dashboard: React.FC = () => {
   financialScopeRef.current = financialScope;
   const financialScopeId = financialScopeKey(financialScope);
   const [financialScopeComplete, setFinancialScopeComplete] = useState(false);
-  const refreshCoordinatorRef = React.useRef<ReturnType<typeof createRefreshCoordinator>>();
-  const requestDataRefresh = React.useCallback((entities: CacheableEntity[], invalidate = true) => {
-    const uid = liveUserIdRef.current;
-    if (uid) {
-      if (invalidate && entities.some((entity) => ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity))) invalidateFinancialReads(uid);
-      for (const entity of entities) dataService.markStale(entity, uid);
+  const [receivableHistoryComplete, setReceivableHistoryComplete] = useState(false);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setReceivableHistoryComplete(false);
+      return;
     }
-    refreshCoordinatorRef.current?.request(entities);
-  }, []);
+    const coverageIsReflected = () => {
+      const snapshot = sessionCache.getSnapshot<Expense[]>('receivableExpenses', currentUserId);
+      return snapshot?.coverage === 'all' && snapshot.data.every((row) =>
+        !!row && row.userId === currentUserId && !!row.id &&
+        expenses.some((expense) => expense.id === row.id && expense.userId === currentUserId));
+    };
+    const updateReceivableCoverage = (event?: Event) => {
+      const detail = (event as CustomEvent<{ entity?: CacheableEntity; userId?: string }> | undefined)?.detail;
+      if (detail && (detail.entity !== 'receivableExpenses' || detail.userId !== currentUserId)) return;
+      setReceivableHistoryComplete(coverageIsReflected());
+    };
+    updateReceivableCoverage();
+    window.addEventListener('session-cache-updated', updateReceivableCoverage);
+    return () => window.removeEventListener('session-cache-updated', updateReceivableCoverage);
+  }, [currentUserId, expenses]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -440,10 +498,21 @@ const Dashboard: React.FC = () => {
       const scopeId = financialScopeKey(scope);
       const load = async <T extends unknown[]>(entity: CacheableEntity, fetch: () => Promise<T>, set: React.Dispatch<React.SetStateAction<T>>) => {
         dataService.markStale(entity, currentUserId);
+        const expenseReadSource: { value: 'cached' | 'server' } = { value: 'cached' };
         const data = await dataService.getData(entity, currentUserId, true, fetch, () => {
           if (['expenses', 'incomes', 'repayments', 'transfers'].includes(entity)) markFinancialScopeCovered(currentUserId, entity as import('../services/historyService').HistoryCollection, scope);
-        }, ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity) ? scopeId : 'collection');
-        if (!cancelled && liveUserIdRef.current === currentUserId && scopeId === financialScopeKey(financialScopeRef.current)) set((previous) => dataEqual(previous, data) ? previous : data);
+        }, ['expenses', 'incomes', 'repayments', 'transfers'].includes(entity) ? scopeId : 'collection',
+        entity === 'expenses' ? (source) => { expenseReadSource.value = source; } : undefined);
+        if (cancelled || liveUserIdRef.current !== currentUserId || scopeId !== financialScopeKey(financialScopeRef.current)) return;
+        if (entity === 'expenses') {
+          const mode = sessionCache.getCoverage('expenses', currentUserId) === 'all' ? 'complete' : 'partial';
+          const incomingSource = expenseReadSource.value === 'server'
+            ? scope === 'all' ? 'verified-complete' : 'verified-partial'
+            : 'cached';
+          mergeAndPublishExpenseRows(data as unknown as Expense[], currentUserId, mode, offlineQueue.getAll(), incomingSource);
+          return;
+        }
+        set((previous) => dataEqual(previous, data) ? previous : data);
       };
       const targets: Partial<Record<CacheableEntity, () => Promise<void>>> = {
         expenses: () => load('expenses', () => readScopedExpenses(currentUserId, scope), setExpenses),
@@ -473,7 +542,7 @@ const Dashboard: React.FC = () => {
       coordinator.dispose();
       if (refreshCoordinatorRef.current === coordinator) refreshCoordinatorRef.current = undefined;
     };
-  }, [currentUserId]);
+  }, [currentUserId, mergeAndPublishExpenseRows, setExpenses]);
   useEffect(() => {
     if (!currentUserId) return;
     const updateCoverage = () => {
@@ -487,12 +556,6 @@ const Dashboard: React.FC = () => {
     return () => window.removeEventListener('financial-scope-loaded', updateCoverage);
   }, [currentUserId, financialScopeId, requestDataRefresh]);
 
-  useEffect(() => {
-    if (!financialScopeComplete || !focusExpenseId || !expenses.some((expense) => expense.id === focusExpenseId)) return;
-    const timer = setTimeout(() => setFocusExpenseId(null), 2500);
-    return () => clearTimeout(timer);
-  }, [expenses, financialScopeComplete, focusExpenseId]);
-
   const notifyOfflineExpenseNeedsAttention = React.useCallback((operationId: string) => {
     if (!currentUserId) return;
     const operation = offlineQueue.getAll().find((item) => item.id === operationId);
@@ -503,9 +566,59 @@ const Dashboard: React.FC = () => {
     const notificationKey = `${currentUserId}:${operationId}`;
     if (notifiedOfflineExpenseAttentionRef.current.has(notificationKey)) return;
     notifiedOfflineExpenseAttentionRef.current.add(notificationKey);
-    showNotification('error', t('offlineExpenseNeedsAttention') + (operation.legacyAmbiguous ? ' '+operation.lastError : ''), {
+    const isVersionConflict = !!operation.lastError?.includes('EXPENSE_VERSION_CONFLICT');
+    showNotification('error', isVersionConflict ? t('expenseVersionConflict') : t('offlineExpenseNeedsAttention') + (operation.legacyAmbiguous ? ' '+operation.lastError : ''), {
       duration: 0,
-      actions: [{
+      actions: isVersionConflict ? [
+        {
+          label: t('expenseConflictMerge'),
+          onClick: async () => {
+            const expenseId = (operation.payload as { id?: unknown }).id;
+            if (typeof expenseId !== 'string') return;
+            try {
+              const latest = await expenseService.getByIdFromServer(expenseId, currentUserId);
+              if (!latest || !await offlineQueue.rebaseExpenseUpdateChain(expenseId, currentUserId, latest as unknown as Record<string, unknown>)) {
+                showNotification('error', t('expenseConflictMergeFailed'));
+                return;
+              }
+              notifiedOfflineExpenseAttentionRef.current.delete(notificationKey);
+              requestDataRefresh(['expenses', 'banks', 'ewallets']);
+              showNotification('info', t('expenseConflictMerge') + ' · ' + t('operationSavedOffline'));
+              void syncService.syncOfflineQueue();
+            } catch (error) {
+              console.error('Could not rebase the saved expense edit:', error);
+              showNotification('error', t('expenseConflictMergeFailed'));
+            }
+          },
+        },
+        {
+          label: t('expenseConflictReload'),
+          onClick: async () => {
+            if (!window.confirm(t('expenseConflictReloadConfirm'))) return;
+            const expenseId = (operation.payload as { id?: unknown }).id;
+            if (typeof expenseId !== 'string') return;
+            try {
+              const latest = await expenseService.getByIdFromServer(expenseId, currentUserId);
+              if (!await offlineQueue.discardExpenseUpdateChain(expenseId, currentUserId)) {
+                showNotification('error', t('expenseConflictMergeFailed'));
+                return;
+              }
+              setExpenses((rows) => latest
+                ? rows.map((row) => row.id === expenseId ? latest : row)
+                : rows.filter((row) => row.id !== expenseId));
+              dataService.updateCache<Expense[]>('expenses', currentUserId, (rows) => latest
+                ? rows.map((row) => row.id === expenseId ? latest : row)
+                : rows.filter((row) => row.id !== expenseId));
+              notifiedOfflineExpenseAttentionRef.current.delete(notificationKey);
+              requestDataRefresh(['expenses', 'banks', 'ewallets']);
+              showNotification('success', t('expenseConflictReload'));
+            } catch (error) {
+              console.error('Could not reload the latest expense:', error);
+              showNotification('error', t('errorLoadingData'));
+            }
+          },
+        },
+      ] : [{
         label: operation.legacyAmbiguous ? '檢查雲端後復原 / Review cloud & recover' : t('retry'),
         onClick: async () => {
           if (operation.legacyAmbiguous) {
@@ -525,7 +638,7 @@ const Dashboard: React.FC = () => {
         },
       }],
     });
-  }, [currentUserId, showNotification, t]);
+  }, [currentUserId, requestDataRefresh, setExpenses, showNotification, t]);
 
   //#region Effects
   useEffect(() => {
@@ -585,11 +698,11 @@ const Dashboard: React.FC = () => {
       if (cachedWallets) setEWallets(currentData('ewallets', cachedWallets));
       if (cachedFeatures) setFeatureSettings(currentData('featureSettings', cachedFeatures));
       if (cachedPresets) setQuickExpensePresets(currentData('quickExpensePresets', cachedPresets));
-      const setExpensesWithPendingOperations = (loadedExpenses: Expense[]) => {
+      const verifiedExpenseSource = scope === 'all' ? 'verified-complete' : 'verified-partial';
+      const setExpensesWithPendingOperations = (loadedExpenses: Expense[], source: 'cached' | 'verified-partial' | 'verified-complete' = 'cached') => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
-        const reconciled = applyPendingExpenseOperations(loadedExpenses, offlineQueue.getAll(), currentUser.uid);
-        sessionCache.set('expenses', currentUser.uid, reconciled);
-        setExpenses((previous) => dataEqual(previous, reconciled) ? previous : reconciled);
+        const completeSnapshot = sessionCache.getCoverage('expenses', currentUser.uid) === 'all';
+        mergeAndPublishExpenseRows(loadedExpenses, currentUser.uid, completeSnapshot ? 'complete' : 'partial', offlineQueue.getAll(), source);
       };
       const setBudgetsWithPendingOperations = (loadedBudgets: Budget[]) => {
         if (liveUserIdRef.current !== currentUser.uid || scopeId !== financialScopeKey(financialScopeRef.current)) return;
@@ -607,9 +720,21 @@ const Dashboard: React.FC = () => {
       // Phase 1: Load cached data first (instant display)
       const initial = <T extends unknown[]>(entity: CacheableEntity, read: Promise<T>, publish: (data: T) => void) =>
         read.then((data) => safeUpdate(publish)(currentData(entity, data)));
+      const initialExpenseReadSource: { value: 'cached' | 'server' } = { value: 'cached' };
+      const expenseRead = dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid,
+        () => readScopedExpenses(currentUser.uid, scope),
+        (freshExpenses) => setExpensesWithPendingOperations(freshExpenses, verifiedExpenseSource),
+        () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId,
+        (source) => { initialExpenseReadSource.value = source; });
+      const publishInitialExpenses = (loadedExpenses: Expense[]) => setExpensesWithPendingOperations(
+        loadedExpenses,
+        loadRevision === offlineQueue.revision + dataService.localRevision
+          ? initialExpenseReadSource.value === 'server' ? verifiedExpenseSource : 'cached'
+          : 'cached',
+      );
       // Publish each collection as it settles. A missing/slow collection cannot gate the others.
       void Promise.allSettled([
-        initial('expenses', dataService.getDataWithRevalidate<Expense[]>('expenses', currentUser.uid, () => readScopedExpenses(currentUser.uid, scope), setExpensesWithPendingOperations, () => markFinancialScopeCovered(currentUser.uid, 'expenses', scope), scopeId), setExpensesWithPendingOperations),
+        initial('expenses', expenseRead, publishInitialExpenses),
         initial('incomes', dataService.getDataWithRevalidate<Income[]>('incomes', currentUser.uid, () => readScopedIncomes(currentUser.uid, scope), safeUpdate(setIncomes), () => markFinancialScopeCovered(currentUser.uid, 'incomes', scope), scopeId), setIncomes),
         initial('categories', dataService.getDataWithRevalidate<Category[]>('categories', currentUser.uid, () => categoryService.getAll(currentUser.uid), setCategoriesWithPendingOperations), setCategoriesWithPendingOperations),
         initial('budgets', dataService.getDataWithRevalidate<Budget[]>('budgets', currentUser.uid, () => budgetService.getAll(currentUser.uid), setBudgetsWithPendingOperations), setBudgetsWithPendingOperations),
@@ -746,7 +871,7 @@ const Dashboard: React.FC = () => {
       console.error('Error loading data:', error);
       showNotification('error', t('errorLoadingData'));
     }
-  }, [currentUser, showNotification, t]);
+  }, [currentUser, mergeAndPublishExpenseRows, showNotification, t]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -820,7 +945,7 @@ const Dashboard: React.FC = () => {
     };
     window.addEventListener('offline-queue-changed', refreshLocal);
     return () => { active = false; if (frame !== undefined) cancelAnimationFrame(frame); window.removeEventListener('offline-queue-changed', refreshLocal); };
-  }, [currentUserId]);
+  }, [currentUserId, setExpenses]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -1095,6 +1220,7 @@ const Dashboard: React.FC = () => {
       ...expenseData,
       id: expenseId,
       userId: currentUser.uid,
+      revision: 1,
     };
 
     if (receipt) {
@@ -1327,70 +1453,49 @@ const Dashboard: React.FC = () => {
   };
 
   // Inline update by id (used by ExpenseList inline editing)
-  const handleInlineUpdateExpense = async (id: string, updates: Partial<Expense>) => {
-    if (!currentUser) return;
-    const originalExpense = expenses.find((e) => e.id === id);
-    if (!originalExpense) return;
+  const handleInlineUpdateExpense = async (id: string, updates: Partial<Expense>, editStartRevision?: number): Promise<'saved' | 'queued' | 'failed'> => {
+    if (!currentUser) return 'failed';
+    const visibleExpense = expensesRef.current.find((e) => e.id === id);
+    if (!visibleExpense || visibleExpense.userId !== currentUser.uid) return 'failed';
     if (offlineQueue.hasPendingExpenseDelete(id, currentUser.uid)) {
       showNotification('info', t('expensePendingDelete'));
-      return;
+      return 'failed';
     }
 
     const updatePayload = { ...updates, id, userId: currentUser.uid };
 
-    // Optimistic update
-    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
-
-    // Update cache optimistically
-    if (currentUser) {
-      dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => 
-        data.map((e) => (e.id === id ? { ...e, ...updates } : e))
-      );
-    }
-
-    await withExpenseMutationLock(currentUser.uid, id, async () => {
+    return withExpenseMutationLock(currentUser.uid, id, async (): Promise<'saved' | 'queued' | 'failed'> => {
+      const originalExpense = expensesRef.current.find((expense) => expense.id === id);
+      if (!originalExpense || originalExpense.userId !== currentUser.uid) return 'failed';
+      const currentRevision = Number.isInteger(originalExpense.revision) && (originalExpense.revision ?? 0) >= 0 ? originalExpense.revision! : 0;
+      const expectedRevision = editStartRevision ?? currentRevision;
+      if (currentRevision !== expectedRevision) {
+        showNotification('error', t('expenseChangedWhileEditing'));
+        return 'failed';
+      }
       if (hasExpenseCreateFailed(currentUser.uid, id) || hasExpenseBeenDeleted(currentUser.uid, id)) {
-        setExpenses((prev) => prev.filter((expense) => expense.id !== id));
-        dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== id));
         if (hasExpenseBeenDeleted(currentUser.uid, id)) showNotification('info', t('expensePendingDelete'));
-        return;
+        return 'failed';
       }
       if (offlineQueue.hasPendingExpenseDelete(id, currentUser.uid)) {
         showNotification('info', t('expensePendingDelete'));
-        return;
+        return 'failed';
       }
 
-      if (offlineQueue.hasPendingExpenseOperations(id, currentUser.uid)) {
-        const queuedId = await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: updatePayload });
-        if (queuedId) {
-          showNotification('info', t('operationSavedOffline'));
-          return;
-        }
-        setExpenses((prev) => prev.map((expense) => expense.id === id ? originalExpense : expense));
-        dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
-          data.map((expense) => expense.id === id ? originalExpense : expense)
-        );
+      const nextRevision = currentRevision + 1;
+      const queuedPayload = { ...updatePayload, revision: nextRevision, expectedRevision };
+      const queuedId = await offlineQueue.enqueue({ type: 'update', entity: 'expense', payload: queuedPayload });
+      if (!queuedId) {
         showNotification('error', t('offlineQueueSaveFailed'));
-        return;
+        return 'failed';
       }
-
-      await optimisticCRUD.run(
-        { type: 'update', data: updatePayload, originalData: originalExpense },
-        () => expenseService.update(id, updates),
-        {
-          entityType: 'expense',
-          retryToQueueOnFail: true,
-          onSuccess: () => {
-            // Cache already updated optimistically, no need to reload
-          },
-          onError: () => {
-            setExpenses((prev) => prev.map((e) => (e.id === id ? originalExpense : e)));
-            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
-              data.map((e) => (e.id === id ? originalExpense : e))
-            );
-          },
-        }
+      const optimisticExpense = { ...originalExpense, ...updates, revision: nextRevision };
+      setExpenses((prev) => prev.map((expense) => expense.id === id ? optimisticExpense : expense));
+      dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) =>
+        data.map((expense) => expense.id === id ? optimisticExpense : expense)
       );
+      showNotification('info', t('operationSavedOffline'));
+      return 'queued';
     });
   };
 
@@ -3661,6 +3766,7 @@ const Dashboard: React.FC = () => {
               expenses: !!currentUserId && financialScopeCovered(currentUserId, 'expenses', financialScope),
               incomes: !!currentUserId && financialScopeCovered(currentUserId, 'incomes', financialScope),
               repayments: !!currentUserId && financialScopeCovered(currentUserId, 'repayments', financialScope),
+              receivableExpenses: !!currentUserId && (receivableHistoryComplete || (financialScope === 'all' && financialScopeCovered(currentUserId, 'expenses', 'all'))),
               userSettings: !!currentUserId && settings?.userId === currentUserId && displayCurrencyReady,
               budgets: !!currentUserId && sessionCache.has('budgets', currentUserId),
               cards: !!currentUserId && sessionCache.has('cards', currentUserId),
@@ -3692,11 +3798,8 @@ const Dashboard: React.FC = () => {
               setActiveTab('expenses');
             }}
             onNavigateToExpense={(expenseId) => {
-              setExpensePeriod((current) => ({ mode: 'all', anchorDate: current.anchorDate }));
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
-              // Clear focus highlight after animation completes
-
             }}
             onNavigateToScheduledPayment={(scheduledPaymentId) => {
               setFocusScheduledPaymentId(scheduledPaymentId);
@@ -3704,7 +3807,7 @@ const Dashboard: React.FC = () => {
             }}
             onNavigateToIncomes={() => setActiveTab('incomes')}
             onNavigateToBudgets={() => setActiveTab('budgets')}
-            onNavigateToPaymentMethods={() => setActiveTab('paymentMethods')}
+            onNavigateToPaymentMethods={() => navigateToPaymentMethods('cards')}
             onCustomizingChange={setIsDashboardCustomizing}
             scheduledPayments={scheduledPayments}
             scheduledPaymentRecords={scheduledPaymentRecords}
@@ -3732,11 +3835,13 @@ const Dashboard: React.FC = () => {
             onInlineUpdate={handleInlineUpdateExpense}
             onBulkDelete={handleBulkDeleteExpenses}
             onReloadRepayments={reloadRepayments}
-            onCreateCard={() => setActiveTab('paymentMethods')}
-            onCreateEWallet={() => setActiveTab('paymentMethods')}
-            onCreateBank={() => setActiveTab('paymentMethods')}
+            onCreateCard={() => navigateToPaymentMethods('cards')}
+            onCreateEWallet={() => navigateToPaymentMethods('cards')}
+            onCreateBank={() => navigateToPaymentMethods('cards')}
             onAddTransfer={handleAddTransfer}
+            onManageTransferHistory={() => navigateToPaymentMethods('transfers')}
             focusExpenseId={focusExpenseId || undefined}
+            onClearFocusExpense={() => setFocusExpenseId(null)}
             quickExpensePresets={quickExpensePresets}
             onQuickExpenseAdd={handleQuickExpenseAdd}
             onQuickExpensePresetsChange={handleReloadQuickExpensePresets}
@@ -3831,6 +3936,7 @@ const Dashboard: React.FC = () => {
         {activeTab === 'paymentMethods' && (
           <Suspense fallback={<></>}>
             <PaymentMethodsTab
+              initialView={paymentMethodsInitialView}
               cards={cards}
               ewallets={ewallets}
               categories={orderedCategories}

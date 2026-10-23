@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   getDocsFromServer,
   query,
@@ -60,6 +61,7 @@ export const expenseService = {
     const now = Timestamp.now();
     const dataToSave = removeUndefinedFields({
       ...expenseFields,
+      revision: 1,
       createdAt: now,
       updatedAt: now,
     });
@@ -127,21 +129,40 @@ export const expenseService = {
     })) as Expense[];
   },
 
+  async getByIdFromServer(id: string, userId: string): Promise<Expense | null> {
+    const snapshot = await getDocFromServer(doc(db, COLLECTION_NAME, id));
+    if (!snapshot.exists() || snapshot.data().userId !== userId) return null;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+      createdAt: snapshot.data().createdAt?.toDate(),
+      updatedAt: snapshot.data().updatedAt?.toDate(),
+    } as Expense;
+  },
+
   // Update an expense
-  async update(id: string, updates: Partial<Expense>, operation?: FinancialOperation): Promise<void> {
+  async update(id: string, updates: Partial<Expense>, operation?: FinancialOperation, expectedRevision?: number): Promise<void> {
     if (await hasFinancialReceipt(operation)) return;
+    if (expectedRevision !== undefined && (!Number.isInteger(expectedRevision) || expectedRevision < 0)) {
+      throw Object.assign(new Error('Invalid expense revision'), { code: 'invalid-argument' });
+    }
     const docRef = doc(db, COLLECTION_NAME, id);
     const dataToUpdate: Record<string, unknown> = { updatedAt: Timestamp.now() };
     for (const [field, value] of Object.entries(updates)) {
-      if (['id', 'userId', 'createdAt', 'updatedAt', 'splitPaidMinor', 'splitSettlement', 'bookedAccountMovements'].includes(field)) continue;
+      if (['id', 'userId', 'createdAt', 'updatedAt', 'revision', 'splitPaidMinor', 'splitSettlement', 'bookedAccountMovements'].includes(field)) continue;
       dataToUpdate[field] = value === undefined ? deleteField() : value;
     }
     await runFinancialTransaction(db, operation, async (transaction) => {
       const expenseSnapshot = await transaction.get(docRef);
       if (!expenseSnapshot.exists()) throw new Error('Expense not found');
       const previousExpense = { id, ...expenseSnapshot.data() } as Expense;
+      const currentRevision = Number.isInteger(previousExpense.revision) && (previousExpense.revision ?? 0) >= 0 ? previousExpense.revision! : 0;
+      if (expectedRevision !== undefined && currentRevision !== expectedRevision) {
+        throw Object.assign(new Error('EXPENSE_VERSION_CONFLICT'), { code: 'failed-precondition', reason: 'expense-version-conflict' });
+      }
+      const nextRevision = currentRevision + 1;
       const summaryState = await transaction.get(friendSpendingSummaryStateRef(previousExpense.userId));
-      const nextExpense = { ...previousExpense, ...updates, id, splitPaidMinor: previousExpense.splitPaidMinor, bookedAccountMovements: previousExpense.bookedAccountMovements } as Expense;
+      const nextExpense = { ...previousExpense, ...updates, id, revision: nextRevision, splitPaidMinor: previousExpense.splitPaidMinor, bookedAccountMovements: previousExpense.bookedAccountMovements } as Expense;
       validateExpenseSplit(nextExpense, previousExpense);
       await validateExpenseTags(transaction, nextExpense, previousExpense);
       if (updates.scheduledPaymentRecordId !== undefined && updates.scheduledPaymentRecordId !== previousExpense.scheduledPaymentRecordId) throw new Error('Payment expense link cannot be changed');
@@ -160,6 +181,7 @@ export const expenseService = {
         applyExpenseSummaryChange(transaction, previousExpense, nextExpense);
       }
       dataToUpdate.bookedAccountMovements = bookedAccountMovements(balanceAdjustments, 1);
+      dataToUpdate.revision = nextRevision;
       transaction.update(docRef, dataToUpdate);
       if (paymentRef && payment?.exists()) transaction.set(paymentRef, removeUndefinedFields({
         ...payment.data(),

@@ -2,11 +2,10 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useUserSettings } from '../../../contexts/UserSettingsContext';
 import { formatDateWithUserFormat } from '../../../utils/dateUtils';
-import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseBaseCurrency, getExpenseDisplaySource } from '../../../utils/currencyUtils';
+import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getExpenseDisplaySource } from '../../../utils/currencyUtils';
 import { useCurrencyConversionMap } from '../../../hooks/useCurrencyConversionMap';
-import { getRepaymentBaseAmount } from '../../../utils/currencyUtils';
 import { WidgetProps } from './types';
-import { splitReceivableRatios } from '../../../utils/expenseSplitCalculator';
+import { isOpenReceivable, receivableProgress } from '../../../utils/expenseSplitCalculator';
 
 const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   expenses,
@@ -33,23 +32,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
     }
   }, [size]);
 
-  // Get tracked expenses and repayment totals
-  const { trackedExpenses, repaymentTotals } = React.useMemo(() => {
-    const tracked = expenses.filter(
-      (exp) => exp.needsRepaymentTracking && !exp.repaymentTrackingCompleted
-    );
-
-    const totals: { [expenseId: string]: number } = {};
-    repayments.forEach((rep) => {
-      if (rep.expenseId) {
-        totals[rep.expenseId] = (totals[rep.expenseId] || 0) + getRepaymentBaseAmount(rep);
-      }
-    });
-
-    return { trackedExpenses: tracked, repaymentTotals: totals };
-  }, [expenses, repayments]);
-
-  const expenseById = React.useMemo(() => new Map(expenses.map((expense) => [expense.id || '', expense])), [expenses]);
+  const trackedExpenses = React.useMemo(() => expenses.filter((expense) => isOpenReceivable(expense, repayments)), [expenses, repayments]);
 
   const expenseDisplayEntries = React.useMemo(() => {
     if (!displayCurrency) return [];
@@ -66,23 +49,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
       });
   }, [displayCurrency, trackedExpenses]);
 
-  const repaymentDisplayEntries = React.useMemo(() => {
-    if (!displayCurrency) return [];
-    return repayments
-      .filter((repayment) => !!repayment.id)
-      .map((repayment) => {
-        const linkedExpense = expenseById.get(repayment.expenseId || '');
-        return {
-          key: repayment.id as string,
-          amount: getRepaymentBaseAmount(repayment),
-          sourceCurrency: repayment.baseCurrency || (linkedExpense ? getExpenseBaseCurrency(linkedExpense) : DEFAULT_BASE_CURRENCY),
-          date: repayment.date,
-        };
-      });
-  }, [displayCurrency, expenseById, repayments]);
-
   const expenseDisplayAmountsById = useCurrencyConversionMap(expenseDisplayEntries, displayCurrency);
-  const repaymentDisplayAmountsById = useCurrencyConversionMap(repaymentDisplayEntries, displayCurrency);
 
   if (trackedExpenses.length === 0) {
     return (
@@ -96,31 +63,30 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
   return (
     <div className={`tracked-expenses-list ${isCompact ? 'tracked-expenses-compact' : ''}`}>
       {trackedExpenses.slice(0, maxItems).map((expense) => {
-        const repaid = repaymentTotals[expense.id!] || 0;
         const displaySource = getExpenseDisplaySource(expense, displayCurrency);
         const fullAmount = displayCurrency
           ? (displaySource.sourceCurrency === displayCurrency
             ? displaySource.amount
             : expenseDisplayAmountsById[expense.id || ''] ?? Number.NaN)
           : getExpenseBaseAmount(expense);
-        const originalRepaidDisplay = displayCurrency
-          ? repayments
-              .filter((repayment) => repayment.expenseId === expense.id)
-              .reduce((sum, repayment) => sum + (repaymentDisplayAmountsById[repayment.id || ''] ?? Number.NaN), 0)
-          : repaid;
-        const split = splitReceivableRatios(expense, repayments);
-        const totalAmount = split ? fullAmount * split.expected : fullAmount;
-        const remaining = split ? fullAmount * split.outstanding : totalAmount - originalRepaidDisplay;
-        const repaidDisplay = totalAmount - remaining;
-        const percentage = totalAmount > 0 ? (repaidDisplay / totalAmount) * 100 : 0;
+        const progress = receivableProgress(expense, repayments);
+        const totalAmount = fullAmount * progress.expectedRatio;
+        const remaining = fullAmount * progress.outstandingRatio;
+        const repaidDisplay = Math.max(0, totalAmount - remaining);
+        const percentage = progress.percent;
 
         return (
           <div 
             key={expense.id} 
-            className={`tracked-expense-card ${onNavigateToExpense ? 'clickable' : ''}`}
-            onClick={() => onNavigateToExpense?.(expense.id!)}
-            role={onNavigateToExpense ? 'button' : undefined}
-            tabIndex={onNavigateToExpense ? 0 : undefined}
+            className={`tracked-expense-card ${onNavigateToExpense && expense.id ? 'clickable' : ''}`}
+            onClick={() => { if (expense.id) onNavigateToExpense?.(expense.id); }}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget || !onNavigateToExpense || !expense.id || (event.key !== 'Enter' && event.key !== ' ')) return;
+              event.preventDefault();
+              onNavigateToExpense(expense.id);
+            }}
+            role={onNavigateToExpense && expense.id ? 'button' : undefined}
+            tabIndex={onNavigateToExpense && expense.id ? 0 : undefined}
           >
             <div className="tracked-expense-header">
               <div className="tracked-expense-info">
@@ -143,7 +109,7 @@ const TrackedExpensesWidget: React.FC<WidgetProps> = ({
                   <span className="tracked-amount-value warning-text">{formatMoney(Math.max(0, remaining), displayCurrency || expense.baseCurrency || expense.currency || DEFAULT_BASE_CURRENCY)}</span>
                 </div>
               </div>
-              {onMarkTrackingCompleted && (
+              {onMarkTrackingCompleted && !expense.splitParticipants?.length && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

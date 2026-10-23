@@ -89,7 +89,7 @@ const renderWidget = (
     case 'budget-progress':
       return <BudgetProgressWidget {...propsWithSize} onNavigateToBudgets={onNavigateToBudgets} />;
     case 'tracked-expenses':
-      return <TrackedExpensesWidget {...propsWithSize} />;
+      return <TrackedExpensesWidget {...propsWithSize} onNavigateToExpense={onNavigateToExpense} />;
     case 'cards-summary':
       return <CardsSummaryWidget {...propsWithSize} onNavigateToPaymentMethods={onNavigateToPaymentMethods} />;
     case 'quick-add':

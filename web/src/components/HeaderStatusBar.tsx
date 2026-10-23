@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './HeaderStatusBar.css';
 
@@ -48,45 +48,44 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
 }) => {
   const { t } = useLanguage();
   const hasStatus = Boolean(importProgress || deleteProgress || isRevalidating);
-  const [floatingTop, setFloatingTop] = useState(8);
+  const [expanded, setExpanded] = useState(false);
 
-  useLayoutEffect(() => {
-    if (!hasStatus) return;
-
-    const header = document.querySelector<HTMLElement>('.dashboard-header-modern');
-    if (!header) return;
-
-    const updatePosition = () => {
-      const nextTop = Math.max(8, Math.round(header.getBoundingClientRect().bottom + 8));
-      setFloatingTop((currentTop) => (currentTop === nextTop ? currentTop : nextTop));
-    };
-
-    updatePosition();
-    const resizeObserver = typeof ResizeObserver === 'undefined'
-      ? undefined
-      : new ResizeObserver(updatePosition);
-    resizeObserver?.observe(header);
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
-
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [hasStatus]);
-
-  // Only show for import/delete progress and background revalidation
   if (!hasStatus) {
     return null;
   }
 
+  const hasError = importProgress?.status === 'error' || deleteProgress?.status === 'error';
+  const isDeleting = deleteProgress?.status === 'deleting';
+  const isWorking = importProgress?.status === 'importing' || isDeleting || isRevalidating;
+  const tone = hasError ? 'error' : isDeleting ? 'warning' : importProgress?.status === 'complete' || deleteProgress?.status === 'complete' ? 'success' : 'accent';
+  const icon = hasError ? '!' : isWorking ? '⟳' : '✓';
+  const statusMessages = [
+    importProgress && `${importProgress.status === 'importing' ? t('importing') : importProgress.status === 'complete' ? t('importComplete') : t('importFailed')}${importProgress.message ? `: ${importProgress.message}` : ''}`,
+    deleteProgress && `${deleteProgress.status === 'deleting' ? t('deleteSelected') : deleteProgress.status === 'complete' ? t('success') : t('error')}${deleteProgress.message ? `: ${deleteProgress.message}` : ''}`,
+    isRevalidating && t('updatingData'),
+  ].filter(Boolean).join(' · ');
+  const statusCount = Number(Boolean(importProgress)) + Number(Boolean(deleteProgress)) + Number(Boolean(isRevalidating));
+
   return (
     <div
       className="header-status-floating-container"
-      style={{ top: `${floatingTop}px` }}
-      aria-live="polite"
     >
+      <button
+        type="button"
+        className="header-status-toggle"
+        data-tone={tone}
+        aria-label={statusMessages}
+        aria-expanded={expanded}
+        aria-controls="header-status-details"
+        title={statusMessages}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span className={isWorking ? 'header-status-toggle-icon header-status-toggle-icon-active' : 'header-status-toggle-icon'} aria-hidden="true">{icon}</span>
+        {statusCount > 1 && <span className="header-status-count" aria-hidden="true">{statusCount}</span>}
+      </button>
+      <span className="header-status-sr-only" role="status" aria-live="polite">{statusMessages}</span>
+      {expanded && (
+        <div id="header-status-details" className="header-status-panel" role="group" aria-label={statusMessages}>
       {importProgress && (
         <div
           className="header-status-floating-item"
@@ -198,6 +197,8 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
               <span className="header-status-title">{t('updatingData')}</span>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>

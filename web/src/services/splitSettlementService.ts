@@ -69,7 +69,7 @@ export const commitRepaymentMutation = async (operation: QueuedOperation): Promi
     if (next) next.bookedAccountMovements = bookedAccountMovements(adjustments, previous?.balanceApplied ? 1 : 0);
     transaction.set(doc(db, 'repaymentPostingProofs', id), { userId, expenseId, operationId: operation.id,
       beforeApplied: previous?.balanceApplied === true, afterApplied: next?.balanceApplied === true, updatedAt: serverTimestamp() });
-    if (expense && (previous?.splitParticipantId || next?.splitParticipantId)) transaction.update(expenseRef, { splitPaidMinor: paid, splitSettlement: {
+    if (expense && (previous?.splitParticipantId || next?.splitParticipantId)) transaction.update(expenseRef, { splitPaidMinor: paid, revision: (expense.revision ?? 0) + 1, splitSettlement: {
       repaymentId: id, operationId: operation.id,
       beforeId: previous?.splitParticipantId ?? '', beforeMinor: previous?.splitParticipantId ? previous.settledExpenseMinor ?? 0 : 0,
       afterId: next?.splitParticipantId ?? '', afterMinor: next?.splitParticipantId ? next.settledExpenseMinor ?? 0 : 0,

@@ -14,7 +14,7 @@ describe('widget-specific completeness', () => {
     expect(screen.getByText('cached rows: 1')).toBeInTheDocument();
   });
   it('does not block valid totals on an unrelated bank/wallet failure', () => {
-    render(<WidgetContainer widget={{ id: 'totals', type: 'summary-cards', enabled: true, order: 0, size: 'medium' }} data={{ ...data, completeness: { expenses: true, incomes: true, repayments: true, userSettings: true, banks: false, ewallets: false } }} />);
+    render(<WidgetContainer widget={{ id: 'totals', type: 'summary-cards', enabled: true, order: 0, size: 'medium' }} data={{ ...data, completeness: { expenses: true, incomes: true, repayments: true, receivableExpenses: true, userSettings: true, banks: false, ewallets: false } }} />);
     expect(screen.getByText('complete totals')).toBeInTheDocument();
   });
   it('fails closed when a collection required by a total is incomplete', () => {
@@ -23,5 +23,9 @@ describe('widget-specific completeness', () => {
     expect(screen.getByRole('status')).toHaveTextContent('incompleteFinancialData');
     expect(widgetDataComplete('pending-payments', { scheduledPayments: true, scheduledPaymentRecords: true })).toBe(true);
     expect(widgetDataComplete('cards-summary', { expenses: true, repayments: true, userSettings: true, cards: false })).toBe(false);
+  });
+  it('keeps receivable totals hidden until all historical split candidates have been read', () => {
+    expect(widgetDataComplete('summary-cards', { expenses: true, incomes: true, repayments: true, userSettings: true })).toBe(false);
+    expect(widgetDataComplete('tracked-expenses', { expenses: true, repayments: true })).toBe(false);
   });
 });

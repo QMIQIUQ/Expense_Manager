@@ -18,6 +18,17 @@ describe('genuine history cursor retrieval', () => {
     expect(view.result.current.rows).toHaveLength(200);
     expect(getHistoryPage).toHaveBeenLastCalledWith('expenses', 'user', undefined, page(0).cursor);
     expect(loaded).toHaveBeenCalledTimes(2);
+    expect(loaded.mock.calls[0][1]).toEqual({ cached: false, cacheVersion: undefined });
+  });
+  it('preserves cached snapshot provenance for offline history pages', async () => {
+    sessionCache.set('expenses', 'user', page(0).rows.map((row) => ({ ...row, userId: 'user' })), { coverage: 'all' });
+    const cacheVersion = sessionCache.getSnapshot('expenses', 'user')!.version;
+    vi.mocked(getHistoryPage).mockResolvedValueOnce({ ...page(0), cached: true, cacheVersion });
+    const loaded = vi.fn();
+    const view = renderHook(() => useHistoryPages('expenses', 'user', undefined, [], loaded));
+
+    await waitFor(() => expect(view.result.current.rows).toHaveLength(100));
+    expect(loaded).toHaveBeenCalledWith(page(0).rows, { cached: true, cacheVersion });
   });
   it('ignores a late page from the previous account', async () => {
     let finish!: (value: ReturnType<typeof page>) => void;

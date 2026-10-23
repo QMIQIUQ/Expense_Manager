@@ -4,9 +4,11 @@ import { applyPendingOperations } from '../utils/pendingOperations';
 import { offlineQueue, type QueuedOperation } from '../utils/offlineQueue';
 import { sessionCache } from '../utils/sessionCache';
 
+export interface HistoryPageSource { cached: boolean; cacheVersion?: string }
+
 /** The default history path reads exactly one page, and advances only on demand. */
 export const useHistoryPages = <T extends { id?: string; date: string }>(name: HistoryCollection, userId: string | undefined,
-  range: HistoryRange | undefined, fallback: T[], onRowsLoaded?: (rows: T[]) => void) => {
+  range: HistoryRange | undefined, fallback: T[], onRowsLoaded?: (rows: T[], source: HistoryPageSource) => void) => {
   const key = `${userId ?? ''}:${name}:${range?.startDate ?? ''}:${range?.endDate ?? ''}`;
   const [state, setState] = useState<{ key: string; rows: T[]; hasMore: boolean; complete: boolean }>({ key: '', rows: [], hasMore: true, complete: false });
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
       snapshot.current = { cached: !!page.cached, version: page.cacheVersion };
       cursor.current = page.cursor;
       setState((previous) => ({ key, rows: replace || previous.key !== key ? page.rows : [...new Map([...previous.rows, ...page.rows].map((row) => [row.id, row])).values()], hasMore: page.hasMore, complete: page.complete !== false }));
-      callback.current?.(page.rows);
+      callback.current?.(page.rows, { cached: !!page.cached, cacheVersion: page.cacheVersion });
     } catch (failure) {
       if (version === generation.current) setError(failure instanceof Error ? failure.message : 'History could not load');
     } finally {
