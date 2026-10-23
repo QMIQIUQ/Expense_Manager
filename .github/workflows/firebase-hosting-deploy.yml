@@ -39,7 +39,7 @@ jobs:
           else
             echo "rules_changed=false" >> "$GITHUB_OUTPUT"
           fi
-          if echo "$changed_files" | grep -Eq '^web/firestore\.indexes\.json$'; then
+          if echo "$changed_files" | grep -Eq '^web/(firestore\.indexes\.json|firebase\.indexes-only\.json)$'; then
             echo "indexes_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "indexes_changed=false" >> "$GITHUB_OUTPUT"
@@ -104,6 +104,7 @@ jobs:
         run: |
           npx --yes firebase-tools@15.34.0 deploy \
             --only firestore:indexes \
+            --config firebase.indexes-only.json \
             --project expense-manager-41afb \
             --non-interactive
 
