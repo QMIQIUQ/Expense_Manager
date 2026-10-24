@@ -3,6 +3,7 @@ import { getHistoryPage, type HistoryCollection, type HistoryCursor, type Histor
 import { applyPendingOperations } from '../utils/pendingOperations';
 import { offlineQueue, type QueuedOperation } from '../utils/offlineQueue';
 import { sessionCache } from '../utils/sessionCache';
+import { getHiddenExpenseIds } from '../utils/expenseMutationLock';
 
 export interface HistoryPageSource { cached: boolean; cacheVersion?: string }
 
@@ -14,6 +15,7 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [pendingOperations, setPendingOperations] = useState(() => offlineQueue.getAll());
+  const [deletionVisibilityRevision, setDeletionVisibilityRevision] = useState(0);
   const generation = useRef(0);
   const cursor = useRef<HistoryCursor>();
   const snapshot = useRef<{ cached: boolean; version?: string }>();
@@ -56,6 +58,10 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   }, [load]);
   useEffect(() => {
     const projected = () => setPendingOperations(offlineQueue.getAll());
+    const deletionVisibilityChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId === userId) setDeletionVisibilityRevision((revision) => revision + 1);
+    };
     const synced = (event: Event) => {
       const detail = (event as CustomEvent<{ userId?: string; operations?: QueuedOperation[] }>).detail;
       if (detail?.userId !== userId || !detail.operations?.some((operation) =>
@@ -77,12 +83,14 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
       void load(true);
     };
     window.addEventListener('offline-queue-changed', projected);
+    window.addEventListener('expense-visibility-changed', deletionVisibilityChanged);
     window.addEventListener('offline-operations-synced', synced);
     window.addEventListener('online', online);
     window.addEventListener('offline', online);
     window.addEventListener('session-cache-updated', cacheChanged);
     return () => {
       window.removeEventListener('offline-queue-changed', projected);
+      window.removeEventListener('expense-visibility-changed', deletionVisibilityChanged);
       window.removeEventListener('offline-operations-synced', synced);
       window.removeEventListener('online', online);
       window.removeEventListener('offline', online);
@@ -91,8 +99,9 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   }, [key, load, name, userId]);
   const rows = useMemo(() => state.key === key ? state.rows : fallback.filter((row) => !userId || (row as { userId?: string }).userId === userId).slice(0, 100), [state.key, state.rows, key, fallback, userId]);
   const projected = useMemo(() => userId ? applyPendingOperations(name, userId, rows, pendingOperations) : rows, [name, userId, rows, pendingOperations]);
+  const hiddenExpenseIds = useMemo(() => name === 'expenses' && userId ? getHiddenExpenseIds(userId) : new Set<string>(), [name, userId, deletionVisibilityRevision]);
   const start = range?.startDate; const end = range?.endDate;
-  const visible = useMemo(() => projected.filter((row) => !start || !end || row.date >= start && row.date <= end), [projected, start, end]);
+  const visible = useMemo(() => projected.filter((row) => (!row.id || !hiddenExpenseIds.has(row.id)) && (!start || !end || row.date >= start && row.date <= end)), [projected, hiddenExpenseIds, start, end]);
   return { rows: visible,
     hasMore: !!userId && (state.key !== key || state.hasMore), loading, error, incomplete: state.key === key && !state.complete,
     loadMore: () => load(false), retry: () => load(true) };

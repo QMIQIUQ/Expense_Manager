@@ -80,7 +80,7 @@ import { allocationLimitsForSettings, calculateIncomeFunding, incomeAllocationIm
 import type { UserSettings } from '../types';
 import { getBillingCyclePeriod } from '../utils/budgetRollover';
 import { useIncomeBudget } from '../hooks/useIncomeBudget';
-import { clearExpenseCreateFailure, hasExpenseBeenDeleted, hasExpenseCreateFailed, markExpenseCreateFailed, markExpenseDeleted, withExpenseMutationLock } from '../utils/expenseMutationLock';
+import { clearExpenseCreateFailure, clearExpenseDeletionInProgress, getHiddenExpenseIds, hasExpenseBeenDeleted, hasExpenseCreateFailed, hasExpenseDeletionInProgress, markExpenseCreateFailed, markExpenseDeleted, markExpenseDeletionInProgress, withExpenseMutationLock } from '../utils/expenseMutationLock';
 
 //#region Helper Functions
 type BudgetQueuePayload = Partial<Budget> & { userId?: string; previousBudget?: Budget };
@@ -412,13 +412,14 @@ const Dashboard: React.FC = () => {
     const mergedIncomingRows = incomingSource === 'cached'
       ? [...incomingRows, ...cachedReceivableRows]
       : [...cachedReceivableRows, ...incomingRows];
+    const hiddenExpenseIds = getHiddenExpenseIds(userId);
     const reconciled = mergeExpenseRows(
       expensesRef.current,
       mergedIncomingRows,
       userId,
       operations,
       { mode, authoritativeReceivableIds, incomingSource },
-    );
+    ).filter((row) => !hiddenExpenseIds.has(row.id!));
     const current = expensesRef.current;
     const stable = dataEqual(current, reconciled) ? current : reconciled;
     sessionCache.set('expenses', userId, stable);
@@ -1350,9 +1351,9 @@ const Dashboard: React.FC = () => {
   const handleDeleteExpense = async (id: string) => {
     if (!currentUser) return;
     const userId = currentUser.uid;
-    const expenseToDelete = expenses.find((e) => e.id === id);
+    const expenseToDelete = expensesRef.current.find((e) => e.id === id);
     const alreadyQueuedForDeletion = offlineQueue.hasPendingExpenseDelete(id, userId);
-    if (alreadyQueuedForDeletion) return;
+    if (alreadyQueuedForDeletion || hasExpenseBeenDeleted(userId, id) || hasExpenseDeletionInProgress(userId, id)) return;
 
     const relatedTransfers = transfers.filter((transfer) => transfer.expenseId === id && !!transfer.id);
     // Older transfers have no explicit expense link, so date/amount matches are never deleted automatically.
@@ -1379,6 +1380,18 @@ const Dashboard: React.FC = () => {
     const relatedTransferIds = relatedTransfers.map((transfer) => transfer.id!).filter(Boolean);
     if (possibleLegacyTransfers.length > 0) showNotification('info', t('relatedTransferNotLinked'));
 
+    markExpenseDeletionInProgress(userId, id);
+
+    const restoreOptimisticDelete = () => {
+      clearExpenseDeletionInProgress(userId, id);
+      if (expenseToDelete) {
+        setExpenses((prev) => applyPendingOperations('expenses', userId, prev.some((expense) => expense.id === id) ? prev : [expenseToDelete, ...prev]));
+        dataService.updateCache<Expense[]>('expenses', userId, (data) => applyPendingOperations('expenses', userId,
+          data.some((expense) => expense.id === id) ? data : [expenseToDelete, ...data]));
+      }
+      if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+    };
+
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
 
@@ -1390,11 +1403,19 @@ const Dashboard: React.FC = () => {
 
     await withExpenseMutationLock(userId, id, async () => {
       if (hasExpenseCreateFailed(userId, id)) {
+        markExpenseDeleted(userId, id);
         setExpenses((prev) => prev.filter((expense) => expense.id !== id));
         dataService.updateCache<Expense[]>('expenses', userId, (data) => data.filter((expense) => expense.id !== id));
         return;
       }
-      if (offlineQueue.hasPendingExpenseDelete(id, userId) || hasExpenseBeenDeleted(userId, id)) return;
+      if (hasExpenseBeenDeleted(userId, id)) {
+        clearExpenseDeletionInProgress(userId, id);
+        return;
+      }
+      if (offlineQueue.hasPendingExpenseDelete(id, userId)) {
+        markExpenseDeleted(userId, id);
+        return;
+      }
 
       const deletePayload = {
         id,
@@ -1409,11 +1430,7 @@ const Dashboard: React.FC = () => {
           return;
         }
 
-        if (expenseToDelete) {
-          setExpenses((prev) => [expenseToDelete, ...prev]);
-          dataService.updateCache<Expense[]>('expenses', userId, (data) => [expenseToDelete, ...data]);
-        }
-        if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+        restoreOptimisticDelete();
         showNotification('error', t('offlineQueueSaveFailed'));
         return;
       }
@@ -1441,11 +1458,7 @@ const Dashboard: React.FC = () => {
           },
           onError: () => {
             if (queuedForRetry) return;
-            if (expenseToDelete) {
-              setExpenses((prev) => [expenseToDelete, ...prev]);
-              dataService.updateCache<Expense[]>('expenses', userId, (data) => [expenseToDelete, ...data]);
-            }
-            if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+            restoreOptimisticDelete();
           },
         }
       );
@@ -1507,8 +1520,14 @@ const Dashboard: React.FC = () => {
   // Bulk delete expenses (from ExpenseList multi-select)
   const handleBulkDeleteExpenses = async (ids: string[]) => {
     if (!currentUser || ids.length === 0) return;
-    const selectedIds = new Set(ids);
-    const originals = expenses.filter((e) => selectedIds.has(e.id!));
+    const requestedIds = new Set(ids);
+    const originals = expensesRef.current.filter((expense) => !!expense.id && requestedIds.has(expense.id) &&
+      !hasExpenseBeenDeleted(currentUser.uid, expense.id) && !hasExpenseDeletionInProgress(currentUser.uid, expense.id) &&
+      !offlineQueue.hasPendingExpenseDelete(expense.id, currentUser.uid));
+    const selectedIds = new Set(originals.map((expense) => expense.id!));
+    if (selectedIds.size === 0) return;
+    const deleteIds = [...selectedIds];
+    selectedIds.forEach((id) => markExpenseDeletionInProgress(currentUser.uid, id));
     const linkedTransfers = transfers.filter((transfer) => !!transfer.id && !!transfer.expenseId && selectedIds.has(transfer.expenseId));
     const linkedTransferIds = new Set(linkedTransfers.map((transfer) => transfer.id));
 
@@ -1522,8 +1541,8 @@ const Dashboard: React.FC = () => {
     setDeleteProgress({
       id: deleteId,
       current: 0,
-      total: ids.length,
-      message: `${t('deleteSelected')} (0/${ids.length})`,
+      total: deleteIds.length,
+      message: `${t('deleteSelected')} (0/${deleteIds.length})`,
       status: 'deleting',
     });
 
@@ -1532,15 +1551,18 @@ const Dashboard: React.FC = () => {
     let failCount = 0;
     let queuedCount = 0;
 
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
+    for (let i = 0; i < deleteIds.length; i++) {
+      const id = deleteIds[i];
       const original = originals.find((o) => o.id === id);
       const relatedTransfers = linkedTransfers.filter((transfer) => transfer.expenseId === id);
       const relatedTransferIds = relatedTransfers.map((transfer) => transfer.id!).filter(Boolean);
       const restoreOptimisticDelete = () => {
+        clearExpenseDeletionInProgress(currentUser.uid, id);
         if (original) {
-          setExpenses((prev) => [original, ...prev]);
-          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => [original, ...data]);
+          setExpenses((prev) => applyPendingOperations('expenses', currentUser.uid,
+            prev.some((expense) => expense.id === id) ? prev : [original, ...prev]));
+          dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => applyPendingOperations('expenses', currentUser.uid,
+            data.some((expense) => expense.id === id) ? data : [original, ...data]));
         }
         if (relatedTransfers.length > 0) {
           setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
@@ -1619,7 +1641,7 @@ const Dashboard: React.FC = () => {
       setDeleteProgress(prev => prev ? {
         ...prev,
         current,
-        message: `${t('deleteSelected')} (${current}/${ids.length})`,
+        message: `${t('deleteSelected')} (${current}/${deleteIds.length})`,
       } : null);
     }
 
@@ -1628,7 +1650,7 @@ const Dashboard: React.FC = () => {
       setDeleteProgress(prev => prev ? {
         ...prev,
         status: 'error',
-        message: `${t('errorDeletingData')}: ${successCount}/${ids.length} ${t('success')}`,
+        message: `${t('errorDeletingData')}: ${successCount}/${deleteIds.length} ${t('success')}`,
       } : null);
     } else {
       setDeleteProgress(prev => prev ? {
