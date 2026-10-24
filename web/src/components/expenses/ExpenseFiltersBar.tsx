@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, type ReactNode } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Category, ExpenseTag, Card, Bank, EWallet } from '../../types';
 import type { ExpenseFilterState, ExpensePaymentFilter, ExpenseSort } from '../../types/expensePeriod';
@@ -15,12 +15,13 @@ interface ExpenseFiltersBarProps {
   onChange: (value: ExpenseFilterState) => void;
   categories: Category[];
   resultCount: number;
+  filterTools?: ReactNode;
 }
 
 const PAYMENT_METHODS: ExpensePaymentFilter[] = ['all', 'cash', 'credit_card', 'e_wallet', 'bank'];
 const SORT_OPTIONS: ExpenseSort[] = ['date-desc', 'date-asc', 'amount-desc', 'amount-asc'];
 
-const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, categories, resultCount, tags = [], cards = [], banks = [], ewallets = [] }) => {
+const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, categories, resultCount, filterTools, tags = [], cards = [], banks = [], ewallets = [] }) => {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const categoryNames = useMemo(
@@ -68,6 +69,7 @@ const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, 
       </div>
 
       {expanded && (
+        <div className="expense-filter-expanded">
         <div className="expense-filter-controls">
           <select value={value.tagId ?? ''} onChange={(event) => update('tagId', event.target.value)} aria-label={t('ledgerAllTags')}>
             <option value="">{t('ledgerAllTags')}</option>
@@ -93,6 +95,8 @@ const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, 
           <select value={value.sort} onChange={(event) => update('sort', event.target.value as ExpenseSort)} aria-label={t('sortBy')}>
             {SORT_OPTIONS.map((sort) => <option key={sort} value={sort}>{sortLabel(sort)}</option>)}
           </select>
+        </div>
+        {filterTools && <div className="expense-filter-tools">{filterTools}</div>}
         </div>
       )}
 

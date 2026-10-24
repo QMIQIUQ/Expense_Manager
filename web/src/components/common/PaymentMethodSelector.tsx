@@ -19,6 +19,7 @@ interface PaymentMethodSelectorProps {
   onCreateEWallet?: () => void;
   showLabels?: boolean;
   compact?: boolean;
+  variant?: 'buttons' | 'select';
   disabled?: boolean;
 }
 
@@ -39,6 +40,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   onCreateEWallet,
   showLabels = true,
   compact = false,
+  variant = 'buttons',
   disabled = false,
 }) => {
   const { t } = useLanguage();
@@ -71,7 +73,24 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         <label style={styles.label}>{t('paymentMethod')}</label>
       )}
       
-      {/* Payment Method Grid */}
+      {variant === 'select' ? (
+        <div style={styles.fieldContainer}>
+          <label style={styles.fieldLabel}>{t('paymentMethod')}</label>
+          <select
+            value={paymentMethod}
+            onChange={(event) => handlePaymentMethodClick(event.target.value as PaymentMethodType)}
+            aria-label={t('paymentMethod')}
+            style={styles.select}
+            disabled={disabled}
+          >
+            <option value="cash">💵 {t('cash')}</option>
+            <option value="credit_card">💳 {t('creditCard')}</option>
+            <option value="e_wallet">📱 {t('eWallet')}</option>
+            <option value="bank">🏦 {t('bankTransfer')}</option>
+          </select>
+        </div>
+      ) : (
+      /* Payment Method Grid */
       <div style={styles.paymentMethodGrid}>
         <button
           type="button"
@@ -130,6 +149,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           <div style={nameStyle}>{t('bankTransfer')}</div>
         </button>
       </div>
+      )}
 
       {/* Credit Card Selector */}
       {paymentMethod === 'credit_card' && cards.length > 0 && (

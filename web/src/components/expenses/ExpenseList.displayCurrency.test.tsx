@@ -158,7 +158,9 @@ describe('ExpenseList display currency', () => {
       date: '2026-10-19',
     };
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
-    HTMLElement.prototype.scrollIntoView = vi.fn();
+    const scrollIntoView = vi.fn();
+    const onFocusHandled = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
     const view = render(
       <ExpenseList expenses={[focused, other]} categories={categories} displayCurrency="MYR" onDelete={vi.fn()} onInlineUpdate={vi.fn()} />
     );
@@ -169,13 +171,54 @@ describe('ExpenseList display currency', () => {
     expect(screen.queryByText('Focused shared meal')).not.toBeInTheDocument();
 
     view.rerender(
-      <ExpenseList expenses={[focused, other]} categories={categories} displayCurrency="MYR" onDelete={vi.fn()} onInlineUpdate={vi.fn()} focusExpenseId={focused.id} />
+      <ExpenseList expenses={[focused, other]} categories={categories} displayCurrency="MYR" onDelete={vi.fn()} onInlineUpdate={vi.fn()} focusExpenseId={focused.id} onFocusHandled={onFocusHandled} />
     );
 
     await waitFor(() => {
       expect(screen.getByText('Focused shared meal')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Collapse 2026-10-20/i })).toHaveAttribute('aria-expanded', 'true');
+      expect(onFocusHandled).toHaveBeenCalledOnce();
     });
+    expect(scrollIntoView).toHaveBeenCalledOnce();
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+  });
+
+  it('uses dropdown fields for category, currency, and payment method while editing', async () => {
+    const user = userEvent.setup();
+    const expense: Expense = {
+      id: 'expense-edit-controls',
+      userId: 'test-user',
+      description: 'Market groceries',
+      amount: 48,
+      currency: 'MYR',
+      category: 'Food & Dining',
+      date: getTodayLocal(),
+      time: '09:30',
+      paymentMethod: 'cash',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    render(
+      <ExpenseList
+        expenses={[expense]}
+        categories={categories}
+        displayCurrency="MYR"
+        onDelete={vi.fn()}
+        onInlineUpdate={vi.fn().mockResolvedValue('saved')}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /edit/i }));
+    expect(screen.getByRole('combobox', { name: /currency/i })).toHaveValue('MYR');
+
+    const categoryTab = screen.getByRole('tab', { name: /category.*description/i });
+    await user.click(categoryTab);
+    expect(categoryTab).toHaveAttribute('aria-selected', 'true');
+    const categorySelect = screen.getByRole('tabpanel').querySelector('select');
+    expect(categorySelect).toHaveValue('Food & Dining');
+    expect(screen.queryByRole('button', { name: 'Food & Dining' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /payment\s*method/i }));
+    expect(screen.getByRole('tabpanel').querySelector('select')).toHaveValue('cash');
   });
 });

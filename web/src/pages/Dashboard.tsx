@@ -3798,6 +3798,9 @@ const Dashboard: React.FC = () => {
               setActiveTab('expenses');
             }}
             onNavigateToExpense={(expenseId) => {
+              const targetExpense = expenses.find((expense) => expense.id === expenseId && expense.userId === currentUserId);
+              if (targetExpense) setExpensePeriod({ mode: 'day', anchorDate: targetExpense.date });
+              setExpenseCategory('');
               setFocusExpenseId(expenseId);
               setActiveTab('expenses');
             }}

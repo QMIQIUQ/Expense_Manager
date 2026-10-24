@@ -90,6 +90,7 @@ interface ExpenseListProps {
   onAddTransfer?: (transfer: Omit<Transfer, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, silent?: boolean) => Promise<void>;
   onManageTransferHistory?: () => void;
   focusExpenseId?: string; // when set, scroll and highlight
+  onFocusHandled?: () => void;
   // Quick expense related
   quickExpensePresets?: QuickExpensePreset[];
   onQuickExpenseAdd?: (preset: QuickExpensePreset) => Promise<void>;
@@ -123,6 +124,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onAddTransfer,
   onManageTransferHistory,
   focusExpenseId,
+  onFocusHandled,
   quickExpensePresets = EMPTY_QUICK_EXPENSE_PRESETS,
   onQuickExpenseAdd,
   onQuickExpensePresetsChange,
@@ -137,6 +139,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const { dateFormat } = useUserSettings();
   const { currentUser } = useAuth();
   const repaymentOwner = useRef(currentUser?.uid); repaymentOwner.current = currentUser?.uid;
+  const focusHandledCallback = useRef(onFocusHandled); focusHandledCallback.current = onFocusHandled;
+  const handledFocusExpenseId = useRef<string>();
   const { rows: expenseTags } = useExpenseTags(currentUser?.uid);
   const { showNotification, updateNotification } = useNotification();
   const today = getTodayLocal();
@@ -218,6 +222,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [receiptPickerTarget, setReceiptPickerTarget] = useState<{ expenseId: string; request: number } | null>(null);
+  const receiptPickerRequestRef = useRef(0);
   const [quickExpenseLoading, setQuickExpenseLoading] = useState<string | null>(null);
   
   // Repayment editing states
@@ -319,29 +325,41 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     });
   }, [currentUser?.uid, expenses, focusExpenseId]);
 
-  React.useEffect(() => {
-    if (!focusExpenseId) return;
-    const highlightEl = (el: HTMLElement) => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const original = el.style.boxShadow;
-      el.style.boxShadow = '0 0 0 3px var(--accent-secondary)';
-      setTimeout(() => {
-        el.style.boxShadow = original;
-      }, 2000);
-    };
-    const el = document.getElementById(`expense-${focusExpenseId}`);
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (el) {
-      highlightEl(el);
-    } else {
-      // Element may not be rendered yet (e.g. right after tab switch) — retry after a short delay
-      timer = setTimeout(() => {
-        const delayed = document.getElementById(`expense-${focusExpenseId}`);
-        if (delayed) highlightEl(delayed);
-      }, 150);
+  useEffect(() => {
+    if (!focusExpenseId) {
+      handledFocusExpenseId.current = undefined;
+      return;
     }
+    if (handledFocusExpenseId.current === focusExpenseId) return;
+
+    let retryInterval: number | undefined;
+    let retryTimeout: number | undefined;
+    const focusTarget = () => {
+      if (handledFocusExpenseId.current === focusExpenseId) return true;
+      const element = document.getElementById(`expense-${focusExpenseId}`);
+      if (!element) return false;
+
+      handledFocusExpenseId.current = focusExpenseId;
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const original = element.style.boxShadow;
+      element.style.boxShadow = '0 0 0 3px var(--accent-secondary)';
+      window.setTimeout(() => { element.style.boxShadow = original; }, 2000);
+      focusHandledCallback.current?.();
+      return true;
+    };
+
+    if (!focusTarget()) {
+      retryInterval = window.setInterval(() => {
+        if (focusTarget() && retryInterval) window.clearInterval(retryInterval);
+      }, 100);
+      retryTimeout = window.setTimeout(() => {
+        if (retryInterval) window.clearInterval(retryInterval);
+      }, 5000);
+    }
+
     return () => {
-      if (timer !== undefined) clearTimeout(timer);
+      if (retryInterval) window.clearInterval(retryInterval);
+      if (retryTimeout) window.clearTimeout(retryTimeout);
     };
   }, [expenses, focusExpenseId]);
 
@@ -1250,6 +1268,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                 style={styles.menuItem}
                                 onClick={() => {
                                   setOpenMenuId(null);
+                                  setExpandedDetailsId(expense.id!);
+                                  setReceiptPickerTarget({ expenseId: expense.id!, request: ++receiptPickerRequestRef.current });
+                                }}
+                              >
+                                <span style={styles.menuIcon}>📎</span>
+                                {t('receiptArchiveUpload')}
+                              </button>
+                              <button
+                                className="menu-item-hover"
+                                style={styles.menuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
                                   startEdit(expense);
                                 }}
                               >
@@ -1320,7 +1350,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 {/* Expanded Details Section */}
                 {expandedDetailsId === expense.id && (
                   <div style={styles.detailsSection}>
-                    <React.Suspense fallback={null}><ReceiptAttachmentPanel expense={expense} /></React.Suspense>
                     {/* Amount Items (if any) */}
                     {expense.amountItems && expense.amountItems.length > 0 && (
                       <div style={styles.detailsSubsection}>
@@ -1501,6 +1530,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         </div>
                       );
                     })()}
+                    <React.Suspense fallback={null}>
+                      <ReceiptAttachmentPanel
+                        expense={expense}
+                        openPickerRequest={receiptPickerTarget?.expenseId === expense.id ? receiptPickerTarget.request : 0}
+                        onPickerOpened={() => setReceiptPickerTarget((current) => current?.expenseId === expense.id ? null : current)}
+                      />
+                    </React.Suspense>
                   </div>
                 )}
             </div>

@@ -12,8 +12,10 @@ vi.mock('../../components/expenses/DateNavigator', () => ({
   default: () => <div data-testid="date-navigator" />,
 }));
 
-vi.mock('../../components/expenses/ExpenseSavedViews', () => ({ ExpenseSavedViews: () => null }));
-vi.mock('../../components/categories/ExpenseTagManager', () => ({ ExpenseTagManager: () => null }));
+vi.mock('../../components/expenses/ExpenseSavedViews', () => ({ ExpenseSavedViews: ({ restoreLast, persistLast }: { restoreLast?: boolean; persistLast?: boolean }) => (
+  <div data-testid="saved-views" data-restore-last={String(restoreLast)} data-persist-last={String(persistLast)} />
+) }));
+vi.mock('../../components/categories/ExpenseTagManager', () => ({ ExpenseTagManager: () => <div data-testid="tag-manager" /> }));
 
 vi.mock('../../components/expenses/ExpensePeriodSummary', () => ({
   default: ({ expenses }: { expenses: Expense[] }) => <div data-testid="summary-count">{expenses.length}</div>,
@@ -26,7 +28,7 @@ vi.mock('../../components/expenses/ExpenseList', () => ({
 }));
 
 vi.mock('../../hooks/useHistoryPages', () => ({
-  useHistoryPages: () => ({ rows: [], hasMore: false, loading: false, incomplete: false, error: undefined, retry: vi.fn(), loadMore: vi.fn() }),
+  useHistoryPages: (_entity: string, _userId: string | undefined, _range: unknown, expenses: Expense[] = []) => ({ rows: expenses, hasMore: false, loading: false, incomplete: false, error: undefined, retry: vi.fn(), loadMore: vi.fn() }),
 }));
 vi.mock('../../hooks/useExpenseTags', () => ({ useExpenseTags: () => ({ rows: [] }) }));
 vi.mock('../../services/expenseAggregateService', () => ({
@@ -122,21 +124,22 @@ describe('ExpensesTab shared result model', () => {
     expect(screen.getByText('Food ×')).toBeInTheDocument();
   });
 
-  test('keeps a dashboard-focused expense visible outside the current period and filters', () => {
+  test('shows a dashboard target in its own day view without a persistent focus notice', () => {
     const focused = makeExpense('dashboard-focus', '2026-10-20', 'Dashboard reminder expense');
+    const otherDay = makeExpense('other-day', '2026-10-19', 'Other day expense');
     render(
       <ExpensesTab
         userId="user"
-        expenses={[focused]}
+        expenses={[focused, otherDay]}
         categories={[]}
         cards={[]}
         ewallets={[]}
         banks={[]}
         repayments={[]}
         transfers={[]}
-        period={{ mode: 'range', anchorDate: '2024-08-14', startDate: '2024-07-15', endDate: '2024-08-14' }}
+        period={{ mode: 'day', anchorDate: focused.date }}
         onPeriodChange={vi.fn()}
-        initialCategory="Travel"
+        initialCategory=""
         displayCurrency="MYR"
         onDelete={vi.fn()}
         onInlineUpdate={vi.fn()}
@@ -156,7 +159,46 @@ describe('ExpensesTab shared result model', () => {
     );
 
     expect(screen.getByTestId('expense-list')).toHaveTextContent('Dashboard reminder expense');
+    expect(screen.getByTestId('expense-list')).not.toHaveTextContent('Other day expense');
     expect(screen.getByTestId('expense-list')).toHaveAttribute('data-focus-id', focused.id);
-    expect(screen.getByText('dashboardExpenseFocusNotice')).toBeInTheDocument();
+    expect(screen.queryByText('dashboardExpenseFocusNotice')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /filters/ }));
+    expect(screen.getByTestId('saved-views')).toHaveAttribute('data-restore-last', 'false');
+    expect(screen.getByTestId('saved-views')).toHaveAttribute('data-persist-last', 'false');
+  });
+
+  test('places saved views and tag management inside expanded filters', () => {
+    render(
+      <ExpensesTab
+        userId="user"
+        expenses={[]}
+        categories={[]}
+        cards={[]}
+        ewallets={[]}
+        banks={[]}
+        repayments={[]}
+        transfers={[]}
+        period={{ mode: 'month', anchorDate: '2026-10-01' }}
+        onPeriodChange={vi.fn()}
+        displayCurrency="MYR"
+        onDelete={vi.fn()}
+        onInlineUpdate={vi.fn()}
+        onBulkDelete={vi.fn()}
+        onReloadRepayments={vi.fn()}
+        onCreateCard={vi.fn()}
+        onCreateEWallet={vi.fn()}
+        onAddTransfer={vi.fn()}
+        quickExpensePresets={[]}
+        onQuickExpenseAdd={vi.fn()}
+        onQuickExpensePresetsChange={vi.fn()}
+        onManageQuickExpenses={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('saved-views')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tag-manager')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(/^filters ·/));
+    expect(screen.getByTestId('saved-views').parentElement).toHaveClass('expense-filter-tools');
+    expect(screen.getByTestId('tag-manager').parentElement?.parentElement).toHaveClass('expense-filter-tools');
   });
 });

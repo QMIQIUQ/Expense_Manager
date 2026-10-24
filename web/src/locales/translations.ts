@@ -5,6 +5,9 @@ export const translations = {
   receiptArchiveTitle: { en: 'Receipt attachments', zh: '收據附件', 'zh-CN': '收据附件' },
   receiptArchiveLimit: { en: 'JPEG, PNG, WebP or PDF. Stored files are limited to 600 KiB each. Larger images are compressed; PDFs must already fit. Attachments use your database quota. Archived files remain stored and can be restored.', zh: '支援 JPEG、PNG、WebP 或 PDF，儲存後每檔上限 600 KiB。大圖片會壓縮；PDF 必須符合上限。附件會占用資料庫配額；封存後仍保留內容並可恢復。', 'zh-CN': '支持 JPEG、PNG、WebP 或 PDF，保存后每个文件上限 600 KiB。大图片会压缩；PDF 必须符合上限。附件占用数据库配额；归档后仍保留内容并可恢复。' },
   receiptArchiveChoose: { en: 'Attach a receipt', zh: '新增收據附件', 'zh-CN': '添加收据附件' },
+  receiptArchiveUpload: { en: 'Upload receipt', zh: '上傳收據', 'zh-CN': '上传收据' },
+  receiptChooseFile: { en: 'Choose a file', zh: '選擇檔案', 'zh-CN': '选择文件' },
+  receiptTakePhoto: { en: 'Take a photo', zh: '拍攝收據', 'zh-CN': '拍摄收据' },
   receiptArchiveShowArchived: { en: 'Show archived receipts', zh: '顯示已封存收據', 'zh-CN': '显示已归档收据' },
   receiptArchiveIncomplete: { en: 'This attachment list is not fully available offline. Connect and refresh to verify all files.', zh: '離線附件清單可能不完整，請連線後重新整理以核對全部檔案。', 'zh-CN': '离线附件列表可能不完整，请联网后刷新核对全部文件。' },
   receiptArchiveOptimized: { en: 'Compressed copy', zh: '壓縮版本', 'zh-CN': '压缩版本' },
@@ -218,8 +221,6 @@ export const translations = {
 
   // Expense List
   expenseHistory: { en: 'Expense History', zh: '支出記錄', 'zh-CN': '支出记录' },
-  dashboardExpenseFocusNotice: { en: 'Opened from a dashboard reminder. This expense is temporarily shown outside the current period and filters.', zh: '這筆支出是從儀表板提醒開啟，會暫時顯示在目前期間與篩選結果之外。', 'zh-CN': '这笔支出是从仪表板提醒打开，会暂时显示在当前期间和筛选结果之外。' },
-  dashboardExpenseFocusMissing: { en: 'This dashboard expense is not available in the current data yet.', zh: '目前載入的資料中找不到這筆支出。', 'zh-CN': '当前加载的数据中找不到这笔支出。' },
   searchExpenses: { en: 'Search expenses...', zh: '搜尋支出...', 'zh-CN': '搜索支出...' },
   filters: { en: 'Filters', zh: '篩選', 'zh-CN': '筛选' },
   allCategories: { en: 'All Categories', zh: '所有類別', 'zh-CN': '所有分类' },

@@ -14,11 +14,12 @@
 .ledger-panel img { max-width: 100%; max-height: 400px; object-fit: contain; }
 .expense-lower-options { display: grid; gap: 12px; min-width: 0; width: 100%; margin-top: 16px; container-type: inline-size; }
 .expense-lower-options > * { box-sizing: border-box; min-width: 0; width: 100%; }
-.expense-focus-notice { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--accent-primary); border-radius: 10px; background: var(--accent-light, var(--bg-secondary)); color: var(--text-primary); line-height: 1.45; }
-.expense-focus-notice > span { min-width: 0; }
-.expense-focus-notice > button { flex: 0 0 auto; min-height: 38px; }
 .expense-tag-picker-compact, .expense-receivable-panel { box-sizing: border-box; display: block; min-inline-size: 0; width: 100%; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin: 0; background: var(--card-bg, var(--bg-primary)); color: var(--text-primary); }
 .expense-tag-picker-compact > legend, .expense-receivable-panel > legend { max-width: 100%; padding: 0 6px; color: var(--text-primary); font-size: 14px; font-weight: 700; line-height: 1.35; }
+.expense-tag-picker-inline { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); }
+.expense-tag-picker-inline .expense-tag-picker-label { margin: 0 0 8px; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.expense-tag-picker-inline .expense-tag-picker-input-row { margin: 0; }
+.expense-tag-picker-inline .expense-tag-picker-options { margin-top: 7px; }
 .expense-tag-picker-compact .expense-tag-picker-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 6px 0; }
 .expense-tag-picker-compact .expense-tag-picker-input-row > input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; }
 .expense-tag-picker-compact .expense-tag-picker-input-row > button { min-height: 44px; white-space: nowrap; }
@@ -36,6 +37,11 @@
 .expense-transfer-edit-note { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .expense-transfer-edit-note > span { flex: 1 1 220px; min-width: 0; }
 .expense-transfer-edit-note > button { min-height: 40px; flex: 0 0 auto; }
+.receipt-attachment-panel > input[type="file"] { display: none; }
+.receipt-source-overlay { position: fixed; inset: 0; z-index: 15000; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgb(0 0 0 / 58%); }
+.receipt-source-dialog { display: grid; gap: 10px; width: min(100%, 360px); padding: 20px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg, var(--bg-primary)); color: var(--text-primary); box-shadow: 0 16px 48px rgb(0 0 0 / 30%); }
+.receipt-source-dialog h3 { margin: 0 0 4px; font-size: 17px; }
+.receipt-source-dialog > button { min-height: 44px; }
 .expense-split-editor-fields { padding-top: 2px; }
 .expense-split-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, 0.58fr) auto; align-items: center; gap: 8px; margin: 8px 0; }
 .expense-split-row > input { box-sizing: border-box; width: 100%; min-width: 0 !important; min-height: 42px; font-size: 14px; }
@@ -45,8 +51,6 @@
 .expense-split-own-share { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 13px; font-weight: 600; color: var(--text-primary) !important; }
 @media (max-width: 600px) {
   .expense-tag-picker-compact, .expense-receivable-panel { padding: 12px; }
-  .expense-focus-notice { align-items: flex-start; }
-  .expense-focus-notice > button { min-height: 36px; }
   .expense-lower-options { gap: 10px; margin-top: 14px; }
   .expense-split-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
   .expense-split-row > input:first-child { grid-column: 1 / -1; }

@@ -44,20 +44,6 @@ export const filterExpensesByPeriod = (
   return expenses.filter((expense) => expense.date >= bounds.startDate && expense.date <= bounds.endDate);
 };
 
-/** Temporarily pins one owner-scoped dashboard target ahead of the current result set. */
-export const includeFocusedExpense = (
-  rows: Expense[],
-  availableRows: Expense[],
-  focusExpenseId: string | undefined,
-  userId: string | undefined,
-): Expense[] => {
-  if (!focusExpenseId || !userId) return rows;
-  const focusedExpense = rows.find((expense) => expense.id === focusExpenseId && expense.userId === userId)
-    ?? availableRows.find((expense) => expense.id === focusExpenseId && expense.userId === userId);
-  const remainingRows = rows.filter((expense) => expense.id !== focusExpenseId);
-  return focusedExpense ? [focusedExpense, ...remainingRows] : remainingRows;
-};
-
 interface ExpenseFilterContext {
   tags?: ExpenseTag[];
   cards?: Card[];

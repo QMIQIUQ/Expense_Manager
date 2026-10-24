@@ -1684,38 +1684,54 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <h2 style={styles.stepHeaderTitle}>{t('currency')}</h2>
             </div>
             <div style={styles.currencySelectBlock}>
-              <div style={styles.currencyGridHeader}>
-                <span style={styles.currencyGridHeaderTitle}>{t('currency')}</span>
-                <span style={styles.currencyGridHeaderHint}>{t('select')}</span>
-              </div>
-              <div style={styles.currencyGrid}>
-                {CURRENCIES.map((currency) => {
-                  const selected = currency.code === formData.currency;
-                  return (
-                    <button
-                      key={currency.code}
-                      type="button"
-                      onClick={() => {
-                        handleCurrencyChange(currency.code);
-                        if (!initialData) window.setTimeout(() => handleNext(), 150);
-                      }}
-                      aria-pressed={selected}
-                      aria-label={`${currency.symbol} ${currency.code} ${currency.name}`}
-                      style={{
-                        ...styles.currencyCard,
-                        ...(selected ? styles.currencyCardActive : {}),
-                      }}
-                    >
-                      <div style={styles.currencyCardTop}>
-                        <span style={styles.currencySymbol}>{currency.symbol}</span>
-                        <span style={styles.currencyCode}>{currency.code}</span>
-                        {selected && <CheckIcon size={14} style={styles.currencyCheckIcon} />}
-                      </div>
-                      <span style={styles.currencyName}>{currency.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              {initialData ? (
+                <div style={styles.fieldContainer}>
+                  <label style={styles.fieldLabel}>{t('currency')}</label>
+                  <select
+                    value={formData.currency}
+                    onChange={(event) => handleCurrencyChange(event.target.value as CurrencyCode)}
+                    aria-label={t('currency')}
+                    style={styles.select}
+                  >
+                    {CURRENCIES.map((currency) => <option key={currency.code} value={currency.code}>{currency.symbol} {currency.code} - {currency.name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div style={styles.currencyGridHeader}>
+                    <span style={styles.currencyGridHeaderTitle}>{t('currency')}</span>
+                    <span style={styles.currencyGridHeaderHint}>{t('select')}</span>
+                  </div>
+                  <div style={styles.currencyGrid}>
+                    {CURRENCIES.map((currency) => {
+                      const selected = currency.code === formData.currency;
+                      return (
+                        <button
+                          key={currency.code}
+                          type="button"
+                          onClick={() => {
+                            handleCurrencyChange(currency.code);
+                            window.setTimeout(() => handleNext(), 150);
+                          }}
+                          aria-pressed={selected}
+                          aria-label={`${currency.symbol} ${currency.code} ${currency.name}`}
+                          style={{
+                            ...styles.currencyCard,
+                            ...(selected ? styles.currencyCardActive : {}),
+                          }}
+                        >
+                          <div style={styles.currencyCardTop}>
+                            <span style={styles.currencySymbol}>{currency.symbol}</span>
+                            <span style={styles.currencyCode}>{currency.code}</span>
+                            {selected && <CheckIcon size={14} style={styles.currencyCheckIcon} />}
+                          </div>
+                          <span style={styles.currencyName}>{currency.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div style={styles.currencyHelp}>
                 {formData.currency === DEFAULT_BASE_CURRENCY
                   ? (t('baseCurrencyHint') || 'MYR is the base currency, so no conversion is needed.')
@@ -1893,25 +1909,42 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               <span style={styles.stepHeaderIcon}>🏷️</span>
               <h2 style={styles.stepHeaderTitle}>{t('selectCategory')}</h2>
             </div>
-            {recentCategories.length > 0 && (
-              <section aria-label={t('recentlyUsedCategories')} style={styles.recentCategorySection}>
-                <h3 style={styles.categorySectionTitle}>{t('recentlyUsedCategories')}</h3>
-                <div style={styles.categoryScrollContainer}>
-                  <div className="expense-category-grid" style={styles.categoryScroll}>
-                    {recentCategories.map(renderCategory)}
-                  </div>
-                </div>
-              </section>
-            )}
-            {otherCategories.length > 0 && (
-              <section aria-label={recentCategories.length > 0 ? t('otherCategories') : t('selectCategory')}>
-                {recentCategories.length > 0 && <h3 style={styles.categorySectionTitle}>{t('otherCategories')}</h3>}
-                <div style={styles.categoryScrollContainer}>
-                  <div className="expense-category-grid" style={styles.categoryScroll}>
-                    {otherCategories.map(renderCategory)}
-                  </div>
-                </div>
-              </section>
+            {initialData ? (
+              <div style={styles.fieldContainer}>
+                <label style={styles.fieldLabel}>{t('selectCategory')}</label>
+                <select
+                  value={formData.category}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, category: event.target.value }))}
+                  aria-label={t('selectCategory')}
+                  style={styles.select}
+                >
+                  <option value="">{t('selectCategory')}</option>
+                  {sortedCategories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
+                </select>
+              </div>
+            ) : (
+              <>
+                {recentCategories.length > 0 && (
+                  <section aria-label={t('recentlyUsedCategories')} style={styles.recentCategorySection}>
+                    <h3 style={styles.categorySectionTitle}>{t('recentlyUsedCategories')}</h3>
+                    <div style={styles.categoryScrollContainer}>
+                      <div className="expense-category-grid" style={styles.categoryScroll}>
+                        {recentCategories.map(renderCategory)}
+                      </div>
+                    </div>
+                  </section>
+                )}
+                {otherCategories.length > 0 && (
+                  <section aria-label={recentCategories.length > 0 ? t('otherCategories') : t('selectCategory')}>
+                    {recentCategories.length > 0 && <h3 style={styles.categorySectionTitle}>{t('otherCategories')}</h3>}
+                    <div style={styles.categoryScrollContainer}>
+                      <div className="expense-category-grid" style={styles.categoryScroll}>
+                        {otherCategories.map(renderCategory)}
+                      </div>
+                    </div>
+                  </section>
+                )}
+              </>
             )}
           </div>
         );
@@ -1931,6 +1964,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 style={styles.textInput}
               />
             </div>
+
+            <ExpenseTagPicker frameless compact userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
 
             {/* Amount Items Description Section */}
             {amountItems.length > 0 && (
@@ -1980,7 +2015,6 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 }}
               />
             </div>
-            <ExpenseTagPicker compact userId={currentUser?.uid} value={tagIds} onChange={setTagIds} />
           </div>
         );
 
@@ -2000,6 +2034,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
             <PaymentMethodSelector
               paymentMethod={formData.paymentMethod as PaymentMethodType}
+              variant={initialData ? 'select' : 'buttons'}
               onPaymentMethodChange={(method) => setFormData(prev => ({ ...prev, paymentMethod: method }))}
               cardId={formData.cardId}
               onCardChange={(cardId) => setFormData(prev => ({ ...prev, cardId }))}

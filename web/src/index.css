@@ -6056,6 +6056,17 @@ button:not(:disabled):hover {
   flex-wrap: wrap;
 }
 
+.expense-filter-expanded,
+.expense-filter-tools {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.expense-filter-tools > .ledger-panel {
+  margin: 0;
+}
+
 .expense-filter-toggle,
 .expense-filter-controls select,
 .expense-filter-chips button {

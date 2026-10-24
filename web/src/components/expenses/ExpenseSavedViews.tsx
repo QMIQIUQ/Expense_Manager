@@ -4,15 +4,16 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { ExpenseFilterState, ExpensePeriodSelection, SavedExpenseView } from '../../types/expensePeriod';
 
 export const ExpenseSavedViews: React.FC<{
-  userId?: string; filters: ExpenseFilterState; period: ExpensePeriodSelection; restoreLast?: boolean;
+  userId?: string; filters: ExpenseFilterState; period: ExpensePeriodSelection; restoreLast?: boolean; persistLast?: boolean;
   onApply: (view: Pick<SavedExpenseView, 'filters' | 'period'>) => void;
-}> = ({ userId, filters, period, onApply, restoreLast = true }) => {
+}> = ({ userId, filters, period, onApply, restoreLast = true, persistLast = true }) => {
   const { t } = useLanguage();
   const { preferences, ready, save } = useExpenseViews(userId);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const restored = useRef<string>();
+  const skipNextSave = useRef(false);
   const latest = useRef({ filters, period, preferences, save }); latest.current = { filters, period, preferences, save };
   const applyRef = useRef(onApply); applyRef.current = onApply;
   useEffect(() => {
@@ -23,13 +24,15 @@ export const ExpenseSavedViews: React.FC<{
   const fingerprint = JSON.stringify({ filters, period });
   useEffect(() => {
     if (!userId || !ready || restored.current !== userId) return;
+    if (!persistLast) { skipNextSave.current = true; return; }
+    if (skipNextSave.current) { skipNextSave.current = false; return; }
     const timer = setTimeout(() => {
       const current = latest.current;
       if (JSON.stringify(current.preferences.lastView) === JSON.stringify({ filters: current.filters, period: current.period })) return;
       void current.save({ action: 'lastView', view: { filters: current.filters, period: current.period } }).catch((failure) => setError(String(failure)));
     }, 700);
     return () => clearTimeout(timer);
-  }, [userId, ready, fingerprint]);
+  }, [userId, ready, fingerprint, persistLast]);
   if (!userId) return null;
   const run = async (action: () => Promise<void>) => {
     setBusy(true); setError(''); try { await action(); } catch (failure) { setError(String(failure)); } finally { setBusy(false); }

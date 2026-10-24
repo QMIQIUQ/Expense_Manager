@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { expenseTagService, normalizeTagName } from '../../services/expenseTagService';
 import '../../styles/ledger.css';
 
-export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onChange: (value: string[]) => void; compact?: boolean }> = ({ userId, value, onChange, compact = false }) => {
+export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onChange: (value: string[]) => void; compact?: boolean; frameless?: boolean }> = ({ userId, value, onChange, compact = false, frameless = false }) => {
   const { t } = useLanguage();
   const { rows, error: readError } = useExpenseTags(userId);
   const [name, setName] = useState('');
@@ -74,9 +74,15 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
       }
     }
   };
+  const PickerContainer = frameless ? 'div' : 'fieldset';
   return (
-    <fieldset className={`ledger-panel expense-tag-picker ${compact ? 'expense-tag-picker-compact' : ''}`} onKeyDown={(event) => { if (event.key === 'Enter') event.stopPropagation(); }}>
-      <legend>{t('ledgerTags')}</legend>
+    <PickerContainer
+      className={`expense-tag-picker ${compact ? 'expense-tag-picker-compact' : ''} ${frameless ? 'expense-tag-picker-inline' : 'ledger-panel'}`}
+      role={frameless ? 'group' : undefined}
+      aria-label={frameless ? t('ledgerTags') : undefined}
+      onKeyDown={(event) => { if (event.key === 'Enter') event.stopPropagation(); }}
+    >
+      {frameless ? <div className="expense-tag-picker-label">{t('ledgerTags')}</div> : <legend>{t('ledgerTags')}</legend>}
       <div className="ledger-row expense-tag-picker-input-row">
         <input
           aria-label={t('ledgerNewTag')}
@@ -119,6 +125,6 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
         </details>
       )}
       {(error || readError) && <p role="alert">{error || t('errorLoadingData')}</p>}
-    </fieldset>
+    </PickerContainer>
   );
 };

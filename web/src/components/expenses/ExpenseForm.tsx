@@ -409,6 +409,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       {/* Payment Method Selection */}
       <PaymentMethodSelector
         paymentMethod={formData.paymentMethod as PaymentMethodType}
+        variant={initialData ? 'select' : 'buttons'}
         onPaymentMethodChange={(method) => setFormData({ ...formData, paymentMethod: method })}
         cardId={formData.cardId}
         onCardChange={(cardId) => setFormData({ ...formData, cardId })}
