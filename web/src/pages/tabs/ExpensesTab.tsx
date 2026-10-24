@@ -103,7 +103,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   const range = useMemo(() => getExpensePeriodBounds({ mode, anchorDate, startDate, endDate }) ?? undefined,
     [mode, anchorDate, startDate, endDate]);
   const history = useHistoryPages('expenses', userId, range, expenses, onHistoryRows);
-  const [aggregateState, setAggregate] = useState<{ key: string; value: ExpenseAggregate }>();
+  const [aggregateState, setAggregate] = useState<{ queryKey: string; value: ExpenseAggregate }>();
   const [summaryError, setSummaryError] = useState<string>();
   const [completePeriod, setCompletePeriod] = useState<CompleteExpensePeriod>();
   const [revision, setRevision] = useState(0);
@@ -130,8 +130,11 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       revision: offlineQueue.expenseRevision(userId), rows: applyPendingOperations('expenses', userId, completeRows ?? displayed!.rows) };
   }
   const savedPeriodRows = displayPeriod.current?.rows;
+  const aggregateQueryKey = JSON.stringify([userId, range, displayCurrency, membership, tags]);
   const aggregateKey = JSON.stringify([readKey, displayCurrency, membership, tags, !!completeRows, revision]);
-  const aggregate = aggregateState?.key === aggregateKey ? aggregateState.value : undefined;
+  // Keep the last summary visible while the same query is being refreshed.
+  // A changed cache revision should not make it disappear before its replacement is ready.
+  const aggregate = aggregateState?.queryKey === aggregateQueryKey ? aggregateState.value : undefined;
   const resultFilters = useMemo(() => ({ ...membership, sort: filters.sort }), [membership, filters.sort]);
   const historyCallback = useRef(onHistoryRows); historyCallback.current = onHistoryRows;
   const publishingHistory = useRef(false);
@@ -185,7 +188,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
     const summary = completeRows
       ? summarizeCompleteExpensePeriod(userId, completeRows, displayCurrency, range, select, isCurrent)
       : readExpenseAggregate(userId, displayCurrency, range, select, isCurrent);
-    void summary.then((value) => { if (isCurrent()) setAggregate({ key: aggregateKey, value }); })
+    void summary.then((value) => { if (isCurrent()) setAggregate({ queryKey: aggregateQueryKey, value }); })
       .catch((error) => { if (current) setSummaryError(error instanceof Error ? error.message : String(error)); });
     return () => { current = false; };
   // Sorting is deliberately absent: it cannot change the financial total.

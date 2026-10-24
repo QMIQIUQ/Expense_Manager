@@ -72,7 +72,8 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
       if (detail?.entity !== name || detail.userId !== userId || !snapshot.current?.cached ||
           sessionCache.getSnapshot(name, userId!)?.version === snapshot.current.version) return;
       generation.current++; busy.current = false; cursor.current = undefined; snapshot.current = undefined;
-      setState({ key, rows: [], hasMore: true, complete: false });
+      // Keep the visible page while its replacement is loading. The response below
+      // atomically swaps in the fresh snapshot; clearing here caused a visible flash.
       void load(true);
     };
     window.addEventListener('offline-queue-changed', projected);
