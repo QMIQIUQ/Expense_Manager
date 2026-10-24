@@ -255,6 +255,10 @@ textarea.ui-control--prominent {
   width: 100% !important;
 }
 
+.ui-control--trailing-action {
+  padding-right: var(--ui-space-10) !important;
+}
+
 /* The native checkbox remains focusable and carries the checked state; this
  * track is only its theme-aware visual companion. */
 .ui-switch-input:focus-visible + .ui-switch-track {

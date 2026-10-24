@@ -277,9 +277,10 @@ const CardForm: React.FC<CardFormProps> = ({
       {/* Card Name and Bank Name */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardName')} *</label>
+          <label htmlFor="card-name" className="ui-form-label ui-form-label--field">{t('cardName')} *</label>
           <input
             type="text"
+            id="card-name"
             name="name"
             value={formData.name}
             onChange={handleChange}
@@ -287,14 +288,16 @@ const CardForm: React.FC<CardFormProps> = ({
             placeholder="e.g., Chase Freedom, Amex Gold"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
               errors.name ? 'border-red-500' : ''
-            }`}
+            } ui-control--standard`}
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'card-name-error' : undefined}
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
               borderColor: errors.name ? 'var(--error-text)' : 'var(--border-color)',
             }}
           />
-          {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+          {errors.name && <span id="card-name-error" className="ui-field-error">{errors.name}</span>}
         </div>
 
         <div className="flex flex-col gap-1 relative">
@@ -349,9 +352,10 @@ const CardForm: React.FC<CardFormProps> = ({
       {/* Card Limit and Billing Day */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardLimit')} ({formData.currency}) *</label>
+          <label htmlFor="card-limit" className="ui-form-label ui-form-label--field">{t('cardLimit')} ({formData.currency}) *</label>
           <input
             type="text"
+            id="card-limit"
             inputMode="numeric"
             name="cardLimit"
             value={fromMinorUnits(formData.cardLimit, formData.currency).toFixed(formData.currency === 'JPY' ? 0 : 2)}
@@ -360,7 +364,9 @@ const CardForm: React.FC<CardFormProps> = ({
             placeholder="0.00"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
               errors.cardLimit ? 'border-red-500' : ''
-            }`}
+            } ui-control--standard`}
+            aria-invalid={!!errors.cardLimit}
+            aria-describedby={errors.cardLimit ? 'card-limit-error' : undefined}
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -368,14 +374,15 @@ const CardForm: React.FC<CardFormProps> = ({
             }}
           />
           {errors.cardLimit && (
-            <span className="text-xs text-red-600">{errors.cardLimit}</span>
+            <span id="card-limit-error" className="ui-field-error">{errors.cardLimit}</span>
           )}
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('billingDay')} (1-28) *</label>
+          <label htmlFor="card-billing-day" className="ui-form-label ui-form-label--field">{t('billingDay')} (1-28) *</label>
           <input
             type="number"
+            id="card-billing-day"
             name="billingDay"
             value={formData.billingDay}
             onChange={handleChange}
@@ -385,7 +392,9 @@ const CardForm: React.FC<CardFormProps> = ({
             max="28"
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ${
               errors.billingDay ? 'border-red-500' : ''
-            }`}
+            } ui-control--standard`}
+            aria-invalid={!!errors.billingDay}
+            aria-describedby={errors.billingDay ? 'card-billing-day-error' : undefined}
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -393,7 +402,7 @@ const CardForm: React.FC<CardFormProps> = ({
             }}
           />
           {errors.billingDay && (
-            <span className="text-xs text-red-600">{errors.billingDay}</span>
+            <span id="card-billing-day-error" className="ui-field-error">{errors.billingDay}</span>
           )}
         </div>
       </div>
@@ -410,7 +419,7 @@ const CardForm: React.FC<CardFormProps> = ({
             onChange={handleAmountChange('benefitMinSpend')}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ui-control--standard"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -425,7 +434,7 @@ const CardForm: React.FC<CardFormProps> = ({
             name="cardType"
             value={formData.cardType}
             onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ui-control--standard"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -490,7 +499,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     onChange={(e) =>
                       handleCashbackRuleChange(index, 'linkedCategoryId', e.target.value)
                     }
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -519,7 +528,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     onChange={handleCashbackAmountChange(index, 'minSpendForRate')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -549,7 +558,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     step="0.1"
                     min="0"
                     max="100"
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -571,7 +580,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     onChange={handleCashbackAmountChange(index, 'capIfMet')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -618,7 +627,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     step="0.1"
                     min="0"
                     max="100"
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -640,7 +649,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     onChange={handleCashbackAmountChange(index, 'capIfNotMet')}
                     onFocus={(e) => e.target.select()}
                     placeholder="0.00"
-                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors"
+                    className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 transition-colors ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',

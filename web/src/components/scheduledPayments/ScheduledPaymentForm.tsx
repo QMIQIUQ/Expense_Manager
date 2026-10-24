@@ -707,7 +707,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder={t('descriptionPlaceholder')}
             rows={2}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none ui-control--standard"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',

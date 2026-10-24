@@ -64,26 +64,29 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
       submitLabel={initialData ? t('update') : t('add')}
     >
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')} *</label>
+        <label htmlFor="bank-name" className="ui-form-label ui-form-label--field">{t('bankName')} *</label>
         <input
           type="text"
+          id="bank-name"
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 ui-control--standard"
+          aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? 'bank-name-error' : undefined}
           style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', borderColor: errors.name ? 'var(--error-text)' : 'var(--border-color)' }}
         />
-        {errors.name && (<span className="text-xs text-red-600">{errors.name}</span>)}
+        {errors.name && (<span id="bank-name-error" className="ui-field-error">{errors.name}</span>)}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('country')}</label>
-          <input name="country" value={formData.country} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
+          <label htmlFor="bank-country" className="ui-form-label ui-form-label--field">{t('country')}</label>
+          <input id="bank-country" name="country" value={formData.country} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2 ui-control--standard" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankCode')}</label>
-          <input name="code" value={formData.code} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
+          <label htmlFor="bank-code" className="ui-form-label ui-form-label--field">{t('bankCode')}</label>
+          <input id="bank-code" name="code" value={formData.code} onChange={handleChange} className="px-3 py-2 border rounded focus:outline-none focus:ring-2 ui-control--standard" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }} />
         </div>
       </div>
 
@@ -94,17 +97,18 @@ const BankForm: React.FC<BankFormProps> = ({ onSubmit, onCancel, initialData, ti
       />
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <label htmlFor="bank-balance" className="ui-form-label ui-form-label--field">
           {t('initialBalance')} ({t('optional')})
         </label>
         <input
           type="number"
+          id="bank-balance"
           name="balance"
           value={formData.balance}
           onChange={handleChange}
           placeholder="0.00"
           step="0.01"
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 ui-control--standard"
           style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
         />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('setInitialBalance')}</p>

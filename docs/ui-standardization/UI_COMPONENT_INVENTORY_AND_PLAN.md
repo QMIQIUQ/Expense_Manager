@@ -191,15 +191,15 @@
 
 | 畫面 / 元件 | main baseline | 分支進度 |
 |---|---|---|
-| Login | 原生欄位有共用 baseline；驗證文字/錯誤呈現由 Login 局部管理。 | 本輪未改；留待獨立逐頁檢查。 |
+| Login | 原生欄位套用 shared baseline；密碼顯示按鈕需要保留右側輸入空間，記住我 checkbox 保持原生。 | Email/password 使用 standard field 和標準 label；密碼欄加入 trailing-action spacing；checkbox 維持原生 18px。登入/驗證 callback 未改。 |
 | Dashboard / widgets | widget 卡片大致使用 shared layer；tracked expense card radius 有局部覆寫。 | Tracked expense card radius 接入 12px token；Dashboard customizer 數字欄位改用 compact variant。其餘 widget 未逐一重排。 |
 | Expenses list / filters | filters 與 quick-preset 欄位有局部 padding/font；selection checkbox 為 native。 | filters 使用 compact；quick-preset 的標籤/欄位及 amount 欄位有明確 variants；保留原 selection 和提交行為。 |
 | Expense create/edit | `StepByStepExpenseForm` 一般欄位、amount 欄位和描述 item 有不同尺寸；stepper、edit tabs、分類和 split 流程各有用途。 | 一般欄位/label 與描述 item 接入 shared variants；主要 amount 使用 prominent。分類 tiles、stepper、edit tabs、OCR 和 split flow 保留。 |
 | Incomes | 收入欄位、label、error、amount 有局部差異。 | `IncomeForm` standard/prominent fields、error styling 和 `DatePicker` 組合接入；`IncomeList` 未改。 |
 | Categories | reassign select 有局部幾何；CategoryForm 欄位需與共用規格對齊。 | `CategoryManager` select 與 `CategoryForm` fields/labels/errors 已接入；色彩選擇器保留 specialized native control。 |
 | Budgets | filter/sort select、amount entry、switch 各有局部尺寸/顏色。 | `BudgetManager` filters/labels、`BudgetForm` standard/prominent/compact fields、keyboard-focusable theme-aware switch，以及 `BudgetTemplates` amount 欄位已更新。 |
-| Payment Methods | text/select fields、labels 和 action button 有局部 variants；選擇 tile 有獨立語意。 | `PaymentMethodSelector` fields/labels/create actions 對齊 shared classes；選擇 tiles 保持原樣。 |
-| Recurring / payment record | 篩選和 payment record 欄位有局部幾何。 | `ScheduledPaymentManager` filter、`ScheduledPaymentForm` fields/labels、`PaymentRecordForm` fields/labels 已接入；付款 handlers 不變。 |
+| Payment Methods | `PaymentMethodSelector` 及 Bank/Card/E-Wallet forms 有各自的 field class；選擇 tile 和色彩控制有專用語意。 | `PaymentMethodSelector` fields/labels/create actions、BankForm、CardForm、EWalletForm 已接入 named variants；cashback nested fields 用 compact；color picker/selection tiles 保持 specialized。ID、金額解析與 handlers 未改。 |
+| Recurring / payment record | 篩選、payment record 欄位和多行備註有局部幾何。 | `ScheduledPaymentManager` filter、`ScheduledPaymentForm` fields/textarea/labels、`PaymentRecordForm` fields/labels 已接入；付款 handlers 不變。 |
 | Profile / Admin | Profile reset-day 和 Admin fields 有局部尺寸。 | Profile reset-day 改用 compact；Admin fields 對齊 shared rules；權限及帳戶行為不變。 |
 | Register (source-only) | `Register.tsx` 定義存在，但 `/register` 未在 `App.tsx` 註冊；Home.tsx 也不是 app route。 | fields 對齊 shared rules，作為未來重新掛載時的基線；目前不屬於可達畫面。 |
 | Settings | Feature ordering numeric field 有固定窄寬。 | `FeatureManager` numeric field 使用 compact；保留 50px 寬和對齊方式。 |

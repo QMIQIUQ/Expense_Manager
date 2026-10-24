@@ -18,6 +18,7 @@
 | Compact 欄位 | `.ui-control--compact`: 44px target, 14px text, 4×8px padding, 1px border, 8px radius | web/src/styles/ui-system.css |
 | Prominent 欄位 | `.ui-control--prominent`: 52px target, 16px text, 12×16px padding, 2px border | web/src/styles/ui-system.css |
 | DatePicker | `.ui-control--date`: 44px target and standard type; 44px trailing space reserved for calendar button | web/src/styles/ui-system.css |
+| Trailing action field | `.ui-control--trailing-action` reserves 40px on the right for an overlaid action such as password visibility | web/src/styles/ui-system.css |
 | 多行文字 | 共用字級、色彩、border/radius/focus；最低高度為兩倍 control height，可繼續垂直伸展 | ui-system.css |
 | Checkbox / radio | 可見 controls 保留原生 input type/value/keyboard；18px、accent 使用目前主題色。隱藏 switch checkbox 維持 sr-only 幾何，track 以目前主題色顯示 | ui-system.css |
 | Labels / field errors | Primary label 14px；secondary label and field error 12px；由各欄位維持 `htmlFor`/`id`、`aria-invalid`、`aria-describedby` 關聯 | ui-system.css、相關表單元件 |

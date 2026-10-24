@@ -5,7 +5,7 @@
 ## 本分支實作差異
 
 - 共享層新增 Standard / Compact / Prominent / Date 欄位 variants、primary/secondary labels、field error、compact action、theme-aware switch track 和 shared focus/error state。
-- 遷移頁面/元件：BudgetManager/BudgetForm/BudgetTemplates、CategoryManager/CategoryForm、PaymentMethodSelector、SearchBar、ExpenseList/StepByStepExpenseForm、IncomeForm/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DashboardCustomizer/QuickAddWidget、AutocompleteDropdown，以及 TrackedExpensesWidget card geometry。
+- 遷移頁面/元件：Login、BankForm/CardForm/EWalletForm、BudgetManager/BudgetForm/BudgetTemplates、CategoryManager/CategoryForm、PaymentMethodSelector、SearchBar、ExpenseList/StepByStepExpenseForm、IncomeForm/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DashboardCustomizer/QuickAddWidget、AutocompleteDropdown，以及 TrackedExpensesWidget card geometry。
 - 保留原生欄位類型、值、handler、ID mapping、鍵盤/combobox 互動、視覺特化的日期/幣別/金額欄位、流程布局和金融 mutation/read paths。
 - 以下完整 per-file 表格繼續描述改動前 main 的 135 個 production TSX 靜態計數，避免把基線計數誤讀為這個分支當前數值。分支狀態與逐頁完成/未完成項請看 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
 

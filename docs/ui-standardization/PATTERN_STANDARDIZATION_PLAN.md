@@ -99,7 +99,7 @@
 
 **目標檔案：** `payment/PaymentMethodsTab.tsx` 及卡片/銀行/錢包表單和列表、`TransferList.tsx`、`scheduledPayments/ScheduledPaymentManager.tsx`、`ScheduledPaymentCard.tsx`、`PaymentRecordForm.tsx`、`PaymentHistoryList.tsx`、expense `RepaymentForm.tsx`、`ExpenseList.tsx`，以及已掛載 `dashboard/widgets/*`。
 
-**本分支 token 接入：指定控制已完成。** `PaymentMethodSelector`、`ScheduledPaymentManager`、`ScheduledPaymentForm`、`PaymentRecordForm` 和 `ExpenseList` 中指定 fields/labels/filters/actions 已接入 variants；其他 payment/repayment forms、lists 和 widgets 未在本輪逐一修改。資訊密度、selection、empty/loading/error 與 inline expand 結構依原畫面保留。
+**本分支 token 接入：指定控制已完成。** `PaymentMethodSelector`、`BankForm`、`CardForm`、`EWalletForm`、`ScheduledPaymentManager`、`ScheduledPaymentForm`、`PaymentRecordForm` 和 `ExpenseList` 中指定 fields/labels/filters/actions 已接入 variants；其他 payment/repayment forms、lists 和 widgets 未在本輪逐一修改。資訊密度、selection、empty/loading/error 與 inline expand 結構依原畫面保留。
 
 **工作步驟：**未來如需重新整理 payment account summary/card/row/chip/actions，先重用現有 semantic tokens；確認清單 filter、selection、多選 toolbar、empty/loading/error、inline expand；圖表資料格式和視覺分開變更。
 
@@ -111,7 +111,7 @@
 
 **目標檔案：** `pages/Dashboard.tsx`、`components/navigation/CompactNavigation.tsx`、`DashboardMenuSection.tsx`、`FloatingExpenseActions.tsx`、`navigationConfig.ts`、`HeaderStatusBar.tsx` / `.css`、`NetworkStatusIndicator.tsx`、`NotificationBell.tsx`、`common/SubTabs.tsx`、Profile、Admin、FeatureManager、Dashboard customizer。
 
-**本分支 token 接入：指定控制已完成。** `AdminTab`、`UserProfile`、`FeatureManager`、`DashboardCustomizer` 和 `QuickAddWidget` 的指定 fields/labels/compact control 已更新；`Register.tsx` 亦已對齊，但目前未由 `App.tsx` 掛載。未改 navigation layout、通知入口或其他功能控制。
+**本分支 token 接入：指定控制已完成。** `Login`、`AdminTab`、`UserProfile`、`FeatureManager`、`DashboardCustomizer` 和 `QuickAddWidget` 的指定 fields/labels/compact control 已更新；`Register.tsx` 亦已對齊，但目前未由 `App.tsx` 掛載。未改 navigation layout、通知入口或其他功能控制。
 
 **需保留邏輯：**`tabFeatures` / `hamburgerFeatures` 排序和可見性、舊 `enabledFeatures` fallback、Profile/Admin 權限、`activeTab`、mobile active item scroll、Dashboard widget order/layout、sync events 和受影響集合局部刷新。Network status、queue status、notification、import/delete progress 是不同來源，外觀一致不代表合併資料流。管理/權限、auth 和 server-only 操作不能改成離線成功假象。
 
