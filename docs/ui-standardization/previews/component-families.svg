@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Manager component family inventory</title>
+  <desc id="desc">A static illustration showing current variation in buttons, form fields, labels, cards, tabs, and selection controls.</desc>
+  <defs>
+    <style>
+      .title{font:700 28px 'Segoe UI',sans-serif;fill:#24222a}.sub{font:15px 'Segoe UI',sans-serif;fill:#66616c}.section{font:700 18px 'Segoe UI',sans-serif;fill:#38333e}.caption{font:13px 'Segoe UI',sans-serif;fill:#625d68}.tiny{font:11px 'Segoe UI',sans-serif;fill:#6b6670}.fieldlabel{font:600 13px 'Segoe UI',sans-serif;fill:#394150}.btntext{font:700 13px 'Segoe UI',sans-serif}.tabtext{font:600 12px 'Segoe UI',sans-serif}
+    </style>
+  </defs>
+  <rect width="1440" height="1000" fill="#f5f3f7"/>
+  <text x="52" y="58" class="title">元件家族：現行設計型態</text>
+  <text x="52" y="88" class="sub">同一用途在不同 CSS / 元件中會出現不同尺寸與外觀。下方是抽樣示意；具體程式位置見盤點文件。</text>
+  <g transform="translate(52 125)">
+    <rect width="1336" height="188" rx="16" fill="#fff" stroke="#e0dce5"/>
+    <text x="24" y="34" class="section">按鈕 / Button variants</text>
+    <rect x="26" y="56" width="145" height="42" rx="8" fill="#7c3aed"/><text x="98" y="82" text-anchor="middle" class="btntext" fill="#fff">實心主要</text>
+    <rect x="190" y="56" width="145" height="42" rx="8" fill="#ede9fe"/><text x="262" y="82" text-anchor="middle" class="btntext" fill="#7c3aed">淡色強調</text>
+    <rect x="354" y="56" width="145" height="42" rx="22" fill="#ede9fe" stroke="#c4b5fd"/><text x="426" y="82" text-anchor="middle" class="btntext" fill="#7c3aed">柔和膠囊</text>
+    <rect x="518" y="56" width="145" height="42" rx="8" fill="#fef2f2"/><text x="590" y="82" text-anchor="middle" class="btntext" fill="#dc2626">危險操作</text>
+    <rect x="682" y="56" width="48" height="42" rx="8" fill="#ede9fe"/><text x="706" y="83" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="19" fill="#7c3aed">✎</text>
+    <rect x="749" y="56" width="230" height="42" rx="8" fill="#fafafa" stroke="#d1d5db"/><text x="864" y="82" text-anchor="middle" class="btntext" fill="#374151">BaseForm 儲存 · 80%</text>
+    <text x="26" y="127" class="caption">現行：實心、淡色強調、柔和膠囊、危險、僅圖示、BaseForm 80:20 都存在。</text>
+    <text x="26" y="153" class="tiny">先選主要操作與表單 footer，再列出取消、刪除和圖示按鈕例外。</text>
+  </g>
+  <g transform="translate(52 335)">
+    <rect width="644" height="278" rx="16" fill="#fff" stroke="#e0dce5"/>
+    <text x="24" y="34" class="section">文字欄位 / 下拉選單 / 核取方塊</text>
+    <text x="28" y="68" class="fieldlabel">標準欄位 · .form-input</text>
+    <rect x="28" y="80" width="274" height="42" rx="8" fill="#fff" stroke="#d1d5db"/><text x="42" y="106" font-family="Segoe UI, sans-serif" font-size="13" fill="#6b7280">請輸入文字</text>
+    <text x="336" y="68" class="fieldlabel">焦點 / 錯誤狀態</text>
+    <rect x="336" y="80" width="274" height="42" rx="8" fill="#fff" stroke="#7c3aed" stroke-width="2"/><text x="350" y="106" font-family="Segoe UI, sans-serif" font-size="13" fill="#394150">輸入中的欄位</text>
+    <text x="336" y="141" class="tiny" fill="#dc2626">錯誤訊息需關聯欄位 ID</text>
+    <rect x="28" y="153" width="176" height="38" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="42" y="177" font-family="Segoe UI, sans-serif" font-size="13" fill="#394150">下拉選單 ▾</text>
+    <rect x="226" y="162" width="19" height="19" rx="3" fill="#7c3aed"/><path d="M230 171l4 4 7-8" fill="none" stroke="#fff" stroke-width="2"/><text x="254" y="177" font-family="Segoe UI, sans-serif" font-size="13" fill="#394150">原生核取方塊</text>
+    <rect x="28" y="211" width="582" height="42" rx="8" fill="#fff" stroke="#e5e7eb"/><text x="44" y="237" font-family="Segoe UI, sans-serif" font-size="13" fill="#394150">例外：ledger panel 欄位可能採用 8px padding / 專屬高度。</text>
+  </g>
+  <g transform="translate(744 335)">
+    <rect width="644" height="278" rx="16" fill="#fff" stroke="#e0dce5"/>
+    <text x="24" y="34" class="section">標籤 / Chip / 分類選擇器</text>
+    <text x="28" y="70" class="fieldlabel">欄位標籤</text>
+    <text x="28" y="96" font-family="Segoe UI, sans-serif" font-size="14" fill="#1f2937">金額 <tspan fill="#dc2626">*</tspan></text>
+    <rect x="28" y="116" width="145" height="38" rx="19" fill="#ede9fe"/><text x="100" y="140" text-anchor="middle" class="tabtext" fill="#6d28d9">🍜 餐飲</text>
+    <rect x="184" y="116" width="137" height="38" rx="19" fill="#f3f4f6" stroke="#d1d5db"/><text x="252" y="140" text-anchor="middle" class="tabtext" fill="#4b5563">＋ 新增標籤</text>
+    <rect x="344" y="64" width="268" height="176" rx="12" fill="#faf9fb" stroke="#e5e7eb"/>
+    <text x="362" y="91" class="fieldlabel">分類圖示格</text>
+    <rect x="362" y="106" width="105" height="52" rx="10" fill="#ede9fe" stroke="#7c3aed"/><text x="414" y="128" text-anchor="middle" font-size="15">🍜</text><text x="414" y="148" text-anchor="middle" class="tiny">餐飲</text>
+    <rect x="479" y="106" width="114" height="52" rx="10" fill="#fff" stroke="#d1d5db"/><text x="536" y="128" text-anchor="middle" font-size="15">🚗</text><text x="536" y="148" text-anchor="middle" class="tiny">交通</text>
+    <rect x="362" y="172" width="231" height="38" rx="8" fill="#fff" stroke="#d1d5db"/><text x="375" y="196" font-family="Segoe UI, sans-serif" font-size="12" fill="#6b7280">原生下拉備用方式</text>
+    <text x="28" y="200" class="caption">Label.tsx / Text.tsx 有定義，目前頁面尚未使用。</text>
+    <text x="28" y="224" class="tiny">分類與標籤的顯示密度、鍵盤和窄螢幕操作需分別決定。</text>
+  </g>
+  <g transform="translate(52 635)">
+    <rect width="644" height="310" rx="16" fill="#fff" stroke="#e0dce5"/>
+    <text x="24" y="34" class="section">卡片 / 表單 / 彈窗</text>
+    <rect x="28" y="62" width="250" height="128" rx="10" fill="#fff" stroke="#d8d4de"/>
+    <text x="46" y="91" class="fieldlabel">一般卡片 · 10px</text><text x="46" y="119" class="caption">內容區與操作按鈕</text><rect x="46" y="143" width="88" height="26" rx="7" fill="#ede9fe"/><text x="90" y="161" text-anchor="middle" class="tiny" fill="#7c3aed">開啟</text>
+    <rect x="300" y="62" width="310" height="128" rx="12" fill="#fff" stroke="#c7c2ce"/>
+    <text x="320" y="91" class="fieldlabel">BaseForm · 12px</text><line x1="300" y1="105" x2="610" y2="105" stroke="#e5e7eb"/><text x="320" y="133" class="caption">表單內容區</text><line x1="300" y1="146" x2="610" y2="146" stroke="#e5e7eb"/><text x="320" y="170" class="tiny">取消 20%　　儲存 80%</text>
+    <rect x="28" y="211" width="582" height="72" rx="12" fill="#f7f4fa" stroke="#d8d4de"/>
+    <text x="48" y="239" class="fieldlabel">儀表板 Widget、ledger panel、popup 各有容器規格</text><text x="48" y="262" class="caption">先決定資訊層級，再統一圓角、邊框、留白與陰影。</text>
+  </g>
+  <g transform="translate(744 635)">
+    <rect width="644" height="310" rx="16" fill="#fff" stroke="#e0dce5"/>
+    <text x="24" y="34" class="section">頁籤 / 逐步表單 / 狀態</text>
+    <rect x="28" y="62" width="588" height="58" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <rect x="40" y="72" width="115" height="38" rx="8" fill="#ede9fe"/><text x="97" y="96" text-anchor="middle" class="tabtext" fill="#6d28d9">主導覽</text>
+    <text x="182" y="96" class="tabtext" fill="#6b7280">卡片</text><line x1="173" y1="110" x2="222" y2="110" stroke="#7c3aed" stroke-width="2"/><text x="265" y="96" class="tabtext" fill="#6b7280">SubTabs 底線</text>
+    <rect x="28" y="137" width="588" height="57" rx="10" fill="#fff" stroke="#e5e7eb"/>
+    <rect x="42" y="148" width="150" height="34" rx="8" fill="#ede9fe" stroke="#7c3aed"/><text x="117" y="170" text-anchor="middle" class="tabtext" fill="#6d28d9">日期 · 金額</text>
+    <rect x="203" y="148" width="150" height="34" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="278" y="170" text-anchor="middle" class="tabtext" fill="#6b7280">分類 · 描述</text>
+    <rect x="364" y="148" width="150" height="34" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="439" y="170" text-anchor="middle" class="tabtext" fill="#6b7280">付款 · 應收</text>
+    <rect x="28" y="212" width="280" height="52" rx="10" fill="#f3f4f6"/><circle cx="53" cy="238" r="9" fill="#7c3aed"/><text x="73" y="243" class="caption">HeaderStatusBar · 操作進度</text>
+    <rect x="326" y="212" width="290" height="52" rx="10" fill="#ecfdf5"/><circle cx="350" cy="238" r="8" fill="#22c55e"/><text x="369" y="243" class="caption">NetworkStatusIndicator · 網路</text>
+    <text x="28" y="292" class="tiny">主導覽、子頁籤、編輯 tabs、建立步驟與狀態語意不同，可統一外觀但不可混淆互動。</text>
+  </g>
+</svg>

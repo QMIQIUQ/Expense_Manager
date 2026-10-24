@@ -12,9 +12,14 @@
 | [PERFORMANCE_RELIABILITY_IMPLEMENTATION.md](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md) | IndexedDB outbox、交易防重送、分頁、快取與驗證紀錄 | 開發者 / 維運 |
 | [OFFLINE_STORAGE_STARTUP.md](implementation-plans/OFFLINE_STORAGE_STARTUP.md) | 離線快照、啟動載入與 IndexedDB 遷移優化計畫（尚未實作） | 開發者 / QA |
 | [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) | 既有功能的 method 與流程盤點 | 開發者 |
+| [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md) | 收入與每月預算聯動規則、現況與驗收紀錄 | 產品 / 開發者 |
 | [LOCAL_FIRST_ACCEPTANCE.md](LOCAL_FIRST_ACCEPTANCE.md) | 既有逐功能本機優先驗收紀錄 | 開發者 / QA |
+| [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md) | IndexedDB outbox、領域交易、重播與待處理狀態 | 開發者 |
+| [OFFLINE_SYNC_GUIDE.md](OFFLINE_SYNC_GUIDE.md) | 本機先顯示、同步狀態與佇列使用說明 | 使用者 / 開發者 |
+| [OFFLINE_FUNCTIONALITY.md](OFFLINE_FUNCTIONALITY.md) | 離線行為、適用範圍與限制摘要 | 使用者 / 開發者 |
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
 | [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
+| [ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) | 目前 UI 元件/樣式盤點、預覽圖與逐檔標準化計畫 | 產品 / 設計 / 開發 |
 | [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2 實作紀錄；較新的導覽改進建議見 UI 導覽盤點 | 產品 / 設計 / 開發 |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | GitHub Pages 與 Firebase live / preview 部署方式 | 開發者 / 運維 |
 | [DARK_MODE_GUIDE.md](DARK_MODE_GUIDE.md) | 深色模式完整指南 | 开发者 |
@@ -35,11 +40,17 @@
 - 💳 [支付方式](PAYMENT_METHODS_GUIDE.md) - 信用卡与电子钱包
 - 💰 [预算管理](BUDGET_GUIDE.md) - 预算与月结日
 - 📊 [收入还款](INCOME_REPAYMENT_GUIDE.md) - 收入追踪与分帐
+- 📶 [本機先顯示與同步](OFFLINE_SYNC_GUIDE.md) - 離線狀態和佇列操作
 
 ### 我是开发者
 - 🏗️ [架构](ARCHITECTURE.md) - 系统设计
 - 🧭 [功能與頁面](FEATURES_AND_PAGES.md) - 功能入口與實際掛載位置
+- 🧩 [主要 Method 與流程](LOGIC_METHOD_FLOW.md) - 領域方法和資料流程
+- 💰 [收入與預算聯動計畫](INCOME_BUDGET_LINK_PLAN.md) - 收入來源、帳期和預算額度規則
+- 📶 [本機優先同步架構](OFFLINE_SYNC_ARCHITECTURE.md) - outbox、交易和重播合約
+- 🧾 [離線功能摘要](OFFLINE_FUNCTIONALITY.md) - 功能範圍及限制
 - 🧭 [UI 架構與排列盤點](UI_NAVIGATION_AUDIT.md) - 導覽結構、目前問題與改進方案
+- 🎨 [UI 元件盤點與統一設計計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) - 元件外觀、預覽和後續逐檔計畫
 - 📱 [Compact Navigation V2](implementation-plans/COMPACT_NAVIGATION_V2.md) - 已發布的實作紀錄；新建議見 UI 導覽盤點
 - 🎨 [UI 规范](UI_STYLE_GUIDE.md) - 样式与组件
 - 🚀 [部署指南](DEPLOYMENT_GUIDE.md) - GitHub Pages 與 Firebase Hosting
@@ -52,4 +63,4 @@
 
 ---
 
-*最後更新: 2026-10-17*
+*最後更新：2026-10-25*

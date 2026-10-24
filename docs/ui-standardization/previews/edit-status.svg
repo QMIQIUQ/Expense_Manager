@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">支出編輯頁籤與全域狀態呈現比較</title>
+  <desc id="desc">The current expense editor has three tabs and a separate floating HeaderStatusBar and network status indicator. Proposals show a four-tab editor and compact status variants.</desc>
+  <defs><style>
+    .h{font:700 27px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#27222d}.sub{font:14px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#645d6b}.heading{font:700 17px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#37313e}.txt{font:13px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#514b58}.small{font:12px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#6b6571}.mini{font:11px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#6b6571}.badge{font:700 11px 'Microsoft JhengHei','Segoe UI',sans-serif;letter-spacing:.5px}
+  </style></defs>
+  <rect width="1440" height="760" fill="#f5f3f7"/>
+  <text x="52" y="54" class="h">支出編輯與全域狀態：現行與待選版型</text>
+  <text x="52" y="82" class="sub">分頁只改變資訊分組；表單值、驗證、儲存 callback 和佇列衝突保護需維持原樣。</text>
+  <g transform="translate(52 112)">
+    <rect width="645" height="286" rx="16" fill="#fff" stroke="#dcd7e2"/>
+    <rect x="22" y="18" width="82" height="24" rx="12" fill="#ece8f2"/><text x="63" y="34" text-anchor="middle" class="badge" fill="#514a58">CURRENT</text>
+    <text x="22" y="72" class="heading">編輯支出 · 目前 3 個分頁</text>
+    <rect x="22" y="91" width="184" height="42" rx="8" fill="#ede9fe" stroke="#7c3aed"/><text x="114" y="117" text-anchor="middle" class="txt">日期 · 金額</text>
+    <rect x="218" y="91" width="184" height="42" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="310" y="117" text-anchor="middle" class="txt">分類 · 描述</text>
+    <rect x="414" y="91" width="208" height="42" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="518" y="117" text-anchor="middle" class="txt">付款 · 應收追蹤</text>
+    <rect x="22" y="146" width="600" height="78" rx="9" fill="#fff" stroke="#e5e7eb"/><text x="42" y="178" class="txt">目前編輯內容：原有欄位依選取分頁顯示</text><text x="42" y="203" class="mini">步驟式新增支出仍維持獨立流程</text>
+    <text x="22" y="258" class="small">Current：由 StepByStepExpenseForm 的 editTabGroups 實際渲染。</text>
+  </g>
+  <g transform="translate(743 112)">
+    <rect width="645" height="286" rx="16" fill="#fff" stroke="#c7d8f0"/>
+    <rect x="22" y="18" width="112" height="24" rx="12" fill="#e8f0ff"/><text x="78" y="34" text-anchor="middle" class="badge" fill="#2858a6">PROPOSAL</text>
+    <text x="22" y="72" class="heading">候選 · 4 個分頁（需先選擇）</text>
+    <rect x="22" y="91" width="142" height="42" rx="8" fill="#ede9fe" stroke="#7c3aed"/><text x="93" y="117" text-anchor="middle" class="txt">日期 · 金額</text>
+    <rect x="176" y="91" width="142" height="42" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="247" y="117" text-anchor="middle" class="txt">分類 · 描述</text>
+    <rect x="330" y="91" width="142" height="42" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="401" y="117" text-anchor="middle" class="txt">付款 · 分帳</text>
+    <rect x="484" y="91" width="138" height="42" rx="8" fill="#f9fafb" stroke="#d1d5db"/><text x="553" y="117" text-anchor="middle" class="txt">附件</text>
+    <rect x="22" y="146" width="600" height="78" rx="9" fill="#fff" stroke="#e5e7eb"/><text x="42" y="178" class="txt">候選內容：把附件從其他區域分離</text><text x="42" y="203" class="mini">只在確認附件流程和草稿行為後採用</text>
+    <text x="22" y="258" class="small">Proposal：四分頁未實作；不可將示意圖當作現況。</text>
+  </g>
+  <g transform="translate(52 428)">
+    <rect width="1336" height="270" rx="16" fill="#fff" stroke="#dcd7e2"/>
+    <text x="24" y="34" class="heading">狀態資訊：目前來源分開，外觀可選擇統一方式</text>
+    <rect x="24" y="59" width="328" height="94" rx="12" fill="#f7f4fa" stroke="#e3dce9"/><rect x="280" y="84" width="46" height="46" rx="23" fill="#fff" stroke="#cfc5db"/><text x="303" y="114" text-anchor="middle" font-size="22" fill="#7c3aed">⟳</text><text x="42" y="88" class="txt">Current：操作進度</text><text x="42" y="115" class="small">HeaderStatusBar 浮動圓鈕 · 42px</text><text x="42" y="137" class="mini">僅有進度時呈現，可展開詳細訊息</text>
+    <rect x="370" y="59" width="286" height="94" rx="12" fill="#ecfdf5" stroke="#d4eadb"/><circle cx="400" cy="105" r="9" fill="#22c55e"/><text x="422" y="99" class="txt">Current：網路狀態</text><text x="422" y="124" class="small">NetworkStatusIndicator</text><text x="422" y="143" class="mini">目前和操作進度分開</text>
+    <rect x="680" y="59" width="306" height="94" rx="12" fill="#f8fbff" stroke="#c7d8f0"/><rect x="702" y="83" width="46" height="46" rx="23" fill="#ede9fe"/><text x="725" y="112" text-anchor="middle" font-size="20" fill="#6d28d9">⟳</text><text x="764" y="99" class="txt">Proposal A · 緊湊圖示</text><text x="764" y="124" class="small">整合入口，點擊看細節</text><text x="764" y="143" class="mini">狀態來源仍需分別標示</text>
+    <rect x="1010" y="59" width="302" height="94" rx="12" fill="#f8fbff" stroke="#c7d8f0"/><rect x="1032" y="83" width="46" height="46" rx="23" fill="#ede9fe"/><text x="1055" y="112" text-anchor="middle" font-size="20" fill="#6d28d9">⟳</text><text x="1092" y="99" class="txt">Proposal B · 圖示 + 文字</text><text x="1092" y="124" class="small">同步中／離線／錯誤</text><text x="1092" y="143" class="mini">需要更多空間，資訊較清楚</text>
+    <text x="24" y="194" class="small">狀態語意要分清：匯入/刪除/重新驗證進度、網路連線與 durable Outbox 待同步不是同一個旗標。</text>
+    <text x="24" y="225" class="mini">合併視覺不代表合併資料來源；錯誤提示、dismiss、ARIA 名稱和待處理操作不能因此遺失。</text>
+  </g>
+  <text x="52" y="735" class="sub">請選擇編輯分組和狀態密度；只有 UI 樣式決策完成後才開始改程式。</text>
+</svg>

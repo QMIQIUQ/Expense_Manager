@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">分帳與還款 UI 比較及金額例子</title>
+  <desc id="desc">Current expense receivable states are shown as two mutually exclusive screens: the checkbox before participants exist, and an enabled status after participants are added. Two proposed layouts compare the same 900 expense with 600 receivable, 100 repaid, and 500 outstanding.</desc>
+  <defs><style>
+    .h{font:700 27px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#27222d}.sub{font:14px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#645d6b}.heading{font:700 17px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#37313e}.label{font:600 13px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#37313e}.txt{font:13px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#514b58}.small{font:12px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#6b6571}.badge{font:700 11px 'Microsoft JhengHei','Segoe UI',sans-serif;letter-spacing:.5px}.amount{font:700 15px 'Microsoft JhengHei','Segoe UI',sans-serif;fill:#302a36}
+  </style></defs>
+  <rect width="1440" height="720" fill="#f5f3f7"/>
+  <text x="52" y="54" class="h">分帳與還款：顯示方案與金額責任</text>
+  <text x="52" y="82" class="sub">Current 表示目前可達 UI；Proposal A/B 是待選版型，財務語意與計算必須保持相同。</text>
+  <g transform="translate(52 108)">
+    <rect width="1336" height="145" rx="16" fill="#fff" stroke="#dcd7e2"/>
+    <text x="24" y="32" class="heading">同一筆分攤的計算基準</text>
+    <text x="24" y="60" class="small">支出總額</text><text x="24" y="91" class="amount">900</text>
+    <text x="250" y="60" class="small">本人負擔</text><text x="250" y="91" class="amount">300</text>
+    <text x="466" y="60" class="small">A 應付 / 已還</text><text x="466" y="91" class="amount">300 / 100</text>
+    <text x="712" y="60" class="small">B 應付 / 已還</text><text x="712" y="91" class="amount">300 / 0</text>
+    <text x="958" y="60" class="small">預期應收</text><text x="958" y="91" class="amount" fill="#6d28d9">600</text>
+    <text x="1152" y="60" class="small">尚未收回</text><text x="1152" y="91" class="amount" fill="#b45309">500</text>
+    <text x="24" y="124" class="small">實際還款紀錄 100 只入帳一次；splitPaidMinor 是結算狀態，不是另一筆 Repayment，也不能再次扣支出。</text>
+  </g>
+  <g transform="translate(52 278)">
+    <rect width="424" height="365" rx="16" fill="#fff" stroke="#dcd7e2"/>
+    <rect x="22" y="18" width="82" height="24" rx="12" fill="#ece8f2"/><text x="63" y="34" text-anchor="middle" class="badge" fill="#514a58">CURRENT</text>
+    <text x="22" y="72" class="heading">現行：兩種互斥的追蹤狀態</text>
+    <rect x="22" y="91" width="378" height="91" rx="9" fill="#faf9fc" stroke="#e5e0eb"/>
+    <text x="36" y="115" class="label">尚無參與者</text><text x="36" y="139" class="small">可勾選或取消追蹤；勾選後展開空白編輯區。</text>
+    <rect x="36" y="150" width="16" height="16" rx="3" fill="#7c3aed"/><path d="M39 158l4 4 6-8" fill="none" stroke="#fff" stroke-width="2"/><text x="61" y="163" class="txt">追蹤應收</text>
+    <rect x="22" y="193" width="378" height="118" rx="9" fill="#faf9fc" stroke="#e5e0eb"/>
+    <text x="36" y="218" class="label">已有參與者（核取方塊隱藏）</text><text x="36" y="241" class="small" fill="#15803d">✓ 分帳追蹤已啟用</text>
+    <text x="36" y="269" class="txt">A　應付 300　·　已還 100</text><text x="36" y="293" class="txt">B　應付 300　·　已還 0</text>
+    <text x="22" y="340" class="small">加入參與者會固定啟用追蹤；兩個狀態不會同時出現。</text>
+  </g>
+  <g transform="translate(508 278)">
+    <rect width="424" height="365" rx="16" fill="#fff" stroke="#c7d8f0"/>
+    <rect x="22" y="18" width="112" height="24" rx="12" fill="#e8f0ff"/><text x="78" y="34" text-anchor="middle" class="badge" fill="#2858a6">PROPOSAL A</text>
+    <text x="22" y="72" class="heading">整合摘要卡 + 明細表</text>
+    <rect x="22" y="94" width="378" height="64" rx="10" fill="#f7f4fa"/><text x="40" y="120" class="small">應收總額</text><text x="380" y="132" text-anchor="end" class="amount" fill="#6d28d9">600</text>
+    <rect x="22" y="170" width="378" height="42" rx="7" fill="#fff" stroke="#e5e7eb"/><text x="38" y="197" class="txt">A　應付 300</text><text x="380" y="197" text-anchor="end" class="txt">已還 100</text>
+    <rect x="22" y="220" width="378" height="42" rx="7" fill="#fff" stroke="#e5e7eb"/><text x="38" y="247" class="txt">B　應付 300</text><text x="380" y="247" text-anchor="end" class="txt">已還 0</text>
+    <rect x="22" y="278" width="378" height="40" rx="8" fill="#fff7ed"/><text x="38" y="303" class="label">尚未收回</text><text x="380" y="303" text-anchor="end" class="label" fill="#b45309">500</text>
+    <text x="22" y="340" class="small">Proposal A：一次看見應付、已還和未還總額。</text>
+  </g>
+  <g transform="translate(964 278)">
+    <rect width="424" height="365" rx="16" fill="#fff" stroke="#c7d8f0"/>
+    <rect x="22" y="18" width="112" height="24" rx="12" fill="#e8f0ff"/><text x="78" y="34" text-anchor="middle" class="badge" fill="#2858a6">PROPOSAL B</text>
+    <text x="22" y="72" class="heading">先啟用追蹤，再展開明細</text>
+    <rect x="22" y="94" width="378" height="54" rx="9" fill="#f7f4fa" stroke="#ddd6e7"/><rect x="40" y="111" width="19" height="19" rx="3" fill="#7c3aed"/><path d="M44 120l4 4 7-8" fill="none" stroke="#fff" stroke-width="2"/><text x="73" y="126" class="txt">追蹤他人應付金額</text><text x="380" y="126" text-anchor="end" class="small">▴</text>
+    <text x="38" y="183" class="small">參與者明細</text><text x="38" y="215" class="txt">A　應付 300　·　已還 100</text><text x="38" y="248" class="txt">B　應付 300　·　已還 0</text>
+    <line x1="38" y1="266" x2="386" y2="266" stroke="#e5e7eb"/><text x="38" y="294" class="label">尚未收回</text><text x="382" y="294" text-anchor="end" class="amount" fill="#b45309">500</text>
+    <text x="22" y="340" class="small">Proposal B：未使用時較短，啟用後逐步顯示內容。</text>
+  </g>
+  <text x="52" y="675" class="sub">不得將同一還款重複算入支出淨額、帳戶餘額或 Dashboard 應收進度；明細不完整時需保留不完整提示。</text>
+</svg>

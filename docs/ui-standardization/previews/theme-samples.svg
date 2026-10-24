@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="930" viewBox="0 0 1440 930" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Manager current theme samples</title>
+  <desc id="desc">Illustrative comparison of a form card, input, label, button, and status badge in four currently supported appearance variants.</desc>
+  <defs>
+    <style>
+      .pageTitle{font:700 28px 'Segoe UI',sans-serif;fill:#24222a}.subtitle{font:15px 'Segoe UI',sans-serif;fill:#66616c}.themeTitle{font:700 20px 'Segoe UI',sans-serif}.themeMeta{font:13px 'Segoe UI',sans-serif;opacity:.75}.label{font:600 13px 'Segoe UI',sans-serif}.fieldText{font:15px 'Segoe UI',sans-serif}.small{font:12px 'Segoe UI',sans-serif}.button{font:700 14px 'Segoe UI',sans-serif}.sampleTag{font:700 12px 'Segoe UI',sans-serif}
+    </style>
+  </defs>
+  <rect width="1440" height="930" fill="#f4f2f6"/>
+  <text x="56" y="58" class="pageTitle">目前支援的主題外觀 · 現行樣式</text>
+  <text x="56" y="88" class="subtitle">同一張表單示意：紫色 light / dark 與 Warm Kitty light / dark。依 CSS 與元件樣式繪製，非瀏覽器截圖。</text>
+  <g transform="translate(56 128)">
+    <rect width="638" height="350" rx="18" fill="#fff" stroke="#ddd8e4"/>
+    <text x="28" y="42" class="themeTitle" fill="#7c3aed">紫色主題 · 淺色</text>
+    <text x="28" y="66" class="themeMeta" fill="#6b7280">--accent-primary · #7c3aed</text>
+    <rect x="28" y="91" width="582" height="220" rx="12" fill="#fff" stroke="#e5e7eb"/>
+    <text x="52" y="128" class="label" fill="#1f2937">描述</text>
+    <rect x="52" y="143" width="352" height="46" rx="8" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+    <text x="68" y="172" class="fieldText" fill="#1f2937">和團隊午餐</text>
+    <text x="52" y="221" class="label" fill="#1f2937">分類</text>
+    <rect x="52" y="236" width="116" height="32" rx="16" fill="#ede9fe"/>
+    <text x="68" y="257" class="sampleTag" fill="#7c3aed">🍜 餐飲</text>
+    <rect x="430" y="238" width="150" height="44" rx="8" fill="#7c3aed"/>
+    <text x="505" y="265" text-anchor="middle" class="button" fill="#fff">儲存支出</text>
+    <rect x="28" y="319" width="98" height="22" rx="11" fill="#ecfdf5"/>
+    <text x="77" y="334" text-anchor="middle" class="small" fill="#15803d">成功</text>
+  </g>
+  <g transform="translate(746 128)">
+    <rect width="638" height="350" rx="18" fill="#111116" stroke="#34313f"/>
+    <text x="28" y="42" class="themeTitle" fill="#c4b5fd">紫色主題 · 深色</text>
+    <text x="28" y="66" class="themeMeta" fill="#98989d">--accent-primary · #a78bfa</text>
+    <rect x="28" y="91" width="582" height="220" rx="12" fill="#1a1625" stroke="#48484a"/>
+    <text x="52" y="128" class="label" fill="#f2f2f7">描述</text>
+    <rect x="52" y="143" width="352" height="46" rx="8" fill="#18181b" stroke="#a78bfa" stroke-width="2"/>
+    <text x="68" y="172" class="fieldText" fill="#f2f2f7">和團隊午餐</text>
+    <text x="52" y="221" class="label" fill="#f2f2f7">分類</text>
+    <rect x="52" y="236" width="116" height="32" rx="16" fill="#3a3654"/>
+    <text x="68" y="257" class="sampleTag" fill="#a78bfa">🍜 餐飲</text>
+    <rect x="430" y="238" width="150" height="44" rx="8" fill="#a78bfa"/>
+    <text x="505" y="265" text-anchor="middle" class="button" fill="#17131f">儲存支出</text>
+    <rect x="28" y="319" width="98" height="22" rx="11" fill="#1a3d2c"/>
+    <text x="77" y="334" text-anchor="middle" class="small" fill="#86efac">成功</text>
+  </g>
+  <g transform="translate(56 518)">
+    <rect width="638" height="350" rx="18" fill="#fff9f4" stroke="#e8d5d9"/>
+    <text x="28" y="42" class="themeTitle" fill="#a24562">暖暖貓主題 · 淺色</text>
+    <text x="28" y="66" class="themeMeta" fill="#6b5b62">--accent-primary · #a24562</text>
+    <rect x="28" y="91" width="582" height="220" rx="16" fill="#fffefc" stroke="#e8d5d9"/>
+    <text x="52" y="128" class="label" fill="#3e3340">描述</text>
+    <rect x="52" y="143" width="352" height="46" rx="10" fill="#fffdfa" stroke="#a24562" stroke-width="2"/>
+    <text x="68" y="172" class="fieldText" fill="#3e3340">和團隊午餐</text>
+    <text x="52" y="221" class="label" fill="#3e3340">分類</text>
+    <rect x="52" y="236" width="116" height="32" rx="16" fill="#f9e2e9"/>
+    <text x="68" y="257" class="sampleTag" fill="#81314c">🍜 餐飲</text>
+    <rect x="430" y="238" width="150" height="44" rx="10" fill="#a24562"/>
+    <text x="505" y="265" text-anchor="middle" class="button" fill="#fff">儲存支出</text>
+    <rect x="28" y="319" width="98" height="22" rx="11" fill="#e9f2e8"/>
+    <text x="77" y="334" text-anchor="middle" class="small" fill="#55775b">成功</text>
+  </g>
+  <g transform="translate(746 518)">
+    <rect width="638" height="350" rx="18" fill="#17141b" stroke="#554453"/>
+    <text x="28" y="42" class="themeTitle" fill="#f0a4bc">暖暖貓主題 · 深色</text>
+    <text x="28" y="66" class="themeMeta" fill="#cbbbc8">Warm Kitty dark palette · #f0a4bc accent</text>
+    <rect x="28" y="91" width="582" height="220" rx="16" fill="#29222f" stroke="#554453"/>
+    <text x="52" y="128" class="label" fill="#f5eaf1">描述</text>
+    <rect x="52" y="143" width="352" height="46" rx="10" fill="#211b26" stroke="#f0a4bc" stroke-width="2"/>
+    <text x="68" y="172" class="fieldText" fill="#f5eaf1">和團隊午餐</text>
+    <text x="52" y="221" class="label" fill="#f5eaf1">分類</text>
+    <rect x="52" y="236" width="116" height="32" rx="16" fill="#49303f"/>
+    <text x="68" y="257" class="sampleTag" fill="#ffd0de">🍜 餐飲</text>
+    <rect x="430" y="238" width="150" height="44" rx="10" fill="#f0a4bc"/>
+    <text x="505" y="265" text-anchor="middle" class="button" fill="#17141b">儲存支出</text>
+    <rect x="28" y="319" width="98" height="22" rx="11" fill="#263b31"/>
+    <text x="77" y="334" text-anchor="middle" class="small" fill="#9ed0ad">成功</text>
+  </g>
+</svg>

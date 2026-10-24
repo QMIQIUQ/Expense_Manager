@@ -4,7 +4,7 @@
 
 本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
 
-> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層細節另見 [系統架構](ARCHITECTURE.md)。
+> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。
 
 ## 目錄 Table of Contents
 
