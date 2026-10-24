@@ -27,7 +27,7 @@ import type {
 } from '../../types';
 import type { QuickExpensePreset } from '../../types/quickExpense';
 import { DEFAULT_EXPENSE_FILTERS, type ExpenseFilterState, type ExpensePeriodSelection } from '../../types/expensePeriod';
-import { filterAndSortExpenses, filterExpenses, filterExpensesByPeriod, getExpensePeriodBounds } from '../../utils/expensePeriodUtils';
+import { filterAndSortExpenses, filterExpenses, filterExpensesByPeriod, getExpensePeriodBounds, includeFocusedExpense } from '../../utils/expensePeriodUtils';
 
 interface ExpensesTabProps {
   userId?: string;
@@ -198,6 +198,11 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
     () => filterAndSortExpenses(periodExpenses, resultFilters, { cards, ewallets, banks, tags }),
     [banks, cards, ewallets, tags, resultFilters, periodExpenses],
   );
+  const displayedExpenses = useMemo(
+    () => includeFocusedExpense(visibleExpenses, [...sourceRows, ...expenses], focusExpenseId, userId),
+    [expenses, focusExpenseId, sourceRows, userId, visibleExpenses],
+  );
+  const focusedExpenseFound = !!focusExpenseId && displayedExpenses.some((expense) => expense.id === focusExpenseId && expense.userId === userId);
   const hasActiveFilters = !!filters.query
     || !!filters.tagId || !!filters.accountKey
     || !!filters.category
@@ -218,6 +223,12 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       <div className="expense-page-heading">
         <h2>{t('expenseHistory')}</h2>
       </div>
+      {focusExpenseId && (
+        <p className="expense-focus-notice" role="status">
+          <span>{t(focusedExpenseFound ? 'dashboardExpenseFocusNotice' : 'dashboardExpenseFocusMissing')}</span>
+          <button type="button" className="btn btn-secondary" onClick={onClearFocusExpense}>{t('close')}</button>
+        </p>
+      )}
       {history.incomplete && <p role="status">{t('cachedHistoryIncomplete')}</p>}
 
       <ExpenseFiltersBar
@@ -237,7 +248,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       {userId && filters.query !== membership.query && <p role="status">{t('loading')}</p>}
 
       <ExpenseList
-        expenses={visibleExpenses.slice(0, visibleCount)}
+        expenses={displayedExpenses.slice(0, visibleCount)}
         allExpenses={expenses}
         categories={categories}
         cards={cards}
@@ -268,8 +279,8 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         onClearFilters={() => setFilters(DEFAULT_EXPENSE_FILTERS)}
       />
       {history.error && <p role="alert">{history.error} <button onClick={history.retry}>{t('retry')}</button></p>}
-      {(visibleCount < visibleExpenses.length || (!requiresFullSearch && history.hasMore)) && <button type="button" disabled={history.loading} className="btn btn-secondary" onClick={() => { setVisibleCount((count) => count + 100); if (!requiresFullSearch && visibleCount >= visibleExpenses.length) void history.loadMore(); }}>
-        {t('showMore')} ({Math.min(visibleCount, visibleExpenses.length)} / {aggregate?.count ?? (history.hasMore ? '…' : visibleExpenses.length)})
+      {(visibleCount < displayedExpenses.length || (!requiresFullSearch && history.hasMore)) && <button type="button" disabled={history.loading} className="btn btn-secondary" onClick={() => { setVisibleCount((count) => count + 100); if (!requiresFullSearch && visibleCount >= displayedExpenses.length) void history.loadMore(); }}>
+        {t('showMore')} ({Math.min(visibleCount, displayedExpenses.length)} / {aggregate?.count ?? (history.hasMore ? '…' : displayedExpenses.length)})
       </button>}
     </div>
   );

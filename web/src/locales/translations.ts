@@ -222,6 +222,8 @@ export const translations = {
 
   // Expense List
   expenseHistory: { en: 'Expense History', zh: '支出記錄', 'zh-CN': '支出记录' },
+  dashboardExpenseFocusNotice: { en: 'Opened from a dashboard reminder. This expense is temporarily shown outside the current period and filters.', zh: '這筆支出是從儀表板提醒開啟，會暫時顯示在目前期間與篩選結果之外。', 'zh-CN': '这笔支出是从仪表板提醒打开，会暂时显示在当前期间和筛选结果之外。' },
+  dashboardExpenseFocusMissing: { en: 'This dashboard expense is not available in the current data yet.', zh: '目前載入的資料中找不到這筆支出。', 'zh-CN': '当前加载的数据中找不到这笔支出。' },
   searchExpenses: { en: 'Search expenses...', zh: '搜尋支出...', 'zh-CN': '搜索支出...' },
   filters: { en: 'Filters', zh: '篩選', 'zh-CN': '筛选' },
   allCategories: { en: 'All Categories', zh: '所有類別', 'zh-CN': '所有分类' },
