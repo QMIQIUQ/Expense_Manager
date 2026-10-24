@@ -1,17 +1,25 @@
 # UI 樣式覆蓋矩陣
 
-> 基準：origin/main 884d3be（2026-10-25）。本輪 UI 實作已套用於隔離 main-based worktree；所有 production TSX/CSS 來源在下表列出。測試 TSX 不算 production screen。
+> 靜態計數基準：改動前 `main@a9a9d7c`（2026-10-25）。下方每檔 inline-style/token 數字和 CSS token 引用數均是 main snapshot 的 source-level baseline，不是目前分支的重新計數。分支 `codex/ui-standardization-inventory` 已修改 selected UI controls；尚未合併到 main。測試 TSX 不算 production screen。
+
+## 本分支實作差異
+
+- 共享層新增 Standard / Compact / Prominent / Date 欄位 variants、primary/secondary labels、field error、compact action、theme-aware switch track 和 shared focus/error state。
+- 遷移頁面/元件：BudgetManager/BudgetForm/BudgetTemplates、CategoryManager/CategoryForm、PaymentMethodSelector、SearchBar、ExpenseList/StepByStepExpenseForm、IncomeForm/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DashboardCustomizer/QuickAddWidget、AutocompleteDropdown，以及 TrackedExpensesWidget card geometry。
+- 保留原生欄位類型、值、handler、ID mapping、鍵盤/combobox 互動、視覺特化的日期/幣別/金額欄位、流程布局和金融 mutation/read paths。
+- 以下完整 per-file 表格繼續描述改動前 main 的 135 個 production TSX 靜態計數，避免把基線計數誤讀為這個分支當前數值。分支狀態與逐頁完成/未完成項請看 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
 
 ## 覆蓋摘要
 
 - Production TSX：**135**（完整檔案清單見下表）；包含測試的 TSX 總數為 182。
-- JSX inline style object：**763**，分布於 **87** 個 production TSX 檔。數量維持原值；本次統一靜態樣式值，沒有刪改表單 callback 或重新包裝欄位。
+- Literal JSX `style={{...}}` object：**762**，分布於 **87** 個 production TSX 檔；同一個欄位可能另有 className/Tailwind 或功能 CSS override，這個數量不表示 762 個不一致控制。
+- Native input/select/textarea controls：**192**（input 133、select 52、textarea 7）。AST 計數只列節點，不等於 192 個獨立畫面或 192 個視覺缺陷。
 - **63** 個 production TSX 檔使用共用 UI tokens。TSX 中 token 引用：字級 **468**、圓角 **281**、間距 **1139**。
 - CSS 檔：**10**（原有 9 個，加上共用層 web/src/styles/ui-system.css）。所有來源仍可在下列 CSS 清單核對。
-- ui-system.css 定義 **145** 個 --ui-* custom properties；掃描 TSX、TS 與 CSS 的 --ui-* 引用，未定義 token：**0**。
-- 共有樣式規則統一輸入欄位/選擇器/textarea、原生 checkbox/radio、標準按鈕、icon 按鈕、卡片、dialog、標題、tabs、chips 與 focus ring。舊 UI 的固定字級、圓角和 spacing 改用相容 alias，保持原尺寸；新 UI 應選 semantic tokens。
+- ui-system.css 定義 **145** 個不同的 --ui-* custom properties；掃描 TSX、TS 與 CSS 的 --ui-* 引用，未定義 token：**0**。
+- Shared CSS 提供輸入欄位/選擇器/textarea、原生 checkbox/radio、標準按鈕、icon 按鈕、卡片、dialog、標題、tabs、chips 與 focus ring 的 global baseline；局部 inline style、Tailwind 和功能 CSS 仍可覆寫它。已確認的差異見 [元件盤點逐畫面清單](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
 - ThemeContext 的 theme、serif/mono/system 字體與 small/medium/large 根字級設定保留；色彩仍由 light/dark/Warm Kitty 主題變數提供。
-- component state、CRUD callback、domain/service、Firebase、IndexedDB outbox、讀取/replay 路徑沒有修改。未掛載的 source 仍列在完整清單內，但不能當成使用者可達畫面。
+- main baseline audit 未修改 component state、CRUD callback、domain/service、Firebase、IndexedDB outbox、讀取/replay 路徑。分支呈現層修改也保留上述邏輯與未掛載 source；未執行 unit/component、Firebase Emulator 或 browser computed-style inspection。未掛載的 source 仍列在完整清單內，但不能當成使用者可達畫面。
 
 ## Production TSX 完整檔案清單
 
@@ -168,11 +176,9 @@
 | web/src/styles/ledger.css | 8 |
 | web/src/styles/ui-system.css | 41 |
 
-## 驗證與範圍
+## Baseline 計數與驗證範圍
 
-- npm run build：TypeScript、Vite production build 和 PWA service worker build 通過；只顯示既有 Browserslist / baseline-browser-mapping 資料過期警告。
-- npx tsc --noEmit：通過。
-- --ui-* 定義/引用一致性：通過（未定義 token 0）。
-- git diff --check：通過。
-- 未執行 unit/component、Firebase Emulator 或 browser regression suite；本次為純呈現層，沒有改動 AGENTS 中規定的 financial/local-first data path。
-- SVG 預覽是標示為 implemented-specimen 的矢量示意，不是 authenticated browser screenshot。畫面掛載和 mounted/source-only 區別見 UI_COMPONENT_INVENTORY_AND_PLAN.md；交互流程/保護界線見 CRUD_FLOW_AUDIT.md。
+- 改動前 `main@a9a9d7c` source scan：production TSX 135、JSX inline style object literal 762/87 files、native input/select/textarea 192；TSX token references: font 468、radius 281、spacing 1139。
+- --ui-* 定義/引用 source scan：145 個不同 custom properties，未定義 token 0。
+- 分支 `npm run build` 和 `git diff --check` 通過。未執行 unit/component、Firebase Emulator 或 browser computed-style inspection；這份 baseline 盤點只證明舊 source 的宣告/覆寫，不能取代實際視窗、主題、字體縮放、focus/error/disabled 狀態檢查。
+- SVG 預覽是 UI 規格示意，不是 authenticated browser screenshot。畫面掛載和 mounted/source-only 區別見 UI_COMPONENT_INVENTORY_AND_PLAN.md；interaction/data-flow 保護界線見 CRUD_FLOW_AUDIT.md。

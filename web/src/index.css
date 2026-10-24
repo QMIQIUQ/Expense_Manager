@@ -592,7 +592,7 @@ button:not(:disabled):hover {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: var(--ui-radius-10px);
+  border-radius: var(--ui-radius-card);
   border: none;
   background: var(--accent-light);
   color: var(--accent-primary);
@@ -2455,14 +2455,15 @@ button:not(:disabled):hover {
 }
 
 .form-label {
-  font-size: var(--ui-font-12px);
-  color: var(--text-secondary);
+  font-size: var(--ui-font-md-sm);
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: var(--ui-space-4px);
   display: block;
 }
 
-.dark .form-label {
+.form-label--secondary {
+  font-size: var(--ui-font-sm);
   color: var(--text-secondary);
 }
 
@@ -5304,27 +5305,11 @@ button:not(:disabled):hover {
 .quick-expense-form-field label {
   display: block;
   margin-bottom: var(--ui-space-4px);
-  font-size: var(--ui-font-12px);
-  font-weight: 500;
-  color: var(--text-secondary);
 }
 
-.quick-expense-form-field input,
-.quick-expense-form-field select {
+.quick-expense-form-field > input,
+.quick-expense-form-field > select {
   width: 100%;
-  padding: var(--ui-space-8px);
-  font-size: var(--ui-font-13px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--ui-radius-6px);
-  background: var(--input-bg);
-  color: var(--text-primary);
-  transition: border-color 0.2s ease;
-}
-
-.quick-expense-form-field input:focus,
-.quick-expense-form-field select:focus {
-  outline: none;
-  border-color: var(--accent-primary);
 }
 
 .amount-input-wrapper {
@@ -5353,11 +5338,8 @@ button:not(:disabled):hover {
 
 .quick-expense-form-actions button {
   flex: 1;
-  padding: var(--ui-space-8px) var(--ui-space-12px);
-  font-size: var(--ui-font-13px);
   font-weight: 500;
   border: none;
-  border-radius: var(--ui-radius-6px);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -6182,7 +6164,7 @@ button:not(:disabled):hover {
 
 .date-picker-input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px var(--accent-light);
+  box-shadow: var(--ui-focus-ring);
 }
 
 .date-picker-input.error {

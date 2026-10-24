@@ -179,7 +179,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
       submitLabel={initialData ? t('update') : t('addIncome')}
     >
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('titleOptional')}</label>
+        <label className="ui-form-label">{t('titleOptional')}</label>
         <input
           type="text"
           name="title"
@@ -187,7 +187,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder={t('enterTitleOrSource')}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="ui-control--standard ui-control--full-width"
           style={{
             borderColor: 'var(--border-color)',
             backgroundColor: 'var(--input-bg)',
@@ -198,7 +198,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
+          <label className="ui-form-label">{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
           <input
             type="text"
             inputMode="numeric"
@@ -207,16 +207,15 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             onChange={handleAmountChange}
             onFocus={(e) => e.target.select()}
             placeholder="0.00"
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.amount ? 'border-red-500' : ''
-            }`}
+            className="ui-control--prominent ui-control--full-width"
+            aria-invalid={Boolean(errors.amount)}
             style={{
               borderColor: errors.amount ? undefined : 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)'
             }}
           />
-          {errors.amount && <span className="text-xs text-red-600">{errors.amount}</span>}
+          {errors.amount && <span className="ui-field-error">{errors.amount}</span>}
         </div>
 
         <CurrencySelector
@@ -237,7 +236,6 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
           error={!!errors.date}
           errorMessage={errors.date}
           dateFormat={dateFormat}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
           style={{
             borderColor: errors.date ? undefined : 'var(--border-color)',
             backgroundColor: 'var(--input-bg)',
@@ -248,14 +246,13 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('type')} *</label>
+          <label className="ui-form-label">{t('type')} *</label>
           <select
             name="type"
             value={formData.type}
             onChange={handleChange}
-            className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
-              errors.type ? 'border-red-500' : ''
-            }`}
+            className="ui-control--standard ui-control--full-width"
+            aria-invalid={Boolean(errors.type)}
             style={{
               borderColor: errors.type ? undefined : 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -267,16 +264,16 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <option value="repayment">{t('repayment')}</option>
             <option value="other">{t('other')}</option>
           </select>
-          {errors.type && <span className="text-xs text-red-600">{errors.type}</span>}
+          {errors.type && <span className="ui-field-error">{errors.type}</span>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('incomeCategory')}</label>
+          <label className="ui-form-label">{t('incomeCategory')}</label>
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="ui-control--standard ui-control--full-width"
             style={{
               borderColor: 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -312,7 +309,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
       {(formData.type === 'repayment' || formData.type === 'reimbursement') && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('payerNameOptional')}</label>
+          <label className="ui-form-label">{t('payerNameOptional')}</label>
           <input
             type="text"
             name="payerName"
@@ -320,7 +317,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             onChange={handleChange}
             onFocus={(e) => e.target.select()}
             placeholder={t('payerNamePlaceholder')}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="ui-control--standard ui-control--full-width"
             style={{
               borderColor: 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -332,12 +329,12 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
 
       {expenses.length > 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('linkToExpenseOptional')}</label>
+          <label className="ui-form-label">{t('linkToExpenseOptional')}</label>
           <select
             name="linkedExpenseId"
             value={formData.linkedExpenseId}
             onChange={handleChange}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="ui-control--standard ui-control--full-width"
             style={{
               borderColor: 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -373,14 +370,14 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
       )}
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notesOptional')}</label>
+        <label className="ui-form-label">{t('notesOptional')}</label>
         <textarea
           name="note"
           value={formData.note}
           onChange={handleChange}
           placeholder={t('addAnyNotes')}
           rows={3}
-          className="px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+          className="ui-control--standard ui-control--full-width"
           style={{
             borderColor: 'var(--border-color)',
             backgroundColor: 'var(--input-bg)',

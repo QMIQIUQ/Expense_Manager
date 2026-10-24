@@ -9,6 +9,17 @@ export const designTokens = {
   ui: {
     controlHeight: 'var(--ui-control-height)',
     compactControlHeight: 'var(--ui-control-height-compact)',
+    prominentControlHeight: 'var(--ui-control-height-prominent)',
+    borderWidth: {
+      standard: 'var(--ui-border-width)',
+      prominent: 'var(--ui-border-width-prominent)',
+    },
+    controlPadding: {
+      block: 'var(--ui-control-padding-block)',
+      inline: 'var(--ui-control-padding-inline)',
+      compactBlock: 'var(--ui-control-padding-block-compact)',
+      compactInline: 'var(--ui-control-padding-inline-compact)',
+    },
     radius: {
       control: 'var(--ui-radius-control)',
       card: 'var(--ui-radius-card)',

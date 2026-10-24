@@ -4,7 +4,7 @@
 
 本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
 
-> 最後核對功能程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)，各操作入口及新增/檢視/編輯/刪除流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選外觀與修改順序見[互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md)及[逐階段標準化計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。
+> 最後核對功能程式碼：`main@a9a9d7c`（2026-10-25）。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；收入聯動預算規則見 [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)，各操作入口及新增/檢視/編輯/刪除流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選外觀與修改順序見[互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md)及[逐階段標準化計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。
 
 ## 目錄 Table of Contents
 
@@ -26,7 +26,7 @@
 |---|---|---|
 | 帳戶與存取 | 登入、註冊流程、登出、個人檔案、管理員工具 | `/` 登入；`/dashboard` 受 `PrivateRoute` 保護；Profile/Admin 從頁首選單開啟 |
 | 財務紀錄 | 支出、收入、分類、還款追蹤 | Dashboard 主頁籤；`ExpensesTab`、`IncomesTab`、`CategoryManager`；還款表單由 `ExpenseList` 開啟（非獨立管理頁） |
-| 預算與規劃 | 預算、預算模板/建議/歷史/結轉、定期付款、到期提醒 | `BudgetManager`；`ScheduledPaymentManager`（Recurring 主頁籤） |
+| 預算與規劃 | 手動或依收入比例的月預算、預算模板/建議/歷史/結轉、定期付款、到期提醒 | `BudgetManager`、收入連動設定/摘要；`ScheduledPaymentManager`（Recurring 主頁籤） |
 | 支付與帳戶 | 信用卡、電子錢包、銀行帳戶、轉帳 | Payment Methods 子頁籤：cards、ewallets、banks、transfers |
 | 分析與總覽 | 摘要卡、支出/分類圖表、趨勢、月比、標籤雲、預算進度、卡片摘要、分期追蹤、待付款、近期支出、追蹤支出、儲蓄目標、朋友支出、快速新增、即將到期帳單 | `CustomizableDashboard`、`DashboardSummary`、`dashboard/widgets/`、朋友支出服務 |
 | 快速輸入 | 快速記帳、步驟式支出表單、掃描收據與 OCR 草稿 | Dashboard 浮動操作；目前由 `StepByStepExpenseForm` 處理；`ExpenseForm.tsx` 存在但未掛載 |
@@ -94,7 +94,7 @@ main.tsx
                 完成佇列操作 / 刷新受影響範圍
 ```
 
-線上與離線操作使用相同的本機提交流程；Firebase 同步不阻擋本機完成。儲存失敗必須顯示錯誤，遠端拒絕保留可檢查的操作。完整的佇列、交易、分頁和快取合約見 [效能與可靠性實作](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md)。既有 method 盤點見 [邏輯與 Method 流程](LOGIC_METHOD_FLOW.md)。
+以上流程是所有一般資料異動的必要契約；不同歷史 handler 的 queue 覆蓋狀態可能不同，不能只因共用 helper 存在就假設每條路徑已符合。完整的佇列、交易、分頁和快取合約見 [效能與可靠性實作](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md)；目前來源差異見 [邏輯與 Method 流程](LOGIC_METHOD_FLOW.md)。
 
 不是所有操作都會經過同一個 Hook。新增功能時，請沿用該領域既有 service，並檢查其 Firestore Rules、離線支援與同步行為；資料隔離及授權以 `web/firestore.rules` 和 Functions 驗證為準。
 
@@ -707,4 +707,4 @@ interface Bank {
 
 ---
 
-**最後更新**: 2026-10-17
+**最後核對**: `main@a9a9d7c`（2026-10-25）

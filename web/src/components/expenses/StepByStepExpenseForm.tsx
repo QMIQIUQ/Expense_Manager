@@ -1364,11 +1364,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 name="receipt-review-time"
               />
               <div style={fieldContainerStyle}>
-                <label style={styles.fieldLabel}>{t('currency')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('currency')}</label>
                 <select
                   value={receiptReviewFormData.currency}
                   onChange={(e) => handleReceiptReviewCurrencyChange(e.target.value as CurrencyCode)}
-                  style={styles.select}
+                  className="ui-control--prominent ui-control--full-width"
                 >
                   {CURRENCIES.map((currency) => (
                     <option key={currency.code} value={currency.code}>
@@ -1378,7 +1378,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 </select>
               </div>
               <div style={fieldContainerStyle}>
-                <label style={styles.fieldLabel}>{receiptTexts.reviewAmount}</label>
+                <label className="ui-form-label ui-form-label--field">{receiptTexts.reviewAmount}</label>
                 {receiptReviewLineItems.length > 0 ? (
                   <div style={{
                     padding: 'var(--ui-space-10px) var(--ui-space-12px)',
@@ -1400,29 +1400,29 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     value={receiptReviewAmountCents > 0 ? fromMinorUnits(receiptReviewAmountCents, receiptReviewFormData.currency).toFixed(getCurrencyMinorDigits(receiptReviewFormData.currency)) : ''}
                     onChange={(e) => updateReceiptReviewForm({ amount: toMinorUnits(Number(e.target.value) || 0, receiptReviewFormData.currency) })}
                     placeholder={formatMoney(0, receiptReviewFormData.currency)}
-                    style={styles.textInput}
+                    className="ui-control--prominent ui-control--full-width"
                   />
                 )}
               </div>
             </div>
 
             <div style={fieldContainerStyle}>
-              <label style={styles.fieldLabel}>{t('description')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('description')}</label>
               <input
                 type="text"
                 value={receiptReviewFormData.description}
                 onChange={(e) => updateReceiptReviewForm({ description: e.target.value })}
                 placeholder={receiptTexts.receiptFallbackDescription}
-                style={styles.textInput}
+                className="ui-control--prominent ui-control--full-width"
               />
             </div>
 
             <div style={fieldContainerStyle}>
-              <label style={styles.fieldLabel}>{t('selectCategory')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('selectCategory')}</label>
               <select
                 value={receiptReviewFormData.category}
                 onChange={(e) => updateReceiptReviewForm({ category: e.target.value })}
-                style={styles.select}
+                className="ui-control--prominent ui-control--full-width"
               >
                 <option value="">{t('selectCategory')}</option>
                 {sortedCategories.map((category) => (
@@ -1451,7 +1451,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
             {receiptReviewLineItems.length > 0 && (
               <div style={fieldContainerStyle}>
-                <label style={styles.fieldLabel}>{t('amountDetails')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('amountDetails')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-8px)' }}>
                   {receiptReviewLineItems.map((item, index) => (
                     <div
@@ -1468,7 +1468,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                         value={item.description || ''}
                         onChange={(e) => updateReceiptReviewLineItem(index, { description: e.target.value })}
                         placeholder={t('itemDescription') || 'Item description'}
-                        style={styles.textInput}
+                        className="ui-control--prominent ui-control--full-width"
                       />
                       <input
                         type="number"
@@ -1478,7 +1478,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                         value={item.amount > 0 ? item.amount.toFixed(getCurrencyMinorDigits(receiptReviewForm.currency)) : ''}
                         onChange={(e) => updateReceiptReviewLineItem(index, { amount: roundMoney(Number(e.target.value) || 0, receiptReviewForm.currency) })}
                         placeholder={formatMoney(0, receiptReviewForm.currency)}
-                        style={styles.textInput}
+                        className="ui-control--prominent ui-control--full-width"
                       />
                       <button
                         type="button"
@@ -1691,12 +1691,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             <div style={styles.currencySelectBlock}>
               {initialData ? (
                 <div style={fieldContainerStyle}>
-                  <label style={styles.fieldLabel}>{t('currency')}</label>
+                  <label className="ui-form-label ui-form-label--field">{t('currency')}</label>
                   <select
                     value={formData.currency}
                     onChange={(event) => handleCurrencyChange(event.target.value as CurrencyCode)}
                     aria-label={t('currency')}
-                    style={styles.select}
+                    className="ui-control--prominent ui-control--full-width"
                   >
                     {CURRENCIES.map((currency) => <option key={currency.code} value={currency.code}>{currency.symbol} {currency.code} - {currency.name}</option>)}
                   </select>
@@ -1770,7 +1770,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 onChange={handleCurrentAmountInputChange}
                 onKeyDown={handleAmountKeyDown}
                 placeholder={formatMoney(0, formData.currency)}
-                style={styles.amountInputMulti}
+                className="ui-control--prominent"
+                style={{ flex: 1 }}
               />
               <button
                 type="button"
@@ -1916,12 +1917,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             </div>
             {initialData ? (
               <div style={fieldContainerStyle}>
-                <label style={styles.fieldLabel}>{t('selectCategory')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('selectCategory')}</label>
                 <select
                   value={formData.category}
                   onChange={(event) => setFormData((previous) => ({ ...previous, category: event.target.value }))}
                   aria-label={t('selectCategory')}
-                  style={styles.select}
+                  className="ui-control--prominent ui-control--full-width"
                 >
                   <option value="">{t('selectCategory')}</option>
                   {sortedCategories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
@@ -1959,14 +1960,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         return (
           <div style={stepContentStyle}>
             <div style={fieldContainerStyle}>
-              <label style={styles.fieldLabel}>📝 {t('description')}</label>
+              <label className="ui-form-label ui-form-label--field">📝 {t('description')}</label>
               <input
                 ref={descriptionInputRef}
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder={t('descriptionPlaceholder')}
-                style={styles.textInput}
+                className="ui-control--prominent ui-control--full-width"
               />
             </div>
 
@@ -1975,7 +1976,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {/* Amount Items Description Section */}
             {amountItems.length > 0 && (
               <div style={fieldContainerStyle}>
-                <label style={styles.fieldLabel}>💰 {t('amountDetails')} ({t('optional')})</label>
+                <label className="ui-form-label ui-form-label--field">💰 {t('amountDetails')} ({t('optional')})</label>
                 <div style={styles.amountDescriptionList}>
                   {amountItems.map((item, index) => (
                     <div key={index} style={styles.amountDescriptionRow}>
@@ -1991,7 +1992,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                           setAmountItems(newItems);
                         }}
                         placeholder={t('itemDescription') || 'Item description...'}
-                        style={styles.amountDescriptionInput}
+                        className="ui-control--compact"
+                        style={{ flex: 1 }}
                       />
                     </div>
                   ))}
@@ -2006,12 +2008,12 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             )}
 
             <div style={fieldContainerStyle}>
-              <label style={styles.fieldLabel}>{t('notes')} ({t('optional')})</label>
+              <label className="ui-form-label ui-form-label--field">{t('notes')} ({t('optional')})</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder={t('notesPlaceholder')}
-                style={styles.textArea}
+                className="ui-control--prominent ui-control--full-width"
                 rows={3}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -2084,7 +2086,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
                 {enableTransfer && (
               <div style={styles.transferOptions}>
-                <label style={styles.fieldLabel}>{t('transferTo')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('transferTo')}</label>
                 <div style={styles.paymentMethodGrid}>
                   <div
                     onClick={() => setTransferToPaymentMethod('cash')}
@@ -2132,7 +2134,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   <select
                     value={transferToCardId}
                     onChange={(e) => setTransferToCardId(e.target.value)}
-                    style={styles.select}
+                    className="ui-control--prominent ui-control--full-width"
                   >
                     <option value="">{t('selectCard')}</option>
                     {cards.map((card) => (
@@ -2147,7 +2149,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     value={transferToEWalletName}
                     onChange={(e) => setTransferToEWalletName(e.target.value)}
                     placeholder={t('eWalletName')}
-                    style={styles.textInput}
+                    className="ui-control--prominent ui-control--full-width"
                   />
                 )}
 
@@ -2155,7 +2157,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   <select
                     value={transferToBankId}
                     onChange={(e) => setTransferToBankId(e.target.value)}
-                    style={styles.select}
+                    className="ui-control--prominent ui-control--full-width"
                   >
                     <option value="">{t('selectBank')}</option>
                     {banks.map((bank) => (
@@ -2555,46 +2557,6 @@ const styles: Record<string, React.CSSProperties> = {
   editFieldContainer: {
     marginBottom: 'var(--ui-space-12px)',
   },
-  fieldLabel: {
-    display: 'block',
-    fontSize: 'var(--ui-font-14px)',
-    fontWeight: '500',
-    marginBottom: 'var(--ui-space-8px)',
-    color: 'var(--text-primary)',
-  },
-  textInput: {
-    width: '100%',
-    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
-    fontSize: 'var(--ui-font-16px)',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-8px)',
-    outline: 'none',
-    transition: 'all 0.2s',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-  },
-  textArea: {
-    width: '100%',
-    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
-    fontSize: 'var(--ui-font-16px)',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-8px)',
-    outline: 'none',
-    resize: 'vertical',
-    fontFamily: 'inherit',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-  },
-  select: {
-    width: '100%',
-    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
-    fontSize: 'var(--ui-font-16px)',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-8px)',
-    outline: 'none',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-  },
   currencySelectBlock: {
     display: 'flex',
     flexDirection: 'column' as const,
@@ -2884,18 +2846,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 'var(--ui-space-8px)',
     marginBottom: 'var(--ui-space-12px)',
   },
-  amountInputMulti: {
-    flex: 1,
-    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
-    fontSize: 'var(--ui-font-18px)',
-    fontWeight: '600',
-    border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-12px)',
-    outline: 'none',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-    transition: 'border-color 0.2s',
-  },
   addAmountBtn: {
     padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     fontSize: 'var(--ui-font-14px)',
@@ -3058,15 +3008,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     minWidth: '70px',
     flexShrink: 0,
-  },
-  amountDescriptionInput: {
-    flex: 1,
-    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
-    fontSize: 'var(--ui-font-13px)',
-    border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-6px)',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
   },
   taxLabel: {
     fontSize: 'var(--ui-font-13px)',

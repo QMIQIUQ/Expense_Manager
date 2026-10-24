@@ -56,7 +56,27 @@ The source matrix includes exact-value aliases named --ui-font-…, --ui-radius-
 
 ### Native controls
 
-Text, date and number inputs, selects and textareas keep native element types and form behavior. They share the same border, text color, accent focus, control radius and minimum target height. Checkbox and radio remain native controls with an 18px target and theme accent; file and color inputs keep their specialized native presentation. The styling layer does not replace native values, event handlers, refs, autofill, IME or date behavior.
+Text, date and number inputs, selects and textareas keep native element types and form behavior. They share the same border, text color, accent focus, control radius and minimum target height. Visible checkbox and radio controls remain native at 18px with the active theme accent. Hidden native checkbox inputs used by custom switches keep their visually hidden geometry and drive a separate theme-aware track. File and color inputs keep their specialized native presentation. The styling layer does not replace native values, event handlers, refs, autofill, IME or date behavior.
+
+### Field and label variants
+
+The shared native-control rule is the default: 44px minimum height, 14px text at the default root scale, 8px vertical/12px horizontal padding, 1px theme-aware border, 8px radius, and the theme-accent `:focus-visible` ring. Textareas may grow beyond their 88px minimum. Components with legacy inline or utility geometry can opt into the named classes below; preserve caller-owned width, margin, value, and event handlers.
+
+| Variant | Intended use | Rule |
+|---|---|---|
+| `.ui-control--standard` | Ordinary text, number, select and multiline fields | 44px minimum height, 14px text, 8px × 12px padding, 1px border and 8px radius. |
+| `.ui-control--compact` | Dense filters, toolbars and nested settings | Keeps the 44px target and 14px text; uses 4px × 8px padding, 1px border and 8px radius. |
+| `.ui-control--prominent` | Main amount or mobile-first entry fields | 52px minimum height, 16px text, 12px × 16px padding and 2px border; theme colors and focus treatment remain shared. |
+| `.ui-control--date` | DatePicker input with a trailing calendar button | 44px target and standard typography; reserves 44px on the trailing edge for the calendar control. |
+| Specialized composition | Autocomplete, currency selector and embedded ledger controls | Preserve interaction and inner/outer sizing together; verify computed sizes before changing either layer. |
+
+Use `.ui-control--full-width` only when the field should fill its container. `.ui-form-label` is the standard 14px field label; `.ui-form-label--secondary` is the 12px secondary/help role. `.ui-field-error` provides the shared error color and 12px type. Set `aria-invalid` on the field and connect help/error content with `aria-describedby` where appropriate; the shared visual class does not create that relationship automatically. Keep an existing specialized label or error hierarchy when it carries distinct meaning.
+
+`.ui-action--compact` aligns dense action buttons to the shared 44px target with 14px type, 8px × 12px padding and 8px radius. It does not change a button's type, callback, disabled guard, loading state or semantic color.
+
+`BudgetForm` custom switches retain the native checkbox as the checked-state and keyboard control; `.ui-switch-track` is only the theme-aware visual companion. Visible checkboxes and radio controls use the shared 18px size, while `.sr-only` switch inputs are excluded from that geometry rule.
+
+The current main baseline and branch implementation status are in [UI 元件盤點與統一設計決策稿](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) and the [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md). The illustrated SVGs, including the [欄位 variants preview](ui-standardization/previews/field-variants.svg), are design previews, not authenticated browser captures. Source findings do not substitute for checking computed styles at mobile and desktop widths.
 
 ---
 

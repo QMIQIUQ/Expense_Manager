@@ -54,7 +54,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       <div className="flex flex-col gap-4">
         <div className="flex gap-3 flex-wrap items-center">
           <div className="flex-1 min-w-[150px]">
-            <label htmlFor="categoryName" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <label htmlFor="categoryName" className="ui-form-label ui-form-label--field">
               {t('categoryName')}
             </label>
             <input
@@ -67,7 +67,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                 setFormData({ ...formData, name: e.target.value });
               }}
               required
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              aria-invalid={Boolean(errors.name)}
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -75,13 +76,13 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               }}
             />
             {errors.name && (
-              <div className="text-xs mt-1" style={{ color: 'var(--error-text)' }}>
+              <div className="ui-field-error" style={{ marginTop: 'var(--ui-space-1)' }}>
                 {errors.name}
               </div>
             )}
           </div>
           <div className="w-[60px]">
-            <label htmlFor="categoryColor" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+            <label htmlFor="categoryColor" className="ui-form-label ui-form-label--field">
               {t('categoryColor')}
             </label>
             <input
@@ -99,7 +100,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
         </div>
 
         <div>
-            <div className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <div className="ui-form-label ui-form-label--field">
               {t('categoryIcon')}
             </div>
 
@@ -108,8 +109,9 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
             type="text"
             value={formData.icon}
             onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-            className="w-full mb-3 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            className="ui-control--standard ui-control--full-width"
             style={{
+              marginBottom: 'var(--ui-space-3)',
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
               borderColor: 'var(--border-color)'
