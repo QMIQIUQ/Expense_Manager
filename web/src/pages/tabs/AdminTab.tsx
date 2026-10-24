@@ -211,19 +211,19 @@ const AdminTab: React.FC = () => {
           </div>
           <form onSubmit={handleCreateUser}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>{t('emailRequired')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('emailRequired')}</label>
               <input
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 required
-                style={styles.input}
+                className="ui-control--standard ui-control--full-width"
                 placeholder={t('emailPlaceholder')}
               />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>{t('passwordRequired')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('passwordRequired')}</label>
               <input
                 type="password"
                 value={newPassword}
@@ -231,19 +231,19 @@ const AdminTab: React.FC = () => {
                 onFocus={(e) => e.target.select()}
                 required
                 minLength={6}
-                style={styles.input}
+                className="ui-control--standard ui-control--full-width"
                 placeholder={t('passwordPlaceholder')}
               />
               <small style={styles.helpText}>{t('passwordMinLengthHint')}</small>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>{t('displayNameOptional')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('displayNameOptional')}</label>
               <input
                 type="text"
                 value={newDisplayName}
                 onChange={(e) => setNewDisplayName(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                style={styles.input}
+                className="ui-control--standard ui-control--full-width"
                 placeholder={t('displayNamePlaceholder')}
               />
             </div>
@@ -428,24 +428,6 @@ const styles = {
   },
   formGroup: {
     marginBottom: 'var(--ui-space-20px)',
-  },
-  label: {
-    display: 'block',
-    marginBottom: 'var(--ui-space-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    fontWeight: '500' as const,
-    color: 'var(--text-secondary)',
-  },
-  input: {
-    width: '100%',
-    padding: 'var(--ui-space-12px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--ui-radius-8px)',
-    fontSize: 'var(--ui-font-15px)',
-    boxSizing: 'border-box' as const,
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-    transition: 'border-color 0.2s',
   },
   checkboxGroup: {
     marginBottom: 'var(--ui-space-20px)',

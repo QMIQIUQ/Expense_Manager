@@ -21,24 +21,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={className}
+      className={[className, 'ui-control--standard'].filter(Boolean).join(' ')}
       style={{
         width: '100%',
-        padding: 'var(--ui-space-10px) var(--ui-space-12px)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--ui-radius-8px)',
-        fontSize: 'var(--ui-font-14px)',
-        outline: 'none',
         backgroundColor: 'var(--input-bg)',
         color: 'var(--text-primary)',
-        transition: 'border-color 0.2s',
         ...style,
-      }}
-      onFocus={(e) => {
-        e.currentTarget.style.borderColor = 'var(--accent-primary)';
-      }}
-      onBlur={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-color)';
       }}
     />
   );

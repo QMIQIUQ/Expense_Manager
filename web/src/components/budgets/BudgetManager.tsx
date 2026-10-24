@@ -704,7 +704,8 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
               id="overall-budget-period"
               value={summaryPeriod}
               onChange={(event) => setSummaryPeriod(event.target.value as BudgetPeriod)}
-              style={styles.controlSelect}
+              className="ui-control--standard"
+              style={{ cursor: 'pointer' }}
             >
               <option value="weekly">{t('periodWeekly')}</option>
               <option value="monthly">{t('periodMonthly')}</option>
@@ -761,11 +762,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
       {/* Sort and Filter Controls */}
       <div style={styles.controlsRow}>
         <div style={styles.controlGroup}>
-          <label style={styles.controlLabel}>{t('sortBy') || 'Sort'}:</label>
+            <label className="ui-form-label ui-form-label--secondary">{t('sortBy') || 'Sort'}:</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            style={styles.controlSelect}
+              className="ui-control--compact"
+              style={{ cursor: 'pointer' }}
           >
             <option value="category-order">{t('categoryOrder')}</option>
             <option value="usage-high">{t('usageHighToLow') || 'Usage: High → Low'}</option>
@@ -775,11 +777,12 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
           </select>
         </div>
         <div style={styles.controlGroup}>
-          <label style={styles.controlLabel}>{t('filter') || 'Filter'}:</label>
+            <label className="ui-form-label ui-form-label--secondary">{t('filter') || 'Filter'}:</label>
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value as typeof filterBy)}
-            style={styles.controlSelect}
+              className="ui-control--compact"
+              style={{ cursor: 'pointer' }}
           >
             <option value="all">{t('allBudgets') || 'All'}</option>
             <option value="over">{t('overBudgetOnly') || '🔴 Over Budget'}</option>
@@ -1050,7 +1053,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             }}
             aria-invalid={modalAvailableMinorUnits !== null && modalAvailableMinorUnits < 0}
             aria-describedby="overall-budget-form-help overall-budget-form-summary"
-            style={styles.overallBudgetInput}
+            className="ui-control--prominent ui-control--full-width"
           />
           <p id="overall-budget-form-help" style={styles.overallBudgetFormHint}>
             {overallBudgetLimit === undefined
@@ -1261,16 +1264,6 @@ const styles = {
     fontSize: 'var(--ui-font-11px)',
     lineHeight: 1.4,
   },
-  overallBudgetInput: {
-    width: '100%',
-    boxSizing: 'border-box' as const,
-    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
-    border: '1px solid var(--border-color, #dee2e6)',
-    borderRadius: 'var(--ui-radius-8px)',
-    background: 'var(--input-bg, var(--card-bg, white))',
-    color: 'var(--text-primary)',
-    fontSize: 'var(--ui-font-16px)',
-  },
   totalBudgetValue: {
     color: 'var(--accent-primary)',
     fontSize: 'var(--ui-font-24px)',
@@ -1441,20 +1434,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 'var(--ui-space-6px)',
-  },
-  controlLabel: {
-    fontSize: 'var(--ui-font-12px)',
-    color: 'var(--text-secondary)',
-    fontWeight: '500' as const,
-  },
-  controlSelect: {
-    padding: 'var(--ui-space-6px) var(--ui-space-10px)',
-    borderRadius: 'var(--ui-radius-6px)',
-    border: '1px solid var(--border-color)',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-    fontSize: 'var(--ui-font-12px)',
-    cursor: 'pointer',
   },
   resultCount: {
     fontSize: 'var(--ui-font-12px)',

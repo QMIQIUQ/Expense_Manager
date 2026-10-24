@@ -467,15 +467,8 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              style={{
-                padding: 'var(--ui-space-10px) var(--ui-space-16px)',
-                borderRadius: 'var(--ui-radius-8px)',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--input-bg)',
-                color: 'var(--text-primary)',
-                fontSize: 'var(--ui-font-14px)',
-                cursor: 'pointer',
-              }}
+              className="ui-control--compact"
+              style={{ cursor: 'pointer' }}
             >
               <option value="all">{t('allTypes')}</option>
               <option value="subscription">🔄 {t('subscription')}</option>

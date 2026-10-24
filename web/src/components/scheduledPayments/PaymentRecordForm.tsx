@@ -133,7 +133,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         {/* Period Selection */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('year')}
             </label>
             <input
@@ -147,7 +147,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               }}
               min="2020"
               max="2100"
-              className="w-full p-3 rounded-lg outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -156,13 +156,13 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('month')}
             </label>
             <select
               value={formData.periodMonth}
               onChange={(e) => setFormData({ ...formData, periodMonth: parseInt(e.target.value) })}
-              className="w-full p-3 rounded-lg outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -180,7 +180,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
 
         {/* Actual Amount Paid */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('actualAmountPaid')} ({currencySymbol}) *
           </label>
           <input
@@ -195,7 +195,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             }}
             onFocus={(e) => e.target.select()}
             required
-            className="w-full p-3 rounded-lg outline-none transition-all"
+            className="ui-control--standard ui-control--full-width"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -228,7 +228,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
           onChange={(value) => setFormData({ ...formData, paidDate: value })}
           required
           dateFormat={dateFormat}
-          className="w-full p-3 rounded-lg outline-none transition-all"
+          className="ui-control--standard ui-control--full-width"
           style={{
             backgroundColor: 'var(--input-bg)',
             color: 'var(--text-primary)',
@@ -238,7 +238,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
 
         {/* Payment Method */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('paymentMethod')}
           </label>
           <select
@@ -250,7 +250,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               paymentMethodName: e.target.value !== 'e_wallet' ? '' : formData.paymentMethodName,
               bankId: e.target.value !== 'bank' ? '' : formData.bankId,
             })}
-            className="w-full p-3 rounded-lg outline-none transition-all"
+            className="ui-control--standard ui-control--full-width"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -267,13 +267,13 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         {/* Card Selection */}
         {formData.paymentMethod === 'credit_card' && cards.length > 0 && (
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('selectCard')}
             </label>
             <select
               value={formData.cardId}
               onChange={(e) => setFormData({ ...formData, cardId: e.target.value })}
-              className="w-full p-3 rounded-lg outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -293,14 +293,14 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         {/* E-Wallet Selection */}
         {formData.paymentMethod === 'e_wallet' && (
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('selectEWallet')}
             </label>
             {ewallets.length > 0 ? (
               <select
                 value={formData.paymentMethodName}
                 onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
-                className="w-full p-3 rounded-lg outline-none transition-all"
+                className="ui-control--standard ui-control--full-width"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
@@ -320,7 +320,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
                 value={formData.paymentMethodName}
                 onChange={(e) => setFormData({ ...formData, paymentMethodName: e.target.value })}
                 placeholder={t('eWalletPlaceholder')}
-                className="w-full p-3 rounded-lg outline-none transition-all"
+                className="ui-control--standard ui-control--full-width"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
@@ -334,13 +334,13 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
         {/* Bank Selection */}
         {formData.paymentMethod === 'bank' && banks.length > 0 && (
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('selectBank')}
             </label>
             <select
               value={formData.bankId}
               onChange={(e) => setFormData({ ...formData, bankId: e.target.value })}
-              className="w-full p-3 rounded-lg outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -359,7 +359,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
 
         {/* Note */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('notes')} ({t('optional')})
           </label>
           <textarea
@@ -367,7 +367,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
             onChange={(e) => setFormData({ ...formData, note: e.target.value })}
             placeholder={t('notesPlaceholder')}
             rows={2}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+            className="ui-control--standard ui-control--full-width resize-none"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
