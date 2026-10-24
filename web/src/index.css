@@ -4673,6 +4673,7 @@ button:not(:disabled):hover {
 
 .inline-amount-wrapper:focus-within {
   border-color: var(--accent-primary);
+  box-shadow: var(--ui-focus-ring);
 }
 
 .currency-symbol {

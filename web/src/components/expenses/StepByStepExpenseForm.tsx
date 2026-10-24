@@ -1828,6 +1828,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   <div style={styles.taxRateRow}>
                     <input
                       type="number"
+                      className="ui-control--compact"
                       value={taxRate}
                       onChange={(e) => handleTaxRateChange(parseFloat(e.target.value) || 0)}
                       style={styles.taxRateInput}

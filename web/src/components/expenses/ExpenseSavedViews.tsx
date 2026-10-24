@@ -42,7 +42,7 @@ export const ExpenseSavedViews: React.FC<{
       <button type="button" onClick={() => onApply({ filters: view.filters, period: view.period })}>{view.name}</button>
       <button type="button" aria-label={`${t('delete')} ${view.name}`} disabled={busy} onClick={() => { void run(() => save({ action: 'remove', id: view.id })); }}>×</button>
     </div>)}</div>
-    <div className="ledger-row"><input value={name} maxLength={60} aria-label={t('ledgerViewName')} onChange={(event) => setName(event.target.value)} />
+    <div className="ledger-row"><input className="ui-control--compact" value={name} maxLength={60} aria-label={t('ledgerViewName')} onChange={(event) => setName(event.target.value)} />
       <button type="button" disabled={busy || !ready || !name.trim() || preferences.savedFilters.length >= 20} onClick={() => { void run(async () => {
         await save({ action: 'upsert', view: { id: crypto.randomUUID(), name: name.trim(), filters, period } }); setName('');
       }); }}>{t('ledgerSaveView')}</button></div>

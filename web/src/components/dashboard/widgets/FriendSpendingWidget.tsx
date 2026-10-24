@@ -235,10 +235,11 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
       </section>
 
       <form className="friend-add-form" onSubmit={handleSendRequest}>
-        <label htmlFor="friend-uid-input">{t('addFriend')}</label>
+        <label htmlFor="friend-uid-input" className="ui-form-label ui-form-label--field">{t('addFriend')}</label>
         <div className="friend-add-controls">
           <input
             id="friend-uid-input"
+            className="ui-control--standard"
             value={friendCode}
             onChange={(event) => setFriendCode(event.target.value)}
             placeholder={t('friendUidPlaceholder')}
@@ -332,9 +333,10 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
         <section className="friend-spending-details">
           <h4>{t('friendSpendingFor')} <code>{selectedFriend.friendUid}</code></h4>
           <div className="friend-preference-controls">
-            <label>
+            <label className="ui-form-label">
               <span>{t('view')}</span>
               <select
+                className="ui-control--compact"
                 value={preference.mode}
                 onChange={(event) => setPreference((current) => ({
                   ...current,
@@ -345,9 +347,10 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
                 <option value="categories">{t('viewCategories')}</option>
               </select>
             </label>
-            <label>
+            <label className="ui-form-label">
               <span>{t('timePeriod')}</span>
               <select
+                className="ui-control--compact"
                 value={preference.period}
                 onChange={(event) => setPreference((current) => ({
                   ...current,
@@ -361,9 +364,10 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
               </select>
             </label>
             {preference.period === 'day' && (
-              <label>
+              <label className="ui-form-label">
                 <span>{t('chooseDate')}</span>
                 <input
+                  className="ui-control--standard"
                   type="date"
                   value={preference.selectedDate}
                   onChange={(event) => setPreference((current) => ({ ...current, selectedDate: event.target.value }))}

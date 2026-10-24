@@ -14,7 +14,7 @@ const TagRow: React.FC<{ userId: string; tag: ExpenseTag }> = ({ userId, tag }) 
     setBusy(true); setError(''); try { await action(); } catch (failure) { setError(String(failure)); } finally { setBusy(false); }
   };
   return <div className="ledger-panel"><div className="ledger-row">
-    <input aria-label={t('ledgerTagName')} maxLength={40} value={name} onChange={(event) => setName(event.target.value)} />
+    <input className="ui-control--standard" aria-label={t('ledgerTagName')} maxLength={40} value={name} onChange={(event) => setName(event.target.value)} />
     <input aria-label={t('color')} type="color" value={color} onChange={(event) => setColor(event.target.value)} />
     <button type="button" disabled={busy || !name.trim()} onClick={() => { void run(async () => { await expenseTagService.save(userId, name, color, tag); }); }}>{t('save')}</button>
     <button type="button" disabled={busy} onClick={() => { void run(() => expenseTagService.archive(userId, tag, !tag.archived)); }}>{t(tag.archived ? 'ledgerRestore' : 'ledgerArchive')}</button>
@@ -25,7 +25,7 @@ export const ExpenseTagManager: React.FC<{ userId: string }> = ({ userId }) => {
   const [name, setName] = useState(''); const [color, setColor] = useState('#64748b');
   const [busy, setBusy] = useState(false); const [failure, setFailure] = useState('');
   return <section><h3>{t('ledgerManageTags')}</h3><p>{t('ledgerArchiveHint')}</p>
-    <div className="ledger-row"><input aria-label={t('ledgerNewTag')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
+    <div className="ledger-row"><input className="ui-control--standard" aria-label={t('ledgerNewTag')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
       <input type="color" aria-label={t('color')} value={color} onChange={(event) => setColor(event.target.value)} />
       <button type="button" disabled={busy || !name.trim() || rows.filter((tag) => !tag.archived).length >= 100} onClick={async () => {
         setBusy(true); setFailure(''); try { await expenseTagService.save(userId, name, color); setName(''); }

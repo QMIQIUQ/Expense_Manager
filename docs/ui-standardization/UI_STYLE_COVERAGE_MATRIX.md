@@ -4,8 +4,9 @@
 
 ## 本分支實作差異
 
-- 共享層新增 Standard / Compact / Prominent / Date 欄位 variants、primary/secondary labels、field error、compact action、theme-aware switch track 和 shared focus/error state。
-- 遷移頁面/元件：Login、BankForm/CardForm/EWalletForm、BudgetManager/BudgetForm/BudgetTemplates、CategoryManager/CategoryForm、PaymentMethodSelector、SearchBar、ExpenseList/StepByStepExpenseForm、IncomeForm/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DashboardCustomizer/QuickAddWidget、AutocompleteDropdown，以及 TrackedExpensesWidget card geometry。
+- 共享層提供 Standard / Compact / Prominent / Date / Embedded / Leading-prefix / Time-segment 欄位 variants、primary/secondary labels、field error、compact action、theme-aware switch track 和 shared focus/error state。
+- 遷移頁面/元件：Login、BankForm/CardForm/EWalletForm、BudgetManager/BudgetForm/BudgetTemplates/IncomeBudgetSettingsModal、CategoryManager/CategoryForm/ExpenseTagManager、PaymentMethodSelector/AccountReconciliationManager、SearchBar、ExpenseList/ExpenseFiltersBar/ExpenseSavedViews/ExpenseSplitEditor/ExpenseTagPicker/StepByStepExpenseForm、IncomeForm/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DashboardCustomizer/QuickAddWidget/FriendSpendingWidget、AutocompleteDropdown、TimePicker，以及 TrackedExpensesWidget card geometry。
+- 複合欄位例外：Autocomplete 和 QuickAdd 的內層 input 使用 embedded variant，由外框負責 border/focus；TimePicker 的小時/分鐘欄位保留 28px embedded geometry，外框提供 focus ring。
 - 保留原生欄位類型、值、handler、ID mapping、鍵盤/combobox 互動、視覺特化的日期/幣別/金額欄位、流程布局和金融 mutation/read paths。
 - 以下完整 per-file 表格繼續描述改動前 main 的 135 個 production TSX 靜態計數，避免把基線計數誤讀為這個分支當前數值。分支狀態與逐頁完成/未完成項請看 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
 
@@ -14,6 +15,7 @@
 - Production TSX：**135**（完整檔案清單見下表）；包含測試的 TSX 總數為 182。
 - Literal JSX `style={{...}}` object：**762**，分布於 **87** 個 production TSX 檔；同一個欄位可能另有 className/Tailwind 或功能 CSS override，這個數量不表示 762 個不一致控制。
 - Native input/select/textarea controls：**192**（input 133、select 52、textarea 7）。AST 計數只列節點，不等於 192 個獨立畫面或 192 個視覺缺陷。
+- 分支可編輯欄位靜態掃描：151 個一般 input/select/textarea（不含 checkbox/radio/color/file/range/hidden/button）。134 個明確使用 shared named variants；剩餘 17 個全屬未掛載的 ExpenseForm/RecurringForm/舊 RepaymentForm/TransferForm。AutocompleteDropdown 的內層 input 已標記 embedded variant，由外框負責 border/focus。這是 TSX class coverage，不是 computed-style 或畫面測試。
 - **63** 個 production TSX 檔使用共用 UI tokens。TSX 中 token 引用：字級 **468**、圓角 **281**、間距 **1139**。
 - CSS 檔：**10**（原有 9 個，加上共用層 web/src/styles/ui-system.css）。所有來源仍可在下列 CSS 清單核對。
 - ui-system.css 定義 **145** 個不同的 --ui-* custom properties；掃描 TSX、TS 與 CSS 的 --ui-* 引用，未定義 token：**0**。

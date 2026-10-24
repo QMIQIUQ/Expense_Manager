@@ -301,16 +301,17 @@ const CardForm: React.FC<CardFormProps> = ({
         </div>
 
         <div className="flex flex-col gap-1 relative">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('bankName')}</label>
+          <label htmlFor="card-bank-name" className="ui-form-label ui-form-label--field" style={{ color: 'var(--text-primary)' }}>{t('bankName')}</label>
           <input
             type="text"
+            id="card-bank-name"
             name="bankName"
             value={formData.bankName}
             onChange={handleBankNameChange}
             onFocus={(e) => e.target.select()}
             onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
             placeholder="e.g., Chase, Citibank, HSBC"
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 transition-colors ui-control--standard"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',

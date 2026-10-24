@@ -415,7 +415,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
             value={formData.amount || ''}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : roundMoney(parseFloat(e.target.value), formData.currency) })}
             placeholder={formatMoney(0, formData.currency)}
-            className="inline-input inline-input-amount"
+            className="inline-input inline-input-amount ui-control--embedded ui-control--leading-prefix"
             step={currencyDigits === 0 ? '1' : '0.01'}
             min="0"
           />

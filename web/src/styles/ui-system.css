@@ -259,6 +259,63 @@ textarea.ui-control--prominent {
   padding-right: var(--ui-space-10) !important;
 }
 
+/* An inline prefix (for example, a currency code) already occupies the left edge. */
+.ui-control--leading-prefix {
+  padding-left: var(--ui-space-1) !important;
+}
+
+/* Inner native fields in a composite control do not draw a second field frame. */
+.ui-control--embedded {
+  box-sizing: border-box !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  box-shadow: none !important;
+}
+
+.ui-control--embedded:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.ui-control--embedded.ui-control--leading-prefix {
+  padding-inline-start: var(--ui-space-1) !important;
+}
+
+/* Time fields are two embedded segments inside one 44px composite control. */
+.ui-control--time-segment {
+  box-sizing: border-box !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  min-width: 0 !important;
+  max-width: 28px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  text-align: center;
+  box-shadow: none !important;
+}
+
+.ui-control--time-segment:focus-visible {
+  outline: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
 /* The native checkbox remains focusable and carries the checked state; this
  * track is only its theme-aware visual companion. */
 .ui-switch-input:focus-visible + .ui-switch-track {

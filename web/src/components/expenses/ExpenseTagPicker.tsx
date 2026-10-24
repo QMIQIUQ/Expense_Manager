@@ -88,6 +88,7 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
           placeholder={t('ledgerNewTag')}
           maxLength={40}
           value={name}
+          className="ui-control--compact"
           onChange={(event) => setName(event.target.value)}
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); void create(); } }}
         />

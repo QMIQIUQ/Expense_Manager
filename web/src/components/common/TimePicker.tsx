@@ -282,7 +282,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
               setTimeout(() => e.target.select(), 0);
             }}
             disabled={disabled}
-            className="tp-input"
+            className="tp-input ui-control--time-segment"
             aria-label="Hours"
           />
           <span className="tp-sep">:</span>
@@ -299,7 +299,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
               setTimeout(() => e.target.select(), 0);
             }}
             disabled={disabled}
-            className="tp-input"
+            className="tp-input ui-control--time-segment"
             aria-label="Minutes"
           />
         </div>
@@ -335,17 +335,25 @@ const TimePicker: React.FC<TimePickerProps> = ({
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 8px 12px;
-          background: var(--input-bg);
-          border: 1px solid var(--border-color);
-          border-radius: 4px;
-          font-size: 14px;
           box-sizing: border-box;
+          min-height: var(--ui-control-height);
+          padding: var(--ui-control-padding-block) var(--ui-control-padding-inline);
+          background: var(--input-bg);
+          border: var(--ui-border-width) solid var(--border-color);
+          border-radius: var(--ui-radius-control);
+          font-family: inherit;
+          font-size: var(--ui-font-md-sm);
+          line-height: var(--ui-line-normal);
         }
 
         .tp-row.disabled {
           opacity: 0.6;
           pointer-events: none;
+        }
+
+        .tp-row:focus-within {
+          border-color: var(--accent-primary);
+          box-shadow: var(--ui-focus-ring);
         }
 
         .tp-inputs {

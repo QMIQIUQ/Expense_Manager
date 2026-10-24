@@ -18,6 +18,9 @@
 | Compact 欄位 | `.ui-control--compact`: 44px target, 14px text, 4×8px padding, 1px border, 8px radius | web/src/styles/ui-system.css |
 | Prominent 欄位 | `.ui-control--prominent`: 52px target, 16px text, 12×16px padding, 2px border | web/src/styles/ui-system.css |
 | DatePicker | `.ui-control--date`: 44px target and standard type; 44px trailing space reserved for calendar button | web/src/styles/ui-system.css |
+| Composite inner field | `.ui-control--embedded` removes the second border/background; the parent composite owns focus feedback | ui-system.css, AutocompleteDropdown.tsx, QuickAddWidget.tsx |
+| Inline prefix field | `.ui-control--leading-prefix` reserves a 4px left inset when a currency prefix sits outside the input | ui-system.css, QuickAddWidget.tsx |
+| TimePicker segments | `.ui-control--time-segment`: 28px borderless hour/minute segments; the enclosing 44px control displays the focus ring | ui-system.css, TimePicker.tsx |
 | Trailing action field | `.ui-control--trailing-action` reserves 40px on the right for an overlaid action such as password visibility | web/src/styles/ui-system.css |
 | 多行文字 | 共用字級、色彩、border/radius/focus；最低高度為兩倍 control height，可繼續垂直伸展 | ui-system.css |
 | Checkbox / radio | 可見 controls 保留原生 input type/value/keyboard；18px、accent 使用目前主題色。隱藏 switch checkbox 維持 sr-only 幾何，track 以目前主題色顯示 | ui-system.css |
@@ -30,7 +33,7 @@
 | 字級 | semantic rem type ramp；舊固定字級以 rem aliases 相容並跟隨 ThemeContext root scale | ui-system.css、designTokens.ts |
 | 間距 | 新 UI 用 4px 主刻度及 2px 半刻度；已存在的固定值以 exact aliases 保存頁面版面 | ui-system.css、designTokens.ts |
 | 色彩 | accent/text/surface/border/status 由現有 theme variables 決定 | index.css、cat-theme.css、tailwind.config.cjs |
-| Focus | visible 2px accent outline 及 3px ring；尊重 reduced-motion | ui-system.css |
+| Focus | field-visible focus uses the theme accent border and 3px ring; the embedded TimePicker segments delegate focus feedback to their parent | ui-system.css |
 | Compact actions | `.ui-action--compact`: 44px target, 14px type, 8×12px padding, 8px radius | ui-system.css |
 
 ## 視覺來源與主題

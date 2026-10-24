@@ -42,7 +42,7 @@ Light, dark, system, Warm Kitty light and Warm Kitty dark keep their existing pa
 | Token | Current value / use |
 |---|---|
 | --ui-control-height | 44px standard field and action target |
-| --ui-control-height-compact | 36px icon and compact action target |
+| --ui-control-height-compact | 36px icon-only target |
 | --ui-radius-control | 8px inputs and standard buttons |
 | --ui-radius-card | 12px card and tab container |
 | --ui-radius-dialog | 16px modal surface |
@@ -68,7 +68,10 @@ The shared native-control rule is the default: 44px minimum height, 14px text at
 | `.ui-control--compact` | Dense filters, toolbars and nested settings | Keeps the 44px target and 14px text; uses 4px × 8px padding, 1px border and 8px radius. |
 | `.ui-control--prominent` | Main amount or mobile-first entry fields | 52px minimum height, 16px text, 12px × 16px padding and 2px border; theme colors and focus treatment remain shared. |
 | `.ui-control--date` | DatePicker input with a trailing calendar button | 44px target and standard typography; reserves 44px on the trailing edge for the calendar control. |
-| Specialized composition | Autocomplete, currency selector and embedded ledger controls | Preserve interaction and inner/outer sizing together; verify computed sizes before changing either layer. |
+| `.ui-control--embedded` | Native input nested inside a framed composite control | Removes the inner border/background and leaves focus feedback to the enclosing control; used by autocomplete and QuickAdd amount. |
+| `.ui-control--leading-prefix` | A field whose left edge is occupied by an inline prefix | Reduces left padding to 4px; use with a standard variant or embedded input as the composition requires. |
+| `.ui-control--time-segment` | Hours/minutes text segments inside TimePicker | 28px embedded segments are intentionally borderless; the enclosing 44px time control owns the theme focus ring. |
+| Specialized composition | Autocomplete and currency selector | Autocomplete's outer container owns border/background/focus while its inner search input stays transparent and borderless; preserve both layers and keyboard behavior. CurrencySelector retains its documented specialized size. |
 
 Use `.ui-control--full-width` only when the field should fill its container. For a field with an overlaid trailing button, add `.ui-control--trailing-action` to reserve 40px on the right. `.ui-form-label` is the standard 14px field label; `.ui-form-label--secondary` is the 12px secondary/help role. `.ui-field-error` provides the shared error color and 12px type. Set `aria-invalid` on the field and connect help/error content with `aria-describedby` where appropriate; the shared visual class does not create that relationship automatically. Keep an existing specialized label or error hierarchy when it carries distinct meaning.
 
