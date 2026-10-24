@@ -12,12 +12,14 @@
 .ledger-panel th, .ledger-panel td { text-align: start; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
 .ledger-panel [role=alert] { color: var(--error-text); overflow-wrap: anywhere; }
 .ledger-panel img { max-width: 100%; max-height: 400px; object-fit: contain; }
-.expense-lower-options { display: grid; gap: 12px; min-width: 0; width: 100%; margin-top: 16px; container-type: inline-size; }
-.expense-lower-options > * { box-sizing: border-box; min-width: 0; width: 100%; }
 .expense-tag-picker-compact { box-sizing: border-box; display: block; min-inline-size: 0; width: 100%; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin: 0; background: var(--card-bg, var(--bg-primary)); color: var(--text-primary); }
 .expense-tag-picker-compact > legend { max-width: 100%; padding: 0 6px; color: var(--text-primary); font-size: 14px; font-weight: 700; line-height: 1.35; }
-.expense-receivable-panel { box-sizing: border-box; display: block; min-inline-size: 0; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); }
+.expense-receivable-panel { box-sizing: border-box; display: block; min-inline-size: 0; width: 100%; margin: 16px 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); container-type: inline-size; }
 .expense-receivable-panel > legend { max-width: 100%; padding: 0; color: var(--text-primary); font-size: 14px; font-weight: 700; line-height: 1.35; }
+.expense-receivable-panel input:not([type="checkbox"]), .expense-receivable-panel button { box-sizing: border-box; max-width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); }
+.expense-receivable-panel button { cursor: pointer; }
+.expense-receivable-panel button:disabled { opacity: .55; cursor: default; }
+.expense-receivable-panel input[type="checkbox"] { appearance: auto; padding: 0; border: 0; border-radius: 0; background: transparent; }
 .expense-tag-picker-inline { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); }
 .expense-tag-picker-inline .expense-tag-picker-label { margin: 0 0 8px; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
 .expense-tag-picker-inline .expense-tag-picker-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 0; }
@@ -37,8 +39,8 @@
 .expense-tag-picker-options .expense-tag-option:disabled { opacity: .48; cursor: not-allowed; }
 .expense-tag-option-indicator { display: inline-grid; place-items: center; flex: 0 0 18px; width: 18px; height: 18px; border: 1px solid currentColor; border-radius: 50%; font-size: 12px; font-weight: 700; line-height: 1; }
 .expense-tag-option[aria-pressed="true"] .expense-tag-option-indicator { border-color: var(--accent-primary); background: var(--accent-primary); color: var(--bg-primary); }
-.expense-receivable-toggle { display: flex !important; align-items: center; gap: 10px !important; width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); font-weight: 600; cursor: pointer; }
-.expense-receivable-toggle input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--accent-primary); }
+.expense-receivable-toggle { box-sizing: border-box; display: flex !important; align-items: center; gap: 10px !important; width: 100%; min-height: 42px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; font-weight: 600; cursor: pointer; }
+.expense-receivable-toggle input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent-primary); }
 .expense-receivable-help { margin: 6px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
 .expense-receivable-help p { margin: 0; }
 .expense-receivable-help p + p { margin-top: 5px; }
@@ -68,7 +70,7 @@
 .expense-split-own-share { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 13px; font-weight: 600; color: var(--text-primary) !important; }
 @media (max-width: 600px) {
   .expense-tag-picker-compact { padding: 12px; }
-  .expense-lower-options { gap: 10px; margin-top: 14px; }
+  .expense-receivable-panel { margin-top: 14px; }
   .expense-split-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
   .expense-split-row > input:first-child { grid-column: 1 / -1; }
   .expense-split-row > input:nth-child(2) { width: 100%; }
@@ -129,8 +131,7 @@
 .expense-edit-section + .expense-edit-section { margin-top: 4px; border-top: 0; }
 .expense-edit-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
 .expense-edit-actions > button { min-width: 96px; min-height: 42px; }
-.expense-edit-form .expense-lower-options { gap: 8px; margin-top: 8px; }
-.expense-edit-form .expense-receivable-panel { padding: 0; }
+.expense-edit-form .expense-receivable-panel { margin-top: 8px; padding: 0; }
 .expense-edit-form .expense-receivable-toggle { min-height: 38px; padding: 6px 8px; border: 0; background: transparent; }
 .expense-edit-form .expense-tag-picker-inline { margin-top: 4px; }
 

@@ -10,7 +10,7 @@ export const ExpenseSplitEditor: React.FC<{ value: ExpenseSplitParticipant[]; on
   const helpId = useId();
   const own = totalMinor - value.reduce((total, row) => total + row.owedMinor, 0);
   const enabled = trackingEnabled || value.length > 0;
-  return <fieldset className="ledger-panel expense-receivable-panel" onKeyDown={(event) => { if (event.key === 'Enter') event.stopPropagation(); }}>
+  return <fieldset className="expense-receivable-panel" onKeyDown={(event) => { if (event.key === 'Enter') event.stopPropagation(); }}>
     <legend className="expense-receivable-legend">
       <span>{t('ledgerReceivableTitle')}</span>
       <button type="button" className="expense-help-button" aria-label={t('ledgerHelp')} aria-expanded={showHelp} aria-controls={helpId} onClick={() => setShowHelp((open) => !open)}>?</button>

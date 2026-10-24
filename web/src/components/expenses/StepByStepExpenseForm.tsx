@@ -2167,16 +2167,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             )}
               </>
             )}
-            <div className="expense-lower-options">
-              <ExpenseSplitEditor
-                value={splitParticipants}
-                onChange={setSplitParticipants}
-                totalMinor={formData.amount}
-                currency={formData.currency as CurrencyCode}
-                trackingEnabled={formData.needsRepaymentTracking}
-                onTrackingChange={(enabled) => setFormData((previous) => ({ ...previous, needsRepaymentTracking: enabled }))}
-              />
-            </div>
+            <ExpenseSplitEditor
+              value={splitParticipants}
+              onChange={setSplitParticipants}
+              totalMinor={formData.amount}
+              currency={formData.currency as CurrencyCode}
+              trackingEnabled={formData.needsRepaymentTracking}
+              onTrackingChange={(enabled) => setFormData((previous) => ({ ...previous, needsRepaymentTracking: enabled }))}
+            />
           </div>
         );
 
