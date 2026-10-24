@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">Dialog and confirmation patterns</title>
+  <desc id="desc">Current centered overlay, candidate standard CRUD dialog and candidate responsive drawer are shown with distinct destructive confirmation.</desc>
+  <defs><style>.bg{fill:#f4f6fb}.panel{fill:#fff;stroke:#d9deeb;stroke-width:2}.ink{fill:#222b42;font:600 22px Arial,sans-serif}.muted{fill:#66718a;font:16px Arial,sans-serif}.small{fill:#66718a;font:14px Arial,sans-serif}.pill{fill:#eeeaff}.pt{fill:#5039a6;font:600 14px Arial,sans-serif}.field{fill:#fbfcff;stroke:#ccd3e3;stroke-width:1.5}.primary{fill:#6550c7}.white{fill:#fff;font:600 14px Arial,sans-serif}.secondary{fill:#f1f2f7}.danger{fill:#c44545}.dtext{fill:#fff;font:600 14px Arial,sans-serif}.rule{stroke:#d9deeb;stroke-width:2}.alert{fill:#fff3f1;stroke:#f0c5bf;stroke-width:1.5}.mobile-title{fill:#222b42;font:700 54px Arial,sans-serif}.mobile-heading{fill:#222b42;font:700 46px Arial,sans-serif}.mobile-body{fill:#526078;font:42px Arial,sans-serif}.mobile-tag{fill:#5039a6;font:700 36px Arial,sans-serif}.desktop{display:inline}.mobile{display:none}@media(max-width:600px){.desktop{display:none}.mobile{display:inline}}</style></defs>
+  <g class="desktop">
+  <rect class="bg" width="1440" height="760"/>
+  <text class="ink" x="44" y="52" style="font-size:30px">Form containers and destructive confirmation</text>
+  <text class="muted" x="44" y="82">A visual choice must keep focus, close, cancel and submit semantics intact.</text>
+  <g transform="translate(40 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="110" height="30" rx="15"/><text class="pt" x="39" y="41">CURRENT</text>
+    <text class="ink" x="22" y="82">Popup + confirm</text>
+    <text class="small" x="22" y="108">Current app uses several modal layouts</text>
+    <rect x="20" y="130" width="390" height="270" rx="12" fill="#f3f4f8"/>
+    <rect x="64" y="153" width="302" height="224" rx="12" fill="#fff" stroke="#d9deeb" stroke-width="2"/>
+    <text class="ink" x="83" y="184" style="font-size:18px">Edit category</text><text class="small" x="337" y="184">×</text>
+    <text class="small" x="83" y="220">Name</text><rect class="field" x="83" y="228" width="263" height="42" rx="8"/><text class="small" x="99" y="255">Groceries</text>
+    <rect class="secondary" x="83" y="305" width="86" height="34" rx="8"/><text class="small" x="107" y="327">Cancel</text>
+    <rect class="primary" x="251" y="305" width="95" height="34" rx="8"/><text class="white" x="278" y="327">Save</text>
+    <text class="small" x="22" y="434">Delete confirmation</text>
+    <rect class="alert" x="20" y="449" width="390" height="129" rx="12"/>
+    <text class="ink" x="40" y="480" style="font-size:18px">Delete this item?</text><text class="small" x="40" y="505">Impact text and button order vary by screen.</text>
+    <rect class="secondary" x="184" y="530" width="90" height="32" rx="8"/><text class="small" x="210" y="551">Cancel</text>
+    <rect class="danger" x="284" y="530" width="106" height="32" rx="8"/><text class="dtext" x="309" y="551">Delete</text>
+  </g>
+  <g transform="translate(505 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="128" height="30" rx="15"/><text class="pt" x="38" y="41">CANDIDATE A</text>
+    <text class="ink" x="22" y="82">Centered dialog</text>
+    <text class="small" x="22" y="108">Consistent shell for small/medium forms</text>
+    <rect x="20" y="130" width="390" height="270" rx="12" fill="#f3f4f8"/>
+    <rect x="48" y="149" width="334" height="232" rx="14" fill="#fff" stroke="#d9deeb" stroke-width="2"/>
+    <text class="ink" x="70" y="183" style="font-size:18px">Edit category</text><text class="small" x="350" y="183">×</text>
+    <text class="small" x="70" y="219">Category name</text><rect class="field" x="70" y="228" width="290" height="42" rx="8"/><text class="small" x="87" y="255">Groceries</text>
+    <line class="rule" x1="70" y1="294" x2="360" y2="294"/>
+    <rect class="secondary" x="70" y="316" width="86" height="36" rx="8"/><text class="small" x="93" y="339">Cancel</text>
+    <rect class="primary" x="260" y="316" width="100" height="36" rx="8"/><text class="white" x="288" y="339">Save</text>
+    <text class="small" x="22" y="434">Alert dialog names impact explicitly</text>
+    <rect class="alert" x="20" y="449" width="390" height="129" rx="12"/>
+    <text class="ink" x="40" y="480" style="font-size:18px">Delete 4 categories?</text><text class="small" x="40" y="505">3 have linked expenses. This cannot be undone.</text>
+    <rect class="secondary" x="184" y="530" width="90" height="32" rx="8"/><text class="small" x="210" y="551">Cancel</text>
+    <rect class="danger" x="284" y="530" width="106" height="32" rx="8"/><text class="dtext" x="309" y="551">Delete</text>
+  </g>
+  <g transform="translate(970 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="128" height="30" rx="15"/><text class="pt" x="38" y="41">CANDIDATE B</text>
+    <text class="ink" x="22" y="82">Drawer / mobile sheet</text>
+    <text class="small" x="22" y="108">Keep list context for longer forms</text>
+    <rect x="20" y="130" width="390" height="270" rx="12" fill="#f3f4f8"/>
+    <rect x="193" y="130" width="217" height="270" rx="12" fill="#fff" stroke="#d9deeb" stroke-width="2"/>
+    <text class="ink" x="211" y="168" style="font-size:17px">Edit category</text><text class="small" x="383" y="168">×</text>
+    <text class="small" x="211" y="205">Category name</text><rect class="field" x="211" y="214" width="181" height="42" rx="8"/><text class="small" x="226" y="240">Groceries</text>
+    <line class="rule" x1="211" y1="310" x2="392" y2="310"/>
+    <rect class="secondary" x="211" y="330" width="75" height="34" rx="8"/><text class="small" x="230" y="352">Cancel</text>
+    <rect class="primary" x="300" y="330" width="92" height="34" rx="8"/><text class="white" x="326" y="352">Save</text>
+    <text class="small" x="22" y="434">For small screens, use a tall sheet</text>
+    <rect class="alert" x="20" y="449" width="390" height="129" rx="12"/>
+    <text class="ink" x="40" y="480" style="font-size:18px">Delete this expense?</text><text class="small" x="40" y="505">Keep focus and context after cancel.</text>
+    <rect class="secondary" x="184" y="530" width="90" height="32" rx="8"/><text class="small" x="210" y="551">Cancel</text>
+    <rect class="danger" x="284" y="530" width="106" height="32" rx="8"/><text class="dtext" x="309" y="551">Delete</text>
+  </g>
+  <text class="muted" x="44" y="742">All candidates require focus containment and return, keyboard dismissal, close guards and explicit destructive impact.</text>
+  </g>
+  <g class="mobile">
+    <rect class="bg" width="1440" height="760"/>
+    <text class="mobile-title" x="48" y="72">Forms · confirmations</text>
+    <rect class="panel" x="40" y="104" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="124" width="226" height="52" rx="26"/><text class="mobile-tag" x="96" y="161">CURRENT</text>
+    <text class="mobile-heading" x="330" y="160">Popup + confirm</text>
+    <text class="mobile-body" x="72" y="218">Layouts and button order vary across screens.</text>
+    <text class="mobile-body" x="72" y="264">Delete impact may need clearer item/count detail.</text>
+    <rect class="panel" x="40" y="296" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="316" width="284" height="52" rx="26"/><text class="mobile-tag" x="96" y="353">CANDIDATE A</text>
+    <text class="mobile-heading" x="388" y="352">Centered dialog</text>
+    <text class="mobile-body" x="72" y="410">Consistent title, scroll area and fixed action footer.</text>
+    <text class="mobile-body" x="72" y="456">Alert names item/count and related consequences.</text>
+    <rect class="panel" x="40" y="488" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="508" width="284" height="52" rx="26"/><text class="mobile-tag" x="96" y="545">CANDIDATE B</text>
+    <text class="mobile-heading" x="388" y="544">Drawer / mobile sheet</text>
+    <text class="mobile-body" x="72" y="602">Keeps list context; phone uses a tall sheet.</text>
+    <text class="mobile-body" x="72" y="648">Cancel returns focus; delete remains a distinct alert.</text>
+  </g>
+</svg>

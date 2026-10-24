@@ -1,6 +1,6 @@
 # 主要 Method 與端到端流程
 
-> 核對範圍：`web/src`、Firestore rules 與 Functions。文件描述目前程式行為，包含 app queue 與 Firestore SDK 離線持久化兩條不同路徑。最後核對：2026-10-18。Vitest 單一 worker 全套 36 個測試檔、215 個測試通過；production build 與 lint 通過。驗收範圍見 `LOCAL_FIRST_ACCEPTANCE.md`。尚未執行 Firebase 正式資料的端到端同步驗證。
+> 核對範圍：`web/src`、Firestore rules 與 Functions；app source 基準 `f864ecda8d28ebf45225d2b6aba15801b52ba872`（後續 `7332790` 僅更新文件）。文件描述目前程式行為，包含 app queue 與 Firestore SDK 離線持久化兩條不同路徑。最後靜態核對：2026-10-25。已記錄的測試、build 與 lint 證據見 `LOCAL_FIRST_ACCEPTANCE.md`；本次文件更新未重跑應用程式測試或正式 Firebase 同步。
 
 ## 1. 程式職責與狀態擁有者
 
@@ -33,9 +33,9 @@
 | `dataService` (`services/dataService.ts`) | `getExpenses`, `getCategories`, `getBudgets`, `getRecurringExpenses`, `getIncomes`, `getCards`, `getEWallets`, `getBanks`, `getRepayments`, `getData`, `getDataWithRevalidate`, `areDataEqual`, `updateCache`, `invalidateCache`, `clearUserCache` | 以 `sessionCache` 支援快取讀取、離線回退及 stale-while-revalidate。Dashboard 初始讀取直接使用 `getDataWithRevalidate`。 |
 | `sessionCache` (`utils/sessionCache.ts`) | `set`, `get`, `getMetadata`, `has`, `remove`, `clearUser`, `clearAll`, `clearOldCaches`, `getCacheSize` | 以 userId/entity key 保存 app 快取；set 寫入 sessionStorage 並盡力複製到 localStorage。localStorage 快取讀取時檢查 24 小時 TTL。 |
 | `networkStatus` (`utils/networkStatus.ts`) | `isOnline`, `subscribe`, `testConnectivity`, `destroy` | 監聽瀏覽器 `online`/`offline` 事件並通知訂閱者。它表示瀏覽器網路狀態，不保證 Firebase 權限或服務可用。 |
-| `offlineQueue` (`utils/offlineQueue.ts`) | `enqueue`, `enqueueMany`, `getAll`, `count`, `save`, `dequeue`, `incrementRetry`, `retry`, `retryExpenseOperationsForId`, `updatePayload`, `hasPendingExpenseOperations`, `hasPendingExpenseDelete`, `hasPendingBudgetOperations`, `removeBudgetOperationsForId`, `clear`, `processQueue` | `localStorage` app outbox；操作類型為 create/update/delete，最多重試 3 次。到達上限時保留並標為 `needs-attention`，budget 拒絕另走專用回復流程。 |
-| `syncService` (`services/syncService.ts`) | `onSyncProgress`, `setAutoSync`, `isSyncInProgress`, `pendingCount`, `syncOfflineQueue`, `refreshCache`, `refreshAllCaches` | app queue 協調器。網路恢復且 auto-sync 開啟時延遲 1 秒執行；也由狀態元件手動觸發。 |
-| `useSyncStatus` (`hooks/useSyncStatus.ts`) | `syncProgress`, `isSyncing`, `pendingCount`, `syncNow` | `NetworkStatusIndicator` 使用的 React adapter；每秒更新佇列/同步數量並暴露手動同步。 |
+| `offlineQueue` (`utils/offlineQueue.ts`) | `initialize`, `getAll`, `count`, `enqueue`, `enqueueMany`, `claimNext`, `renew`, `complete`, `release`, `fail`, `retry`, `recoverAmbiguous`, `rebaseExpenseUpdateChain`, `discardExpenseUpdateChain`, `clear` | IndexedDB app outbox；交易式跨分頁 lease/fencing，依帳戶順序及 operation dependency claim。同步失敗最多 5 次後保留並標為 `needs-attention`；Budget 驗證拒絕另走專用回復流程。 |
+| `syncService` (`services/syncService.ts`) | `onSyncProgress`, `isSyncInProgress`, `pendingCount`, `syncOfflineQueue`, `refreshCache`, `refreshAllCaches` | 唯一 app queue executor。網路恢復、登入、queue 變更時安排同步；狀態元件也可手動觸發。 |
+| `useSyncStatus` (`hooks/useSyncStatus.ts`) | `syncProgress`, `isSyncing`, `pendingCount`, `syncNow` | `NetworkStatusIndicator` 使用的 React adapter；初始讀值後訂閱 sync progress、queue change 與 online/offline 事件，不以週期性 storage polling 更新。 |
 | `useOptimisticCRUD` (`hooks/useOptimisticCRUD.ts`) | `run`, `isPending`, `getPendingOperation`, `pendingCount` | 先登記 UI pending 狀態、保存 durable queue，再呼叫 service；網路錯誤保留 queue，永久錯誤呼叫 rollback callback。 |
 
 ### 財務紀錄、帳戶與預算
@@ -59,7 +59,7 @@
 |---|---|---|
 | `scheduledPaymentService` | `calculateInstallmentAmount`, `calculateRemainingAmount`, `createId`, `create`, `getAll`, `getActive`, `update`, `delete`, `toggleActive`, `markCompleted`, `createPaymentRecordId`, `createPaymentRecord`, `getPaymentRecords`, `getAllPaymentRecords`, `updatePaymentRecord`, `deletePaymentRecord`, `getPaymentSummary`, `isPeriodPaid`, `getPendingPayments`, `exportPaymentHistoryToCSV`, `downloadPaymentHistoryCSV`, `getUpcomingReminders` | 定期付款計劃與付款紀錄、期別付款狀態、分析/提醒及 CSV 匯出。record create 使用固定 ID；開啟自動生成支出時，record queue 帶同可冪等重播的 expense payload。 |
 | `recurringExpenseService` | `create`, `getAll`, `getActive`, `update`, `delete`, `toggleActive` | 舊式 `recurringExpenses` 資料服務；其 `RecurringExpenseManager`/`RecurringTab` 不在目前 Dashboard 掛載流程。 |
-| `userSettingsService` | `get`, `create`, `update`, `setOverallBudgetLimit`, `getOrCreate` | 一般偏好樂觀更新並可排隊同步；整體預算限額使用伺服器配置 transaction 驗證。部分讀取可指定強制伺服器讀取。 |
+| `userSettingsService` | `get`, `create`, `update`, `setOverallBudgetLimit`, `setIncomeLinkedBudget`, `getOrCreate` | 一般偏好樂觀更新並可排隊同步；整體預算限額和收入連動模式切換使用伺服器配置 transaction 驗證。部分讀取可指定強制伺服器讀取。 |
 | `featureSettingsService` | `getOrCreate`, `update`, `resetToDefaults` | 主頁籤與選單功能偏好。 |
 | `dashboardLayoutService` | `get`, `fetchFromFirebase`, `getOrCreate`, `update`, `updateWidgets`, `toggleWidget`, `reorderWidgets`, `resetToDefault`, `updateColumns` | Dashboard Widget 顯示、順序及欄數配置；編輯先更新本機 state，網路錯誤可由 `dashboardLayout` queue 重播。 |
 | `currencyRateService` | `getHistoricalRate`, `convertAmountToCurrency`, `resolveAmountCurrencyFields`, `resolveExpenseCurrencyFields` | 取歷史匯率、快取匯率、計算原幣/基準幣欄位；對外提供 `currencyRateService` object。 |
@@ -80,6 +80,7 @@
 | `domain/money.ts`, `utils/currencyUtils.ts` | `parseCurrencyCode`, `requireCurrencyCode`, `roundMoney`, `toMinorUnits`, `fromMinorUnits`, `convertWithSnapshot`, `getCurrencyBaseAmount`, `getExpenseDisplaySource`, `buildExpenseCurrencyFields` | 金額精度、minor units、匯率快照換算、原幣/基準幣欄位與顯示來源。 |
 | `utils/budgetAllocation.ts`, `budgetCurrencyUtils.ts` | `getAllocatedBudgetMinorUnits`, `validateOverallBudgetLimit`, `validateBudgetAllocationChange`, `validateBudgetAllocationBatch`, `toBudgetBaseAmount`, `convertBudgetAmount` | 將各幣別預算正規化至基準幣 minor units，驗證單筆或批次配置不超整體限額。 |
 | `utils/budgetMutationLock.ts`, `budgetMutationTransaction.ts` | `withBudgetMutationLock`, `runBudgetMutationTransaction` | 同一 client 序列化預算變更；transaction 讀取伺服器快照、確認 settings revision 未變後才提交。 |
+| `utils/incomeLinkedBudget.ts`, `services/incomeBudgetData.ts`, `hooks/useIncomeBudget.ts` | `incomeBudgetRange`, `calculateIncomeFunding`, `validIncomeLink`, `allocationLimitsForSettings`, `readIncomeBudgetCycle`, `useIncomeBudget` | 以帳單週期完整收入快照與 pending operations 計算月收入支持額度；資料不完整、無效匯率或設定錯誤時保留狀態，不把不完整列表當成完整收入。詳細收入資格及金額規則見 `INCOME_BUDGET_LINK_PLAN.md`。 |
 | `utils/budgetRollover.ts`, `budgetNotifications.ts` | `getBillingCyclePeriod`, `getPreviousBillingCyclePeriod`, `calculateSpentInPeriod`, `calculateRolloverAmount`, `shouldCalculateRollover`, `getEffectiveBudgetAmount`, `calculateBudgetPeriod`, `calculateBudgetSpending`, `checkBudgetAlerts`, `getBudgetSummary` | 依帳單週期計算支出、結轉額及預算提醒。 |
 | `utils/budgetAnalysis.ts`, `budgetSuggestions.ts`, `budgetTemplates.ts` | `getSpendingHistory`, `analyzeBudget`, `getAllBudgetSuggestions`, `calculateBudgetSuggestions`, `getAllTemplates`, `calculateBudgetsFromTemplate` | 從歷史支出分析配置、提出建議並把模板轉成 budget input。 |
 | `utils/dateUtils.ts`, `expensePeriodUtils.ts` | `getTodayLocal`, `formatDateLocal`, `formatDateWithUserFormat`, `getExpensePeriodBounds`, `filterExpensesByPeriod`, `filterAndSortExpenses` | 本地日期格式、週期邊界及支出期間篩選/排序；日期範圍採本地日曆語意。 |
@@ -133,9 +134,11 @@ Login → AuthContext.signup/login/loginWithGoogle
 4. app queue 重播 budget 亦使用 mutation lock 和 budget service；達重試上限時發出拒絕事件，Dashboard 重新讀伺服器資料或依 `previousBudget` rollback。
 5. `setOverallBudgetLimit` 使用線上 server snapshot 與 transaction 驗證配置；離線時會回報失敗，沒有相同的 app queue fallback。
 
+收入連動月預算由 `IncomeBudgetSettingsModal`、`UserSettingsContext.setIncomeLinkedBudget`、`userSettingsService.setIncomeLinkedBudget`、`readIncomeBudgetCycle` 和 `useIncomeBudget` 串接。設定以 userSettings mutation 保存至 IndexedDB outbox，遠端模式切換仍由預算配置 transaction 驗證；收入來源、完整帳期、匯率和還款去重規則見 `INCOME_BUDGET_LINK_PLAN.md`。Dashboard 與 BudgetManager 共用收入支持額度計算，不將衍生額度寫回手動月上限。
+
 ### 3.7 定期付款與付款紀錄
 
-`ScheduledPaymentManager` 管理 `scheduledPayments` 和 `scheduledPaymentRecords`。確認付款先以固定 ID 在列表建立 provisional record，解析金額匯率快照後更新本機資料，再以 `scheduledPaymentRecord` durable queue 保存 record 和可選的固定 ID 自動生成 expense payload，最後呼叫 `scheduledPaymentService.createPaymentRecord`。摘要與本期已付款判斷使用目前畫面的本機紀錄。重播先建立 record，再以冪等 expense create 處理支出和帳戶餘額。兩份文件不是同一 Firestore transaction，因此若第二步永久失敗，需留意 record 已保存但支出未生成的部分完成狀態。
+`ScheduledPaymentManager` 管理 `scheduledPayments` 和 `scheduledPaymentRecords`。確認付款先以固定 ID 建立本機 provisional record，解析匯率快照後把 record 與可選的固定 ID 自動生成 expense payload 一起保存至 `scheduledPaymentRecord` outbox。`scheduledPaymentService.createPaymentRecord` 在同一個 `runFinancialTransaction` 中驗證付款計畫、既有 record/expense、套用帳戶餘額和朋友摘要、建立 expense、建立或修復 record，並原子寫入 mutation receipt。摘要與本期已付款判斷立即使用本機 record；重播使用原固定 ID。只有舊版已部分提交的 record 會進入既有連結修復分支；目前 handler 的新付款路徑不會分兩個 Firestore transaction 提交。
 
 ### 3.8 幣別、收據、好友、匯入匯出
 
@@ -148,12 +151,12 @@ Login → AuthContext.signup/login/loginWithGoogle
 
 | 項目 | 已落實的行為 |
 |---|---|
-| 本機先顯示 | 一般資料變更及偏好先更新本機 state/cache，完整 owner/ID/payload 在呼叫 Firebase 前保存；成功同步後移除操作並發事件重新載入資料。 |
-| Queue 路由 | scheduled payment、payment record、transfer、feature settings、quick expense preset、user settings 和 dashboard layout 有專用 executor。一般失敗重試三次後保留 `needs-attention`；budget 驗證拒絕走專用回復。 |
-| 財務交易 | expense/income/transfer service 在同一 transaction 維護相關帳戶餘額。支出編輯先反向調整舊付款資料，再套用新值；轉帳刪除也在交易內回復餘額。 |
+| 本機先顯示 | 一般資料變更及偏好先更新本機 state/cache，完整 owner/ID/payload 在呼叫 Firebase 前保存；同步成功後依 outbox claim/complete 移除操作並發事件刷新受影響資料。 |
+| Queue 路由 | 所有已接入的本機優先操作使用共用 IndexedDB outbox 與唯一 `syncService` executor；失敗最多 5 次後保留 `needs-attention`，Budget 驗證拒絕走專用回復。 |
+| 財務交易 | expense/income/transfer service 在同一 transaction 維護相關帳戶餘額；scheduled payment record、可選的生成 expense、帳戶餘額、摘要與 receipt 也在同一 transaction。支出編輯先反向調整舊付款資料，再套用新值。 |
 | 手動同步 | 頁首和漢堡選單都呼叫 `syncOfflineQueue()`，並依 queue 剩餘數量顯示結果。 |
 
-仍有明確邊界：整體預算限額必須線上 transaction 驗證；多幣別資料缺少交易日匯率快照時，不能保存未換算金額；管理員與跨使用者好友權限異動依賴伺服器確認。`scheduledPaymentRecord` 與自動支出使用固定 ID 可安全重試，但兩個文件不是同一 Firestore transaction，第二階段永久失敗時可能呈現部分完成。清除 app queue 仍會永久丟棄所有本機待同步操作。
+仍有明確邊界：整體預算限額必須線上 transaction 驗證；多幣別資料缺少交易日匯率快照時，不能保存未換算金額；管理員與跨使用者好友權限異動依賴伺服器確認。`scheduledPaymentRecord` 與可選自動支出在目前付款 handler 由同一 transaction 提交；舊版部分提交的 record 另有 idempotent repair 路徑。清除 app queue 仍會永久丟棄所有本機待同步操作。
 
 ## 5. 未接入主流程的舊實作
 

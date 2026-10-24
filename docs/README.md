@@ -20,6 +20,9 @@
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
 | [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
 | [ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) | 目前 UI 元件/樣式盤點、預覽圖與逐檔標準化計畫 | 產品 / 設計 / 開發 |
+| [ui-standardization/CRUD_FLOW_AUDIT.md](ui-standardization/CRUD_FLOW_AUDIT.md) | 各功能新增、檢視、編輯、刪除與表單 overlay 流程 | 產品 / 設計 / 開發 |
+| [ui-standardization/INTERACTION_PATTERN_CANDIDATES.md](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) | 欄位、按鈕、dialog/drawer、狀態回饋候選與官方參考 | 產品 / 設計 / 開發 |
+| [ui-standardization/PATTERN_STANDARDIZATION_PLAN.md](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) | 選定樣式後的逐階段檔案清單、流程邏輯及驗收步驟 | 開發者 / QA |
 | [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2 實作紀錄；較新的導覽改進建議見 UI 導覽盤點 | 產品 / 設計 / 開發 |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | GitHub Pages 與 Firebase live / preview 部署方式 | 開發者 / 運維 |
 | [DARK_MODE_GUIDE.md](DARK_MODE_GUIDE.md) | 深色模式完整指南 | 开发者 |
@@ -51,6 +54,9 @@
 - 🧾 [離線功能摘要](OFFLINE_FUNCTIONALITY.md) - 功能範圍及限制
 - 🧭 [UI 架構與排列盤點](UI_NAVIGATION_AUDIT.md) - 導覽結構、目前問題與改進方案
 - 🎨 [UI 元件盤點與統一設計計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) - 元件外觀、預覽和後續逐檔計畫
+- 🧾 [CRUD 表單流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md) - 目前可達功能的新增/檢視/編輯/刪除流程
+- 🧩 [互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) - 元件、overlay、同步回饋選擇及參考
+- 🗂️ [樣式逐階段實作計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) - 需修改的檔案、必保留邏輯和驗收條件
 - 📱 [Compact Navigation V2](implementation-plans/COMPACT_NAVIGATION_V2.md) - 已發布的實作紀錄；新建議見 UI 導覽盤點
 - 🎨 [UI 规范](UI_STYLE_GUIDE.md) - 样式与组件
 - 🚀 [部署指南](DEPLOYMENT_GUIDE.md) - GitHub Pages 與 Firebase Hosting

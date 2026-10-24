@@ -67,7 +67,7 @@ Dashboard `loadData()` 與 `dataService.getDataWithRevalidate()` 有快取時先
 
 重播成功後操作自 queue 移除。同一帳戶依送出順序執行；較早的操作失敗、正在直接寫入或需要處理時，後面的操作先保留，避免新增尚未成功就先編輯/刪除，或使用尚未建立的帳戶。直接寫入中的 outbox 項目不會同時由 SyncService 再執行。重新載入後記憶體中的執行標記消失，durable queue 可繼續重播。
 
-重試三次仍失敗時，操作留在 queue 並標記 `needs-attention`；重開頁面也會恢復通知與重試入口。Budget 伺服器驗證拒絕時則走 budget 專用回復處理，可能移除同一 budget 的依賴操作。queue 序列化保留明確的 undefined 欄位，避免離線更新遺失原本要求清除的可選值。
+`offlineQueue` 的 `MAX_RETRY` 設為 5；第 5 次同步失敗後，操作仍留在 queue 並標記 `needs-attention`。重開頁面也會恢復通知與重試入口。Budget 伺服器驗證拒絕時則走 budget 專用回復處理，可能移除同一 budget 的依賴操作。queue 序列化保留明確的 undefined 欄位，避免離線更新遺失原本要求清除的可選值。
 
 ## 5. 同步觸發與使用者操作
 

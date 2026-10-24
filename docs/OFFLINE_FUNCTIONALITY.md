@@ -20,3 +20,4 @@ app queue 涵蓋主要 CRUD、排序及一般偏好設定。重試達上限的�
 - [離線同步架構](OFFLINE_SYNC_ARCHITECTURE.md) — 實際執行路徑、重試策略和已知缺口。
 - [主要 Method 與端到端流程](LOGIC_METHOD_FLOW.md) — 支出、收入、轉帳、預算及定期付款資料流程。
 - [離線狀態使用說明](OFFLINE_SYNC_GUIDE.md) — 一般使用者如何查看和執行同步。
+- [UI 同步狀態候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) — 本機接受、同步中、雲端確認與需處理狀態的視覺語意；候選尚未選定。

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920" role="img" aria-labelledby="title desc">
+  <title id="title">Expense CRUD flow: current and two candidates</title>
+  <desc id="desc">Three columns compare the current expense stepper and three-tab edit flow with a consistent dialog and a full-page workspace.</desc>
+  <defs>
+    <style>
+      .bg{fill:#f4f6fb}.panel{fill:#fff;stroke:#d9deeb;stroke-width:2}.ink{fill:#222b42;font:600 22px Arial,sans-serif}.muted{fill:#64708a;font:16px Arial,sans-serif}.small{fill:#66718a;font:14px Arial,sans-serif}.pill{fill:#eeeaff}.pilltext{fill:#5039a6;font:600 14px Arial,sans-serif}.field{fill:#fbfcff;stroke:#ccd3e3;stroke-width:1.5}.button{fill:#6550c7}.buttontext{fill:#fff;font:600 15px Arial,sans-serif}.secondary{fill:#f1f2f7}.line{stroke:#d9deeb;stroke-width:2}.ok{fill:#e7f6ef}.warn{fill:#fff5dd}.danger{fill:#fff0ef}.tag{font:600 14px Arial,sans-serif}.mobile-title{fill:#222b42;font:700 54px Arial,sans-serif}.mobile-heading{fill:#222b42;font:700 48px Arial,sans-serif}.mobile-body{fill:#526078;font:44px Arial,sans-serif}.mobile-tag{fill:#5039a6;font:700 38px Arial,sans-serif}.desktop{display:inline}.mobile{display:none}@media(max-width:600px){.desktop{display:none}.mobile{display:inline}}
+    </style>
+  </defs>
+  <g class="desktop">
+  <rect class="bg" width="1440" height="920"/>
+  <text x="48" y="54" class="ink" style="font-size:30px">Expense CRUD · same data, different interaction patterns</text>
+  <text x="48" y="84" class="muted">Illustrative mockups · select a direction before changing production UI</text>
+  <g transform="translate(40 112)">
+    <rect class="panel" width="430" height="760" rx="18"/>
+    <rect class="pill" x="24" y="22" width="110" height="30" rx="15"/><text class="pilltext" x="41" y="43">CURRENT</text>
+    <text class="ink" x="24" y="88">Step form + edit tabs</text>
+    <text class="muted" x="24" y="118">Existing create flow and three-part edit</text>
+    <rect x="22" y="145" width="386" height="58" rx="12" fill="#f3f0ff"/>
+    <text class="small" x="40" y="170">Create · step 2 of 6</text><text class="ink" x="40" y="191" style="font-size:18px">Amount &amp; currency</text>
+    <rect class="field" x="26" y="226" width="378" height="60" rx="10"/><text class="small" x="44" y="250">Amount</text><text class="ink" x="44" y="274">RM 42.80</text>
+    <rect class="field" x="26" y="302" width="378" height="60" rx="10"/><text class="small" x="44" y="326">Currency</text><text class="ink" x="44" y="350">MYR  ▾</text>
+    <rect class="secondary" x="26" y="382" width="108" height="42" rx="9"/><text class="small" x="59" y="408">Back</text>
+    <rect class="button" x="278" y="382" width="126" height="42" rx="9"/><text class="buttontext" x="316" y="408">Next</text>
+    <line class="line" x1="24" y1="454" x2="406" y2="454"/>
+    <text class="small" x="26" y="488">Edit · 3 tabs</text>
+    <rect x="26" y="504" width="378" height="42" rx="10" fill="#f1f2f7"/>
+    <rect class="button" x="28" y="506" width="122" height="38" rx="9"/><text class="buttontext" x="46" y="531">Date / amount</text>
+    <text class="small" x="166" y="531">Category</text><text class="small" x="294" y="531">Payment</text>
+    <rect class="field" x="26" y="562" width="378" height="52" rx="9"/><text class="small" x="42" y="594">Edit fields keep their current values</text>
+    <rect class="secondary" x="26" y="640" width="108" height="42" rx="9"/><text class="small" x="57" y="666">Cancel</text>
+    <rect class="button" x="278" y="640" width="126" height="42" rx="9"/><text class="buttontext" x="319" y="666">Save</text>
+    <text class="muted" x="26" y="724">Distinct styles; create and edit semantics stay separate.</text>
+  </g>
+  <g transform="translate(505 112)">
+    <rect class="panel" width="430" height="760" rx="18"/>
+    <rect class="pill" x="24" y="22" width="128" height="30" rx="15"/><text class="pilltext" x="40" y="43">CANDIDATE A</text>
+    <text class="ink" x="24" y="88">Consistent large dialog</text>
+    <text class="muted" x="24" y="118">Keep stepper/tabs; standardize shell</text>
+    <rect x="22" y="146" width="386" height="585" rx="14" fill="#f5f6fa"/>
+    <rect x="43" y="166" width="344" height="540" rx="14" fill="#fff" stroke="#d7dcea" stroke-width="2"/>
+    <text class="ink" x="64" y="204" style="font-size:19px">Add expense</text><text class="small" x="340" y="204">×</text>
+    <text class="small" x="64" y="238">Step 2 / 6 · Amount</text>
+    <rect x="64" y="253" width="302" height="6" rx="3" fill="#e7e4f5"/><rect x="64" y="253" width="105" height="6" rx="3" fill="#6550c7"/>
+    <text class="small" x="64" y="293">Amount</text><rect class="field" x="64" y="302" width="302" height="54" rx="9"/><text class="ink" x="82" y="337">RM 42.80</text>
+    <text class="small" x="64" y="386">Currency</text><rect class="field" x="64" y="395" width="302" height="50" rx="9"/><text class="ink" x="82" y="427" style="font-size:17px">MYR  ▾</text>
+    <rect class="ok" x="64" y="466" width="302" height="46" rx="9"/><text class="small" x="78" y="494">Labels, hints and errors share one rhythm</text>
+    <line class="line" x1="64" y1="654" x2="366" y2="654"/>
+    <rect class="secondary" x="64" y="668" width="102" height="30" rx="8"/><text class="small" x="94" y="689">Back</text>
+    <rect class="button" x="268" y="668" width="98" height="30" rx="8"/><text class="buttontext" x="299" y="689">Next</text>
+    <text class="muted" x="26" y="730">Lowest migration risk; create/edit retain their current steps.</text>
+  </g>
+  <g transform="translate(970 112)">
+    <rect class="panel" width="430" height="760" rx="18"/>
+    <rect class="pill" x="24" y="22" width="128" height="30" rx="15"/><text class="pilltext" x="40" y="43">CANDIDATE B</text>
+    <text class="ink" x="24" y="88">Full-page workspace</text>
+    <text class="muted" x="24" y="118">More room for long forms and attachments</text>
+    <rect x="22" y="146" width="386" height="585" rx="14" fill="#fafbfe" stroke="#d7dcea" stroke-width="2"/>
+    <rect x="23" y="147" width="385" height="64" rx="14" fill="#fff"/>
+    <text class="small" x="44" y="175">‹ Back to Expenses</text><text class="ink" x="44" y="198" style="font-size:19px">Edit expense</text>
+    <rect x="42" y="230" width="346" height="42" rx="10" fill="#f1f2f7"/>
+    <rect class="button" x="44" y="232" width="106" height="38" rx="8"/><text class="buttontext" x="62" y="257">Details</text>
+    <text class="small" x="171" y="257">Payment</text><text class="small" x="274" y="257">Split</text>
+    <text class="small" x="44" y="310">Amount</text><rect class="field" x="44" y="319" width="346" height="50" rx="9"/><text class="ink" x="62" y="351">RM 42.80</text>
+    <text class="small" x="44" y="403">Category</text><rect class="field" x="44" y="412" width="346" height="50" rx="9"/><text class="ink" x="62" y="444" style="font-size:17px">Groceries   ▾</text>
+    <text class="small" x="44" y="495">Receipt</text><rect class="field" x="44" y="504" width="346" height="74" rx="9"/><text class="small" x="62" y="548">Attachment preview · OCR draft preserved</text>
+    <rect class="secondary" x="44" y="664" width="100" height="42" rx="9"/><text class="small" x="75" y="690">Cancel</text>
+    <rect class="button" x="288" y="664" width="102" height="42" rx="9"/><text class="buttontext" x="321" y="690">Save</text>
+    <text class="muted" x="26" y="730">More space; requires explicit navigation and draft rules.</text>
+  </g>
+  </g>
+  <g class="mobile">
+    <rect class="bg" width="1440" height="920"/>
+    <text class="mobile-title" x="48" y="72">Expense CRUD · design choices</text>
+    <rect class="panel" x="40" y="112" width="1360" height="236" rx="24"/>
+    <rect class="pill" x="72" y="136" width="226" height="54" rx="27"/><text class="mobile-tag" x="96" y="175">CURRENT</text>
+    <text class="mobile-heading" x="330" y="174">Stepper + three edit tabs</text>
+    <text class="mobile-body" x="72" y="239">Create steps and edit tabs use different layouts today.</text>
+    <text class="mobile-body" x="72" y="299">Receipt/OCR drafts, split data and revision must stay intact.</text>
+    <rect class="panel" x="40" y="368" width="1360" height="236" rx="24"/>
+    <rect class="pill" x="72" y="392" width="284" height="54" rx="27"/><text class="mobile-tag" x="96" y="431">CANDIDATE A</text>
+    <text class="mobile-heading" x="388" y="430">Large dialog shell</text>
+    <text class="mobile-body" x="72" y="495">Keep current steps and tabs; align labels, errors and footer.</text>
+    <text class="mobile-body" x="72" y="555">Lower migration risk; preserve create/edit semantics.</text>
+    <rect class="panel" x="40" y="624" width="1360" height="236" rx="24"/>
+    <rect class="pill" x="72" y="648" width="284" height="54" rx="27"/><text class="mobile-tag" x="96" y="687">CANDIDATE B</text>
+    <text class="mobile-heading" x="388" y="686">Full-page workspace</text>
+    <text class="mobile-body" x="72" y="751">More room for long forms, attachments and receipt review.</text>
+    <text class="mobile-body" x="72" y="811">Needs clear back, close, draft recovery and save behavior.</text>
+  </g>
+</svg>

@@ -1,10 +1,10 @@
 # Expense Manager - System Architecture
 
-> **UI 架構更新（2026-10-09）**：現行畫面路由、Dashboard 頁籤與導覽排列請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準；目前 UI 元件、樣式差異與後續統一候選請看 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。早期系統圖是簡化示意，不能用來推斷目前所有功能入口。
+> **UI 架構更新（2026-10-25）**：現行畫面路由、Dashboard 頁籤與導覽排列請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準；目前 UI 元件、樣式差異與後續統一候選請看 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。逐功能表單/CRUD 入口見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選互動和後續改檔計畫見 [UI 設計標準化文件組](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。早期系統圖是簡化示意，不能用來推斷目前所有功能入口。
 
 ## System Overview
 
-> 本文件保留歷史架構說明及資料流範例。現行目錄職責、主頁籤與完整功能地圖請先看 [完整功能與頁面文檔](FEATURES_AND_PAGES.md)；主要 method 與寫入流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) 和 [本機優先同步架構](OFFLINE_SYNC_ARCHITECTURE.md)，其中以 `web/src` 現況核對。
+> 本文件保留歷史架構說明及資料流範例。現行目錄職責、主頁籤與完整功能地圖請先看 [完整功能與頁面文檔](FEATURES_AND_PAGES.md)；主要 method 與寫入流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) 和 [本機優先同步架構](OFFLINE_SYNC_ARCHITECTURE.md)，其中以 `web/src` 現況核對。UI 元件的 CRUD 入口與逐階段調整範圍見 [UI 設計文件組](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。
 
 ### Current Implementation Layers
 

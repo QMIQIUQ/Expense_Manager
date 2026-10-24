@@ -1,6 +1,6 @@
 # Expense Manager UI 元件盤點與統一設計決策稿
 
-> 盤點基準：`origin/main`，commit `f864ecda8d28ebf45225d2b6aba15801b52ba872`（2026-10-25）
+> 程式碼盤點基準：`f864ecda8d28ebf45225d2b6aba15801b52ba872`（2026-10-25）。文件索引與新 UI 設計文件目前在 `main` 的 `7332790` 後更新；該文件 commit 沒有改動 app source。
 > 文件用途：先讓使用者選定要統一的外觀，再依本文件分階段修改。此文件只盤點與規劃，沒有修改 UI 程式。
 > 預覽圖由現有 CSS 與元件樣式重繪，是 SVG 示意圖，不是瀏覽器截圖；圖中的備選做法也不代表已採用。
 
@@ -33,6 +33,20 @@
 **編輯與狀態呈現**：對照目前三分頁、候選四分頁，以及進度/網路狀態密度。
 
 ![編輯與狀態版型比較](previews/edit-status.svg)
+
+**新增/編輯/刪除流程**：對照現行支出 stepper/tabs、共用 dialog 和全頁 workspace 方向。
+
+![支出 CRUD 流程目前與候選比較](previews/crud-flow-comparison.svg)
+
+**確認 dialog 與破壞性操作**：比較現行 modal、置中統一 dialog 和 drawer/sheet。
+
+![確認 dialog 目前與候選比較](previews/dialog-confirmation-comparison.svg)
+
+**同步狀態回饋**：區分本機保存、同步中、遠端確認和需處理操作。
+
+![離線同步狀態回饋目前與候選比較](previews/overlay-feedback-comparison.svg)
+
+更完整的功能 CRUD 入口及表單/overlay 流程見 [CRUD 流程盤點](CRUD_FLOW_AUDIT.md)；欄位、tabs、dialog/drawer 與狀態候選見 [互動模式候選](INTERACTION_PATTERN_CANDIDATES.md)；逐階段改動檔案和必須保留的資料邏輯見 [樣式標準化計畫](PATTERN_STANDARDIZATION_PLAN.md)。
 
 ## 2. 盤點範圍與方法
 
@@ -107,6 +121,8 @@
 | 表格/批次操作 | `MultiSelectToolbar.tsx`、支出列表/歷史列表 | 勾選列、批次操作與資料表格較局部，不能只套用一般卡片/表單規格。 |
 
 `BaseForm` 的直接消費者與實際掛載狀態請以上方掛載矩陣為準；統一表單外觀時仍須保留每個可達畫面的欄位、提交回呼和驗證方式。
+
+**Overlay 現況邊界：**目前 `PopupModal` 尚無 dialog ARIA 語意與 focus 管理；`ConfirmModal` 會先呼叫關閉 callback，再排程確認 callback。標準化時須以實際 consumer 的回呼語意重新設計，不能把候選互動當成目前行為。逐項證據見 [CRUD 流程與互動稽核](CRUD_FLOW_AUDIT.md)。
 
 ## 4. UI 元素類別與目前樣式
 

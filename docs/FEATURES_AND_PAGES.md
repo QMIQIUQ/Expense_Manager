@@ -4,7 +4,7 @@
 
 本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
 
-> 最後核對程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。
+> 最後核對功能程式碼：2026-10-17。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)，各操作入口及新增/檢視/編輯/刪除流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選外觀與修改順序見[互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md)及[逐階段標準化計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。
 
 ## 目錄 Table of Contents
 
@@ -25,11 +25,11 @@
 | 功能群組 | 包含功能 | 目前入口 / 主要實作 |
 |---|---|---|
 | 帳戶與存取 | 登入、註冊流程、登出、個人檔案、管理員工具 | `/` 登入；`/dashboard` 受 `PrivateRoute` 保護；Profile/Admin 從頁首選單開啟 |
-| 財務紀錄 | 支出、收入、分類、還款追蹤 | Dashboard 主頁籤；`ExpensesTab`、`IncomesTab`、`CategoryManager`、`RepaymentManager` |
+| 財務紀錄 | 支出、收入、分類、還款追蹤 | Dashboard 主頁籤；`ExpensesTab`、`IncomesTab`、`CategoryManager`；還款表單由 `ExpenseList` 開啟（非獨立管理頁） |
 | 預算與規劃 | 預算、預算模板/建議/歷史/結轉、定期付款、到期提醒 | `BudgetManager`；`ScheduledPaymentManager`（Recurring 主頁籤） |
 | 支付與帳戶 | 信用卡、電子錢包、銀行帳戶、轉帳 | Payment Methods 子頁籤：cards、ewallets、banks、transfers |
 | 分析與總覽 | 摘要卡、支出/分類圖表、趨勢、月比、標籤雲、預算進度、卡片摘要、分期追蹤、待付款、近期支出、追蹤支出、儲蓄目標、朋友支出、快速新增、即將到期帳單 | `CustomizableDashboard`、`DashboardSummary`、`dashboard/widgets/`、朋友支出服務 |
-| 快速輸入 | 快速記帳、一般/步驟式支出表單、掃描收據與 OCR 草稿 | Dashboard 浮動操作；`ExpenseForm`、`StepByStepExpenseForm`、`receiptOcrService` |
+| 快速輸入 | 快速記帳、步驟式支出表單、掃描收據與 OCR 草稿 | Dashboard 浮動操作；目前由 `StepByStepExpenseForm` 處理；`ExpenseForm.tsx` 存在但未掛載 |
 | 個人化 | 主頁籤順序/顯示、Dashboard Widget 排列、語言、主題、顯示幣別、日期捷徑 | Settings 頁籤、`DashboardCustomizer`、頁首/設定面板 |
 | 資料移轉 | CSV/Excel 匯入匯出 | 匯入匯出 Modal；`importExportUtils` |
 | 離線與安裝 | PWA 安裝、離線讀寫佇列、網路狀態、恢復同步 | PWA Provider/Service Worker、`offlineQueue`、`syncService`、同步狀態元件 |
@@ -152,7 +152,7 @@ main.tsx
 
 | 功能 | 類型 | 組件路徑 |
 |-----|------|---------|
-| 新增支出 | Modal/Sheet | `components/expenses/ExpenseForm.tsx` |
+| 新增支出 | Step-by-step form / receipt flow | `components/expenses/StepByStepExpenseForm.tsx`；`ExpenseForm.tsx` 目前未掛載 |
 | 編輯支出 | PopupModal | `ExpenseList.tsx` → `PopupModal` |
 | 新增收入 | Form | `components/income/IncomeForm.tsx` |
 | 編輯收入 | PopupModal | `IncomeList.tsx` → `PopupModal` |
@@ -163,8 +163,8 @@ main.tsx
 | 新增信用卡 | PopupModal | `CardManager.tsx` → `PopupModal` |
 | 編輯信用卡 | PopupModal | `CardManager.tsx` → `PopupModal` |
 | 確認刪除 | ConfirmModal | `components/ConfirmModal.tsx` |
-| 還款管理 | Inline/Modal | `components/repayment/` |
-| 轉帳管理 | Modal | `components/transfer/` |
+| 還款管理 | 支出項目內的 modal | `components/expenses/ExpenseList.tsx` → `RepaymentForm.tsx`；`components/repayment/RepaymentManager.tsx` / `RepaymentList.tsx` 為未掛載舊管理鏈 |
+| 轉帳管理 | Payment Methods transfers 清單 | `components/payment/PaymentMethodsTab.tsx` → `TransferList.tsx`；目前 production 掛載鏈沒有新增表單入口，`TransferForm.tsx` 未掛載 |
 | 預算模板 | Modal | `components/budgets/BudgetTemplates.tsx` |
 | 數據導入匯出 | Modal | `components/importexport/` |
 
@@ -251,6 +251,8 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 - 點擊背景關閉
 - 防止背景滾動
 
+**目前互動與無障礙邊界**：`PopupModal` 已有 Portal、ESC／背景關閉與背景捲動鎖定；目前 modal 容器尚未設定 `role="dialog"`、`aria-modal`、標題關聯，也沒有初始焦點、焦點限制或關閉後焦點返回。這些是標準化候選，不是現行行為。詳細核對與建議見 [CRUD 流程與互動稽核](ui-standardization/CRUD_FLOW_AUDIT.md)。
+
 ### BaseForm 基礎表單
 
 **路徑**: `components/common/BaseForm.tsx`
@@ -268,6 +270,8 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 - 刪除確認
 - 危險操作確認
 - 批量刪除確認
+
+**目前確認順序**：按下確認後，元件先呼叫 `onCancel()` 關閉視窗，再以 `setTimeout(..., 0)` 呼叫 `onConfirm()`；目前沒有等待非同步確認結果或顯示確認中狀態。容器也尚未提供 `alertdialog` 語意或焦點管理。若要標準化，需把「關閉視窗」與「取消操作」分開，並先盤點各 consumer 的 callback 語意；完整依據見 [CRUD 流程與互動稽核](ui-standardization/CRUD_FLOW_AUDIT.md)。
 
 ### FormPopup 表單彈窗包裝器
 
@@ -405,7 +409,7 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 
 ### 10. 還款管理 Repayment Management
 
-**組件**: `components/repayment/`
+**目前可達 UI**: `components/expenses/ExpenseList.tsx` 開啟 `components/expenses/RepaymentForm.tsx`；`components/repayment/RepaymentManager.tsx` / `RepaymentList.tsx` 是未掛載舊管理鏈。各操作流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)。
 
 | 功能 | 描述 |
 |------|------|
@@ -416,7 +420,7 @@ Use the default (non-chromeless) `PopupModal` style when the dialog content is *
 
 ### 11. 轉帳管理 Transfer Management
 
-**組件**: `components/transfer/`
+**目前可達 UI**: Payment Methods 的 transfers 子頁掛載 `components/transfer/TransferList.tsx`；目前沒有可達的新增表單入口，`TransferForm.tsx` 未掛載。各操作流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)。
 
 | 功能 | 描述 |
 |------|------|

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">Overlay and sync feedback options</title>
+  <desc id="desc">Three columns compare current scattered messages, a row status with toast, and a persistent sync status surface.</desc>
+  <defs><style>.bg{fill:#f4f6fb}.panel{fill:#fff;stroke:#d9deeb;stroke-width:2}.ink{fill:#222b42;font:600 22px Arial,sans-serif}.muted{fill:#66718a;font:16px Arial,sans-serif}.small{fill:#66718a;font:14px Arial,sans-serif}.tiny{fill:#66718a;font:12px Arial,sans-serif}.pill{fill:#eeeaff}.pt{fill:#5039a6;font:600 14px Arial,sans-serif}.line{stroke:#e1e5ed;stroke-width:1.5}.green{fill:#e8f6ef;stroke:#b9e3cb}.amber{fill:#fff5dc;stroke:#ecd28d}.red{fill:#fff0ef;stroke:#edc5c0}.purple{fill:#6550c7}.white{fill:#fff;font:600 13px Arial,sans-serif}.gray{fill:#f5f6fa}.mobile-title{fill:#222b42;font:700 54px Arial,sans-serif}.mobile-heading{fill:#222b42;font:700 46px Arial,sans-serif}.mobile-body{fill:#526078;font:42px Arial,sans-serif}.mobile-tag{fill:#5039a6;font:700 36px Arial,sans-serif}.desktop{display:inline}.mobile{display:none}@media(max-width:600px){.desktop{display:none}.mobile{display:inline}}</style></defs>
+  <g class="desktop">
+  <rect class="bg" width="1440" height="760"/>
+  <text class="ink" x="44" y="52" style="font-size:30px">Local save, cloud sync and recoverable errors</text>
+  <text class="muted" x="44" y="82">The message must say which stage completed; a toast cannot stand in for durable queue state.</text>
+  <g transform="translate(40 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="110" height="30" rx="15"/><text class="pt" x="39" y="41">CURRENT</text>
+    <text class="ink" x="22" y="82">Messages in multiple places</text>
+    <text class="small" x="22" y="108">Status, network indicator and toast differ</text>
+    <rect class="gray" x="20" y="133" width="390" height="66" rx="10"/>
+    <text class="tiny" x="38" y="158">HEADER</text><text class="small" x="38" y="181">Network available  ·  Sync 2</text>
+    <rect class="green" x="73" y="229" width="323" height="62" rx="10"/>
+    <text class="small" x="92" y="255" style="font-weight:bold">Saved offline</text><text class="tiny" x="92" y="277">Short message may disappear</text>
+    <rect x="20" y="320" width="390" height="206" rx="12" fill="#fff" stroke="#e1e5ed" stroke-width="1.5"/>
+    <text class="small" x="38" y="354" style="font-weight:bold">Recent expense</text><text class="small" x="38" y="389">Groceries</text><text class="small" x="338" y="389">RM 42.80</text>
+    <line class="line" x1="38" y1="407" x2="390" y2="407"/>
+    <text class="tiny" x="38" y="436">No persistent per-row sync state</text>
+    <text class="small" x="22" y="568">Challenge: local save can be mistaken for cloud sync.</text>
+  </g>
+  <g transform="translate(505 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="128" height="30" rx="15"/><text class="pt" x="38" y="41">CANDIDATE A</text>
+    <text class="ink" x="22" y="82">Row status + short toast</text>
+    <text class="small" x="22" y="108">Keep state near the changed record</text>
+    <rect x="20" y="133" width="390" height="58" rx="10" fill="#f3f4f8"/>
+    <text class="small" x="38" y="158" style="font-weight:bold">Local changes</text><text class="tiny" x="38" y="179">2 waiting to sync</text>
+    <rect x="20" y="218" width="390" height="75" rx="12" fill="#fff" stroke="#e1e5ed" stroke-width="1.5"/>
+    <text class="small" x="38" y="248" style="font-weight:bold">Groceries</text><text class="small" x="338" y="248">RM 42.80</text>
+    <rect class="green" x="38" y="260" width="185" height="24" rx="12"/><text class="tiny" x="51" y="277">Saved on this device</text>
+    <rect class="amber" x="20" y="317" width="390" height="61" rx="10"/>
+    <text class="small" x="38" y="342" style="font-weight:bold">Syncing · 2 changes</text><text class="tiny" x="38" y="364">This indicator stays until confirmed</text>
+    <rect class="green" x="20" y="398" width="390" height="54" rx="10"/>
+    <text class="small" x="38" y="430" style="font-weight:bold">Cloud confirmed</text>
+    <rect class="red" x="20" y="472" width="390" height="80" rx="10"/>
+    <text class="small" x="38" y="499" style="font-weight:bold">Needs attention</text><text class="tiny" x="38" y="522">Review or retry · operation is retained</text>
+    <text class="small" x="22" y="580">Clear per-record context; needs queue details.</text>
+  </g>
+  <g transform="translate(970 112)">
+    <rect class="panel" width="430" height="600" rx="18"/>
+    <rect class="pill" x="22" y="20" width="128" height="30" rx="15"/><text class="pt" x="38" y="41">CANDIDATE B</text>
+    <text class="ink" x="22" y="82">Persistent sync surface</text>
+    <text class="small" x="22" y="108">One place for queue count and recovery</text>
+    <rect x="20" y="133" width="390" height="262" rx="14" fill="#fff" stroke="#d9deeb" stroke-width="2"/>
+    <rect x="20" y="133" width="390" height="62" rx="14" fill="#f5f3ff"/>
+    <text class="ink" x="40" y="169" style="font-size:18px">Local sync</text><text class="small" x="326" y="169">2 pending</text>
+    <circle cx="53" cy="225" r="8" fill="#d49a20"/><text class="small" x="72" y="230" style="font-weight:bold">Syncing changes</text><text class="tiny" x="72" y="250">The app will retry in the background</text>
+    <line class="line" x1="40" y1="270" x2="390" y2="270"/>
+    <circle cx="53" cy="303" r="8" fill="#c44545"/><text class="small" x="72" y="308" style="font-weight:bold">1 item needs review</text><text class="tiny" x="72" y="330">Your local change is retained</text>
+    <rect x="72" y="345" width="116" height="32" rx="8" fill="#6550c7"/><text class="white" x="98" y="366">Review items</text>
+    <rect class="green" x="20" y="420" width="390" height="65" rx="10"/>
+    <text class="small" x="38" y="447" style="font-weight:bold">Saved on this device</text><text class="tiny" x="38" y="469">Cloud confirmation shown after receipt</text>
+    <rect class="red" x="20" y="507" width="390" height="58" rx="10"/>
+    <text class="small" x="38" y="532" style="font-weight:bold">Cloud rejected this change</text><text class="tiny" x="38" y="552">View error · retry or resolve</text>
+    <text class="small" x="22" y="590">Best recovery context; occupies more page space.</text>
+  </g>
+  <text class="muted" x="44" y="742">All states should be event-driven. Keep “saved locally”, “syncing”, “confirmed” and “needs attention” distinct.</text>
+  </g>
+  <g class="mobile">
+    <rect class="bg" width="1440" height="760"/>
+    <text class="mobile-title" x="48" y="72">Sync feedback choices</text>
+    <rect class="panel" x="40" y="104" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="124" width="226" height="52" rx="26"/><text class="mobile-tag" x="96" y="161">CURRENT</text>
+    <text class="mobile-heading" x="330" y="160">Status + toast are separate</text>
+    <text class="mobile-body" x="72" y="218">A short “saved offline” message may disappear.</text>
+    <text class="mobile-body" x="72" y="264">Users can confuse local acceptance with cloud sync.</text>
+    <rect class="panel" x="40" y="296" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="316" width="284" height="52" rx="26"/><text class="mobile-tag" x="96" y="353">CANDIDATE A</text>
+    <text class="mobile-heading" x="388" y="352">Row status + toast</text>
+    <text class="mobile-body" x="72" y="410">Keep local save and sync state beside the changed row.</text>
+    <text class="mobile-body" x="72" y="456">Needs-attention keeps a visible retry/review path.</text>
+    <rect class="panel" x="40" y="488" width="1360" height="180" rx="24"/>
+    <rect class="pill" x="72" y="508" width="284" height="52" rx="26"/><text class="mobile-tag" x="96" y="545">CANDIDATE B</text>
+    <text class="mobile-heading" x="388" y="544">Persistent sync surface</text>
+    <text class="mobile-body" x="72" y="602">One place for pending count and retained operations.</text>
+    <text class="mobile-body" x="72" y="648">Better recovery context, but uses more page space.</text>
+  </g>
+</svg>
