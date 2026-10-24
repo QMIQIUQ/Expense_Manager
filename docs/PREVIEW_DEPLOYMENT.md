@@ -100,7 +100,7 @@ Preview deployments expire after 7 days of the last update. This helps keep Fire
   - `FIREBASE_SERVICE_ACCOUNT` (required for Firebase GitHub Action)
   - All VITE_FIREBASE_* secrets for build
 - Check GitHub Actions is enabled for the repository
-- Ensure Node.js 20 is being used in the workflow
+- Ensure the workflow uses Node.js 24 LTS from the repository's `.nvmrc`
 
 ### Preview URL Not Working (预览 URL 不工作)
 

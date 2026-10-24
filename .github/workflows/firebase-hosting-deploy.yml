@@ -14,14 +14,14 @@ jobs:
       checks: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Install dependencies
         working-directory: web
@@ -47,13 +47,13 @@ jobs:
 
       - name: Authenticate Google Cloud
         if: steps.firestore-changes.outputs.rules_changed == 'true' || steps.firestore-changes.outputs.indexes_changed == 'true'
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Set up Google Cloud CLI
         if: steps.firestore-changes.outputs.rules_changed == 'true' || steps.firestore-changes.outputs.indexes_changed == 'true'
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: expense-manager-41afb
 
