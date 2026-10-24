@@ -12,7 +12,7 @@ const ReceiptAttachmentPanel: React.FC<{ expense: Expense; openPickerRequest?: n
   const userId = currentUser?.uid ?? ''; const scope = `${userId}:${expense.id}`;
   const active = useRef(scope); active.current = scope;
   const { rows, complete, error: readError, reload } = useReceiptAttachments(userId, expense.id ?? '');
-  const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [showArchived, setShowArchived] = useState(false); const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [showArchived, setShowArchived] = useState(false); const [showSourcePicker, setShowSourcePicker] = useState(false); const [showHelp, setShowHelp] = useState(false);
   const [preview, setPreview] = useState<{ scope: string; url: string; row: ReceiptAttachment }>();
   const serial = useRef(0); const mounted = useRef(true); const handledPickerRequest = useRef(0);
   const upload = useRef<HTMLInputElement>(null); const camera = useRef<HTMLInputElement>(null);
@@ -46,7 +46,9 @@ const ReceiptAttachmentPanel: React.FC<{ expense: Expense; openPickerRequest?: n
     });
   };
   const pending = offlineQueue.getAll().filter((operation) => operation.entity === 'receiptAttachment' && (operation.payload as ReceiptAttachment)?.userId === userId && (operation.payload as ReceiptAttachment)?.expenseId === expense.id);
-  return <section className="ledger-panel receipt-attachment-panel"><h4>{t('receiptArchiveTitle')}</h4><p>{t('receiptArchiveLimit')}</p>
+  return <section className="receipt-attachment-panel">
+    <div className="receipt-attachment-heading"><h4>{t('receiptArchiveTitle')}</h4><button type="button" className="receipt-attachment-help-button" aria-label={t('ledgerHelp')} aria-expanded={showHelp} aria-controls={`receipt-help-${expense.id}`} onClick={() => setShowHelp((open) => !open)}>?</button></div>
+    <p id={`receipt-help-${expense.id}`} className="receipt-attachment-help" role="note" hidden={!showHelp}>{t('receiptArchiveLimit')}</p>
     <input ref={upload} aria-label={t('receiptArchiveChoose')} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={busy} onChange={handleFileChange} />
     <input ref={camera} aria-label={t('receiptTakePhoto')} type="file" accept="image/*" capture="environment" disabled={busy} onChange={handleFileChange} />
     <div className="ledger-row"><button type="button" disabled={busy} onClick={() => setShowSourcePicker(true)}>{t('receiptArchiveUpload')}</button><button type="button" disabled={busy} onClick={reload}>{t('receiptArchiveRefresh')}</button>

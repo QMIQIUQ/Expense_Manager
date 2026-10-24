@@ -38,7 +38,6 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
   }, []);
   if (!userId) return null;
   const availableTags = rows.filter((tag) => !tag.archived || value.includes(tag.id));
-  const selectedTags = availableTags.filter((tag) => value.includes(tag.id));
   const matchingTag = rows.find((tag) => !tag.archived && normalizeTagName(tag.name) === normalizeTagName(name));
   const canAdd = !!name.trim() && (
     matchingTag
@@ -96,33 +95,25 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
           {t('add')}
         </button>
       </div>
-      {selectedTags.length > 0 && (
-        <div className="expense-tag-selected-chips" aria-label={t('ledgerTags')}>
-          {selectedTags.map((tag) => (
-            <span className="expense-tag-chip" key={tag.id} style={{ borderColor: tag.color }}>
-              <span style={{ color: tag.color }}>{tag.name}{tag.archived ? ` (${t('ledgerArchived')})` : ''}</span>
-              <button type="button" aria-label={`${t('ledgerRemoveTag')} ${tag.name}`} onClick={() => onChange(value.filter((id) => id !== tag.id))}>×</button>
-            </span>
-          ))}
-        </div>
-      )}
       {availableTags.length > 0 && (
-        <details className="expense-tag-picker-options">
-          <summary>{t('ledgerChooseTags')}</summary>
-          <div className="ledger-chips">
+        <div className="expense-tag-picker-options" role="group" aria-label={t('ledgerChooseTags')}>
+          <div className="expense-tag-picker-options-label">{t('ledgerChooseTags')}</div>
+          <div className="expense-tag-picker-options-list">
             {availableTags.map((tag) => (
-              <label key={tag.id}>
-                <input
-                  type="checkbox"
-                  checked={value.includes(tag.id)}
-                  disabled={!value.includes(tag.id) && (tag.archived || value.length >= 10)}
-                  onChange={(event) => onChange(event.target.checked ? [...value, tag.id] : value.filter((id) => id !== tag.id))}
-                />
+              <button
+                type="button"
+                key={tag.id}
+                className="expense-tag-option"
+                aria-pressed={value.includes(tag.id)}
+                disabled={!value.includes(tag.id) && (tag.archived || value.length >= 10)}
+                onClick={() => onChange(value.includes(tag.id) ? value.filter((id) => id !== tag.id) : [...value, tag.id])}
+              >
+                <span className="expense-tag-option-indicator" aria-hidden="true">{value.includes(tag.id) ? '✓' : '+'}</span>
                 <span style={{ color: tag.color }}>{tag.name}{tag.archived ? ` (${t('ledgerArchived')})` : ''}</span>
-              </label>
+              </button>
             ))}
           </div>
-        </details>
+        </div>
       )}
       {(error || readError) && <p role="alert">{error || t('errorLoadingData')}</p>}
     </PickerContainer>

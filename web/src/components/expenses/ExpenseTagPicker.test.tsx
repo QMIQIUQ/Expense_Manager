@@ -19,7 +19,7 @@ describe('ExpenseTagPicker', () => {
     vi.mocked(expenseTagService.save).mockReset().mockResolvedValue('new-tag');
   });
 
-  it('keeps the compact tag field consistent and allows selecting an existing tag', () => {
+  it('shows existing tags immediately and allows toggling a selection', () => {
     const onChange = vi.fn();
     const { container } = render(
       <LanguageProvider>
@@ -30,11 +30,11 @@ describe('ExpenseTagPicker', () => {
     expect(container.querySelector('.expense-tag-picker-compact')).toBeInTheDocument();
     expect(screen.getByText('Tags')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'New tag' })).toBeInTheDocument();
-    const options = container.querySelector('details.expense-tag-picker-options') as HTMLDetailsElement;
-    fireEvent.click(screen.getByText('Choose from existing tags'));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Trip' }));
+    expect(screen.getByText('Existing tags · tap to toggle')).toBeInTheDocument();
+    const tag = screen.getByRole('button', { name: 'Trip' });
+    expect(tag).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(tag);
 
-    expect(options.open).toBe(true);
     expect(onChange).toHaveBeenCalledWith(['trip']);
   });
 

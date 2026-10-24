@@ -66,7 +66,7 @@ export const translations = {
   ledgerDuplicateIncomplete: { en: 'Duplicate checking is incomplete. Some records could not be checked. You can still add this expense.', zh: '無法完整查重，部分紀錄尚未取得。你仍可自行決定是否新增。', 'zh-CN': '无法完整查重，部分记录尚未取得。你仍可自行决定是否新增。' },
   ledgerAddAnyway: { en: 'Add anyway', zh: '仍然新增', 'zh-CN': '仍然新增' },
   ledgerTags: { en: 'Tags', zh: '標籤', 'zh-CN': '标签' },
-  ledgerChooseTags: { en: 'Choose from existing tags', zh: '選擇既有標籤', 'zh-CN': '选择已有标签' },
+  ledgerChooseTags: { en: 'Existing tags · tap to toggle', zh: '既有標籤・點擊即可選取或取消', 'zh-CN': '已有标签・点击即可选择或取消' },
   ledgerRemoveTag: { en: 'Remove tag', zh: '移除標籤', 'zh-CN': '移除标签' },
   now: { en: 'Now', zh: '現在', 'zh-CN': '现在' },
   ledgerNewTag: { en: 'New tag', zh: '新增標籤', 'zh-CN': '新增标签' },
