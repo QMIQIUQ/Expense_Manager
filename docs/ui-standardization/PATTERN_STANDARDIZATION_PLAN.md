@@ -1,6 +1,6 @@
 # UI 樣式統一：逐階段檔案與邏輯計畫
 
-> 執行狀態：UI 共用幾何/tokens 已完成；本文件保留逐階段檔案清單、資料邏輯保護與未來 interaction/layout 改版的細節。程式基準：`origin/main@884d3bed2c523c6bd1290abdab25c241d8981e78`（2026-10-25）。本次 UI source 改動只調整 styles/classes/tokens；financial/local-first handlers 和 services 未修改。
+> 狀態：shared UI tokens 與 global baseline 已存在；`main@a9a9d7c` 的 per-screen audit 仍發現欄位、labels、switch 和 feedback 的 local overrides。此文件保留逐階段檔案清單、資料邏輯保護與候選實作細節，尚未代表全站逐檔修改已完成。此輪只整理 source audit / 文件，沒有修改 product UI 程式。此輪程式基準：`main@a9a9d7c`（2026-10-25）。
 
 共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐 production TSX 和 CSS 的目前 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
 
@@ -20,7 +20,7 @@
 
 **工作步驟**
 
-1. 以 `origin/main@884d3be` 的 mounted route/component tree 作為 source baseline；畫面位置和未掛載 source 區分見元件盤點。
+1. 以 `main@a9a9d7c` 的 mounted route/component tree 作為 source baseline；畫面位置和未掛載 source 區分見元件盤點。
 2. 幾何採用本計畫的 semantic tokens：44px 一般 controls/actions、36px compact icon actions、8px control/12px card/16px dialog radius；primary/secondary/danger 顏色仍依操作語意和 theme。
 3. 不以視覺 token migration 重新設計支出 create/OCR/edit、分類/tag、repayment、導航、確認/同步/離線狀態流程。
 4. 對照 [CRUD 流程盤點](CRUD_FLOW_AUDIT.md)，保留 mounted status；`TransferForm`、legacy `RepaymentManager`/`RecurringExpenseManager` 等 unmounted source 不當作目前畫面。

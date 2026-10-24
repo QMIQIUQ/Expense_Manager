@@ -58,6 +58,23 @@ The source matrix includes exact-value aliases named --ui-font-…, --ui-radius-
 
 Text, date and number inputs, selects and textareas keep native element types and form behavior. They share the same border, text color, accent focus, control radius and minimum target height. Checkbox and radio remain native controls with an 18px target and theme accent; file and color inputs keep their specialized native presentation. The styling layer does not replace native values, event handlers, refs, autofill, IME or date behavior.
 
+### Field and label variants
+
+The shared native-control rule is the default: 44px minimum height, 14px text at the default root scale, 8px vertical/12px horizontal padding, 1px theme-aware border, 8px radius, and the theme-accent `:focus-visible` ring. Textareas may grow beyond their 88px minimum. An inline declaration or utility class can still override this default, so the existence of the shared rule does not mean every mounted field currently matches it.
+
+Use named variants when the task selects them:
+
+| Variant | Intended use | Rule |
+|---|---|---|
+| Standard | Ordinary text, number, select and multiline fields | Inherit the native baseline above. |
+| Compact | Dense filter/toolbars | Share documented type, radius and spacing tokens; keep a 44px target unless the user accepts a smaller target for that specific control. |
+| Prominent | Main amount or mobile-first entry fields | May retain 16px text and a stronger border; document the reason and keep the shared theme and focus treatment. |
+| Specialized | Date picker composition, autocomplete, currency selector, embedded ledger controls | Preserve the interaction and inner/outer sizing together; verify computed sizes before changing either layer. |
+
+The current source has multiple field-label sizes: the shared/native label rule and `Label.tsx` use the 14px scale, `.form-label` and BudgetManager use 12px, and PaymentMethodSelector has 13px labels. Treating every label as interchangeable would lose secondary/help hierarchy. A follow-up should define explicit standard and secondary label roles and migrate each screen intentionally. Validation messages also use different local structures; keep their current association with fields until a shared accessible pattern is selected.
+
+The current audit and per-screen checklist are in [UI 元件盤點與統一設計決策稿](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md). The illustrated SVGs are design previews, not authenticated browser captures. Source findings do not substitute for checking computed styles at mobile and desktop widths.
+
 ---
 
 ## 2. Button system

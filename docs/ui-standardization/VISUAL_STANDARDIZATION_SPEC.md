@@ -1,12 +1,12 @@
 # UI 視覺統一規格
 
-> 狀態：已實作。共用控制外觀、文字層級、圓角、spacing 與 focus tokens 已接入 app；預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。盤點基準為 origin/main 884d3be（2026-10-25）。
+> 狀態：共用控制外觀、文字層級、圓角、spacing 與 focus baseline 已接入 app；部分 screen 的 inline style / utility 仍覆寫共用欄位與 labels，並非所有畫面已逐檔統一。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。source audit 基準為 `main@a9a9d7c`（2026-10-25）；逐畫面差異與待選方案見 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md)。
 
 ## 預覽
 
 ![已實作規格的欄位、按鈕、checkbox、卡片與 dialog，在預設亮色、預設暗色和 Warm Kitty 亮色的向量示意](previews/unified-ui-system.svg)
 
-預覽顯示實作採用的幾何規則與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖。所有 production TSX/CSS 的逐檔覆蓋數字見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
+預覽顯示共用規格的幾何與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖，也不代表 local overrides 已在每個畫面清除。所有 production TSX/CSS 的逐檔覆蓋數字見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
 
 ## 共用規格
 
