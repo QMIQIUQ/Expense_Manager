@@ -18,8 +18,14 @@
 .expense-tag-picker-compact > legend, .expense-receivable-panel > legend { max-width: 100%; padding: 0 6px; color: var(--text-primary); font-size: 14px; font-weight: 700; line-height: 1.35; }
 .expense-tag-picker-inline { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); }
 .expense-tag-picker-inline .expense-tag-picker-label { margin: 0 0 8px; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
-.expense-tag-picker-inline .expense-tag-picker-input-row { margin: 0; }
-.expense-tag-picker-inline .expense-tag-picker-options { margin-top: 7px; }
+.expense-tag-picker-inline .expense-tag-picker-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 0; }
+.expense-tag-picker-inline .expense-tag-picker-input-row > input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; }
+.expense-tag-picker-inline .expense-tag-picker-input-row > button { min-height: 42px; white-space: nowrap; }
+.expense-tag-picker-inline .expense-tag-selected-chips { margin: 5px 0 0; }
+.expense-tag-picker-inline .expense-tag-chip { border: 0; padding: 2px 2px 2px 0; background: transparent; }
+.expense-tag-picker-inline .expense-tag-picker-options { margin-top: 5px; padding: 0; border: 0; background: transparent; }
+.expense-tag-picker-inline .expense-tag-picker-options > summary { display: inline-flex; padding: 0; border: 0; background: transparent; font: inherit; }
+.expense-tag-picker-inline .expense-tag-picker-options .ledger-chips { gap: 6px; margin: 5px 0 0; padding: 0; border: 0; background: transparent; }
 .expense-tag-picker-compact .expense-tag-picker-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 6px 0; }
 .expense-tag-picker-compact .expense-tag-picker-input-row > input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; }
 .expense-tag-picker-compact .expense-tag-picker-input-row > button { min-height: 44px; white-space: nowrap; }
@@ -32,7 +38,11 @@
 .expense-tag-picker-options .ledger-chips { margin: 6px 0; }
 .expense-receivable-toggle { display: flex !important; align-items: center; gap: 10px !important; width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); font-weight: 600; cursor: pointer; }
 .expense-receivable-toggle input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--accent-primary); }
-.expense-receivable-hint, .expense-split-editor-fields > p:first-child { margin: 7px 0 9px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.expense-receivable-help { margin: 6px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.expense-receivable-help p { margin: 0; }
+.expense-receivable-help p + p { margin-top: 5px; }
+.expense-receivable-panel .expense-help-button { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-inline-start: 6px; padding: 0; border: 1px solid var(--border-color); border-radius: 50%; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; line-height: 1; cursor: pointer; vertical-align: middle; }
+.expense-receivable-legend { display: flex; align-items: center; gap: 3px; }
 .expense-receivable-status { margin: 0; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--success-text) 10%, var(--bg-secondary)); color: var(--success-text, var(--text-primary)); font-size: 12px; font-weight: 600; line-height: 1.45; }
 .expense-transfer-edit-note { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .expense-transfer-edit-note > span { flex: 1 1 220px; min-width: 0; }
@@ -106,16 +116,23 @@
 .expense-edit-tab { flex: 1 0 110px; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); color: var(--text-secondary); font: inherit; line-height: 1.3; white-space: normal; }
 .expense-edit-tab[aria-selected="true"] { border-color: var(--accent-primary); background: var(--accent-light); color: var(--text-primary); font-weight: 650; }
 .expense-edit-tabpanel { min-width: 0; max-height: min(72dvh, 820px); overflow-y: auto; padding: 0 12px 8px; }
-.expense-edit-form .stepContent { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; padding: 14px 4px; }
-.expense-edit-section + .expense-edit-section { margin-top: 8px; border-top: 1px solid var(--border-color); }
+.expense-edit-tabpanel-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; align-items: start; }
+.expense-edit-tabpanel-details .expense-edit-section { min-width: 0; margin: 0; border: 0; }
+.expense-edit-tabpanel-details .expense-edit-section:nth-child(3) { grid-column: 1 / -1; }
+.expense-edit-section + .expense-edit-section { margin-top: 4px; border-top: 0; }
 .expense-edit-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
 .expense-edit-actions > button { min-width: 96px; min-height: 42px; }
-.expense-edit-form .expense-tag-picker-compact { margin-top: 8px; }
+.expense-edit-form .expense-lower-options { gap: 8px; margin-top: 8px; }
+.expense-edit-form .expense-receivable-panel { padding: 10px; }
+.expense-edit-form .expense-receivable-toggle { min-height: 38px; padding: 6px 8px; border: 0; background: transparent; }
+.expense-edit-form .expense-tag-picker-inline { margin-top: 4px; }
 
 @media (max-width: 480px) {
   .expense-edit-tabs { padding-inline: 10px; }
   .expense-edit-tab { flex-basis: 104px; padding: 7px 8px; font-size: 13px; }
   .expense-edit-tabpanel { max-height: min(68dvh, 720px); padding-inline: 10px; }
+  .expense-edit-tabpanel-details { grid-template-columns: minmax(0, 1fr); }
+  .expense-edit-tabpanel-details .expense-edit-section:nth-child(3) { grid-column: auto; }
   .expense-edit-actions { padding: 10px; }
   .expense-edit-actions > button { flex: 1; }
 }

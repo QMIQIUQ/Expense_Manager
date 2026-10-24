@@ -37,6 +37,7 @@ export const translations = {
   ledgerReconciledSnapshot: { en: 'Snapshot reconciled. Later transaction edits require another review.', zh: '此快照已完成對帳，之後若修改交易需重新核對。', 'zh-CN': '此快照已完成对账，之后若修改交易需重新核对。' },
   ledgerSplit: { en: 'Split breakdown', zh: '分攤明細', 'zh-CN': '分摊明细' },
   ledgerReceivableTitle: { en: 'Expense split and amount owed', zh: '支出分攤與待收款', 'zh-CN': '支出分摊与待收款' },
+  ledgerHelp: { en: 'Show explanation', zh: '顯示說明', 'zh-CN': '显示说明' },
   ledgerTrackReceivable: { en: 'Track money owed to me', zh: '啟用待收款追蹤', 'zh-CN': '启用待收款追踪' },
   ledgerReceivableHint: { en: 'This is the repayment plan only and does not change the expense or budget. Record money received once from the expense details.', zh: '這裡只設定應收計畫，不會改變支出或預算；實際收到款項時，再從支出明細新增還款。', 'zh-CN': '这里只设置应收计划，不会改变支出或预算；实际收到款项时，再从支出详情新增还款。' },
   ledgerSplitTrackingEnabled: { en: 'Amount owed is set. When money arrives, record it once from the expense details.', zh: '應收金額已設定；實際收到款項時，從支出明細登記一次還款即可。', 'zh-CN': '应收金额已设置；实际收到款项时，从支出详情登记一次还款即可。' },

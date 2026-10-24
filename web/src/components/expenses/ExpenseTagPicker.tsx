@@ -77,7 +77,7 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
   const PickerContainer = frameless ? 'div' : 'fieldset';
   return (
     <PickerContainer
-      className={`expense-tag-picker ${compact ? 'expense-tag-picker-compact' : ''} ${frameless ? 'expense-tag-picker-inline' : 'ledger-panel'}`}
+      className={`expense-tag-picker ${compact && !frameless ? 'expense-tag-picker-compact' : ''} ${frameless ? 'expense-tag-picker-inline' : 'ledger-panel'}`}
       role={frameless ? 'group' : undefined}
       aria-label={frameless ? t('ledgerTags') : undefined}
       onKeyDown={(event) => { if (event.key === 'Enter') event.stopPropagation(); }}
@@ -93,7 +93,7 @@ export const ExpenseTagPicker: React.FC<{ userId?: string; value: string[]; onCh
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); void create(); } }}
         />
         <button type="button" disabled={busy || !canAdd} onClick={() => { void create(); }}>
-          {matchingTag ? t('add') : t('ledgerNewTag')}
+          {t('add')}
         </button>
       </div>
       {selectedTags.length > 0 && (

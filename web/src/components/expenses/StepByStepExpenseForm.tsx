@@ -1363,7 +1363,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 timeFormat={timeFormat}
                 name="receipt-review-time"
               />
-              <div style={styles.fieldContainer}>
+              <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>{t('currency')}</label>
                 <select
                   value={receiptReviewFormData.currency}
@@ -1377,7 +1377,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                   ))}
                 </select>
               </div>
-              <div style={styles.fieldContainer}>
+              <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>{receiptTexts.reviewAmount}</label>
                 {receiptReviewLineItems.length > 0 ? (
                   <div style={{
@@ -1406,7 +1406,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             </div>
 
-            <div style={styles.fieldContainer}>
+            <div style={fieldContainerStyle}>
               <label style={styles.fieldLabel}>{t('description')}</label>
               <input
                 type="text"
@@ -1417,7 +1417,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               />
             </div>
 
-            <div style={styles.fieldContainer}>
+            <div style={fieldContainerStyle}>
               <label style={styles.fieldLabel}>{t('selectCategory')}</label>
               <select
                 value={receiptReviewFormData.category}
@@ -1450,7 +1450,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             />
 
             {receiptReviewLineItems.length > 0 && (
-              <div style={styles.fieldContainer}>
+              <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>{t('amountDetails')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {receiptReviewLineItems.map((item, index) => (
@@ -1617,6 +1617,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     </div>
   );
 
+  const stepContentStyle = initialData
+    ? { ...styles.stepContent, ...styles.editStepContent }
+    : styles.stepContent;
+  const fieldContainerStyle = initialData ? styles.editFieldContainer : styles.fieldContainer;
+
   const renderStepContent = (step: Step = currentStep) => {
     switch (step) {
       case STEP_RECEIPT: {
@@ -1626,7 +1631,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
       case 1: {
         const isNotToday = formData.date !== getTodayLocal();
         return (
-          <div style={{ ...styles.stepContent, overflow: 'visible', overflowY: 'visible' }}>
+          <div style={{ ...stepContentStyle, overflow: 'visible', overflowY: 'visible' }}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>📅</span>
               <h2 style={styles.stepHeaderTitle}>{t('date')}</h2>
@@ -1678,14 +1683,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
       case 2:
         return (
-          <div style={styles.stepContent}>
+          <div style={stepContentStyle}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>💱</span>
               <h2 style={styles.stepHeaderTitle}>{t('currency')}</h2>
             </div>
             <div style={styles.currencySelectBlock}>
               {initialData ? (
-                <div style={styles.fieldContainer}>
+                <div style={fieldContainerStyle}>
                   <label style={styles.fieldLabel}>{t('currency')}</label>
                   <select
                     value={formData.currency}
@@ -1743,7 +1748,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
       case 3:
         return (
-          <div style={styles.stepContent}>
+          <div style={stepContentStyle}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>💰</span>
               <h2 style={styles.stepHeaderTitle}>{t('amount')}</h2>
@@ -1904,13 +1909,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         );
 
         return (
-          <div style={styles.stepContent}>
+          <div style={stepContentStyle}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>🏷️</span>
               <h2 style={styles.stepHeaderTitle}>{t('selectCategory')}</h2>
             </div>
             {initialData ? (
-              <div style={styles.fieldContainer}>
+              <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>{t('selectCategory')}</label>
                 <select
                   value={formData.category}
@@ -1952,8 +1957,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
       case 5:
         return (
-          <div style={styles.stepContent}>
-            <div style={styles.fieldContainer}>
+          <div style={stepContentStyle}>
+            <div style={fieldContainerStyle}>
               <label style={styles.fieldLabel}>📝 {t('description')}</label>
               <input
                 ref={descriptionInputRef}
@@ -1969,7 +1974,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
             {/* Amount Items Description Section */}
             {amountItems.length > 0 && (
-              <div style={styles.fieldContainer}>
+              <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>💰 {t('amountDetails')} ({t('optional')})</label>
                 <div style={styles.amountDescriptionList}>
                   {amountItems.map((item, index) => (
@@ -2000,7 +2005,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
               </div>
             )}
 
-            <div style={styles.fieldContainer}>
+            <div style={fieldContainerStyle}>
               <label style={styles.fieldLabel}>{t('notes')} ({t('optional')})</label>
               <textarea
                 value={formData.notes}
@@ -2020,7 +2025,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
       case 6:
         return (
-          <div style={styles.stepContent}>
+          <div style={stepContentStyle}>
             <div style={styles.stepHeader}>
               <span style={styles.stepHeaderIcon}>💳</span>
               <h2 style={styles.stepHeaderTitle}>{t('paymentMethod')}</h2>
@@ -2300,7 +2305,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           </div>
           <div
             id={`expense-edit-panel-${selectedEditTab.id}`}
-            className="expense-edit-tabpanel"
+            className={`expense-edit-tabpanel expense-edit-tabpanel-${selectedEditTab.id}`}
             role="tabpanel"
             aria-labelledby={`expense-edit-tab-${selectedEditTab.id}`}
             key={selectedEditTab.id}
@@ -2435,6 +2440,13 @@ const styles: Record<string, React.CSSProperties> = {
     overflowY: 'auto',
     position: 'relative' as const, // Establish positioning context for absolute children
   },
+  editStepContent: {
+    padding: '8px 0',
+    flex: '0 0 auto',
+    minHeight: 0,
+    maxHeight: 'none',
+    overflowY: 'visible',
+  },
   stepHeader: {
     display: 'flex',
     alignItems: 'center',
@@ -2541,6 +2553,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   fieldContainer: {
     marginBottom: '24px',
+  },
+  editFieldContainer: {
+    marginBottom: '12px',
   },
   fieldLabel: {
     display: 'block',

@@ -597,7 +597,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       </div>
 
       {/* Footer removed - handled by BaseForm */}
-      <ExpenseTagPicker userId={initialData && initialData.userId !== currentUser?.uid ? undefined : currentUser?.uid} value={tagIds} onChange={setTagIds} />
+      <ExpenseTagPicker frameless compact userId={initialData && initialData.userId !== currentUser?.uid ? undefined : currentUser?.uid} value={tagIds} onChange={setTagIds} />
     </BaseForm>
   );
 };
