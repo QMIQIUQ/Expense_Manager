@@ -2070,10 +2070,9 @@ button:not(:disabled):hover {
   border-top-color: var(--accent-primary);
 }
 
-/* Badges and tags */
-.dark [class*="badge"],
-.dark [class*="tag"],
-.dark [class*="chip"] {
+/* Badges only. Substring matching tag/chip also hits layout wrappers like
+   expense-tag-picker, expense-tag-picker-input-row, and ledger-chips. */
+.dark [class*="badge"] {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
