@@ -445,6 +445,32 @@ button:not(:disabled):hover {
   animation: spin 1s linear infinite;
 }
 
+.app-startup-loading {
+  box-sizing: border-box;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.app-startup-cat {
+  display: none;
+}
+
+.theme-cat .app-startup-cat {
+  display: block;
+  width: min(300px, 72vw);
+  max-width: 100%;
+  height: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .loading-status-icon {
     animation: none;

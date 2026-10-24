@@ -5,6 +5,16 @@ import Login from './pages/Login';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { PWAProvider } from './contexts/PWAContext';
 import FeatureLoadBoundary from './components/common/FeatureLoadBoundary';
+import CatIllustration from './components/CatIllustration';
+import InlineLoading from './components/InlineLoading';
+
+const AppLoadingFallback: React.FC = () => (
+  <div className="app-startup-loading" role="status" aria-live="polite">
+    <CatIllustration variant="sleep" className="app-startup-cat" />
+    <InlineLoading size={36} />
+    <span>Loading… / 載入中…</span>
+  </div>
+);
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const router = createBrowserRouter(
@@ -17,7 +27,7 @@ const router = createBrowserRouter(
         element: (
           <PrivateRoute>
             <FeatureLoadBoundary>
-              <Suspense fallback={<div role="status" style={{ padding: 24 }}>Loading… / 載入中…</div>}>
+              <Suspense fallback={<AppLoadingFallback />}>
                 <Dashboard />
               </Suspense>
             </FeatureLoadBoundary>
@@ -37,7 +47,7 @@ const App: React.FC = () => {
   return (
     <PWAProvider>
       <FeatureLoadBoundary>
-        <Suspense fallback={<div role="status" style={{ padding: 24 }}>Loading… / 載入中…</div>}>
+        <Suspense fallback={<AppLoadingFallback />}>
           <RouterProvider router={router} future={{ v7_startTransition: true }} />
         </Suspense>
       </FeatureLoadBoundary>
