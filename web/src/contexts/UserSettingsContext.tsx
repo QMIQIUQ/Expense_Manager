@@ -59,6 +59,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const [loading, setLoading] = useState(true);
   const latestUserIdRef = useRef(userId);
   const latestSettingsRef = useRef(settings);
+  const settingWriteIdsRef = useRef(new Map<string, number>());
   const currencyWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const currencyWriteIdRef = useRef(0);
   const overallBudgetWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -66,6 +67,9 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
   const overallBudgetRequestIdsRef = useRef(new Map<BudgetPeriod, number>());
   const incomeBudgetWriteIdRef = useRef(0);
   latestUserIdRef.current = userId;
+
+  const acceptedSettings = (ownerId: string, fallback: UserSettings): UserSettings =>
+    applyPendingOperations('userSettings', ownerId, sessionCache.get<UserSettings>('userSettings', ownerId) ?? fallback);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,9 +92,11 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
 
     userSettingsService.getOrCreate(userId, true)
       .then((userSettings) => {
-        if (!cancelled) {
-          latestSettingsRef.current = userSettings;
-          setSettings(userSettings);
+        if (!cancelled && latestUserIdRef.current === userId) {
+          const latest = sessionCache.get<UserSettings>('userSettings', userId) ?? userSettings;
+          const reconciled = applyPendingOperations('userSettings', userId, latest);
+          latestSettingsRef.current = reconciled;
+          setSettings(reconciled);
         }
       })
       .catch((error) => {
@@ -119,8 +125,10 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
       if (detail?.entity !== 'userSettings' || detail.userId !== userId) return;
       void userSettingsService.getOrCreate(userId, true).then((syncedSettings) => {
         if (latestUserIdRef.current === userId) {
-          latestSettingsRef.current = syncedSettings;
-          setSettings(syncedSettings);
+          const latest = sessionCache.get<UserSettings>('userSettings', userId) ?? syncedSettings;
+          const reconciled = applyPendingOperations('userSettings', userId, latest);
+          latestSettingsRef.current = reconciled;
+          setSettings(reconciled);
         }
       }).catch((error) => console.error('Failed to refresh synced user settings:', error));
     };
@@ -168,6 +176,9 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     if (!userId) return;
     const baseline = latestSettingsRef.current;
     if (!baseline || (baseline.userId !== userId && baseline.id !== userId)) return;
+    const writeKey = `${userId}:${String(key)}`;
+    const requestId = (settingWriteIdsRef.current.get(writeKey) ?? 0) + 1;
+    settingWriteIdsRef.current.set(writeKey, requestId);
     const optimistic = { ...baseline, [key]: value };
     latestSettingsRef.current = optimistic;
     setSettings(optimistic);
@@ -177,8 +188,8 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
     } catch (error) {
       if (isRetryableNetworkError(error) && await enqueueSettingsUpdate(error, userId, { [key]: value } as Partial<UserSettings>)) return;
       const latest = latestSettingsRef.current;
-      if (latest && latest[key] === value) {
-        const restored = { ...latest, [key]: baseline[key] };
+      if (latest && settingWriteIdsRef.current.get(writeKey) === requestId) {
+        const restored = { ...latest, [key]: acceptedSettings(userId, baseline)[key] };
         latestSettingsRef.current = restored;
         setSettings(restored);
       }
@@ -233,7 +244,7 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
       if (currencyWriteIdRef.current === requestId && latestUserIdRef.current === uid) {
         const latest = latestSettingsRef.current;
         if (latest && (latest.userId === uid || latest.id === uid)) {
-          const restored = { ...latest, displayCurrency: previousCurrency };
+          const restored = { ...latest, displayCurrency: acceptedSettings(uid, settings ?? latest).displayCurrency || previousCurrency };
           latestSettingsRef.current = restored;
           setSettings(restored);
         }
@@ -276,8 +287,9 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
         const latest = latestSettingsRef.current;
         if (latest && (latest.userId === uid || latest.id === uid)) {
           const restoredLimits = { ...latest.overallBudgetLimits };
-          if (previousLimit === undefined) delete restoredLimits[period];
-          else restoredLimits[period] = previousLimit;
+          const acceptedLimit = acceptedSettings(uid, currentSettings).overallBudgetLimits?.[period];
+          if (acceptedLimit === undefined) delete restoredLimits[period];
+          else restoredLimits[period] = acceptedLimit;
           const restored = { ...latest, overallBudgetLimits: restoredLimits };
           latestSettingsRef.current = restored;
           setSettings(restored);
@@ -311,10 +323,12 @@ export const UserSettingsProvider: React.FC<UserSettingsProviderProps> = ({ chil
         if (latest) {
           const limits = { ...latest.overallBudgetLimits };
           if (manualMonthlyLimit !== undefined) {
-            if (baseline.overallBudgetLimits?.monthly === undefined) delete limits.monthly;
-            else limits.monthly = baseline.overallBudgetLimits.monthly;
+            const acceptedMonthlyLimit = acceptedSettings(uid, baseline).overallBudgetLimits?.monthly;
+            if (acceptedMonthlyLimit === undefined) delete limits.monthly;
+            else limits.monthly = acceptedMonthlyLimit;
           }
-          const restored = { ...latest, incomeLinkedBudget: baseline.incomeLinkedBudget, overallBudgetLimits: limits };
+          const accepted = acceptedSettings(uid, baseline);
+          const restored = { ...latest, incomeLinkedBudget: accepted.incomeLinkedBudget, overallBudgetLimits: limits };
           latestSettingsRef.current = restored;
           setSettings(restored);
         }

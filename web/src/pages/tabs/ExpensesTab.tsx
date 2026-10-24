@@ -130,8 +130,9 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       revision: offlineQueue.expenseRevision(userId), rows: applyPendingOperations('expenses', userId, completeRows ?? displayed!.rows) };
   }
   const savedPeriodRows = displayPeriod.current?.rows;
-  const aggregateQueryKey = JSON.stringify([userId, range, displayCurrency, membership, tags]);
-  const aggregateKey = JSON.stringify([readKey, displayCurrency, membership, tags, !!completeRows, revision]);
+  const expenseQueueRevision = userId ? offlineQueue.expenseRevision(userId) : 0;
+  const aggregateQueryKey = JSON.stringify([userId, range, displayCurrency, membership, tags, expenseQueueRevision]);
+  const aggregateKey = JSON.stringify([readKey, displayCurrency, membership, tags, !!completeRows, revision, expenseQueueRevision]);
   // Keep the last summary visible while the same query is being refreshed.
   // A changed cache revision should not make it disappear before its replacement is ready.
   const aggregate = aggregateState?.queryKey === aggregateQueryKey ? aggregateState.value : undefined;
@@ -192,7 +193,7 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
       .catch((error) => { if (current) setSummaryError(error instanceof Error ? error.message : String(error)); });
     return () => { current = false; };
   // Sorting is deliberately absent: it cannot change the financial total.
-  }, [userId, range, readKey, aggregateKey, membership, requiresFullSearch, cards, ewallets, banks, tags, displayCurrency, completeRows]);
+  }, [userId, range, readKey, aggregateKey, aggregateQueryKey, membership, requiresFullSearch, cards, ewallets, banks, tags, displayCurrency, completeRows]);
   useEffect(() => { setVisibleCount(100); }, [period, filters]);
 
   const sourceRows = userId ? savedPeriodRows ?? history.rows : expenses;

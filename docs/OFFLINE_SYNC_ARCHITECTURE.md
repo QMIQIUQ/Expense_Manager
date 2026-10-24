@@ -1,6 +1,6 @@
 # 本機優先與 Firebase 同步架構
 
-> 本文件定義所有一般使用者資料異動的必要行為，並對照目前程式路徑。最後核對：2026-10-18。
+> 本文件定義所有一般使用者資料異動的必要行為，並對照目前程式路徑。最後核對：2026-10-25。
 
 ## 1. 必要原則
 
@@ -11,7 +11,7 @@
 ```text
 使用者送出
   → 立刻更新 React state / 本機資料快取
-  → writeLocalFirst / writeLocalFirstBatch：將完整 owner / ID / payload 保存到 localStorage
+  → writeLocalFirst / writeLocalFirstBatch：將完整 owner / ID / payload 保存到 IndexedDB outbox
       ├─ 已知離線或前面還有未完成寫入：本機接受，保留 queue，立即解除等待
       ├─ 線上：領域 service 成功後移除 queue，校正相關畫面/餘額
       ├─ 可重試網路錯誤：保留已保存的 queue 與樂觀結果
@@ -33,7 +33,7 @@
 | 應用資料快取 | `dataService`、`sessionCache`（sessionStorage，並可選擇性複製到 localStorage） | 先顯示近期讀取資料，並在重新整理時支援應用層離線讀取。持久副本有 24 小時 TTL；localStorage 容量不足時副本可能無法保存。 |
 | Firestore SDK 快取 | `config/firebase.ts` 的多分頁 IndexedDB 持久快取 | SDK 管理已讀文件及 SDK 可離線保存的寫入，連線恢復後自行同步。它不會替應用 queue 中的自訂操作執行領域副作用。 |
 
-`offlineQueue` 是第四種狀態：應用層尚待執行的操作 outbox，key 為 `offline_operations_queue`，內容存在 localStorage。Firebase SDK 的 IndexedDB 待同步寫入不計入 app queue 數量。
+`offlineQueue` 是第四種狀態：應用層尚待執行的操作 outbox，內容保存在 IndexedDB，透過交易、跨分頁 lease 與 fencing token 保護；舊版 `offline_operations_queue` localStorage 資料會在初始化時遷移。Firebase SDK 的 IndexedDB 待同步寫入不計入 app queue 數量。
 
 ## 3. 載入與本機先顯示
 
@@ -76,7 +76,10 @@ Dashboard `loadData()` 與 `dataService.getDataWithRevalidate()` 有快取時先
 - 頁首 `NetworkStatusIndicator` 可顯示/手動啟動 app queue 同步。
 - Dashboard 漢堡選單的「重新上傳」也直接呼叫 `syncOfflineQueue()`，並依 queue 剩餘數量回報結果，不以重新載入資料冒充同步成功。
 - 同一時間僅執行一個 queue sync。操作依 queue 快照順序逐項處理；同步期間新增的操作會安排下一輪。
-- queue 寫入 localStorage 若失敗，UI 不應假稱「已離線保存」；需提示保存失敗並回復尚未能持久化的本機修改。
+- IndexedDB outbox 寫入若失敗，UI 不應假稱「已離線保存」；需提示保存失敗並回復尚未能持久化的本機修改。
+- 永久拒絕時只回復該筆失敗操作造成的欄位/資料列，並重新套用同一帳戶仍存在 outbox 的其他操作，避免較早操作的 rollback 蓋掉後來已接受的本機修改。
+- 刪除支出時若同時刪除關聯轉帳，pending projection 也必須隱藏關聯轉帳；不能只更新 React state，讓背景讀取又把它顯示回來。
+- 支出與定期付款記錄 outbox revision 變化會使支出摘要 query 失效，避免舊摘要在樂觀新增/刪除後短暫覆蓋新總額。
 - 「清除佇列」會移除整個 app queue，不會清除 Firestore SDK IndexedDB 資料，且無法復原。只應在確認待處理操作都可丟棄後使用。
 
 定期付款摘要與本期已付款判斷直接使用目前畫面的付款紀錄，包含尚未同步的紀錄，不再等待第二次 Firebase 查詢。帳戶餘額的正式數值仍由支出/收入/轉帳的領域 transaction 確認。

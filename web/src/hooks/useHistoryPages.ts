@@ -15,7 +15,7 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [pendingOperations, setPendingOperations] = useState(() => offlineQueue.getAll());
-  const [deletionVisibilityRevision, setDeletionVisibilityRevision] = useState(0);
+  const [, setDeletionVisibilityRevision] = useState(0);
   const generation = useRef(0);
   const cursor = useRef<HistoryCursor>();
   const snapshot = useRef<{ cached: boolean; version?: string }>();
@@ -99,9 +99,9 @@ export const useHistoryPages = <T extends { id?: string; date: string }>(name: H
   }, [key, load, name, userId]);
   const rows = useMemo(() => state.key === key ? state.rows : fallback.filter((row) => !userId || (row as { userId?: string }).userId === userId).slice(0, 100), [state.key, state.rows, key, fallback, userId]);
   const projected = useMemo(() => userId ? applyPendingOperations(name, userId, rows, pendingOperations) : rows, [name, userId, rows, pendingOperations]);
-  const hiddenExpenseIds = useMemo(() => name === 'expenses' && userId ? getHiddenExpenseIds(userId) : new Set<string>(), [name, userId, deletionVisibilityRevision]);
   const start = range?.startDate; const end = range?.endDate;
-  const visible = useMemo(() => projected.filter((row) => (!row.id || !hiddenExpenseIds.has(row.id)) && (!start || !end || row.date >= start && row.date <= end)), [projected, hiddenExpenseIds, start, end]);
+  const hiddenExpenseIds = name === 'expenses' && userId ? getHiddenExpenseIds(userId) : new Set<string>();
+  const visible = projected.filter((row) => (!row.id || !hiddenExpenseIds.has(row.id)) && (!start || !end || row.date >= start && row.date <= end));
   return { rows: visible,
     hasMore: !!userId && (state.key !== key || state.hasMore), loading, error, incomplete: state.key === key && !state.complete,
     loadMore: () => load(false), retry: () => load(true) };

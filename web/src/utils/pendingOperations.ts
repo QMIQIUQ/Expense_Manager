@@ -129,6 +129,11 @@ export const applyPendingOperations = <T>(entity: CacheableEntity, userId: strin
     const payload = operation.payload as Record<string, unknown> | null;
     if (payload?.userId !== userId) continue;
     if (operation.entity === entities[entity]) matching.push(operation);
+    if (entity === 'transfers' && operation.entity === 'expense' && operation.type === 'delete' && Array.isArray(payload.relatedTransferIds)) {
+      for (const id of payload.relatedTransferIds) {
+        if (typeof id === 'string' && id) matching.push({ ...operation, entity: 'transfer', payload: { id, userId } });
+      }
+    }
     if ((entity === 'expenses' || entity === 'receivableExpenses') && operation.entity === 'scheduledPaymentRecord' && operation.type === 'create') {
       const expense = payload.generatedExpensePayload as Record<string, unknown> | undefined;
       if (expense?.userId === userId) matching.push({ ...operation, entity: 'expense', payload: expense });

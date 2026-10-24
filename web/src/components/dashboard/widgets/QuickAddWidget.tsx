@@ -282,12 +282,14 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       // 5. Rollback on error
       if (isEditing) {
         const originalPreset = quickExpensePresets.find((preset) => preset.id === editedPresetId);
-        setLocalPresets((previous) => originalPreset
-          ? previous.map((preset) => preset.id === presetId ? originalPreset : preset)
-          : previous.filter((preset) => preset.id !== presetId));
+        setLocalPresets((previous) => applyPendingOperations('quickExpensePresets', currentUser.uid,
+          originalPreset
+            ? previous.map((preset) => preset.id === presetId ? { ...preset, ...originalPreset } : preset)
+            : previous.filter((preset) => preset.id !== presetId)));
       } else {
         // Remove temp preset
-        setLocalPresets(prev => prev.filter(p => p.id !== presetId));
+        setLocalPresets((previous) => applyPendingOperations('quickExpensePresets', currentUser.uid,
+          previous.filter((preset) => preset.id !== presetId)));
       }
       // Update notification to error
       updateNotification(notificationId, {
@@ -308,6 +310,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     
     // 2. Optimistic delete
     setLocalPresets(prev => prev.filter(p => p.id !== presetId));
+    const deletedIndex = localPresets.findIndex((preset) => preset.id === presetId);
     
     // 3. Show pending notification
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
@@ -336,9 +339,10 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
         }
       }
       // 5. Rollback on error
-      if (deletedPreset) {
-        setLocalPresets(prev => [...prev, deletedPreset]);
-      }
+      if (deletedPreset) setLocalPresets((previous) => applyPendingOperations('quickExpensePresets', currentUser.uid,
+        previous.some((preset) => preset.id === presetId)
+          ? previous
+          : [...previous.slice(0, Math.min(deletedIndex, previous.length)), deletedPreset, ...previous.slice(Math.min(deletedIndex, previous.length))]));
       // Update notification to error
       updateNotification(notificationId, {
         type: 'error',

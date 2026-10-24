@@ -8,6 +8,8 @@ import { QuickExpensePreset } from '../../types/quickExpense';
 import { dashboardLayoutService } from '../../services/dashboardLayoutService';
 import { quickExpenseService } from '../../services/quickExpenseService';
 import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
+import { sessionCache } from '../../utils/sessionCache';
+import { applyPendingOperations } from '../../utils/pendingOperations';
 
 const isRetryableNetworkError = (error: unknown): boolean => {
   const code = error && typeof error === 'object' && 'code' in error
@@ -176,8 +178,11 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
         }
       }
       
-      // 4. Rollback on failure
-      setWidgets(previousWidgets);
+      // Restore the last locally accepted layout and keep later queued edits visible.
+      const cachedLayout = sessionCache.get<{ userId: string; widgets: DashboardWidget[] }>('dashboardLayout', currentUser.uid);
+      const restoredLayout = applyPendingOperations('dashboardLayout', currentUser.uid,
+        cachedLayout ?? { userId: currentUser.uid, widgets: previousWidgets });
+      setWidgets([...restoredLayout.widgets].sort((a, b) => a.order - b.order));
       
       // 5. Notify error
       showNotification('error', t('saveFailed') || '保存失敗，請稍後重試');

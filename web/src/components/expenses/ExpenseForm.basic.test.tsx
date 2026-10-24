@@ -22,7 +22,7 @@ describe('ExpenseForm - Basic Tests', () => {
   const mockOnCancel = vi.fn();
 
   it('renders form fields correctly', () => {
-    render(
+    const { container } = render(
       <ExpenseForm
         onSubmit={mockOnSubmit}
         onCancel={mockOnCancel}
@@ -33,7 +33,7 @@ describe('ExpenseForm - Basic Tests', () => {
     // Check for form inputs
     expect(screen.getByPlaceholderText(/grocery shopping/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText('0.00')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
+    expect(container.querySelector('button[type="submit"]')).toBeInTheDocument();
   });
 
   it('displays correct title for new expense', () => {

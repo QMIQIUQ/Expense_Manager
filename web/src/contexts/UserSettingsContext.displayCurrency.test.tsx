@@ -1,8 +1,9 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { offlineQueue } from '../utils/offlineQueue';
 import { sessionCache } from '../utils/sessionCache';
+import { writeLocalFirst } from '../utils/localFirstMutation';
 import { LanguageProvider } from './LanguageContext';
 import { UserSettingsProvider, useUserSettings } from './UserSettingsContext';
 import DisplayCurrencyControl from '../components/common/DisplayCurrencyControl';
@@ -106,6 +107,24 @@ describe('UserSettingsContext display currency', () => {
 
     await waitFor(() => expect(screen.getByTestId('profile-currency')).toHaveTextContent('TWD'));
     resolveFirstUser?.(makeSettings('user-1', 'USD'));
+    await waitFor(() => expect(screen.getByTestId('profile-currency')).toHaveTextContent('TWD'));
+  });
+
+  it('keeps an accepted local setting when an older initial server read returns later', async () => {
+    let resolveInitialRead: ((settings: UserSettings) => void) | undefined;
+    mockGetOrCreate.mockImplementation(() => new Promise<UserSettings>((resolve) => { resolveInitialRead = resolve; }));
+    sessionCache.set('userSettings', 'user-1', makeSettings('user-1', 'MYR'));
+    renderSettings();
+    await waitFor(() => expect(resolveInitialRead).toBeTypeOf('function'));
+
+    await act(async () => {
+      await writeLocalFirst({ type: 'update', entity: 'userSettings', payload: {
+        userId: 'user-1', updates: { displayCurrency: 'TWD' },
+      } }, vi.fn()).catch(() => undefined);
+    });
+    await waitFor(() => expect(screen.getByTestId('profile-currency')).toHaveTextContent('TWD'));
+
+    await act(async () => { resolveInitialRead?.(makeSettings('user-1', 'MYR')); });
     await waitFor(() => expect(screen.getByTestId('profile-currency')).toHaveTextContent('TWD'));
   });
 });

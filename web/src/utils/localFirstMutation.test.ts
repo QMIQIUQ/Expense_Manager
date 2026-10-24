@@ -141,6 +141,16 @@ describe('reconciling collection snapshots', () => {
     await offlineQueue.enqueue(create('record', 'scheduledPaymentRecord', { generatedExpensePayload: { id: 'expense', userId: 'user', amount: 50 } }));
     expect(applyPendingOperations('expenses', 'user', [])).toEqual([expect.objectContaining({ id: 'expense', amount: 50 })]);
   });
+  it('projects expense deletion to its linked transfers until the transaction is confirmed', async () => {
+    await offlineQueue.enqueue({ type: 'delete', entity: 'expense', payload: {
+      id: 'expense', userId: 'user', relatedTransferIds: ['linked-transfer'],
+    } });
+    const visible = applyPendingOperations('transfers', 'user', [
+      { id: 'linked-transfer', userId: 'user', amount: 10 },
+      { id: 'unrelated-transfer', userId: 'user', amount: 5 },
+    ]);
+    expect(visible.map((row) => row.id)).toEqual(['unrelated-transfer']);
+  });
   it('removes a generated expense immediately when its payment record deletion is accepted locally', async () => {
     sessionCache.set('expenses', 'user', [{ id: 'expense', userId: 'user', amount: 50 }]);
     await writeLocalFirst({ type: 'delete', entity: 'scheduledPaymentRecord', payload: { id: 'record', userId: 'user', generatedExpenseId: 'expense' } }, vi.fn()).catch(() => undefined);

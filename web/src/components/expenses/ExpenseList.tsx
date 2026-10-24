@@ -36,6 +36,7 @@ import { getCurrencyMinorDigits, roundMoney } from '../../domain/money';
 import { dataService } from '../../services/dataService';
 import { queueFailedWrite, writeLocalFirst } from '../../utils/localFirstMutation';
 import { applyPendingOperations } from '../../utils/pendingOperations';
+import { reconcileOptimisticCollection } from '../../utils/optimisticCollection';
 import { hasReceivablePlan, isOpenReceivable, receivableProgress } from '../../utils/expenseSplitCalculator';
 
 const EMPTY_REPAYMENTS: Repayment[] = [];
@@ -460,11 +461,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
       return true;
     } catch (error) {
-      if (payload) {
-        const id = payload.id;
-        setLocalRepayments((previous) => previous.filter((row) => row.id !== id));
-        dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.filter((row) => row.id !== id));
-      }
+      if (payload?.id) reconcileOptimisticCollection('repayments', userId, setLocalRepayments,
+        { type: 'create', id: payload.id });
       updateNotification(notificationId, { type: 'error', message: t('failedToAddRepayment') + ': ' + String(error), duration: 5000 });
       return false;
     }
@@ -476,11 +474,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     const expense = expenses.find((row) => row.id === original?.expenseId);
     if (!original || !expense) return false;
     const notificationId = showNotification('pending', t('saving'), { duration: 0 });
+    let optimisticPayload: Repayment | undefined;
     try {
       const input = { ...original, ...updates };
       const settlement = await prepareRepaymentSettlement(input, expense, original);
       if (repaymentOwner.current !== userId) return false;
       const payload = { ...input, ...settlement, id: repaymentId, userId, expenseId: expense.id!, updatedAt: new Date() };
+      optimisticPayload = payload;
       setLocalRepayments((previous) => previous.map((row) => row.id === repaymentId ? payload : row));
       dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.map((row) => row.id === repaymentId ? payload : row));
       await acceptLocalMutation({ entity: 'repayment', type: 'update', payload });
@@ -488,8 +488,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
       return true;
     } catch (error) {
-      setLocalRepayments((previous) => previous.map((row) => row.id === repaymentId ? original : row));
-      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.map((row) => row.id === repaymentId ? original : row));
+      const fields = optimisticPayload
+        ? Object.keys(optimisticPayload).filter((key) => !Object.is(optimisticPayload![key as keyof Repayment], original[key as keyof Repayment])) as (keyof Repayment)[]
+        : [];
+      reconcileOptimisticCollection('repayments', userId, setLocalRepayments,
+        { type: 'update', id: repaymentId, original, fields });
       updateNotification(notificationId, { type: 'error', message: t('failedToUpdateRepayment') + ': ' + String(error), duration: 5000 });
       return false;
     }
@@ -498,6 +501,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const handleDeleteRepayment = async (repaymentId: string) => {
     const userId = currentUser?.uid; if (!userId) return;
     const original = localRepayments.find((row) => row.id === repaymentId); if (!original) return;
+    const originalIndex = localRepayments.findIndex((row) => row.id === repaymentId);
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
     setLocalRepayments((previous) => previous.filter((row) => row.id !== repaymentId));
     dataService.updateCache<Repayment[]>('repayments', userId, (previous) => previous.filter((row) => row.id !== repaymentId));
@@ -506,8 +510,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       setDeleteRepaymentConfirm({ isOpen: false, repaymentId: null });
       updateNotification(notificationId, { type: 'info', message: t('ledgerSavedLocally'), duration: 3000 });
     } catch (error) {
-      setLocalRepayments((previous) => [...previous, original]);
-      dataService.updateCache<Repayment[]>('repayments', userId, (previous) => [...previous, original]);
+      reconcileOptimisticCollection('repayments', userId, setLocalRepayments,
+        { type: 'delete', id: repaymentId, original, index: originalIndex });
       updateNotification(notificationId, { type: 'error', message: t('failedToDeleteRepayment') + ': ' + String(error), duration: 5000 });
     }
   };
@@ -782,7 +786,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           return;
         }
       }
-      setLocalQuickExpensePresets(previousPresets);
+      setLocalQuickExpensePresets((previous) => applyPendingOperations('quickExpensePresets', currentUser.uid,
+        isEditing && existingPreset
+          ? previous.map((preset) => preset.id === presetId ? { ...preset, ...existingPreset } : preset)
+          : previous.filter((preset) => preset.id !== presetId)));
       updateNotification(notificationId, {
         type: 'error',
         message: t('errorSavingData'),
@@ -796,6 +803,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     if (!currentUser) return;
     const notificationId = showNotification('pending', t('deleting'), { duration: 0 });
     const previousPresets = localQuickExpensePresets;
+    const deletedIndex = previousPresets.findIndex((preset) => preset.id === presetId);
+    const deletedPreset = previousPresets[deletedIndex];
     setLocalQuickExpensePresets(previousPresets.filter((preset) => preset.id !== presetId));
 
     try {
@@ -821,7 +830,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           return;
         }
       }
-      setLocalQuickExpensePresets(previousPresets);
+      setLocalQuickExpensePresets((previous) => applyPendingOperations('quickExpensePresets', currentUser.uid,
+        deletedPreset && !previous.some((preset) => preset.id === presetId)
+          ? [...previous.slice(0, Math.min(deletedIndex, previous.length)), deletedPreset, ...previous.slice(Math.min(deletedIndex, previous.length))]
+          : previous));
       updateNotification(notificationId, {
         type: 'error',
         message: t('errorDeletingData'),

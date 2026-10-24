@@ -73,7 +73,7 @@ describe('ExpenseTagPicker', () => {
     render(<LanguageProvider><ControlledPicker /></LanguageProvider>);
 
     fireEvent.change(screen.getByRole('textbox', { name: 'New tag' }), { target: { value: 'Work' } });
-    fireEvent.click(screen.getByRole('button', { name: 'New tag' }));
+    fireEvent.click(screen.getByRole('button', { name: /add/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Select while saving' }));
     await act(async () => { resolveSave('new-tag'); });
 
@@ -86,7 +86,7 @@ describe('ExpenseTagPicker', () => {
     const onChange = vi.fn();
     const { rerender } = render(<LanguageProvider><ExpenseTagPicker userId="test-user" value={[]} onChange={onChange} /></LanguageProvider>);
     fireEvent.change(screen.getByRole('textbox', { name: 'New tag' }), { target: { value: 'Work' } });
-    fireEvent.click(screen.getByRole('button', { name: 'New tag' }));
+    fireEvent.click(screen.getByRole('button', { name: /add/i }));
     rerender(<LanguageProvider><ExpenseTagPicker userId="other-user" value={[]} onChange={onChange} /></LanguageProvider>);
     await act(async () => { resolveSave('new-tag'); });
 

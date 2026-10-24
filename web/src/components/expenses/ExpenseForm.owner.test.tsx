@@ -12,14 +12,14 @@ vi.mock('../../services/expenseTagService', () => ({
 describe('expense tag identity comes from authentication', () => {
   it('allows empty-category accounts to create tags and resets selected tags after an owner switch', async () => {
     fake.owner = 'one'; const result = render(<ExpenseForm categories={[]} onSubmit={vi.fn()} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'one tag' }));
-    expect(screen.getByRole('checkbox', { name: 'one tag' })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'one tag' }));
+    expect(screen.getByRole('button', { name: 'one tag' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.change(screen.getByRole('textbox', { name: 'New tag' }), { target: { value: 'Work' } });
-    fireEvent.click(screen.getByRole('button', { name: 'New tag' }));
+    fireEvent.click(result.container.querySelector('.expense-tag-picker-input-row button')!);
     await waitFor(() => expect(fake.save).toHaveBeenCalledWith('one', 'Work', '#64748b'));
     fake.owner = 'two'; result.rerender(<ExpenseForm categories={[]} onSubmit={vi.fn()} />);
-    expect(screen.queryByRole('checkbox', { name: 'one tag' })).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'two tag' })).not.toBeChecked();
+    expect(screen.queryByRole('button', { name: 'one tag' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'two tag' })).toHaveAttribute('aria-pressed', 'false');
   });
 });
 

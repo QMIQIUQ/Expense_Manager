@@ -46,7 +46,7 @@ describe('ExpenseForm', () => {
   });
 
   it('shows validation errors when submitting empty form', async () => {
-    render(
+    const { container } = render(
       <ExpenseForm
         onSubmit={mockOnSubmit}
         onCancel={mockOnCancel}
@@ -54,7 +54,7 @@ describe('ExpenseForm', () => {
       />
     );
 
-    const submitButton = screen.getByRole('button', { name: /add|submit/i });
+    const submitButton = container.querySelector<HTMLButtonElement>('button[type="submit"]')!;
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -65,7 +65,7 @@ describe('ExpenseForm', () => {
   });
 
   it('submits form with valid data', async () => {
-    render(
+    const { container } = render(
       <ExpenseForm
         onSubmit={mockOnSubmit}
         onCancel={mockOnCancel}
@@ -91,7 +91,7 @@ describe('ExpenseForm', () => {
     });
 
     // Submit form
-    const submitButton = screen.getByRole('button', { name: /add/i });
+    const submitButton = container.querySelector<HTMLButtonElement>('button[type="submit"]')!;
     fireEvent.click(submitButton);
 
     await waitFor(() => {

@@ -26,12 +26,17 @@
 
 ## 回歸證據
 
-2026-10-18：`npm run test:run -- --maxWorkers=1` 通過 36 個檔案、215 個測試；`npm run build` 與 `npm run lint` 通過。
+2026-10-25：`npm run test:run -- --maxWorkers=1` 通過 78 個檔案、389 個測試；`npm run build` 與 `npm run lint` 通過。
 
 - `utils/localFirstMutation.test.ts`：各 collection 的離線提交/快取恢復、固定 ID、伺服器 Promise 未完成時已保存資料、跨功能先後順序、永久拒絕/儲存失敗、批次排序、undefined 清除欄位、singleton 偏好與自動生成支出。
 - `services/dataService.localFirst.test.ts`：背景回應不得移除執行中或剛完成的本機寫入；沒有 updatedAt 的欄位/順序變化也能更新。
 - `services/syncService.localFirst.test.ts`：逐 entity executor、失敗 create 阻擋後續 update/delete、直接寫入不重複重播、不同帳戶隔離與 needs-attention 復原順序。
 - `services/scheduledPaymentService.localFirst.test.ts`：未同步付款立即參與摘要；統計不重新查詢 Firebase。
+- `utils/optimisticCollection.test.ts`：失敗回復輔助函式只還原該操作修改的欄位，並把仍在 durable outbox 的其他操作重新套用至 React state 與快取。
+- `utils/localFirstMutation.test.ts`：支出待刪除時，其關聯轉帳也會被 pending projection 隱藏，背景讀取不會讓轉帳閃回。
+- `contexts/UserSettingsContext.displayCurrency.test.tsx`：延遲的初始伺服器讀取不覆蓋剛接受的本機設定；設定寫入失敗回復至目前已接受的快取/outbox 值。
+- `pages/tabs/ExpensesTab`：摘要鍵含支出/付款紀錄 outbox revision，使接受本機變更後的舊聚合回應失效。
+- Dashboard CRUD rollback、快速預設、還款及儀表板版面失敗回復均改為重放剩餘 pending operations；預算刪除也檢查 outbox enqueue 是否成功，保存失敗時回復畫面與快取。
 - 既有頁面/表單測試、TypeScript production build 與 ESLint 一併執行。測試使用可控的延遲/錯誤與 service mocks；沒有使用正式使用者帳戶建立測試資料，不能把它描述為 Firebase 正式資料的端到端驗證。
 
 排程付款紀錄與自動支出是兩個可冪等重試的寫入階段，第二階段永久失敗時仍可能部分完成；queue 保留失敗操作供處理。清除整個 queue 會丟棄所有未同步操作，操作前須確認可以捨棄。

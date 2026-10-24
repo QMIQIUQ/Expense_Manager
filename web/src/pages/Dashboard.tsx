@@ -71,6 +71,7 @@ import { sessionCache, type CacheableEntity } from '../utils/sessionCache';
 import { applyPendingOperations, mergeExpenseRows, mergeReceivableCandidatesFromSource } from '../utils/pendingOperations';
 import { hasReceivablePlan } from '../utils/expenseSplitCalculator';
 import { getQueuedWriteId, writeLocalFirstBatch } from '../utils/localFirstMutation';
+import { reconcileOptimisticCollection } from '../utils/optimisticCollection';
 import { getTodayLocal, getCurrentTimeLocal } from '../utils/dateUtils';
 import { DEFAULT_BASE_CURRENCY, formatMoney, getExpenseBaseAmount, getRepaymentBaseAmount } from '../utils/currencyUtils';
 import { type BudgetAllocationInput, validateBudgetAllocationChange } from '../utils/budgetAllocation';
@@ -1280,10 +1281,7 @@ const Dashboard: React.FC = () => {
             requestDataRefresh(['expenses', 'banks', 'ewallets']);
           },
           onError: () => {
-            // Rollback optimistic update
-            setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-            // Rollback cache
-            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((e) => e.id !== expenseId));
+            reconcileOptimisticCollection('expenses', currentUser.uid, setExpenses, { type: 'create', id: expenseId });
           },
         }
       );
@@ -1389,14 +1387,19 @@ const Dashboard: React.FC = () => {
         dataService.updateCache<Expense[]>('expenses', userId, (data) => applyPendingOperations('expenses', userId,
           data.some((expense) => expense.id === id) ? data : [expenseToDelete, ...data]));
       }
-      if (relatedTransfers.length > 0) setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
+      if (relatedTransfers.length > 0) reconcileOptimisticCollection('transfers', userId, setTransfers,
+        (rows) => [...relatedTransfers.filter((transfer) => !rows.some((item) => item.id === transfer.id)), ...rows]);
     };
 
     // Optimistic update: remove expense
     setExpenses((prev) => prev.filter((e) => e.id !== id));
 
     // Optimistic update: remove related transfer if exists
-    if (relatedTransferIds.length > 0) setTransfers((prev) => prev.filter((transfer) => !relatedTransferIds.includes(transfer.id || '')));
+    if (relatedTransferIds.length > 0) {
+      setTransfers((prev) => prev.filter((transfer) => !relatedTransferIds.includes(transfer.id || '')));
+      dataService.updateCache<Transfer[]>('transfers', userId,
+        (rows) => rows.filter((transfer) => !relatedTransferIds.includes(transfer.id || '')));
+    }
 
     // Update cache optimistically
     dataService.updateCache<Expense[]>('expenses', userId, (data) => data.filter((e) => e.id !== id));
@@ -1535,6 +1538,8 @@ const Dashboard: React.FC = () => {
     setExpenses((prev) => prev.filter((e) => !selectedIds.has(e.id!)));
     dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => !selectedIds.has(expense.id!)));
     setTransfers((prev) => prev.filter((transfer) => !linkedTransferIds.has(transfer.id)));
+    if (linkedTransferIds.size > 0) dataService.updateCache<Transfer[]>('transfers', currentUser.uid,
+      (rows) => rows.filter((transfer) => !linkedTransferIds.has(transfer.id || '')));
 
     // 設置刪除進度狀態
     const deleteId = `delete-${Date.now()}`;
@@ -1564,9 +1569,8 @@ const Dashboard: React.FC = () => {
           dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => applyPendingOperations('expenses', currentUser.uid,
             data.some((expense) => expense.id === id) ? data : [original, ...data]));
         }
-        if (relatedTransfers.length > 0) {
-          setTransfers((prev) => [...relatedTransfers.filter((transfer) => !prev.some((item) => item.id === transfer.id)), ...prev]);
-        }
+        if (relatedTransfers.length > 0) reconcileOptimisticCollection('transfers', currentUser.uid, setTransfers,
+          (rows) => [...relatedTransfers.filter((transfer) => !rows.some((item) => item.id === transfer.id)), ...rows]);
       };
       let mutationResult: 'saved' | 'queued' | 'failed' = 'failed';
       await withExpenseMutationLock(currentUser.uid, id, async () => {
@@ -1727,9 +1731,7 @@ const Dashboard: React.FC = () => {
           );
         },
         onError: () => {
-          setCategories((prev) => prev.filter((c) => c.id !== categoryId));
-          // Rollback cache
-          dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => data.filter((c) => c.id !== categoryId));
+          reconcileOptimisticCollection('categories', currentUser.uid, setCategories, { type: 'create', id: categoryId });
         },
       }
     );
@@ -1751,8 +1753,7 @@ const Dashboard: React.FC = () => {
       })), () => categoryService.updateOrder(orderedIds));
     } catch (error) {
       if (getQueuedWriteId(error)) { showNotification('info', t('operationSavedOffline')); return; }
-      setCategories(previousCategories);
-      dataService.updateCache<Category[]>('categories', currentUser.uid, () => previousCategories);
+      reconcileOptimisticCollection('categories', currentUser.uid, setCategories, () => previousCategories);
       throw error;
     }
   };
@@ -1782,17 +1783,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (originalCategory) {
-            setCategories((prev) =>
-              prev.map((c) => (c.id === id ? originalCategory : c))
-            );
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => 
-                data.map((c) => (c.id === id ? originalCategory : c))
-              );
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('categories', currentUser.uid, setCategories,
+            { type: 'update', id, original: originalCategory, fields: Object.keys(updates) as (keyof Category)[] });
         },
       }
     );
@@ -1819,13 +1811,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (categoryToDelete) {
-            setCategories((prev) => [...prev, categoryToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Category[]>('categories', currentUser.uid, (data) => [...data, categoryToDelete]);
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('categories', currentUser.uid, setCategories,
+            { type: 'delete', id, original: categoryToDelete, index: categories.findIndex((category) => category.id === id) });
         },
       }
     );
@@ -1958,8 +1945,7 @@ const Dashboard: React.FC = () => {
       updatedAt: new Date(),
     };
     const rollbackOptimisticBudget = () => {
-      setBudgets((prev) => prev.filter((budget) => budget.id !== budgetId));
-      dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => data.filter((budget) => budget.id !== budgetId));
+      reconcileOptimisticCollection('budgets', currentUser.uid, setBudgets, { type: 'create', id: budgetId });
     };
     setBudgets((prev) => [...prev, optimisticBudget]);
     dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, optimisticBudget]);
@@ -2034,12 +2020,8 @@ const Dashboard: React.FC = () => {
       : false;
     const optimisticBudget = { ...originalBudget, ...updates };
     const rollbackOptimisticBudget = () => {
-      setBudgets((prev) => prev.map((budget) => budget.id === id ? originalBudget : budget));
-      if (currentUser) {
-        dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) =>
-          data.map((budget) => budget.id === id ? originalBudget : budget)
-        );
-      }
+      if (currentUser) reconcileOptimisticCollection('budgets', currentUser.uid, setBudgets,
+        { type: 'update', id, original: originalBudget, fields: Object.keys(updates) as (keyof Budget)[] });
     };
     setBudgets((prev) => prev.map((budget) => budget.id === id ? optimisticBudget : budget));
     if (currentUser) {
@@ -2139,11 +2121,17 @@ const Dashboard: React.FC = () => {
       }
 
       if (currentUser && offlineQueue.hasPendingBudgetOperations(id, currentUser.uid)) {
-        await offlineQueue.enqueue({
+        const queuedId = await offlineQueue.enqueue({
           type: 'delete',
           entity: 'budget',
           payload: { id, userId: currentUser.uid, previousBudget: budgetToDelete },
         });
+        if (!queuedId) {
+          reconcileOptimisticCollection('budgets', currentUser.uid, setBudgets,
+            { type: 'delete', id, original: budgetToDelete, index: budgets.findIndex((budget) => budget.id === id) });
+          showNotification('error', t('offlineQueueSaveFailed'));
+          return;
+        }
         showNotification('info', t('operationSavedOffline'));
         return;
       }
@@ -2161,13 +2149,8 @@ const Dashboard: React.FC = () => {
           },
           onError: () => {
             if (queuedForRetry) return;
-            if (budgetToDelete) {
-              setBudgets((prev) => [...prev, budgetToDelete]);
-              // Rollback cache
-              if (currentUser) {
-                dataService.updateCache<Budget[]>('budgets', currentUser.uid, (data) => [...data, budgetToDelete]);
-              }
-            }
+            if (currentUser) reconcileOptimisticCollection('budgets', currentUser.uid, setBudgets,
+              { type: 'delete', id, original: budgetToDelete, index: budgets.findIndex((budget) => budget.id === id) });
           },
         }
       );
@@ -2204,7 +2187,8 @@ const Dashboard: React.FC = () => {
           setScheduledPayments((prev) => prev.map((p) => (p.id === paymentId ? realPayment : p)));
         },
         onError: () => {
-          setScheduledPayments((prev) => prev.filter((p) => p.id !== paymentId));
+          if (currentUser) reconcileOptimisticCollection('scheduledPayments', currentUser.uid, setScheduledPayments,
+            { type: 'create', id: paymentId });
         },
       }
     );
@@ -2225,11 +2209,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
-          if (original) {
-            setScheduledPayments((prev) =>
-              prev.map((p) => (p.id === id ? original : p))
-            );
-          }
+          if (currentUser) reconcileOptimisticCollection('scheduledPayments', currentUser.uid, setScheduledPayments,
+            { type: 'update', id, original, fields: Object.keys(updates) as (keyof ScheduledPayment)[] });
         },
       }
     );
@@ -2248,9 +2229,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
-          if (original) {
-            setScheduledPayments((prev) => [...prev, original]);
-          }
+          if (currentUser) reconcileOptimisticCollection('scheduledPayments', currentUser.uid, setScheduledPayments,
+            { type: 'delete', id, original, index: scheduledPayments.findIndex((payment) => payment.id === id) });
         },
       }
     );
@@ -2271,11 +2251,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
-          if (original) {
-            setScheduledPayments((prev) =>
-              prev.map((p) => (p.id === id ? original : p))
-            );
-          }
+          if (currentUser) reconcileOptimisticCollection('scheduledPayments', currentUser.uid, setScheduledPayments,
+            { type: 'update', id, original, fields: ['isActive'] });
         },
       }
     );
@@ -2403,10 +2380,11 @@ const Dashboard: React.FC = () => {
         onQueued: () => { accepted = true; },
         onSuccess: () => { accepted = true; },
         onError: () => {
-          setScheduledPaymentRecords((prev) => prev.filter((r) => r.id !== recordId));
+          reconcileOptimisticCollection('scheduledPaymentRecords', currentUser.uid, setScheduledPaymentRecords,
+            { type: 'create', id: recordId });
           if (generatedExpensePayload) {
-            setExpenses((prev) => prev.filter((expense) => expense.id !== generatedExpensePayload.id));
-            dataService.updateCache<Expense[]>('expenses', currentUser.uid, (data) => data.filter((expense) => expense.id !== generatedExpensePayload.id));
+            reconcileOptimisticCollection('expenses', currentUser.uid, setExpenses,
+              { type: 'create', id: generatedExpensePayload.id! });
           }
         },
       }
@@ -2438,9 +2416,9 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => {},
         onError: () => {
-          if (original) {
-            setScheduledPaymentRecords((prev) => [...prev, original]);
-          }
+          const ownerId = original?.userId || currentUser?.uid;
+          if (ownerId) reconcileOptimisticCollection('scheduledPaymentRecords', ownerId, setScheduledPaymentRecords,
+            { type: 'delete', id, original, index: scheduledPaymentRecords.findIndex((record) => record.id === id) });
         },
       }
     );
@@ -2518,9 +2496,7 @@ const Dashboard: React.FC = () => {
           requestDataRefresh(['incomes', 'banks', 'ewallets']);
         },
         onError: () => {
-          setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
-          // Rollback cache
-          dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => data.filter((i) => i.id !== incomeId));
+          reconcileOptimisticCollection('incomes', currentUser.uid, setIncomes, { type: 'create', id: incomeId });
         },
       }
     );
@@ -2566,15 +2542,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => { requestDataRefresh(['incomes', 'banks', 'ewallets']); },
         onError: () => {
-          if (originalIncome) {
-            setIncomes((prev) => prev.map((i) => (i.id === id ? originalIncome : i)));
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => 
-                data.map((i) => (i.id === id ? originalIncome : i))
-              );
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('incomes', currentUser.uid, setIncomes,
+            { type: 'update', id, original: originalIncome, fields: Object.keys(updates) as (keyof Income)[] });
         },
       }
     );
@@ -2599,13 +2568,8 @@ const Dashboard: React.FC = () => {
         retryToQueueOnFail: true,
         onSuccess: () => { requestDataRefresh(['incomes', 'banks', 'ewallets']); },
         onError: () => {
-          if (incomeToDelete) {
-            setIncomes((prev) => [...prev, incomeToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Income[]>('incomes', currentUser.uid, (data) => [...data, incomeToDelete]);
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('incomes', currentUser.uid, setIncomes,
+            { type: 'delete', id, original: incomeToDelete, index: incomes.findIndex((income) => income.id === id) });
         },
       }
     );
@@ -2682,7 +2646,7 @@ const Dashboard: React.FC = () => {
           requestDataRefresh(['transfers', 'expenses', 'banks', 'ewallets']);
         },
         onError: () => {
-          setTransfers((prev) => prev.filter((transfer) => transfer.id !== transferId));
+          reconcileOptimisticCollection('transfers', currentUser.uid, setTransfers, { type: 'create', id: transferId });
         },
       }
     );
@@ -2720,9 +2684,8 @@ const Dashboard: React.FC = () => {
           showNotification('success', t('transferDeleted'));
         },
         onError: () => {
-          if (transferToDelete) {
-            setTransfers((prev) => [...prev, transferToDelete]);
-          }
+          if (currentUser) reconcileOptimisticCollection('transfers', currentUser.uid, setTransfers,
+            { type: 'delete', id, original: transferToDelete, index: transfers.findIndex((transfer) => transfer.id === id) });
         },
       }
     );
@@ -2767,9 +2730,7 @@ const Dashboard: React.FC = () => {
           );
         },
         onError: () => {
-          setCards((prev) => prev.filter((c) => c.id !== cardId));
-          // Rollback cache
-          dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => data.filter((c) => c.id !== cardId));
+          reconcileOptimisticCollection('cards', currentUser.uid, setCards, { type: 'create', id: cardId });
         },
       }
     );
@@ -2806,9 +2767,7 @@ const Dashboard: React.FC = () => {
           );
         },
         onError: () => {
-          setBanks(prev => prev.filter(b => b.id !== bankId));
-          // Rollback cache
-          dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => data.filter((b) => b.id !== bankId));
+          reconcileOptimisticCollection('banks', currentUser.uid, setBanks, { type: 'create', id: bankId });
         },
       }
     );
@@ -2837,13 +2796,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          setBanks(prev => prev.map(b => b.id === id ? original : b));
-          // Rollback cache
-          if (currentUser) {
-            dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => 
-              data.map((b) => (b.id === id ? original : b))
-            );
-          }
+          if (currentUser) reconcileOptimisticCollection('banks', currentUser.uid, setBanks,
+            { type: 'update', id, original, fields: Object.keys(updates) as (keyof Bank)[] });
         },
       }
     );
@@ -2869,11 +2823,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          setBanks(prev => [...prev, original]);
-          // Rollback cache
-          if (currentUser) {
-            dataService.updateCache<Bank[]>('banks', currentUser.uid, (data) => [...data, original]);
-          }
+          if (currentUser) reconcileOptimisticCollection('banks', currentUser.uid, setBanks,
+            { type: 'delete', id, original, index: banks.findIndex((bank) => bank.id === id) });
         },
       }
     );
@@ -2904,17 +2855,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (originalCard) {
-            setCards((prev) =>
-              prev.map((c) => (c.id === id ? originalCard : c))
-            );
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => 
-                data.map((c) => (c.id === id ? originalCard : c))
-              );
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('cards', currentUser.uid, setCards,
+            { type: 'update', id, original: originalCard, fields: Object.keys(updates) as (keyof Card)[] });
         },
       }
     );
@@ -2941,13 +2883,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (cardToDelete) {
-            setCards((prev) => [...prev, cardToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<Card[]>('cards', currentUser.uid, (data) => [...data, cardToDelete]);
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('cards', currentUser.uid, setCards,
+            { type: 'delete', id, original: cardToDelete, index: cards.findIndex((card) => card.id === id) });
         },
       }
     );
@@ -2992,9 +2929,7 @@ const Dashboard: React.FC = () => {
           );
         },
         onError: () => {
-          setEWallets((prev) => prev.filter((w) => w.id !== walletId));
-          // Rollback cache
-          dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => data.filter((w) => w.id !== walletId));
+          reconcileOptimisticCollection('ewallets', currentUser.uid, setEWallets, { type: 'create', id: walletId });
         },
       }
     );
@@ -3026,15 +2961,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (originalWallet) {
-            setEWallets((prev) => prev.map((w) => (w.id === id ? originalWallet : w)));
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => 
-                data.map((w) => (w.id === id ? originalWallet : w))
-              );
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('ewallets', currentUser.uid, setEWallets,
+            { type: 'update', id, original: originalWallet, fields: Object.keys(updates) as (keyof EWallet)[] });
         },
       }
     );
@@ -3062,13 +2990,8 @@ const Dashboard: React.FC = () => {
           // Cache already updated optimistically, no need to reload
         },
         onError: () => {
-          if (walletToDelete) {
-            setEWallets((prev) => [...prev, walletToDelete]);
-            // Rollback cache
-            if (currentUser) {
-              dataService.updateCache<EWallet[]>('ewallets', currentUser.uid, (data) => [...data, walletToDelete]);
-            }
-          }
+          if (currentUser) reconcileOptimisticCollection('ewallets', currentUser.uid, setEWallets,
+            { type: 'delete', id, original: walletToDelete, index: ewallets.findIndex((wallet) => wallet.id === id) });
         },
       }
     );
@@ -3076,6 +2999,19 @@ const Dashboard: React.FC = () => {
   //#endregion
 
   //#region Event Handlers - Feature Settings
+  const rollbackFeatureSettings = (original: FeatureSettings | null) => {
+    if (!currentUser) return;
+    const baseline = original ?? sessionCache.get<FeatureSettings>('featureSettings', currentUser.uid);
+    if (!baseline) {
+      setFeatureSettings(null);
+      dataService.invalidateCache('featureSettings', currentUser.uid);
+      return;
+    }
+    const reconciled = applyPendingOperations('featureSettings', currentUser.uid, baseline);
+    setFeatureSettings(reconciled);
+    sessionCache.set('featureSettings', currentUser.uid, reconciled);
+  };
+
   const handleUpdateFeatureSettings = async (
     enabledFeatures: FeatureTab[],
     tabFeatures?: FeatureTab[],
@@ -3110,9 +3046,7 @@ const Dashboard: React.FC = () => {
           requestDataRefresh(['featureSettings']);
         },
         onError: () => {
-          if (originalSettings) {
-            setFeatureSettings(originalSettings);
-          }
+          rollbackFeatureSettings(originalSettings);
         },
       }
     );
@@ -3141,7 +3075,7 @@ const Dashboard: React.FC = () => {
           requestDataRefresh(['featureSettings']);
         },
         onError: () => {
-          if (originalSettings) setFeatureSettings(originalSettings);
+          rollbackFeatureSettings(originalSettings);
         },
       }
     );
