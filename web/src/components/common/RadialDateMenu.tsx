@@ -194,13 +194,13 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
           style={{
             width: '60px',
             height: '60px',
-            borderRadius: '50%',
+            borderRadius: 'var(--ui-radius-circle)',
             background: 'var(--tab-active-bg)',
             border: '3px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '24px',
+            fontSize: 'var(--ui-font-24px)',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
             position: 'relative',
             zIndex: 2,
@@ -231,7 +231,7 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
                 transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
                 width: '80px',
                 height: '80px',
-                borderRadius: '50%',
+                borderRadius: 'var(--ui-radius-circle)',
                 background: selectedType === option.type
                   ? 'var(--tab-active-bg)'
                   : 'var(--card-bg)',
@@ -242,19 +242,19 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '10px',
+                fontSize: 'var(--ui-font-10px)',
                 fontWeight: 600,
-                gap: '4px',
+                gap: 'var(--ui-space-4px)',
                 boxShadow: selectedType === option.type
                   ? '0 8px 20px var(--shadow-lg)'
                   : '0 4px 12px var(--shadow-md)',
                 transition: 'all 0.2s ease',
                 zIndex: 1,
-                padding: '4px',
+                padding: 'var(--ui-space-4px)',
               }}
               aria-label={option.label}
             >
-              <span style={{ fontSize: '20px' }}>{option.icon}</span>
+              <span style={{ fontSize: 'var(--ui-font-20px)' }}>{option.icon}</span>
               <span
                 style={{
                   textAlign: 'center',
@@ -317,9 +317,9 @@ const RadialDateMenu: React.FC<RadialDateMenuProps> = ({
           transform: 'translateX(-50%)',
           background: 'var(--card-bg)',
           color: 'var(--text-primary)',
-          padding: '12px 24px',
-          borderRadius: '24px',
-          fontSize: '14px',
+          padding: 'var(--ui-space-12px) var(--ui-space-24px)',
+          borderRadius: 'var(--ui-radius-24px)',
+          fontSize: 'var(--ui-font-14px)',
           fontWeight: 500,
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
           border: '1px solid var(--border-color)',

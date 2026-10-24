@@ -923,7 +923,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               )}
               {/* Show current viewMode date context when not 'all' */}
               {viewMode !== 'all' && selectedDate && (
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--background-secondary)', borderRadius: '6px' }}>
+                <div style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-secondary)', padding: 'var(--ui-space-8px) var(--ui-space-12px)', background: 'var(--background-secondary)', borderRadius: 'var(--ui-radius-6px)' }}>
                   📅 {formatDateByViewMode(viewMode, selectedDate)}
                 </div>
               )}
@@ -931,7 +931,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             {/* Only show date range filters when viewMode is 'all' */}
             {viewMode === 'all' && (
               <div style={styles.filterRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)' }}>
                   <input
                     id="allDatesToggle"
                     type="checkbox"
@@ -944,7 +944,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     }}
                     aria-label={t('allDates')}
                   />
-                  <label htmlFor="allDatesToggle" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{t('allDates')}</label>
+                  <label htmlFor="allDatesToggle" style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-primary)' }}>{t('allDates')}</label>
                 </div>
                 {/* Use shared DatePicker for desktop calendar support */}
                 <div style={styles.dateFilterGroup}>
@@ -1007,7 +1007,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 onClick={() => setShowQuickExpenseForm(true)}
                 aria-label={t('addQuickExpense')}
               >
-                <span style={{ fontSize: '16px' }}>+</span>
+                <span style={{ fontSize: 'var(--ui-font-16px)' }}>+</span>
                 <span>{t('add')}</span>
               </button>
             </div>
@@ -1048,7 +1048,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             <div key={date} style={styles.dateGroup}>
               {/* Date group header with daily subtotal - clickable to expand/collapse */}
               <div className="date-group-header" style={styles.dateGroupHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)' }}>
                   {multiSelectEnabled && (
                     <input
                       type="checkbox"
@@ -1069,7 +1069,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleGroupCollapse(date)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer', border: 0, background: 'transparent', padding: 0, color: 'inherit', textAlign: 'left' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)', flex: 1, cursor: 'pointer', border: 0, background: 'transparent', padding: 'var(--ui-space-0px)', color: 'inherit', textAlign: 'left' }}
                     aria-expanded={!isCollapsed}
                     aria-label={`${isCollapsed ? t('expandGroup') : t('collapseGroup')} ${formatDate(date)}`}
                   >
@@ -1105,10 +1105,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   }}
                 >
               {/* View Mode - edit is now done via popup */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-8px)' }}>
                   {/* First row: time, category, status on left; amount info on right */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--ui-space-12px)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                       {multiSelectEnabled && (
                         <input
                           type="checkbox"
@@ -1138,7 +1138,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--ui-space-2px)', flexShrink: 0 }}>
                       {/* Amount Display */}
                       {(() => {
                         const color = isRepaid ? (hasExcess ? 'var(--info-text)' : 'var(--warning-text)') : 'var(--error-text)';
@@ -1146,7 +1146,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                           <div style={{
                             fontWeight: '700',
                             color,
-                            fontSize: '16px',
+                            fontSize: 'var(--ui-font-16px)',
                             textAlign: 'right',
                             lineHeight: 1,
                           }}>
@@ -1162,7 +1162,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       {(() => {
                         if (repaid > 0) {
                               return (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '11px', color: 'var(--text-secondary)', gap: '1px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 'var(--ui-font-11px)', color: 'var(--text-secondary)', gap: 'var(--ui-space-1px)' }}>
                               <div>{t('original')}: <span style={{ color: 'var(--error-text)' }}>{formatMoney(expenseDisplayAmount, expenseDisplayCurrency)}</span></div>
                               <div>{t('repaid')}: <span style={{ color: 'var(--success-text)' }}>{formatMoney(repaidDisplay, expenseDisplayCurrency)}</span></div>
                             </div>
@@ -1177,13 +1177,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   <h3 style={styles.description}>{expense.description}</h3>
 
                   {/* Third row: notes + payment method on left; buttons on right */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--ui-space-12px)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-4px)', flex: 1, minWidth: 0 }}>
                       {expense.notes && <p style={styles.notes}>{expense.notes}</p>}
                       
                       {/* Payment Method Display */}
                       {expense.paymentMethod && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-6px)', fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>
                           {expense.paymentMethod === 'cash' && `💵 ${t('cash')}`}
                           {expense.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                           {expense.paymentMethod === 'e_wallet' && `📱 ${expense.paymentMethodName || t('eWallet')}`}
@@ -1215,7 +1215,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                             return '';
                           };
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-primary)', marginTop: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-4px)', fontSize: 'var(--ui-font-11px)', color: 'var(--accent-primary)', marginTop: 'var(--ui-space-2px)' }}>
                               <span>➡️ {t('to') || '到'}: {getToLabel()}</span>
                             </div>
                           );
@@ -1224,7 +1224,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       })()}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-8px)', alignItems: 'flex-end', flexShrink: 0 }}>
                       {/* Desktop: Show all buttons */}
                       <div className="desktop-actions" style={styles.actions}>
                         <button 
@@ -1443,7 +1443,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                               <div style={styles.progressText}>
                                 {percentage.toFixed(0)}% {t('repaid')} ({formatMoney(settledDisplay, expenseDisplayCurrency)} / {formatMoney(expectedDisplay, expenseDisplayCurrency)})
                               </div>
-                              <div style={{ ...styles.progressText, marginTop: '4px' }}>
+                              <div style={{ ...styles.progressText, marginTop: 'var(--ui-space-4px)' }}>
                                 {t('totalRepaid')}: {formatMoney(repaidDisplay, expenseDisplayCurrency)}
                                 {excessDisplay > 0 && <> · {t('excess')}: {formatMoney(excessDisplay, expenseDisplayCurrency)}</>}
                               </div>
@@ -1459,7 +1459,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       const expenseRepayments = repaymentsByExpense.get(expense.id || '') ?? EMPTY_REPAYMENTS;
                       return (
                         <div style={styles.detailsSubsection}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--ui-space-8px)' }}>
                             <div style={styles.detailsLabel}>📋 {t('repaymentRecords')}</div>
                             <button
                               onClick={() => setShowRepaymentFormForExpenseId(expense.id!)}
@@ -1490,15 +1490,15 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                   return '';
                                 };
                                 return (
-                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+                                  <div key={rep.id} style={{ ...styles.repaymentRecordItem, flexDirection: 'column', alignItems: 'stretch', gap: 'var(--ui-space-4px)' }}>
                                     {/* First row: date, amount, payment method, action buttons */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
+                                      <div style={{ display: 'flex', gap: 'var(--ui-space-12px)', alignItems: 'center', flex: 1 }}>
                                         <span style={styles.repaymentRecordDate}>{formatDateWithUserFormat(rep.date, dateFormat)}</span>
                                         <span style={styles.repaymentRecordAmount}>{formatMoney(getDisplayRepaymentAmount(rep), expenseDisplayCurrency)}</span>
                                         <span style={styles.repaymentRecordMethod}>{getPaymentLabel()}</span>
                                       </div>
-                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                      <div style={{ display: 'flex', gap: 'var(--ui-space-4px)' }}>
                                         <button
                                           onClick={() => setEditingRepayment(rep)}
                                           className="btn-icon btn-icon-primary"
@@ -1521,7 +1521,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                                     </div>
                                     {/* Second row: payerName and note (if any) */}
                                     {(rep.payerName || rep.note) && (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-2px)', paddingLeft: 'var(--ui-space-4px)', fontSize: 'var(--ui-font-12px)', color: 'var(--text-tertiary)' }}>
                                         {rep.payerName && (
                                           <span>👤 {rep.payerName}</span>
                                         )}
@@ -1535,7 +1535,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                               })}
                             </div>
                           ) : (
-                            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', fontStyle: 'italic' }}>
+                            <div style={{ color: 'var(--text-tertiary)', fontSize: 'var(--ui-font-13px)', fontStyle: 'italic' }}>
                               {t('noRepaymentRecords')}
                             </div>
                           )}
@@ -1923,20 +1923,20 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: 'var(--ui-space-20px)',
   },
   filterSection: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    padding: '16px',
+    borderRadius: 'var(--ui-radius-8px)',
+    padding: 'var(--ui-space-16px)',
   },
   filterRow: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
     flexWrap: 'wrap' as const,
     alignItems: 'center',
   },
@@ -1944,34 +1944,34 @@ const styles = {
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     flexWrap: 'wrap' as const,
   },
   filterInput: {
     flex: 1,
     minWidth: '150px',
     width: '100%',
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-6px)',
+    fontSize: 'var(--ui-font-14px)',
   },
   filterSelect: {
     flex: 1,
     minWidth: '120px',
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',
     outline: 'none',
   },
   toggleFiltersButton: {
-    padding: '10px 16px',
+    padding: 'var(--ui-space-10px) var(--ui-space-16px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
@@ -1979,28 +1979,28 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
     transition: 'all 0.2s ease',
   },
   dateFilterGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     flex: 1,
     minWidth: '140px',
   },
   dateLabel: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500' as const,
     color: 'var(--text-secondary)',
     whiteSpace: 'nowrap' as const,
   },
   dateInput: {
     flex: 1,
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     minWidth: '120px',
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',
@@ -2008,44 +2008,44 @@ const styles = {
   },
   filters: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
     flexWrap: 'wrap' as const,
   },
   searchInput: {
     flex: 1,
     minWidth: '200px',
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '4px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-4px)',
+    fontSize: 'var(--ui-font-14px)',
   },
   noData: {
     textAlign: 'center' as const,
-    padding: '40px',
+    padding: 'var(--ui-space-40px)',
     color: 'var(--text-secondary)',
   },
   list: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
     /* Global `body` already has bottom safe-padding to avoid the FAB.
        Remove local padding to prevent double spacing on Expenses page. */
-    paddingBottom: 0,
+    paddingBottom: 'var(--ui-space-0px)',
   },
   selectedCard: {
     boxShadow: '0 0 0 3px var(--accent-secondary)'
   },
-  timeDisplay: { fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '500' as const },
-  mainRow: { display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', minWidth: 0 },
-  leftCol: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, gap: '4px' },
-  rightCol: { display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: '8px', flexShrink: 0 },
+  timeDisplay: { fontSize: 'var(--ui-font-12px)', color: 'var(--text-tertiary)', fontWeight: '500' as const },
+  mainRow: { display: 'flex', justifyContent: 'space-between', gap: 'var(--ui-space-12px)', alignItems: 'flex-start', minWidth: 0 },
+  leftCol: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, gap: 'var(--ui-space-4px)' },
+  rightCol: { display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 'var(--ui-space-8px)', flexShrink: 0 },
   expenseInfo: {
     flex: 1,
     minWidth: 0,
   },
   description: {
-    margin: '0',
-    fontSize: '16px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
     overflow: 'hidden',
@@ -2054,11 +2054,11 @@ const styles = {
   },
   category: {
     display: 'inline-block',
-    padding: '5px 10px',
+    padding: 'var(--ui-space-5px) var(--ui-space-10px)',
     background: 'var(--accent-light)',
     color: 'var(--accent-primary)',
-    borderRadius: '8px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     maxWidth: '150px',
     overflow: 'hidden',
@@ -2069,72 +2069,72 @@ const styles = {
   categoryIcon: {
     width: '36px',
     height: '36px',
-    borderRadius: '50%',
+    borderRadius: 'var(--ui-radius-circle)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     flexShrink: 0,
   },
   categoryName: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
   date: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-tertiary)',
   },
   notes: {
-    margin: '0',
-    fontSize: '14px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
   },
   amount: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '600' as const,
     color: 'var(--error-text)',
-    marginBottom: '4px',
+    marginBottom: 'var(--ui-space-4px)',
     wordBreak: 'break-all' as const,
     lineHeight: '1.2',
   },
   amountSection: {
-    marginBottom: '4px',
+    marginBottom: 'var(--ui-space-4px)',
   },
   amountBreakdown: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'flex-end',
-    gap: '2px',
+    gap: 'var(--ui-space-2px)',
   },
   originalAmount: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-tertiary)',
     textDecoration: 'line-through',
   },
   repaidAmount: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--success-text)',
     fontWeight: '500' as const,
   },
   netAmount: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '700' as const,
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--ui-space-6px)',
   },
   amountBadge: {
     position: 'absolute' as const,
     top: '12px',
     right: '12px',
     backgroundColor: 'transparent',
-    padding: 0,
-    fontSize: '16px',
+    padding: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '700' as const,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
     lineHeight: 1,
     pointerEvents: 'none' as const,
   },
@@ -2143,28 +2143,28 @@ const styles = {
     top: '34px',
     right: '12px',
     textAlign: 'right' as const,
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     color: 'var(--text-secondary)',
     lineHeight: 1.2,
     pointerEvents: 'none' as const,
   },
   excessBadge: {
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
     color: 'var(--info-text)',
   },
   excessBadgeSmall: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     fontWeight: '500' as const,
     color: 'var(--info-text)',
-    marginLeft: '4px',
+    marginLeft: 'var(--ui-space-4px)',
   },
   repaymentAnnotation: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginTop: '6px',
-    fontSize: '11px',
+    gap: 'var(--ui-space-8px)',
+    marginTop: 'var(--ui-space-6px)',
+    fontSize: 'var(--ui-font-11px)',
     color: 'var(--text-secondary)',
   },
   annotationItem: {
@@ -2175,45 +2175,45 @@ const styles = {
     color: 'var(--border-color)',
   },
   completedBadge: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     fontWeight: '600' as const,
     color: 'var(--success-text)',
     backgroundColor: 'var(--success-bg)',
-    padding: '2px 6px',
-    borderRadius: '4px',
+    padding: 'var(--ui-space-2px) var(--ui-space-6px)',
+    borderRadius: 'var(--ui-radius-4px)',
   },
   pendingBadge: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     fontWeight: '600' as const,
     color: 'var(--warning-text)',
     backgroundColor: 'var(--warning-bg)',
-    padding: '2px 6px',
-    borderRadius: '4px',
+    padding: 'var(--ui-space-2px) var(--ui-space-6px)',
+    borderRadius: 'var(--ui-radius-4px)',
   },
   completedCheck: {
-    marginLeft: '6px',
+    marginLeft: 'var(--ui-space-6px)',
     color: 'var(--success-text)',
     fontWeight: '700' as const,
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     lineHeight: 1,
     display: 'inline-flex',
     alignItems: 'center',
   },
-  actions: { gap: '8px' },
+  actions: { gap: 'var(--ui-space-8px)' },
   mobileActions: {
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
   },
   menuContainer: {
     position: 'relative' as const,
   },
   menuButton: {
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
-    fontSize: '20px',
+    fontSize: 'var(--ui-font-20px)',
     fontWeight: 'bold' as const,
     lineHeight: '1',
   },
@@ -2221,10 +2221,10 @@ const styles = {
     position: 'absolute' as const,
     right: 0,
     top: '100%',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
     minWidth: '160px',
@@ -2232,13 +2232,13 @@ const styles = {
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     border: 'none',
     backgroundColor: 'transparent',
     color: 'var(--text-primary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     cursor: 'pointer',
     textAlign: 'left' as const,
   },
@@ -2248,11 +2248,11 @@ const styles = {
     color: 'inherit',
   },
   iconButton: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     border: 'none',
     cursor: 'pointer',
   },
@@ -2283,171 +2283,171 @@ const styles = {
     fontWeight: '600' as const,
   },
   selectToggleButton: {
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     border: '1px solid var(--border-color)',
     backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
     fontWeight: 600,
   },
   selectAllButton: {
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     border: '1px solid var(--success-text)',
     backgroundColor: 'var(--success-bg)',
     color: 'var(--success-text)',
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     cursor: 'pointer',
     fontWeight: 600,
   },
   deleteSelectedButton: {
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     border: 'none',
     backgroundColor: 'var(--error-bg)',
     color: 'var(--error-text)',
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     cursor: 'pointer',
     fontWeight: 600,
   },
   selectRow: {
     display: 'flex',
-    gap: '10px',
-    marginTop: '10px',
+    gap: 'var(--ui-space-10px)',
+    marginTop: 'var(--ui-space-10px)',
     flexWrap: 'wrap' as const,
     alignItems: 'center',
   },
   dateGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-10px)',
+    marginBottom: 'var(--ui-space-12px)',
   },
   dateGroupHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     backgroundColor: 'var(--info-bg)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     borderLeft: '4px solid var(--info-text)',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     userSelect: 'none' as const,
   },
   dateGroupDate: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
   expenseCount: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '400' as const,
     color: 'var(--text-secondary)',
   },
   collapseIcon: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     color: 'var(--accent-primary)',
     display: 'inline-block',
     width: '12px',
     transition: 'transform 0.2s',
   },
   dateGroupTotal: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600' as const,
     color: 'var(--info-text)',
   },
   inlineRepaymentSection: {
     // Spacer wrapper only; visual card is handled inside RepaymentManager (inline mode)
-    marginTop: '12px',
+    marginTop: 'var(--ui-space-12px)',
   },
   // More Details styles
   moreDetailsRow: {
     display: 'flex',
     justifyContent: 'center',
-    marginTop: '8px',
+    marginTop: 'var(--ui-space-8px)',
   },
   moreDetailsBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     background: 'none',
     border: 'none',
     color: 'var(--text-secondary)',
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     cursor: 'pointer',
-    padding: '4px 12px',
-    borderRadius: '4px',
+    padding: 'var(--ui-space-4px) var(--ui-space-12px)',
+    borderRadius: 'var(--ui-radius-4px)',
     transition: 'all 0.2s',
     width: '100%',
   },
   detailsSection: {
-    marginTop: '12px',
-    padding: '12px',
+    marginTop: 'var(--ui-space-12px)',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     maxHeight: '300px',
     overflowY: 'auto' as const,
   },
   detailsSubsection: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
   },
   detailsLabel: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     color: 'var(--text-secondary)',
   },
   detailsValue: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-primary)',
   },
   amountItemsDetail: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '2px',
+    gap: 'var(--ui-space-2px)',
   },
   amountItemDetail: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-primary)',
   },
   amountItemDesc: {
     color: 'var(--text-secondary)',
   },
   taxDetailRow: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
     fontStyle: 'italic' as const,
-    marginTop: '4px',
-    paddingTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
+    paddingTop: 'var(--ui-space-4px)',
     borderTop: '1px solid var(--border-color)',
   },
   repaymentProgress: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
   },
   progressBar: {
     height: '8px',
     background: 'var(--border-color)',
-    borderRadius: '4px',
+    borderRadius: 'var(--ui-radius-4px)',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: '4px',
+    borderRadius: 'var(--ui-radius-4px)',
     transition: 'width 0.3s',
   },
   progressText: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
   },
   addRepaymentBtn: {
-    padding: '6px 12px',
-    fontSize: '12px',
+    padding: 'var(--ui-space-6px) var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500' as const,
-    borderRadius: '6px',
+    borderRadius: 'var(--ui-radius-6px)',
     border: '1px solid var(--success-text)',
     background: 'transparent',
     color: 'var(--success-text)',
@@ -2457,16 +2457,16 @@ const styles = {
   repaymentRecordsList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '6px',
+    gap: 'var(--ui-space-6px)',
   },
   repaymentRecordItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '6px 8px',
+    gap: 'var(--ui-space-12px)',
+    padding: 'var(--ui-space-6px) var(--ui-space-8px)',
     background: 'var(--card-bg)',
-    borderRadius: '4px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-4px)',
+    fontSize: 'var(--ui-font-12px)',
   },
   repaymentRecordDate: {
     color: 'var(--text-secondary)',
@@ -2482,11 +2482,11 @@ const styles = {
     flex: 1,
   },
   manageRepaymentsBtn: {
-    marginTop: '8px',
-    padding: '6px 12px',
-    fontSize: '12px',
+    marginTop: 'var(--ui-space-8px)',
+    padding: 'var(--ui-space-6px) var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500' as const,
-    borderRadius: '6px',
+    borderRadius: 'var(--ui-radius-6px)',
     border: '1px solid var(--border-color)',
     background: 'transparent',
     color: 'var(--text-secondary)',

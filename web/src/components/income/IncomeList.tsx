@@ -202,7 +202,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
           if (ids.length === 0) return;
           setBulkDeleteConfirm(true);
         }}
-        style={{ marginBottom: '8px' }}
+        style={{ marginBottom: 'var(--ui-space-8px)' }}
       />
       {groupedIncomes.map(({ date, incomes: dayIncomes, dailyTotal }) => {
         const isCollapsed = collapsedGroups.has(date);
@@ -210,7 +210,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
           <div key={date} style={styles.dateGroup}>
             {/* Date group header with daily subtotal - clickable to expand/collapse */}
             <div className="date-group-header" style={styles.dateGroupHeader} onClick={() => toggleGroupCollapse(date)}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)' }}>
                 <span style={styles.collapseIcon}>{isCollapsed ? '▶' : '▼'}</span>
                 <span style={styles.dateGroupDate}>{formatDate(date)}</span>
                 <span style={styles.incomeCount}>({dayIncomes.length})</span>
@@ -230,11 +230,11 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
         <div key={income.id} className="income-card" style={{
           ...(openMenuId === income.id ? { zIndex: 9999 } : {}),
           display: 'flex',
-          gap: '10px',
+          gap: 'var(--ui-space-10px)',
           ...(isSelectionMode && selectedIds.has(income.id!) ? { border: '1px solid var(--accent-primary)' } : {})
         }}>
           {isSelectionMode && (
-            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 'var(--ui-space-8px)' }}>
               <input
                 type="checkbox"
                 checked={selectedIds.has(income.id!)}
@@ -300,7 +300,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                     </div>
                     
                     {/* Desktop: Show individual buttons */}
-                    <div className="desktop-actions" style={{ gap: '8px' }}>
+                    <div className="desktop-actions" style={{ gap: 'var(--ui-space-8px)' }}>
                       <button
                         onClick={() => startEdit(income)}
                         className="btn-icon btn-icon-primary"
@@ -434,13 +434,13 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   amountBadge: {
     position: 'absolute' as const,
     top: '12px',
     right: '12px',
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '700' as const,
     color: 'var(--success-text)',
     pointerEvents: 'none' as const,
@@ -451,26 +451,26 @@ const styles = {
   headerRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-12px)',
     flexWrap: 'wrap' as const,
     minWidth: 0,
-    paddingRight: '96px', // reserve space for top-right amount badge
+    paddingRight: 'var(--ui-space-96px)', // reserve space for top-right amount badge
   },
   dateDisplay: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
     flexShrink: 0,
   },
   linkedExpenseChip: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--accent-primary)',
     background: 'var(--accent-light)',
-    padding: '5px 10px',
-    borderRadius: '8px',
+    padding: 'var(--ui-space-5px) var(--ui-space-10px)',
+    borderRadius: 'var(--ui-radius-8px)',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
     maxWidth: '60%',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -482,33 +482,33 @@ const styles = {
   },
   mainRow: {
     display: 'flex',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     alignItems: 'flex-start',
   },
   bottomRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
-    marginTop: '4px',
+    gap: 'var(--ui-space-12px)',
+    marginTop: 'var(--ui-space-4px)',
   },
   leftCol: {
     flex: 1,
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   titleRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   typeBadge: {
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '600' as const,
-    padding: '4px 10px',
-    borderRadius: '6px',
+    padding: 'var(--ui-space-4px) var(--ui-space-10px)',
+    borderRadius: 'var(--ui-radius-6px)',
     flexShrink: 0,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
@@ -518,7 +518,7 @@ const styles = {
     minWidth: 0,
   },
   incomeTitle: {
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
     overflow: 'hidden',
@@ -526,33 +526,33 @@ const styles = {
     whiteSpace: 'nowrap' as const,
   },
   payerName: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
-    marginTop: '2px',
+    marginTop: 'var(--ui-space-2px)',
   },
   incomeNote: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
     fontStyle: 'italic' as const,
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     flex: 1,
   },
   rightCol: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'flex-end',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   incomeActions: {
     display: 'flex',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   iconButton: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -567,13 +567,13 @@ const styles = {
     position: 'relative' as const,
   },
   menuButton: {
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
-    fontSize: '20px',
+    fontSize: 'var(--ui-font-20px)',
     fontWeight: 'bold' as const,
     lineHeight: '1',
   },
@@ -581,10 +581,10 @@ const styles = {
     position: 'absolute' as const,
     right: 0,
     top: '100%',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
     minWidth: '160px',
@@ -592,13 +592,13 @@ const styles = {
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     border: 'none',
     backgroundColor: 'transparent',
     color: 'var(--text-primary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     cursor: 'pointer',
     textAlign: 'left' as const,
   },
@@ -611,39 +611,39 @@ const styles = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 20px',
+    padding: 'var(--ui-space-60px) var(--ui-space-20px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '12px',
+    borderRadius: 'var(--ui-radius-12px)',
   },
   emptyIcon: {
-    fontSize: '64px',
-    marginBottom: '16px',
+    fontSize: 'var(--ui-font-64px)',
+    marginBottom: 'var(--ui-space-16px)',
     opacity: 0.5,
   },
   emptyText: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
-    marginBottom: '8px',
+    marginBottom: 'var(--ui-space-8px)',
   },
   emptySubtext: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-tertiary)',
   },
   dateGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
-    marginBottom: '8px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-8px)',
   },
   dateGroupHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 14px',
+    padding: 'var(--ui-space-10px) var(--ui-space-14px)',
     background: 'var(--success-bg)',
-    borderRadius: '10px',
+    borderRadius: 'var(--ui-radius-10px)',
     borderLeft: '5px solid var(--success-text)',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
@@ -651,46 +651,46 @@ const styles = {
     boxShadow: '0 2px 6px var(--shadow)',
   },
   dateGroupDate: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
   incomeCount: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '400' as const,
     color: 'var(--text-secondary)',
   },
   collapseIcon: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     color: 'var(--success-text)',
     display: 'inline-block',
     width: '12px',
     transition: 'transform 0.2s',
   },
   dateGroupTotal: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600' as const,
     color: 'var(--success-text)',
   },
   inlineEditor: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   inlineRow: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
     flexWrap: 'wrap' as const,
   },
   inlineActions: {
     display: 'flex',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     justifyContent: 'flex-end',
   },
   saveButton: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     backgroundColor: 'var(--success-bg)',
     display: 'flex',
     alignItems: 'center',
@@ -698,9 +698,9 @@ const styles = {
     cursor: 'pointer',
   },
   cancelButton: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     backgroundColor: 'var(--bg-tertiary)',
     display: 'flex',
     alignItems: 'center',

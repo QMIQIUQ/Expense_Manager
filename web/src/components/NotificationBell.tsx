@@ -103,7 +103,7 @@ const NotificationBell: React.FC = () => {
         ...panelStyle,
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--border-color)',
-        borderRadius: '12px',
+        borderRadius: 'var(--ui-radius-12px)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
         overflow: 'hidden',
         display: 'flex',
@@ -118,14 +118,14 @@ const NotificationBell: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 16px',
+        padding: 'var(--ui-space-12px) var(--ui-space-16px)',
         borderBottom: '1px solid var(--border-color)',
         flexShrink: 0,
       }}>
-        <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>
+        <span style={{ fontWeight: 600, fontSize: 'var(--ui-font-15px)', color: 'var(--text-primary)' }}>
           {t('notifications')}
         </span>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: 'var(--ui-space-8px)' }}>
           {notificationHistory.length > 0 && (
             <>
               <button
@@ -133,11 +133,11 @@ const NotificationBell: React.FC = () => {
                 style={{
                   background: 'none',
                   border: 'none',
-                  fontSize: '12px',
+                  fontSize: 'var(--ui-font-12px)',
                   color: 'var(--accent-primary)',
                   cursor: 'pointer',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
+                  padding: 'var(--ui-space-2px) var(--ui-space-6px)',
+                  borderRadius: 'var(--ui-radius-4px)',
                 }}
               >
                 {t('markAllRead')}
@@ -147,11 +147,11 @@ const NotificationBell: React.FC = () => {
                 style={{
                   background: 'none',
                   border: 'none',
-                  fontSize: '12px',
+                  fontSize: 'var(--ui-font-12px)',
                   color: 'var(--text-secondary)',
                   cursor: 'pointer',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
+                  padding: 'var(--ui-space-2px) var(--ui-space-6px)',
+                  borderRadius: 'var(--ui-radius-4px)',
                 }}
               >
                 {t('clearAll')}
@@ -165,12 +165,12 @@ const NotificationBell: React.FC = () => {
       <div style={{ overflowY: 'auto', flex: 1 }}>
         {notificationHistory.length === 0 ? (
           <div style={{
-            padding: '32px 16px',
+            padding: 'var(--ui-space-32px) var(--ui-space-16px)',
             textAlign: 'center',
             color: 'var(--text-secondary)',
-            fontSize: '14px',
+            fontSize: 'var(--ui-font-14px)',
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔔</div>
+            <div style={{ fontSize: 'var(--ui-font-32px)', marginBottom: 'var(--ui-space-8px)' }}>🔔</div>
             {t('noNotifications')}
           </div>
         ) : (
@@ -179,8 +179,8 @@ const NotificationBell: React.FC = () => {
               key={item.id}
               style={{
                 display: 'flex',
-                gap: '10px',
-                padding: '10px 16px',
+                gap: 'var(--ui-space-10px)',
+                padding: 'var(--ui-space-10px) var(--ui-space-16px)',
                 borderBottom: '1px solid var(--border-color)',
                 backgroundColor: item.read ? 'transparent' : 'var(--accent-light, var(--bg-secondary))',
                 transition: 'background-color 0.2s',
@@ -189,22 +189,22 @@ const NotificationBell: React.FC = () => {
               <div style={{
                 width: '28px',
                 height: '28px',
-                borderRadius: '50%',
+                borderRadius: 'var(--ui-radius-circle)',
                 backgroundColor: getTypeBg(item.type),
                 color: getTypeColor(item.type),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '13px',
+                fontSize: 'var(--ui-font-13px)',
                 fontWeight: 700,
                 flexShrink: 0,
-                marginTop: '2px',
+                marginTop: 'var(--ui-space-2px)',
               }}>
                 {getIcon(item.type)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: '13px',
+                  fontSize: 'var(--ui-font-13px)',
                   color: 'var(--text-primary)',
                   lineHeight: '1.4',
                   wordBreak: 'break-word',
@@ -212,9 +212,9 @@ const NotificationBell: React.FC = () => {
                   {item.message}
                 </div>
                 <div style={{
-                  fontSize: '11px',
+                  fontSize: 'var(--ui-font-11px)',
                   color: 'var(--text-secondary)',
-                  marginTop: '4px',
+                  marginTop: 'var(--ui-space-4px)',
                 }}>
                   {formatRelativeTime(item.timestamp)}
                 </div>
@@ -223,10 +223,10 @@ const NotificationBell: React.FC = () => {
                 <div style={{
                   width: '8px',
                   height: '8px',
-                  borderRadius: '50%',
+                  borderRadius: 'var(--ui-radius-circle)',
                   backgroundColor: 'var(--accent-primary)',
                   flexShrink: 0,
-                  marginTop: '6px',
+                  marginTop: 'var(--ui-space-6px)',
                 }} />
               )}
             </div>
@@ -275,14 +275,14 @@ const NotificationBell: React.FC = () => {
               right: 0,
               minWidth: '16px',
               height: '16px',
-              fontSize: '10px',
+              fontSize: 'var(--ui-font-10px)',
               backgroundColor: 'var(--error-text)',
               color: '#ffffff',
-              borderRadius: '8px',
+              borderRadius: 'var(--ui-radius-8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '0 3px',
+              padding: 'var(--ui-space-0px) var(--ui-space-3px)',
               fontWeight: 700,
               lineHeight: 1,
             }}

@@ -24,10 +24,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       className={className}
       style={{
         width: '100%',
-        padding: '10px 12px',
+        padding: 'var(--ui-space-10px) var(--ui-space-12px)',
         border: '1px solid var(--border-color)',
-        borderRadius: '8px',
-        fontSize: '14px',
+        borderRadius: 'var(--ui-radius-8px)',
+        fontSize: 'var(--ui-font-14px)',
         outline: 'none',
         backgroundColor: 'var(--input-bg)',
         color: 'var(--text-primary)',

@@ -71,11 +71,11 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
     container: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '16px',
+      gap: 'var(--ui-space-16px)',
       position: 'relative' as const,
     },
     content: {
-      marginTop: '8px',
+      marginTop: 'var(--ui-space-8px)',
     },
   };
 
@@ -133,7 +133,7 @@ const PaymentMethodsTab: React.FC<PaymentMethodsTabProps> = ({
         )}
         {activeView === 'transfers' && (
           <div>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            <h3 style={{ margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-16px) var(--ui-space-0px)', fontSize: 'var(--ui-font-24px)', fontWeight: 600, color: 'var(--text-primary)' }}>
               {t('transferHistory')}
             </h3>
             <TransferList

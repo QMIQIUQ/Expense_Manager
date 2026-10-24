@@ -20,14 +20,14 @@ const SubTabs: React.FC<SubTabsProps> = ({ tabs, activeTab, onTabChange }) => {
   const styles = {
     container: {
       display: 'flex',
-      gap: '8px',
+      gap: 'var(--ui-space-2)',
       borderBottom: '1px solid var(--border-color)',
-      marginBottom: '16px',
+      marginBottom: 'var(--ui-space-4)',
     },
     tab: (isActive: boolean) => ({
-      padding: '8px 16px',
+      padding: 'var(--ui-space-2) var(--ui-space-4)',
       fontWeight: 500,
-      fontSize: '0.875rem',
+      fontSize: 'var(--ui-font-md-sm)',
       transition: 'all 0.2s',
       color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
       cursor: 'pointer',

@@ -119,63 +119,63 @@ Or tap address bar and select "Install"
       maxWidth: '400px',
       zIndex: 9999,
       marginLeft: 'auto',
-      marginRight: 0,
+      marginRight: 'var(--ui-space-0px)',
     }}>
       <div style={{
         backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
+        borderRadius: 'var(--ui-radius-8px)',
         boxShadow: '0 10px 25px var(--shadow)',
-        padding: '16px',
+        padding: 'var(--ui-space-16px)',
         border: '1px solid var(--border-color)',
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: '12px',
+          gap: 'var(--ui-space-12px)',
         }}>
           <div style={{
             width: '48px',
             height: '48px',
             backgroundColor: 'var(--success-bg)',
-            borderRadius: '8px',
+            borderRadius: 'var(--ui-radius-8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: '24px' }}>💰</span>
+            <span style={{ fontSize: 'var(--ui-font-24px)' }}>💰</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{
-              fontSize: '14px',
+              fontSize: 'var(--ui-font-14px)',
               fontWeight: 600,
               color: 'var(--text-primary)',
-              margin: '0 0 4px 0',
+              margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-4px) var(--ui-space-0px)',
             }}>
               Install Expense Manager
             </h3>
             <p style={{
-              fontSize: '12px',
+              fontSize: 'var(--ui-font-12px)',
               color: 'var(--text-secondary)',
-              margin: '0 0 12px 0',
+              margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px)',
               lineHeight: '1.5',
             }}>
               Install this app on your device for quick and easy access when you're on the go.
             </p>
             <div style={{
               display: 'flex',
-              gap: '8px',
+              gap: 'var(--ui-space-8px)',
             }}>
               <button
                 onClick={handleInstallClick}
                 style={{
                   flex: 1,
-                  padding: '6px 12px',
+                  padding: 'var(--ui-space-6px) var(--ui-space-12px)',
                   backgroundColor: 'var(--success-text)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '12px',
+                  borderRadius: 'var(--ui-radius-4px)',
+                  fontSize: 'var(--ui-font-12px)',
                   fontWeight: 500,
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',
@@ -192,12 +192,12 @@ Or tap address bar and select "Install"
               <button
                 onClick={dismissPrompt}
                 style={{
-                  padding: '6px 12px',
+                  padding: 'var(--ui-space-6px) var(--ui-space-12px)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '12px',
+                  borderRadius: 'var(--ui-radius-4px)',
+                  fontSize: 'var(--ui-font-12px)',
                   fontWeight: 500,
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',

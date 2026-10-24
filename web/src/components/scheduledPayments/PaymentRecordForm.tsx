@@ -92,8 +92,8 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
   return (
     <div className="flex flex-col gap-4" style={{ 
       backgroundColor: 'var(--bg-secondary)', 
-      padding: '16px',
-      borderRadius: '8px',
+      padding: 'var(--ui-space-16px)',
+      borderRadius: 'var(--ui-radius-8px)',
       border: '1px solid var(--border-color)'
     }}>
       {/* Header */}
@@ -385,7 +385,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               backgroundColor: 'var(--accent-light)',
               color: 'var(--accent-primary)',
               fontWeight: 600,
-              borderRadius: '6px',
+              borderRadius: 'var(--ui-radius-6px)',
               lineHeight: 1.2,
             }}
           >
@@ -399,7 +399,7 @@ const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({
               backgroundColor: 'var(--bg-secondary)',
               color: 'var(--text-primary)',
               fontWeight: 600,
-              borderRadius: '6px',
+              borderRadius: 'var(--ui-radius-6px)',
               lineHeight: 1.2,
             }}
           >

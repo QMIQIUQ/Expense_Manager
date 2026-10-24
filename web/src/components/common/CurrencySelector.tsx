@@ -211,10 +211,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   label: {
     display: 'block',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 600,
     color: 'var(--text-primary)',
-    marginBottom: '6px',
+    marginBottom: 'var(--ui-space-6px)',
   },
   trigger: {
     width: '100%',
@@ -222,9 +222,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
-    padding: '12px 14px',
-    borderRadius: '8px',
+    gap: 'var(--ui-space-12px)',
+    padding: 'var(--ui-space-12px) var(--ui-space-14px)',
+    borderRadius: 'var(--ui-radius-8px)',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'var(--border-color)',
@@ -236,7 +236,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   triggerCompact: {
     minHeight: '44px',
-    padding: '10px 12px',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
   },
   triggerOpen: {
     borderColor: 'var(--accent-primary)',
@@ -249,9 +249,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   triggerValue: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     minWidth: 0,
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 600,
   },
   triggerSymbol: {
@@ -269,35 +269,35 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 18px 36px rgba(0, 0, 0, 0.2)',
-    padding: '12px',
+    padding: 'var(--ui-space-12px)',
   },
   menuHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '8px',
-    marginBottom: '10px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-10px)',
   },
   menuTitle: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 600,
     color: 'var(--text-primary)',
   },
   menuSubtitle: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
   },
   menuGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   currencyOption: {
     minHeight: '52px',
-    padding: '10px 12px',
-    borderRadius: '8px',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
+    borderRadius: 'var(--ui-radius-8px)',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'var(--border-color)',
@@ -308,7 +308,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
   },
   currencyOptionActive: {
     borderColor: 'var(--accent-primary)',
@@ -317,15 +317,15 @@ const styles: { [key: string]: React.CSSProperties } = {
   currencyOptionTop: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--ui-space-6px)',
     minWidth: 0,
   },
   currencySymbol: {
-    fontSize: '15px',
+    fontSize: 'var(--ui-font-15px)',
     fontWeight: 700,
   },
   currencyCode: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     fontWeight: 600,
   },
   currencyCheckIcon: {
@@ -334,7 +334,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexShrink: 0,
   },
   currencyName: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
     lineHeight: 1.2,
   },

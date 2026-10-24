@@ -1235,7 +1235,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     const formatReviewAmount = (amountCents: number): string => formatMoney(fromMinorUnits(amountCents, reviewCurrency), reviewCurrency);
 
     const sourceActions = (
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--ui-space-8px)', flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={() => handleChooseReceiptSource('file')}
@@ -1264,19 +1264,19 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
     );
 
     return (
-      <div style={{ ...styles.stepContent, gap: '16px' }}>
+      <div style={{ ...styles.stepContent, gap: 'var(--ui-space-16px)' }}>
         <div style={styles.stepHeader}>
           <span style={styles.stepHeaderIcon}>🧾</span>
           <h2 style={styles.stepHeaderTitle}>{receiptTexts.receiptFlowTitle}</h2>
         </div>
 
         <div style={{
-          fontSize: 13,
+          fontSize: 'var(--ui-font-13px)',
           lineHeight: 1.5,
           color: 'var(--text-secondary)',
-          padding: '10px 12px',
+          padding: 'var(--ui-space-10px) var(--ui-space-12px)',
           border: '1px solid var(--border-color, #e9ecef)',
-          borderRadius: 8,
+          borderRadius: 'var(--ui-radius-8px)',
           background: 'var(--bg-secondary, #f8f9fa)',
         }}>
           {receiptTexts.receiptFlowSubtitle}
@@ -1286,24 +1286,24 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         {receiptPreviewUrl && (
           <div style={{
             display: 'flex',
-            gap: '12px',
+            gap: 'var(--ui-space-12px)',
             alignItems: 'center',
             flexWrap: 'wrap',
-            padding: '12px',
+            padding: 'var(--ui-space-12px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
+            borderRadius: 'var(--ui-radius-8px)',
             background: 'var(--bg-primary, #fff)',
           }}>
             <img
               src={receiptPreviewUrl}
               alt="Receipt preview"
-              style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-color, #e9ecef)' }}
+              style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 'var(--ui-radius-8px)', border: '1px solid var(--border-color, #e9ecef)' }}
             />
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              <div style={{ fontSize: 'var(--ui-font-13px)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 {receiptOcrStatus || receiptTexts.previewSaved}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 'var(--ui-space-4px)' }}>
                 {receiptOcrSummary || receiptOcrError || receiptTexts.reviewHint}
               </div>
             </div>
@@ -1312,27 +1312,27 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
         {receiptOcrBusy && (
           <div style={{
-            padding: '14px 12px',
+            padding: 'var(--ui-space-14px) var(--ui-space-12px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
+            borderRadius: 'var(--ui-radius-8px)',
             background: 'var(--bg-secondary, #f8f9fa)',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{receiptOcrStatus || receiptTexts.scanning}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{receiptTexts.reviewHint}</div>
+            <div style={{ fontSize: 'var(--ui-font-13px)', fontWeight: 600, color: 'var(--text-primary)' }}>{receiptOcrStatus || receiptTexts.scanning}</div>
+            <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', marginTop: 'var(--ui-space-4px)' }}>{receiptTexts.reviewHint}</div>
           </div>
         )}
 
         {!receiptOcrBusy && sourceChoicesVisible && (
           <div style={{
-            padding: '14px 12px',
+            padding: 'var(--ui-space-14px) var(--ui-space-12px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
+            borderRadius: 'var(--ui-radius-8px)',
             background: 'var(--bg-secondary, #f8f9fa)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            gap: 'var(--ui-space-10px)',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{receiptTexts.chooseSource}</div>
+            <div style={{ fontSize: 'var(--ui-font-13px)', fontWeight: 600, color: 'var(--text-primary)' }}>{receiptTexts.chooseSource}</div>
             {sourceActions}
           </div>
         )}
@@ -1341,14 +1341,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: 'var(--ui-space-16px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
-            padding: '12px',
+            borderRadius: 'var(--ui-radius-8px)',
+            padding: 'var(--ui-space-12px)',
             background: 'var(--bg-primary, #fff)',
           }}>
             {receiptOcrError && <div role="alert" style={styles.receiptDraftWarning}>{receiptOcrError}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--ui-space-12px)' }}>
               <DatePicker
                 label={t('date')}
                 value={receiptReviewFormData.date}
@@ -1381,11 +1381,11 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 <label style={styles.fieldLabel}>{receiptTexts.reviewAmount}</label>
                 {receiptReviewLineItems.length > 0 ? (
                   <div style={{
-                    padding: '10px 12px',
+                    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
                     border: '1px solid var(--border-color, #e9ecef)',
-                    borderRadius: 8,
+                    borderRadius: 'var(--ui-radius-8px)',
                     background: 'var(--bg-secondary, #f8f9fa)',
-                    fontSize: 14,
+                    fontSize: 'var(--ui-font-14px)',
                     fontWeight: 600,
                     color: 'var(--text-primary)',
                   }}>
@@ -1452,14 +1452,14 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {receiptReviewLineItems.length > 0 && (
               <div style={fieldContainerStyle}>
                 <label style={styles.fieldLabel}>{t('amountDetails')}</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-8px)' }}>
                   {receiptReviewLineItems.map((item, index) => (
                     <div
                       key={`${item.description || 'item'}-${index}`}
                       style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 110px 34px',
-                        gap: '8px',
+                        gap: 'var(--ui-space-8px)',
                         alignItems: 'center',
                       }}
                     >
@@ -1501,8 +1501,8 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    paddingTop: '6px',
-                    fontSize: 13,
+                    paddingTop: 'var(--ui-space-6px)',
+                    fontSize: 'var(--ui-font-13px)',
                     color: 'var(--text-secondary)',
                   }}>
                     <span>{t('total')}</span>
@@ -1513,13 +1513,13 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             )}
 
             {receiptOcrText && (
-              <details style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              <details style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>
                 <summary style={{ cursor: 'pointer' }}>{receiptTexts.originalText}</summary>
-                <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{receiptOcrText}</pre>
+                <pre style={{ whiteSpace: 'pre-wrap', marginTop: 'var(--ui-space-8px)' }}>{receiptOcrText}</pre>
               </details>
             )}
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 'var(--ui-space-8px)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <button type="button" onClick={handleApplyReceiptReview} style={styles.buttonPrimary}>
                 {receiptTexts.applyReceipt}
               </button>
@@ -1541,31 +1541,31 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
 
         {showFailureState && !showReceiptSourcePicker && (
           <div style={{
-            padding: '14px 12px',
+            padding: 'var(--ui-space-14px) var(--ui-space-12px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
+            borderRadius: 'var(--ui-radius-8px)',
             background: 'var(--bg-secondary, #f8f9fa)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            gap: 'var(--ui-space-10px)',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{receiptOcrError}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{receiptTexts.reviewHint}</div>
+            <div style={{ fontSize: 'var(--ui-font-13px)', fontWeight: 600, color: 'var(--text-primary)' }}>{receiptOcrError}</div>
+            <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>{receiptTexts.reviewHint}</div>
             {sourceActions}
           </div>
         )}
 
         {!receiptOcrBusy && !sourceChoicesVisible && !hasReviewState && !showFailureState && (
           <div style={{
-            padding: '14px 12px',
+            padding: 'var(--ui-space-14px) var(--ui-space-12px)',
             border: '1px solid var(--border-color, #e9ecef)',
-            borderRadius: 8,
+            borderRadius: 'var(--ui-radius-8px)',
             background: 'var(--bg-secondary, #f8f9fa)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            gap: 'var(--ui-space-10px)',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{receiptTexts.entryHint}</div>
+            <div style={{ fontSize: 'var(--ui-font-13px)', fontWeight: 600, color: 'var(--text-primary)' }}>{receiptTexts.entryHint}</div>
             {sourceActions}
           </div>
         )}
@@ -1641,7 +1641,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
                 ⚠️ {t('notTodayHint') || '注意：选择的日期不是今天'}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-16px)', width: '100%' }}>
               <div style={styles.dateInputRow}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <DatePicker
@@ -2235,7 +2235,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
         </button>
         
         <div style={styles.headerCenter}>
-          <div style={{ ...styles.headerTitle, ...(initialData ? { marginBottom: 0 } : {}) }}>
+          <div style={{ ...styles.headerTitle, ...(initialData ? { marginBottom: 'var(--ui-space-0px)' } : {}) }}>
             {initialData ? (t('editExpense') || '编辑支出') : (t('addExpense') || '新增支出')}
           </div>
           {!initialData && renderProgressIndicator()}
@@ -2331,21 +2331,21 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '100%',
     width: '100%',
-    margin: '0 auto',
+    margin: 'var(--ui-space-0px) auto',
     background: 'var(--card-bg, white)',
-    borderRadius: '16px',
+    borderRadius: 'var(--ui-radius-16px)',
     boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
     display: 'flex',
     flexDirection: 'column',
   },
   header: {
     background: 'var(--bg-secondary, #f8f9fa)',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     borderBottom: '1px solid var(--border-color, #e9ecef)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   headerCenter: {
     flex: 1,
@@ -2354,13 +2354,13 @@ const styles: Record<string, React.CSSProperties> = {
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--ui-space-6px)',
   },
   headerTitle: {
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '600',
     color: 'var(--text-primary)',
-    marginBottom: '8px',
+    marginBottom: 'var(--ui-space-8px)',
   },
   headerNavBtn: {
     width: '36px',
@@ -2368,10 +2368,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: 'bold',
     border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     background: 'var(--card-bg, white)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
@@ -2382,7 +2382,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--success-bg, #d4edda)',
     border: '1px solid var(--success-text, #28a745)',
     color: 'var(--success-text, #28a745)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
   },
   headerNavBtnPrimary: {
     background: 'var(--accent-primary)',
@@ -2394,17 +2394,17 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'not-allowed',
   },
   headerIcon: {
-    fontSize: '20px',
+    fontSize: 'var(--ui-font-20px)',
   },
   progressContainer: {
     display: 'flex',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
   },
   progressBar: {
     flex: 1,
     height: '3px',
     background: 'var(--border-color, #e9ecef)',
-    borderRadius: '2px',
+    borderRadius: 'var(--ui-radius-2px)',
     transition: 'all 0.3s',
   },
   progressBarActive: {
@@ -2412,17 +2412,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   progressSummary: {
     display: 'flex',
-    gap: '6px',
-    padding: '10px 12px',
+    gap: 'var(--ui-space-6px)',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
     overflowX: 'auto',
     background: 'var(--card-bg, white)',
     borderBottom: '1px solid var(--border-color, #e9ecef)',
   },
   summaryChip: {
-    padding: '4px 10px',
+    padding: 'var(--ui-space-4px) var(--ui-space-10px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '12px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-12px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500',
     whiteSpace: 'nowrap',
     cursor: 'pointer',
@@ -2431,7 +2431,7 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s',
   },
   stepContent: {
-    padding: '16px',
+    padding: 'var(--ui-space-16px)',
     flex: 1, // Take available space
     minHeight: '300px',
     maxHeight: 'calc(100vh - 250px)', // Constrain max height to viewport
@@ -2439,7 +2439,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative' as const, // Establish positioning context for absolute children
   },
   editStepContent: {
-    padding: '8px 0',
+    padding: 'var(--ui-space-8px) var(--ui-space-0px)',
     flex: '0 0 auto',
     minHeight: 0,
     maxHeight: 'none',
@@ -2448,21 +2448,21 @@ const styles: Record<string, React.CSSProperties> = {
   stepHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-12px)',
   },
   stepHeaderIcon: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
   },
   stepHeaderTitle: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600',
     color: 'var(--text-primary)',
-    margin: 0,
+    margin: 'var(--ui-space-0px)',
   },
   headerTotal: {
     marginLeft: 'auto',
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '700',
     color: 'var(--success-text)',
   },
@@ -2470,12 +2470,12 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
   },
   amountInput: {
-    fontSize: '32px',
+    fontSize: 'var(--ui-font-32px)',
     fontWeight: '700',
     textAlign: 'center',
     border: 'none',
     borderBottom: '2px solid var(--accent-primary)',
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     width: '100%',
     maxWidth: '280px',
     outline: 'none',
@@ -2489,15 +2489,15 @@ const styles: Record<string, React.CSSProperties> = {
   categoryScroll: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))',
-    gap: '8px',
-    paddingBottom: '8px',
+    gap: 'var(--ui-space-8px)',
+    paddingBottom: 'var(--ui-space-8px)',
     width: '100%',
   },
   categoryCard: {
     minHeight: '76px',
-    padding: '8px 6px',
+    padding: 'var(--ui-space-8px) var(--ui-space-6px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     textAlign: 'center',
     cursor: 'pointer',
     border: '1px solid var(--border-color, #e9ecef)',
@@ -2514,11 +2514,11 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--accent-primary)',
   },
   categoryEmoji: {
-    fontSize: '20px',
-    marginBottom: '4px',
+    fontSize: 'var(--ui-font-20px)',
+    marginBottom: 'var(--ui-space-4px)',
   },
   categoryName: {
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500',
     color: 'var(--text-primary)',
     overflow: 'hidden',
@@ -2533,41 +2533,41 @@ const styles: Record<string, React.CSSProperties> = {
   dateInputRow: {
     display: 'flex',
     alignItems: 'flex-end',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
   },
   setNowButton: {
     flex: '0 0 auto',
     minHeight: '42px',
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     border: '1px solid var(--accent-primary)',
-    borderRadius: '10px',
+    borderRadius: 'var(--ui-radius-10px)',
     background: 'var(--accent-light)',
     color: 'var(--accent-primary)',
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     fontWeight: 600,
     cursor: 'pointer',
     maxWidth: '100%',
   },
   fieldContainer: {
-    marginBottom: '24px',
+    marginBottom: 'var(--ui-space-24px)',
   },
   editFieldContainer: {
-    marginBottom: '12px',
+    marginBottom: 'var(--ui-space-12px)',
   },
   fieldLabel: {
     display: 'block',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500',
-    marginBottom: '8px',
+    marginBottom: 'var(--ui-space-8px)',
     color: 'var(--text-primary)',
   },
   textInput: {
     width: '100%',
-    padding: '12px 16px',
-    fontSize: '16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-16px)',
     border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     outline: 'none',
     transition: 'all 0.2s',
     background: 'var(--input-bg, white)',
@@ -2575,10 +2575,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   textArea: {
     width: '100%',
-    padding: '12px 16px',
-    fontSize: '16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-16px)',
     border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     outline: 'none',
     resize: 'vertical',
     fontFamily: 'inherit',
@@ -2587,10 +2587,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   select: {
     width: '100%',
-    padding: '12px 16px',
-    fontSize: '16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-16px)',
     border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     outline: 'none',
     background: 'var(--input-bg, white)',
     color: 'var(--text-primary)',
@@ -2598,35 +2598,35 @@ const styles: Record<string, React.CSSProperties> = {
   currencySelectBlock: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '6px',
-    marginTop: '4px',
-    marginBottom: '4px',
+    gap: 'var(--ui-space-6px)',
+    marginTop: 'var(--ui-space-4px)',
+    marginBottom: 'var(--ui-space-4px)',
   },
   currencyGridHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
-    marginBottom: '6px',
+    gap: 'var(--ui-space-12px)',
+    marginBottom: 'var(--ui-space-6px)',
   },
   currencyGridHeaderTitle: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
   },
   currencyGridHeaderHint: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
   },
   currencyGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   currencyCard: {
-    padding: '12px',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     textAlign: 'left',
     cursor: 'pointer',
     border: '1px solid var(--border-color, #e9ecef)',
@@ -2641,16 +2641,16 @@ const styles: Record<string, React.CSSProperties> = {
   currencyCardTop: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '6px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-6px)',
   },
   currencySymbol: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: 700 as const,
     color: 'var(--text-primary)',
   },
   currencyCode: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 700 as const,
     color: 'var(--text-primary)',
   },
@@ -2660,39 +2660,39 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   currencyName: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: 500 as const,
     color: 'var(--text-secondary)',
     lineHeight: 1.35,
   },
   currencyHelp: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
     lineHeight: 1.4,
   },
   currencyError: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--error-text)',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
   },
   receiptDraftWarning: {
-    padding: '10px 12px',
-    borderRadius: '8px',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
+    borderRadius: 'var(--ui-radius-8px)',
     background: 'var(--warning-bg, #fff4d6)',
     color: 'var(--warning-text, #8a5a00)',
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     lineHeight: 1.5,
   },
   paymentMethodGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '10px',
-    marginBottom: '16px',
+    gap: 'var(--ui-space-10px)',
+    marginBottom: 'var(--ui-space-16px)',
   },
   paymentMethodCard: {
-    padding: '12px 8px',
+    padding: 'var(--ui-space-12px) var(--ui-space-8px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     textAlign: 'center',
     cursor: 'pointer',
     border: '1px solid var(--border-color, #e9ecef)',
@@ -2703,52 +2703,52 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--accent-primary)',
   },
   paymentMethodIcon: {
-    fontSize: '20px',
-    marginBottom: '4px',
+    fontSize: 'var(--ui-font-20px)',
+    marginBottom: 'var(--ui-space-4px)',
   },
   paymentMethodName: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
   paymentMethodCardSmall: {
-    padding: '16px 12px',
+    padding: 'var(--ui-space-16px) var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     textAlign: 'center',
     cursor: 'pointer',
     border: '2px solid transparent',
     transition: 'all 0.2s',
   },
   paymentMethodIconSmall: {
-    fontSize: '24px',
-    marginBottom: '4px',
+    fontSize: 'var(--ui-font-24px)',
+    marginBottom: 'var(--ui-space-4px)',
   },
   paymentMethodNameSmall: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
   autoSelectHint: {
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     background: 'var(--info-bg)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--info-text)',
-    marginBottom: '16px',
+    marginBottom: 'var(--ui-space-16px)',
     textAlign: 'center',
   },
   checkboxContainer: {
-    marginBottom: '16px',
-    padding: '16px',
+    marginBottom: 'var(--ui-space-16px)',
+    padding: 'var(--ui-space-16px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
   },
   checkboxLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    fontSize: '16px',
+    gap: 'var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '500',
     cursor: 'pointer',
     color: 'var(--text-primary)',
@@ -2759,103 +2759,103 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   checkboxHint: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
-    marginTop: '8px',
-    marginLeft: '32px',
+    marginTop: 'var(--ui-space-8px)',
+    marginLeft: 'var(--ui-space-32px)',
   },
   transferOptions: {
-    marginTop: '16px',
-    padding: '16px',
+    marginTop: 'var(--ui-space-16px)',
+    padding: 'var(--ui-space-16px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
   },
   navigation: {
     display: 'flex',
-    gap: '12px',
-    padding: '16px 24px',
+    gap: 'var(--ui-space-12px)',
+    padding: 'var(--ui-space-16px) var(--ui-space-24px)',
     borderTop: '1px solid var(--border-color, #e9ecef)',
   },
   buttonSecondary: {
     flex: 1,
-    padding: '12px 20px',
-    fontSize: '14px',
+    padding: 'var(--ui-space-12px) var(--ui-space-20px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500',
     border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     background: 'var(--card-bg, white)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   receiptHintText: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
-    marginBottom: '8px',
+    marginBottom: 'var(--ui-space-8px)',
     lineHeight: 1.5,
   },
   categorySectionTitle: {
-    margin: '0 0 8px',
-    fontSize: '14px',
+    margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-8px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: 600,
     color: 'var(--text-secondary)',
   },
   recentCategorySection: {
-    marginBottom: '16px',
+    marginBottom: 'var(--ui-space-16px)',
   },
   buttonPrimary: {
     flex: 1,
-    padding: '12px 20px',
-    fontSize: '14px',
+    padding: 'var(--ui-space-12px) var(--ui-space-20px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500',
     border: '1px solid var(--accent-primary)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     background: 'var(--accent-primary)',
     color: 'white',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   noItemsContainer: {
-    padding: '16px',
+    padding: 'var(--ui-space-16px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     textAlign: 'center',
   },
   noItemsText: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
-    margin: '0 0 12px 0',
+    margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px)',
   },
   createButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
+    padding: 'var(--ui-space-8px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: 'var(--ui-radius-6px)',
     background: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   dateWarning: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--warning-text)',
-    marginBottom: '12px',
+    marginBottom: 'var(--ui-space-12px)',
     textAlign: 'center',
   },
   toggleOptionsContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
-    marginTop: '8px',
+    gap: 'var(--ui-space-8px)',
+    marginTop: 'var(--ui-space-8px)',
   },
   toggleOption: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '12px',
+    gap: 'var(--ui-space-10px)',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
     border: '1px solid var(--border-color, #e9ecef)',
     transition: 'all 0.2s',
@@ -2865,45 +2865,45 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--accent-primary)',
   },
   toggleOptionIcon: {
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
   },
   toggleOptionText: {
     flex: 1,
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500',
     color: 'var(--text-primary)',
   },
   toggleIndicator: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--accent-primary)',
     fontWeight: '600',
   },
   // Multi-amount styles
   amountInputRow: {
     display: 'flex',
-    gap: '8px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-12px)',
   },
   amountInputMulti: {
     flex: 1,
-    padding: '12px 16px',
-    fontSize: '18px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '600',
     border: '2px solid var(--border-color, #e9ecef)',
-    borderRadius: '12px',
+    borderRadius: 'var(--ui-radius-12px)',
     outline: 'none',
     background: 'var(--input-bg, white)',
     color: 'var(--text-primary)',
     transition: 'border-color 0.2s',
   },
   addAmountBtn: {
-    padding: '12px 16px',
-    fontSize: '14px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600',
     background: 'var(--accent-primary)',
     color: 'white',
     border: 'none',
-    borderRadius: '12px',
+    borderRadius: 'var(--ui-radius-12px)',
     cursor: 'pointer',
     whiteSpace: 'nowrap' as const,
     transition: 'all 0.2s',
@@ -2913,23 +2913,23 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'not-allowed',
   },
   amountItemsList: {
-    marginBottom: '12px',
+    marginBottom: 'var(--ui-space-12px)',
   },
   amountItemsLabel: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500',
     color: 'var(--text-secondary)',
-    marginBottom: '6px',
+    marginBottom: 'var(--ui-space-6px)',
   },
   amountItem: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
-    marginBottom: '4px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    marginBottom: 'var(--ui-space-4px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-primary)',
   },
   removeAmountBtn: {
@@ -2937,19 +2937,19 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     color: 'var(--text-secondary)',
     cursor: 'pointer',
-    fontSize: '14px',
-    padding: '4px 8px',
-    borderRadius: '4px',
+    fontSize: 'var(--ui-font-14px)',
+    padding: 'var(--ui-space-4px) var(--ui-space-8px)',
+    borderRadius: 'var(--ui-radius-4px)',
     transition: 'all 0.2s',
   },
   taxCheckboxRow: {
-    marginBottom: '8px',
+    marginBottom: 'var(--ui-space-8px)',
   },
   taxCheckboxLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
+    gap: 'var(--ui-space-8px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
   },
@@ -2961,31 +2961,31 @@ const styles: Record<string, React.CSSProperties> = {
   taxRateRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-12px)',
   },
   taxRateInput: {
     width: '60px',
-    padding: '8px 12px',
-    fontSize: '14px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-14px)',
     border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     background: 'var(--input-bg, white)',
     color: 'var(--text-primary)',
     textAlign: 'center' as const,
   },
   taxRatePercent: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
   },
   taxPresetBtn: {
-    padding: '6px 12px',
-    fontSize: '12px',
+    padding: 'var(--ui-space-6px) var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500',
     background: 'var(--bg-secondary, #f8f9fa)',
     color: 'var(--text-primary)',
     border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
@@ -2995,24 +2995,24 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-primary)',
   },
   amountSummary: {
-    padding: '12px',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
-    marginTop: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
+    marginTop: 'var(--ui-space-8px)',
   },
   summaryRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
-    marginBottom: '4px',
+    marginBottom: 'var(--ui-space-4px)',
   },
   summaryRowTotal: {
-    marginTop: '8px',
-    paddingTop: '8px',
+    marginTop: 'var(--ui-space-8px)',
+    paddingTop: 'var(--ui-space-8px)',
     borderTop: '1px solid var(--border-color, #e9ecef)',
-    fontSize: '15px',
+    fontSize: 'var(--ui-font-15px)',
     fontWeight: '600',
     color: 'var(--text-primary)',
   },
@@ -3024,17 +3024,17 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
-    marginTop: '12px',
+    borderRadius: 'var(--ui-radius-8px)',
+    marginTop: 'var(--ui-space-12px)',
   },
   simpleAmountLabel: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
   },
   simpleAmountValue: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '700',
     color: 'var(--accent-primary)',
   },
@@ -3042,18 +3042,18 @@ const styles: Record<string, React.CSSProperties> = {
   amountDescriptionList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
-    padding: '12px',
+    gap: 'var(--ui-space-8px)',
+    padding: 'var(--ui-space-12px)',
     background: 'var(--bg-secondary, #f8f9fa)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
   },
   amountDescriptionRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   amountDescriptionAmount: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '600',
     color: 'var(--text-primary)',
     minWidth: '70px',
@@ -3061,32 +3061,32 @@ const styles: Record<string, React.CSSProperties> = {
   },
   amountDescriptionInput: {
     flex: 1,
-    padding: '8px 12px',
-    fontSize: '13px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
+    fontSize: 'var(--ui-font-13px)',
     border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: '6px',
+    borderRadius: 'var(--ui-radius-6px)',
     background: 'var(--input-bg, white)',
     color: 'var(--text-primary)',
   },
   taxLabel: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     fontStyle: 'italic' as const,
     color: 'var(--text-secondary)',
     minWidth: '70px',
     flexShrink: 0,
   },
   taxValue: {
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
   },
   saveAndAddAnotherBtn: {
     width: '100%',
-    marginTop: '20px',
-    padding: '14px 20px',
-    fontSize: '15px',
+    marginTop: 'var(--ui-space-20px)',
+    padding: 'var(--ui-space-14px) var(--ui-space-20px)',
+    fontSize: 'var(--ui-font-15px)',
     fontWeight: '600',
     border: '2px dashed var(--accent-primary)',
-    borderRadius: '10px',
+    borderRadius: 'var(--ui-radius-10px)',
     background: 'var(--accent-light, rgba(139, 92, 246, 0.1))',
     color: 'var(--accent-primary)',
     cursor: 'pointer',
@@ -3094,7 +3094,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
 };
 

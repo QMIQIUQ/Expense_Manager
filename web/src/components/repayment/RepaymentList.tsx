@@ -147,7 +147,7 @@ const RepaymentList: React.FC<RepaymentListProps> = ({
                 <div style={styles.metaRow}>
                   <span style={getDateStyle()}>{formatDate(repayment.date)}</span>
                   {repayment.payerName && (
-                    <span style={{ ...getPaymentChipStyle(), fontSize: '11px', padding: '2px 8px' }}>
+                    <span style={{ ...getPaymentChipStyle(), fontSize: 'var(--ui-font-11px)', padding: 'var(--ui-space-2px) var(--ui-space-8px)' }}>
                       {repayment.paymentMethod === 'credit_card' && `💳 ${t('creditCard')}`}
                       {repayment.paymentMethod === 'e_wallet' && `📱 ${repayment.paymentMethodName || t('eWallet')}`}
                       {(!repayment.paymentMethod || repayment.paymentMethod === 'cash') && `💵 ${t('cash')}`}
@@ -205,18 +205,18 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   list: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
   },
   repaymentCard: {
     background: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '14px 16px',
+    borderRadius: 'var(--ui-radius-12px)',
+    padding: 'var(--ui-space-14px) var(--ui-space-16px)',
     boxShadow: '0 2px 8px var(--shadow)',
     transition: 'all 0.2s ease',
   } as React.CSSProperties,
@@ -224,62 +224,62 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '16px',
+    gap: 'var(--ui-space-16px)',
   },
   leftSection: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
     minWidth: 0,
   },
   rightSection: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'flex-end',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     flexShrink: 0,
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   metaRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     flexWrap: 'wrap' as const,
   },
   noteRow: {
-    marginTop: '2px',
+    marginTop: 'var(--ui-space-2px)',
   },
   paymentChip: {
-    padding: '4px 10px',
+    padding: 'var(--ui-space-4px) var(--ui-space-10px)',
     background: 'var(--success-bg)',
     color: 'var(--success-text)',
-    borderRadius: '16px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-16px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     boxShadow: '0 1px 3px var(--shadow)',
   },
   amount: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '700' as const,
     color: 'var(--success-text)',
     whiteSpace: 'nowrap' as const,
   },
   date: {
-    fontSize: '0.85rem',
+    fontSize: 'var(--ui-font-0-85rem)',
     color: 'var(--text-secondary)',
   },
   payerName: {
-    fontSize: '0.95rem',
+    fontSize: 'var(--ui-font-0-95rem)',
     fontWeight: '600',
     color: 'var(--text-primary)',
   },
   noteText: {
-    fontSize: '0.8rem',
+    fontSize: 'var(--ui-font-0-8rem)',
     color: 'var(--text-tertiary)',
     fontStyle: 'italic',
     overflow: 'hidden',
@@ -288,11 +288,11 @@ const styles = {
   },
   actions: {
     display: 'flex',
-    gap: '4px',
+    gap: 'var(--ui-space-4px)',
   },
   noData: {
     textAlign: 'center' as const,
-    padding: '20px',
+    padding: 'var(--ui-space-20px)',
     color: 'var(--text-tertiary)',
   },
 };

@@ -68,25 +68,25 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
   return (
     <div
       style={{
-        padding: '20px',
+        padding: 'var(--ui-space-20px)',
         backgroundColor: 'var(--card-bg)',
-        borderRadius: '12px',
+        borderRadius: 'var(--ui-radius-12px)',
         border: '1px solid var(--border-color)',
       }}
     >
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: 'var(--ui-space-16px)' }}>
         <h3 style={{
-          margin: '0 0 8px 0',
+          margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-8px) var(--ui-space-0px)',
           color: 'var(--text-primary)',
-          fontSize: '16px',
+          fontSize: 'var(--ui-font-16px)',
           fontWeight: 600,
         }}>
           {t('dateShortcutsSettings') || 'Date Shortcuts Settings'}
         </h3>
         <p style={{
-          margin: 0,
+          margin: 'var(--ui-space-0px)',
           color: 'var(--text-secondary)',
-          fontSize: '13px',
+          fontSize: 'var(--ui-font-13px)',
         }}>
           {t('dateShortcutsDesc') || 'Customize which date shortcuts appear in the long-press menu'}
         </p>
@@ -95,14 +95,14 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        marginBottom: '16px',
-        padding: '12px',
+        gap: 'var(--ui-space-8px)',
+        marginBottom: 'var(--ui-space-16px)',
+        padding: 'var(--ui-space-12px)',
         backgroundColor: 'var(--bg-secondary)',
-        borderRadius: '8px',
+        borderRadius: 'var(--ui-radius-8px)',
       }}>
-        <span style={{ fontSize: '20px' }}>ℹ️</span>
-        <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+        <span style={{ fontSize: 'var(--ui-font-20px)' }}>ℹ️</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--ui-font-13px)' }}>
           {enabledCount} {t('shortcutsEnabled') || 'shortcuts enabled'}
         </span>
       </div>
@@ -110,8 +110,8 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
-        marginBottom: '16px',
+        gap: 'var(--ui-space-8px)',
+        marginBottom: 'var(--ui-space-16px)',
       }}>
         {shortcuts.map((shortcut) => {
           const label = SHORTCUT_LABELS[shortcut.type][language] || SHORTCUT_LABELS[shortcut.type].en;
@@ -122,10 +122,10 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                padding: '12px',
+                padding: 'var(--ui-space-12px)',
                 backgroundColor: shortcut.enabled ? 'var(--accent-light)' : 'var(--bg-secondary)',
                 border: `1px solid ${shortcut.enabled ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                borderRadius: '8px',
+                borderRadius: 'var(--ui-radius-8px)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
@@ -135,7 +135,7 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
                 checked={shortcut.enabled}
                 onChange={() => handleToggle(shortcut.type)}
                 style={{
-                  marginRight: '12px',
+                  marginRight: 'var(--ui-space-12px)',
                   width: '18px',
                   height: '18px',
                   cursor: 'pointer',
@@ -144,7 +144,7 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
               <span style={{
                 flex: 1,
                 color: 'var(--text-primary)',
-                fontSize: '14px',
+                fontSize: 'var(--ui-font-14px)',
                 fontWeight: shortcut.enabled ? 500 : 400,
               }}>
                 {label}
@@ -152,7 +152,7 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
               {shortcut.angle != null && (
                 <span style={{
                   color: 'var(--text-tertiary)',
-                  fontSize: '12px',
+                  fontSize: 'var(--ui-font-12px)',
                 }}>
                   {shortcut.angle}°
                 </span>
@@ -164,7 +164,7 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
 
       <div style={{
         display: 'flex',
-        gap: '12px',
+        gap: 'var(--ui-space-12px)',
         flexWrap: 'wrap',
       }}>
         <button
@@ -173,12 +173,12 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
           style={{
             flex: 1,
             minWidth: '120px',
-            padding: '12px 20px',
+            padding: 'var(--ui-space-12px) var(--ui-space-20px)',
             backgroundColor: hasChanges ? 'var(--accent-primary)' : 'var(--bg-secondary)',
             color: hasChanges ? 'white' : 'var(--text-tertiary)',
             border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
+            borderRadius: 'var(--ui-radius-8px)',
+            fontSize: 'var(--ui-font-14px)',
             fontWeight: 600,
             cursor: hasChanges ? 'pointer' : 'not-allowed',
             opacity: saving ? 0.6 : 1,
@@ -192,12 +192,12 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
           onClick={handleResetToDefaults}
           disabled={saving}
           style={{
-            padding: '12px 20px',
+            padding: 'var(--ui-space-12px) var(--ui-space-20px)',
             backgroundColor: 'var(--bg-secondary)',
             color: 'var(--text-primary)',
             border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            fontSize: '14px',
+            borderRadius: 'var(--ui-radius-8px)',
+            fontSize: 'var(--ui-font-14px)',
             fontWeight: 500,
             cursor: 'pointer',
             opacity: saving ? 0.6 : 1,

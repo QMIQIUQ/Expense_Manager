@@ -258,11 +258,11 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                           : 'var(--bg-tertiary)',
                         color: widget.enabled ? 'var(--accent-primary)' : 'var(--text-tertiary)',
                         border: widget.enabled ? '1px solid var(--accent-primary)' : '1px dashed var(--text-tertiary)',
-                        borderRadius: '8px',
-                        padding: '6px 12px',
+                        borderRadius: 'var(--ui-radius-8px)',
+                        padding: 'var(--ui-space-6px) var(--ui-space-12px)',
                         cursor: 'pointer',
                         fontWeight: 500,
-                        fontSize: '12px',
+                        fontSize: 'var(--ui-font-12px)',
                         minWidth: '50px',
                         transition: 'all 0.2s ease'
                       }}

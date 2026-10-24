@@ -27,7 +27,7 @@ const styles = {
   spinner: {
     display: 'inline-block',
     border: '2px solid',
-    borderRadius: '50%',
+    borderRadius: 'var(--ui-radius-circle)',
     animation: 'spin 0.8s linear infinite',
   },
 };

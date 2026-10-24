@@ -87,7 +87,7 @@ const IncomesTab: React.FC<Props> = ({
         placeholder={t('searchByName')}
         value={searchTerm}
         onChange={setSearchTerm}
-        style={{ marginBottom: 8 }}
+        style={{ marginBottom: 'var(--ui-space-8px)' }}
       />
 
       {/* Add Income Form - PopupModal */}
@@ -132,27 +132,27 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '16px',
+    gap: 'var(--ui-space-16px)',
     flexWrap: 'wrap' as const,
   },
   title: {
-    margin: 0,
-    fontSize: '24px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-24px)',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
   },
   searchInput: {
     width: '100%',
-    padding: '10px 12px',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     outline: 'none',
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',

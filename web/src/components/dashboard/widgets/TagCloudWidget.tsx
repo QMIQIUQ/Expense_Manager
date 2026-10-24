@@ -64,7 +64,7 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
   };
 
   return (
-    <div className="tag-cloud-widget" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+    <div className="tag-cloud-widget" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--ui-space-8px)', alignItems: 'center' }}>
       {tags.map((tag, index) => (
         <div
           key={index}
@@ -77,8 +77,8 @@ const TagCloudWidget: React.FC<WidgetProps> = ({
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)',
-            borderRadius: '20px',
-            padding: '4px 12px',
+            borderRadius: 'var(--ui-radius-20px)',
+            padding: 'var(--ui-space-4px) var(--ui-space-12px)',
             fontSize: `${getFontSize(tag.count)}px`,
             color: tag.color,
             cursor: onNavigateToExpenses ? 'pointer' : 'default',

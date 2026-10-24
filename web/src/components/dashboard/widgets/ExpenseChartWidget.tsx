@@ -187,7 +187,7 @@ const ExpenseChartWidget: React.FC<WidgetProps> = ({ expenses, categories, billi
           align="center"
           wrapperStyle={{
             fontSize: `${chartConfig.fontSize}px`,
-            paddingTop: '10px',
+            paddingTop: 'var(--ui-space-10px)',
           }}
           formatter={(value: string) => {
             const item = pieData.find(d => d.name === value);

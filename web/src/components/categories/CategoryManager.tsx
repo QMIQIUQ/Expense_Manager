@@ -277,7 +277,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           if (ids.length === 0) return;
           setBulkDeleteConfirm(true);
         }}
-        style={{ marginBottom: '16px' }}
+        style={{ marginBottom: 'var(--ui-space-16px)' }}
       />}
 
       <div style={styles.categoryList} ref={categoryListRef}>
@@ -311,10 +311,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '12px',
+                  padding: 'var(--ui-space-12px)',
                   backgroundColor: 'var(--card-bg)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--ui-radius-8px)',
                 }}
               >
                 {isSorting && (
@@ -349,7 +349,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   </div>
                 )}
                 {isSelectionMode && (
-                  <div style={{ paddingRight: '12px', display: 'flex', alignItems: 'center' }}>
+                  <div style={{ paddingRight: 'var(--ui-space-12px)', display: 'flex', alignItems: 'center' }}>
                     <input
                       type="checkbox"
                       checked={selectedIds.has(category.id!)}
@@ -366,13 +366,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     </span>
                       <span style={styles.categoryName}>
                         {category.name}
-                        {isDuplicate && <span style={{ color: 'var(--warning-text)', marginLeft: '8px', fontSize: '12px' }}>⚠️ Duplicate</span>}
+                        {isDuplicate && <span style={{ color: 'var(--warning-text)', marginLeft: 'var(--ui-space-8px)', fontSize: 'var(--ui-font-12px)' }}>⚠️ Duplicate</span>}
                       </span>
                       {category.isDefault && <span style={styles.defaultBadge}>Default</span>}
                     </div>
                     
                     {/* Desktop: Show individual buttons */}
-                    {!isSorting && <div className="desktop-actions" style={{ gap: '8px', alignItems: 'center' }}>
+                    {!isSorting && <div className="desktop-actions" style={{ gap: 'var(--ui-space-8px)', alignItems: 'center' }}>
                       <button onClick={() => startEdit(category)} className="btn-icon btn-icon-primary" aria-label={t('edit')}>
                         <EditIcon size={18} />
                       </button>
@@ -514,7 +514,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         maxWidth="600px"
       >
         {deleteConfirm.expensesUsingCategory.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-16px)' }}>
             <div style={styles.modalWarning}>
               ⚠️ {t('warning')}: {t('categoryInUse') || 'This category is being used by'} {deleteConfirm.expensesUsingCategory.length} {t('expenses') || 'expense(s)'}:
             </div>
@@ -615,117 +615,117 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     flexWrap: 'wrap' as const,
   },
   headerActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     flexWrap: 'wrap' as const,
   },
   sortHint: {
-    margin: 0,
+    margin: 'var(--ui-space-0px)',
     color: 'var(--text-secondary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
   },
   orderError: {
-    margin: 0,
-    padding: '10px 12px',
-    borderRadius: '8px',
+    margin: 'var(--ui-space-0px)',
+    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
+    borderRadius: 'var(--ui-radius-8px)',
     color: 'var(--error-text)',
     backgroundColor: 'var(--error-bg)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
   },
   sortControls: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    marginRight: '10px',
+    gap: 'var(--ui-space-6px)',
+    marginRight: 'var(--ui-space-10px)',
     flexShrink: 0,
   },
   dragHandle: {
     color: 'var(--text-secondary)',
     cursor: 'grab',
-    padding: '4px',
-    fontSize: '20px',
+    padding: 'var(--ui-space-4px)',
+    fontSize: 'var(--ui-font-20px)',
     userSelect: 'none' as const,
   },
   moveButtons: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '2px',
+    gap: 'var(--ui-space-2px)',
   },
   moveButton: {
-    padding: '0 5px',
+    padding: 'var(--ui-space-0px) var(--ui-space-5px)',
     minWidth: '32px',
     minHeight: '32px',
     color: 'var(--text-primary)',
     lineHeight: 1,
   },
   title: {
-    margin: 0,
-    fontSize: '24px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-24px)',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
   },
   searchContainer: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
   },
   searchInput: {
     flex: 1,
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-6px)',
+    fontSize: 'var(--ui-font-14px)',
   },
   noData: {
     textAlign: 'center' as const,
-    padding: '40px',
+    padding: 'var(--ui-space-40px)',
     color: 'var(--text-secondary)',
   },
   form: {
     backgroundColor: 'var(--bg-secondary)',
-    padding: '20px',
-    borderRadius: '8px',
+    padding: 'var(--ui-space-20px)',
+    borderRadius: 'var(--ui-radius-8px)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '15px',
-    marginBottom: '12px',
+    gap: 'var(--ui-space-15px)',
+    marginBottom: 'var(--ui-space-12px)',
     border: '1px solid var(--border-color)',
   },
   formGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     minWidth: 0,
   },
   formRow: {
     display: 'flex',
-    gap: '15px',
+    gap: 'var(--ui-space-15px)',
     alignItems: 'flex-start',
   },
   iconGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '8px',
-    padding: '4px',
+    gap: 'var(--ui-space-8px)',
+    padding: 'var(--ui-space-4px)',
     maxWidth: '100%',
   },
   iconButton: {
-    padding: '10px',
-    fontSize: '24px',
+    padding: 'var(--ui-space-10px)',
+    fontSize: 'var(--ui-font-24px)',
     borderWidth: '2px',
     borderStyle: 'solid',
     borderColor: 'var(--border-color)',
-    borderRadius: '4px',
+    borderRadius: 'var(--ui-radius-4px)',
     backgroundColor: 'var(--card-bg)',
     cursor: 'pointer',
   },
@@ -737,32 +737,32 @@ const styles = {
     width: '100%',
     height: '40px',
     border: '1px solid var(--border-color)',
-    borderRadius: '4px',
+    borderRadius: 'var(--ui-radius-4px)',
     cursor: 'pointer',
   },
   formActions: {
     display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
+    gap: 'var(--ui-space-12px)',
+    marginTop: 'var(--ui-space-8px)',
   },
   submitButton: {
     flex: 1,
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     backgroundColor: 'var(--accent-primary)',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-4px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500' as const,
     cursor: 'pointer',
   },
   cancelButton: {
-    padding: '10px 24px',
+    padding: 'var(--ui-space-10px) var(--ui-space-24px)',
     backgroundColor: 'var(--secondary-bg)',
     color: 'var(--text-primary)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500' as const,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
@@ -770,12 +770,12 @@ const styles = {
   categoryList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   categoryInfo: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     flex: 1,
     minWidth: 0,
     overflow: 'hidden',
@@ -786,47 +786,47 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '8px',
-    fontSize: '20px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-20px)',
     flexShrink: 0,
   },
   categoryName: {
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '500' as const,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
   defaultBadge: {
-    padding: '4px 8px',
+    padding: 'var(--ui-space-4px) var(--ui-space-8px)',
     backgroundColor: 'var(--info-bg)',
     color: 'var(--info-text)',
-    borderRadius: '4px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-4px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '500' as const,
   },
   categoryActions: {
     display: 'flex',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     alignItems: 'center',
   },
   editBtn: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteBtn: {
-    padding: '8px',
+    padding: 'var(--ui-space-8px)',
     backgroundColor: 'var(--error-bg)',
     color: 'var(--error-text)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -836,13 +836,13 @@ const styles = {
     position: 'relative' as const,
   },
   menuButton: {
-    padding: '8px 12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     backgroundColor: 'var(--accent-light)',
     color: 'var(--accent-primary)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     cursor: 'pointer',
-    fontSize: '20px',
+    fontSize: 'var(--ui-font-20px)',
     fontWeight: 'bold' as const,
     lineHeight: '1',
   },
@@ -850,10 +850,10 @@ const styles = {
     position: 'absolute' as const,
     right: 0,
     top: '100%',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
     minWidth: '160px',
@@ -861,13 +861,13 @@ const styles = {
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     border: 'none',
     backgroundColor: 'transparent',
     color: 'var(--text-primary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     cursor: 'pointer',
     textAlign: 'left' as const,
   },
@@ -889,8 +889,8 @@ const styles = {
   },
   modalContent: {
     backgroundColor: 'var(--card-bg)',
-    borderRadius: '16px',
-    padding: '28px',
+    borderRadius: 'var(--ui-radius-16px)',
+    padding: 'var(--ui-space-28px)',
     maxWidth: '600px',
     width: '90%',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
@@ -899,50 +899,50 @@ const styles = {
     overflow: 'auto',
   },
   modalTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '22px',
+    margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-16px) var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-22px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
   modalWarning: {
-    padding: '12px',
+    padding: 'var(--ui-space-12px)',
     backgroundColor: 'var(--warning-bg)',
     border: '1px solid var(--warning-text)',
-    borderRadius: '4px',
-    marginBottom: '16px',
+    borderRadius: 'var(--ui-radius-4px)',
+    marginBottom: 'var(--ui-space-16px)',
     color: 'var(--warning-text)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
   },
   expenseList: {
-    marginBottom: '16px',
-    padding: '12px',
+    marginBottom: 'var(--ui-space-16px)',
+    padding: 'var(--ui-space-12px)',
     backgroundColor: 'var(--bg-secondary)',
-    borderRadius: '4px',
+    borderRadius: 'var(--ui-radius-4px)',
     maxHeight: '200px',
     overflow: 'auto',
   },
   expenseItem: {
-    padding: '4px 0',
-    fontSize: '14px',
+    padding: 'var(--ui-space-4px) var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
   },
   modalQuestion: {
-    marginBottom: '16px',
-    fontSize: '16px',
+    marginBottom: 'var(--ui-space-16px)',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
   },
   radioGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
-    marginBottom: '24px',
+    gap: 'var(--ui-space-12px)',
+    marginBottom: 'var(--ui-space-24px)',
   },
   radioLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
+    gap: 'var(--ui-space-8px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-primary)',
     cursor: 'pointer',
   },
@@ -950,32 +950,32 @@ const styles = {
     cursor: 'pointer',
   },
   reassignSelect: {
-    marginLeft: '28px',
-    padding: '8px',
+    marginLeft: 'var(--ui-space-28px)',
+    padding: 'var(--ui-space-8px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '4px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-4px)',
+    fontSize: 'var(--ui-font-14px)',
     width: 'calc(100% - 28px)',
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',
   },
   modalMessage: {
-    marginBottom: '24px',
-    fontSize: '14px',
+    marginBottom: 'var(--ui-space-24px)',
+    fontSize: 'var(--ui-font-14px)',
     color: 'var(--text-secondary)',
   },
   modalActions: {
     display: 'flex',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     justifyContent: 'flex-end',
   },
   confirmButton: {
-    padding: '10px 24px',
+    padding: 'var(--ui-space-10px) var(--ui-space-24px)',
     backgroundColor: 'var(--error-bg)',
     color: 'var(--error-text)',
     border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500' as const,
     cursor: 'pointer',
     transition: 'all 0.2s ease',

@@ -96,16 +96,16 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '10px 12px',
+              padding: 'var(--ui-space-10px) var(--ui-space-12px)',
               background: 'var(--card-bg)',
               border: '1px solid var(--border-color)',
-              borderRadius: '10px',
-              marginBottom: '8px',
+              borderRadius: 'var(--ui-radius-10px)',
+              marginBottom: 'var(--ui-space-8px)',
               cursor: onNavigateToScheduledPayment ? 'pointer' : 'default',
               transition: 'all 0.2s',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-10px)', flex: 1, minWidth: 0 }}>
               <span style={{ fontSize: isCompact ? '16px' : '20px' }}>
                 {isToday ? '🔴' : isTomorrow ? '🟡' : '📅'}
               </span>
@@ -113,7 +113,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
                 <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {bill.name}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>
                   {isToday
                     ? t('dueToday')
                     : isTomorrow
@@ -129,7 +129,7 @@ const UpcomingBillsWidget: React.FC<WidgetProps> = ({
         );
       })}
       {upcomingBills.length > maxItems && (
-        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', padding: '4px' }}>
+        <div style={{ textAlign: 'center', fontSize: 'var(--ui-font-13px)', color: 'var(--text-secondary)', padding: 'var(--ui-space-4px)' }}>
           +{upcomingBills.length - maxItems} {t('more')}
         </div>
       )}

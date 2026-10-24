@@ -2,28 +2,28 @@
 
 .profile-container {
   max-width: 900px;
-  margin: 0 auto;
-  padding: 16px;
+  margin: var(--ui-space-0px) auto;
+  padding: var(--ui-space-16px);
 }
 
 /* Page Header */
 .profile-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--ui-space-24px);
 }
 
 .profile-title {
-  font-size: 28px;
+  font-size: var(--ui-font-28px);
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 /* Card Styles */
 .profile-card {
   background: var(--card-bg);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
+  border-radius: var(--ui-radius-16px);
+  padding: var(--ui-space-24px);
+  margin-bottom: var(--ui-space-20px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-color);
 }
@@ -31,16 +31,16 @@
 .card-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  gap: var(--ui-space-16px);
+  margin-bottom: var(--ui-space-20px);
+  padding-bottom: var(--ui-space-16px);
   border-bottom: 1px solid var(--border-color);
 }
 
 .card-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,29 +73,29 @@
 }
 
 .card-title {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 /* User Info Grid */
 .info-grid {
   display: grid;
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px;
+  gap: var(--ui-space-4px);
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 500;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -103,27 +103,27 @@
 }
 
 .info-value {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   color: var(--text-primary);
   word-break: break-all;
 }
 
 .info-value-mono {
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
 }
 
 /* Settings Content */
 .settings-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--ui-space-24px);
 }
 
 .setting-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .setting-label-row {
@@ -131,21 +131,21 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .setting-preview {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
   background: var(--bg-secondary);
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: var(--ui-space-4px) var(--ui-space-10px);
+  border-radius: var(--ui-radius-6px);
 }
 
 .setting-preview strong {
@@ -153,9 +153,9 @@
 }
 
 .setting-description {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-8px) var(--ui-space-0px);
   line-height: 1.5;
 }
 
@@ -163,7 +163,7 @@
 .toggle-switch-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .toggle-option {
@@ -171,13 +171,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px 16px;
+  padding: var(--ui-space-20px) var(--ui-space-16px);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   background: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .toggle-option:hover:not(:disabled) {
@@ -197,7 +197,7 @@
 }
 
 .toggle-time {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   font-weight: 700;
   color: var(--text-primary);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
@@ -208,7 +208,7 @@
 }
 
 .toggle-text {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
   text-align: center;
 }
@@ -217,7 +217,7 @@
 .date-format-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .date-format-option {
@@ -225,13 +225,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px 12px;
+  padding: var(--ui-space-16px) var(--ui-space-12px);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   background: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .date-format-option:hover:not(:disabled) {
@@ -251,7 +251,7 @@
 }
 
 .date-format-example {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--text-primary);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
@@ -262,7 +262,7 @@
 }
 
 .date-format-label {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -271,7 +271,7 @@
 /* Billing Cycle Section */
 .billing-input-row {
   display: flex;
-  gap: 16px;
+  gap: var(--ui-space-16px);
   align-items: flex-start;
 }
 
@@ -279,11 +279,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .billing-label {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
   color: var(--text-secondary);
 }
@@ -291,15 +291,15 @@
 .billing-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .billing-input {
   width: 80px;
-  padding: 12px 16px;
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   border: 2px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 18px;
+  border-radius: var(--ui-radius-10px);
+  font-size: var(--ui-font-18px);
   font-weight: 600;
   text-align: center;
   background: var(--input-bg);
@@ -318,13 +318,13 @@
 }
 
 .billing-suffix {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .billing-hint {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -334,13 +334,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
+  gap: var(--ui-space-8px);
+  padding: var(--ui-space-12px) var(--ui-space-24px);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: var(--ui-radius-10px);
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -368,7 +368,7 @@
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   animation: spin 0.8s linear infinite;
 }
 
@@ -382,12 +382,12 @@
 .info-notice {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-16px);
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .info-notice svg {
@@ -398,15 +398,15 @@
 /* Desktop styles (768px and above) */
 @media (min-width: 768px) {
   .profile-container {
-    padding: 32px;
+    padding: var(--ui-space-32px);
   }
 
   .profile-title {
-    font-size: 32px;
+    font-size: var(--ui-font-32px);
   }
 
   .profile-card {
-    padding: 28px;
+    padding: var(--ui-space-28px);
   }
 
   .info-grid {
@@ -418,11 +418,11 @@
   }
 
   .toggle-option {
-    padding: 24px 20px;
+    padding: var(--ui-space-24px) var(--ui-space-20px);
   }
 
   .toggle-time {
-    font-size: 28px;
+    font-size: var(--ui-font-28px);
   }
 
   .billing-input-row {
@@ -433,42 +433,42 @@
   .billing-input-group {
     flex-direction: row;
     align-items: center;
-    gap: 16px;
+    gap: var(--ui-space-16px);
   }
 }
 
 /* Large desktop styles (1024px and above) */
 @media (min-width: 1024px) {
   .profile-container {
-    padding: 40px;
+    padding: var(--ui-space-40px);
   }
 }
 
 /* Mobile styles (below 480px) */
 @media (max-width: 480px) {
   .profile-container {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 
   .profile-title {
-    font-size: 24px;
+    font-size: var(--ui-font-24px);
   }
 
   .profile-card {
-    padding: 16px;
-    border-radius: 12px;
+    padding: var(--ui-space-16px);
+    border-radius: var(--ui-radius-12px);
   }
 
   .card-header {
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    gap: var(--ui-space-12px);
+    margin-bottom: var(--ui-space-16px);
+    padding-bottom: var(--ui-space-12px);
   }
 
   .card-icon {
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--ui-radius-10px);
   }
 
   .card-icon svg {
@@ -477,7 +477,7 @@
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: var(--ui-font-16px);
   }
 
   .toggle-switch-container {
@@ -485,14 +485,14 @@
   }
 
   .toggle-option {
-    padding: 16px 12px;
+    padding: var(--ui-space-16px) var(--ui-space-12px);
     flex-direction: row;
     justify-content: flex-start;
-    gap: 16px;
+    gap: var(--ui-space-16px);
   }
 
   .toggle-time {
-    font-size: 20px;
+    font-size: var(--ui-font-20px);
     min-width: 80px;
     text-align: center;
   }
@@ -506,15 +506,15 @@
   }
 
   .date-format-option {
-    padding: 12px 8px;
+    padding: var(--ui-space-12px) var(--ui-space-8px);
   }
 
   .date-format-example {
-    font-size: 14px;
+    font-size: var(--ui-font-14px);
   }
 
   .date-format-label {
-    font-size: 10px;
+    font-size: var(--ui-font-10px);
   }
 
   .setting-label-row {
@@ -532,7 +532,7 @@
 
   .save-button {
     width: 100%;
-    padding: 14px 24px;
+    padding: var(--ui-space-14px) var(--ui-space-24px);
   }
 }
 

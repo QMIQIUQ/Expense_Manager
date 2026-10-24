@@ -247,7 +247,7 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>{t('scheduledPayments')}</h2>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 'var(--ui-space-8px)', flexWrap: 'wrap' }}>
           {!isAdding && (
             <>
               <button 
@@ -255,13 +255,13 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
+                  gap: 'var(--ui-space-8px)',
+                  padding: 'var(--ui-space-8px) var(--ui-space-12px)',
                   backgroundColor: 'var(--accent-light)',
                   color: 'var(--accent-primary)',
                   border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
+                  borderRadius: 'var(--ui-radius-8px)',
+                  fontSize: 'var(--ui-font-14px)',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
@@ -274,13 +274,13 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
+                  gap: 'var(--ui-space-6px)',
+                  padding: 'var(--ui-space-8px) var(--ui-space-12px)',
                   backgroundColor: 'var(--success-bg)',
                   color: 'var(--success-text)',
                   border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
+                  borderRadius: 'var(--ui-radius-8px)',
+                  fontSize: 'var(--ui-font-14px)',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
@@ -468,12 +468,12 @@ const ScheduledPaymentManager: React.FC<ScheduledPaymentManagerProps> = ({
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: 'var(--ui-space-10px) var(--ui-space-16px)',
+                borderRadius: 'var(--ui-radius-8px)',
                 border: '1px solid var(--border-color)',
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
-                fontSize: '14px',
+                fontSize: 'var(--ui-font-14px)',
                 cursor: 'pointer',
               }}
             >
@@ -592,35 +592,35 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: 'var(--ui-space-20px)',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   title: {
-    margin: 0,
-    fontSize: '24px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-24px)',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
   },
   searchContainer: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
     flexWrap: 'wrap' as const,
   },
   noData: {
     textAlign: 'center' as const,
-    padding: '40px',
+    padding: 'var(--ui-space-40px)',
     color: 'var(--text-secondary)',
   },
   paymentList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
 };
 

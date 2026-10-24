@@ -1,5 +1,12 @@
 # Project instructions
 
+## UI consistency requirement
+
+- For any new or modified UI, follow `docs/UI_STYLE_GUIDE.md` and the shared tokens in `web/src/styles/designTokens.ts` and `web/src/styles/ui-system.css`. Do not introduce one-off colors, typography, spacing, radii, shadows, control geometry, or focus styles when a shared token or pattern exists.
+- Reuse the existing semantic controls and patterns for buttons, fields, labels, tabs, cards, dialogs, menus, and feedback. Keep native control semantics, keyboard behavior, theme selection, and user font preferences intact.
+- Keep data handlers and local-first behavior unchanged during visual work. If a UI change requires a behavior change, document the reason and verify it against `docs/OFFLINE_SYNC_ARCHITECTURE.md` before implementation.
+- When adding a new UI pattern or changing a shared pattern, update `docs/UI_STYLE_GUIDE.md` and the relevant component/coverage inventory so future changes have one current reference.
+
 ## Required local-first behavior
 
 - Every ordinary user data mutation must update the visible React state and local cache before waiting for Firebase. Use a stable document ID throughout the UI, durable outbox and domain service.

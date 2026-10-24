@@ -12,8 +12,8 @@ const SectionTitle: React.FC<SectionTitleProps> = ({ children, style = {} }) => 
   return (
     <h3
       style={{
-        margin: 0,
-        fontSize: '20px',
+        margin: 'var(--ui-space-0px)',
+        fontSize: 'var(--ui-font-xl)',
         fontWeight: 600,
         color: 'var(--text-primary)',
         ...style,

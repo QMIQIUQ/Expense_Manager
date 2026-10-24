@@ -331,13 +331,13 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
                   right: '8px',
                   backgroundColor: 'var(--warning-text)',
                   color: 'white',
-                  borderRadius: '50%',
+                  borderRadius: 'var(--ui-radius-circle)',
                   width: '24px',
                   height: '24px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '12px',
+                  fontSize: 'var(--ui-font-12px)',
                   fontWeight: 'bold',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}>
@@ -474,7 +474,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ expenses, categorie
                 align="center"
                 wrapperStyle={{ 
                   fontSize: isMobile ? '11px' : '12px',
-                  paddingTop: '10px',
+                  paddingTop: 'var(--ui-space-10px)',
                   maxWidth: '100%'
                 }}
                 formatter={(value: string) => {

@@ -20,9 +20,11 @@
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
 | [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
 | [ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) | 目前 UI 元件/樣式盤點、預覽圖與逐檔標準化計畫 | 產品 / 設計 / 開發 |
+| [ui-standardization/VISUAL_STANDARDIZATION_SPEC.md](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md) | 已實作的共享 UI 尺寸、token、主題規則與 SVG 規格預覽 | 產品 / 設計 / 開發 |
+| [ui-standardization/UI_STYLE_COVERAGE_MATRIX.md](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md) | Production TSX/CSS 逐檔清單、inline styles 與 UI token 覆蓋統計 | 設計 / 開發 / QA |
 | [ui-standardization/CRUD_FLOW_AUDIT.md](ui-standardization/CRUD_FLOW_AUDIT.md) | 各功能新增、檢視、編輯、刪除與表單 overlay 流程 | 產品 / 設計 / 開發 |
 | [ui-standardization/INTERACTION_PATTERN_CANDIDATES.md](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) | 欄位、按鈕、dialog/drawer、狀態回饋候選與官方參考 | 產品 / 設計 / 開發 |
-| [ui-standardization/PATTERN_STANDARDIZATION_PLAN.md](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) | 選定樣式後的逐階段檔案清單、流程邏輯及驗收步驟 | 開發者 / QA |
+| [ui-standardization/PATTERN_STANDARDIZATION_PLAN.md](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) | 已採用幾何的逐階段實作紀錄、保護的流程邏輯及未來 interaction 改版驗收步驟 | 開發者 / QA |
 | [implementation-plans/COMPACT_NAVIGATION_V2.md](implementation-plans/COMPACT_NAVIGATION_V2.md) | 已發布的 Compact Navigation V2 實作紀錄；較新的導覽改進建議見 UI 導覽盤點 | 產品 / 設計 / 開發 |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | GitHub Pages 與 Firebase live / preview 部署方式 | 開發者 / 運維 |
 | [DARK_MODE_GUIDE.md](DARK_MODE_GUIDE.md) | 深色模式完整指南 | 开发者 |
@@ -53,7 +55,9 @@
 - 📶 [本機優先同步架構](OFFLINE_SYNC_ARCHITECTURE.md) - outbox、交易和重播合約
 - 🧾 [離線功能摘要](OFFLINE_FUNCTIONALITY.md) - 功能範圍及限制
 - 🧭 [UI 架構與排列盤點](UI_NAVIGATION_AUDIT.md) - 導覽結構、目前問題與改進方案
-- 🎨 [UI 元件盤點與統一設計計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) - 元件外觀、預覽和後續逐檔計畫
+- 🎨 [UI 元件盤點與統一設計計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) - 全站 UI 位置、元件類別、主題與逐檔邏輯邊界
+- 🎨 [已實作 UI 規格與預覽](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md) - 共用欄位、按鈕、卡片、dialog 及主題 tokens
+- 🗂️ [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md) - 全部 production TSX/CSS 檔案及 inline/token 統計
 - 🧾 [CRUD 表單流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md) - 目前可達功能的新增/檢視/編輯/刪除流程
 - 🧩 [互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) - 元件、overlay、同步回饋選擇及參考
 - 🗂️ [樣式逐階段實作計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) - 需修改的檔案、必保留邏輯和驗收條件

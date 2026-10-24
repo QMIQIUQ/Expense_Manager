@@ -115,10 +115,10 @@ const CardManager: React.FC<CardManagerProps> = ({
       position: 'absolute' as const,
       right: 0,
       top: '100%',
-      marginTop: '4px',
+      marginTop: 'var(--ui-space-4px)',
       backgroundColor: 'var(--card-bg)',
       border: '1px solid var(--border-color)',
-      borderRadius: '8px',
+      borderRadius: 'var(--ui-radius-8px)',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       zIndex: 9999,
       minWidth: '160px',
@@ -126,13 +126,13 @@ const CardManager: React.FC<CardManagerProps> = ({
     menuItem: {
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
+      gap: 'var(--ui-space-8px)',
       width: '100%',
-      padding: '12px 16px',
+      padding: 'var(--ui-space-12px) var(--ui-space-16px)',
       border: 'none',
       backgroundColor: 'transparent',
       color: 'var(--text-primary)',
-      fontSize: '14px',
+      fontSize: 'var(--ui-font-14px)',
       cursor: 'pointer',
       textAlign: 'left' as const,
     },
@@ -162,8 +162,8 @@ const CardManager: React.FC<CardManagerProps> = ({
         }
       `}</style>
       <div className="card-manager">
-        <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
-        <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('creditCards')}</h3>
+        <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--ui-space-16px)', flexWrap: 'wrap', marginBottom: 'var(--ui-space-20px)' }}>
+        <h3 style={{ margin: 'var(--ui-space-0px)', fontSize: 'var(--ui-font-24px)', fontWeight: 600, color: 'var(--text-primary)' }}>{t('creditCards')}</h3>
         <button 
           onClick={() => setIsAdding(true)} 
           className="btn btn-accent-light"
@@ -177,7 +177,7 @@ const CardManager: React.FC<CardManagerProps> = ({
         placeholder={t('searchByName')}
         value={searchTerm}
         onChange={setSearchTerm}
-        style={{ marginBottom: 20 }}
+        style={{ marginBottom: 'var(--ui-space-20px)' }}
       />
 
       {/* Add Card Popup Modal */}
@@ -236,7 +236,7 @@ const CardManager: React.FC<CardManagerProps> = ({
             setBulkDeleteConfirm(true);
           }
         }}
-        style={{ marginBottom: 20 }}
+        style={{ marginBottom: 'var(--ui-space-20px)' }}
       />
 
       {filteredCards.length === 0 && !isAdding ? (

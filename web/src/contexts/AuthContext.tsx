@@ -50,7 +50,7 @@ const setupContainerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '24px',
+  padding: 'var(--ui-space-24px)',
   background: 'var(--bg-primary)',
   color: 'var(--text-primary)',
 };
@@ -58,26 +58,26 @@ const setupContainerStyle: React.CSSProperties = {
 const setupPanelStyle: React.CSSProperties = {
   width: 'min(100%, 720px)',
   border: '1px solid var(--border-color)',
-  borderRadius: '12px',
-  padding: '24px',
+  borderRadius: 'var(--ui-radius-12px)',
+  padding: 'var(--ui-space-24px)',
   background: 'var(--bg-secondary)',
   boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
 };
 
 const headingStyle: React.CSSProperties = {
-  margin: '0 0 12px',
-  fontSize: '1.5rem',
+  margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px)',
+  fontSize: 'var(--ui-font-1-5rem)',
   lineHeight: 1.2,
 };
 
 const textStyle: React.CSSProperties = {
-  margin: '0 0 12px',
+  margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px)',
   lineHeight: 1.6,
   color: 'var(--text-secondary)',
 };
 
 const hintStyle: React.CSSProperties = {
-  margin: 0,
+  margin: 'var(--ui-space-0px)',
   lineHeight: 1.6,
   color: 'var(--text-secondary)',
   whiteSpace: 'pre-wrap',
@@ -221,7 +221,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             justifyContent: 'center',
             alignItems: 'center',
             height: '100vh',
-            fontSize: '1.2rem',
+            fontSize: 'var(--ui-font-1-2rem)',
             color: 'var(--text-secondary)',
           }}
         >

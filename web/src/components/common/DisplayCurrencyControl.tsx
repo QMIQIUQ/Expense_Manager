@@ -36,7 +36,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     marginLeft: 'auto',
     flex: '0 1 auto',
     minWidth: 0,
@@ -44,7 +44,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   label: {
     flexShrink: 0,
-    fontSize: '13px',
+    fontSize: 'var(--ui-font-13px)',
     fontWeight: 600,
     color: 'var(--text-secondary)',
     whiteSpace: 'nowrap',

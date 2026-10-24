@@ -37,7 +37,7 @@ const styles = {
   section: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '15px',
+    gap: 'var(--ui-space-15px)',
   },
 };
 

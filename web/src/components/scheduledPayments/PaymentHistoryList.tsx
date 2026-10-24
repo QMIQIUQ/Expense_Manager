@@ -53,10 +53,10 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
     return (
       <div 
         style={{
-          padding: '24px',
+          padding: 'var(--ui-space-24px)',
           textAlign: 'center',
           backgroundColor: 'var(--bg-secondary)',
-          borderRadius: '8px',
+          borderRadius: 'var(--ui-radius-8px)',
           color: 'var(--text-secondary)',
         }}
       >
@@ -69,13 +69,13 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
     <div 
       style={{
         backgroundColor: 'var(--bg-secondary)',
-        borderRadius: '8px',
-        padding: '12px',
+        borderRadius: 'var(--ui-radius-8px)',
+        padding: 'var(--ui-space-12px)',
       }}
     >
       <h5 style={{ 
-        margin: '0 0 12px', 
-        fontSize: '14px', 
+        margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px)',
+        fontSize: 'var(--ui-font-14px)',
         fontWeight: 600, 
         color: 'var(--text-primary)' 
       }}>
@@ -86,12 +86,12 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '8px',
-        marginBottom: '12px',
-        padding: '8px',
+        gap: 'var(--ui-space-8px)',
+        marginBottom: 'var(--ui-space-12px)',
+        padding: 'var(--ui-space-8px)',
         backgroundColor: 'var(--card-bg)',
-        borderRadius: '6px',
-        fontSize: '12px',
+        borderRadius: 'var(--ui-radius-6px)',
+        fontSize: 'var(--ui-font-12px)',
       }}>
         {!conversion.isLoading && conversion.failedKeys.length > 0 && (
           <div style={{ gridColumn: '1 / -1', color: 'var(--warning-text)' }}>
@@ -126,7 +126,7 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
       </div>
 
       {/* Records List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-8px)' }}>
         {records.map((record, index) => {
           const difference = conversion.amountsByKey[`${record.id || `record-${index}`}:actual`]
             - conversion.amountsByKey[`${record.id || `record-${index}`}:expected`];
@@ -138,23 +138,23 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '10px 12px',
+                padding: 'var(--ui-space-10px) var(--ui-space-12px)',
                 backgroundColor: 'var(--card-bg)',
-                borderRadius: '6px',
-                fontSize: '13px',
+                borderRadius: 'var(--ui-radius-6px)',
+                fontSize: 'var(--ui-font-13px)',
               }}
             >
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)', marginBottom: 'var(--ui-space-4px)' }}>
                   <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
                     {record.periodYear}/{String(record.periodMonth).padStart(2, '0')}
                   </span>
                   {difference !== 0 && (
                     <span 
                       style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '11px',
+                        padding: 'var(--ui-space-2px) var(--ui-space-6px)',
+                        borderRadius: 'var(--ui-radius-4px)',
+                        fontSize: 'var(--ui-font-11px)',
                         fontWeight: 500,
                         backgroundColor: difference > 0 ? 'var(--info-bg)' : 'var(--warning-bg)',
                         color: difference > 0 ? 'var(--info-text)' : 'var(--warning-text)',
@@ -166,10 +166,10 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                     </span>
                   )}
                 </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--ui-font-12px)' }}>
                   📅 {record.paidDate}
                   {record.paymentMethod && (
-                    <span style={{ marginLeft: '8px' }}>
+                    <span style={{ marginLeft: 'var(--ui-space-8px)' }}>
                       {record.paymentMethod === 'credit_card' && '💳'}
                       {record.paymentMethod === 'e_wallet' && '📱'}
                       {record.paymentMethod === 'bank' && '🏦'}
@@ -177,18 +177,18 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                     </span>
                   )}
                   {record.note && (
-                    <span style={{ marginLeft: '8px' }}>📝 {record.note}</span>
+                    <span style={{ marginLeft: 'var(--ui-space-8px)' }}>📝 {record.note}</span>
                   )}
                 </div>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-12px)' }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 600, color: 'var(--success-text)' }}>
                     {formatConverted(record.actualAmount, record, index, 'actual')}
                   </div>
                   {record.expectedAmount !== record.actualAmount && (
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
+                    <div style={{ fontSize: 'var(--ui-font-11px)', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
                       {formatConverted(record.expectedAmount, record, index, 'expected')}
                     </div>
                   )}
@@ -199,7 +199,7 @@ const PaymentHistoryList: React.FC<PaymentHistoryListProps> = ({
                     onClick={() => onDelete(record.id!)}
                     className="btn-icon btn-icon-danger"
                     title={t('delete')}
-                    style={{ padding: '6px' }}
+                    style={{ padding: 'var(--ui-space-6px)' }}
                   >
                     <DeleteIcon size={14} />
                   </button>

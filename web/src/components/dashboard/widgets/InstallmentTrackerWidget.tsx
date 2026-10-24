@@ -107,51 +107,51 @@ const InstallmentTrackerWidget: React.FC<WidgetProps> = ({
           tabIndex={onNavigateToScheduledPayment ? 0 : undefined}
           aria-label={onNavigateToScheduledPayment ? `${inst.name} - ${inst.paidCount}/${inst.totalInstallments}` : undefined}
           style={{
-            padding: '12px',
+            padding: 'var(--ui-space-12px)',
             background: 'var(--card-bg)',
             border: '1px solid var(--border-color)',
-            borderRadius: '10px',
-            marginBottom: '8px',
+            borderRadius: 'var(--ui-radius-10px)',
+            marginBottom: 'var(--ui-space-8px)',
             cursor: onNavigateToScheduledPayment ? 'pointer' : 'default',
             transition: 'all 0.2s',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--ui-space-8px)' }}>
             <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 📅 {inst.name}
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', marginTop: 'var(--ui-space-2px)' }}>
                 {inst.paidCount}/{inst.totalInstallments} {t('installmentsPaid')} · {formatDisplayAmount(inst.periodAmount)}/{t('period')}
               </div>
             </div>
-            <div style={{ textAlign: 'right', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+            <div style={{ textAlign: 'right', whiteSpace: 'nowrap', marginLeft: 'var(--ui-space-8px)' }}>
               <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: isCompact ? '13px' : '14px' }}>
                 {formatDisplayAmount(inst.remaining)}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('remaining')}</div>
+              <div style={{ fontSize: 'var(--ui-font-11px)', color: 'var(--text-secondary)' }}>{t('remaining')}</div>
             </div>
           </div>
-          <div className="progress-bar" style={{ height: '6px', borderRadius: '3px' }}>
+          <div className="progress-bar" style={{ height: '6px', borderRadius: 'var(--ui-radius-3px)' }}>
             <div
               className="progress-fill"
               style={{
                 width: `${Math.min(100, inst.progress ?? 0)}%`,
                 backgroundColor: inst.progress !== null && inst.progress >= 80 ? 'var(--success-text)' : 'var(--accent-primary)',
                 height: '100%',
-                borderRadius: '3px',
+                borderRadius: 'var(--ui-radius-3px)',
                 transition: 'width 0.3s',
               }}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--ui-space-4px)', fontSize: 'var(--ui-font-11px)', color: 'var(--text-secondary)' }}>
             <span>{inst.progress === null ? '—' : `${inst.progress.toFixed(0)}%`}</span>
             <span>{formatDisplayAmount(inst.totalPaid)} / {formatDisplayAmount(inst.totalAmount)}</span>
           </div>
         </div>
       ))}
       {installments.length > maxItems && (
-        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', padding: '4px' }}>
+        <div style={{ textAlign: 'center', fontSize: 'var(--ui-font-13px)', color: 'var(--text-secondary)', padding: 'var(--ui-space-4px)' }}>
           +{installments.length - maxItems} {t('more')}
         </div>
       )}

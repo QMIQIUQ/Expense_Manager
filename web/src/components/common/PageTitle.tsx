@@ -12,8 +12,8 @@ const PageTitle: React.FC<PageTitleProps> = ({ children, style = {} }) => {
   return (
     <h2
       style={{
-        margin: 0,
-        fontSize: '24px',
+        margin: 'var(--ui-space-0px)',
+        fontSize: 'var(--ui-font-2xl)',
         fontWeight: 600,
         color: 'var(--text-primary)',
         ...style,

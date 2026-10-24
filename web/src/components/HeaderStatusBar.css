@@ -16,9 +16,9 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  padding: 0;
+  padding: var(--ui-space-0px);
   border: 1px solid var(--border-color);
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   background: color-mix(in srgb, var(--card-bg) 94%, var(--accent-primary) 6%);
   color: var(--accent-primary);
   box-shadow: 0 3px 12px var(--shadow-md), 0 1px 4px var(--shadow);
@@ -36,7 +36,7 @@
 .header-status-toggle[data-tone='error'] { color: var(--error-text); }
 
 .header-status-toggle-icon {
-  font-size: 21px;
+  font-size: var(--ui-font-21px);
   font-weight: 700;
   line-height: 1;
 }
@@ -52,13 +52,13 @@
   display: grid;
   min-width: 17px;
   height: 17px;
-  padding: 0 4px;
+  padding: var(--ui-space-0px) var(--ui-space-4px);
   place-items: center;
   border: 2px solid var(--card-bg);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   background: var(--accent-primary);
   color: white;
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
   font-weight: 700;
 }
 
@@ -68,7 +68,7 @@
   bottom: calc(100% + 10px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   width: min(380px, calc(100vw - 24px));
   max-height: calc(100dvh - 88px - env(safe-area-inset-bottom));
   overflow-y: auto;
@@ -79,8 +79,8 @@
   position: absolute;
   width: 1px;
   height: 1px;
-  padding: 0;
-  margin: -1px;
+  padding: var(--ui-space-0px);
+  margin: var(--ui-space-neg-1px);
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -93,13 +93,13 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ui-space-0px);
   width: 100%;
-  margin: 0;
-  padding: 12px 14px;
+  margin: var(--ui-space-0px);
+  padding: var(--ui-space-12px) var(--ui-space-14px);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--status-accent);
-  border-radius: 14px;
+  border-radius: var(--ui-radius-14px);
   background-color: var(--accent-light);
   background-color: color-mix(in srgb, var(--card-bg) 91%, var(--status-accent) 9%);
   color: var(--text-primary);
@@ -125,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   min-height: 32px;
 }
 
@@ -133,7 +133,7 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   min-width: 0;
 }
 
@@ -144,7 +144,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   background-color: var(--accent-light);
   background-color: color-mix(in srgb, var(--card-bg) 84%, var(--status-accent) 16%);
   color: var(--status-accent);
@@ -153,11 +153,11 @@
 .header-status-icon .loading-status-icon {
   display: inline-block;
   color: var(--status-accent);
-  font-size: 17px;
+  font-size: var(--ui-font-17px);
 }
 
 .header-status-glyph {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   font-weight: 700;
   line-height: 1;
 }
@@ -165,7 +165,7 @@
 .header-status-title {
   flex: 0 0 auto;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 650;
   line-height: 1.35;
   white-space: nowrap;
@@ -176,7 +176,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -185,9 +185,9 @@
 .header-status-progress-bar {
   width: 100%;
   height: 4px;
-  margin-top: 10px;
+  margin-top: var(--ui-space-10px);
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   background-color: color-mix(in srgb, var(--bg-tertiary) 78%, var(--status-accent) 22%);
 }
 
@@ -205,12 +205,12 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  padding: 0;
+  padding: var(--ui-space-0px);
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   background: transparent;
   color: var(--text-tertiary);
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   line-height: 1;
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease;

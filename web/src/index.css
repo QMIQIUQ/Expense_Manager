@@ -143,8 +143,8 @@
 }
 
 * {
-  margin: 0;
-  padding: 0;
+  margin: var(--ui-space-0px);
+  padding: var(--ui-space-0px);
   box-sizing: border-box;
 }
 
@@ -160,11 +160,11 @@ body {
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
   /* Enhanced typography for dark mode readability */
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   line-height: 1.6;
   letter-spacing: 0.01em;
   /* Global safe-padding so fixed action buttons don't cover content */
-  padding-bottom: 96px; /* equals Tailwind pb-24 */
+  padding-bottom: var(--ui-space-96px); /* equals Tailwind pb-24 */
 }
 
 /* Dark mode typography enhancements */
@@ -196,8 +196,8 @@ p, span, div {
 
 button {
   font-family: inherit;
-  font-size: 1rem;
-  border-radius: 4px;
+  font-size: var(--ui-font-1rem);
+  border-radius: var(--ui-radius-4px);
 }
 
 button:hover:not(:disabled) {
@@ -239,12 +239,12 @@ input {
   -webkit-user-select: text;
   user-select: text;
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background-color: var(--input-bg);
   color: var(--text-primary);
-  padding: 10px 14px;
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.5;
 }
@@ -263,12 +263,12 @@ input:focus {
 
 select, textarea {
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background-color: var(--select-bg);
   color: var(--text-primary);
-  padding: 10px 14px;
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.5;
 }
@@ -342,9 +342,9 @@ button:not(:disabled):hover {
 .hamburger-menu-panel {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   box-shadow: 0 4px 12px var(--shadow);
-  padding: 4px 0;
+  padding: var(--ui-space-4px) var(--ui-space-0px);
 }
 
 .dark .hamburger-menu-panel {
@@ -359,11 +359,11 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 6px 14px;
+  padding: var(--ui-space-6px) var(--ui-space-14px);
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -453,8 +453,8 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 24px;
+  gap: var(--ui-space-14px);
+  padding: var(--ui-space-24px);
   background: var(--bg-primary);
   color: var(--text-secondary);
   text-align: center;
@@ -512,20 +512,20 @@ button:not(:disabled):hover {
 
 /* Dashboard responsive layout */
 .dashboard-container {
-  padding: 20px;
+  padding: var(--ui-space-20px);
   width: 100%;
   overflow-x: hidden; /* prevent horizontal bleed on mobile */
 }
 
 @media (max-width: 480px) {
   .dashboard-container {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 }
 
 .dashboard-card {
   background-color: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   box-shadow: 0 2px 8px var(--shadow);
   border: 1px solid var(--border-color);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -543,10 +543,10 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  margin-bottom: 20px;
+  padding: var(--ui-space-16px) var(--ui-space-20px);
+  margin-bottom: var(--ui-space-20px);
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-16px);
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 8px var(--shadow-sm);
 }
@@ -554,12 +554,12 @@ button:not(:disabled):hover {
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   min-width: 0;
 }
 
 .header-logo {
-  font-size: 32px;
+  font-size: var(--ui-font-32px);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -569,18 +569,18 @@ button:not(:disabled):hover {
 }
 
 .header-title {
-  font-size: 1.25rem;
+  font-size: var(--ui-font-1-25rem);
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0;
+  margin: var(--ui-space-0px);
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .header-subtitle {
-  font-size: 0.8rem;
+  font-size: var(--ui-font-0-8rem);
   color: var(--text-secondary);
-  margin: 2px 0 0;
+  margin: var(--ui-space-2px) var(--ui-space-0px) var(--ui-space-0px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -592,7 +592,7 @@ button:not(:disabled):hover {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   border: none;
   background: var(--accent-light);
   color: var(--accent-primary);
@@ -614,9 +614,9 @@ button:not(:disabled):hover {
   height: 18px;
   background: var(--error-text);
   color: white;
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   font-weight: 600;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -624,20 +624,20 @@ button:not(:disabled):hover {
 
 @media (max-width: 640px) {
   .dashboard-header-modern {
-    padding: 12px 14px;
-    margin-bottom: 16px;
+    padding: var(--ui-space-12px) var(--ui-space-14px);
+    margin-bottom: var(--ui-space-16px);
   }
   
   .header-logo {
-    font-size: 28px;
+    font-size: var(--ui-font-28px);
   }
   
   .header-title {
-    font-size: 1.1rem;
+    font-size: var(--ui-font-1-1rem);
   }
   
   .header-subtitle {
-    font-size: 0.75rem;
+    font-size: var(--ui-font-0-75rem);
   }
   
   .header-menu-btn {
@@ -651,22 +651,22 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 20px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-20px);
 }
 
 @media (max-width: 640px) {
   .dashboard-header {
     flex-direction: row;
     align-items: center;
-    padding: 14px;
+    padding: var(--ui-space-14px);
   }
 }
 
 .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .header-actions button {
@@ -698,8 +698,8 @@ button:not(:disabled):hover {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: var(--ui-space-6px);
+  border-radius: var(--ui-radius-6px);
   z-index: 60;
 }
 
@@ -712,14 +712,14 @@ button:not(:disabled):hover {
   right: 12px;
   top: 56px;
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   box-shadow: 0 8px 24px var(--shadow-lg);
   border: 1px solid var(--border-color);
-  padding: 8px;
+  padding: var(--ui-space-8px);
   z-index: 50;
   min-width: 200px;
   display: grid;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   max-width: calc(100vw - 24px);
 }
 
@@ -731,9 +731,9 @@ button:not(:disabled):hover {
 .action-dropdown button {
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: var(--ui-space-10px) var(--ui-space-14px);
+  border-radius: var(--ui-radius-8px);
+  font-size: var(--ui-font-14px);
   color: var(--text-primary);
   background-color: transparent;
 }
@@ -752,8 +752,8 @@ button:not(:disabled):hover {
 
 .dashboard-tabs {
   display: flex;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--ui-space-8px);
+  padding: var(--ui-space-12px);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -770,7 +770,7 @@ button:not(:disabled):hover {
   position: relative;
   border: 1px solid transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   letter-spacing: 0.01em;
 }
 
@@ -823,14 +823,14 @@ button:not(:disabled):hover {
 }
 
 .content-pad {
-  padding: 20px;
+  padding: var(--ui-space-20px);
   overflow-wrap: anywhere; /* long IDs/URLs won't overflow */
   word-break: break-word;
 }
 
 @media (max-width: 480px) {
   .content-pad {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 }
 
@@ -846,40 +846,40 @@ button:not(:disabled):hover {
 /* Prevent overflow on extremely small screens */
 @media (max-width: 360px) {
   .dashboard-card {
-    padding: 10px;
+    padding: var(--ui-space-10px);
   }
   
   .dashboard-header {
-    padding: 10px;
-    gap: 8px;
+    padding: var(--ui-space-10px);
+    gap: var(--ui-space-8px);
   }
   
   .dashboard-header h1 {
-    font-size: 1.25rem;
+    font-size: var(--ui-font-1-25rem);
     line-height: 1.3;
   }
   
   .dashboard-header p {
-    font-size: 0.75rem;
+    font-size: var(--ui-font-0-75rem);
   }
   
   /* Force content to wrap and not overflow */
   .content-pad {
-    padding: 10px;
+    padding: var(--ui-space-10px);
     overflow-x: hidden;
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
   
   .dashboard-tabs {
-    padding: 8px;
-    gap: 4px;
+    padding: var(--ui-space-8px);
+    gap: var(--ui-space-4px);
   }
   
   .dashboard-tab {
     min-width: 80px;
-    padding: 8px 10px;
-    font-size: 0.75rem;
+    padding: var(--ui-space-8px) var(--ui-space-10px);
+    font-size: var(--ui-font-0-75rem);
   }
   
   /* Ensure all containers respect viewport width */
@@ -891,13 +891,13 @@ button:not(:disabled):hover {
 /* Ultra-small screens (under 320px) */
 @media (max-width: 320px) {
   .dashboard-header h1 {
-    font-size: 1rem;
+    font-size: var(--ui-font-1rem);
   }
   
   .dashboard-tab {
     min-width: 70px;
-    padding: 6px 8px;
-    font-size: 0.7rem;
+    padding: var(--ui-space-6px) var(--ui-space-8px);
+    font-size: var(--ui-font-0-7rem);
   }
 }
 
@@ -913,12 +913,12 @@ button:not(:disabled):hover {
 /* Ensure text in small containers doesn't overflow */
 @media (max-width: 480px) {
   button {
-    font-size: 0.875rem;
-    padding: 8px 12px;
+    font-size: var(--ui-font-0-875rem);
+    padding: var(--ui-space-8px) var(--ui-space-12px);
   }
   
   input, select {
-    font-size: 14px;
+    font-size: var(--ui-font-14px);
     min-width: 0;
   }
   
@@ -1049,7 +1049,7 @@ button:not(:disabled):hover {
 
 .dark ::-webkit-scrollbar-thumb {
   background: var(--bg-tertiary);
-  border-radius: 5px;
+  border-radius: var(--ui-radius-5px);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
@@ -1119,11 +1119,11 @@ button:not(:disabled):hover {
 .scheduled-payment-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--ui-radius-12px);
+  padding: var(--ui-space-16px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   position: relative;
 }
 
@@ -1141,7 +1141,7 @@ button:not(:disabled):hover {
 .summary-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* ============================================ */
@@ -1152,10 +1152,10 @@ button:not(:disabled):hover {
 .card-manager .form-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   box-shadow: 0 3px 10px var(--shadow);
-  margin-bottom: 20px;
+  margin-bottom: var(--ui-space-20px);
 }
 
 .dark .card-manager .form-card {
@@ -1168,12 +1168,12 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--ui-space-16px);
 }
 
 .card-manager .form-title {
-  margin: 0;
-  font-size: 18px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-18px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1182,10 +1182,10 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: var(--ui-space-6px);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1197,20 +1197,20 @@ button:not(:disabled):hover {
 }
 
 .card-manager .empty-state {
-  padding: 40px 20px;
+  padding: var(--ui-space-40px) var(--ui-space-20px);
   text-align: center;
 }
 
 .card-manager .empty-text {
   color: var(--text-tertiary);
-  font-size: 14px;
-  margin: 0;
+  font-size: var(--ui-font-14px);
+  margin: var(--ui-space-0px);
 }
 
 .card-manager .card-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 .credit-card .card-header {
@@ -1222,29 +1222,29 @@ button:not(:disabled):hover {
 .credit-card .card-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .credit-card .card-name {
-  margin: 0;
-  font-size: 16px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .credit-card .card-limit {
-  margin: 0;
-  font-size: 12px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-12px);
   color: var(--text-tertiary);
 }
 
 /* Stats row to match sample */
 .credit-card .stats-grid {
-  margin-top: 12px;
+  margin-top: var(--ui-space-12px);
   display: grid;
   /* Responsive grid that wraps gracefully */
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* Tablet and below: ensure two columns */
@@ -1262,19 +1262,19 @@ button:not(:disabled):hover {
 }
 
 .credit-card .stat-card {
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: var(--ui-radius-12px);
+  padding: var(--ui-space-14px);
   background-color: var(--bg-secondary);
 }
 
 .credit-card .stat-card .stat-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: var(--ui-space-6px);
 }
 
 .credit-card .stat-card .stat-value {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -1292,21 +1292,21 @@ button:not(:disabled):hover {
 
 /* Cashback breakdown */
 .credit-card .btn-toggle {
-  margin-top: 8px;
+  margin-top: var(--ui-space-8px);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-8px) var(--ui-space-12px);
+  border-radius: var(--ui-radius-8px);
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
   color: var(--text-primary);
 }
 
 .credit-card .breakdown-section {
-  margin-top: 8px;
+  margin-top: var(--ui-space-8px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   background-color: var(--card-bg);
 }
 
@@ -1314,7 +1314,7 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: var(--ui-space-12px) var(--ui-space-14px);
   border-top: 1px solid var(--border-color);
 }
 
@@ -1333,10 +1333,10 @@ button:not(:disabled):hover {
 .ewallet-manager .form-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   box-shadow: 0 3px 10px var(--shadow);
-  margin-bottom: 20px;
+  margin-bottom: var(--ui-space-20px);
 }
 
 .dark .ewallet-manager .form-card {
@@ -1349,12 +1349,12 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--ui-space-16px);
 }
 
 .ewallet-manager .form-title {
-  margin: 0;
-  font-size: 18px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-18px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1363,10 +1363,10 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: var(--ui-space-6px);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1381,10 +1381,10 @@ button:not(:disabled):hover {
 .bank-manager .form-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   box-shadow: 0 3px 10px var(--shadow);
-  margin-bottom: 20px;
+  margin-bottom: var(--ui-space-20px);
 }
 
 .dark .bank-manager .form-card {
@@ -1397,12 +1397,12 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--ui-space-16px);
 }
 
 .bank-manager .form-title {
-  margin: 0;
-  font-size: 18px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-18px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1411,10 +1411,10 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: var(--ui-space-6px);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1428,17 +1428,17 @@ button:not(:disabled):hover {
 .bank-manager .bank-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* Recurring Expense Manager Form Styles */
 .form-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   box-shadow: 0 3px 10px var(--shadow);
-  margin-bottom: 20px;
+  margin-bottom: var(--ui-space-20px);
 }
 
 .dark .form-card {
@@ -1448,14 +1448,14 @@ button:not(:disabled):hover {
 }
 
 .card-icon {
-  font-size: 28px;
+  font-size: var(--ui-font-28px);
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--icon-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   align-self: center;
 }
 
@@ -1470,9 +1470,9 @@ button:not(:disabled):hover {
 }
 
 .card-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: var(--ui-space-4px);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -1480,7 +1480,7 @@ button:not(:disabled):hover {
 }
 
 .card-value {
-  font-size: 20px;
+  font-size: var(--ui-font-20px);
   font-weight: 700;
   color: var(--text-primary);
   word-break: break-word;
@@ -1491,16 +1491,16 @@ button:not(:disabled):hover {
 .tracked-expenses-section {
   background-color: var(--warning-bg);
   border: 2px solid #ffc107;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: var(--ui-radius-12px);
+  padding: var(--ui-space-20px);
   /* Margin removed in favor of dashboard-summary gap */
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 /* Dashboard vertical layout spacing */
 .dashboard-summary {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--ui-space-24px);
 }
 
 /* Ensure charts and breakdown sections don't collapse margins inside flex container */
@@ -1508,7 +1508,7 @@ button:not(:disabled):hover {
 .dashboard-summary > .category-breakdown,
 .dashboard-summary > .chart-container,
 .dashboard-summary > .recent-expenses-container {
-  margin: 0; /* rely on gap */
+  margin: var(--ui-space-0px); /* rely on gap */
 }
 
 .dark .tracked-expenses-section {
@@ -1519,25 +1519,25 @@ button:not(:disabled):hover {
 .tracked-expenses-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* ==================== Pending Payments Widget ==================== */
 .pending-payments-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .pending-payment-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: var(--ui-radius-10px);
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   box-shadow: 0 2px 6px var(--shadow);
   transition: all 0.2s ease;
 }
@@ -1547,7 +1547,7 @@ button:not(:disabled):hover {
 }
 
 .pending-payments-compact .pending-payment-card {
-  padding: 8px 10px;
+  padding: var(--ui-space-8px) var(--ui-space-10px);
 }
 
 .pending-payment-card:hover {
@@ -1562,13 +1562,13 @@ button:not(:disabled):hover {
 .pending-payment-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   flex: 1;
   min-width: 0;
 }
 
 .pending-payment-icon {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   flex-shrink: 0;
 }
 
@@ -1580,29 +1580,29 @@ button:not(:disabled):hover {
 .pending-payment-name {
   font-weight: 500;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .pending-payments-compact .pending-payment-name {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .pending-payment-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: var(--ui-space-4px);
+  font-size: var(--ui-font-11px);
   color: var(--text-secondary);
-  margin-top: 1px;
+  margin-top: var(--ui-space-1px);
 }
 
 .pending-payment-category {
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 10px;
+  padding: var(--ui-space-1px) var(--ui-space-4px);
+  border-radius: var(--ui-radius-3px);
+  font-size: var(--ui-font-10px);
   white-space: nowrap;
 }
 
@@ -1624,27 +1624,27 @@ button:not(:disabled):hover {
 .pending-payment-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .pending-payment-amount {
   font-weight: 600;
   color: var(--error-text);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   white-space: nowrap;
 }
 
 .pending-payments-compact .pending-payment-amount {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .pending-payment-confirm-btn {
-  padding: 4px 8px;
+  padding: var(--ui-space-4px) var(--ui-space-8px);
   background-color: var(--success-bg);
   color: var(--success-text);
   border: none;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--ui-radius-4px);
+  font-size: var(--ui-font-11px);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -1658,9 +1658,9 @@ button:not(:disabled):hover {
 
 .pending-payments-more {
   text-align: center;
-  padding: 8px;
+  padding: var(--ui-space-8px);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 /* Dark mode styles */
@@ -1678,17 +1678,17 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: var(--ui-space-10px);
 }
 
 .btn-complete {
-  padding: 4px 8px;
+  padding: var(--ui-space-4px) var(--ui-space-8px);
   border: none;
   background: var(--accent-primary);
   color: white;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   font-weight: 600;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -1702,13 +1702,13 @@ button:not(:disabled):hover {
 .tracked-expense-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--ui-space-1px);
   flex: 1;
   min-width: 0;
 }
 
 .tracked-expense-title {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
@@ -1726,31 +1726,31 @@ button:not(:disabled):hover {
 }
 
 .tracked-expense-date {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--text-tertiary);
 }
 
 .tracked-expense-amounts {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   flex-shrink: 0;
 }
 
 .tracked-amount-item {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ui-space-0px);
   align-items: flex-end;
 }
 
 .tracked-amount-label {
-  font-size: 9px;
+  font-size: var(--ui-font-9px);
   color: var(--text-tertiary);
 }
 
 .tracked-amount-value {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1758,9 +1758,9 @@ button:not(:disabled):hover {
 .progress-bar {
   height: 4px;
   background-color: var(--bg-tertiary);
-  border-radius: 2px;
+  border-radius: var(--ui-radius-2px);
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: var(--ui-space-6px);
 }
 
 .progress-fill {
@@ -1772,19 +1772,19 @@ button:not(:disabled):hover {
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--ui-space-15px);
 }
 
 .category-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-12px);
   width: 100%;
   text-align: left;
   font: inherit;
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   border: 1px solid var(--border-color);
 }
 
@@ -1792,12 +1792,12 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   min-width: 0;
 }
 
 .category-name {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
@@ -1808,7 +1808,7 @@ button:not(:disabled):hover {
 }
 
 .category-amount {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   color: var(--error-text);
   white-space: nowrap;
@@ -1816,7 +1816,7 @@ button:not(:disabled):hover {
 }
 
 .category-percentage {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
   align-self: flex-end;
 }
@@ -1824,18 +1824,18 @@ button:not(:disabled):hover {
 .recent-expenses-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .recent-expense-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: var(--ui-space-12px);
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  gap: 10px;
+  border-radius: var(--ui-radius-8px);
+  gap: var(--ui-space-10px);
   box-shadow: 0 2px 6px var(--shadow);
   transition: all 0.2s ease;
 }
@@ -1892,13 +1892,13 @@ button:not(:disabled):hover {
 .recent-expense-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   flex: 1;
   min-width: 0;
 }
 
 .recent-expense-desc {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
@@ -1907,12 +1907,12 @@ button:not(:disabled):hover {
 }
 
 .recent-expense-category {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--chip-text);
   display: inline-block;
-  padding: 2px 6px;
+  padding: var(--ui-space-2px) var(--ui-space-6px);
   background-color: var(--chip-bg);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   max-width: fit-content;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1924,17 +1924,17 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .recent-expense-amount {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--error-text);
 }
 
 .recent-expense-date {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-tertiary);
 }
 
@@ -1942,16 +1942,16 @@ button:not(:disabled):hover {
 .credit-card-summary-item {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   min-width: 0;
   position: relative;
   box-shadow: 0 3px 10px var(--shadow);
   transition: all 0.2s ease;
-  margin-bottom: 16px;
+  margin-bottom: var(--ui-space-16px);
 }
 
 .dark .credit-card-summary-item {
@@ -1964,7 +1964,7 @@ button:not(:disabled):hover {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--ui-space-12px);
 }
 
 .card-name {
@@ -1973,7 +1973,7 @@ button:not(:disabled):hover {
 }
 
 .card-meta {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-tertiary);
 }
 
@@ -1982,44 +1982,44 @@ button:not(:disabled):hover {
 }
 
 .cashback-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .cashback-value {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: 700;
   color: var(--accent-primary);
 }
 
 .utilization-section {
-  margin-bottom: 8px;
+  margin-bottom: var(--ui-space-8px);
 }
 
 .utilization-info {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: var(--ui-font-12px);
+  margin-bottom: var(--ui-space-4px);
   color: var(--text-secondary);
 }
 
 .card-limits {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .cashback-suggestions {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: var(--ui-space-12px);
+  padding-top: var(--ui-space-12px);
   border-top: 1px solid var(--border-color);
 }
 
 .suggestion-item {
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: var(--ui-font-12px);
+  margin-bottom: var(--ui-space-4px);
   color: var(--text-secondary);
 }
 
@@ -2029,7 +2029,7 @@ button:not(:disabled):hover {
 }
 
 .more-cards-text {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   text-align: center;
   color: var(--text-tertiary);
 }
@@ -2037,15 +2037,15 @@ button:not(:disabled):hover {
 .more-cards-button {
   display: block;
   width: 100%;
-  padding: 10px 16px;
-  margin-top: 8px;
-  font-size: 13px;
+  padding: var(--ui-space-10px) var(--ui-space-16px);
+  margin-top: var(--ui-space-8px);
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   text-align: center;
   color: var(--accent-primary);
   background: transparent;
   border: 1px dashed var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -2116,9 +2116,9 @@ button:not(:disabled):hover {
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-tertiary) 100%) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 10px !important;
+  border-radius: var(--ui-radius-10px) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  padding: 10px 14px !important;
+  padding: var(--ui-space-10px) var(--ui-space-14px) !important;
 }
 
 /* Recharts Legend styling
@@ -2133,9 +2133,9 @@ button:not(:disabled):hover {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 12px;
-  padding: 0;
-  margin: 0;
+  gap: var(--ui-space-6px) var(--ui-space-12px);
+  padding: var(--ui-space-0px);
+  margin: var(--ui-space-0px);
 }
 
 .recharts-default-legend .recharts-legend-item {
@@ -2179,19 +2179,19 @@ button:not(:disabled):hover {
 }
 
 .recharts-tooltip-wrapper .recharts-tooltip-item-list {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: var(--ui-space-0px) !important;
+  padding: var(--ui-space-0px) !important;
 }
 
 .recharts-tooltip-wrapper .recharts-tooltip-item {
   color: var(--text-primary) !important;
   font-weight: 600 !important;
-  font-size: 13px !important;
-  padding: 2px 0 !important;
-  margin: 0 !important;
+  font-size: var(--ui-font-13px) !important;
+  padding: var(--ui-space-2px) var(--ui-space-0px) !important;
+  margin: var(--ui-space-0px) !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: var(--ui-space-6px) !important;
 }
 
 .recharts-tooltip-wrapper .recharts-tooltip-item-name {
@@ -2260,17 +2260,17 @@ button:not(:disabled):hover {
 
 .dark progress::-webkit-progress-bar {
   background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
 }
 
 .dark progress::-webkit-progress-value {
   background: var(--tab-active-bg);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
 }
 
 .dark progress::-moz-progress-bar {
   background: var(--tab-active-bg);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
 }
 
 /* Floating action button enhancement */
@@ -2400,11 +2400,11 @@ button:not(:disabled):hover {
 .tracked-expense-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: var(--ui-radius-10px);
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ui-space-0px);
   min-width: 0;
   position: relative;
   box-shadow: 0 2px 6px var(--shadow);
@@ -2415,11 +2415,11 @@ button:not(:disabled):hover {
 .recent-expense-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--ui-radius-14px);
+  padding: var(--ui-space-16px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   min-width: 0;
   position: relative;
   box-shadow: 0 3px 10px var(--shadow);
@@ -2450,15 +2450,15 @@ button:not(:disabled):hover {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: var(--ui-space-6px);
+  margin-bottom: var(--ui-space-12px);
 }
 
 .form-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: var(--ui-space-4px);
   display: block;
 }
 
@@ -2470,12 +2470,12 @@ button:not(:disabled):hover {
 .form-select,
 .form-textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background-color: var(--input-bg);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.5;
 }
@@ -2501,14 +2501,14 @@ button:not(:disabled):hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: var(--ui-space-8px) var(--ui-space-16px);
+  border-radius: var(--ui-radius-8px);
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .btn:hover:not(:disabled) {
@@ -2589,12 +2589,12 @@ button:not(:disabled):hover {
 }
 
 .btn-pill {
-  border-radius: 9999px;
+  border-radius: var(--ui-radius-pill);
 }
 
 .btn-icon {
-  padding: 8px;
-  border-radius: 8px;
+  padding: var(--ui-space-8px);
+  border-radius: var(--ui-radius-8px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2660,14 +2660,14 @@ button:not(:disabled):hover {
 
 /* Unified Hamburger Menu Button */
 .menu-trigger-button {
-  padding: 8px 12px;
+  padding: var(--ui-space-8px) var(--ui-space-12px);
   background-color: var(--accent-light);
   color: var(--accent-primary);
   border: 1px solid transparent;
   outline: none;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 20px;
+  font-size: var(--ui-font-20px);
   font-weight: bold;
   line-height: 1;
   display: flex;
@@ -2716,8 +2716,8 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: center;
   background-color: var(--card-bg);
-  border-radius: 4px;
-  padding: 2px;
+  border-radius: var(--ui-radius-4px);
+  padding: var(--ui-space-2px);
   box-shadow: 0 1px 2px var(--shadow);
 }
 
@@ -2737,8 +2737,8 @@ button:not(:disabled):hover {
 /* Widget Container */
 .widget-container {
   background-color: var(--card-bg);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--ui-radius-12px);
+  padding: var(--ui-space-16px);
   box-shadow: 0 2px 8px var(--shadow);
   transition: all 0.2s ease;
   border: 1px solid var(--border-color);
@@ -2811,19 +2811,19 @@ button:not(:disabled):hover {
 .widget-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ui-space-8px);
+  margin-bottom: var(--ui-space-12px);
 }
 
 .widget-icon {
-  font-size: 20px;
+  font-size: var(--ui-font-20px);
 }
 
 .widget-title {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 /* Widget edit controls */
@@ -2833,15 +2833,15 @@ button:not(:disabled):hover {
   right: 8px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   z-index: 10;
 }
 
 .widget-drag-handle {
   cursor: grab;
   color: var(--text-tertiary);
-  font-size: 16px;
-  padding: 4px;
+  font-size: var(--ui-font-16px);
+  padding: var(--ui-space-4px);
 }
 
 .widget-drag-handle:active {
@@ -2855,16 +2855,16 @@ button:not(:disabled):hover {
 
 .widget-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .widget-action-btn {
-  padding: 4px 8px;
+  padding: var(--ui-space-4px) var(--ui-space-8px);
   border: none;
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   transition: all 0.2s;
 }
 
@@ -2878,19 +2878,19 @@ button:not(:disabled):hover {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-8px) var(--ui-space-12px);
   color: var(--text-secondary);
 }
 
 .widget-empty-state span {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   line-height: 1;
 }
 
 .widget-empty-state p {
-  margin: 0;
-  font-size: 13px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-13px);
   color: var(--text-tertiary);
   line-height: 1;
 }
@@ -2901,29 +2901,29 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--ui-space-24px);
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   border: 2px dashed var(--border-color);
 }
 
 .widget-placeholder-icon {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   opacity: 0.5;
 }
 
 .widget-placeholder-text {
   color: var(--text-tertiary);
-  font-size: 12px;
-  margin-top: 8px;
+  font-size: var(--ui-font-12px);
+  margin-top: var(--ui-space-8px);
 }
 
 /* Dashboard Widgets Grid */
 .dashboard-widgets-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 16px 0;
+  gap: var(--ui-space-16px);
+  padding: var(--ui-space-16px) var(--ui-space-0px);
 }
 
 /* Dashboard Customizer */
@@ -2938,12 +2938,12 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 16px;
+  padding: var(--ui-space-16px);
 }
 
 .customizer-modal {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-16px);
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
@@ -2956,25 +2956,25 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: var(--ui-space-20px) var(--ui-space-24px);
   border-bottom: 1px solid var(--border-color);
 }
 
 .customizer-header h2 {
-  margin: 0;
-  font-size: 20px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-20px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .customizer-header .btn-close {
-  padding: 8px;
+  padding: var(--ui-space-8px);
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   color: var(--text-secondary);
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   width: 36px;
   height: 36px;
   display: flex;
@@ -2989,15 +2989,15 @@ button:not(:disabled):hover {
 .customizer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: var(--ui-space-20px) var(--ui-space-24px);
 }
 
 .customizer-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--ui-space-12px);
+  margin-bottom: var(--ui-space-16px);
   flex-wrap: wrap;
 }
 
@@ -3005,26 +3005,26 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   flex: 1;
   min-width: 200px;
 }
 
 .customizer-hint-text {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .customizer-btn-reset-inline {
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: var(--ui-space-6px) var(--ui-space-12px);
+  border-radius: var(--ui-radius-6px);
   border: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3039,11 +3039,11 @@ button:not(:disabled):hover {
 
 .customizer-hint {
   color: var(--text-secondary);
-  font-size: 14px;
-  padding: 10px 14px;
+  font-size: var(--ui-font-14px);
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   background: var(--bg-secondary);
-  border-radius: 8px;
-  margin: 0;
+  border-radius: var(--ui-radius-8px);
+  margin: var(--ui-space-0px);
   flex: 1;
   min-width: 150px;
 }
@@ -3051,23 +3051,23 @@ button:not(:disabled):hover {
 .bulk-size-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .bulk-size-control label {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
 }
 
 .bulk-size-select {
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: var(--ui-space-6px) var(--ui-space-10px);
+  border-radius: var(--ui-radius-6px);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   cursor: pointer;
   transition: all 0.2s;
   min-width: 100px;
@@ -3091,16 +3091,16 @@ button:not(:disabled):hover {
 .widget-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .widget-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   border: 1px solid var(--border-color);
   cursor: grab;
   transition: all 0.2s;
@@ -3128,18 +3128,18 @@ button:not(:disabled):hover {
 
 .widget-item .widget-drag-handle {
   color: var(--text-tertiary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .widget-info {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .widget-info .widget-icon {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
 }
 
 .widget-details {
@@ -3150,28 +3150,28 @@ button:not(:disabled):hover {
 .widget-name {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .widget-desc {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .widget-controls {
   display: flex;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   align-items: center;
 }
 
 .widget-order-input {
   width: 50px;
-  padding: 6px 8px;
+  padding: var(--ui-space-6px) var(--ui-space-8px);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: var(--ui-radius-6px);
+  font-size: var(--ui-font-12px);
   text-align: center;
   transition: all 0.2s;
 }
@@ -3180,7 +3180,7 @@ button:not(:disabled):hover {
 .widget-order-input::-webkit-outer-spin-button,
 .widget-order-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 .widget-order-input {
@@ -3199,12 +3199,12 @@ button:not(:disabled):hover {
 }
 
 .widget-size-select {
-  padding: 6px 8px;
+  padding: var(--ui-space-6px) var(--ui-space-8px);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: var(--ui-radius-6px);
+  font-size: var(--ui-font-12px);
   cursor: pointer;
   transition: all 0.2s;
   min-width: 60px;
@@ -3221,12 +3221,12 @@ button:not(:disabled):hover {
 }
 
 .btn-move {
-  padding: 6px 10px;
+  padding: var(--ui-space-6px) var(--ui-space-10px);
   border: none;
   background: var(--bg-tertiary);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-primary);
   transition: all 0.2s;
 }
@@ -3242,12 +3242,12 @@ button:not(:disabled):hover {
 }
 
 .btn-toggle {
-  padding: 6px 10px;
+  padding: var(--ui-space-6px) var(--ui-space-10px);
   border: none;
   background: var(--bg-tertiary);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   transition: all 0.2s;
 }
 
@@ -3290,34 +3290,34 @@ button:not(:disabled):hover {
 
 /* Add widget section */
 .add-widget-section {
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: var(--ui-space-24px);
+  padding-top: var(--ui-space-20px);
   border-top: 1px solid var(--border-color);
 }
 
 .add-widget-section h3 {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  margin-bottom: var(--ui-space-12px);
 }
 
 .available-widgets {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .btn-add-widget {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-8px) var(--ui-space-12px);
   border: 1px dashed var(--border-color);
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
   transition: all 0.2s;
 }
@@ -3332,8 +3332,8 @@ button:not(:disabled):hover {
 .customizer-footer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-16px) var(--ui-space-24px);
   border-top: 1px solid var(--border-color);
 }
 
@@ -3342,10 +3342,10 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  padding: var(--ui-space-8px) var(--ui-space-16px);
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: var(--ui-radius-6px);
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3367,7 +3367,7 @@ button:not(:disabled):hover {
 /* Button row: save + cancel */
 .customizer-btn-row {
   display: flex;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   width: 100%;
 }
 
@@ -3388,7 +3388,7 @@ button:not(:disabled):hover {
 
 /* Cancel button - secondary style per UI_BUTTON_STYLE_GUIDE */
 .customizer-btn-cancel {
-  padding: 8px 20px;
+  padding: var(--ui-space-8px) var(--ui-space-20px);
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
@@ -3403,7 +3403,7 @@ button:not(:disabled):hover {
 
 .footer-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* Mobile responsive styles for dashboard customizer widget list */
@@ -3411,25 +3411,25 @@ button:not(:disabled):hover {
   .customizer-modal {
     max-width: 100%;
     max-height: 100vh;
-    border-radius: 0;
+    border-radius: var(--ui-radius-0px);
   }
 
   .customizer-header {
-    padding: 16px;
+    padding: var(--ui-space-16px);
   }
 
   .customizer-header h2 {
-    font-size: 18px;
+    font-size: var(--ui-font-18px);
   }
 
   .customizer-content {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 
   .customizer-toolbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: var(--ui-space-12px);
   }
 
   .customizer-hint {
@@ -3445,8 +3445,8 @@ button:not(:disabled):hover {
   /* Widget item responsive layout */
   .widget-item {
     flex-wrap: wrap;
-    padding: 12px;
-    gap: 8px;
+    padding: var(--ui-space-12px);
+    gap: var(--ui-space-8px);
   }
 
   .widget-item .widget-drag-handle {
@@ -3456,7 +3456,7 @@ button:not(:disabled):hover {
   .widget-order-input {
     order: 2;
     width: 40px;
-    padding: 4px 6px;
+    padding: var(--ui-space-4px) var(--ui-space-6px);
   }
 
   .widget-info {
@@ -3467,7 +3467,7 @@ button:not(:disabled):hover {
   }
 
   .widget-info .widget-icon {
-    font-size: 20px;
+    font-size: var(--ui-font-20px);
     flex-shrink: 0;
   }
 
@@ -3477,14 +3477,14 @@ button:not(:disabled):hover {
   }
 
   .widget-name {
-    font-size: 13px;
+    font-size: var(--ui-font-13px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .widget-desc {
-    font-size: 11px;
+    font-size: var(--ui-font-11px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3494,24 +3494,24 @@ button:not(:disabled):hover {
     order: 4;
     flex: 0 0 100%;
     justify-content: flex-end;
-    padding-top: 8px;
+    padding-top: var(--ui-space-8px);
     border-top: 1px solid var(--border-color);
-    margin-top: 4px;
+    margin-top: var(--ui-space-4px);
   }
 
   .widget-size-select {
-    font-size: 11px;
-    padding: 5px 6px;
+    font-size: var(--ui-font-11px);
+    padding: var(--ui-space-5px) var(--ui-space-6px);
     min-width: 50px;
   }
 
   .customizer-footer {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 
   .customizer-btn {
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: var(--ui-space-10px) var(--ui-space-16px);
+    font-size: var(--ui-font-13px);
   }
 
   .customizer-footer .btn {
@@ -3532,7 +3532,7 @@ button:not(:disabled):hover {
 /* Additional responsive adjustments for very small mobile screens */
 @media (max-width: 360px) {
   .widget-controls {
-    gap: 6px;
+    gap: var(--ui-space-6px);
   }
 
   .widget-size-select {
@@ -3544,17 +3544,17 @@ button:not(:disabled):hover {
 .budget-progress-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 .budget-progress-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-14px) var(--ui-space-16px);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: var(--ui-radius-14px);
 }
 
 .budget-total-summary {
@@ -3565,17 +3565,17 @@ button:not(:disabled):hover {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .budget-progress-summary-label {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .budget-progress-summary-value {
   overflow-wrap: anywhere;
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
 }
 
 .total-budget-value {
@@ -3593,7 +3593,7 @@ button:not(:disabled):hover {
 .budget-summary-conversion-error {
   grid-column: 1 / -1;
   color: var(--error-text);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 @media (max-width: 480px) {
@@ -3605,31 +3605,31 @@ button:not(:disabled):hover {
     flex-direction: row !important;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--ui-space-8px);
   }
 
   .budget-total-summary-metric .budget-total-summary-value {
-    font-size: 18px;
+    font-size: var(--ui-font-18px);
   }
 
   .budget-progress-summary {
-    gap: 8px;
-    padding: 12px;
+    gap: var(--ui-space-8px);
+    padding: var(--ui-space-12px);
   }
 
   .budget-progress-summary-value {
-    font-size: 14px;
+    font-size: var(--ui-font-14px);
   }
 }
 
 .budget-progress-item {
-  padding: 16px;
+  padding: var(--ui-space-16px);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: var(--ui-radius-14px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   box-shadow: 0 3px 10px var(--shadow);
   transition: all 0.2s ease;
 }
@@ -3639,59 +3639,59 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .budget-period-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   flex-wrap: wrap;
 }
 
 .budget-period-chip {
-  padding: 5px 10px;
+  padding: var(--ui-space-5px) var(--ui-space-10px);
   background: var(--accent-light);
   color: var(--accent-primary);
-  border-radius: 16px;
-  font-size: 11px;
+  border-radius: var(--ui-radius-16px);
+  font-size: var(--ui-font-11px);
   font-weight: 600;
   text-transform: capitalize;
   box-shadow: 0 1px 3px var(--shadow);
 }
 
 .budget-period-range {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--text-tertiary);
   font-weight: 400;
 }
 
 .budget-rollover-badge {
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: var(--ui-font-12px);
+  padding: var(--ui-space-2px) var(--ui-space-4px);
   background-color: var(--accent-light);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
 }
 
 .budget-amounts {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   white-space: nowrap;
 }
 
 .budget-spent {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: 600;
 }
 
 .budget-separator {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-tertiary);
 }
 
 .budget-total {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-secondary);
 }
 
@@ -3700,12 +3700,12 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .budget-category-name {
-  margin: 0;
-  font-size: 15px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-15px);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -3714,11 +3714,11 @@ button:not(:disabled):hover {
 .budget-daily-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 8px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-6px) var(--ui-space-8px);
   background: var(--bg-tertiary);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: var(--ui-radius-6px);
+  font-size: var(--ui-font-11px);
   flex-wrap: wrap;
 }
 
@@ -3726,11 +3726,11 @@ button:not(:disabled):hover {
 .budget-suggestion-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--ui-radius-12px);
+  padding: var(--ui-space-16px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   transition: all 0.2s ease;
 }
 
@@ -3746,37 +3746,37 @@ button:not(:disabled):hover {
 }
 
 .suggestion-category {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .suggestion-confidence {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .suggestion-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-space-10px);
 }
 
 .suggestion-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   background: var(--accent-light);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
 }
 
 .suggestion-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .suggestion-amount {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: 700;
   color: var(--accent-primary);
 }
@@ -3784,14 +3784,14 @@ button:not(:disabled):hover {
 .suggestion-details {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .suggestion-detail {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .detail-label {
@@ -3808,19 +3808,19 @@ button:not(:disabled):hover {
 }
 
 .months-analyzed {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--text-tertiary);
   font-style: italic;
 }
 
 .suggestion-apply-btn {
   width: 100%;
-  padding: 10px 16px;
+  padding: var(--ui-space-10px) var(--ui-space-16px);
   background: var(--accent-primary);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--ui-radius-8px);
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3837,21 +3837,21 @@ button:not(:disabled):hover {
 
 /* Budget History Styles */
 .budget-history {
-  margin-top: 12px;
-  padding: 12px;
+  margin-top: var(--ui-space-12px);
+  padding: var(--ui-space-12px);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
 }
 
 .budget-history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--ui-space-10px);
 }
 
 .budget-history-title {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -3860,8 +3860,8 @@ button:not(:disabled):hover {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 4px;
-  padding-top: 8px;
+  gap: var(--ui-space-4px);
+  padding-top: var(--ui-space-8px);
   position: relative;
 }
 
@@ -3881,7 +3881,7 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .budget-history-bar {
@@ -3894,42 +3894,42 @@ button:not(:disabled):hover {
 }
 
 .budget-history-label {
-  font-size: 9px;
+  font-size: var(--ui-font-9px);
   color: var(--text-tertiary);
   white-space: nowrap;
-  margin-top: 4px;
+  margin-top: var(--ui-space-4px);
 }
 
 .budget-history-legend {
   display: flex;
   justify-content: flex-end;
-  margin-top: 4px;
+  margin-top: var(--ui-space-4px);
 }
 
 .budget-history-100-line {
-  font-size: 9px;
+  font-size: var(--ui-font-9px);
   color: var(--text-tertiary);
 }
 
 /* Budget History Advanced Chart */
 .budget-history-advanced {
-  margin-top: 12px;
-  padding: 16px;
+  margin-top: var(--ui-space-12px);
+  padding: var(--ui-space-16px);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
 }
 
 .budget-history-view-toggle {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: var(--ui-space-4px) var(--ui-space-10px);
+  font-size: var(--ui-font-11px);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   transition: all 0.15s ease;
 }
 
@@ -3941,55 +3941,55 @@ button:not(:disabled):hover {
 .budget-history-chart-container {
   width: 100%;
   height: 180px;
-  margin-top: 8px;
+  margin-top: var(--ui-space-8px);
 }
 
 .budget-chart-tooltip {
   background: var(--bg-primary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 6px !important;
-  padding: 8px 12px !important;
+  border-radius: var(--ui-radius-6px) !important;
+  padding: var(--ui-space-8px) var(--ui-space-12px) !important;
   box-shadow: var(--shadow-md) !important;
 }
 
 .budget-chart-tooltip .label {
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--ui-space-4px);
 }
 
 .budget-chart-tooltip .value {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--ui-space-6px);
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .budget-chart-tooltip .value .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
 }
 
 .budget-history-legend-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
+  gap: var(--ui-space-4px);
+  font-size: var(--ui-font-10px);
   color: var(--text-tertiary);
 }
 
 .budget-history-legend-item .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
 }
 
 .budget-daily-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .budget-daily-label {
@@ -4006,9 +4006,9 @@ button:not(:disabled):hover {
 }
 
 .budget-pace-indicator {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: var(--ui-font-10px);
+  padding: var(--ui-space-2px) var(--ui-space-6px);
+  border-radius: var(--ui-radius-4px);
 }
 
 .budget-pace-indicator.over {
@@ -4025,14 +4025,14 @@ button:not(:disabled):hover {
 .budget-progress-row-3 {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .budget-progress-bar {
   flex: 1;
   height: 6px;
   background-color: var(--border-color);
-  border-radius: 3px;
+  border-radius: var(--ui-radius-3px);
   overflow: hidden;
 }
 
@@ -4042,7 +4042,7 @@ button:not(:disabled):hover {
 }
 
 .budget-percentage {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
   font-weight: 500;
   min-width: 45px;
@@ -4050,11 +4050,11 @@ button:not(:disabled):hover {
   /* Reset styles from generic [class*="tag"] selector */
   background: transparent !important;
   border: none !important;
-  padding: 0;
+  padding: var(--ui-space-0px);
 }
 
 .budget-status-text {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -4063,24 +4063,24 @@ button:not(:disabled):hover {
 .cards-summary-widget {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ui-space-16px);
   width: 100%;
 }
 
 .cards-summary-widget .credit-card-summary-item {
-  margin-bottom: 0;
+  margin-bottom: var(--ui-space-0px);
 }
 
 .cards-summary-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .card-stats {
   display: flex;
-  gap: 16px;
-  margin: 12px 0;
+  gap: var(--ui-space-16px);
+  margin: var(--ui-space-12px) var(--ui-space-0px);
   flex-wrap: wrap;
 }
 
@@ -4090,12 +4090,12 @@ button:not(:disabled):hover {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--text-secondary);
 }
 
 .stat-value {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -4105,21 +4105,21 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--ui-space-12px);
+  margin-bottom: var(--ui-space-12px);
   flex-wrap: wrap;
 }
 
 .btn-customize {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-8px) var(--ui-space-14px);
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
   transition: all 0.2s;
 }
@@ -4134,14 +4134,14 @@ button:not(:disabled):hover {
 .quick-expense-widget {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ui-space-16px);
   height: fit-content;
 }
 
 .quick-expense-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 /* ========================================
@@ -4157,14 +4157,14 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--ui-space-6px);
   width: 100%;
-  padding: 12px;
-  padding-right: 36px; /* Space for menu button */
+  padding: var(--ui-space-12px);
+  padding-right: var(--ui-space-36px); /* Space for menu button */
   min-height: 90px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
   text-align: left;
@@ -4188,19 +4188,19 @@ button:not(:disabled):hover {
   left: 50%;
   width: 20px;
   height: 20px;
-  margin: -10px 0 0 -10px;
+  margin: var(--ui-space-neg-10px) var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-neg-10px);
   border: 2px solid var(--accent-primary);
   border-top-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   animation: spin 0.8s linear infinite;
 }
 
 .quick-expense-card-category {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 999px;
+  padding: var(--ui-space-3px) var(--ui-space-8px);
+  border-radius: var(--ui-radius-pill);
   background: var(--accent-light);
   color: var(--accent-primary);
   max-width: 100%;
@@ -4210,14 +4210,14 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-card-amount {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 700;
   color: var(--accent-primary);
   line-height: 1.2;
 }
 
 .quick-expense-card-name {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1.3;
@@ -4238,13 +4238,13 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--ui-space-0px);
   border: none;
   background: var(--accent-light);
   color: var(--accent-primary);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   font-weight: bold;
   line-height: 1;
   transition: background-color 0.2s;
@@ -4260,7 +4260,7 @@ button:not(:disabled):hover {
   min-width: 140px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
@@ -4272,13 +4272,13 @@ button:not(:disabled):hover {
 .quick-expense-menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s;
@@ -4319,14 +4319,14 @@ button:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   width: 100%;
   /* Reduce default vertical space; allow auto height */
-  padding: 8px 10px;
+  padding: var(--ui-space-8px) var(--ui-space-10px);
   min-height: 72px; /* slightly smaller; can be tuned further */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -4361,10 +4361,10 @@ button:not(:disabled):hover {
   left: 50%;
   width: 20px;
   height: 20px;
-  margin: -10px 0 0 -10px;
+  margin: var(--ui-space-neg-10px) var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-neg-10px);
   border: 2px solid var(--accent-primary);
   border-top-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-circle);
   animation: spin 0.8s linear infinite;
 }
 
@@ -4382,11 +4382,11 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: flex-start;
   width: 100%;
-  margin: 4px 0;
+  margin: var(--ui-space-4px) var(--ui-space-0px);
 }
 
 .quick-expense-icon {
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -4395,11 +4395,11 @@ button:not(:disabled):hover {
 .quick-expense-category-chip {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 10px;
+  gap: var(--ui-space-2px);
+  font-size: var(--ui-font-10px);
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: var(--ui-space-2px) var(--ui-space-8px);
+  border-radius: var(--ui-radius-pill);
   background: var(--accent-light);
   color: var(--accent-primary);
   max-width: 100%;
@@ -4415,7 +4415,7 @@ button:not(:disabled):hover {
 
 /* Amount styling */
 .quick-expense-amount {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   font-weight: 600;
   color: var(--accent-primary);
   letter-spacing: -0.01em;
@@ -4427,12 +4427,12 @@ button:not(:disabled):hover {
   align-items: flex-start;
   justify-content: space-between;
   width: 100%;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   min-height: 36px; /* Fixed height for 2 lines of text */
 }
 
 .quick-expense-name {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   color: var(--text-primary);
   text-align: left;
@@ -4451,12 +4451,12 @@ button:not(:disabled):hover {
 .quick-expense-delete {
   position: absolute;
   top: 4px;
-  padding: 4px;
+  padding: var(--ui-space-4px);
   border: none;
   background: var(--card-bg);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s, visibility 0.2s;
@@ -4488,14 +4488,14 @@ button:not(:disabled):hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: var(--ui-space-4px);
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   border: 2px dashed var(--border-color);
   background: transparent;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   transition: all 0.2s;
   min-height: 80px; /* Match quick-expense-btn height */
 }
@@ -4507,7 +4507,7 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-add-btn .add-icon {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   font-weight: 300;
 }
 
@@ -4515,13 +4515,13 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: var(--ui-space-8px);
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-secondary);
   transition: all 0.2s;
 }
@@ -4535,22 +4535,22 @@ button:not(:disabled):hover {
 .quick-expense-inline-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: var(--ui-space-16px);
+  padding: var(--ui-space-16px);
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   border: 1px solid var(--border-color);
-  margin-top: 12px;
+  margin-top: var(--ui-space-12px);
 }
 
 .inline-form-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .inline-form-label {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -4558,7 +4558,7 @@ button:not(:disabled):hover {
 .inline-form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 @media (min-width: 640px) {
@@ -4569,7 +4569,7 @@ button:not(:disabled):hover {
 
 .inline-form-row {
   display: flex;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -4586,9 +4586,9 @@ button:not(:disabled):hover {
   justify-content: center;
   border: 2px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 20px;
+  font-size: var(--ui-font-20px);
   transition: all 0.2s;
 }
 
@@ -4603,14 +4603,14 @@ button:not(:disabled):hover {
   z-index: 100;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px;
+  gap: var(--ui-space-4px);
+  padding: var(--ui-space-8px);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   box-shadow: 0 4px 12px var(--shadow);
   width: 200px;
-  margin-top: 4px;
+  margin-top: var(--ui-space-4px);
 }
 
 .icon-option-small {
@@ -4621,9 +4621,9 @@ button:not(:disabled):hover {
   justify-content: center;
   border: 1px solid transparent;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--ui-font-18px);
   transition: all 0.15s;
 }
 
@@ -4640,11 +4640,11 @@ button:not(:disabled):hover {
 .inline-input {
   width: 100%;
   height: 40px;
-  padding: 0 12px;
+  padding: var(--ui-space-0px) var(--ui-space-12px);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--ui-radius-8px);
+  font-size: var(--ui-font-14px);
   color: var(--text-primary);
   transition: border-color 0.2s;
 }
@@ -4665,8 +4665,8 @@ button:not(:disabled):hover {
   width: 100%;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding-left: 12px;
+  border-radius: var(--ui-radius-8px);
+  padding-left: var(--ui-space-12px);
   transition: border-color 0.2s;
 }
 
@@ -4676,14 +4676,14 @@ button:not(:disabled):hover {
 
 .currency-symbol {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .inline-input-amount {
   flex: 1;
   border: none;
   background: transparent;
-  padding-left: 4px;
+  padding-left: var(--ui-space-4px);
   height: 38px;
 }
 
@@ -4695,11 +4695,11 @@ button:not(:disabled):hover {
 .inline-select {
   width: 100%;
   height: 40px;
-  padding: 0 12px;
+  padding: var(--ui-space-0px) var(--ui-space-12px);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--ui-radius-8px);
+  font-size: var(--ui-font-14px);
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -4711,15 +4711,15 @@ button:not(:disabled):hover {
 
 .inline-form-actions {
   display: flex;
-  gap: 12px;
-  padding-top: 12px;
+  gap: var(--ui-space-12px);
+  padding-top: var(--ui-space-12px);
   border-top: 1px solid var(--border-color);
 }
 
 .inline-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: var(--ui-space-8px) var(--ui-space-16px);
+  border-radius: var(--ui-radius-6px);
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -4749,7 +4749,7 @@ button:not(:disabled):hover {
 .inline-btn-cancel {
   background: var(--bg-secondary);
   color: var(--text-primary);
-  padding: 8px 20px;
+  padding: var(--ui-space-8px) var(--ui-space-20px);
 }
 
 .inline-btn-cancel:hover {
@@ -4770,7 +4770,7 @@ button:not(:disabled):hover {
   top: 4px;
   right: 4px;
   display: flex;
-  gap: 2px;
+  gap: var(--ui-space-2px);
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -4802,8 +4802,8 @@ button:not(:disabled):hover {
   .pending-payment-card {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
-    padding: 12px;
+    gap: var(--ui-space-12px);
+    padding: var(--ui-space-12px);
   }
 
   .pending-payment-info {
@@ -4813,12 +4813,12 @@ button:not(:disabled):hover {
   .pending-payment-actions {
     width: 100%;
     justify-content: space-between;
-    padding-top: 8px;
+    padding-top: var(--ui-space-8px);
     border-top: 1px solid var(--border-color);
   }
 
   .pending-payment-amount {
-    font-size: 16px;
+    font-size: var(--ui-font-16px);
   }
 
   .pending-payment-confirm-btn {
@@ -4845,13 +4845,13 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-menu-trigger {
-  padding: 4px 8px;
+  padding: var(--ui-space-4px) var(--ui-space-8px);
   background-color: var(--accent-light);
   color: var(--accent-primary);
   border: none !important;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: bold;
   line-height: 1;
   display: flex;
@@ -4899,7 +4899,7 @@ button:not(:disabled):hover {
   min-width: 160px;
   background-color: var(--card-bg) !important;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
   overflow: visible;
   z-index: 10000; /* Above card but below modals */
@@ -4912,13 +4912,13 @@ button:not(:disabled):hover {
 .quick-expense-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   border: none;
   background-color: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   cursor: pointer;
   text-align: left;
   opacity: 1 !important;
@@ -4953,9 +4953,9 @@ button:not(:disabled):hover {
   justify-content: center;
   border: none;
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   transition: background 0.2s;
 }
 
@@ -4967,7 +4967,7 @@ button:not(:disabled):hover {
 .quick-expense-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 .quick-expense-form-header {
@@ -4977,18 +4977,18 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-form-header h4 {
-  margin: 0;
-  font-size: 16px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .btn-close-small {
-  padding: 4px 8px;
+  padding: var(--ui-space-4px) var(--ui-space-8px);
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   color: var(--text-secondary);
 }
 
@@ -4999,7 +4999,7 @@ button:not(:disabled):hover {
 .quick-expense-form-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   max-height: 400px;
   overflow-y: auto;
 }
@@ -5007,8 +5007,8 @@ button:not(:disabled):hover {
 .quick-expense-form-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 12px;
+  gap: var(--ui-space-8px);
+  padding-top: var(--ui-space-12px);
   border-top: 1px solid var(--border-color);
 }
 
@@ -5016,7 +5016,7 @@ button:not(:disabled):hover {
 .icon-selector {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .icon-option {
@@ -5027,9 +5027,9 @@ button:not(:disabled):hover {
   justify-content: center;
   border: 2px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   cursor: pointer;
-  font-size: 20px;
+  font-size: var(--ui-font-20px);
   transition: all 0.2s;
 }
 
@@ -5049,21 +5049,21 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: var(--ui-space-8px);
 }
 
 .quick-add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   width: 100%;
-  padding: 16px 24px;
+  padding: var(--ui-space-16px) var(--ui-space-24px);
   border: 2px dashed var(--accent-primary);
   background: var(--accent-light);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   color: var(--accent-primary);
   transition: all 0.2s;
@@ -5077,25 +5077,25 @@ button:not(:disabled):hover {
 }
 
 .quick-add-icon {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   font-weight: 700;
 }
 
 .quick-add-text {
-  font-size: 16px;
+  font-size: var(--ui-font-16px);
 }
 
 /* ==================== Quick Expense Scroll Bar (Expense List) ==================== */
 .quick-expense-scroll-container {
-  margin: 4px 0 8px;
-  padding: 0;
+  margin: var(--ui-space-4px) var(--ui-space-0px) var(--ui-space-8px);
+  padding: var(--ui-space-0px);
 }
 
 .quick-expense-scroll-bar {
   display: flex;
-  gap: 6px;
+  gap: var(--ui-space-6px);
   overflow-x: auto;
-  padding: 2px 0; /* Restore small vertical padding to prevent hover translate clipping */
+  padding: var(--ui-space-2px) var(--ui-space-0px); /* Restore small vertical padding to prevent hover translate clipping */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
@@ -5116,7 +5116,7 @@ button:not(:disabled):hover {
 
 .quick-expense-scroll-bar::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 3px;
+  border-radius: var(--ui-radius-3px);
   transition: background 0.3s ease;
 }
 
@@ -5129,15 +5129,15 @@ button:not(:disabled):hover {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px; /* Add minimal vertical padding to avoid top being cut off on hover */
+  gap: var(--ui-space-6px);
+  padding: var(--ui-space-2px) var(--ui-space-8px); /* Add minimal vertical padding to avoid top being cut off on hover */
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   line-height: 1.3;
 }
 
@@ -5163,7 +5163,7 @@ button:not(:disabled):hover {
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0.5);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5179,7 +5179,7 @@ button:not(:disabled):hover {
 /* } */
 
 .quick-expense-scroll-name {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
@@ -5189,7 +5189,7 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-scroll-amount {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 600;
   color: var(--accent-primary);
 }
@@ -5197,7 +5197,7 @@ button:not(:disabled):hover {
 /* Quick Expense Container - 80:20 Split Layout */
 .quick-expense-scroll-container {
   display: flex;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   align-items: center;
 }
 
@@ -5219,15 +5219,15 @@ button:not(:disabled):hover {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   width: 100%;
-  padding: 2px 8px;
+  padding: var(--ui-space-2px) var(--ui-space-8px);
   border: 1px dashed var(--accent-primary);
   background: var(--accent-light);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   line-height: 1.3;
   color: var(--accent-primary);
   font-weight: 500;
@@ -5269,7 +5269,7 @@ button:not(:disabled):hover {
   overflow-y: auto;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   box-shadow: 0 8px 24px var(--shadow-lg);
   z-index: 1000;
   animation: slideDown 0.2s ease-out;
@@ -5287,24 +5287,24 @@ button:not(:disabled):hover {
 }
 
 .quick-expense-form-section {
-  padding: 16px;
+  padding: var(--ui-space-16px);
 }
 
 .quick-expense-form-header h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+  margin: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px);
+  font-size: var(--ui-font-14px);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .quick-expense-form-field {
-  margin-bottom: 12px;
+  margin-bottom: var(--ui-space-12px);
 }
 
 .quick-expense-form-field label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 12px;
+  margin-bottom: var(--ui-space-4px);
+  font-size: var(--ui-font-12px);
   font-weight: 500;
   color: var(--text-secondary);
 }
@@ -5312,10 +5312,10 @@ button:not(:disabled):hover {
 .quick-expense-form-field input,
 .quick-expense-form-field select {
   width: 100%;
-  padding: 8px;
-  font-size: 13px;
+  padding: var(--ui-space-8px);
+  font-size: var(--ui-font-13px);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   background: var(--input-bg);
   color: var(--text-primary);
   transition: border-color 0.2s ease;
@@ -5342,22 +5342,22 @@ button:not(:disabled):hover {
 }
 
 .amount-input-wrapper input {
-  padding-left: 24px;
+  padding-left: var(--ui-space-24px);
 }
 
 .quick-expense-form-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 16px;
+  gap: var(--ui-space-8px);
+  margin-top: var(--ui-space-16px);
 }
 
 .quick-expense-form-actions button {
   flex: 1;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: var(--ui-space-8px) var(--ui-space-12px);
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -5388,16 +5388,16 @@ button:not(:disabled):hover {
 .quick-expense-form-divider {
   height: 1px;
   background: var(--border-color);
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 .quick-expense-presets-list {
-  padding: 16px;
+  padding: var(--ui-space-16px);
 }
 
 .quick-expense-presets-list h4 {
-  margin: 0 0 12px 0;
-  font-size: 13px;
+  margin: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px);
+  font-size: var(--ui-font-13px);
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -5408,7 +5408,7 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: var(--ui-space-10px) var(--ui-space-0px);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -5420,11 +5420,11 @@ button:not(:disabled):hover {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .preset-name {
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -5433,25 +5433,25 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   color: var(--text-secondary);
 }
 
 .preset-category {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .preset-amount {
   font-weight: 600;
   color: var(--accent-primary);
-  margin-left: 8px;
+  margin-left: var(--ui-space-8px);
 }
 
 .preset-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .preset-actions .btn-icon {
@@ -5460,10 +5460,10 @@ button:not(:disabled):hover {
   justify-content: center;
   width: 28px;
   height: 28px;
-  padding: 0;
+  padding: var(--ui-space-0px);
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.2s ease;
@@ -5489,42 +5489,42 @@ button:not(:disabled):hover {
 /* Summary Cards Compact Mode */
 .summary-cards-grid.summary-cards-compact {
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .summary-cards-compact .summary-card {
-  padding: 8px;
+  padding: var(--ui-space-8px);
 }
 
 .summary-cards-compact .card-icon {
   width: 28px;
   height: 28px;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .summary-cards-compact .card-label {
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
 }
 
 .summary-cards-compact .card-value {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 /* Category List Compact Mode */
 .category-list.category-list-compact .category-item {
-  padding: 8px 10px;
+  padding: var(--ui-space-8px) var(--ui-space-10px);
 }
 
 .category-list-compact .category-info {
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .category-list-compact .category-name {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .category-list-compact .category-amount {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
 }
 
 .category-list-compact .progress-bar {
@@ -5533,57 +5533,57 @@ button:not(:disabled):hover {
 
 /* Recent Expenses Compact Mode */
 .recent-expenses-list.recent-expenses-compact .recent-expense-item {
-  padding: 8px 10px;
+  padding: var(--ui-space-8px) var(--ui-space-10px);
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   border: 1px solid var(--border-color);
 }
 
 .recent-expenses-compact .recent-expense-desc {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .recent-expenses-compact .recent-expense-category {
-  font-size: 9px;
-  padding: 1px 5px;
+  font-size: var(--ui-font-9px);
+  padding: var(--ui-space-1px) var(--ui-space-5px);
 }
 
 .recent-expenses-compact .recent-expense-amount {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .recent-expenses-compact .recent-expense-date {
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
 }
 
 .recent-expenses-list.recent-expenses-compact {
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 /* Tracked Expenses Compact Mode */
 .tracked-expenses-list.tracked-expenses-compact .tracked-expense-card {
-  padding: 10px;
+  padding: var(--ui-space-10px);
 }
 
 .tracked-expenses-compact .tracked-expense-title {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .tracked-expenses-compact .tracked-expense-date {
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
 }
 
 .tracked-expenses-compact .tracked-amount-label,
 .tracked-expenses-compact .tracked-amount-value {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
 }
 
 .tracked-expenses-compact .tracked-expense-amounts {
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .tracked-expenses-compact .category-percentage {
-  font-size: 10px;
+  font-size: var(--ui-font-10px);
 }
 
 .tracked-expenses-compact .progress-bar {
@@ -5593,74 +5593,74 @@ button:not(:disabled):hover {
 .tracked-more-text {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 12px;
-  padding: 8px 0;
+  font-size: var(--ui-font-12px);
+  padding: var(--ui-space-8px) var(--ui-space-0px);
 }
 
 /* Cards Summary Compact Mode */
 .cards-summary-widget.cards-summary-compact {
-  gap: 12px;
+  gap: var(--ui-space-12px);
 }
 
 .cards-summary-compact .credit-card-summary-item {
-  padding: 12px;
+  padding: var(--ui-space-12px);
 }
 
 .cards-summary-compact .card-name {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .cards-summary-compact .utilization-info {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
 }
 
 /* Quick Expense Widget Compact Mode */
 .quick-expense-widget.quick-expense-compact .quick-expense-grid {
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .quick-expense-compact .quick-expense-btn {
-  padding: 4px 6px; /* tighter vertical padding */
+  padding: var(--ui-space-4px) var(--ui-space-6px); /* tighter vertical padding */
   min-width: 78px;
   min-height: auto; /* let content define height */
 }
 
 .quick-expense-compact .quick-expense-category-chip {
-  font-size: 9px;
-  padding: 1px 5px;
+  font-size: var(--ui-font-9px);
+  padding: var(--ui-space-1px) var(--ui-space-5px);
 }
 
 .quick-expense-compact .quick-expense-amount {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .quick-expense-compact .quick-expense-name {
-  font-size: 9px;
+  font-size: var(--ui-font-9px);
 }
 
 .quick-expense-compact .quick-expense-add-btn {
   min-width: 60px;
   min-height: 55px;
-  padding: 6px;
-  font-size: 10px;
+  padding: var(--ui-space-6px);
+  font-size: var(--ui-font-10px);
 }
 
 .quick-expense-compact .quick-expense-grid {
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .quick-expense-compact .quick-expense-row-amount {
-  margin: 0; /* remove extra vertical margin */
+  margin: var(--ui-space-0px); /* remove extra vertical margin */
 }
 
 .quick-expense-compact .quick-expense-row-name {
-  gap: 2px;
+  gap: var(--ui-space-2px);
   min-height: 20px; /* smaller for compact mode */
 }
 
 .quick-expense-compact .quick-expense-menu-trigger {
-  font-size: 14px;
-  padding: 2px 4px;
+  font-size: var(--ui-font-14px);
+  padding: var(--ui-space-2px) var(--ui-space-4px);
 }
 
 /* ==================== PopupModal Component ==================== */
@@ -5732,16 +5732,16 @@ button:not(:disabled):hover {
 .popup-modal-content .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: var(--ui-space-6px);
+  margin-bottom: var(--ui-space-16px);
 }
 
 .popup-modal-content .form-field:last-child {
-  margin-bottom: 0;
+  margin-bottom: var(--ui-space-0px);
 }
 
 .popup-modal-content .form-label {
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -5750,12 +5750,12 @@ button:not(:disabled):hover {
 .popup-modal-content .form-select,
 .popup-modal-content .form-textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: var(--ui-space-10px) var(--ui-space-14px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background-color: var(--input-bg);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   transition: all 0.2s ease;
 }
 
@@ -5780,16 +5780,16 @@ button:not(:disabled):hover {
 }
 
 .popup-modal-content .form-error {
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   color: var(--error-text);
-  margin-top: 4px;
+  margin-top: var(--ui-space-4px);
 }
 
 /* Form grid layout helpers */
 .popup-modal-content .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: var(--ui-space-16px);
 }
 
 @media (max-width: 480px) {
@@ -5801,26 +5801,26 @@ button:not(:disabled):hover {
 
 /* Savings Goal Widget */
 .savings-goal-widget {
-  padding: 0;
+  padding: var(--ui-space-0px);
 }
 
 .savings-goal-card {
-  padding: 12px;
+  padding: var(--ui-space-12px);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
 }
 
 .savings-goal-card .card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ui-space-8px);
+  margin-bottom: var(--ui-space-12px);
 }
 
 .savings-goal-card .card-header h3 {
-  margin: 0;
-  font-size: 15px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-15px);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -5828,39 +5828,39 @@ button:not(:disabled):hover {
 .savings-goal-card .card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-space-10px);
 }
 
 .savings-amount {
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   font-weight: 700;
 }
 
 .savings-rate-label {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: var(--ui-space-4px);
 }
 
 .savings-rate-bar {
   height: 8px;
   background: var(--bg-secondary);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   overflow: hidden;
 }
 
 .savings-rate-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   transition: width 0.3s;
 }
 
 .daily-average {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
 }
 
 .daily-average .label {
@@ -5871,23 +5871,23 @@ button:not(:disabled):hover {
 .month-comparison-widget {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .comparison-row {
-  padding: 10px 12px;
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .comparison-label {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -5895,18 +5895,18 @@ button:not(:disabled):hover {
 .comparison-values {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: var(--ui-space-10px);
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
 }
 
 .comparison-values .compact-value {
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
 }
 
 /* Tag Cloud Widget */
 .tag-cloud-widget {
-  padding: 4px 0;
+  padding: var(--ui-space-4px) var(--ui-space-0px);
 }
 
 .tag-item.clickable:hover {
@@ -5918,7 +5918,7 @@ button:not(:disabled):hover {
 .upcoming-bills-widget {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ui-space-0px);
 }
 
 .upcoming-bill-item.clickable:hover {
@@ -5930,7 +5930,7 @@ button:not(:disabled):hover {
 .installment-tracker-widget {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ui-space-0px);
 }
 
 .installment-item.clickable:hover {
@@ -5962,7 +5962,7 @@ button:not(:disabled):hover {
   background: var(--modal-bg);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-16px);
   box-shadow: 0 12px 40px var(--shadow-md);
 }
 
@@ -5975,13 +5975,13 @@ button:not(:disabled):hover {
 
 .period-picker-header {
   min-height: 60px;
-  padding: 12px 16px;
+  padding: var(--ui-space-12px) var(--ui-space-16px);
   border-bottom: 1px solid var(--border-color);
 }
 
 .period-picker-header h3 {
-  margin: 0;
-  font-size: 18px;
+  margin: var(--ui-space-0px);
+  font-size: var(--ui-font-18px);
 }
 
 .period-picker-icon-button,
@@ -5992,7 +5992,7 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   background: var(--bg-secondary);
   color: var(--text-primary);
   touch-action: manipulation;
@@ -6001,8 +6001,8 @@ button:not(:disabled):hover {
 .period-picker-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-  gap: 4px;
-  padding: 10px 16px 0;
+  gap: var(--ui-space-4px);
+  padding: var(--ui-space-10px) var(--ui-space-16px) var(--ui-space-0px);
 }
 
 .period-picker-tabs button,
@@ -6011,7 +6011,7 @@ button:not(:disabled):hover {
 .period-picker-calendar button {
   min-height: 44px;
   border: 1px solid var(--border-color);
-  border-radius: 9px;
+  border-radius: var(--ui-radius-9px);
   background: transparent;
   color: var(--text-primary);
   font-weight: 600;
@@ -6030,7 +6030,7 @@ button:not(:disabled):hover {
 
 .period-picker-calendar button.in-range {
   color: var(--accent-primary);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-4px);
   background: color-mix(in srgb, var(--accent-light) 80%, transparent);
 }
 
@@ -6038,19 +6038,19 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 14px;
+  gap: var(--ui-space-12px);
+  margin-top: var(--ui-space-16px);
+  padding-top: var(--ui-space-14px);
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
 }
 
 .period-picker-confirm {
   min-height: 44px;
-  padding: 8px 18px;
+  padding: var(--ui-space-8px) var(--ui-space-18px);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background: var(--accent-primary);
   color: #fff;
   font-weight: 600;
@@ -6065,10 +6065,10 @@ button:not(:disabled):hover {
 .expense-filter-bar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
+  gap: var(--ui-space-10px);
+  padding: var(--ui-space-14px);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   background: var(--card-bg);
 }
 
@@ -6077,28 +6077,28 @@ button:not(:disabled):hover {
 .expense-filter-chips {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   flex-wrap: wrap;
 }
 
 .expense-filter-expanded,
 .expense-filter-tools {
   display: grid;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   min-width: 0;
 }
 
 .expense-filter-tools > .ledger-panel {
-  margin: 0;
+  margin: var(--ui-space-0px);
 }
 
 .expense-filter-toggle,
 .expense-filter-controls select,
 .expense-filter-chips button {
   min-height: 40px;
-  padding: 8px 12px;
+  padding: var(--ui-space-8px) var(--ui-space-12px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background: var(--input-bg);
   color: var(--text-primary);
 }
@@ -6114,7 +6114,7 @@ button:not(:disabled):hover {
 
 .expense-filter-chips button {
   min-height: 34px;
-  padding: 5px 9px;
+  padding: var(--ui-space-5px) var(--ui-space-9px);
   color: var(--accent-primary);
   background: var(--accent-light);
 }
@@ -6138,26 +6138,26 @@ button:not(:disabled):hover {
 .expense-page-workspace {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--ui-space-20px);
 }
 
 .expense-page-heading h2 {
-  margin: 0;
+  margin: var(--ui-space-0px);
   color: var(--text-primary);
-  font-size: 24px;
+  font-size: var(--ui-font-24px);
   font-weight: 600;
 }
 
 .date-picker-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   width: 100%;
 }
 
 .date-picker-wrapper label {
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
   font-weight: 500;
 }
 
@@ -6171,13 +6171,13 @@ button:not(:disabled):hover {
 .date-picker-input {
   width: 100%;
   min-height: 42px;
-  padding: 8px 44px 8px 12px;
+  padding: var(--ui-space-8px) var(--ui-space-44px) var(--ui-space-8px) var(--ui-space-12px);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   outline: none;
   background: var(--input-bg);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-14px);
 }
 
 .date-picker-input:focus {
@@ -6197,9 +6197,9 @@ button:not(:disabled):hover {
   justify-content: center;
   min-width: 36px;
   min-height: 36px;
-  padding: 6px;
+  padding: var(--ui-space-6px);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-6px);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -6213,18 +6213,18 @@ button:not(:disabled):hover {
 
 .date-picker-error {
   color: var(--error-text);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
 }
 
 .period-picker-content {
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  padding: var(--ui-space-14px) var(--ui-space-16px) calc(16px + env(safe-area-inset-bottom));
 }
 
 .period-picker-navigation {
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--ui-space-12px);
+  margin-bottom: var(--ui-space-12px);
 }
 
 .period-picker-navigation strong {
@@ -6235,12 +6235,12 @@ button:not(:disabled):hover {
 .period-picker-calendar {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
+  gap: var(--ui-space-5px);
 }
 
 .period-picker-calendar button {
   min-width: 0;
-  padding: 0;
+  padding: var(--ui-space-0px);
 }
 
 .period-picker-weekday,
@@ -6253,7 +6253,7 @@ button:not(:disabled):hover {
 
 .period-picker-weekday {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--ui-font-11px);
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -6262,13 +6262,13 @@ button:not(:disabled):hover {
 .period-picker-year-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 @media (max-width: 480px) {
   .period-picker-overlay {
     align-items: flex-end;
-    padding: 0;
+    padding: var(--ui-space-0px);
   }
 
   .period-picker-modal {
@@ -6286,7 +6286,7 @@ button:not(:disabled):hover {
 
 /* Compact top navigation and persistent quick-add actions */
 .dashboard-page {
-  padding-bottom: 32px;
+  padding-bottom: var(--ui-space-32px);
 }
 
 .dashboard-header-modern {
@@ -6294,27 +6294,27 @@ button:not(:disabled):hover {
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   height: 56px;
   min-height: 56px;
-  margin: 0 0 12px;
-  padding: 0 12px;
+  margin: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px);
+  padding: var(--ui-space-0px) var(--ui-space-12px);
   overflow: visible;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   box-shadow: none;
 }
 
 .dashboard-header-modern .header-brand {
   flex: 0 0 auto;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .dashboard-header-modern .header-logo {
-  font-size: 26px;
+  font-size: var(--ui-font-26px);
 }
 
 .dashboard-header-modern .header-title {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
 }
 
 .dashboard-header-modern .header-subtitle {
@@ -6326,7 +6326,7 @@ button:not(:disabled):hover {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
   min-width: 0;
   height: 56px;
 }
@@ -6335,7 +6335,7 @@ button:not(:disabled):hover {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 2px;
+  gap: var(--ui-space-2px);
   min-width: 0;
   height: 44px;
   overflow-x: auto;
@@ -6353,15 +6353,15 @@ button:not(:disabled):hover {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--ui-space-5px);
   min-width: 44px;
   min-height: 44px;
-  padding: 0 10px;
+  padding: var(--ui-space-0px) var(--ui-space-10px);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -6384,7 +6384,7 @@ button:not(:disabled):hover {
   bottom: 1px;
   left: 10px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--ui-radius-2px);
   background: var(--accent-primary);
   content: '';
 }
@@ -6398,7 +6398,7 @@ button:not(:disabled):hover {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .header-currency-control {
@@ -6410,8 +6410,8 @@ button:not(:disabled):hover {
 
 .header-currency-control .display-currency-control {
   width: 100%;
-  margin-left: 0 !important;
-  gap: 6px;
+  margin-left: var(--ui-space-0px) !important;
+  gap: var(--ui-space-6px);
 }
 
 .header-currency-control .expense-display-currency-selector {
@@ -6427,8 +6427,8 @@ button:not(:disabled):hover {
     position: absolute;
     width: 1px;
     height: 1px;
-    padding: 0;
-    margin: -1px;
+    padding: var(--ui-space-0px);
+    margin: var(--ui-space-neg-1px);
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
@@ -6447,7 +6447,7 @@ button:not(:disabled):hover {
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-space-12px);
   background: transparent;
   box-shadow: none;
   pointer-events: none;
@@ -6457,12 +6457,12 @@ button:not(:disabled):hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--ui-space-8px);
   height: 56px;
-  padding: 16px 24px;
+  padding: var(--ui-space-16px) var(--ui-space-24px);
   border: 0;
-  border-radius: 50px;
-  font-size: 16px;
+  border-radius: var(--ui-radius-50px);
+  font-size: var(--ui-font-16px);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -6498,11 +6498,11 @@ button:not(:disabled):hover {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: 'brand actions' 'navigation navigation';
-    gap: 0;
+    gap: var(--ui-space-0px);
     height: auto;
     min-height: 0;
-    margin-bottom: 10px;
-    padding: 0 8px;
+    margin-bottom: var(--ui-space-10px);
+    padding: var(--ui-space-0px) var(--ui-space-8px);
   }
 
   .dashboard-header-modern .header-brand {
@@ -6511,18 +6511,18 @@ button:not(:disabled):hover {
   }
 
   .dashboard-header-modern .header-logo {
-    font-size: 24px;
+    font-size: var(--ui-font-24px);
   }
 
   .dashboard-header-modern .header-title {
-    font-size: 14px;
+    font-size: var(--ui-font-14px);
   }
 
   .compact-navigation {
     grid-area: navigation;
     width: 100%;
     height: 44px;
-    gap: 2px;
+    gap: var(--ui-space-2px);
     border-top: 1px solid var(--border-color);
   }
 
@@ -6532,8 +6532,8 @@ button:not(:disabled):hover {
   }
 
   .compact-navigation-item {
-    padding: 0 9px;
-    font-size: 12px;
+    padding: var(--ui-space-0px) var(--ui-space-9px);
+    font-size: var(--ui-font-12px);
   }
 
   .compact-navigation-item.is-active::after {
@@ -6552,30 +6552,30 @@ button:not(:disabled):hover {
   }
 
   .header-currency-control .expense-display-currency-selector > button {
-    gap: 4px !important;
-    padding: 6px 7px !important;
-    font-size: 12px !important;
+    gap: var(--ui-space-4px) !important;
+    padding: var(--ui-space-6px) var(--ui-space-7px) !important;
+    font-size: var(--ui-font-12px) !important;
   }
 
   .floating-expense-actions.is-mobile {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     left: 16px;
-    gap: 12px;
+    gap: var(--ui-space-12px);
   }
 
   .floating-expense-action {
     width: 56px;
     height: 56px;
-    padding: 0;
-    border-radius: 50%;
+    padding: var(--ui-space-0px);
+    border-radius: var(--ui-radius-circle);
   }
 
   .floating-expense-action-primary {
-    font-size: 28px;
+    font-size: var(--ui-font-28px);
   }
 
   .floating-expense-action-secondary {
-    font-size: 24px;
+    font-size: var(--ui-font-24px);
   }
 }
 
@@ -6589,8 +6589,8 @@ button:not(:disabled):hover {
 /* Keep dashboard widgets visually calm while preserving edit affordances. */
 .dashboard-widgets-grid .widget-container {
   min-height: 0;
-  padding: 14px;
-  border-radius: 10px;
+  padding: var(--ui-space-14px);
+  border-radius: var(--ui-radius-10px);
   box-shadow: none;
 }
 
@@ -6602,7 +6602,7 @@ button:not(:disabled):hover {
 
 @media (max-width: 768px) {
   .dashboard-widgets-grid .widget-container {
-    padding: 12px;
+    padding: var(--ui-space-12px);
   }
 }
 
@@ -6614,13 +6614,13 @@ button:not(:disabled):hover {
   justify-content: space-between;
   width: 100%;
   min-height: 44px;
-  margin: 0;
-  padding: 10px 16px;
+  margin: var(--ui-space-0px);
+  padding: var(--ui-space-10px) var(--ui-space-16px);
   border: 0;
-  border-radius: 0;
+  border-radius: var(--ui-radius-0px);
   background: transparent !important;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 600;
   letter-spacing: 0.025em;
   text-align: left;
@@ -6633,12 +6633,12 @@ button:not(:disabled):hover {
 .dashboard-menu-panel .dashboard-menu-section-content {
   box-sizing: border-box;
   width: 100%;
-  padding: 0 0 8px;
+  padding: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-8px);
 }
 
 .dashboard-menu-panel .dashboard-menu-account-section,
 .dashboard-menu-panel .dashboard-menu-logout-section {
-  padding-top: 4px;
+  padding-top: var(--ui-space-4px);
 }
 
 .dashboard-menu-panel .menu-item-hover {
@@ -6647,9 +6647,9 @@ button:not(:disabled):hover {
   align-items: center;
   width: 100%;
   min-height: 44px;
-  margin: 0;
-  padding: 10px 16px;
-  border-radius: 0;
+  margin: var(--ui-space-0px);
+  padding: var(--ui-space-10px) var(--ui-space-16px);
+  border-radius: var(--ui-radius-0px);
   text-align: left;
   touch-action: manipulation;
 }
@@ -6678,7 +6678,7 @@ button:not(:disabled):hover {
 
 .friend-spending-widget {
   display: grid;
-  gap: 16px;
+  gap: var(--ui-space-16px);
   color: var(--text-primary);
 }
 
@@ -6687,15 +6687,15 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-12px) var(--ui-space-14px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-12px);
   background: var(--bg-secondary);
 }
 
 .friend-spending-preview-notice p {
-  margin: 0;
+  margin: var(--ui-space-0px);
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -6703,7 +6703,7 @@ button:not(:disabled):hover {
 .friend-code-panel > div {
   display: grid;
   min-width: 0;
-  gap: 4px;
+  gap: var(--ui-space-4px);
 }
 
 .friend-code-panel code,
@@ -6712,28 +6712,28 @@ button:not(:disabled):hover {
 .friend-spending-details h4 code {
   overflow-wrap: anywhere;
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: var(--ui-font-0-82rem);
 }
 
 .friend-add-form,
 .friend-list-section,
 .friend-spending-details {
   display: grid;
-  gap: 10px;
+  gap: var(--ui-space-10px);
 }
 
 .friend-add-form label,
 .friend-list-section h4,
 .friend-spending-details h4 {
-  margin: 0;
+  margin: var(--ui-space-0px);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: var(--ui-font-0-95rem);
   font-weight: 700;
 }
 
 .friend-add-controls {
   display: flex;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .friend-add-controls input,
@@ -6741,10 +6741,10 @@ button:not(:disabled):hover {
 .friend-preference-controls input {
   min-width: 0;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background: var(--input-bg);
   color: var(--text-primary);
-  padding: 9px 10px;
+  padding: var(--ui-space-9px) var(--ui-space-10px);
 }
 
 .friend-add-controls input {
@@ -6753,10 +6753,10 @@ button:not(:disabled):hover {
 
 .friend-spending-widget button {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-8px);
   background: var(--accent-primary);
   color: #fff;
-  padding: 8px 12px;
+  padding: var(--ui-space-8px) var(--ui-space-12px);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -6788,16 +6788,16 @@ button:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--ui-space-12px);
+  padding: var(--ui-space-10px) var(--ui-space-12px);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   background: var(--card-bg);
 }
 
 .friend-row-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .friend-card-row {
@@ -6812,8 +6812,8 @@ button:not(:disabled):hover {
 .friend-select-button {
   display: grid;
   flex: 1 1 220px;
-  gap: 4px;
-  padding: 0 !important;
+  gap: var(--ui-space-4px);
+  padding: var(--ui-space-0px) !important;
   background: transparent !important;
   color: var(--text-primary) !important;
   text-align: left;
@@ -6822,15 +6822,15 @@ button:not(:disabled):hover {
 .friend-select-button span,
 .friend-muted-label {
   color: var(--text-secondary);
-  font-size: 0.82rem;
+  font-size: var(--ui-font-0-82rem);
 }
 
 .friend-share-toggle {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--ui-space-7px);
   color: var(--text-secondary);
-  font-size: 0.82rem;
+  font-size: var(--ui-font-0-82rem);
 }
 
 .friend-share-toggle input {
@@ -6841,18 +6841,18 @@ button:not(:disabled):hover {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 10px;
-  padding: 12px;
+  gap: var(--ui-space-10px);
+  padding: var(--ui-space-12px);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-10px);
   background: var(--bg-secondary);
 }
 
 .friend-preference-controls label {
   display: grid;
-  gap: 5px;
+  gap: var(--ui-space-5px);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: var(--ui-font-0-8rem);
 }
 
 .friend-preference-controls button {
@@ -6862,23 +6862,23 @@ button:not(:disabled):hover {
 .friend-total-list,
 .friend-category-list {
   display: grid;
-  gap: 8px;
+  gap: var(--ui-space-8px);
 }
 
 .friend-total-row strong {
-  font-size: 1.1rem;
+  font-size: var(--ui-font-1-1rem);
 }
 
 .friend-category-row {
   display: grid;
-  gap: 6px;
+  gap: var(--ui-space-6px);
 }
 
 .friend-category-heading {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 0.88rem;
+  gap: var(--ui-space-12px);
+  font-size: var(--ui-font-0-88rem);
 }
 
 .friend-category-heading strong {
@@ -6889,7 +6889,7 @@ button:not(:disabled):hover {
 .friend-category-meter {
   height: 7px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   background: var(--bg-tertiary);
 }
 
@@ -6901,9 +6901,9 @@ button:not(:disabled):hover {
 }
 
 .friend-error-message {
-  margin: 0;
+  margin: var(--ui-space-0px);
   color: var(--error-text);
-  font-size: 0.88rem;
+  font-size: var(--ui-font-0-88rem);
 }
 
 @media (max-width: 600px) {

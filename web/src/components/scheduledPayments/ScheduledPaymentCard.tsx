@@ -183,8 +183,8 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
       <div className="scheduled-payment-card">
         {/* Row 1: Type Icon, Category, Status, Amount */}
         <div style={styles.row1}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '16px' }}>{getTypeIcon()}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 'var(--ui-font-16px)' }}>{getTypeIcon()}</span>
             <span 
               className="category-chip"
               style={{
@@ -219,7 +219,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
 
         {/* Row 3: Payment Info */}
         <div style={styles.row3}>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
+          <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', flex: 1 }}>
             {payment.paymentMethod === 'credit_card' && (
               <span>💳 {cards.find(c => c.id === payment.cardId)?.name || t('creditCard')}</span>
             )}
@@ -233,11 +233,11 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
               <span>💵 {t('cash')}</span>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>
             📅 {t('dueDay')}: {payment.dueDay}
           </div>
           {summary?.nextDueDate && (
-            <div style={{ fontSize: '12px', color: 'var(--warning-text)' }}>
+            <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--warning-text)' }}>
               ⏰ {t('nextDue')}: {formatDateWithUserFormat(summary.nextDueDate, dateFormat)}
             </div>
           )}
@@ -246,7 +246,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
         {/* Progress Bar for Installment/Debt */}
         {progress && (
           <div style={styles.progressContainer}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--ui-space-4px)', fontSize: 'var(--ui-font-12px)' }}>
               <span style={{ color: 'var(--text-secondary)' }}>
                 {t('totalPaid')}: <DisplayCurrencyAmount amount={progress.totalPaid} currency={payment.currency} /> / <DisplayCurrencyAmount amount={progress.totalAmount} currency={payment.currency} />
               </span>
@@ -264,7 +264,7 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
               />
             </div>
             {progress.remaining > 0 && (
-              <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--warning-text)' }}>
+              <div style={{ marginTop: 'var(--ui-space-4px)', fontSize: 'var(--ui-font-12px)', color: 'var(--warning-text)' }}>
                 {t('remainingAmount')}: <DisplayCurrencyAmount amount={progress.remaining} currency={payment.currency} />
               </div>
             )}
@@ -303,13 +303,13 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
-                padding: '10px 16px',
+                gap: 'var(--ui-space-6px)',
+                padding: 'var(--ui-space-10px) var(--ui-space-16px)',
                 backgroundColor: isPeriodPaid ? 'var(--success-bg)' : 'var(--accent-light)',
                 color: isPeriodPaid ? 'var(--success-text)' : 'var(--accent-primary)',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
+                borderRadius: 'var(--ui-radius-8px)',
+                fontSize: 'var(--ui-font-14px)',
                 fontWeight: 600,
                 cursor: isPeriodPaid ? 'default' : 'pointer',
                 opacity: isPeriodPaid ? 0.8 : 1,
@@ -327,12 +327,12 @@ const ScheduledPaymentCard: React.FC<ScheduledPaymentCardProps> = ({
           <button
             onClick={() => setShowHistory(!showHistory)}
             style={{
-              padding: '10px 16px',
+              padding: 'var(--ui-space-10px) var(--ui-space-16px)',
               backgroundColor: 'var(--bg-secondary)',
               color: 'var(--text-secondary)',
               border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: 'var(--ui-radius-8px)',
+              fontSize: 'var(--ui-font-14px)',
               fontWeight: 500,
               cursor: 'pointer',
             }}
@@ -436,7 +436,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   row2: {
     display: 'flex',
@@ -445,81 +445,81 @@ const styles = {
   row3: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
     flexWrap: 'wrap' as const,
   },
   category: {
-    padding: '5px 10px',
-    borderRadius: '16px',
-    fontSize: '12px',
+    padding: 'var(--ui-space-5px) var(--ui-space-10px)',
+    borderRadius: 'var(--ui-radius-16px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     boxShadow: '0 1px 3px var(--shadow)',
   },
   activeStatus: {
     color: 'var(--success-text)',
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
   },
   inactiveStatus: {
     color: 'var(--error-text)',
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
   },
   completedStatus: {
     color: 'var(--success-text)',
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
   },
   amount: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '600' as const,
     color: 'var(--error-text)',
     whiteSpace: 'nowrap' as const,
   },
   frequency: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
     fontWeight: '400' as const,
   },
   name: {
-    margin: 0,
-    fontSize: '15px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-15px)',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
   },
   description: {
-    margin: '4px 0 0',
-    fontSize: '13px',
+    margin: 'var(--ui-space-4px) var(--ui-space-0px) var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-13px)',
     color: 'var(--text-secondary)',
   },
   progressContainer: {
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
   },
   progressBar: {
     height: '6px',
     backgroundColor: 'var(--bg-secondary)',
-    borderRadius: '3px',
+    borderRadius: 'var(--ui-radius-3px)',
     overflow: 'hidden' as const,
   },
   progressFill: {
     height: '100%',
-    borderRadius: '3px',
+    borderRadius: 'var(--ui-radius-3px)',
     transition: 'width 0.3s ease',
   },
   summaryGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-    gap: '8px',
-    padding: '8px',
+    gap: 'var(--ui-space-8px)',
+    padding: 'var(--ui-space-8px)',
     backgroundColor: 'var(--bg-secondary)',
-    borderRadius: '8px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-8px)',
+    fontSize: 'var(--ui-font-12px)',
   },
   actionsRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginTop: '4px',
+    gap: 'var(--ui-space-8px)',
+    marginTop: 'var(--ui-space-4px)',
   },
   menuContainer: {
     position: 'relative' as const,
@@ -528,10 +528,10 @@ const styles = {
     position: 'absolute' as const,
     right: 0,
     top: '100%',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
     minWidth: '160px',
@@ -539,13 +539,13 @@ const styles = {
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     border: 'none',
     backgroundColor: 'transparent',
     color: 'var(--text-primary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     cursor: 'pointer',
     textAlign: 'left' as const,
   },

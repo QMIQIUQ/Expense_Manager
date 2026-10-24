@@ -28,10 +28,10 @@ const Text: React.FC<TextProps> = ({
   };
 
   const sizeStyles: Record<TextSize, React.CSSProperties> = {
-    sm: { fontSize: '12px' },
-    base: { fontSize: '14px' },
-    lg: { fontSize: '16px' },
-    xl: { fontSize: '18px' },
+    sm: { fontSize: 'var(--ui-font-sm)' },
+    base: { fontSize: 'var(--ui-font-md-sm)' },
+    lg: { fontSize: 'var(--ui-font-base)' },
+    xl: { fontSize: 'var(--ui-font-lg)' },
   };
 
   return (

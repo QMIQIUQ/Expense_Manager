@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1010" viewBox="0 0 1440 1010" role="img" aria-labelledby="title description">
+  <title id="title">Expense Manager unified UI system preview</title>
+  <desc id="description">Buttons, fields, checkbox, card, and dialog share shape, spacing, and type scale across the default light, default dark, and Warm Kitty light themes.</desc>
+  <defs>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="145%"><feDropShadow dx="0" dy="5" stdDeviation="10" flood-color="#211b27" flood-opacity=".12"/></filter>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; }
+      .heading { font-size: 30px; font-weight: 700; }
+      .subheading { font-size: 16px; }
+      .panel-title { font-size: 19px; font-weight: 700; }
+      .label { font-size: 13px; font-weight: 650; }
+      .field-text { font-size: 15px; }
+      .button-text { font-size: 14px; font-weight: 650; }
+      .caption { font-size: 12px; }
+      .card-heading { font-size: 14px; font-weight: 650; }
+      .amount { font-size: 25px; font-weight: 700; }
+      .dialog-heading { font-size: 16px; font-weight: 700; }
+    </style>
+  </defs>
+  <rect width="1440" height="1010" fill="#f4f2f8"/>
+  <text x="56" y="58" class="eyebrow" fill="#7652ba">EXPENSE MANAGER · UI STANDARDIZATION</text>
+  <text x="56" y="106" class="heading" fill="#211b27">One component language, three theme palettes</text>
+  <text x="56" y="137" class="subheading" fill="#6c6675">Same control height, type ramp, spacing, and corner system; theme files supply the color.</text>
+
+  <!-- Default light theme -->
+  <g transform="translate(56 176)">
+    <rect width="420" height="770" rx="20" fill="#fbfaff" stroke="#e5e0ec"/>
+    <rect width="420" height="82" rx="20" fill="#ffffff"/>
+    <path d="M0 62v20h420V62" fill="#ffffff"/>
+    <text x="26" y="35" class="panel-title" fill="#211b27">Default · light</text>
+    <text x="26" y="59" class="caption" fill="#716a7d">Purple semantic accent</text>
+    <circle cx="378" cy="39" r="15" fill="#7c3aed"/>
+    <text x="26" y="119" class="label" fill="#4d4659">Payment method</text>
+    <rect x="26" y="132" width="368" height="44" rx="8" fill="#ffffff" stroke="#d8d2e2"/>
+    <text x="42" y="162" class="field-text" fill="#292434">Everyday account</text>
+    <path d="m370 151 7 7 7-7" fill="none" stroke="#716a7d" stroke-width="2"/>
+    <text x="26" y="211" class="caption" fill="#716a7d">44 px field · 8 px radius · shared focus ring</text>
+    <text x="26" y="256" class="label" fill="#4d4659">Actions</text>
+    <rect x="26" y="270" width="130" height="44" rx="8" fill="#7c3aed"/>
+    <text x="91" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Save</text>
+    <rect x="166" y="270" width="130" height="44" rx="8" fill="#f2eff7" stroke="#d8d2e2"/>
+    <text x="231" y="299" text-anchor="middle" class="button-text" fill="#292434">Cancel</text>
+    <rect x="306" y="270" width="88" height="44" rx="8" fill="#c2414a"/>
+    <text x="350" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Delete</text>
+    <rect x="26" y="342" width="18" height="18" rx="4" fill="#7c3aed"/>
+    <path d="m30 351 4 4 7-8" fill="none" stroke="#ffffff" stroke-width="2"/>
+    <text x="54" y="356" class="field-text" fill="#292434">Track this as a shared expense</text>
+    <rect x="26" y="392" width="368" height="126" rx="12" fill="#ffffff" stroke="#e5e0ec" filter="url(#shadow)"/>
+    <text x="46" y="424" class="card-heading" fill="#6c6675">THIS MONTH</text>
+    <text x="46" y="464" class="amount" fill="#211b27">$2,480.00</text>
+    <rect x="298" y="410" width="76" height="26" rx="13" fill="#eee8fb"/>
+    <text x="336" y="428" text-anchor="middle" class="caption" fill="#6235c5">On track</text>
+    <text x="46" y="493" class="caption" fill="#716a7d">12 transactions · updated just now</text>
+    <rect x="26" y="546" width="368" height="190" rx="16" fill="#ffffff" stroke="#e5e0ec" filter="url(#shadow)"/>
+    <text x="48" y="580" class="dialog-heading" fill="#211b27">Save changes?</text>
+    <path d="M26 598h368" stroke="#e5e0ec"/>
+    <text x="48" y="633" class="field-text" fill="#4d4659">Your changes will be saved to this</text>
+    <text x="48" y="655" class="field-text" fill="#4d4659">payment method.</text>
+    <rect x="48" y="680" width="208" height="44" rx="8" fill="#7c3aed"/>
+    <text x="152" y="706" text-anchor="middle" class="button-text" fill="#ffffff">Save changes</text>
+    <rect x="266" y="680" width="106" height="44" rx="8" fill="#f2eff7"/>
+    <text x="319" y="706" text-anchor="middle" class="button-text" fill="#292434">Cancel</text>
+  </g>
+
+  <!-- Default dark theme -->
+  <g transform="translate(510 176)">
+    <rect width="420" height="770" rx="20" fill="#100e16" stroke="#302a3b"/>
+    <rect width="420" height="82" rx="20" fill="#1a1625"/>
+    <path d="M0 62v20h420V62" fill="#1a1625"/>
+    <text x="26" y="35" class="panel-title" fill="#f8f6fc">Default · dark</text>
+    <text x="26" y="59" class="caption" fill="#bbb3c8">Purple semantic accent</text>
+    <circle cx="378" cy="39" r="15" fill="#a78bfa"/>
+    <text x="26" y="119" class="label" fill="#e5e0ed">Payment method</text>
+    <rect x="26" y="132" width="368" height="44" rx="8" fill="#0a0a0f" stroke="#48484a"/>
+    <text x="42" y="162" class="field-text" fill="#f8f6fc">Everyday account</text>
+    <path d="m370 151 7 7 7-7" fill="none" stroke="#bbb3c8" stroke-width="2"/>
+    <text x="26" y="211" class="caption" fill="#a79eb5">44 px field · 8 px radius · shared focus ring</text>
+    <text x="26" y="256" class="label" fill="#e5e0ed">Actions</text>
+    <rect x="26" y="270" width="130" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="91" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Save</text>
+    <rect x="166" y="270" width="130" height="44" rx="8" fill="#252338" stroke="#48484a"/>
+    <text x="231" y="299" text-anchor="middle" class="button-text" fill="#f8f6fc">Cancel</text>
+    <rect x="306" y="270" width="88" height="44" rx="8" fill="#e35a63"/>
+    <text x="350" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Delete</text>
+    <rect x="26" y="342" width="18" height="18" rx="4" fill="#a78bfa"/>
+    <path d="m30 351 4 4 7-8" fill="none" stroke="#17131f" stroke-width="2"/>
+    <text x="54" y="356" class="field-text" fill="#f8f6fc">Track this as a shared expense</text>
+    <rect x="26" y="392" width="368" height="126" rx="12" fill="#1a1625" stroke="#302a3b" filter="url(#shadow)"/>
+    <text x="46" y="424" class="card-heading" fill="#bbb3c8">THIS MONTH</text>
+    <text x="46" y="464" class="amount" fill="#f8f6fc">$2,480.00</text>
+    <rect x="298" y="410" width="76" height="26" rx="13" fill="#30264a"/>
+    <text x="336" y="428" text-anchor="middle" class="caption" fill="#c8b7ff">On track</text>
+    <text x="46" y="493" class="caption" fill="#a79eb5">12 transactions · updated just now</text>
+    <rect x="26" y="546" width="368" height="190" rx="16" fill="#1a1625" stroke="#302a3b" filter="url(#shadow)"/>
+    <text x="48" y="580" class="dialog-heading" fill="#f8f6fc">Save changes?</text>
+    <path d="M26 598h368" stroke="#302a3b"/>
+    <text x="48" y="633" class="field-text" fill="#e5e0ed">Your changes will be saved to this</text>
+    <text x="48" y="655" class="field-text" fill="#e5e0ed">payment method.</text>
+    <rect x="48" y="680" width="208" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="152" y="706" text-anchor="middle" class="button-text" fill="#ffffff">Save changes</text>
+    <rect x="266" y="680" width="106" height="44" rx="8" fill="#252338"/>
+    <text x="319" y="706" text-anchor="middle" class="button-text" fill="#f8f6fc">Cancel</text>
+  </g>
+
+  <!-- Warm Kitty light theme -->
+  <g transform="translate(964 176)">
+    <rect width="420" height="770" rx="20" fill="#fff6f2" stroke="#e8d5d9"/>
+    <rect width="420" height="82" rx="20" fill="#fffefc"/>
+    <path d="M0 62v20h420V62" fill="#fffefc"/>
+    <text x="26" y="35" class="panel-title" fill="#3e3340">Warm Kitty · light</text>
+    <text x="26" y="59" class="caption" fill="#6b5b62">Rose semantic accent</text>
+    <circle cx="378" cy="39" r="15" fill="#a24562"/>
+    <text x="26" y="119" class="label" fill="#4d414b">Payment method</text>
+    <rect x="26" y="132" width="368" height="44" rx="8" fill="#fffdfa" stroke="#e8d5d9"/>
+    <text x="42" y="162" class="field-text" fill="#3e3340">Everyday account</text>
+    <path d="m370 151 7 7 7-7" fill="none" stroke="#6b5b62" stroke-width="2"/>
+    <text x="26" y="211" class="caption" fill="#76656d">44 px field · 8 px radius · shared focus ring</text>
+    <text x="26" y="256" class="label" fill="#4d414b">Actions</text>
+    <rect x="26" y="270" width="130" height="44" rx="8" fill="#a24562"/>
+    <text x="91" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Save</text>
+    <rect x="166" y="270" width="130" height="44" rx="8" fill="#fff6f2" stroke="#e8d5d9"/>
+    <text x="231" y="299" text-anchor="middle" class="button-text" fill="#3e3340">Cancel</text>
+    <rect x="306" y="270" width="88" height="44" rx="8" fill="#bd5660"/>
+    <text x="350" y="299" text-anchor="middle" class="button-text" fill="#ffffff">Delete</text>
+    <rect x="26" y="342" width="18" height="18" rx="4" fill="#a24562"/>
+    <path d="m30 351 4 4 7-8" fill="none" stroke="#ffffff" stroke-width="2"/>
+    <text x="54" y="356" class="field-text" fill="#3e3340">Track this as a shared expense</text>
+    <rect x="26" y="392" width="368" height="126" rx="12" fill="#fffefc" stroke="#e8d5d9" filter="url(#shadow)"/>
+    <text x="46" y="424" class="card-heading" fill="#6b5b62">THIS MONTH</text>
+    <text x="46" y="464" class="amount" fill="#3e3340">$2,480.00</text>
+    <rect x="298" y="410" width="76" height="26" rx="13" fill="#f9e2e9"/>
+    <text x="336" y="428" text-anchor="middle" class="caption" fill="#81314c">On track</text>
+    <text x="46" y="493" class="caption" fill="#76656d">12 transactions · updated just now</text>
+    <rect x="26" y="546" width="368" height="190" rx="16" fill="#fffefc" stroke="#e8d5d9" filter="url(#shadow)"/>
+    <text x="48" y="580" class="dialog-heading" fill="#3e3340">Save changes?</text>
+    <path d="M26 598h368" stroke="#e8d5d9"/>
+    <text x="48" y="633" class="field-text" fill="#4d414b">Your changes will be saved to this</text>
+    <text x="48" y="655" class="field-text" fill="#4d414b">payment method.</text>
+    <rect x="48" y="680" width="208" height="44" rx="8" fill="#a24562"/>
+    <text x="152" y="706" text-anchor="middle" class="button-text" fill="#ffffff">Save changes</text>
+    <rect x="266" y="680" width="106" height="44" rx="8" fill="#fff6f2"/>
+    <text x="319" y="706" text-anchor="middle" class="button-text" fill="#3e3340">Cancel</text>
+  </g>
+  <text x="56" y="984" class="caption" fill="#716a7d">Preview of implemented design tokens and shared primitives. Theme-specific illustration and brand colors remain owned by each theme.</text>
+</svg>

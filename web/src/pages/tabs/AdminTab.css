@@ -3,7 +3,7 @@
 /* Desktop layout - default */
 .admin-user-list {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-16px);
   overflow: hidden;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 6px var(--shadow);
@@ -11,10 +11,10 @@
 
 .admin-user-header {
   display: flex;
-  padding: 16px 24px;
+  padding: var(--ui-space-16px) var(--ui-space-24px);
   background: var(--bg-secondary);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--ui-font-13px);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -23,10 +23,10 @@
 
 .admin-user-row {
   display: flex;
-  padding: 16px 24px;
+  padding: var(--ui-space-16px) var(--ui-space-24px);
   border-bottom: 1px solid var(--border-color);
   align-items: center;
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   color: var(--text-primary);
   transition: background-color 0.2s;
 }
@@ -35,12 +35,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--ui-space-24px);
 }
 
 .admin-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--ui-space-10px);
   justify-content: flex-end;
 }
 
@@ -56,30 +56,30 @@
   
   .admin-user-row {
     display: block !important;
-    padding: 16px !important;
-    margin-bottom: 12px;
+    padding: var(--ui-space-16px) !important;
+    margin-bottom: var(--ui-space-12px);
     border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
+    border-radius: var(--ui-radius-12px) !important;
     background: var(--card-bg) !important;
   }
   
   .admin-user-row > div {
     flex: none !important;
     width: 100% !important;
-    margin-bottom: 12px;
+    margin-bottom: var(--ui-space-12px);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   
   .admin-user-row > div:last-child {
-    margin-bottom: 0;
+    margin-bottom: var(--ui-space-0px);
   }
   
   .admin-user-row > div::before {
     content: attr(data-label);
     font-weight: 600;
-    font-size: 12px;
+    font-size: var(--ui-font-12px);
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -88,13 +88,13 @@
   .admin-actions {
     flex-wrap: wrap !important;
     justify-content: flex-start !important;
-    gap: 8px !important;
+    gap: var(--ui-space-8px) !important;
   }
   
   .admin-header {
     flex-direction: column;
     align-items: flex-start !important;
-    gap: 16px;
+    gap: var(--ui-space-16px);
   }
   
   .admin-header button {

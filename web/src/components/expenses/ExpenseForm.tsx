@@ -423,7 +423,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         onCreateCard={onCreateCard}
         onCreateEWallet={onCreateEWallet}
       />
-      {errors.paymentMethodName && <span className="text-xs text-red-600" style={{ marginTop: '-12px' }}>{errors.paymentMethodName}</span>}
+      {errors.paymentMethodName && <span className="text-xs text-red-600" style={{ marginTop: 'var(--ui-space-neg-12px)' }}>{errors.paymentMethodName}</span>}
 
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('notes')} ({t('optional')})</label>

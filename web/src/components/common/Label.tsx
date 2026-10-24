@@ -16,15 +16,15 @@ const Label: React.FC<LabelProps> = ({ children, htmlFor, required = false, styl
       htmlFor={htmlFor}
       style={{
         display: 'block',
-        marginBottom: '6px',
-        fontSize: '14px',
+        marginBottom: 'var(--ui-space-1-5)',
+        fontSize: 'var(--ui-font-md-sm)',
         fontWeight: 500,
         color: 'var(--text-primary)',
         ...style,
       }}
     >
       {children}
-      {required && <span style={{ color: 'var(--error-text)', marginLeft: '4px' }}>*</span>}
+      {required && <span style={{ color: 'var(--error-text)', marginLeft: 'var(--ui-space-1)' }}>*</span>}
     </label>
   );
 };

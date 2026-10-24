@@ -95,8 +95,8 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
       {cards.length > 1 && !isCompact && (
         <div className="cards-sort-controls" style={{
           display: 'flex',
-          gap: '6px',
-          marginBottom: '10px',
+          gap: 'var(--ui-space-6px)',
+          marginBottom: 'var(--ui-space-10px)',
           flexWrap: 'wrap',
         }}>
           {(['default', 'spending', 'cashback-remaining'] as CardSortMode[]).map((mode) => (
@@ -105,12 +105,12 @@ const CardsSummaryWidget: React.FC<WidgetProps & { onNavigateToPaymentMethods?: 
               onClick={(e) => { e.stopPropagation(); setSortMode(mode); }}
               className={`cards-sort-btn ${sortMode === mode ? 'active' : ''}`}
               style={{
-                padding: '4px 10px',
-                borderRadius: '14px',
+                padding: 'var(--ui-space-4px) var(--ui-space-10px)',
+                borderRadius: 'var(--ui-radius-14px)',
                 border: `1px solid ${sortMode === mode ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                 background: sortMode === mode ? 'var(--accent-light)' : 'var(--bg-secondary)',
                 color: sortMode === mode ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                fontSize: '12px',
+                fontSize: 'var(--ui-font-12px)',
                 fontWeight: sortMode === mode ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s',

@@ -28,7 +28,7 @@ export const MultiSelectToolbar: React.FC<MultiSelectToolbarProps> = ({
       style={{ 
         display: 'flex', 
         justifyContent: 'flex-start', 
-        gap: '8px', 
+        gap: 'var(--ui-space-8px)',
         alignItems: 'center', 
         flexWrap: 'wrap',
         ...style 
@@ -40,8 +40,8 @@ export const MultiSelectToolbar: React.FC<MultiSelectToolbarProps> = ({
         aria-pressed={isSelectionMode}
         aria-label="Toggle multi-select"
         style={{
-          padding: '8px 12px',
-          borderRadius: '8px',
+          padding: 'var(--ui-space-8px) var(--ui-space-12px)',
+          borderRadius: 'var(--ui-radius-8px)',
           border: '1px solid var(--border-color)',
           backgroundColor: isSelectionMode ? 'var(--accent-light)' : 'var(--card-bg)',
           color: isSelectionMode ? 'var(--accent-primary)' : 'var(--text-primary)',
@@ -59,8 +59,8 @@ export const MultiSelectToolbar: React.FC<MultiSelectToolbarProps> = ({
             className="btn btn-success"
             aria-label="Select all"
             style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
+              padding: 'var(--ui-space-8px) var(--ui-space-12px)',
+              borderRadius: 'var(--ui-radius-8px)',
               border: '1px solid var(--success-text)',
               backgroundColor: 'var(--success-bg)',
               color: 'var(--success-text)',
@@ -75,8 +75,8 @@ export const MultiSelectToolbar: React.FC<MultiSelectToolbarProps> = ({
             className="btn btn-danger"
             aria-label="Delete selected"
             style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
+              padding: 'var(--ui-space-8px) var(--ui-space-12px)',
+              borderRadius: 'var(--ui-radius-8px)',
               border: 'none',
               backgroundColor: 'var(--error-bg)',
               color: 'var(--error-text)',

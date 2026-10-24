@@ -1,8 +1,8 @@
 # UI Style Guide
 
-本文档整合了 Expense Manager 的所有 UI 规范，包括按钮、组件、布局和交互模式。
+本文檔是 Expense Manager 目前採用的 UI 樣式規範。共用控制尺寸、字級、間距、圓角與 focus 規則由 CSS/TypeScript/Tailwind tokens 提供，紫色與 Warm Kitty 色盤仍由各主題提供。
 
-> 頁面層級、目前導覽和推薦排列方案請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。本指南提供元件外觀與互動原則；目前程式的導覽和建議改版需分開理解。
+> 頁面掛載、完整 TSX 檔案覆蓋及 token 統計請見 [UI 元件盤點](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) 和 [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md)。目前規格與預覽見 [視覺統一規格](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md)。導覽排列建議請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。
 
 ---
 
@@ -21,141 +21,69 @@
 
 ---
 
-## 1. 设计令牌
+## 1. Design tokens
 
-所有颜色必须使用 CSS 变量，禁止硬编码十六进制值。
+The shared source is web/src/styles/ui-system.css, imported after the base and theme styles. It owns shared geometry and component defaults. index.css and cat-theme.css remain the source of theme colors; ThemeContext continues to own the selected font family and root font scale. New UI must use semantic tokens instead of literal values.
 
-### 主色调
+### Theme colors
 
-| 变量 | 亮色模式 | 暗色模式 | 用途 |
-|------|---------|---------|------|
-| `--accent-primary` | #7c3aed | #a78bfa | 主按钮、链接 |
-| `--accent-secondary` | #8b5cf6 | #c4b5fd | 次要强调 |
-| `--accent-hover` | #6d28d9 | #8b5cf6 | 悬停状态 |
-| `--accent-light` | #ede9fe | #3a3654 | 按钮背景 |
+| Token family | Purpose |
+|---|---|
+| --accent-* | Primary interactive color, links, selected tabs and focus |
+| --text-* | Primary, secondary and tertiary text |
+| --bg-*, --card-bg, --input-bg | Page, surface and control backgrounds |
+| --border-* | Control, surface and divider borders |
+| --success-*, --warning-*, --error-*, --info-* | State colors and feedback |
 
-### 状态颜色
+Light, dark, system, Warm Kitty light and Warm Kitty dark keep their existing palette values. Do not hard-code a theme color into a shared component.
 
-| 变量 | 用途 |
-|------|------|
-| `--success-bg/text` | 成功提示 |
-| `--warning-bg/text` | 警告提示 |
-| `--error-bg/text` | 错误提示 |
-| `--info-bg/text` | 信息提示 |
+### Shared geometry and type
 
-### 结构颜色
+| Token | Current value / use |
+|---|---|
+| --ui-control-height | 44px standard field and action target |
+| --ui-control-height-compact | 36px icon and compact action target |
+| --ui-radius-control | 8px inputs and standard buttons |
+| --ui-radius-card | 12px card and tab container |
+| --ui-radius-dialog | 16px modal surface |
+| --ui-radius-pill / --ui-radius-circle | Tags/chips and circular controls |
+| --ui-font-xs through --ui-font-5xl | Rem-based type ramp |
+| --ui-space-1 through --ui-space-24 | Four-pixel spacing rhythm with two-pixel half steps |
+| --ui-focus-ring | Theme accent focus ring |
+| --ui-layer-* | Dropdown, sticky, fixed, modal, popover and tooltip layers |
 
-| 变量 | 用途 |
-|------|------|
-| `--card-bg` | 卡片背景 |
-| `--bg-secondary` | 次要背景 |
-| `--bg-tertiary` | 第三层背景 |
-| `--border-color` | 边框颜色 |
-| `--text-primary` | 主文字 |
-| `--text-secondary` | 次要文字 |
+The source matrix includes exact-value aliases named --ui-font-…, --ui-radius-… and --ui-space-… for pre-existing fixed inline/CSS declarations. These aliases preserve established page spacing; pixel font aliases are rem-based and continue to respond to ThemeContext font scaling. Use the semantic tokens above for new or rewritten UI instead of adding another alias.
 
----
+### Native controls
 
-## 2. 按钮系统
-
-### 基础按钮类
-
-```css
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px var(--shadow);
-}
-```
-
-### 按钮变体
-
-| 类名 | 背景 | 文字 | 用途 |
-|------|------|------|------|
-| `.btn-primary` | `--accent-primary` | 白色 | 主要操作 |
-| `.btn-secondary` | `--bg-secondary` | `--text-primary` | 取消/关闭 |
-| `.btn-danger` | `--error-bg` | `--error-text` | 删除操作 |
-| `.btn-success` | `--success-bg` | `--success-text` | 确认操作 |
+Text, date and number inputs, selects and textareas keep native element types and form behavior. They share the same border, text color, accent focus, control radius and minimum target height. Checkbox and radio remain native controls with an 18px target and theme accent; file and color inputs keep their specialized native presentation. The styling layer does not replace native values, event handlers, refs, autofill, IME or date behavior.
 
 ---
 
-## 3. 表单按钮规范
+## 2. Button system
 
-所有表单（创建/编辑）应遵循 `BaseForm` 组件的按钮样式。
+All action buttons inherit the application font and control radius. The .btn and modal/form action families use a 44px minimum target and the shared 14px action size. Icon-only actions use the compact 36px target; pill buttons and chips use the pill token.
 
-### 标准表单按钮
+| Variant | Visual role | Existing pattern |
+|---|---|---|
+| Primary | Main save/add/confirm action using the active theme accent | .btn-primary, BaseForm and modal primary actions |
+| Secondary | Cancel, close or low-emphasis action on a neutral surface | .btn-secondary, modal secondary actions |
+| Danger | Destructive action using the existing error palette | .btn-danger, modal danger actions |
+| Success / warning | Domain status or explicitly successful/warning actions | Existing semantic classes |
+| Icon | Compact icon-only action with its accessible label retained | .btn-icon*, close and menu actions |
+| Pill | Compact tag or filter affordance | .btn-pill, category/tag/status chips |
 
-```tsx
-<div className="flex gap-3 pt-2">
-  <button
-    type="submit"
-    style={{
-      flex: 1,
-      backgroundColor: 'var(--accent-light)',
-      color: 'var(--accent-primary)',
-      padding: '8px 16px',
-      borderRadius: '6px',
-      fontWeight: 600,
-      fontSize: '14px',
-    }}
-  >
-    {t('save')}
-  </button>
-  <button
-    type="button"
-    onClick={onCancel}
-    style={{
-      backgroundColor: 'var(--bg-secondary)',
-      color: 'var(--text-primary)',
-      padding: '8px 20px',
-      borderRadius: '6px',
-      fontWeight: 600,
-      fontSize: '14px',
-    }}
-  >
-    {t('cancel')}
-  </button>
-</div>
-```
-
-### 表单按钮规格
-
-| 属性 | 保存按钮 | 取消按钮 |
-|------|---------|---------|
-| 背景 | `var(--accent-light)` | `var(--bg-secondary)` |
-| 文字 | `var(--accent-primary)` | `var(--text-primary)` |
-| 内边距 | `8px 16px` | `8px 20px` |
-| 圆角 | `6px` | `6px` |
-| 字重 | `600` | `600` |
-| Flex | `flex: 1` | 固定宽度 |
-
-### 悬停效果
-
-```css
-/* 亮色模式 */
-.inline-btn-save:hover:not(:disabled) {
-  filter: brightness(0.95);
-}
-
-/* 暗色模式 */
-.dark .inline-btn-save:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-```
+Do not change a button's type, callback, disabled guard or loading state to make its appearance consistent.
 
 ---
 
+## 3. Form button rules
+
+BaseForm remains the shared form frame. Its primary and secondary actions retain the current 80:20 flex ratio and use the same 44px target, control radius and action font token as modal actions. A custom form can keep its existing footer layout when the screen requires it, but its action styles must use the shared button variants/tokens.
+
+Labels, required markers, help and errors keep their existing relationship to the field. Use an associated native label and preserve id, name, value, onChange, onBlur, ref, inputMode, type and ARIA attributes. Do not replace a native input, checkbox, select or tab with a clickable div.
+
+---
 ## 4. 图标按钮
 
 用于内联操作（编辑/删除/链接）。
@@ -167,10 +95,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px;  /* 仅图标 */
-  /* padding: 8px 12px; 带标签 */
-  border-radius: 8px;
+  gap: var(--ui-space-1-5);
+  padding: var(--ui-space-2);  /* 仅圖示 */
+  /* padding: var(--ui-space-2) var(--ui-space-3); 帶標籤 */
+  min-width: var(--ui-control-height-compact);
+  min-height: var(--ui-control-height-compact);
+  border-radius: var(--ui-radius-control);
   border: none;
   background-color: transparent;
 }
@@ -259,36 +189,28 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
   min-width: 140px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-radius: var(--ui-radius-control);
+  box-shadow: var(--ui-shadow-card);
   overflow: hidden;
-}
-
-.dark .floating-menu {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-space-2);
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--ui-space-3) var(--ui-space-4);
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-md-sm);
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s;
+  transition: background-color var(--ui-transition-fast);
 }
 
 .menu-item:hover {
   background: var(--hover-bg);
-}
-
-.dark .menu-item:hover {
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.15), rgba(167, 139, 250, 0.2));
 }
 
 .menu-item.danger {
@@ -298,10 +220,10 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 /* 触发按钮 */
 .card-menu-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  top: var(--ui-space-2);
+  right: var(--ui-space-2);
+  min-width: var(--ui-control-height-compact);
+  min-height: var(--ui-control-height-compact);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,9 +231,9 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
   border: none;
   background: var(--accent-light);
   color: var(--accent-primary);
-  border-radius: 6px;
+  border-radius: var(--ui-radius-control);
   cursor: pointer;
-  font-size: 18px;
+  font-size: var(--ui-font-lg);
   font-weight: bold;
   line-height: 1;
 }
@@ -393,11 +315,11 @@ const FloatingMenu: React.FC<Props> = ({ anchorId, children, onClose }) => {
 
 .compact-navigation-item.is-active::after {
   position: absolute;
-  right: 10px;
-  bottom: 1px;
-  left: 10px;
+  right: var(--ui-space-2-5);
+  bottom: var(--ui-space-1px);
+  left: var(--ui-space-2-5);
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--ui-radius-2px);
   background: var(--accent-primary);
   content: '';
 }
@@ -418,11 +340,11 @@ CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。`web/src/index.cs
 
 | 层级 | 用途 | 亮色 | 暗色 |
 |------|------|------|------|
-| Level 0 | 主背景 | #ffffff | #0a0a0f |
-| Level 1 | 卡片/模态框 | #ffffff | #1a1625 |
-| Level 2 | 嵌套容器 | #f5f5f5 | #252338 |
-| Level 3 | 交互元素 | #f0f0f0 | #3a3654 |
-| Level 4 | 边框/分割线 | #e5e7eb | #48484a |
+| Level 0 | 主背景 | `var(--bg-primary)` | `var(--bg-primary)` |
+| Level 1 | 卡片/模态框 | `var(--card-bg)` | `var(--card-bg)` |
+| Level 2 | 嵌套容器 | `var(--bg-secondary)` | `var(--bg-secondary)` |
+| Level 3 | 交互元素 | `var(--hover-bg)` | `var(--hover-bg)` |
+| Level 4 | 边框/分割线 | `var(--border-color)` | `var(--border-color)` |
 
 ### 卡片样式
 
@@ -430,8 +352,8 @@ CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。`web/src/index.cs
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px var(--shadow);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-shadow-card);
 }
 ```
 
@@ -486,9 +408,7 @@ CSS 來源：`web/src/index.css` 中 `.compact-navigation-*`。`web/src/index.cs
 
 | 元素 | 亮色模式 | 暗色模式 | 级别 |
 |------|---------|---------|------|
-| 主文字 | 16.1:1 | 14.5:1 | AAA ✅ |
-| 次要文字 | 5.3:1 | 6.1:1 | AA ✅ |
-| 按钮文字 | 8.5:1 | 9.2:1 | AAA ✅ |
+| 主文字、次要文字及按鈕文字 | 依當前主題 token 測量 | 依當前主題 token 測量 | 本文件不宣稱尚未重新量測的比例；變更色盤後需逐主題驗證 |
 
 ### 规则
 

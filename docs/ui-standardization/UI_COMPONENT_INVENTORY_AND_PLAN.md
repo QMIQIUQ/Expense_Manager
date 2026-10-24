@@ -1,8 +1,7 @@
 # Expense Manager UI 元件盤點與統一設計決策稿
 
-> 程式碼盤點基準：`f864ecda8d28ebf45225d2b6aba15801b52ba872`（2026-10-25）。文件索引與新 UI 設計文件目前在 `main` 的 `7332790` 後更新；該文件 commit 沒有改動 app source。
-> 文件用途：先讓使用者選定要統一的外觀，再依本文件分階段修改。此文件只盤點與規劃，沒有修改 UI 程式。
-> 預覽圖由現有 CSS 與元件樣式重繪，是 SVG 示意圖，不是瀏覽器截圖；圖中的備選做法也不代表已採用。
+> 程式碼盤點基準：`884d3be`（2026-10-25）。本輪已將共用 UI token 和幾何規則套用於 production UI；逐檔結果見 [樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
+> 預覽圖是 UI 規格的 SVG 示意，不是瀏覽器截圖。按鈕/欄位/卡片/dialog 基礎外觀已採用；分類選擇、流程版型、tabs 與 overlay 行為仍維持原有互動意義。
 
 ## 1. 摘要
 
@@ -10,13 +9,19 @@
 
 目前可選的主題是 `light`、`dark`、`system`、`cat`、`cat-dark`。`system` 會跟隨作業系統，另有 system/serif/mono 字體和 small/medium/large 字級設定。`cat` 與 `cat-dark` 是 Warm Kitty 主題，覆寫一部分預設紫色樣式。
 
-建議依「先定 token 與基礎元件、再整理導覽與表單、最後整理卡片與各頁」分階段做。這樣能先讓共用元件有穩定規格，並降低每個頁面自行覆寫造成的新差異。選項尚待使用者決定；未選定前不應將示意稿當成批准的視覺規範。
+目前透過最後載入的 `ui-system.css` 套用全站控制/卡片/tab/dialog 幾何，並將 TSX/CSS 中的靜態 font-size、border-radius、padding、margin、gap 值轉接到共用 token。既有非標準尺寸以 alias 保持原 layout；新/改 UI 必須使用語意 token 和本文件的共享元件規格。
+
+本輪已完成元件盤點、覆蓋矩陣、視覺規格與 shared UI styling implementation；點開 [視覺統一規格](VISUAL_STANDARDIZATION_SPEC.md) 看尺寸與 preview，再看 [逐檔實作計畫](PATTERN_STANDARDIZATION_PLAN.md) 的邏輯界線與流程保護。其他 CRUD/tab/drawer/category interaction proposal 不代表本輪改過互動行為。
 
 ### 預覽圖
 
 **主題色彩預覽**：相同欄位、按鈕、標籤和卡片在四種已支援外觀中的示意。
 
 ![四種主題的表單與卡片示意](previews/theme-samples.svg)
+
+**共用 UI 規格**：相同欄位、按鈕、checkbox、卡片和 dialog 在三種色盤共用尺寸/字級/radius tokens。
+
+![已採用的共用 UI 幾何在三種色盤的預覽](previews/unified-ui-system.svg)
 
 **元件樣式盤點**：目前存在的欄位、按鈕、容器、頁籤和選擇控制差異。
 
@@ -34,7 +39,7 @@
 
 ![編輯與狀態版型比較](previews/edit-status.svg)
 
-**新增/編輯/刪除流程**：對照現行支出 stepper/tabs、共用 dialog 和全頁 workspace 方向。
+**新增/編輯/刪除流程**：對照目前支出 stepper/tabs、共用 dialog 和未採用的全頁 workspace 方向；互動草圖不代表 exact token 渲染。
 
 ![支出 CRUD 流程目前與候選比較](previews/crud-flow-comparison.svg)
 
@@ -64,7 +69,7 @@
 | `section` | 17 | `nav` | 1 | `table` | 3 |
 | `h1` | 6 | `h2` | 24 | `h3` | 50 |
 
-全域及主題 CSS 分布在 `web/src/index.css`、`web/src/cat-theme.css` 和 `web/src/styles/ledger.css` 等 9 個 CSS 檔。`index.css` 單檔很長，包含全域規則、通用元件及多個功能的局部樣式；閱讀樣式時要一併檢查後置覆寫和主題選擇器。
+全域及主題 CSS 分布在 10 個 CSS 檔；新增的 `web/src/styles/ui-system.css` 在 `index.css` 和 `cat-theme.css` 後載入，提供共享幾何/控制樣式。`index.css` 仍包含全域規則與功能局部樣式；讀取樣式時要一併檢查後置覆寫和主題選擇器。
 
 ## 3. 目前實際畫面與功能入口
 
@@ -128,13 +133,13 @@
 
 | 元素類別 | 目前表現 | 主要樣式來源/檔案 |
 |---|---|---|
-| 文字、標題、說明 | 原生 `h1`–`h6`、`p`、`span`、`div`；字級/顏色同時來自全域 CSS、Tailwind、inline style。`Label`/`Text` 尚未成為通用實際用法。 | `index.css`、`PageTitle.tsx`、`SectionTitle.tsx`、`Label.tsx`、`Text.tsx` |
-| Label | 原生 `<label>` 可透過 `htmlFor` 關聯欄位；`form-label` 為 12px 次要色，`Label.tsx` 預設為 14px primary 色；表單中也有 JSX inline label。 | `index.css`、`Label.tsx`、各 `*Form.tsx` |
-| Textbox / input | 原生 `<input>`；通用 `.form-input` 為全寬、10×14px padding、8px 圓角；inline 編輯、數字/金額、搜尋與 ledger input 有局部規則。 | `index.css`、`ledger.css`、`ExpenseForm.tsx`、`StepByStepExpenseForm.tsx` |
-| Textarea / select | 原生 `<textarea>`、`<select>`；基礎 `.form-textarea` / `.form-select` 與 input 同組；部分 native select 保留瀏覽器選單行為。 | `index.css`、各表單、`StepByStepExpenseForm.tsx` |
-| Checkbox / radio / toggle | 原生 checkbox/radio；深色模式有全域規則。支出代墊/追蹤、批次選取和功能開關用途不同；receivable toggle 有自訂間距與 18px checkbox。 | `index.css`、`ledger.css`、`ExpenseSplitEditor.tsx`、列表/設定元件 |
-| Button | 原生 `<button>` 預設樣式、`.btn` 家族、`.btn-icon`、modal 專用按鈕、Tailwind class、inline style 並存。主要/次要/危險/成功/soft accent/圓形 icon 都有使用。 | `index.css`、`PopupModal.tsx`、`BaseForm.tsx`、`Dashboard.tsx` |
-| Card / panel / div container | `.card` 等通用卡片；WidgetContainer、`ledger-panel`、`BaseForm`、modal 和功能卡有各自邊框/圓角/陰影。大量 `<div>` 只負責 layout，不適合全部做成卡片。 | `index.css`、`ledger.css`、`WidgetContainer.tsx`、`BaseForm.tsx` |
+| 文字、標題、說明 | 原生 `h1`–`h6`、`p`、`span`、`div`；全域 heading 與靜態 inline/CSS font-size 使用 UI type tokens。通用 `Label`/`Text` definitions 仍不代表每個頁面已改用 wrapper。 | `ui-system.css`、`index.css`、`PageTitle.tsx`、`SectionTitle.tsx`、`Label.tsx`、`Text.tsx` |
+| Label | 原生 `<label>` 保留 `htmlFor`；標籤以同一字級/色彩層級呈現，靜態 inline 尺寸使用 token。 | `ui-system.css`、`Label.tsx`、各 `*Form.tsx` |
+| Textbox / input | 原生 `<input>`；一般欄位 44px 最小高度、共用 control padding/radius/text/focus；inline edit、金額與 ledger 特有尺寸/狀態保留。 | `ui-system.css`、`index.css`、`ledger.css`、`StepByStepExpenseForm.tsx` |
+| Textarea / select | 原生 `<textarea>`、`<select>`；共用色彩/border/radius/focus 與字級，保留原生 select 和 textarea 擴展行為。 | `ui-system.css`、`index.css`、各表單 |
+| Checkbox / radio / toggle | 原生 checkbox/radio 保持 input 語意和 value，18px 使用 theme accent；批次勾選、功能開關和 receivable toggle 用途不合併。 | `ui-system.css`、`index.css`、`ledger.css`、列表/設定元件 |
+| Button | 原生 button / `.btn` / icon / modal action 使用 control radius、通用字級及一般44px/compact36px 互動高度；語意變體及 theme 顏色保留。 | `ui-system.css`、`index.css`、`PopupModal.tsx`、`BaseForm.tsx` |
+| Card / panel / div container | `.card`、dashboard widget、budget/expense/income/payment card 共享 12px radius；layout div 維持純排版，不一律加 surface/background。 | `ui-system.css`、`index.css`、`ledger.css`、`WidgetContainer.tsx` |
 | Chips / tags | 分類 chip、已選標籤 chip、標籤選取按鈕、圖表 tag cloud；顏色、密度和交互狀態各異。 | `ExpenseTagPicker.tsx`、`ledger.css`、`ExpenseTagManager.tsx`、`TagCloudWidget.tsx` |
 | 導覽 tabs | 主功能水平滑動 nav；`SubTabs` 底線樣式；支出編輯 tabs 的 selected 狀態；建立支出的逐步進度/前後導覽。 | `CompactNavigation.tsx`、`SubTabs.tsx`、`StepByStepExpenseForm.tsx`、`index.css`、`ledger.css` |
 | Modal / dropdown / popover / bottom sheet | 現行 PopupModal/ConfirmModal 遮罩和內容框、autocomplete 下拉、日期快捷選單、Action Menu、PWA prompt 等浮層；source-only Modal/FormPopup 另列 unmounted。不同 z-index 與關閉/焦點方式。 | `PopupModal.tsx`、`ConfirmModal.tsx`、`Modal.tsx`、`AutocompleteDropdown.tsx`、`RadialDateMenu.tsx`、`Dashboard.tsx` |
@@ -146,31 +151,31 @@
 
 ### 樣式來源
 
-1. `web/src/index.css` 是主要 CSS，包含 CSS 變數、全域標籤規則、`.form-*`、`.btn-*`、卡片和功能局部樣式。
-2. `web/src/cat-theme.css` 以 `.theme-cat` / `.theme-cat-dark` 覆寫顏色、卡片圓角/陰影、表單焦點、按鈕和插畫。
-3. `web/src/styles/ledger.css` 為 ledger/支出標籤/receivable/編輯區等專屬樣式。
-4. Tailwind 用於 layout/utilities；`web/tailwind.config.cjs` 另有一份硬編碼色盤。
-5. React 元件 inline style 仍控制不少表單、分類格、儀表板 header 和表單 footer。
-6. `web/src/styles/designTokens.ts` 有集中 token 的意圖；全應用程式目前可確認的使用點很少，`AutocompleteDropdown.tsx` 使用其 dropdown z-index。CSS vars、Tailwind 色盤和 TypeScript tokens 尚未完全同步。
+1. `web/src/index.css` 提供主色變數、全域規則、`.form-*`、`.btn-*`、卡片和頁面局部樣式。
+2. `web/src/cat-theme.css` 保留 Warm Kitty palette、插畫與主題特有色彩；幾何由後載入的共同樣式層收斂。
+3. `web/src/styles/ledger.css` 保留 ledger/支出標籤/receivable/編輯區等專屬版面與狀態。
+4. `web/src/styles/ui-system.css` 統一共同尺寸/幾何/focus，並包含語意 token 和舊固定尺寸的 exact-value aliases。
+5. `web/tailwind.config.cjs` semantic colors 讀取當前 CSS theme variables；spacing/font/radius 增加 ui token extensions。
+6. React inline style 中固定 font-size、border-radius、padding、margin、gap 遷移到 tokens；資料驅動位置/尺寸、圖表設定和非幾何呈現仍保留在原元件。
+7. `web/src/styles/designTokens.ts` 提供 TS runtime consumer 共用 UI token；`AutocompleteDropdown.tsx` 仍使用其 dropdown z-index。
 
 ### 已存在的外觀變體
 
 | 元件 | 現有變體/數值 | 造成的差異 |
 |---|---|---|
-| 按鈕 | 原生 button 全域 radius 4px；`.btn` radius 8px；`BaseForm` primary/secondary inline radius 8px；style guide 範例又列 6px 表單按鈕；`.btn-primary` 實心，`.btn-accent-light` 和 `.btn-soft-accent` 淺底，`.btn-pill` 膠囊，`.btn-icon-*` 圖示按鈕。 | 相同的「新增/儲存」意圖，可能使用實心、淡色、soft、不同圓角或 inline 規格。 |
-| 表單欄位 | `.form-input/.form-select/.form-textarea` 8px radius、10×14px；ledger 表單局部有 8px padding 或 42–44px min-height；inline style 另有自訂。 | 欄位高度、密度與焦點 ring 不完全一致。 |
+| 按鈕 | primary/secondary/danger/success/soft/pill/icon variants 還是保留；普通 action 共用 44px target、8px control radius、共用字級，icon action 36px。 | 顏色/用途不同；同類操作幾何一致。 |
+| 表單欄位 | native input/select 共用 44px 最小高度、token padding、8px control radius、共用 focus；特殊日期/ledger 子控件保留專屬版面。 | 語意與高層幾何一致，特殊表單行為不合併。 |
 | 表單框架 | `BaseForm` header/body/footer，儲存:取消約 80:20；`PopupModal` footer 和自訂 Expense editor footer 不是同一布局。 | footer 按鈕位置、排列、比例會隨功能不同。 |
-| 卡片 | 全域 `.card` 群組 radius 10px、padding 10×12px；`.recent-expense-card` radius 14px、padding 16px；BaseForm 外框 radius 12px；ledger panel radius 12px；Cat theme 將一組卡片覆寫成 16px。 | 卡片層級、內容留白和陰影不一致。 |
+| 卡片 | 共用 `.card`/widget/功能卡 radius 12px；內容 padding 與 shadow 依卡片類型保留。 | 卡片幾何統一，資訊密度與財務資料排序不重排。 |
 | tabs | CompactNavigation 為可橫向捲動的按鈕 nav；SubTabs 是底線 tabs；支出編輯是選取底色 tabs；建立支出是逐步流程。 | 目前有四種不同導覽語意，不能只改成一種 CSS 而不看用途。 |
-| 顏色 | 預設紫色 accent；深色模式有紫色底；Warm Kitty light/dark 使用玫瑰色系、特殊插畫和較大圓角。 | 色彩、對比、陰影和品牌圖案隨主題而異。 |
-| 密度/形狀 | 頁面內 `.card`、dashboard widgets、帳戶卡、支出 panel 和 row/list 分別設定間距；chip 有圓角膠囊，button 另有 pill。 | 內容密度和控制形狀需要由產品選定範圍，而非盲目全站統一數值。 |
+| 顏色 | Purple light/dark 與 Warm Kitty light/dark 仍由原 theme variables 提供；共同樣式只讀取 semantic colors。 | 顏色、插畫與品牌色仍隨主題變化。 |
+| 密度/形狀 | 靜態 spacing/radius 已改接 shared tokens；卡片、widget、dialog、控制項、chip 分別使用同一類幾何值。 | 內容 padding、列表密度、資訊排序及特殊資料卡版型保留；要改內容結構或密度仍需獨立產品決策。 |
 
-### 文件規範與實際程式的落差
+### 已保留的程式差異
 
-- `docs/UI_STYLE_GUIDE.md` 說明 `.card` 12px 圓角，但目前 `index.css` 通用卡片群組實際為 10px；Warm Kitty 又覆寫為 16px。
-- Style Guide 表單按鈕範例使用 6px 圓角和 soft accent；目前 `BaseForm` inline button 使用 8px，且 primary 是實心 accent。
-- Style Guide 建議所有顏色使用 CSS vars；實際程式仍有 Tailwind hex、inline literal 和少量 selector-specific color。
-- `Label.tsx`、`Text.tsx` 是元件定義，不等於現有頁面已經統一使用它們；逐頁遷移前要決定是否擴充/使用。
+- 主次危險按鈕及 success/warning/status 顏色是語意變體，不合併為相同顏色。
+- compact list/圖表/定位使用的動態尺寸/顏色不轉成固定值。
+- `Label.tsx`、`Text.tsx` 仍是可重用 definitions；全域規格透過 CSS 控制已掛載原生元素，不要求把每個頁面重包 wrapper。
 
 ## 6. 支出/還款特殊互動盤點
 
@@ -185,36 +190,33 @@
 
 以上視覺整理不得改變表單資料語意或財務計算。已存在的欄位 ID、owner、tag 關聯、分類排序、付款方式 ID、分攤參與者、回呼順序和錯誤處理都需要保持。
 
-## 7. 待選的統一規格
+## 7. 已採用的共用外觀與保留模式
 
-以下選項留給後續選擇，勾選不會由本盤點文件自動套用。建議每項選一個主規格，若需要例外請列出元件/頁面。
+| 項目 | 已採用規格 | 狀態/範圍 |
+|---|---|---|
+| Primary/secondary/danger buttons | 保留依操作語意區分的實心/中性色/破壞性 variants；44px action target、8px radius、共用字級 | 已實作；按鈕 callback/type 未改 |
+| 表單 footer | BaseForm 原有 80:20 ratio；按鈕尺寸與字型共用 | 已實作；自訂支出 footer 不重排 |
+| 一般欄位 | native input/select 44px 最小高度；textarea 可增高；focus/radius/padding 使用 token | 已實作；日期/金額等原生語意保留 |
+| Checkbox/radio | 原生控件、18px、accent theme color | 已實作；checked value 和表單提交未改 |
+| Card/dialog | card 12px；dialog 16px；theme surface/shadow 保留 | 已實作；資料密度未重排 |
+| Chips / badges | 語意維持原樣，統一 pill radius | 已實作 |
+| 主題/字體 | Purple light/dark、Warm Kitty light/dark 保留；system/serif/mono 及 small/medium/large 設定保留 | 已實作；改用 semantic theme tokens |
+| 分類/標籤選擇、分帳布局、支出 tabs、status entry | 保留當前可達 UI 與操作語意 | 不屬幾何標準化；未切換資料流程或重排功能流程 |
 
-| 決策 | 選項 A | 選項 B | 選項 C | 目前狀態 |
-|---|---|---|---|---|
-| 主要動作按鈕 | `[ ]` 實心 primary | `[ ]` 淡色 accent | `[ ]` 依上下文保留兩種 | 待選 |
-| 表單 footer | `[ ]` 儲存/取消 80:20 | `[ ]` 等寬 | `[ ]` 手機堆疊，桌機 80:20 | 待選 |
-| 一般欄位 | `[ ]` 44px 觸控高度 | `[ ]` 40px 緊湊 | `[ ]` 一般/compact 兩種密度 | 待選 |
-| 分類選取 | `[ ]` icon tile 為主 | `[ ]` 搜尋/下拉為主 | `[ ]` 最近項 tile + 搜尋全部 | 待選 |
-| 標籤 | `[ ]` 內嵌 chips | `[ ]` 摺疊/compact | `[ ]` 表單與列表用不同密度 | 待選 |
-| 支出分攤 | `[ ]` 直接顯示完整面板 | `[ ]` 先開啟追蹤再展開 | `[ ]` 摘要卡 + 可展開明細 | 待選 |
-| 支出編輯 tabs | `[ ]` 保持目前 3 組 | `[ ]` 分成 4 組 | `[ ]` 改為單頁分區，不使用 tabs | 待選 |
-| 狀態列 | `[ ]` icon + 文字 | `[ ]` icon 為主，必要時顯示文字 | `[ ]` 收進工具選單 | 待選 |
-| 卡片容器 | `[ ]` 一般卡片統一 10px | `[ ]` 統一 12px | `[ ]` widget/資料卡分成兩層 | 待選 |
-| 主題策略 | `[ ]` 保留紫色與 Warm Kitty 兩套 | `[ ]` 以紫色為主，Warm Kitty 僅換色 | `[ ]` 其他（填入） | 待選 |
-| 字級/字體 | `[ ]` 保留現有設定 | `[ ]` 收斂到兩種字體/字級 | `[ ]` 其他（填入） | 待選 |
+## 8. 逐階段檔案與邏輯計畫
 
-## 8. 建議的分階段實作計畫
+共用 token 層、native controls、按鈕/卡片/dialog/tab 幾何及固定 TSX/CSS 字級/圓角/spacing tokenization 已完成。以下各階段記錄哪些檔案承載 UI、若未來另做 workflow/layout 改版需改哪些邏輯，以及不得違反的資料契約；不要把 interaction proposal 當成已完成。
 
-每一階段先把選定的規格落成 tokens，再逐步替換使用點。不要先全域更改原生 `button/input/div`，以免第三方圖表、特殊收據流程或資料列一起受到非預期影響。
+### 第 0 階段：main 基線與範圍
 
-### 第 0 階段：使用者選擇與畫面基線
-
-1. 收回第 7 節各項選擇，明確列出允許例外的畫面。
-2. 決定保留紫色與 Warm Kitty 的範圍、手機/桌機密度、表單 footer 和錯誤/成功狀態外觀。
-3. 以登入、Dashboard、Expenses 建立/編輯、Categories、Payment Methods、Budgets、Profile 各取代表畫面作為比對基準。
-4. 記錄不同語言、深淺主題、字級和 320/390/768/1280px 視窗下的樣式；基線與程式碼改動分開保存。
+1. 本次實作基於 `origin/main@884d3be`；UI 逐檔清單和來源指標見覆蓋矩陣。
+2. 採用第 7 節所列的 44px 控制、36px compact icon target、8/12/16px radius、rem type ramp 和既有紫色/Warm Kitty 色盤。
+3. Dashboard、Expenses/Income/Budgets/Categories/Payment Methods/Scheduled Payments/Profile/Admin/Login 等 mounted screens 都載入共同 UI layer。
+4. 分類/分帳/編輯 tabs/同步狀態的操作模式不因外觀而重選或重排；未來流程改版需另外記錄 viewport、語系與狀態矩陣。
 
 ### 第 1 階段：Token 和主題來源整理
+
+**狀態：完成。** `ui-system.css`、TypeScript design tokens 和 Tailwind semantic colors/spacing/font/radius extensions 已建立；各主題值與 ThemeContext 設定沿用。
 
 **檔案：**
 
@@ -225,13 +227,15 @@
 - `web/src/contexts/ThemeContext.tsx`
 - `web/src/components/ThemeToggle.tsx`、`ThemeToggle.css`
 
-**要做：**選定色彩、字體、字級、間距、圓角、陰影、focus ring、狀態色和 z-index 的唯一命名；把 TypeScript tokens、CSS custom properties 和 Tailwind theme 對齊。Dark 和 Warm Kitty 作為同一 token 介面的值集，不重複定義各種元件外觀。
+**已實作：**建立 semantic spacing/type/radius/control/shadow/focus/layer tokens；TypeScript UI tokens 與 Tailwind tokens 指向 CSS variables；dark 和 Warm Kitty 仍是同一套幾何規則下的 theme value set。
 
 **邏輯注意：**保留 localStorage 舊值與 `system` 對作業系統主題變化的行為；保留 Warm Kitty manifest/icon 更新、字體設定與字級設定；明確保留 themeColor 與 `<meta name="theme-color">` 的外觀更新。新 token 不要讓舊主題值在初始化時閃一下。
 
 ### 第 2 階段：建立與使用共用基礎元件
 
-**基礎檔案：** `web/src/components/common/Label.tsx`、`Text.tsx`、`BaseForm.tsx`、新增或整理 Button / TextField / Select / Checkbox 的共用 API（新增檔名待選）；`web/src/index.css`、`web/src/styles/ledger.css`。
+**狀態：共用呈現完成；沒有新增 wrapper API。** 原生控制透過全域共用 CSS 規格，Label/Text/PageTitle/SectionTitle/SubTabs/BaseForm/PopupModal/ConfirmModal 靜態 style values 改接 tokens。
+
+**基礎檔案：** `web/src/components/common/Label.tsx`、`Text.tsx`、`BaseForm.tsx`、`PopupModal.tsx`、`SubTabs.tsx`、`web/src/index.css`、`web/src/styles/ledger.css` 及新 `web/src/styles/ui-system.css`。目前沒有另建 Button/TextField wrapper，避免改動原生欄位提交 API。
 
 **要做：**先固定 label/error/help text 的層級；欄位支援 label、required、hint、error、disabled、leading/trailing adornment；按鈕支援 primary/secondary/tertiary/danger/icon、loading/disabled；卡片和 modal 提供有意義的 variant，而不是靠任意 `div` class 命名。
 
@@ -241,6 +245,8 @@
 
 ### 第 3 階段：全域 shell、導覽和狀態元件
 
+**狀態：全站共用 geometry 已生效；navigation/status layout 與來源未合併。**
+
 **檔案：** `web/src/pages/Dashboard.tsx`、`web/src/components/navigation/CompactNavigation.tsx`、`DashboardMenuSection.tsx`、`FloatingExpenseActions.tsx`、`navigationConfig.ts`、`web/src/components/HeaderStatusBar.tsx` / `.css`、`NetworkStatusIndicator.tsx`、`NotificationBell.tsx`、`common/SubTabs.tsx`。
 
 **要做：**統一頂部、主 nav、功能內子頁籤、工具選單、通知與新增 FAB 的高度、間距、顏色、focus/selected/hover/disabled 狀態。狀態列和網路狀態可統一視覺語言，但保留各自觸發條件與資訊來源。
@@ -248,6 +254,8 @@
 **邏輯注意：**保留 `FeatureSettings` 的 `tabFeatures` / `hamburgerFeatures` 順序、舊 `enabledFeatures` fallback、Profile/Admin 可見權限、目前 `activeTab` 導向和手機 active item `scrollIntoView`。新增按鈕、長按日期快捷和收據掃描仍需互不遮擋。
 
 ### 第 4 階段：支出、收據、分類、標籤與分攤表單
+
+**狀態：靜態 typography/spacing/radius tokens 與全域 native control styles 已套用；支出步驟、OCR、分類選擇及 split state 未重排。**
 
 **目前掛載、可執行的檔案：** `web/src/components/expenses/StepByStepExpenseForm.tsx`、`ExpenseList.tsx`、`ExpenseFiltersBar.tsx`、`DateNavigator.tsx`、`PeriodPickerModal.tsx`、`ExpenseTagPicker.tsx`、`ExpenseSplitEditor.tsx`、`ExpenseSplitSummary.tsx`、`RepaymentForm.tsx`、`ReceiptAttachmentPanel.tsx`、`web/src/styles/ledger.css`。
 
@@ -265,6 +273,8 @@
 
 ### 第 5 階段：清單、卡片和 Dashboard widgets
 
+**狀態：mounted cards/widgets 共用 12px surface geometry；widget order、資料完整度、row density 與 chart semantics 保留。**
+
 **目前掛載、可執行的檔案：** `web/src/components/dashboard/widgets/WidgetContainer.tsx`、各已掛載的 `*Widget.tsx`、`CustomizableDashboard.tsx`、`DashboardCustomizer.tsx`、`web/src/components/expenses/ExpenseList.tsx`、`TrackedExpensesWidget.tsx`、`IncomeList.tsx`、`BudgetManager.tsx`、`ScheduledPaymentCard.tsx`、`TransferList.tsx`、`AccountReconciliationManager.tsx`。
 
 **未掛載參考（不列入本階段執行範圍）：** `components/repayment/RepaymentList.tsx` 與它所屬的舊管理鏈。只有產品決定重新掛載該管理頁時才另排遷移；目前可達的還款輸入是支出流程中的 `components/expenses/RepaymentForm.tsx`。
@@ -275,6 +285,8 @@
 
 ### 第 6 階段：其他頁面、登入和收尾
 
+**狀態：所有 production TSX 由共用 stylesheet/token layer 覆蓋；逐檔 token 引用與 inline-style 數量見矩陣。未掛載 source 也完成靜態值 tokenization，但仍不視為 current screen。**
+
 **目前掛載、可執行的檔案：** `web/src/pages/Login.tsx`、`UserProfile.tsx`、`pages/tabs/AdminTab.tsx`、目前掛載的 `components/categories/`、`budgets/`、`payment/`、`banks/`、`cards/`、`ewallet/`、`transfer/`、`scheduledPayments/`、`importexport/`，以及 `common/DatePicker.tsx`、`TimePicker.tsx`、`CurrencySelector.tsx`、`PaymentMethodSelector.tsx`、`AutocompleteDropdown.tsx`、`MultiSelectToolbar.tsx`、`ConfirmModal.tsx`。
 
 **未掛載參考（不列入本階段執行範圍）：** `components/repayment/RepaymentManager.tsx` / `RepaymentList.tsx`。`Register.tsx` 和 `RecurringTab.tsx` 也先確認產品是否重新啟用，再列入遷移。
@@ -283,7 +295,7 @@
 
 ## 9. 既有七項 UX 與 F17 的逐檔案計畫
 
-本節是未來計畫，不代表已批准或已完成 UI 改動。優先級延續前一輪規劃；先由使用者在第 7 節選定視覺，再決定各項是否執行。
+本節記錄仍未重設的互動/流程候選，不代表本次已實作。全站外觀已採用共用 tokens；若日後改分類搜尋、分帳布局、同步入口、支出 tabs 或 Now 按鈕，仍須先確認該候選的資料和行為變化，再分開改檔與驗收。
 
 ### UX-1（P1）：同步與離線狀態
 
@@ -349,7 +361,9 @@ F17 **不是完全沒有實作**：目前 `expenseService.update()` 已可在 Fi
 - **涉及檔案：**`ExpenseList.tsx`、`Dashboard.tsx`、`services/expenseService.ts`、`services/syncService.ts`、`utils/offlineQueue.ts`、`utils/pendingOperations.ts`。依既有 mutation contract，queued remote mutation 的 immutable receipt 和 domain write 必須保持同一 transaction。
 - **整合驗收建議：**開始編輯後其他裝置先更新、連續離線編輯同一支出、重新載入/重新登入後恢復 pending work、多分頁同時編輯、衝突後使用者重試/捨棄。這些是未來驗收建議；本次文件工作沒有執行測試。
 
-## 10. 驗收清單（實作批准後使用）
+## 10. 樣式實作狀態與後續驗收清單
+
+本次已完成 `npm run build`、`npx tsc --noEmit`、token references、SVG/Markdown links 與 `git diff --check`。未執行 unit/component、Firebase Emulator 或 browser regression suite。以下 checkbox 僅列出後續完整互動/流程重設需要的驗收，不能解讀成目前已經改動該流程。
 
 - [ ] 四個色彩外觀及 system 跟隨行為正常；字體與字級設定保留。
 - [ ] 每種主要控制能用鍵盤操作，focus 清晰；label 有關聯，錯誤/說明文字可由 assistive technology 取得。

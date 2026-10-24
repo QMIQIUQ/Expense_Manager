@@ -73,7 +73,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   formContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: 'var(--ui-space-16px)',
   },
 };
 

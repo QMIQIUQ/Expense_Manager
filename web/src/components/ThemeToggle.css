@@ -4,9 +4,9 @@
 
 .theme-picker-title {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-12px);
   font-weight: 600;
-  margin: 0 0 6px 4px;
+  margin: var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-6px) var(--ui-space-4px);
 }
 
 .theme-brightness-options {
@@ -17,7 +17,7 @@
   align-items: center;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
@@ -25,7 +25,7 @@
   justify-content: space-between;
   min-height: 48px;
   overflow: hidden;
-  padding: 4px;
+  padding: var(--ui-space-4px);
   position: relative;
   width: 100%;
 }
@@ -33,7 +33,7 @@
 .theme-brightness-thumb {
   background: var(--card-bg);
   border-color: var(--border-color);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   bottom: 4px;
   box-shadow: 0 1px 4px var(--shadow-sm);
   left: 4px;
@@ -51,8 +51,8 @@
   align-items: center;
   display: flex;
   flex: 1 1 50%;
-  font-size: 13px;
-  gap: 6px;
+  font-size: var(--ui-font-13px);
+  gap: var(--ui-space-6px);
   justify-content: center;
   min-width: 0;
   position: relative;
@@ -84,12 +84,12 @@
 }
 
 .theme-choice-title {
-  margin-top: 14px;
+  margin-top: var(--ui-space-14px);
 }
 
 .theme-picker-options {
   display: grid;
-  gap: 6px;
+  gap: var(--ui-space-6px);
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -97,23 +97,23 @@
   align-items: center;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 11px;
+  border-radius: var(--ui-radius-11px);
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   font: inherit;
-  font-size: 12px;
-  gap: 3px;
+  font-size: var(--ui-font-12px);
+  gap: var(--ui-space-3px);
   justify-content: center;
   min-height: 56px;
   min-width: 0;
-  padding: 6px 4px;
+  padding: var(--ui-space-6px) var(--ui-space-4px);
   text-align: center;
 }
 
 .theme-picker-option-icon {
-  font-size: 15px;
+  font-size: var(--ui-font-15px);
   line-height: 1;
 }
 
@@ -138,11 +138,11 @@
 
 @media (max-width: 420px) {
   .theme-picker-options {
-    gap: 4px;
+    gap: var(--ui-space-4px);
   }
 
   .theme-picker-option {
-    font-size: 11px;
+    font-size: var(--ui-font-11px);
   }
 }
 

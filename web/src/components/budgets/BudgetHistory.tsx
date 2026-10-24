@@ -211,7 +211,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       <div className="budget-history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="budget-history-title">{t('budgetHistory') || 'History'}</span>
         {showAdvanced && (
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: 'var(--ui-space-4px)' }}>
             <button
               onClick={() => setViewMode('bar')}
               style={{
@@ -293,7 +293,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 
       {/* Advanced Chart View (Recharts) */}
       {viewMode === 'chart' && showAdvanced && (
-        <div style={{ width: '100%', height: 150, marginTop: '8px' }}>
+        <div style={{ width: '100%', height: 150, marginTop: 'var(--ui-space-8px)' }}>
           <ResponsiveContainer>
             <BarChart data={periods} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <XAxis 
@@ -331,10 +331,10 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
 };
 
 const viewButtonStyle: React.CSSProperties = {
-  padding: '4px 8px',
+  padding: 'var(--ui-space-4px) var(--ui-space-8px)',
   border: '1px solid var(--border-color)',
-  borderRadius: '4px',
-  fontSize: '10px',
+  borderRadius: 'var(--ui-radius-4px)',
+  fontSize: 'var(--ui-font-10px)',
   cursor: 'pointer',
   transition: 'all 0.2s',
 };
@@ -343,24 +343,24 @@ const tooltipStyles = {
   container: {
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    padding: '8px 12px',
+    borderRadius: 'var(--ui-radius-8px)',
+    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   } as React.CSSProperties,
   label: {
-    margin: 0,
-    fontSize: '12px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: 600,
     color: 'var(--text-primary)',
   } as React.CSSProperties,
   value: {
-    margin: '4px 0 0 0',
-    fontSize: '11px',
+    margin: 'var(--ui-space-4px) var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-11px)',
     color: 'var(--text-secondary)',
   } as React.CSSProperties,
   percentage: {
-    margin: '2px 0 0 0',
-    fontSize: '13px',
+    margin: 'var(--ui-space-2px) var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-13px)',
     fontWeight: 600,
   } as React.CSSProperties,
 };
@@ -369,23 +369,23 @@ const statsStyles = {
   container: {
     display: 'flex',
     justifyContent: 'space-around',
-    padding: '8px 0',
-    marginTop: '8px',
-    marginBottom: '12px',
+    padding: 'var(--ui-space-8px) var(--ui-space-0px)',
+    marginTop: 'var(--ui-space-8px)',
+    marginBottom: 'var(--ui-space-12px)',
     borderTop: '1px solid var(--border-color)',
   } as React.CSSProperties,
   item: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: '2px',
+    gap: 'var(--ui-space-2px)',
   } as React.CSSProperties,
   label: {
-    fontSize: '10px',
+    fontSize: 'var(--ui-font-10px)',
     color: 'var(--text-tertiary)',
   } as React.CSSProperties,
   value: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: 600,
     color: 'var(--text-primary)',
   } as React.CSSProperties,

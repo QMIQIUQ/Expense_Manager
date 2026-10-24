@@ -46,12 +46,12 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
+    <div style={{ maxWidth: '400px', margin: 'var(--ui-space-100px) auto', padding: 'var(--ui-space-20px)' }}>
       <h2>Register</h2>
-      {error && <div style={{ color: 'var(--error-text)', marginBottom: '10px' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error-text)', marginBottom: 'var(--ui-space-10px)' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
+        <div style={{ marginBottom: 'var(--ui-space-15px)' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: 'var(--ui-space-5px)' }}>
             Email
           </label>
           <input
@@ -61,11 +61,11 @@ const Register: React.FC = () => {
             onChange={(e) => setEmail(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
           />
         </div>
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>
+        <div style={{ marginBottom: 'var(--ui-space-15px)' }}>
+          <label htmlFor="password" style={{ display: 'block', marginBottom: 'var(--ui-space-5px)' }}>
             Password
           </label>
           <input
@@ -75,11 +75,11 @@ const Register: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
           />
         </div>
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '5px' }}>
+        <div style={{ marginBottom: 'var(--ui-space-15px)' }}>
+          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: 'var(--ui-space-5px)' }}>
             Confirm Password
           </label>
           <input
@@ -89,7 +89,7 @@ const Register: React.FC = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
           />
         </div>
         <button
@@ -97,12 +97,12 @@ const Register: React.FC = () => {
           disabled={loading}
           style={{
             width: '100%',
-            padding: '10px',
+            padding: 'var(--ui-space-10px)',
             backgroundColor: 'var(--accent-primary)',
             color: 'white',
             border: 'none',
             cursor: 'pointer',
-            marginBottom: '10px',
+            marginBottom: 'var(--ui-space-10px)',
           }}
         >
           {loading ? 'Loading...' : 'Register'}
@@ -113,12 +113,12 @@ const Register: React.FC = () => {
         disabled={loading}
         style={{
           width: '100%',
-          padding: '10px',
+          padding: 'var(--ui-space-10px)',
           backgroundColor: 'var(--bg-secondary)',
           color: 'var(--text-primary)',
           border: '1px solid var(--border-color)',
           cursor: 'pointer',
-          marginBottom: '10px',
+          marginBottom: 'var(--ui-space-10px)',
         }}
       >
         Sign up with Google

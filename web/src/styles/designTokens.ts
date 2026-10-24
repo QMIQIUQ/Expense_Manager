@@ -4,6 +4,27 @@
  */
 
 export const designTokens = {
+  // Shared UI geometry lives in CSS so theme and user font preferences remain
+  // the runtime source of truth. These mirrors keep TS consumers on the same scale.
+  ui: {
+    controlHeight: 'var(--ui-control-height)',
+    compactControlHeight: 'var(--ui-control-height-compact)',
+    radius: {
+      control: 'var(--ui-radius-control)',
+      card: 'var(--ui-radius-card)',
+      dialog: 'var(--ui-radius-dialog)',
+      pill: 'var(--ui-radius-pill)',
+    },
+    fontSize: {
+      xs: 'var(--ui-font-xs)',
+      sm: 'var(--ui-font-md-sm)',
+      base: 'var(--ui-font-base)',
+      lg: 'var(--ui-font-lg)',
+      xl: 'var(--ui-font-xl)',
+      '2xl': 'var(--ui-font-2xl)',
+    },
+    focusRing: 'var(--ui-focus-ring)',
+  },
   // Color Palette
   colors: {
     // Primary colors (Purple accent system - aligned with CSS variables)
@@ -176,7 +197,7 @@ export const designTokens = {
 } as const;
 
 // Export individual token groups for convenience
-export const { colors, spacing, typography, borderRadius, shadows, transitions, zIndex, breakpoints } = designTokens;
+export const { ui, colors, spacing, typography, borderRadius, shadows, transitions, zIndex, breakpoints } = designTokens;
 
 // Helper function to get color value
 export const getColor = (path: string): string => {

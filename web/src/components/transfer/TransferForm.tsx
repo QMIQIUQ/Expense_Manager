@@ -210,7 +210,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
       submitLabel={t('addTransfer') || 'Add Transfer'}
     >
       {errors.general && (
-        <div className="text-sm text-red-600 p-3 bg-red-50 rounded" style={{ marginBottom: '16px' }}>
+        <div className="text-sm text-red-600 p-3 bg-red-50 rounded" style={{ marginBottom: 'var(--ui-space-16px)' }}>
           {errors.general}
         </div>
       )}
@@ -270,12 +270,12 @@ const TransferForm: React.FC<TransferFormProps> = ({
 
       {/* From Payment Method */}
       <div style={{ 
-        padding: '16px', 
+        padding: 'var(--ui-space-16px)',
         backgroundColor: 'var(--info-light)', 
-        borderRadius: '8px',
+        borderRadius: 'var(--ui-radius-8px)',
         border: '1px solid var(--border-color)'
       }}>
-        <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>
+        <h4 style={{ margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px)', color: 'var(--text-primary)', fontSize: 'var(--ui-font-16px)', fontWeight: 600 }}>
           {t('transferFrom')} ⬆️
         </h4>
 
@@ -300,12 +300,12 @@ const TransferForm: React.FC<TransferFormProps> = ({
 
       {/* To Payment Method */}
       <div style={{ 
-        padding: '16px', 
+        padding: 'var(--ui-space-16px)',
         backgroundColor: 'var(--success-light)', 
-        borderRadius: '8px',
+        borderRadius: 'var(--ui-radius-8px)',
         border: '1px solid var(--border-color)'
       }}>
-        <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>
+        <h4 style={{ margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-12px) var(--ui-space-0px)', color: 'var(--text-primary)', fontSize: 'var(--ui-font-16px)', fontWeight: 600 }}>
           {t('transferTo')} ⬇️
         </h4>
 

@@ -268,7 +268,7 @@ The app works offline and syncs when online!
         <div className="pwa-modal-overlay" onClick={() => setModalOpen(false)}>
           <div className="pwa-modal" onClick={e => e.stopPropagation()}>
             <div className="pwa-modal-content">
-              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{modalContent}</pre>
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--ui-font-14px)' }}>{modalContent}</pre>
             </div>
             <button className="pwa-modal-close" onClick={() => setModalOpen(false)}>
               {t('close') || 'Close'}

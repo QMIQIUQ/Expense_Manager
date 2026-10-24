@@ -201,13 +201,13 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
+              gap: 'var(--ui-space-8px)',
+              padding: 'var(--ui-space-8px) var(--ui-space-12px)',
               backgroundColor: 'var(--accent-light)',
               color: 'var(--accent-primary)',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: 'var(--ui-radius-8px)',
+              fontSize: 'var(--ui-font-14px)',
               fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -329,8 +329,8 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             style={styles.dueBillsHeader}
             onClick={handleToggleDueBills}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-              <span style={{ fontSize: '18px' }}>🔔</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-10px)', cursor: 'pointer' }}>
+              <span style={{ fontSize: 'var(--ui-font-18px)' }}>🔔</span>
               <h3 style={styles.dueBillsTitle}>{t('upcomingDuePayments')}</h3>
               {unviewedBills.length > 0 && (
                 <span style={styles.badge}>{unviewedBills.length}</span>
@@ -346,16 +346,16 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
             <div style={styles.dueBillsList}>
               {dueBills.map((bill) => (
                 <div key={bill.id} style={styles.dueBillCard}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)', flex: 1 }}>
                     {/* Payment Method Icon */}
                     {bill.paymentMethod === 'credit_card' && (
-                      <span style={{ fontSize: '16px' }}>💳</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>💳</span>
                     )}
                     {bill.paymentMethod === 'e_wallet' && (
-                      <span style={{ fontSize: '16px' }}>📱</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>📱</span>
                     )}
                     {(!bill.paymentMethod || bill.paymentMethod === 'cash') && (
-                      <span style={{ fontSize: '16px' }}>💵</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>💵</span>
                     )}
                     
                     {/* Category Badge */}
@@ -375,7 +375,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                   
                   <div style={{ gridColumn: '1 / -1' }}>
                     <div style={styles.dueBillDescription}>{bill.description}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', marginTop: 'var(--ui-space-4px)' }}>
                       {t('dueToday')}
                     </div>
                   </div>
@@ -437,16 +437,16 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
               <>
                 {/* First row: Payment Icon, Category, Status, Amount */}
                 <div style={styles.expenseRow1}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ui-space-8px)' }}>
                     {/* Payment Method Icon */}
                     {expense.paymentMethod === 'credit_card' && (
-                      <span style={{ fontSize: '16px' }}>💳</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>💳</span>
                     )}
                     {expense.paymentMethod === 'e_wallet' && (
-                      <span style={{ fontSize: '16px' }}>📱</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>📱</span>
                     )}
                     {(!expense.paymentMethod || expense.paymentMethod === 'cash') && (
-                      <span style={{ fontSize: '16px' }}>💵</span>
+                      <span style={{ fontSize: 'var(--ui-font-16px)' }}>💵</span>
                     )}
                     {/* Category */}
                     <span 
@@ -475,7 +475,7 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
 
                 {/* Third row: Payment Details, Frequency, and Hamburger */}
                 <div style={styles.expenseRow3}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1 }}>
+                  <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)', flex: 1 }}>
                     {expense.paymentMethod === 'credit_card' && (
                       <span>💳 {cards.find(c => c.id === expense.cardId)?.name || t('creditCard')}</span>
                     )}
@@ -486,12 +486,12 @@ const RecurringExpenseManager: React.FC<RecurringExpenseManagerProps> = ({
                       <span>💵 {t('cash')}</span>
                     )}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: 'var(--ui-font-12px)', color: 'var(--text-secondary)' }}>
                     {({ daily: t('freqDaily'), weekly: t('freqWeekly'), monthly: t('freqMonthly'), yearly: t('freqYearly') } as Record<string,string>)[expense.frequency]}
                   </div>
 
                   {/* Desktop: Show individual buttons */}
-                  <div className="desktop-actions" style={{ gap: '8px' }}>
+                  <div className="desktop-actions" style={{ gap: 'var(--ui-space-8px)' }}>
                     <button
                       onClick={() => onToggleActive(expense.id!, !expense.isActive)}
                       className={`btn-icon ${expense.isActive ? 'btn-icon-warning' : 'btn-icon-success'}`}
@@ -594,7 +594,7 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: 'var(--ui-space-20px)',
   },
   header: {
     display: 'flex',
@@ -602,60 +602,60 @@ const styles = {
     alignItems: 'center',
   },
   title: {
-    margin: 0,
-    fontSize: '24px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-24px)',
     fontWeight: 600 as const,
     color: 'var(--text-primary)',
   },
   searchContainer: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
   },
   searchInput: {
     flex: 1,
-    padding: '10px',
+    padding: 'var(--ui-space-10px)',
     border: '1px solid var(--border-color)',
-    borderRadius: '6px',
-    fontSize: '14px',
+    borderRadius: 'var(--ui-radius-6px)',
+    fontSize: 'var(--ui-font-14px)',
   },
   form: {
     backgroundColor: 'var(--bg-secondary)',
-    padding: '20px',
-    borderRadius: '8px',
+    padding: 'var(--ui-space-20px)',
+    borderRadius: 'var(--ui-radius-8px)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '15px',
+    gap: 'var(--ui-space-15px)',
     maxHeight: '70vh',
     overflowY: 'auto' as const,
   },
   formGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '5px',
+    gap: 'var(--ui-space-5px)',
   },
   formRow: {
     display: 'flex',
-    gap: '15px',
+    gap: 'var(--ui-space-15px)',
   },
   formActions: {
     display: 'flex',
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
   },
   noData: {
     textAlign: 'center' as const,
-    padding: '40px',
+    padding: 'var(--ui-space-40px)',
     color: 'var(--text-secondary)',
   },
   expenseList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
+    gap: 'var(--ui-space-10px)',
   },
   expenseRow1: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   expenseRow2: {
     display: 'flex',
@@ -664,45 +664,45 @@ const styles = {
   expenseRow3: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   description: {
-    margin: 0,
-    fontSize: '15px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-15px)',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
   },
   category: {
-    padding: '5px 10px',
+    padding: 'var(--ui-space-5px) var(--ui-space-10px)',
     background: 'var(--accent-light)',
     color: 'var(--accent-primary)',
-    borderRadius: '16px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-16px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     boxShadow: '0 1px 3px var(--shadow)',
   },
   amount: {
-    fontSize: '18px',
+    fontSize: 'var(--ui-font-18px)',
     fontWeight: '600' as const,
     color: 'var(--error-text)',
     whiteSpace: 'nowrap' as const,
   },
   status: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
   },
   activeStatus: {
     color: 'var(--success-text)',
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
   },
   inactiveStatus: {
     color: 'var(--error-text)',
-    fontSize: '11px',
+    fontSize: 'var(--ui-font-11px)',
     fontWeight: '500' as const,
   },
   actions: {
     display: 'flex',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
   },
   menuContainer: {
     position: 'relative' as const,
@@ -711,10 +711,10 @@ const styles = {
     position: 'absolute' as const,
     right: 0,
     top: '100%',
-    marginTop: '4px',
+    marginTop: 'var(--ui-space-4px)',
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '8px',
+    borderRadius: 'var(--ui-radius-8px)',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     zIndex: 9999,
     minWidth: '160px',
@@ -722,13 +722,13 @@ const styles = {
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     width: '100%',
-    padding: '12px 16px',
+    padding: 'var(--ui-space-12px) var(--ui-space-16px)',
     border: 'none',
     backgroundColor: 'transparent',
     color: 'var(--text-primary)',
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     cursor: 'pointer',
     textAlign: 'left' as const,
   },
@@ -740,9 +740,9 @@ const styles = {
   dueBillsContainer: {
     backgroundColor: 'var(--card-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: '12px',
-    padding: '16px',
-    marginBottom: '20px',
+    borderRadius: 'var(--ui-radius-12px)',
+    padding: 'var(--ui-space-16px)',
+    marginBottom: 'var(--ui-space-20px)',
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
   },
   dueBillsHeader: {
@@ -753,49 +753,49 @@ const styles = {
     userSelect: 'none' as const,
   },
   dueBillsTitle: {
-    margin: 0,
-    fontSize: '16px',
+    margin: 'var(--ui-space-0px)',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '600' as const,
     color: 'var(--text-primary)',
   },
   badge: {
     backgroundColor: 'var(--error-text)',
     color: 'white',
-    borderRadius: '12px',
-    padding: '2px 8px',
-    fontSize: '12px',
+    borderRadius: 'var(--ui-radius-12px)',
+    padding: 'var(--ui-space-2px) var(--ui-space-8px)',
+    fontSize: 'var(--ui-font-12px)',
     fontWeight: '600' as const,
     minWidth: '20px',
     textAlign: 'center' as const,
   },
   dueBillsList: {
-    marginTop: '16px',
+    marginTop: 'var(--ui-space-16px)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: 'var(--ui-space-12px)',
   },
   dueBillCard: {
     backgroundColor: 'var(--bg-secondary)',
-    padding: '14px',
-    borderRadius: '10px',
+    padding: 'var(--ui-space-14px)',
+    borderRadius: 'var(--ui-radius-10px)',
     border: '1px solid var(--error-border)',
     display: 'grid',
     gridTemplateColumns: '1fr auto',
-    gap: '8px',
+    gap: 'var(--ui-space-8px)',
     alignItems: 'center',
   },
   dueBillDescription: {
-    fontSize: '14px',
+    fontSize: 'var(--ui-font-14px)',
     fontWeight: '500' as const,
     color: 'var(--text-primary)',
   },
   dueBillAmount: {
-    fontSize: '16px',
+    fontSize: 'var(--ui-font-16px)',
     fontWeight: '600' as const,
     color: 'var(--error-text)',
   },
   collapseArrow: {
-    fontSize: '12px',
+    fontSize: 'var(--ui-font-12px)',
     color: 'var(--text-secondary)',
     transition: 'transform 0.2s',
   },

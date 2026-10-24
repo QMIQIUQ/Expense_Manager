@@ -1,6 +1,6 @@
 # UI 互動樣式候選與參考
 
-> 本文件供視覺與互動選擇使用；候選是設計方向，不代表已採用或要引入第三方元件庫。比較基準為 `origin/main` app source，2026-10-25。語意與鍵盤行為優先依 WAI-ARIA APG，再用設計系統參考視覺與版面慣例。
+> 本文件供尚未決定的資訊結構與互動選擇使用；候選是設計方向，不代表已採用或要引入第三方元件庫。共用控制高度/字級/radius/spacing 已在 production 採用，這些圖中的 alternative layout/interaction 不代表本輪已實作。比較基準為 `origin/main` app source，2026-10-25。語意與鍵盤行為優先依 WAI-ARIA APG，再用設計系統參考視覺與版面慣例。
 
 ## 1. 比較圖
 

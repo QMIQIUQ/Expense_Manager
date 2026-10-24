@@ -67,8 +67,8 @@ const TransferList: React.FC<TransferListProps> = ({
 
   if (sortedTransfers.length === 0) {
     return (
-      <div className="no-data" style={{ padding: '40px 20px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+      <div className="no-data" style={{ padding: 'var(--ui-space-40px) var(--ui-space-20px)', textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--ui-font-14px)' }}>
           {t('noTransfersYet')}
         </p>
       </div>

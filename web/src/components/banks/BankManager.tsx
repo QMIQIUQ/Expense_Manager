@@ -166,10 +166,10 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
       position: 'absolute' as const,
       right: 0,
       top: '100%',
-      marginTop: '4px',
+      marginTop: 'var(--ui-space-4px)',
       backgroundColor: 'var(--card-bg)',
       border: '1px solid var(--border-color)',
-      borderRadius: '8px',
+      borderRadius: 'var(--ui-radius-8px)',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       zIndex: 9999,
       minWidth: '160px',
@@ -177,13 +177,13 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
     menuItem: {
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
+      gap: 'var(--ui-space-8px)',
       width: '100%',
-      padding: '12px 16px',
+      padding: 'var(--ui-space-12px) var(--ui-space-16px)',
       border: 'none',
       backgroundColor: 'transparent',
       color: 'var(--text-primary)',
-      fontSize: '14px',
+      fontSize: 'var(--ui-font-14px)',
       cursor: 'pointer',
       textAlign: 'left' as const,
     },
@@ -195,8 +195,8 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
 
   return (
     <div className="bank-manager">
-      <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{t('banks')}</h3>
+      <div className="header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--ui-space-16px)', marginBottom: 'var(--ui-space-12px)' }}>
+        <h3 style={{ margin: 'var(--ui-space-0px)', fontSize: 'var(--ui-font-24px)', fontWeight: 600, color: 'var(--text-primary)' }}>{t('banks')}</h3>
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} className="btn btn-accent-light">
             <PlusIcon size={18} />
@@ -210,7 +210,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
           placeholder={t('searchByName')}
           value={searchTerm}
           onChange={setSearchTerm}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 'var(--ui-space-20px)' }}
         />
       </div>
 
@@ -259,7 +259,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
              setDeleteConfirm({ isOpen: true, bankId: null });
           }
         }}
-        style={{ marginBottom: 20 }}
+        style={{ marginBottom: 'var(--ui-space-20px)' }}
       />
 
       <style>{`
@@ -302,7 +302,7 @@ const BankManager: React.FC<BankManagerProps> = ({ banks, expenses, incomes, tra
                     <div className="card-info">
                       <h3 className="card-name">{bank.name}</h3>
                       {(bank.country || bank.code) && (
-                        <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        <p style={{ margin: 'var(--ui-space-0px)', fontSize: 'var(--ui-font-14px)', color: 'var(--text-secondary)' }}>
                           {bank.country || ''} {bank.code ? `• ${bank.code}` : ''}
                         </p>
                       )}
