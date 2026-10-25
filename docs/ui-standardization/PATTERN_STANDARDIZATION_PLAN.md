@@ -1,8 +1,8 @@
 # UI 樣式統一：逐階段檔案與邏輯計畫
 
-> 執行狀態：UI 共用幾何/tokens 已完成；本文件保留逐階段檔案清單、資料邏輯保護與未來 interaction/layout 改版的細節。程式基準：`origin/main@884d3bed2c523c6bd1290abdab25c241d8981e78`（2026-10-25）。本次 UI source 改動只調整 styles/classes/tokens；financial/local-first handlers 和 services 未修改。
+> 狀態：改動前 source audit 基準為 `main@a9a9d7c`；本分支 `codex/ui-standardization-inventory` 已在指定 screens 完成欄位/label/filter/switch 的呈現層標準化並更新文件。改動尚未合併到 main。這是範圍有限的 field consistency pass，不表示所有 production TSX 都已統一；逐頁剩餘差異、資料邏輯保護與未做的 interaction proposal 仍列於下文。
 
-共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐 production TSX 和 CSS 的目前 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
+共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐頁控制類別/例外見 [逐畫面清單](UI_SCREEN_STYLE_CHECKLIST.md)，逐 production TSX 和 CSS 的 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
 
 ## 1. 實作原則與不可變資料契約
 
@@ -20,7 +20,7 @@
 
 **工作步驟**
 
-1. 以 `origin/main@884d3be` 的 mounted route/component tree 作為 source baseline；畫面位置和未掛載 source 區分見元件盤點。
+1. 以 `main@a9a9d7c` 的 mounted route/component tree 作為 source baseline；畫面位置和未掛載 source 區分見元件盤點。
 2. 幾何採用本計畫的 semantic tokens：44px 一般 controls/actions、36px compact icon actions、8px control/12px card/16px dialog radius；primary/secondary/danger 顏色仍依操作語意和 theme。
 3. 不以視覺 token migration 重新設計支出 create/OCR/edit、分類/tag、repayment、導航、確認/同步/離線狀態流程。
 4. 對照 [CRUD 流程盤點](CRUD_FLOW_AUDIT.md)，保留 mounted status；`TransferForm`、legacy `RepaymentManager`/`RecurringExpenseManager` 等 unmounted source 不當作目前畫面。
@@ -63,7 +63,7 @@
 
 **目標檔案：** `common/PopupModal.tsx`、`common/BaseForm.tsx`、`ConfirmModal.tsx`、`FormPopup.tsx` / `Modal.tsx`（先確認是否仍無 production consumer）、必要 overlay CSS；選定候選後再決定是否抽共用 primitives。
 
-**視覺狀態：已完成 token 接入。** `PopupModal` / `ConfirmModal` 保持原有 header/body/footer、最大寬度/高度、內容捲動、遮罩、Escape/外部點擊規則和 action order；幾何值接 shared tokens。資訊結構、手機 safe area、一般 dialog 與 destructive alert dialog 的語意分離、menu/popover/combobox anchor/focus pattern 屬尚未執行的互動/版型改進。若選 Drawer/Sheet，桌機與手機採同一資料狀態，不複製表單 state。
+**視覺狀態：本分支未修改。** `PopupModal` / `ConfirmModal` 保持現有 header/body/footer、最大寬度/高度、內容捲動、遮罩、Escape/外部點擊規則和 action order。資訊結構、手機 safe area、一般 dialog 與 destructive alert dialog 語意分離、menu/popover/combobox anchor/focus pattern 仍是未執行的互動/版型改進。若選 Drawer/Sheet，桌機與手機採同一資料狀態，不複製表單 state。
 
 **目前程式邊界：**`PopupModal` 支援 Portal、Escape/遮罩關閉及 body scroll lock，但沒有 `role="dialog"`、`aria-modal`、初始焦點/focus trap/焦點返回。`ConfirmModal` 沒有 alertdialog semantics；確認會先以 `onCancel` 關閉，再以 `setTimeout(..., 0)` 呼叫 `onConfirm`，不等待 mutation 結果，也無 modal 內 loading/error。這些缺口需作為候選改進實作，不能在現況盤點或 Current 圖示中當作已存在。
 
@@ -77,7 +77,7 @@
 
 ### 支出、收據 OCR、編輯、分攤
 
-**token 接入：已完成。** 上述已存在 UI 的靜態字級、圓角、padding、margin、gap 已改用 shared tokens；頁面結構、資料驅動尺寸和步驟/編輯互動保留。若未來改分類選擇、tag 密度或三個編輯 tabs，需先依互動候選另行決定。
+**本分支 token 接入：指定控制已完成。** `StepByStepExpenseForm`、`ExpenseList`、`ExpenseFiltersBar`、`ExpenseSavedViews`、`ExpenseTagPicker`、`ExpenseSplitEditor`、`ExpenseTagManager`、`IncomeForm`、`CategoryForm` 和 `DatePicker` 的欄位、labels/errors、filter 或主要 amount 使用 named variants。頁面結構、資料驅動尺寸、step/OCR/edit/split/category/tag 互動保留；TimePicker/Autocomplete 的內層欄位以專用複合樣式保留。
 
 **目標檔案：** `expenses/StepByStepExpenseForm.tsx`、`ExpenseList.tsx`、`DateNavigator.tsx`、`ExpenseFiltersBar.tsx`、`ExpenseTagPicker.tsx`、`ExpenseSplitEditor.tsx`、`ExpenseSplitSummary.tsx`、`ReceiptAttachmentPanel.tsx`、`styles/ledger.css`。
 
@@ -87,7 +87,7 @@
 
 ### 收入與預算
 
-**token 接入：已完成。** 上述已存在 UI 的靜態幾何值改接 shared tokens；欄位/摘要資訊結構與收入連動預算的資料流程保留。
+**本分支 token 接入：指定控制已完成。** `IncomeForm`、`BudgetForm`、`BudgetManager`、`BudgetTemplates` 和 `IncomeBudgetSettingsModal` 的 fields、filters、labels、errors、amount entries 和 switch track 已接入 shared variants。欄位/摘要資訊結構與收入連動預算資料流程保留。
 
 **目標檔案：** `income/IncomeForm.tsx` / `IncomeList.tsx`；`budgets/BudgetForm.tsx`、`BudgetManager.tsx`、`IncomeBudgetSettingsModal.tsx`、收入 budget summary hooks；與其調用的 service/cache hook 只在樣式改動需要時檢查，不任意更換邏輯。
 
@@ -99,7 +99,7 @@
 
 **目標檔案：** `payment/PaymentMethodsTab.tsx` 及卡片/銀行/錢包表單和列表、`TransferList.tsx`、`scheduledPayments/ScheduledPaymentManager.tsx`、`ScheduledPaymentCard.tsx`、`PaymentRecordForm.tsx`、`PaymentHistoryList.tsx`、expense `RepaymentForm.tsx`、`ExpenseList.tsx`，以及已掛載 `dashboard/widgets/*`。
 
-**token 接入：已完成。** Payment methods、排程付款、還款、清單及 widgets 的靜態幾何值改接 shared tokens。資訊密度、filter/selection、empty/loading/error 與 inline expand 結構依原畫面保留；若重排這些版型，先做獨立 interaction proposal。
+**本分支 token 接入：指定控制已完成。** `PaymentMethodSelector`、`BankForm`、`CardForm`、`EWalletForm`、`AccountReconciliationManager`、`ScheduledPaymentManager`、`ScheduledPaymentForm`、`PaymentRecordForm`，以及 `ExpenseList` 的 tag/saved-view/split/filter 欄位中指定 fields/labels/filters/actions 已接入 variants；其他 payment/repayment forms、lists 和 widgets 未在本輪逐一修改。資訊密度、selection、empty/loading/error 與 inline expand 結構依原畫面保留。
 
 **工作步驟：**未來如需重新整理 payment account summary/card/row/chip/actions，先重用現有 semantic tokens；確認清單 filter、selection、多選 toolbar、empty/loading/error、inline expand；圖表資料格式和視覺分開變更。
 
@@ -111,7 +111,7 @@
 
 **目標檔案：** `pages/Dashboard.tsx`、`components/navigation/CompactNavigation.tsx`、`DashboardMenuSection.tsx`、`FloatingExpenseActions.tsx`、`navigationConfig.ts`、`HeaderStatusBar.tsx` / `.css`、`NetworkStatusIndicator.tsx`、`NotificationBell.tsx`、`common/SubTabs.tsx`、Profile、Admin、FeatureManager、Dashboard customizer。
 
-**token 接入：已完成。** Navigation、Dashboard、Profile/Admin、通知及偏好畫面的靜態字級、radius 和 spacing 使用 shared tokens；依功能而異的資訊佈局和控制語意保留。
+**本分支 token 接入：指定控制已完成。** `Login`、`AdminTab`、`UserProfile`、`FeatureManager`、`DashboardCustomizer`、`QuickAddWidget` 和 `FriendSpendingWidget` 的指定 fields/labels/compact control 已更新；`Register.tsx` 亦已對齊，但目前未由 `App.tsx` 掛載。未改 navigation layout、通知入口或其他功能控制。
 
 **需保留邏輯：**`tabFeatures` / `hamburgerFeatures` 排序和可見性、舊 `enabledFeatures` fallback、Profile/Admin 權限、`activeTab`、mobile active item scroll、Dashboard widget order/layout、sync events 和受影響集合局部刷新。Network status、queue status、notification、import/delete progress 是不同來源，外觀一致不代表合併資料流。管理/權限、auth 和 server-only 操作不能改成離線成功假象。
 
@@ -119,16 +119,18 @@
 
 ## 9. Phase 7：CSS 清理、全面回歸與完成定義
 
-1. 本輪已完成靜態幾何 token 接入；舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
-2. 對照 CRUD audit 的每個可達流程、空/載入/validation/pending/success/needs-attention 逐一視覺與互動檢查。
-3. 在 320/390/768/1280px、全部主題、zh-TW/en、鍵盤和 screen reader semantics 下檢查 overflow、focus trap/return、labels/errors、touch target。
-4. 按改動範圍選擇元件測試/互動測試、延遲遠端、offline/reload、拒絕/rollback 和 replay-order 驗證。若觸及任何本機優先或金融行為，遵循 `docs/OFFLINE_SYNC_ARCHITECTURE.md` 並執行相應行為驗收；不能只靠靜態截圖。
-5. 更新 `docs/UI_STYLE_GUIDE.md`、UI inventory、此計畫、CRUD audit、`FEATURES_AND_PAGES.md` 和 `docs/README.md`；移除已不符的舊數值/現況；保留未選定候選及實作決策記錄。
-6. 本輪已執行 `git diff --check`、consumer/token 定義搜尋、變更範圍檢查、TypeScript check 和 production build；未執行 unit/component、Firebase Emulator、跨視窗/語系的 browser regression。後續完成互動改版時仍須做相應畫面與行為 review，任何未驗證項目需在驗收報告標明。
+1. 本分支已完成所列 fields/labels/filters/actions 的 named variant 接入；AST source scan 有 151 個一般欄位，其中 134 使用 named variants，剩下 17 個只在未掛載舊表單。舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
+2. 使用 [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md) 對照 Login、Dashboard/widgets、Expenses、Incomes、Categories、Budgets、Payment Methods、Scheduled Payments、Settings、Profile/Admin 和全域浮層；目前是 JSX/CSS source review，不等於每個狀態的 authenticated browser QA。
+3. 對照 CRUD audit 的每個可達流程、空/載入/validation/pending/success/needs-attention 逐一視覺與互動檢查。
+4. 在 320/390/768/1280px、全部主題、zh-TW/en、鍵盤和 screen reader semantics 下檢查 overflow、focus trap/return、labels/errors、touch target。
+5. 按改動範圍選擇元件測試/互動測試、延遲遠端、offline/reload、拒絕/rollback 和 replay-order 驗證。若觸及任何本機優先或金融行為，遵循 `docs/OFFLINE_SYNC_ARCHITECTURE.md` 並執行相應行為驗收；不能只靠靜態截圖。
+6. 更新 `docs/UI_STYLE_GUIDE.md`、逐畫面清單、UI inventory、覆蓋矩陣、視覺規格、此計畫和 `docs/README.md`；與本輪無關的資料流程文件不需重寫。
+7. 本輪只修改呈現層和文件，未碰本機優先/金融行為。`npm run build`、Markdown local-link scan 和 `git diff --check` 通過；未執行 unit/component、Firebase Emulator、跨視窗/語系或 authenticated browser computed-style regression。任何未驗證項目需在驗收報告標明。
 
 ## 10. 文件與流程關聯
 
 - [元件盤點與已採用規格](UI_COMPONENT_INVENTORY_AND_PLAN.md)：現況、數量、掛載狀態、已採用 token 和保留的 UX/F17 候選。
+- [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)：每個可達畫面的控制類別、shared variants、語意例外和尚待 browser QA 的範圍。
 - [CRUD 流程盤點](CRUD_FLOW_AUDIT.md)：各項功能入口至新增/檢視/編輯/刪除及 overlay。
 - [互動候選](INTERACTION_PATTERN_CANDIDATES.md)：欄位、tabs、modal/drawer、同步回饋及外部參考。
 - [離線同步架構](../OFFLINE_SYNC_ARCHITECTURE.md)：IndexedDB outbox、交易和重播契約。

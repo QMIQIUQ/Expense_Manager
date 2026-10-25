@@ -1,20 +1,30 @@
 # UI 視覺統一規格
 
-> 狀態：已實作。共用控制外觀、文字層級、圓角、spacing 與 focus tokens 已接入 app；預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。盤點基準為 origin/main 884d3be（2026-10-25）。
+> 狀態：分支 `codex/ui-standardization-inventory` 已在指定 screens 實作欄位、labels、filters、errors、switch 和 compact actions 的共享 variants；分支尚未合併到 main。main source audit 基準仍為 `main@a9a9d7c`（2026-10-25）。逐畫面 source 檢查見 [UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)；authenticated browser computed styles 尚未完成。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。
 
 ## 預覽
 
 ![已實作規格的欄位、按鈕、checkbox、卡片與 dialog，在預設亮色、預設暗色和 Warm Kitty 亮色的向量示意](previews/unified-ui-system.svg)
 
-預覽顯示實作採用的幾何規則與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖。所有 production TSX/CSS 的逐檔覆蓋數字見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
+![Standard、Compact 和 Prominent 欄位尺寸的向量示意](previews/field-variants.svg)
+
+預覽顯示共用規格的幾何與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖，也不代表所有 local overrides 已在每個畫面清除。逐檔 main 基線數字和分支實作範圍見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
 
 ## 共用規格
 
 | 元件/屬性 | 已採用規格 | 執行來源 |
 |---|---|---|
-| 一般欄位 | input/select 44px 最小高度、共用 control padding、8px radius、14px action/body token、theme surface/border/focus | web/src/styles/ui-system.css |
+| 一般欄位 | `.ui-control--standard`: 44px min-height, 14px text, 8×12px padding, 1px border, 8px radius | web/src/styles/ui-system.css |
+| Compact 欄位 | `.ui-control--compact`: 44px target, 14px text, 4×8px padding, 1px border, 8px radius | web/src/styles/ui-system.css |
+| Prominent 欄位 | `.ui-control--prominent`: 52px target, 16px text, 12×16px padding, 2px border | web/src/styles/ui-system.css |
+| DatePicker | `.ui-control--date`: 44px target and standard type; 44px trailing space reserved for calendar button | web/src/styles/ui-system.css |
+| Composite inner field | `.ui-control--embedded` removes the second border/background; the parent composite owns focus feedback | ui-system.css, AutocompleteDropdown.tsx, QuickAddWidget.tsx |
+| Inline prefix field | `.ui-control--leading-prefix` reserves a 4px left inset when a currency prefix sits outside the input | ui-system.css, QuickAddWidget.tsx |
+| TimePicker segments | `.ui-control--time-segment`: 28px borderless hour/minute segments; the enclosing 44px control displays the focus ring | ui-system.css, TimePicker.tsx |
+| Trailing action field | `.ui-control--trailing-action` reserves 40px on the right for an overlaid action such as password visibility | web/src/styles/ui-system.css |
 | 多行文字 | 共用字級、色彩、border/radius/focus；最低高度為兩倍 control height，可繼續垂直伸展 | ui-system.css |
-| Checkbox / radio | 保留原生 input type/value/keyboard；18px、accent 使用目前主題色 | ui-system.css |
+| Checkbox / radio | 可見 controls 保留原生 input type/value/keyboard；18px、accent 使用目前主題色。隱藏 switch checkbox 維持 sr-only 幾何，track 以目前主題色顯示 | ui-system.css |
+| Labels / field errors | Primary label 14px；secondary/tertiary label and field error 12px；由各欄位維持 `htmlFor`/`id`、`aria-invalid`、`aria-describedby` 關聯 | ui-system.css、相關表單元件 |
 | 一般按鈕 | 44px 最小互動高度、8px radius、共用 action 字級；primary/secondary/danger/success/warning 語意和既有色彩變體保留 | ui-system.css、index.css |
 | Icon 按鈕 | 一般 icon action 至少 36px，close/menu 語意保留；pill/chip 使用全圓角 | ui-system.css |
 | 一般卡片 / widget | 12px radius；既有內容、欄位與資料密度不重排 | ui-system.css |
@@ -23,7 +33,8 @@
 | 字級 | semantic rem type ramp；舊固定字級以 rem aliases 相容並跟隨 ThemeContext root scale | ui-system.css、designTokens.ts |
 | 間距 | 新 UI 用 4px 主刻度及 2px 半刻度；已存在的固定值以 exact aliases 保存頁面版面 | ui-system.css、designTokens.ts |
 | 色彩 | accent/text/surface/border/status 由現有 theme variables 決定 | index.css、cat-theme.css、tailwind.config.cjs |
-| Focus | visible 2px accent outline 及 3px ring；尊重 reduced-motion | ui-system.css |
+| Focus | field-visible focus uses the theme accent border and 3px ring; the embedded TimePicker segments delegate focus feedback to their parent | ui-system.css |
+| Compact actions | `.ui-action--compact`: 44px target, 14px type, 8×12px padding, 8px radius | ui-system.css |
 
 ## 視覺來源與主題
 
@@ -47,7 +58,7 @@
 
 - npm run build：TypeScript、Vite client build、PWA service worker build 通過；輸出只有 Browserslist / baseline-browser-mapping 資料過期提示。
 - npx tsc --noEmit：通過。
-- UI token 定義/引用檢查、SVG XML、Markdown 連結和 git diff --check：提交前檢查。
-- 未執行 unit/component、Firebase Emulator 或 browser regression suite；此次改動是呈現層，沒有變更 app data mutation/read paths。
+- git diff --check：通過。
+- 未執行 unit/component、Firebase Emulator 或 browser computed-style regression；此次改動是呈現層，沒有變更 app data mutation/read paths。
 
 **後續 UI 開發必須依照** [UI Style Guide](../UI_STYLE_GUIDE.md)，逐檔覆蓋與目前差異見 [UI 元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md)、[UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)、[逐階段計畫](PATTERN_STANDARDIZATION_PLAN.md)。

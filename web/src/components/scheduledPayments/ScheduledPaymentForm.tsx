@@ -161,7 +161,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
       <div className="flex flex-col gap-4">
         {/* Payment Type Selection */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('paymentType')} *
           </label>
           <div className="flex gap-2">
@@ -218,7 +218,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
 
         {/* Name */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('name')} *
           </label>
           <input
@@ -227,7 +227,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder={t('scheduledPaymentNamePlaceholder')}
             required
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            className="ui-control--standard ui-control--full-width"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -257,7 +257,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
         {formData.type !== 'subscription' && (
           <>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              <label className="ui-form-label">
                 {t('totalAmount')} ({getCurrencySymbol(formData.currency)}) *
               </label>
               <input
@@ -272,7 +272,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 }}
                 onFocus={(e) => e.target.select()}
                 required
-                className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                className="ui-control--standard ui-control--full-width"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
@@ -283,7 +283,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                <label className="ui-form-label">
                   {t('totalInstallments')} *
                 </label>
                 <input
@@ -298,7 +298,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                   min="1"
                   max="360"
                   required
-                  className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  className="ui-control--standard ui-control--full-width"
                   style={{
                     backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-primary)',
@@ -308,7 +308,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                <label className="ui-form-label">
                   {t('interestRate')} (%)
                 </label>
                 <input
@@ -323,7 +323,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                   min="0"
                   max="100"
                   step="0.1"
-                  className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  className="ui-control--standard ui-control--full-width"
                   style={{
                     backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-primary)',
@@ -339,9 +339,8 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 id="calculateFromTotal"
                 checked={calculateFromTotal}
                 onChange={(e) => setCalculateFromTotal(e.target.checked)}
-                className="w-4 h-4"
               />
-              <label htmlFor="calculateFromTotal" className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="calculateFromTotal" className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('autoCalculateMonthly')}
               </label>
             </div>
@@ -363,7 +362,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
 
         {/* Amount per period (always shown but can be auto-calculated) */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {formData.frequency === 'monthly' ? t('monthlyAmount') : t('yearlyAmount')} ({getCurrencySymbol(formData.currency)}) *
           </label>
           <input
@@ -382,7 +381,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             onFocus={(e) => e.target.select()}
             required
             disabled={calculateFromTotal && formData.type !== 'subscription'}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+            className="ui-control--standard ui-control--full-width"
             style={{
               backgroundColor: calculateFromTotal && formData.type !== 'subscription' ? 'var(--bg-secondary)' : 'var(--input-bg)',
               color: 'var(--text-primary)',
@@ -394,13 +393,13 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
         {/* Frequency and Due Day */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('frequency')} *
             </label>
             <select
               value={formData.frequency}
               onChange={(e) => setFormData({ ...formData, frequency: e.target.value as ScheduledPaymentFrequency })}
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -413,7 +412,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label className="ui-form-label">
               {t('dueDay')} *
             </label>
             <input
@@ -428,7 +427,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               min="1"
               max="31"
               required
-              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-primary)',
@@ -445,7 +444,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           onChange={(value) => setFormData({ ...formData, startDate: value })}
           required
           dateFormat={dateFormat}
-          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+          className="ui-control--standard ui-control--full-width"
           style={{
             backgroundColor: 'var(--input-bg)',
             color: 'var(--text-primary)',
@@ -486,9 +485,8 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 id="hasEndDate"
                 checked={formData.hasEndDate}
                 onChange={(e) => setFormData({ ...formData, hasEndDate: e.target.checked })}
-                className="w-4 h-4"
               />
-              <label htmlFor="hasEndDate" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              <label htmlFor="hasEndDate" className="ui-form-label">
                 {t('hasEndDate')}
               </label>
             </div>
@@ -498,7 +496,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 value={formData.endDate}
                 onChange={(value) => setFormData({ ...formData, endDate: value })}
                 dateFormat={dateFormat}
-                className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                className="ui-control--standard ui-control--full-width"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
@@ -523,16 +521,15 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               id="enableReminders"
               checked={formData.enableReminders}
               onChange={(e) => setFormData({ ...formData, enableReminders: e.target.checked })}
-              className="w-4 h-4"
             />
-            <label htmlFor="enableReminders" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label htmlFor="enableReminders" className="ui-form-label">
               🔔 {t('enableReminders')}
             </label>
           </div>
           
           {formData.enableReminders && (
             <div className="flex items-center gap-2 ml-6">
-              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('reminderDaysBefore')}:
               </label>
               <input
@@ -546,7 +543,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 }}
                 min="1"
                 max="30"
-                className="w-16 p-2 rounded-lg border text-center"
+                className="w-16 ui-control--compact"
                 style={{
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-primary)',
@@ -565,10 +562,9 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             id="autoGenerateExpense"
             checked={formData.autoGenerateExpense}
             onChange={(e) => setFormData({ ...formData, autoGenerateExpense: e.target.checked })}
-            className="w-4 h-4"
           />
           <div className="flex flex-col">
-            <label htmlFor="autoGenerateExpense" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label htmlFor="autoGenerateExpense" className="ui-form-label">
               📝 {t('autoGenerateExpense')}
             </label>
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -585,16 +581,15 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               id="isShared"
               checked={formData.isShared}
               onChange={(e) => setFormData({ ...formData, isShared: e.target.checked, splitParticipants: e.target.checked ? formData.splitParticipants : [] })}
-              className="w-4 h-4"
             />
-            <label htmlFor="isShared" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            <label htmlFor="isShared" className="ui-form-label">
               👥 {t('sharedPayment')}
             </label>
           </div>
           
           {formData.isShared && (
             <div className="flex flex-col gap-2 ml-6 mt-2">
-              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('splitWith')}:
               </label>
               
@@ -609,7 +604,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                       setFormData({ ...formData, splitParticipants: updated });
                     }}
                     placeholder={t('personName')}
-                    className="flex-1 p-2 rounded-lg border"
+                    className="flex-1 ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -634,7 +629,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                     placeholder={t('shareAmount')}
                     min="0"
                     step="0.01"
-                    className="w-24 p-2 rounded-lg border text-right"
+                    className="w-24 ui-control--compact"
                     style={{
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-primary)',
@@ -699,7 +694,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
 
         {/* Description (Optional) */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label className="ui-form-label">
             {t('description')} ({t('optional')})
           </label>
           <textarea
@@ -707,7 +702,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder={t('descriptionPlaceholder')}
             rows={2}
-            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none ui-control--standard"
             style={{
               backgroundColor: 'var(--input-bg)',
               color: 'var(--text-primary)',

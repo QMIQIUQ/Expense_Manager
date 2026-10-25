@@ -71,28 +71,29 @@ const ExpenseFiltersBar: React.FC<ExpenseFiltersBarProps> = ({ value, onChange, 
       {expanded && (
         <div className="expense-filter-expanded">
         <div className="expense-filter-controls">
-          <select value={value.tagId ?? ''} onChange={(event) => update('tagId', event.target.value)} aria-label={t('ledgerAllTags')}>
+          <select className="ui-control--compact" value={value.tagId ?? ''} onChange={(event) => update('tagId', event.target.value)} aria-label={t('ledgerAllTags')}>
             <option value="">{t('ledgerAllTags')}</option>
             {tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}{tag.archived ? ` (${t('ledgerArchived')})` : ''}</option>)}
           </select>
-          <select value={value.accountKey ?? ''} onChange={(event) => update('accountKey', event.target.value)} aria-label={t('ledgerAllAccounts')}>
+          <select className="ui-control--compact" value={value.accountKey ?? ''} onChange={(event) => update('accountKey', event.target.value)} aria-label={t('ledgerAllAccounts')}>
             <option value="">{t('ledgerAllAccounts')}</option>
             {banks.map((bank) => <option key={`bank:${bank.id}`} value={`bank:${bank.id}`}>{bank.name}</option>)}
             {cards.map((card) => <option key={`credit_card:${card.id}`} value={`credit_card:${card.id}`}>{card.name}</option>)}
             {ewallets.map((wallet) => <option key={`e_wallet:${wallet.id}`} value={`e_wallet:${wallet.name}`}>{wallet.name}</option>)}
           </select>
-          <select value={value.category} onChange={(event) => update('category', event.target.value)} aria-label={t('allCategories')}>
+          <select className="ui-control--compact" value={value.category} onChange={(event) => update('category', event.target.value)} aria-label={t('allCategories')}>
             <option value="">{t('allCategories')}</option>
             {categoryNames.map((category) => <option key={category} value={category}>{category}</option>)}
           </select>
           <select
             value={value.paymentMethod}
+            className="ui-control--compact"
             onChange={(event) => update('paymentMethod', event.target.value as ExpensePaymentFilter)}
             aria-label={t('paymentMethod')}
           >
             {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{paymentLabel(method)}</option>)}
           </select>
-          <select value={value.sort} onChange={(event) => update('sort', event.target.value as ExpenseSort)} aria-label={t('sortBy')}>
+          <select className="ui-control--compact" value={value.sort} onChange={(event) => update('sort', event.target.value as ExpenseSort)} aria-label={t('sortBy')}>
             {SORT_OPTIONS.map((sort) => <option key={sort} value={sort}>{sortLabel(sort)}</option>)}
           </select>
         </div>

@@ -112,9 +112,10 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('eWalletNameLabel')} *</label>
+          <label htmlFor="ewallet-name" className="ui-form-label ui-form-label--field">{t('eWalletNameLabel')} *</label>
           <input
             type="text"
+            id="ewallet-name"
             name="name"
             value={formData.name}
             onChange={handleChange}
@@ -122,7 +123,9 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             placeholder={t('eWalletNamePlaceholder2')}
             className={`px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ${
               errors.name ? 'border-red-500' : ''
-            }`}
+            } ui-control--standard`}
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'ewallet-name-error' : undefined}
             style={{
               borderColor: errors.name ? undefined : 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -130,21 +133,22 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             }}
             disabled={isSubmitting}
           />
-          {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+          {errors.name && <span id="ewallet-name-error" className="ui-field-error">{errors.name}</span>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          <label htmlFor="ewallet-provider" className="ui-form-label ui-form-label--field">
             {t('provider')} ({t('optional')})
           </label>
           <input
             type="text"
+            id="ewallet-provider"
             name="provider"
             value={formData.provider}
             onChange={handleChange}
             onFocus={(e) => e.target.select()}
             placeholder={t('providerPlaceholder')}
-            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ui-control--standard"
             style={{
               borderColor: 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -162,17 +166,18 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
       />
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <label htmlFor="ewallet-account-number" className="ui-form-label ui-form-label--field">
           {t('accountNumber')} ({t('optional')})
         </label>
         <input
           type="text"
+          id="ewallet-account-number"
           name="accountNumber"
           value={formData.accountNumber}
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder={t('accountNumberPlaceholder')}
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ui-control--standard"
           style={{
             borderColor: 'var(--border-color)',
             backgroundColor: 'var(--input-bg)',
@@ -185,18 +190,19 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <label htmlFor="ewallet-initial-balance" className="ui-form-label ui-form-label--field">
           {t('initialBalance')} ({t('optional')})
         </label>
         <input
           type="number"
+          id="ewallet-initial-balance"
           name="balance"
           value={formData.balance}
           onChange={handleChange}
           onFocus={(e) => e.target.select()}
           placeholder="0.00"
           step="0.01"
-          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ui-control--standard"
           style={{
             borderColor: 'var(--border-color)',
             backgroundColor: 'var(--input-bg)',
@@ -208,7 +214,7 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('categoryIcon')} *</label>
+        <label className="ui-form-label ui-form-label--field">{t('categoryIcon')} *</label>
         <div 
           className="flex flex-wrap gap-2 border rounded-lg p-3 max-h-48 overflow-y-auto"
           style={{ borderColor: 'var(--border-color)' }}
@@ -233,11 +239,11 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             </button>
           ))}
         </div>
-        {errors.icon && <span className="text-xs text-red-600">{errors.icon}</span>}
+        {errors.icon && <span className="ui-field-error">{errors.icon}</span>}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('categoryColor')} *</label>
+        <label className="ui-form-label ui-form-label--field">{t('categoryColor')} *</label>
         <div 
           className="flex flex-wrap gap-2 border rounded-lg p-3"
           style={{ borderColor: 'var(--border-color)' }}
@@ -274,13 +280,15 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
           />
           <input
             type="text"
+            aria-invalid={!!errors.color}
+            aria-describedby={errors.color ? 'ewallet-color-error' : undefined}
             value={formData.color}
             onChange={(e) => {
               setFormData((prev) => ({ ...prev, color: e.target.value }));
               if (errors.color) setErrors((prev) => ({ ...prev, color: '' }));
             }}
             placeholder="#000000"
-            className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary ui-control--standard"
             style={{
               borderColor: 'var(--border-color)',
               backgroundColor: 'var(--input-bg)',
@@ -289,11 +297,11 @@ const EWalletForm: React.FC<EWalletFormProps> = ({ onSubmit, onCancel, initialDa
             disabled={isSubmitting}
           />
         </div>
-        {errors.color && <span className="text-xs text-red-600">{errors.color}</span>}
+        {errors.color && <span id="ewallet-color-error" className="ui-field-error">{errors.color}</span>}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('preview')}</label>
+        <label className="ui-form-label ui-form-label--field">{t('preview')}</label>
         <div 
           className="flex gap-3 border rounded-lg p-3 items-center"
           style={{

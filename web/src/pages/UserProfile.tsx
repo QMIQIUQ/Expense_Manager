@@ -326,7 +326,7 @@ const UserProfile: React.FC = () => {
               <p className="setting-description">{t('billingCycleDescription')}</p>
               <div className="billing-input-row">
                 <div className="billing-input-group">
-                  <label className="billing-label">{t('monthlyResetDay')}</label>
+                  <label className="billing-label ui-form-label">{t('monthlyResetDay')}</label>
                   <div className="billing-input-wrapper">
                     <input
                       type="number"
@@ -339,7 +339,7 @@ const UserProfile: React.FC = () => {
                           setBillingCycleDay(1);
                         }
                       }}
-                      className="billing-input"
+                      className="billing-input ui-control--compact"
                       disabled={saving}
                     />
                     <span className="billing-suffix">{t('dayOfMonth') || 'of each month'}</span>

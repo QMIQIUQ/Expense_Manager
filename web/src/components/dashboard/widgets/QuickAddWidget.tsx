@@ -394,20 +394,20 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
     <div className="quick-expense-inline-form" onKeyDown={handleKeyDown}>
       {/* Row 1: Name */}
       <div className="inline-form-field">
-        <label className="inline-form-label">{t('presetName')}</label>
+        <label className="inline-form-label ui-form-label">{t('presetName')}</label>
         <input
           ref={nameInputRef}
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder={t('quickExpenseNamePlaceholder')}
-          className="inline-input"
+          className="inline-input ui-control--compact ui-control--full-width"
         />
       </div>
 
       {/* Row 2: Amount */}
       <div className="inline-form-field">
-        <label className="inline-form-label">{t('amount')}</label>
+        <label className="inline-form-label ui-form-label">{t('amount')}</label>
         <div className="inline-amount-wrapper">
           <span className="currency-symbol">{getCurrencySymbol(formData.currency)}</span>
           <input
@@ -415,7 +415,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
             value={formData.amount || ''}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : roundMoney(parseFloat(e.target.value), formData.currency) })}
             placeholder={formatMoney(0, formData.currency)}
-            className="inline-input inline-input-amount"
+            className="inline-input inline-input-amount ui-control--embedded ui-control--leading-prefix"
             step={currencyDigits === 0 ? '1' : '0.01'}
             min="0"
           />
@@ -435,7 +435,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
       {/* Row 3: Category + Payment Method (2 columns on desktop) */}
       <div className="inline-form-grid">
         <div className="inline-form-field">
-          <label className="inline-form-label">{t('category')}</label>
+          <label className="inline-form-label ui-form-label">{t('category')}</label>
           <select
             value={formData.categoryId}
             onChange={(e) => {
@@ -447,7 +447,7 @@ const QuickAddWidget: React.FC<WidgetProps> = ({
                 icon: cat?.icon || formData.icon || '💰'
               });
             }}
-            className="inline-select"
+            className="inline-select ui-control--compact ui-control--full-width"
           >
             <option value="">{t('selectCategory')}</option>
             {sortCategories(categories).map((cat) => (

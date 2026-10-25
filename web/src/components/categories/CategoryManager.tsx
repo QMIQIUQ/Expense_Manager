@@ -354,7 +354,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       type="checkbox"
                       checked={selectedIds.has(category.id!)}
                       onChange={() => toggleSelection(category.id!)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      style={{ cursor: 'pointer' }}
                     />
                   </div>
                 )}
@@ -535,7 +535,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             </div>
             
             <div style={styles.radioGroup}>
-              <label style={styles.radioLabel}>
+              <label className="ui-form-label" style={styles.radioLabel}>
                 <input
                   type="radio"
                   name="deleteAction"
@@ -551,7 +551,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 <select
                   value={reassignToCategoryId}
                   onChange={(e) => setReassignToCategoryId(e.target.value)}
-                  style={styles.reassignSelect}
+                          className="ui-control--standard"
+                          style={{ marginLeft: 'var(--ui-space-28px)', width: 'calc(100% - 28px)' }}
                 >
                   <option value="">{t('selectCategory') || 'Select a category...'}</option>
                   {sortedCategories
@@ -564,7 +565,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 </select>
               )}
               
-              <label style={styles.radioLabel}>
+              <label className="ui-form-label" style={styles.radioLabel}>
                 <input
                   type="radio"
                   name="deleteAction"
@@ -948,16 +949,6 @@ const styles = {
   },
   radio: {
     cursor: 'pointer',
-  },
-  reassignSelect: {
-    marginLeft: 'var(--ui-space-28px)',
-    padding: 'var(--ui-space-8px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--ui-radius-4px)',
-    fontSize: 'var(--ui-font-14px)',
-    width: 'calc(100% - 28px)',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
   },
   modalMessage: {
     marginBottom: 'var(--ui-space-24px)',

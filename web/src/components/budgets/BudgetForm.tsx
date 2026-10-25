@@ -171,7 +171,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
+            <label className="ui-form-label">{t('amount')} ({getCurrencySymbol(formData.currency)}) *</label>
             <input
               type="text"
               inputMode="numeric"
@@ -186,7 +186,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               onFocus={(e) => e.target.select()}
               placeholder={currencyDigits === 0 ? '0' : '0.00'}
               required
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              className="ui-control--prominent ui-control--full-width"
               style={{
                 borderColor: 'var(--border-color)',
                 backgroundColor: 'var(--input-bg)',
@@ -241,7 +241,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('budgetPeriod')} *</label>
+            <label className="ui-form-label">{t('budgetPeriod')} *</label>
             <select
               value={formData.period}
               onChange={(e) =>
@@ -250,7 +250,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                   period: e.target.value as 'monthly' | 'weekly' | 'yearly',
                 })
               }
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 borderColor: 'var(--border-color)',
                 backgroundColor: 'var(--input-bg)',
@@ -276,7 +276,6 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               onChange={(value) => setFormData({ ...formData, startDate: value })}
               required
               dateFormat={dateFormat}
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
               style={{
                 borderColor: 'var(--border-color)',
                 backgroundColor: 'var(--input-bg)',
@@ -286,7 +285,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('alertAt')} *</label>
+            <label className="ui-form-label">{t('alertAt')} *</label>
             <input
               type="number"
               value={formData.alertThreshold || ''}
@@ -302,7 +301,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               min="1"
               max="100"
               required
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              className="ui-control--standard ui-control--full-width"
               style={{
                 borderColor: 'var(--border-color)',
                 backgroundColor: 'var(--input-bg)',
@@ -323,7 +322,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              <label className="ui-form-label">
                 🔄 {t('rolloverBudget') || 'Rollover Budget'}
               </label>
               <span 
@@ -349,9 +348,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                     rolloverCap: e.target.checked ? formData.rolloverCap : undefined,
                   });
                 }}
-                className="sr-only peer"
+                className="sr-only ui-switch-input"
               />
-              <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+              <span className="ui-switch-track" aria-hidden="true" />
             </label>
           </div>
           
@@ -362,13 +361,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           {showRolloverSettings && (
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                <label className="ui-form-label ui-form-label--secondary">
                   {t('rolloverPercentage') || 'Rollover %'}
                 </label>
                 <select
                   value={formData.rolloverPercentage || 100}
                   onChange={(e) => setFormData({ ...formData, rolloverPercentage: parseInt(e.target.value) })}
-                  className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="ui-control--compact ui-control--full-width"
                   style={{
                     borderColor: 'var(--border-color)',
                     backgroundColor: 'var(--input-bg)',
@@ -383,7 +382,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                <label className="ui-form-label ui-form-label--secondary">
                   {t('rolloverCap') || 'Max Rollover'} ({getCurrencySymbol(formData.currency)})
                 </label>
                 <input
@@ -396,7 +395,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                   placeholder={t('noLimit') || 'No limit'}
                   min="0"
                   step="0.01"
-                  className="px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="ui-control--compact ui-control--full-width"
                   style={{
                     borderColor: 'var(--border-color)',
                     backgroundColor: 'var(--input-bg)',

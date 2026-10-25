@@ -191,7 +191,7 @@ function AutocompleteDropdown<T = unknown>({
   return (
     <div ref={containerRef} className={`ac-select ${className}`}>
       {label && (
-        <label className="ac-select-label" htmlFor={inputId}>
+        <label className="ac-select-label ui-form-label" htmlFor={inputId}>
           {label}
         </label>
       )}
@@ -221,7 +221,7 @@ function AutocompleteDropdown<T = unknown>({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="autocomplete-input"
+            className="autocomplete-input ui-control--embedded"
             autoComplete="off"
             role="combobox"
             aria-expanded={isOpen}
@@ -346,10 +346,10 @@ function AutocompleteDropdown<T = unknown>({
 
         .ac-select-label {
           display: block;
-          font-size: 14px;
+          font-size: var(--ui-font-md-sm);
           font-weight: 500;
           color: var(--text-primary) !important;
-          margin-bottom: 4px;
+          margin-bottom: var(--ui-space-1);
           position: static;
           transform: none;
           background: none !important;
@@ -367,14 +367,15 @@ function AutocompleteDropdown<T = unknown>({
         .autocomplete-input-container {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 0 12px;
-          height: 38px;
-          border: 1px solid var(--border-color);
-          border-radius: 4px;
+          box-sizing: border-box;
+          gap: var(--ui-space-1-5);
+          min-height: var(--ui-control-height);
+          padding: 0 var(--ui-control-padding-inline);
+          border: var(--ui-border-width) solid var(--border-color);
+          border-radius: var(--ui-radius-control);
           background: var(--input-bg);
           cursor: pointer;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color var(--ui-transition-fast), box-shadow var(--ui-transition-fast), background-color var(--ui-transition-fast);
         }
 
         .autocomplete-input-container:hover:not(.disabled) {
@@ -383,7 +384,7 @@ function AutocompleteDropdown<T = unknown>({
 
         .autocomplete-input-container.focused {
           border-color: var(--accent-primary);
-          box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+          box-shadow: var(--ui-focus-ring);
         }
 
         .autocomplete-input-container.error {
@@ -396,7 +397,7 @@ function AutocompleteDropdown<T = unknown>({
         }
 
         .autocomplete-selected-icon {
-          font-size: 16px;
+          font-size: var(--ui-font-base);
           flex-shrink: 0;
           line-height: 1;
         }
@@ -408,10 +409,13 @@ function AutocompleteDropdown<T = unknown>({
 
         .autocomplete-input {
           flex: 1;
+          box-sizing: border-box;
+          min-height: 0 !important;
+          max-height: 100%;
           border: none !important;
           outline: none !important;
           background: transparent !important;
-          font-size: 14px;
+          font-size: var(--ui-font-md-sm);
           color: var(--text-primary);
           height: 100%;
           padding: 0 !important;
@@ -509,7 +513,7 @@ function AutocompleteDropdown<T = unknown>({
         }
 
         .autocomplete-option-label {
-          font-size: 14px;
+          font-size: var(--ui-font-md-sm);
           font-weight: 500;
           color: var(--text-primary);
           overflow: hidden;
@@ -531,9 +535,9 @@ function AutocompleteDropdown<T = unknown>({
         }
 
         .autocomplete-empty {
-          padding: 16px 12px;
+          padding: var(--ui-space-4) var(--ui-space-3);
           text-align: center;
-          font-size: 14px;
+          font-size: var(--ui-font-md-sm);
           color: var(--text-secondary);
         }
 
@@ -550,7 +554,7 @@ function AutocompleteDropdown<T = unknown>({
           cursor: pointer;
           color: var(--accent-primary);
           font-weight: 500;
-          font-size: 14px;
+          font-size: var(--ui-font-md-sm);
         }
 
         .autocomplete-create-new:hover {

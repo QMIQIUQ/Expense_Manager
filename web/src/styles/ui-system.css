@@ -58,9 +58,13 @@
 
   --ui-control-height: 44px;
   --ui-control-height-compact: 36px;
+  --ui-control-height-prominent: 52px;
   --ui-control-padding-block: var(--ui-space-2);
   --ui-control-padding-inline: var(--ui-space-3);
+  --ui-control-padding-block-compact: var(--ui-space-1);
+  --ui-control-padding-inline-compact: var(--ui-space-2);
   --ui-border-width: 1px;
+  --ui-border-width-prominent: 2px;
   --ui-focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 28%, transparent);
   --ui-shadow-card: 0 2px 8px var(--shadow);
   --ui-shadow-dialog: 0 12px 36px var(--shadow-md);
@@ -111,15 +115,15 @@ input[type='radio'] {
   accent-color: var(--accent-primary);
 }
 
-input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
+input[type='checkbox']:not(.sr-only):not(.ui-switch-input) {
+  width: 18px !important;
+  height: 18px !important;
   border-radius: var(--ui-radius-xs);
 }
 
 input[type='radio'] {
-  width: 18px;
-  height: 18px;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not([type='color']):focus-visible,
@@ -131,6 +135,234 @@ textarea:focus-visible,
   outline: none;
   border-color: var(--accent-primary);
   box-shadow: var(--ui-focus-ring);
+}
+
+/* Named field variants provide a stable override for components that still
+ * carry legacy inline or utility geometry. They keep native elements and
+ * caller-provided widths, margins, values and event handlers intact. */
+.ui-control--standard,
+.ui-control--compact,
+.ui-control--prominent {
+  box-sizing: border-box !important;
+  border-style: solid !important;
+  border-radius: var(--ui-radius-control) !important;
+  line-height: var(--ui-line-normal) !important;
+  font-family: inherit !important;
+}
+
+.ui-control--standard {
+  min-height: var(--ui-control-height) !important;
+  padding: var(--ui-control-padding-block) var(--ui-control-padding-inline) !important;
+  border-width: var(--ui-border-width) !important;
+  font-size: var(--ui-font-md-sm) !important;
+}
+
+/* Dense filters keep the same 44px target while using less visual padding. */
+.ui-control--compact {
+  min-height: var(--ui-control-height) !important;
+  padding: var(--ui-control-padding-block-compact) var(--ui-control-padding-inline-compact) !important;
+  border-width: var(--ui-border-width) !important;
+  font-size: var(--ui-font-md-sm) !important;
+}
+
+.ui-control--prominent {
+  min-height: var(--ui-control-height-prominent) !important;
+  padding: var(--ui-space-3) var(--ui-space-4) !important;
+  border-width: var(--ui-border-width-prominent) !important;
+  font-size: var(--ui-font-base) !important;
+}
+
+.ui-control--date {
+  box-sizing: border-box !important;
+  min-height: var(--ui-control-height) !important;
+  padding: var(--ui-control-padding-block) var(--ui-space-11) var(--ui-control-padding-block) var(--ui-control-padding-inline) !important;
+  border-style: solid !important;
+  border-width: var(--ui-border-width) !important;
+  border-radius: var(--ui-radius-control) !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  font-family: inherit !important;
+}
+
+.ui-control--date:focus-visible {
+  outline: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: var(--ui-focus-ring) !important;
+}
+
+.ui-control--date.error {
+  border-color: var(--error-text) !important;
+}
+
+textarea.ui-control--prominent {
+  min-height: calc(var(--ui-control-height) * 2) !important;
+}
+
+.ui-control--standard:focus-visible,
+.ui-control--compact:focus-visible,
+.ui-control--prominent:focus-visible {
+  outline: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: var(--ui-focus-ring) !important;
+}
+
+.ui-control--standard[aria-invalid='true'],
+.ui-control--compact[aria-invalid='true'],
+.ui-control--prominent[aria-invalid='true'] {
+  border-color: var(--error-text) !important;
+}
+
+.ui-control--standard[aria-invalid='true']:focus-visible,
+.ui-control--compact[aria-invalid='true']:focus-visible,
+.ui-control--prominent[aria-invalid='true']:focus-visible {
+  border-color: var(--error-text) !important;
+  box-shadow: var(--ui-focus-ring) !important;
+}
+
+.ui-form-label {
+  color: var(--text-primary) !important;
+  font-size: var(--ui-font-md-sm) !important;
+  font-weight: 500 !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.ui-form-label--field {
+  display: block;
+  margin-bottom: var(--ui-space-2);
+}
+
+.ui-form-label--secondary {
+  color: var(--text-secondary) !important;
+  font-size: var(--ui-font-sm) !important;
+}
+
+.ui-form-label--tertiary {
+  color: var(--text-tertiary) !important;
+  font-size: var(--ui-font-sm) !important;
+}
+
+.ui-field-error {
+  color: var(--error-text) !important;
+  font-size: var(--ui-font-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.ui-action--compact {
+  box-sizing: border-box !important;
+  min-height: var(--ui-control-height) !important;
+  padding: var(--ui-space-2) var(--ui-space-3) !important;
+  border-radius: var(--ui-radius-control) !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-tight) !important;
+}
+
+.ui-control--full-width {
+  width: 100% !important;
+}
+
+.ui-control--trailing-action {
+  padding-right: var(--ui-space-10) !important;
+}
+
+/* An inline prefix (for example, a currency code) already occupies the left edge. */
+.ui-control--leading-prefix {
+  padding-left: var(--ui-space-1) !important;
+}
+
+/* Inner native fields in a composite control do not draw a second field frame. */
+.ui-control--embedded {
+  box-sizing: border-box !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  box-shadow: none !important;
+}
+
+.ui-control--embedded:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.ui-control--embedded.ui-control--leading-prefix {
+  padding-inline-start: var(--ui-space-1) !important;
+}
+
+/* Time fields are two embedded segments inside one 44px composite control. */
+.ui-control--time-segment {
+  box-sizing: border-box !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  min-width: 0 !important;
+  max-width: 28px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: var(--ui-font-md-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  text-align: center;
+  box-shadow: none !important;
+}
+
+.ui-control--time-segment:focus-visible {
+  outline: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* The native checkbox remains focusable and carries the checked state; this
+ * track is only its theme-aware visual companion. */
+.ui-switch-input:focus-visible + .ui-switch-track {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.ui-switch-track {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--ui-space-9);
+  height: var(--ui-space-5);
+  border-radius: var(--ui-radius-pill);
+  background: var(--border-color);
+  transition: background-color var(--ui-transition-fast);
+}
+
+.ui-switch-track::after {
+  position: absolute;
+  top: var(--ui-space-0-5);
+  left: var(--ui-space-0-5);
+  width: var(--ui-space-4);
+  height: var(--ui-space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--ui-radius-circle);
+  background: var(--bg-primary);
+  content: '';
+  transition: transform var(--ui-transition-fast);
+}
+
+.ui-switch-input:checked + .ui-switch-track {
+  background: var(--accent-primary);
+}
+
+.ui-switch-input:checked + .ui-switch-track::after {
+  transform: translateX(var(--ui-space-4));
+}
+
+.ui-switch-input:disabled + .ui-switch-track {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 button,
@@ -194,6 +426,7 @@ h4 { font-size: var(--ui-font-lg); line-height: var(--ui-line-normal); }
 .dashboard-card,
 .widget-container,
 .expense-card,
+.tracked-expense-card,
 .income-card,
 .category-card,
 .budget-card,

@@ -120,7 +120,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   return (
     <>
       <div className="date-picker-wrapper">
-        {label && <label htmlFor={inputId}>{label}{required && ' *'}</label>}
+        {label && <label className="ui-form-label" htmlFor={inputId}>{label}{required && ' *'}</label>}
         <div className="date-picker-input-group">
           <input
             ref={inputRef}
@@ -135,7 +135,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             required={required}
             disabled={disabled}
             readOnly={isTouchLayout}
-            className={`date-picker-input ${error ? 'error' : ''} ${className}`}
+            className={`date-picker-input ui-control--date ${error ? 'error' : ''} ${className}`}
             style={style}
             aria-haspopup="dialog"
             aria-expanded={isOpen}

@@ -890,6 +890,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
+                className="ui-control--compact"
                 style={styles.filterSelect}
                 aria-label="Filter by category"
               >
@@ -910,6 +911,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                       setAllDates(false);
                     }
                   }}
+                  className="ui-control--compact"
                   style={styles.filterSelect}
                   aria-label="Filter by month"
                 >
@@ -944,7 +946,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     }}
                     aria-label={t('allDates')}
                   />
-                  <label htmlFor="allDatesToggle" style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-primary)' }}>{t('allDates')}</label>
+                  <label className="ui-form-label" htmlFor="allDatesToggle" style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-primary)' }}>{t('allDates')}</label>
                 </div>
                 {/* Use shared DatePicker for desktop calendar support */}
                 <div style={styles.dateFilterGroup}>
@@ -1722,9 +1724,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           {/* Quick Expense Preset Form */}
           <div className="quick-expense-form-section">
             <div className="quick-expense-form-field">
-              <label>{t('presetName')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('presetName')}</label>
               <input
                 type="text"
+                className="ui-control--standard ui-control--full-width"
                 value={quickExpenseFormData.name}
                 onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, name: e.target.value })}
                 placeholder={t('quickExpenseNamePlaceholder')}
@@ -1732,9 +1735,10 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
 
             <div className="quick-expense-form-field">
-              <label>{t('amount')} ({quickExpenseFormData.currency || DEFAULT_BASE_CURRENCY})</label>
+              <label className="ui-form-label ui-form-label--field">{t('amount')} ({quickExpenseFormData.currency || DEFAULT_BASE_CURRENCY})</label>
               <input
                 type="text"
+                className="ui-control--prominent ui-control--full-width"
                 inputMode="numeric"
                 value={(quickExpenseFormData.amount / 100).toFixed(quickExpenseCurrencyDigits)}
                 onChange={(e) => {
@@ -1786,8 +1790,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
 
             <div className="quick-expense-form-field">
-              <label>{t('paymentMethod')}</label>
+              <label className="ui-form-label ui-form-label--field">{t('paymentMethod')}</label>
               <select
+                className="ui-control--standard ui-control--full-width"
                 value={quickExpenseFormData.paymentMethod}
                 onChange={(e) => setQuickExpenseFormData({ 
                   ...quickExpenseFormData, 
@@ -1806,8 +1811,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
             {quickExpenseFormData.paymentMethod === 'credit_card' && cards.length > 0 && (
               <div className="quick-expense-form-field">
-                <label>{t('selectCard')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('selectCard')}</label>
                 <select
+                  className="ui-control--standard ui-control--full-width"
                   value={quickExpenseFormData.cardId || ''}
                   onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, cardId: e.target.value || undefined })}
                 >
@@ -1821,8 +1827,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
             {quickExpenseFormData.paymentMethod === 'e_wallet' && ewallets.length > 0 && (
               <div className="quick-expense-form-field">
-                <label>{t('selectEWallet')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('selectEWallet')}</label>
                 <select
+                  className="ui-control--standard ui-control--full-width"
                   value={quickExpenseFormData.ewalletId || ''}
                   onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, ewalletId: e.target.value || undefined })}
                 >
@@ -1836,8 +1843,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
             {quickExpenseFormData.paymentMethod === 'bank' && banks.length > 0 && (
               <div className="quick-expense-form-field">
-                <label>{t('selectBank')}</label>
+                <label className="ui-form-label ui-form-label--field">{t('selectBank')}</label>
                 <select
+                  className="ui-control--standard ui-control--full-width"
                   value={quickExpenseFormData.bankId || ''}
                   onChange={(e) => setQuickExpenseFormData({ ...quickExpenseFormData, bankId: e.target.value || undefined })}
                 >
@@ -1852,14 +1860,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             <div className="quick-expense-form-actions">
               <button 
                 onClick={handleSaveQuickExpensePreset} 
-                className="btn-save"
+                className="btn-save ui-action--compact"
                 disabled={!quickExpenseFormData.name || !quickExpenseFormData.categoryId || quickExpenseFormData.amount <= 0}
               >
                 {editingPresetId ? t('update') : t('save')}
               </button>
               <button 
                 onClick={resetQuickExpenseForm} 
-                className="btn-cancel"
+                className="btn-cancel ui-action--compact"
               >
                 {t('cancel')}
               </button>
@@ -1959,13 +1967,6 @@ const styles = {
   filterSelect: {
     flex: 1,
     minWidth: '120px',
-    padding: 'var(--ui-space-10px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--ui-radius-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-    outline: 'none',
   },
   toggleFiltersButton: {
     padding: 'var(--ui-space-10px) var(--ui-space-16px)',

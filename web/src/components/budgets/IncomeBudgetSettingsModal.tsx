@@ -72,8 +72,8 @@ const IncomeBudgetSettingsModal: React.FC<Props> = ({ isOpen, onClose, budgets, 
   return <PopupModal isOpen={isOpen} onClose={() => { if (!saving) onClose(); }} title={t('editOverallBudget')}
     isForm onSubmit={save} primaryButtonLabel={saving ? t('saving') : t('save')} primaryButtonDisabled={saving || loading || !initialized} maxWidth="600px">
     <div className="income-budget-form">
-      <label htmlFor="income-budget-mode">{t('incomeBudgetMode')}</label>
-      <select id="income-budget-mode" value={draft.enabled ? 'income' : 'manual'} disabled={saving || loading || !initialized} onChange={(event) => {
+      <label htmlFor="income-budget-mode" className="ui-form-label ui-form-label--field">{t('incomeBudgetMode')}</label>
+      <select id="income-budget-mode" className="ui-control--standard" value={draft.enabled ? 'income' : 'manual'} disabled={saving || loading || !initialized} onChange={(event) => {
         const enabled = event.target.value === 'income';
         setDraft((old) => ({ ...old, enabled }));
         if (!enabled && allocated !== null && (!amount.trim() || Number(amount) * 100 < allocated)) setAmount((allocated / 100).toFixed(2));
@@ -83,19 +83,19 @@ const IncomeBudgetSettingsModal: React.FC<Props> = ({ isOpen, onClose, budgets, 
         <option value="income">{t('incomeLinkedBudgetMode')}</option>
       </select>
       {draft.enabled ? <>
-        <label htmlFor="income-budget-percentage">{t('incomeBudgetPercentage')}</label>
+        <label htmlFor="income-budget-percentage" className="ui-form-label ui-form-label--field">{t('incomeBudgetPercentage')}</label>
         <input id="income-budget-percentage" type="number" required min="0" max="100" step="0.01" value={percentage}
-          disabled={saving} onChange={(event) => { setPercentage(event.target.value); setError(''); }} />
-        <label className="income-budget-checkbox"><input type="checkbox" checked={draft.includeReimbursements} disabled={saving}
+          className="ui-control--standard" disabled={saving} onChange={(event) => { setPercentage(event.target.value); setError(''); }} />
+        <label className="income-budget-checkbox ui-form-label"><input type="checkbox" checked={draft.includeReimbursements} disabled={saving}
           onChange={(event) => setDraft((old) => ({ ...old, includeReimbursements: event.target.checked }))} />{t('incomeBudgetIncludeReimbursements')}</label>
-        <label className="income-budget-checkbox"><input type="checkbox" checked={draft.includeRepayments} disabled={saving}
+        <label className="income-budget-checkbox ui-form-label"><input type="checkbox" checked={draft.includeRepayments} disabled={saving}
           onChange={(event) => setDraft((old) => ({ ...old, includeRepayments: event.target.checked }))} />{t('incomeBudgetIncludeRepayments')}</label>
         <p className="income-budget-caption">{t('incomeBudgetSourceHint')}</p>
         <IncomeBudgetSummary state={preview} compact />
       </> : <>
-        <label htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
+        <label htmlFor="overall-budget-amount" className="ui-form-label ui-form-label--field">{t('overallBudgetAmount')}</label>
         <input id="overall-budget-amount" type="number" required min="0" step="0.01" value={amount} disabled={saving}
-          onChange={(event) => { setAmount(event.target.value); setError(''); }} />
+          className="ui-control--standard" onChange={(event) => { setAmount(event.target.value); setError(''); }} />
         <p className="income-budget-caption">{settings?.overallBudgetLimits?.monthly === undefined ? t('overallBudgetSuggestedHint') : t('overallBudgetSavedHint')}</p>
         <p className="income-budget-caption">{t('allocatedBudget')}: {allocated === null ? '—' : formatMoney(allocated / 100, 'MYR')}</p>
         {settings?.incomeLinkedBudget?.enabled && <p className="income-budget-caption">{t('incomeBudgetRestoreHint')}</p>}

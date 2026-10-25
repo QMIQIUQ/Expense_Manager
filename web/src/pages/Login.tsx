@@ -185,7 +185,7 @@ const Login: React.FC = () => {
             <div>
               <label 
                 htmlFor="email" 
-                className="block text-sm font-medium mb-1"
+                className="ui-form-label ui-form-label--field"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('email')}
@@ -197,7 +197,7 @@ const Login: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 required
-                className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 transition-colors"
+                className="w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 transition-colors ui-control--standard"
                 style={{
                   borderColor: 'var(--border-color)',
                   backgroundColor: 'var(--input-bg)',
@@ -210,7 +210,7 @@ const Login: React.FC = () => {
             <div>
               <label 
                 htmlFor="password" 
-                className="block text-sm font-medium mb-1"
+                className="ui-form-label ui-form-label--field"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('password')}
@@ -223,7 +223,7 @@ const Login: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={(e) => e.target.select()}
                   required
-                  className="w-full rounded-md border px-3 py-2 pr-10 focus:outline-none focus:ring-2 transition-colors"
+                  className="w-full rounded-md border px-3 py-2 pr-10 focus:outline-none focus:ring-2 transition-colors ui-control--standard ui-control--trailing-action"
                   style={{
                     borderColor: 'var(--border-color)',
                     backgroundColor: 'var(--input-bg)',
@@ -262,17 +262,11 @@ const Login: React.FC = () => {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded cursor-pointer"
-                style={{
-                  // Using inline style for accentColor as it's not available in Tailwind
-                  // and provides native browser checkbox theming
-                  accentColor: 'var(--accent-primary)',
-                  borderColor: 'var(--border-color)',
-                }}
+                className="rounded cursor-pointer"
               />
               <label 
                 htmlFor="rememberMe" 
-                className="ml-2 block text-sm cursor-pointer"
+                className="ui-form-label ml-2 block text-sm cursor-pointer"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('rememberMe')}

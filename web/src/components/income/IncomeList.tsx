@@ -239,7 +239,7 @@ const IncomeList: React.FC<IncomeListProps> = ({ incomes, expenses, cards, ewall
                 type="checkbox"
                 checked={selectedIds.has(income.id!)}
                 onChange={() => toggleSelection(income.id!)}
-                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                style={{ cursor: 'pointer' }}
               />
             </div>
           )}

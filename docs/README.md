@@ -11,17 +11,18 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系統分層、資料流與 Firebase 架構 | 開發者 |
 | [PERFORMANCE_RELIABILITY_IMPLEMENTATION.md](PERFORMANCE_RELIABILITY_IMPLEMENTATION.md) | IndexedDB outbox、交易防重送、分頁、快取與驗證紀錄 | 開發者 / 維運 |
 | [OFFLINE_STORAGE_STARTUP.md](implementation-plans/OFFLINE_STORAGE_STARTUP.md) | 離線快照、啟動載入與 IndexedDB 遷移優化計畫（尚未實作） | 開發者 / QA |
-| [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) | 既有功能的 method 與流程盤點 | 開發者 |
-| [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md) | 收入與每月預算聯動規則、現況與驗收紀錄 | 產品 / 開發者 |
+| [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md) | 主要 method、流程及當前 source-level 同步核對 | 開發者 |
+| [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md) | 收入與每月預算聯動規則、實作邊界與驗收紀錄 | 產品 / 開發者 |
 | [LOCAL_FIRST_ACCEPTANCE.md](LOCAL_FIRST_ACCEPTANCE.md) | 既有逐功能本機優先驗收紀錄 | 開發者 / QA |
 | [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md) | IndexedDB outbox、領域交易、重播與待處理狀態 | 開發者 |
 | [OFFLINE_SYNC_GUIDE.md](OFFLINE_SYNC_GUIDE.md) | 本機先顯示、同步狀態與佇列使用說明 | 使用者 / 開發者 |
 | [OFFLINE_FUNCTIONALITY.md](OFFLINE_FUNCTIONALITY.md) | 離線行為、適用範圍與限制摘要 | 使用者 / 開發者 |
 | [UI_NAVIGATION_AUDIT.md](UI_NAVIGATION_AUDIT.md) | UI 架構、現行導覽盤點與桌機/手機排列方案 | 產品 / 設計 / 開發 |
-| [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI 组件与样式规范 | 开发者 |
-| [ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) | 目前 UI 元件/樣式盤點、預覽圖與逐檔標準化計畫 | 產品 / 設計 / 開發 |
-| [ui-standardization/VISUAL_STANDARDIZATION_SPEC.md](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md) | 已實作的共享 UI 尺寸、token、主題規則與 SVG 規格預覽 | 產品 / 設計 / 開發 |
-| [ui-standardization/UI_STYLE_COVERAGE_MATRIX.md](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md) | Production TSX/CSS 逐檔清單、inline styles 與 UI token 覆蓋統計 | 設計 / 開發 / QA |
+| [UI_STYLE_GUIDE.md](UI_STYLE_GUIDE.md) | UI shared tokens、field variants、按鈕/卡片與無障礙規範 | 開發者 |
+| [ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) | `main@a9a9d7c` 元件/樣式盤點、SVG 預覽與逐畫面待選清單 | 產品 / 設計 / 開發 |
+| [ui-standardization/UI_SCREEN_STYLE_CHECKLIST.md](ui-standardization/UI_SCREEN_STYLE_CHECKLIST.md) | Login、Dashboard、各功能頁與全域浮層的 textbox/label/checkbox/button/card 樣式清單和例外 | 設計 / 開發 / QA |
+| [ui-standardization/VISUAL_STANDARDIZATION_SPEC.md](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md) | 共享 UI 尺寸、tokens、主題規則與 SVG 規格預覽 | 產品 / 設計 / 開發 |
+| [ui-standardization/UI_STYLE_COVERAGE_MATRIX.md](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md) | `main@a9a9d7c` Production TSX/CSS 覆蓋與 token/source 統計 | 設計 / 開發 / QA |
 | [ui-standardization/CRUD_FLOW_AUDIT.md](ui-standardization/CRUD_FLOW_AUDIT.md) | 各功能新增、檢視、編輯、刪除與表單 overlay 流程 | 產品 / 設計 / 開發 |
 | [ui-standardization/INTERACTION_PATTERN_CANDIDATES.md](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md) | 欄位、按鈕、dialog/drawer、狀態回饋候選與官方參考 | 產品 / 設計 / 開發 |
 | [ui-standardization/PATTERN_STANDARDIZATION_PLAN.md](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md) | 已採用幾何的逐階段實作紀錄、保護的流程邏輯及未來 interaction 改版驗收步驟 | 開發者 / QA |

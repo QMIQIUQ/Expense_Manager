@@ -70,17 +70,17 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   return (
     <div style={styles.container}>
       {showLabels && (
-        <label style={styles.label}>{t('paymentMethod')}</label>
+        <label className="ui-form-label ui-form-label--field">{t('paymentMethod')}</label>
       )}
       
       {variant === 'select' ? (
         <div style={styles.fieldContainer}>
-          <label style={styles.fieldLabel}>{t('paymentMethod')}</label>
+          <label className="ui-form-label ui-form-label--secondary ui-form-label--field" style={{ marginBottom: 'var(--ui-space-1-5)' }}>{t('paymentMethod')}</label>
           <select
             value={paymentMethod}
             onChange={(event) => handlePaymentMethodClick(event.target.value as PaymentMethodType)}
             aria-label={t('paymentMethod')}
-            style={styles.select}
+            className="ui-control--standard ui-control--full-width"
             disabled={disabled}
           >
             <option value="cash">💵 {t('cash')}</option>
@@ -154,11 +154,11 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       {/* Credit Card Selector */}
       {paymentMethod === 'credit_card' && cards.length > 0 && (
         <div style={styles.fieldContainer}>
-          <label style={styles.fieldLabel}>{t('selectCard')}</label>
+          <label className="ui-form-label ui-form-label--secondary ui-form-label--field" style={{ marginBottom: 'var(--ui-space-1-5)' }}>{t('selectCard')}</label>
           <select
             value={cardId || ''}
             onChange={(e) => onCardChange?.(e.target.value)}
-            style={styles.select}
+            className="ui-control--standard ui-control--full-width"
             disabled={disabled}
           >
             {cards.map((card) => (
@@ -172,7 +172,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         <div style={styles.noItemsContainer}>
           <p style={styles.noItemsText}>{t('noCardsYet')}</p>
           {onCreateCard && (
-            <button type="button" onClick={onCreateCard} style={styles.createButton} disabled={disabled}>
+            <button type="button" onClick={onCreateCard} className="ui-action--compact" style={styles.createButton} disabled={disabled}>
               + {t('addCard')}
             </button>
           )}
@@ -182,12 +182,12 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       {/* E-Wallet Selector */}
       {paymentMethod === 'e_wallet' && (
         <div style={styles.fieldContainer}>
-          <label style={styles.fieldLabel}>{t('eWalletName')}</label>
+          <label className="ui-form-label ui-form-label--secondary ui-form-label--field" style={{ marginBottom: 'var(--ui-space-1-5)' }}>{t('eWalletName')}</label>
           {ewallets.length > 0 ? (
             <select
               value={paymentMethodName || ''}
               onChange={(e) => onPaymentMethodNameChange?.(e.target.value)}
-              style={styles.select}
+                className="ui-control--standard ui-control--full-width"
               disabled={disabled}
             >
               {ewallets.map((wallet) => (
@@ -201,11 +201,11 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                 value={paymentMethodName || ''}
                 onChange={(e) => onPaymentMethodNameChange?.(e.target.value)}
                 placeholder={t('eWalletPlaceholder')}
-                style={styles.textInput}
+              className="ui-control--standard ui-control--full-width"
                 disabled={disabled}
               />
               {onCreateEWallet && (
-                <button type="button" onClick={onCreateEWallet} style={{...styles.createButton, marginTop: 'var(--ui-space-8px)'}} disabled={disabled}>
+                <button type="button" onClick={onCreateEWallet} className="ui-action--compact" style={{ ...styles.createButton, marginTop: 'var(--ui-space-8px)' }} disabled={disabled}>
                   + {t('addEWallet')}
                 </button>
               )}
@@ -217,11 +217,11 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       {/* Bank Selector */}
       {paymentMethod === 'bank' && banks.length > 0 && (
         <div style={styles.fieldContainer}>
-          <label style={styles.fieldLabel}>{t('selectBank')}</label>
+          <label className="ui-form-label ui-form-label--secondary ui-form-label--field" style={{ marginBottom: 'var(--ui-space-1-5)' }}>{t('selectBank')}</label>
           <select
             value={bankId || ''}
             onChange={(e) => onBankChange?.(e.target.value)}
-            style={styles.select}
+            className="ui-control--standard ui-control--full-width"
             disabled={disabled}
           >
             {banks.map((bank) => (
@@ -235,7 +235,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         <div style={styles.noItemsContainer}>
           <p style={styles.noItemsText}>{t('selectBank')}</p>
           {onCreateBank && (
-            <button type="button" onClick={onCreateBank} style={styles.createButton} disabled={disabled}>
+            <button type="button" onClick={onCreateBank} className="ui-action--compact" style={styles.createButton} disabled={disabled}>
               + {t('addBank')}
             </button>
           )}
@@ -305,33 +305,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   fieldContainer: {
     marginBottom: 'var(--ui-space-16px)',
   },
-  fieldLabel: {
-    display: 'block',
-    fontSize: 'var(--ui-font-13px)',
-    fontWeight: '500',
-    color: 'var(--text-secondary)',
-    marginBottom: 'var(--ui-space-6px)',
-  },
-  select: {
-    width: '100%',
-    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
-    border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-    outline: 'none',
-  },
-  textInput: {
-    width: '100%',
-    padding: 'var(--ui-space-10px) var(--ui-space-12px)',
-    border: '1px solid var(--border-color, #e9ecef)',
-    borderRadius: 'var(--ui-radius-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    background: 'var(--input-bg, white)',
-    color: 'var(--text-primary)',
-    outline: 'none',
-  },
   noItemsContainer: {
     textAlign: 'center',
     padding: 'var(--ui-space-16px)',
@@ -345,12 +318,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: 'var(--ui-space-0px) var(--ui-space-0px) var(--ui-space-8px) var(--ui-space-0px)',
   },
   createButton: {
-    padding: 'var(--ui-space-8px) var(--ui-space-16px)',
     background: 'var(--accent-primary)',
     color: 'white',
     border: 'none',
-    borderRadius: 'var(--ui-radius-6px)',
-    fontSize: 'var(--ui-font-13px)',
     fontWeight: '500',
     cursor: 'pointer',
   },

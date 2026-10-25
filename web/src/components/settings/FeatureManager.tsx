@@ -359,6 +359,7 @@ const FeatureManager: React.FC<FeatureManagerProps> = ({
                           setLocalEnabled(newOrder);
                         }
                       }}
+                      className="ui-control--compact"
                       style={styles.positionInput}
                       title={t('position')}
                     />
@@ -637,10 +638,6 @@ const styles = {
   },
   positionInput: {
     width: '50px',
-    padding: 'var(--ui-space-4px) var(--ui-space-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--ui-radius-6px)',
     textAlign: 'center' as const,
     backgroundColor: 'var(--input-bg)',
     color: 'var(--text-primary)',

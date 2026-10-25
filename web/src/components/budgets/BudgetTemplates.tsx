@@ -106,7 +106,7 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
         {/* Total Budget Input */}
         {selectedTemplate && (
           <div style={styles.budgetInputSection}>
-            <label style={styles.inputLabel}>
+            <label className="ui-form-label">
               {t('totalMonthlyBudget') || 'Total Monthly Budget'} ({getCurrencySymbol(DEFAULT_BASE_CURRENCY)})
             </label>
             <input
@@ -115,7 +115,8 @@ const BudgetTemplates: React.FC<BudgetTemplatesProps> = ({
               onChange={(e) => setTotalBudget(parseFloat(e.target.value) || 0)}
               min="100"
               step="100"
-              style={styles.budgetInput}
+              className="ui-control--prominent"
+              style={{ width: '120px' }}
             />
             <button
               onClick={() => setShowPreview(!showPreview)}
@@ -291,20 +292,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: 'var(--ui-space-12px)',
     marginBottom: 'var(--ui-space-16px)',
     flexWrap: 'wrap',
-  },
-  inputLabel: {
-    fontSize: 'var(--ui-font-14px)',
-    fontWeight: 500,
-    color: 'var(--text-primary)',
-  },
-  budgetInput: {
-    padding: 'var(--ui-space-8px) var(--ui-space-12px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--ui-radius-8px)',
-    fontSize: 'var(--ui-font-14px)',
-    width: '120px',
-    backgroundColor: 'var(--input-bg)',
-    color: 'var(--text-primary)',
   },
   previewButton: {
     padding: 'var(--ui-space-8px) var(--ui-space-16px)',

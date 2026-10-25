@@ -61,7 +61,7 @@ const Register: React.FC = () => {
             onChange={(e) => setEmail(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
+            className="ui-control--standard ui-control--full-width"
           />
         </div>
         <div style={{ marginBottom: 'var(--ui-space-15px)' }}>
@@ -75,7 +75,7 @@ const Register: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
+            className="ui-control--standard ui-control--full-width"
           />
         </div>
         <div style={{ marginBottom: 'var(--ui-space-15px)' }}>
@@ -89,7 +89,7 @@ const Register: React.FC = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             onFocus={(e) => e.target.select()}
             required
-            style={{ width: '100%', padding: 'var(--ui-space-8px)', boxSizing: 'border-box' }}
+            className="ui-control--standard ui-control--full-width"
           />
         </div>
         <button

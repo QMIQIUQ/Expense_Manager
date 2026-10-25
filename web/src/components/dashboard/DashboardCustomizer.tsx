@@ -116,7 +116,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
               </button>
             </div>
             <div className="bulk-size-control">
-              <label htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
+              <label className="ui-form-label" htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
               <select
                 id="bulk-size-select"
                 onChange={(e) => {
@@ -127,7 +127,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                     e.target.value = '';
                   }
                 }}
-                className="bulk-size-select"
+                className="bulk-size-select ui-control--compact"
                 defaultValue=""
               >
                 <option value="" disabled>{t('selectSize')}</option>
@@ -217,7 +217,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                         e.currentTarget.blur();
                       }
                     }}
-                    className="widget-order-input"
+                    className="widget-order-input ui-control--compact"
                     title={t('order')}
                     aria-label="order"
                   />
@@ -239,7 +239,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                         const newSize = e.target.value as import('../../types/dashboard').WidgetSize;
                         setLocalWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, size: newSize } : w)));
                       }}
-                      className="widget-size-select"
+                      className="widget-size-select ui-control--compact"
                       title={t('size')}
                     >
                       <option value="small">{t('small')}</option>
