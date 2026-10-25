@@ -1,30 +1,30 @@
 # UI 樣式覆蓋矩陣
 
-> 靜態計數基準：改動前 `main@a9a9d7c`（2026-10-25）。下方每檔 inline-style/token 數字和 CSS token 引用數均是 main snapshot 的 source-level baseline，不是目前分支的重新計數。分支 `codex/ui-standardization-inventory` 已修改 selected UI controls；尚未合併到 main。測試 TSX 不算 production screen。
+> 靜態計數基準：改動前 `main@a9a9d7c`（2026-10-25）。下方逐檔 inline-style/token 數字和 CSS token 引用數均是改動前 main snapshot 的 source-level baseline，不是 `main@9fce5d7` 的重新計數。指定 UI controls 已透過 PR #120 合併至 main。測試 TSX 不算 production screen。
 
-## 本分支實作差異
+## 已合併至 main 的實作差異
 
 - 共享層提供 Standard / Compact / Prominent / Date / Embedded / Leading-prefix / Time-segment 欄位 variants、primary/secondary/tertiary labels、field error、compact action、theme-aware switch track 和 shared focus/error state。
 - 遷移頁面/元件：Login、BankForm/CardForm/EWalletForm、BudgetManager/BudgetForm/BudgetTemplates/IncomeBudgetSettingsModal、CategoryManager/CategoryForm/ExpenseTagManager、PaymentMethodSelector/AccountReconciliationManager、SearchBar、ExpenseList/ExpenseFiltersBar/ExpenseSavedViews/ExpenseSplitEditor/ExpenseTagPicker/ReceiptAttachmentPanel/StepByStepExpenseForm、IncomeForm/IncomeList/DatePicker、ScheduledPaymentManager/ScheduledPaymentForm/PaymentRecordForm、AdminTab/Register/UserProfile、FeatureManager/DateShortcutsSettings/DashboardCustomizer/QuickAddWidget/FriendSpendingWidget、AutocompleteDropdown、TimePicker，以及 TrackedExpensesWidget card geometry。
 - 複合欄位例外：Autocomplete 和 QuickAdd 的內層 input 使用 embedded variant，由外框負責 border/focus；TimePicker 的小時/分鐘欄位保留 28px embedded geometry，外框提供 focus ring。
 - 保留原生欄位類型、值、handler、ID mapping、鍵盤/combobox 互動、視覺特化的日期/幣別/金額欄位、流程布局和金融 mutation/read paths。
-- 以下完整 per-file 表格繼續描述改動前 main 的 135 個 production TSX 靜態計數，避免把基線計數誤讀為這個分支當前數值。逐頁控制類別和例外見 [逐畫面清單](UI_SCREEN_STYLE_CHECKLIST.md)，掛載狀態和分支進度見 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
+- 以下完整 per-file 表格繼續描述改動前 main 的 135 個 production TSX 靜態計數，避免把歷史基線計數誤讀為目前 main 的數值。逐頁控制類別和例外見 [逐畫面清單](UI_SCREEN_STYLE_CHECKLIST.md)，掛載狀態和已合併範圍見 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md#71-main-逐畫面一致性檢查清單)。
 
 ## 覆蓋摘要
 
 - Production TSX：**135**（完整檔案清單見下表）；包含測試的 TSX 總數為 182。
 - Literal JSX `style={{...}}` object：**762**，分布於 **87** 個 production TSX 檔；同一個欄位可能另有 className/Tailwind 或功能 CSS override，這個數量不表示 762 個不一致控制。
 - Native input/select/textarea controls：**192**（input 133、select 52、textarea 7）。AST 計數只列節點，不等於 192 個獨立畫面或 192 個視覺缺陷。
-- 分支可編輯欄位靜態掃描：151 個一般 input/select/textarea（不含 checkbox/radio/color/file/range/hidden/button）。134 個明確使用 shared named variants；剩餘 17 個全屬未掛載的 ExpenseForm/RecurringForm/舊 RepaymentForm/TransferForm。AutocompleteDropdown 的內層 input 已標記 embedded variant，由外框負責 border/focus。這是 TSX class coverage，不是 computed-style 或畫面測試。
-- 分支 label AST scan：154 個 `<label>`，127 個採 `.ui-form-label` primary/secondary/tertiary classes；27 個未採一般欄位 label class，包含 switch/toggle、section heading、TimePicker 專用 label、definition-only 元件和未掛載 source。
-- 分支 checkbox AST scan：30 個 checkbox 節點（29 個可見，1 個隱藏 switch）；可見原生控件套用共用 18px rule。剩餘兩個 `w-4 h-4` utility 都在未掛載 `ExpenseForm.tsx`。
+- 合併後 main 的可編輯欄位靜態掃描：151 個一般 input/select/textarea（不含 checkbox/radio/color/file/range/hidden/button）。134 個明確使用 shared named variants；剩餘 17 個全屬未掛載的 ExpenseForm/RecurringForm/舊 RepaymentForm/TransferForm。AutocompleteDropdown 的內層 input 已標記 embedded variant，由外框負責 border/focus。這是 TSX class coverage，不是 computed-style 或畫面測試。
+- 合併後 main 的 label AST scan：154 個 `<label>`，127 個採 `.ui-form-label` primary/secondary/tertiary classes；27 個未採一般欄位 label class，包含 switch/toggle、section heading、TimePicker 專用 label、definition-only 元件和未掛載 source。
+- 合併後 main 的 checkbox AST scan：30 個 checkbox 節點（29 個可見，1 個隱藏 switch）；可見原生控件套用共用 18px rule。剩餘兩個 `w-4 h-4` utility 都在未掛載 `ExpenseForm.tsx`。
 - Button source scan：343 個 JSX button，205 個含 `className`、174 個有 inline `style`；這些是結構計數，不是未統一問題數。action、icon、chip/tab、selection tile 和 domain controls 按語意分類，不能視為同一種按鈕。
 - **63** 個 production TSX 檔使用共用 UI tokens。TSX 中 token 引用：字級 **468**、圓角 **281**、間距 **1139**。
 - CSS 檔：**10**（原有 9 個，加上共用層 web/src/styles/ui-system.css）。所有來源仍可在下列 CSS 清單核對。
 - ui-system.css 定義 **145** 個不同的 --ui-* custom properties；掃描 TSX、TS 與 CSS 的 --ui-* 引用，未定義 token：**0**。
 - Shared CSS 提供輸入欄位/選擇器/textarea、原生 checkbox/radio、標準按鈕、icon 按鈕、卡片、dialog、標題、tabs、chips 與 focus ring 的 global baseline；局部 inline style、Tailwind 和功能 CSS 仍可覆寫它。逐頁控制類別和保留差異見 [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)。
 - ThemeContext 的 theme、serif/mono/system 字體與 small/medium/large 根字級設定保留；色彩仍由 light/dark/Warm Kitty 主題變數提供。
-- main baseline audit 未修改 component state、CRUD callback、domain/service、Firebase、IndexedDB outbox、讀取/replay 路徑。分支呈現層修改也保留上述邏輯與未掛載 source；未執行 unit/component、Firebase Emulator 或 browser computed-style inspection。未掛載的 source 仍列在完整清單內，但不能當成使用者可達畫面。
+- main baseline audit 未修改 component state、CRUD callback、domain/service、Firebase、IndexedDB outbox、讀取/replay 路徑。已合併的呈現層修改也保留上述邏輯與未掛載 source；未執行 unit/component、Firebase Emulator 或 browser computed-style inspection。未掛載的 source 仍列在完整清單內，但不能當成使用者可達畫面。
 
 ## Production TSX 完整檔案清單
 

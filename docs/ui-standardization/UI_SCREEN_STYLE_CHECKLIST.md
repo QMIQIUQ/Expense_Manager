@@ -1,6 +1,6 @@
 # main 逐畫面 UI 樣式檢查清單
 
-> 程式基線：既有 Expense_Manager plugin 唯讀連線確認的 `main@a9a9d7c`（2026-10-25）。本文件同時記錄目前 PR 分支 `codex/ui-standardization-inventory` 的欄位與 label 收斂結果；PR 尚未合併。這是 JSX/CSS source audit，沒有 authenticated browser computed-style 截圖。
+> 改動前程式基線：既有 Expense_Manager plugin 唯讀連線確認的 `main@a9a9d7c`（2026-10-25）；欄位與 label 的收斂已透過 PR #120 合併至 `main@9fce5d7`。這是 JSX/CSS source audit，沒有 authenticated browser computed-style 截圖。
 
 這份清單將可到達的功能畫面和共用浮層拆開，核對 textbox、label、checkbox/radio、按鈕、tabs/chips、card/panel 及純 layout wrapper。完整元件檔案和 token 數字見[覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)；實作邏輯界線見[逐階段標準化計畫](PATTERN_STANDARDIZATION_PLAN.md)。
 

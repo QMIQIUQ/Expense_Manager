@@ -1,6 +1,6 @@
 # 收入與預算聯動：檢查結果與實作計畫
 
-原始規劃日期：2026-10-23。程式碼核對基準：`main@a9a9d7c`（2026-10-25）。此文件保留原始產品規則、實作邊界與驗收計畫；對應的收入連動設定、計算 selector、摘要與表單程式已在此 main snapshot 中。這次文件更新沒有執行測試或檢查部署工作流程，因此不代表 Firebase Hosting 已部署該版本。
+原始規劃日期：2026-10-23。程式碼核對基準：`main@9fce5d7`（2026-10-25）。此文件保留原始產品規則、實作邊界與驗收計畫；對應的收入連動設定、計算 selector、摘要與表單程式已在目前 main 中。UI 樣式更新沒有改動該功能的資料或計算邏輯。main commit `9fce5d7` 的 Firebase Hosting workflow 已成功；這不替代本文件列出的功能測試證據。
 
 ## 1. 目的與交付邊界
 
@@ -30,7 +30,7 @@
 | `web/src/utils/budgetRollover.ts` | 帳期函式直接用 `new Date(year, month, billingCycleDay)` | 29–31 日在短月會溢位，必須定義月底截斷並驗證 |
 | `web/firestore.rules` | 驗證上限形狀及設定修訂版號，限制使用者只能操作所屬設定 | 新設定需加入形狀、型別、比例範圍與模式切換約束 |
 
-歷史規劃基準：工作區 `c010e7a`；當時讀取的 `origin/main` 為 `d2bad4a`。本次已用目前 `main@a9a9d7c` 重新核對相關功能程式存在；歷史規劃快照與原驗收條件仍保留作為設計來源。發布狀態需以對應 commit 的 Firebase Hosting 工作流程確認。
+歷史規劃基準：工作區 `c010e7a`；當時讀取的 `origin/main` 為 `d2bad4a`。後續已用 `main@9fce5d7` 重新核對相關功能程式存在；歷史規劃快照與原驗收條件仍保留作為設計來源。發布狀態需以對應 commit 的 Firebase Hosting 工作流程確認。
 
 ## 3. 產品規則與金額定義
 
@@ -205,15 +205,11 @@ incomeLinkedBudget?: {
 以最新 main 建立隔離整合分支／工作區，只提交此任務檔案，不整批合併目前其他開發分支。
 收入聯動預設關閉，因此發布不批次改變現有使用者預算。
 
-計畫階段已將此文件發布至 main；此次功能交付接續完成程式實作與驗證。
-功能發布須先通過上列測試及獨立審查，再推 main；規則、必要索引、建置、Hosting 必須逐項確認實際結果。
-目前 main push 會觸發 Firebase 正式工作流程，發布前須以實際工作流程設定確認；本次已指定 main，包含該正常自動流程，不需再製造一個重複授權步驟。
-正式工作流程若失敗或尚未完成，只回報真實狀態，不能宣稱網站已更新。
+計畫與功能實作均已發布至 main。2026-10-25 的 `main@9fce5d7` push 觸發 Firebase Hosting run [40145546800](https://github.com/QMIQIUQ/Expense_Manager/actions/runs/40145546800)，建置與 Hosting 部署成功。
+後續發布仍須以對應 commit 的測試及實際 workflow 結果為準；若 workflow 失敗或尚未完成，只回報當下狀態，不宣稱網站已更新。
 若需回退 UI，先回退程式且保留相容的新設定資料；不刪除收入、分類或 pending outbox。
 
-已知發布前置問題：檢查時 main 最近一次 Firebase Hosting 執行 [39793898695](https://github.com/QMIQIUQ/Expense_Manager/actions/runs/39793898695) 失敗，日誌回報 HTTP 403 及缺少 `serviceusage.services.get` 權限。
-這是既有部署狀態，與本次規劃文件無關；後續功能正式上線前必須先確認部署身分具備所需權限，再取得成功的實際部署證據。
-本計畫不修改 IAM、不擴大服務帳號權限；將此項視為可獨立處理的發布前置條件。
+歷史發布問題：較早的 Firebase Hosting run [39793898695](https://github.com/QMIQIUQ/Expense_Manager/actions/runs/39793898695) 曾回報 HTTP 403 與缺少 `serviceusage.services.get` 權限；後續 main run `40145546800` 已成功部署。此歷史問題不代表目前發布狀態；本計畫不修改 IAM 或擴大服務帳號權限。
 
 正式網址：<https://expense-manager-41afb.web.app/>。
 

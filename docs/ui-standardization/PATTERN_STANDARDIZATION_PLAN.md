@@ -1,6 +1,6 @@
 # UI 樣式統一：逐階段檔案與邏輯計畫
 
-> 狀態：改動前 source audit 基準為 `main@a9a9d7c`；本分支 `codex/ui-standardization-inventory` 已在指定 screens 完成欄位/label/filter/switch 的呈現層標準化並更新文件。改動尚未合併到 main。這是範圍有限的 field consistency pass，不表示所有 production TSX 都已統一；逐頁剩餘差異、資料邏輯保護與未做的 interaction proposal 仍列於下文。
+> 狀態：改動前 source audit 基準為 `main@a9a9d7c`；指定 screens 的欄位/label/filter/switch 呈現層標準化和文件已透過 PR #120 合併到 `main@9fce5d7`。這是範圍有限的 field consistency pass，不表示所有 production TSX 都已統一；逐頁剩餘差異、資料邏輯保護與未做的 interaction proposal 仍列於下文。
 
 共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐頁控制類別/例外見 [逐畫面清單](UI_SCREEN_STYLE_CHECKLIST.md)，逐 production TSX 和 CSS 的 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
 
@@ -63,7 +63,7 @@
 
 **目標檔案：** `common/PopupModal.tsx`、`common/BaseForm.tsx`、`ConfirmModal.tsx`、`FormPopup.tsx` / `Modal.tsx`（先確認是否仍無 production consumer）、必要 overlay CSS；選定候選後再決定是否抽共用 primitives。
 
-**視覺狀態：本分支未修改。** `PopupModal` / `ConfirmModal` 保持現有 header/body/footer、最大寬度/高度、內容捲動、遮罩、Escape/外部點擊規則和 action order。資訊結構、手機 safe area、一般 dialog 與 destructive alert dialog 語意分離、menu/popover/combobox anchor/focus pattern 仍是未執行的互動/版型改進。若選 Drawer/Sheet，桌機與手機採同一資料狀態，不複製表單 state。
+**視覺狀態：本次合併未修改。** `PopupModal` / `ConfirmModal` 保持現有 header/body/footer、最大寬度/高度、內容捲動、遮罩、Escape/外部點擊規則和 action order。資訊結構、手機 safe area、一般 dialog 與 destructive alert dialog 語意分離、menu/popover/combobox anchor/focus pattern 仍是未執行的互動/版型改進。若選 Drawer/Sheet，桌機與手機採同一資料狀態，不複製表單 state。
 
 **目前程式邊界：**`PopupModal` 支援 Portal、Escape/遮罩關閉及 body scroll lock，但沒有 `role="dialog"`、`aria-modal`、初始焦點/focus trap/焦點返回。`ConfirmModal` 沒有 alertdialog semantics；確認會先以 `onCancel` 關閉，再以 `setTimeout(..., 0)` 呼叫 `onConfirm`，不等待 mutation 結果，也無 modal 內 loading/error。這些缺口需作為候選改進實作，不能在現況盤點或 Current 圖示中當作已存在。
 
@@ -77,7 +77,7 @@
 
 ### 支出、收據 OCR、編輯、分攤
 
-**本分支 token 接入：指定控制已完成。** `StepByStepExpenseForm`、`ExpenseList`、`ExpenseFiltersBar`、`ExpenseSavedViews`、`ExpenseTagPicker`、`ExpenseSplitEditor`、`ExpenseTagManager`、`IncomeForm`、`CategoryForm` 和 `DatePicker` 的欄位、labels/errors、filter 或主要 amount 使用 named variants。頁面結構、資料驅動尺寸、step/OCR/edit/split/category/tag 互動保留；TimePicker/Autocomplete 的內層欄位以專用複合樣式保留。
+**已合併的 token 接入：指定控制已完成。** `StepByStepExpenseForm`、`ExpenseList`、`ExpenseFiltersBar`、`ExpenseSavedViews`、`ExpenseTagPicker`、`ExpenseSplitEditor`、`ExpenseTagManager`、`IncomeForm`、`CategoryForm` 和 `DatePicker` 的欄位、labels/errors、filter 或主要 amount 使用 named variants。頁面結構、資料驅動尺寸、step/OCR/edit/split/category/tag 互動保留；TimePicker/Autocomplete 的內層欄位以專用複合樣式保留。
 
 **目標檔案：** `expenses/StepByStepExpenseForm.tsx`、`ExpenseList.tsx`、`DateNavigator.tsx`、`ExpenseFiltersBar.tsx`、`ExpenseTagPicker.tsx`、`ExpenseSplitEditor.tsx`、`ExpenseSplitSummary.tsx`、`ReceiptAttachmentPanel.tsx`、`styles/ledger.css`。
 
@@ -87,7 +87,7 @@
 
 ### 收入與預算
 
-**本分支 token 接入：指定控制已完成。** `IncomeForm`、`BudgetForm`、`BudgetManager`、`BudgetTemplates` 和 `IncomeBudgetSettingsModal` 的 fields、filters、labels、errors、amount entries 和 switch track 已接入 shared variants。欄位/摘要資訊結構與收入連動預算資料流程保留。
+**已合併的 token 接入：指定控制已完成。** `IncomeForm`、`BudgetForm`、`BudgetManager`、`BudgetTemplates` 和 `IncomeBudgetSettingsModal` 的 fields、filters、labels、errors、amount entries 和 switch track 已接入 shared variants。欄位/摘要資訊結構與收入連動預算資料流程保留。
 
 **目標檔案：** `income/IncomeForm.tsx` / `IncomeList.tsx`；`budgets/BudgetForm.tsx`、`BudgetManager.tsx`、`IncomeBudgetSettingsModal.tsx`、收入 budget summary hooks；與其調用的 service/cache hook 只在樣式改動需要時檢查，不任意更換邏輯。
 
@@ -99,7 +99,7 @@
 
 **目標檔案：** `payment/PaymentMethodsTab.tsx` 及卡片/銀行/錢包表單和列表、`TransferList.tsx`、`scheduledPayments/ScheduledPaymentManager.tsx`、`ScheduledPaymentCard.tsx`、`PaymentRecordForm.tsx`、`PaymentHistoryList.tsx`、expense `RepaymentForm.tsx`、`ExpenseList.tsx`，以及已掛載 `dashboard/widgets/*`。
 
-**本分支 token 接入：指定控制已完成。** `PaymentMethodSelector`、`BankForm`、`CardForm`、`EWalletForm`、`AccountReconciliationManager`、`ScheduledPaymentManager`、`ScheduledPaymentForm`、`PaymentRecordForm`，以及 `ExpenseList` 的 tag/saved-view/split/filter 欄位中指定 fields/labels/filters/actions 已接入 variants；其他 payment/repayment forms、lists 和 widgets 未在本輪逐一修改。資訊密度、selection、empty/loading/error 與 inline expand 結構依原畫面保留。
+**已合併的 token 接入：指定控制已完成。** `PaymentMethodSelector`、`BankForm`、`CardForm`、`EWalletForm`、`AccountReconciliationManager`、`ScheduledPaymentManager`、`ScheduledPaymentForm`、`PaymentRecordForm`，以及 `ExpenseList` 的 tag/saved-view/split/filter 欄位中指定 fields/labels/filters/actions 已接入 variants；其他 payment/repayment forms、lists 和 widgets 未在本輪逐一修改。資訊密度、selection、empty/loading/error 與 inline expand 結構依原畫面保留。
 
 **工作步驟：**未來如需重新整理 payment account summary/card/row/chip/actions，先重用現有 semantic tokens；確認清單 filter、selection、多選 toolbar、empty/loading/error、inline expand；圖表資料格式和視覺分開變更。
 
@@ -111,7 +111,7 @@
 
 **目標檔案：** `pages/Dashboard.tsx`、`components/navigation/CompactNavigation.tsx`、`DashboardMenuSection.tsx`、`FloatingExpenseActions.tsx`、`navigationConfig.ts`、`HeaderStatusBar.tsx` / `.css`、`NetworkStatusIndicator.tsx`、`NotificationBell.tsx`、`common/SubTabs.tsx`、Profile、Admin、FeatureManager、Dashboard customizer。
 
-**本分支 token 接入：指定控制已完成。** `Login`、`AdminTab`、`UserProfile`、`FeatureManager`、`DashboardCustomizer`、`QuickAddWidget` 和 `FriendSpendingWidget` 的指定 fields/labels/compact control 已更新；`Register.tsx` 亦已對齊，但目前未由 `App.tsx` 掛載。未改 navigation layout、通知入口或其他功能控制。
+**已合併的 token 接入：指定控制已完成。** `Login`、`AdminTab`、`UserProfile`、`FeatureManager`、`DashboardCustomizer`、`QuickAddWidget` 和 `FriendSpendingWidget` 的指定 fields/labels/compact control 已更新；`Register.tsx` 亦已對齊，但目前未由 `App.tsx` 掛載。未改 navigation layout、通知入口或其他功能控制。
 
 **需保留邏輯：**`tabFeatures` / `hamburgerFeatures` 排序和可見性、舊 `enabledFeatures` fallback、Profile/Admin 權限、`activeTab`、mobile active item scroll、Dashboard widget order/layout、sync events 和受影響集合局部刷新。Network status、queue status、notification、import/delete progress 是不同來源，外觀一致不代表合併資料流。管理/權限、auth 和 server-only 操作不能改成離線成功假象。
 
@@ -119,7 +119,7 @@
 
 ## 9. Phase 7：CSS 清理、全面回歸與完成定義
 
-1. 本分支已完成所列 fields/labels/filters/actions 的 named variant 接入；AST source scan 有 151 個一般欄位，其中 134 使用 named variants，剩下 17 個只在未掛載舊表單。舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
+1. main 已完成所列 fields/labels/filters/actions 的 named variant 接入；AST source scan 有 151 個一般欄位，其中 134 使用 named variants，剩下 17 個只在未掛載舊表單。舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
 2. 使用 [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md) 對照 Login、Dashboard/widgets、Expenses、Incomes、Categories、Budgets、Payment Methods、Scheduled Payments、Settings、Profile/Admin 和全域浮層；目前是 JSX/CSS source review，不等於每個狀態的 authenticated browser QA。
 3. 對照 CRUD audit 的每個可達流程、空/載入/validation/pending/success/needs-attention 逐一視覺與互動檢查。
 4. 在 320/390/768/1280px、全部主題、zh-TW/en、鍵盤和 screen reader semantics 下檢查 overflow、focus trap/return、labels/errors、touch target。

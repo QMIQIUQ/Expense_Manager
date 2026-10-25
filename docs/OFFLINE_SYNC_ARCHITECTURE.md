@@ -1,6 +1,6 @@
 # 本機優先與 Firebase 同步架構
 
-> 本文件定義所有一般使用者資料異動的必要行為，並對照目前程式路徑。程式碼基準：`main@a9a9d7c`（2026-10-25）。各功能 handler 是否完整遵守契約仍須依實際 payload、service 與 executor 檢查；摘要見 [主要 Method 流程](LOGIC_METHOD_FLOW.md)。
+> 本文件定義所有一般使用者資料異動的必要行為，並對照目前程式路徑。程式碼基準：`main@9fce5d7`（2026-10-25）；與 `main@a9a9d7c` 相比，此次 main 更新僅調整 UI 呈現，沒有修改本地優先或 Firebase queue 路徑。各功能 handler 是否完整遵守契約仍須依實際 payload、service 與 executor 檢查；摘要見 [主要 Method 流程](LOGIC_METHOD_FLOW.md)。
 
 ## 1. 必要原則
 

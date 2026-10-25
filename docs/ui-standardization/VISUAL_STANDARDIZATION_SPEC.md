@@ -1,6 +1,6 @@
 # UI 視覺統一規格
 
-> 狀態：分支 `codex/ui-standardization-inventory` 已在指定 screens 實作欄位、labels、filters、errors、switch 和 compact actions 的共享 variants；分支尚未合併到 main。main source audit 基準仍為 `main@a9a9d7c`（2026-10-25）。逐畫面 source 檢查見 [UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)；authenticated browser computed styles 尚未完成。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。
+> 狀態：指定 screens 的欄位、labels、filters、errors、switch 和 compact actions 已透過 PR #120 合併至 `main@9fce5d7`（2026-10-25）。樣式改動前的 source audit 基線為 `main@a9a9d7c`。逐畫面 source 檢查見 [UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)；authenticated browser computed styles 尚未完成。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。
 
 ## 預覽
 
@@ -8,7 +8,7 @@
 
 ![Standard、Compact 和 Prominent 欄位尺寸的向量示意](previews/field-variants.svg)
 
-預覽顯示共用規格的幾何與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖，也不代表所有 local overrides 已在每個畫面清除。逐檔 main 基線數字和分支實作範圍見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
+預覽顯示共用規格的幾何與色盤差異；它是 SVG 示意，不是執行中的瀏覽器截圖，也不代表所有 local overrides 已在每個畫面清除。逐檔 main 改動前基線數字和已合併的實作範圍見 [UI 樣式覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。
 
 ## 共用規格
 

@@ -1,6 +1,6 @@
 # Expense Manager - System Architecture
 
-> 目前 main 核對基準：`a9a9d7c`（2026-10-25）。此文件保留較完整的系統分層說明；功能掛載以 [功能與頁面](FEATURES_AND_PAGES.md) 為準，離線契約與實際 queue 行為以 [同步架構](OFFLINE_SYNC_ARCHITECTURE.md) 和 [Method 流程盤點](LOGIC_METHOD_FLOW.md) 為準。
+> 目前 main 核對基準：`main@9fce5d7`（2026-10-25）。此文件保留較完整的系統分層說明；功能掛載以 [功能與頁面](FEATURES_AND_PAGES.md) 為準，離線契約與實際 queue 行為以 [同步架構](OFFLINE_SYNC_ARCHITECTURE.md) 和 [Method 流程盤點](LOGIC_METHOD_FLOW.md) 為準。
 
 > **UI 架構更新（2026-10-25）**：現行畫面路由、Dashboard 頁籤與導覽排列請以 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md) 為準；目前 UI 元件、樣式差異與後續統一候選請看 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)。逐功能表單/CRUD 入口見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選互動和後續改檔計畫見 [UI 設計標準化文件組](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。早期系統圖是簡化示意，不能用來推斷目前所有功能入口。
 
