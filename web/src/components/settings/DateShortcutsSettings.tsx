@@ -119,6 +119,7 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
           return (
             <label
               key={shortcut.type}
+              className="ui-form-label"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -136,8 +137,6 @@ const DateShortcutsSettings: React.FC<DateShortcutsSettingsProps> = ({
                 onChange={() => handleToggle(shortcut.type)}
                 style={{
                   marginRight: 'var(--ui-space-12px)',
-                  width: '18px',
-                  height: '18px',
                   cursor: 'pointer',
                 }}
               />

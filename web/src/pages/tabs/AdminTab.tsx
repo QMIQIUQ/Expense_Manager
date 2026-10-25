@@ -248,7 +248,7 @@ const AdminTab: React.FC = () => {
               />
             </div>
             <div style={styles.checkboxGroup}>
-              <label style={styles.checkboxLabel}>
+              <label className="ui-form-label" style={styles.checkboxLabel}>
                 <input
                   type="checkbox"
                   checked={newIsAdmin}
@@ -446,8 +446,6 @@ const styles = {
   checkbox: {
     marginRight: 'var(--ui-space-12px)',
     cursor: 'pointer',
-    width: '18px',
-    height: '18px',
   },
   submitButton: {
     padding: 'var(--ui-space-12px) var(--ui-space-24px)',

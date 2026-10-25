@@ -411,7 +411,7 @@ const CardForm: React.FC<CardFormProps> = ({
       {/* Benefit Min Spend and Card Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('benefitMinSpend')} ({formData.currency})</label>
+          <label className="ui-form-label">{t('benefitMinSpend')} ({formData.currency})</label>
           <input
             type="text"
             inputMode="numeric"
@@ -430,7 +430,7 @@ const CardForm: React.FC<CardFormProps> = ({
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('cardType')} *</label>
+          <label className="ui-form-label">{t('cardType')} *</label>
           <select
             name="cardType"
             value={formData.cardType}
@@ -491,7 +491,7 @@ const CardForm: React.FC<CardFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Linked Category */}
                 <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('linkedCategory')} *
                     <Tooltip text={t('tooltipLinkedCategory')} />
                   </label>
@@ -518,7 +518,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Min Spend for Higher Rate */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('minSpendForRate')} ({formData.currency})
                     <Tooltip text={t('tooltipMinSpendForRate')} />
                   </label>
@@ -540,7 +540,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Rate if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('rateIfMet')}
                     <Tooltip text={t('tooltipRateIfMet')} />
                   </label>
@@ -570,7 +570,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Cap if Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('capIfMet')} ({formData.currency})
                     <Tooltip text={t('tooltipCapIfMet')} />
                   </label>
@@ -592,7 +592,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Display: Spend to reach cap */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-tertiary)' }}>
+                  <label className="ui-form-label ui-form-label--tertiary flex items-center">
                     {t('spendToReachCap')}
                     <Tooltip text={t('tooltipSpendToReachCap')} />
                   </label>
@@ -609,7 +609,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Rate if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('rateIfNotMet')}
                     <Tooltip text={t('tooltipRateIfNotMet')} />
                   </label>
@@ -639,7 +639,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
                 {/* Cap if Not Met */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium flex items-center" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="ui-form-label ui-form-label--secondary flex items-center">
                     {t('capIfNotMet')} ({formData.currency})
                     <Tooltip text={t('tooltipCapIfNotMet')} />
                   </label>

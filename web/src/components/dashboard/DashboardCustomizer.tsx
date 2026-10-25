@@ -116,7 +116,7 @@ const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
               </button>
             </div>
             <div className="bulk-size-control">
-              <label htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
+              <label className="ui-form-label" htmlFor="bulk-size-select">{t('setAllSizes')}:</label>
               <select
                 id="bulk-size-select"
                 onChange={(e) => {

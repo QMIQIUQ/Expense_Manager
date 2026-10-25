@@ -262,17 +262,11 @@ const Login: React.FC = () => {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded cursor-pointer"
-                style={{
-                  // Using inline style for accentColor as it's not available in Tailwind
-                  // and provides native browser checkbox theming
-                  accentColor: 'var(--accent-primary)',
-                  borderColor: 'var(--border-color)',
-                }}
+                className="rounded cursor-pointer"
               />
               <label 
                 htmlFor="rememberMe" 
-                className="ml-2 block text-sm cursor-pointer"
+                className="ui-form-label ml-2 block text-sm cursor-pointer"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {t('rememberMe')}

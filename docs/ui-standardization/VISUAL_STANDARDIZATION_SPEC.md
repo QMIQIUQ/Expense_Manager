@@ -1,6 +1,6 @@
 # UI 視覺統一規格
 
-> 狀態：分支 `codex/ui-standardization-inventory` 已在指定 screens 實作欄位、labels、filters、errors、switch 和 compact actions 的共享 variants；分支尚未合併到 main。main source audit 基準仍為 `main@a9a9d7c`（2026-10-25）。其他 production screens 和 browser computed styles 尚未全數核對。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色；逐畫面狀態見 [元件盤點](UI_COMPONENT_INVENTORY_AND_PLAN.md)。
+> 狀態：分支 `codex/ui-standardization-inventory` 已在指定 screens 實作欄位、labels、filters、errors、switch 和 compact actions 的共享 variants；分支尚未合併到 main。main source audit 基準仍為 `main@a9a9d7c`（2026-10-25）。逐畫面 source 檢查見 [UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)；authenticated browser computed styles 尚未完成。預設紫色、dark 與 Warm Kitty 主題繼續提供各自的顏色。
 
 ## 預覽
 
@@ -24,7 +24,7 @@
 | Trailing action field | `.ui-control--trailing-action` reserves 40px on the right for an overlaid action such as password visibility | web/src/styles/ui-system.css |
 | 多行文字 | 共用字級、色彩、border/radius/focus；最低高度為兩倍 control height，可繼續垂直伸展 | ui-system.css |
 | Checkbox / radio | 可見 controls 保留原生 input type/value/keyboard；18px、accent 使用目前主題色。隱藏 switch checkbox 維持 sr-only 幾何，track 以目前主題色顯示 | ui-system.css |
-| Labels / field errors | Primary label 14px；secondary label and field error 12px；由各欄位維持 `htmlFor`/`id`、`aria-invalid`、`aria-describedby` 關聯 | ui-system.css、相關表單元件 |
+| Labels / field errors | Primary label 14px；secondary/tertiary label and field error 12px；由各欄位維持 `htmlFor`/`id`、`aria-invalid`、`aria-describedby` 關聯 | ui-system.css、相關表單元件 |
 | 一般按鈕 | 44px 最小互動高度、8px radius、共用 action 字級；primary/secondary/danger/success/warning 語意和既有色彩變體保留 | ui-system.css、index.css |
 | Icon 按鈕 | 一般 icon action 至少 36px，close/menu 語意保留；pill/chip 使用全圓角 | ui-system.css |
 | 一般卡片 / widget | 12px radius；既有內容、欄位與資料密度不重排 | ui-system.css |

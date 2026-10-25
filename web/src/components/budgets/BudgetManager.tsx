@@ -699,7 +699,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
             <p style={styles.overallBudgetHint}>{linkedMonthly ? t('incomeBudgetSourceHint') : t('overallBudgetHint')}</p>
           </div>
           <div style={styles.overallBudgetControls}>
-            <label style={styles.budgetPeriodLabel} htmlFor="overall-budget-period">{t('budgetPeriodSummary')}</label>
+            <label className="ui-form-label" style={styles.budgetPeriodLabel} htmlFor="overall-budget-period">{t('budgetPeriodSummary')}</label>
             <select
               id="overall-budget-period"
               value={summaryPeriod}
@@ -1038,7 +1038,7 @@ const BudgetManager: React.FC<BudgetManagerProps> = ({
         maxWidth="480px"
       >
         <div style={styles.overallBudgetForm}>
-          <label htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
+          <label className="ui-form-label" htmlFor="overall-budget-amount">{t('overallBudgetAmount')}</label>
           <input
             id="overall-budget-amount"
             type="number"

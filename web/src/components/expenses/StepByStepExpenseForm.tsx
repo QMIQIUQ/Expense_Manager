@@ -1813,7 +1813,7 @@ const StepByStepExpenseForm: React.FC<StepByStepExpenseFormProps> = ({
             {amountItems.length > 0 && (
               <>
                 <div style={styles.taxCheckboxRow}>
-                  <label style={styles.taxCheckboxLabel}>
+                  <label className="ui-form-label" style={styles.taxCheckboxLabel}>
                     <input
                       type="checkbox"
                       checked={enableTax}
@@ -2905,8 +2905,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   taxCheckbox: {
-    width: '18px',
-    height: '18px',
     cursor: 'pointer',
   },
   taxRateRow: {

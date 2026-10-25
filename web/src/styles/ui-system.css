@@ -236,6 +236,11 @@ textarea.ui-control--prominent {
   font-size: var(--ui-font-sm) !important;
 }
 
+.ui-form-label--tertiary {
+  color: var(--text-tertiary) !important;
+  font-size: var(--ui-font-sm) !important;
+}
+
 .ui-field-error {
   color: var(--error-text) !important;
   font-size: var(--ui-font-sm) !important;

@@ -273,7 +273,7 @@ const ImportExportModal: React.FC<Props> = ({
         {/* Options */}
         <div style={styles.optionsSection}>
           <h4 style={styles.sectionTitle}>{t('importOptions')}</h4>
-          <label style={styles.checkboxLabel}>
+          <label className="ui-form-label" style={styles.checkboxLabel}>
             <input
               type="checkbox"
               checked={options.autoCreateCategories}
@@ -588,8 +588,6 @@ const styles = {
   },
   checkbox: {
     cursor: 'pointer',
-    width: '18px',
-    height: '18px',
   },
   warning: {
     margin: 'var(--ui-space-0px)',

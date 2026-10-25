@@ -354,7 +354,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                       type="checkbox"
                       checked={selectedIds.has(category.id!)}
                       onChange={() => toggleSelection(category.id!)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      style={{ cursor: 'pointer' }}
                     />
                   </div>
                 )}
@@ -535,7 +535,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             </div>
             
             <div style={styles.radioGroup}>
-              <label style={styles.radioLabel}>
+              <label className="ui-form-label" style={styles.radioLabel}>
                 <input
                   type="radio"
                   name="deleteAction"
@@ -565,7 +565,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 </select>
               )}
               
-              <label style={styles.radioLabel}>
+              <label className="ui-form-label" style={styles.radioLabel}>
                 <input
                   type="radio"
                   name="deleteAction"

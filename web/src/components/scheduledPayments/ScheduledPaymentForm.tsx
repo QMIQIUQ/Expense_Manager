@@ -339,9 +339,8 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 id="calculateFromTotal"
                 checked={calculateFromTotal}
                 onChange={(e) => setCalculateFromTotal(e.target.checked)}
-                className="w-4 h-4"
               />
-              <label htmlFor="calculateFromTotal" className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="calculateFromTotal" className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('autoCalculateMonthly')}
               </label>
             </div>
@@ -486,7 +485,6 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
                 id="hasEndDate"
                 checked={formData.hasEndDate}
                 onChange={(e) => setFormData({ ...formData, hasEndDate: e.target.checked })}
-                className="w-4 h-4"
               />
               <label htmlFor="hasEndDate" className="ui-form-label">
                 {t('hasEndDate')}
@@ -523,7 +521,6 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               id="enableReminders"
               checked={formData.enableReminders}
               onChange={(e) => setFormData({ ...formData, enableReminders: e.target.checked })}
-              className="w-4 h-4"
             />
             <label htmlFor="enableReminders" className="ui-form-label">
               🔔 {t('enableReminders')}
@@ -532,7 +529,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           
           {formData.enableReminders && (
             <div className="flex items-center gap-2 ml-6">
-              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('reminderDaysBefore')}:
               </label>
               <input
@@ -565,7 +562,6 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
             id="autoGenerateExpense"
             checked={formData.autoGenerateExpense}
             onChange={(e) => setFormData({ ...formData, autoGenerateExpense: e.target.checked })}
-            className="w-4 h-4"
           />
           <div className="flex flex-col">
             <label htmlFor="autoGenerateExpense" className="ui-form-label">
@@ -585,7 +581,6 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
               id="isShared"
               checked={formData.isShared}
               onChange={(e) => setFormData({ ...formData, isShared: e.target.checked, splitParticipants: e.target.checked ? formData.splitParticipants : [] })}
-              className="w-4 h-4"
             />
             <label htmlFor="isShared" className="ui-form-label">
               👥 {t('sharedPayment')}
@@ -594,7 +589,7 @@ const ScheduledPaymentForm: React.FC<ScheduledPaymentFormProps> = ({
           
           {formData.isShared && (
             <div className="flex flex-col gap-2 ml-6 mt-2">
-              <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <label className="ui-form-label ui-form-label--secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {t('splitWith')}:
               </label>
               

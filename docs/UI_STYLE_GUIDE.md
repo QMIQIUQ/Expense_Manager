@@ -2,7 +2,7 @@
 
 本文檔是 Expense Manager 目前採用的 UI 樣式規範。共用控制尺寸、字級、間距、圓角與 focus 規則由 CSS/TypeScript/Tailwind tokens 提供，紫色與 Warm Kitty 色盤仍由各主題提供。
 
-> 頁面掛載、完整 TSX 檔案覆蓋及 token 統計請見 [UI 元件盤點](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) 和 [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md)。目前規格與預覽見 [視覺統一規格](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md)。導覽排列建議請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。
+> 頁面掛載、完整 TSX 檔案覆蓋及 token 統計請見 [UI 元件盤點](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) 和 [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md)。逐畫面的 textbox、label、checkbox、button、card/panel 檢查見 [逐畫面 UI 樣式清單](ui-standardization/UI_SCREEN_STYLE_CHECKLIST.md)；目前規格與預覽見 [視覺統一規格](ui-standardization/VISUAL_STANDARDIZATION_SPEC.md)。導覽排列建議請見 [UI 架構與導覽排列盤點](UI_NAVIGATION_AUDIT.md)。
 
 ---
 
@@ -73,13 +73,13 @@ The shared native-control rule is the default: 44px minimum height, 14px text at
 | `.ui-control--time-segment` | Hours/minutes text segments inside TimePicker | 28px embedded segments are intentionally borderless; the enclosing 44px time control owns the theme focus ring. |
 | Specialized composition | Autocomplete and currency selector | Autocomplete's outer container owns border/background/focus while its inner search input stays transparent and borderless; preserve both layers and keyboard behavior. CurrencySelector retains its documented specialized size. |
 
-Use `.ui-control--full-width` only when the field should fill its container. For a field with an overlaid trailing button, add `.ui-control--trailing-action` to reserve 40px on the right. `.ui-form-label` is the standard 14px field label; `.ui-form-label--secondary` is the 12px secondary/help role. `.ui-field-error` provides the shared error color and 12px type. Set `aria-invalid` on the field and connect help/error content with `aria-describedby` where appropriate; the shared visual class does not create that relationship automatically. Keep an existing specialized label or error hierarchy when it carries distinct meaning.
+Use `.ui-control--full-width` only when the field should fill its container. For a field with an overlaid trailing button, add `.ui-control--trailing-action` to reserve 40px on the right. `.ui-form-label` is the standard 14px field label; `.ui-form-label--secondary` and `--tertiary` use 12px type with their matching theme text colors. `.ui-field-error` provides the shared error color and 12px type. Set `aria-invalid` on the field and connect help/error content with `aria-describedby` where appropriate; the shared visual class does not create that relationship automatically. Keep an existing specialized label or error hierarchy when it carries distinct meaning.
 
 `.ui-action--compact` aligns dense action buttons to the shared 44px target with 14px type, 8px × 12px padding and 8px radius. It does not change a button's type, callback, disabled guard, loading state or semantic color.
 
 `BudgetForm` custom switches retain the native checkbox as the checked-state and keyboard control; `.ui-switch-track` is only the theme-aware visual companion. Visible checkboxes and radio controls use the shared 18px size, while `.sr-only` switch inputs are excluded from that geometry rule.
 
-The current main baseline and branch implementation status are in [UI 元件盤點與統一設計決策稿](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) and the [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md). The illustrated SVGs, including the [欄位 variants preview](ui-standardization/previews/field-variants.svg), are design previews, not authenticated browser captures. Source findings do not substitute for checking computed styles at mobile and desktop widths.
+The current main baseline and branch implementation status are in [UI 元件盤點與統一設計決策稿](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md), the [逐畫面 UI 樣式清單](ui-standardization/UI_SCREEN_STYLE_CHECKLIST.md), and the [UI 樣式覆蓋矩陣](ui-standardization/UI_STYLE_COVERAGE_MATRIX.md). The illustrated SVGs, including the [欄位 variants preview](ui-standardization/previews/field-variants.svg), are design previews, not authenticated browser captures. Source findings do not substitute for checking computed styles at mobile and desktop widths.
 
 ---
 

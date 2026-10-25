@@ -138,7 +138,7 @@
 | 元素類別 | 目前表現 | 主要樣式來源/檔案 |
 |---|---|---|
 | 文字、標題、說明 | 原生 `h1`–`h6`、`p`、`span`、`div`；全域 heading 與靜態 inline/CSS font-size 使用 UI type tokens。通用 `Label`/`Text` definitions 仍不代表每個頁面已改用 wrapper。 | `ui-system.css`、`index.css`、`PageTitle.tsx`、`SectionTitle.tsx`、`Label.tsx`、`Text.tsx` |
-| Label | main baseline 的 label 有 12px、13px、14px 層級；分支新增 14px primary 與 12px secondary 的語意 classes，已遷移本輪修改的表單/篩選畫面。 | `ui-system.css`、`index.css`、`Label.tsx`、各 `*Form.tsx` |
+| Label | main baseline 有 12px、13px、14px label 層級；分支新增 14px primary、12px secondary/tertiary 的語意 classes，已遷移已掛載的普通欄位和 checkbox labels。Switch/toggle、TimePicker 與區段標題保留專用語意。 | `ui-system.css`、`index.css`、`Label.tsx`、各 `*Form.tsx` |
 | Textbox / input | 原生 `<input>` 保留語意；分支提供 Standard 44px/14px、Compact 44px/14px、Prominent 52px/16px variants，並遷移本輪列出的 mounted fields。日期、幣別和 ledger 專用控制保留自己的組合。 | `ui-system.css`、`designTokens.ts`、`index.css`、表單元件 |
 | Textarea / select | 原生 `<textarea>`、`<select>` 保留 native 行為和 textarea 擴展；分支已將 PaymentRecordForm、BudgetManager、ScheduledPaymentForm 等指定欄位接入 named variants。其他元件仍可能保留局部樣式。 | `ui-system.css`、`index.css`、PaymentRecordForm、BudgetManager |
 | Checkbox / radio / toggle | 可見原生 checkbox/radio 為 18px theme accent；BudgetForm custom switch 保留原生 checkbox 狀態和鍵盤輸入，視覺 track 使用主題 token 與 focus ring。 | `ui-system.css`、`BudgetForm.tsx`、`ledger.css`、列表/設定元件 |
@@ -192,10 +192,10 @@
 | 畫面 / 元件 | main baseline | 分支進度 |
 |---|---|---|
 | Login | 原生欄位套用 shared baseline；密碼顯示按鈕需要保留右側輸入空間，記住我 checkbox 保持原生。 | Email/password 使用 standard field 和標準 label；密碼欄加入 trailing-action spacing；checkbox 維持原生 18px。登入/驗證 callback 未改。 |
-| Dashboard / widgets | widget 卡片大致使用 shared layer；tracked expense card radius 有局部覆寫。 | Tracked expense card radius 接入 12px token；Dashboard customizer 數字欄位用 compact、QuickAdd amount 使用 embedded composite field；FriendSpending 的文字/日期欄位用 standard、偏好 selects 用 compact。其餘 widget 未逐一重排。 |
+| Dashboard / widgets | widget 卡片大致使用 shared layer；tracked expense card radius 有局部覆寫。 | Tracked expense card radius 接入 12px token；Dashboard customizer 數字欄位用 compact、QuickAdd amount 使用 embedded composite field；FriendSpending 的文字/日期欄位用 standard、偏好 selects 用 compact。其餘 widgets 按 read-only/chart、selection、action 語意保留版型，逐頁類別見 [screen checklist](UI_SCREEN_STYLE_CHECKLIST.md)。 |
 | Expenses list / filters | filters 與 quick-preset 欄位有局部 padding/font；selection checkbox 為 native。 | filters、saved view、tag 管理、tag picker 與分帳的 participant/amount fields 明確使用 shared variants；quick-preset 的 label/field/amount 也有 variants。保留原 selection 和提交行為。 |
 | Expense create/edit | `StepByStepExpenseForm` 一般欄位、amount 欄位和描述 item 有不同尺寸；stepper、edit tabs、分類和 split 流程各有用途。 | 一般欄位/label 與描述 item 接入 shared variants；主要 amount 使用 prominent；tag picker、split fields 和 tax rate 使用 compact。分類 tiles、stepper、edit tabs、OCR 和 split flow 保留。 |
-| Incomes | 收入欄位、label、error、amount 有局部差異。 | `IncomeForm` standard/prominent fields、error styling 和 `DatePicker` 組合接入；`IncomeList` 未改。 |
+| Incomes | 收入欄位、label、error、amount 有局部差異。 | `IncomeForm` standard/prominent fields、error styling 和 `DatePicker` 組合接入；`IncomeList` 可見 checkbox 使用 shared 18px geometry，沒有額外可見文字 label。 |
 | Categories | reassign select 有局部幾何；CategoryForm 欄位需與共用規格對齊。 | `CategoryManager` select 與 `CategoryForm` fields/labels/errors 已接入；色彩選擇器保留 specialized native control。 |
 | Budgets | filter/sort select、amount entry、switch 各有局部尺寸/顏色。 | `BudgetManager` filters/labels、`BudgetForm` standard/prominent/compact fields、`IncomeBudgetSettingsModal` fields/labels、keyboard-focusable theme-aware switch，以及 `BudgetTemplates` amount 欄位已更新。 |
 | Payment Methods | `PaymentMethodSelector` 及 Bank/Card/E-Wallet forms 有各自的 field class；選擇 tile 和色彩控制有專用語意。 | `PaymentMethodSelector` fields/labels/create actions、BankForm、CardForm、EWalletForm 和 AccountReconciliationManager 的欄位已接入 named variants；cashback nested fields 用 compact；color picker/selection tiles 保持 specialized。ID、金額解析與 handlers 未改。 |
@@ -203,11 +203,12 @@
 | Profile / Admin | Profile reset-day 和 Admin fields 有局部尺寸。 | Profile reset-day 改用 compact；Admin fields 對齊 shared rules；權限及帳戶行為不變。 |
 | Register (source-only) | `Register.tsx` 定義存在，但 `/register` 未在 `App.tsx` 註冊；Home.tsx 也不是 app route。 | fields 對齊 shared rules，作為未來重新掛載時的基線；目前不屬於可達畫面。 |
 | Settings | Feature ordering numeric field 有固定窄寬。 | `FeatureManager` numeric field 使用 compact；保留 50px 寬和對齊方式。 |
-| Labels / validation (cross-screen) | main 有多種 label type scale 和不同 error markup。 | 本輪修改表單以 primary/secondary label 和共用 error class 收斂；ARIA 關聯仍需逐欄位核對，未宣稱所有畫面完成。 |
+| Labels / validation (cross-screen) | main 有多種 label type scale 和不同 error markup。 | 工作樹 AST scan：154 個 label nodes，127 個採 shared label class；其餘包括 BudgetForm switch、ExpenseSplitEditor toggle、CardForm section label、TimePicker 專用 label、definition-only Label 與 source-only forms。ARIA 關聯仍須逐欄位核對。 |
+| Buttons / cards / div wrappers | 按鈕含 primary/secondary/danger/status/icon/pill/tab/tile/domain actions；cards、panels 和 layout div 承擔不同角色。 | 依同一語意角色使用共同幾何；card/widget 12px、dialog 16px、control 8px、chip pill；純 layout div 保持透明。逐畫面分類和 source scan 限制見 [screen checklist](UI_SCREEN_STYLE_CHECKLIST.md)。 |
 | Autocomplete / date / time / currency | 日期/時間/幣別/autocomplete 有內外層與原生互動差異；CurrencySelector 是有意尺寸變體。 | DatePicker 使用 date variant；TimePicker 時/分欄位是 borderless embedded segments，由外框負責 focus ring；AutocompleteDropdown 外框負責幾何/焦點，內層 search input 保持透明無框。它有 3 個 mounted consumer：BudgetForm、ExpenseList quick-expense preset、ScheduledPaymentForm；legacy ExpenseForm/RecurringForm 仍未掛載。Consumer ID/name mapping、handlers 和 keyboard behavior 保留；CurrencySelector 未改。 |
 | Dialog / global feedback | PopupModal/ConfirmModal 的 dialog ARIA/focus management 尚未完整；通知和欄位錯誤是不同來源。 | 本輪未修改 dialog focus/ARIA、global feedback flows。 |
 
-本輪已完成上述分支列出的 mounted 欄位、label、filter、switch 和 compact action 改動；amount entry、日期/時間/幣別選擇器、分類 tiles、表格/清單密度、dialog focus/ARIA 與其他未點名畫面保留為明確例外或後續項目。不可將這份狀態表解讀成所有 controls 已逐頁 runtime 驗證。
+本輪已完成上述分支列出的 mounted 欄位、label、filter、switch、checkbox 幾何和 compact action 改動；使用者可達畫面的控制類別與有意保留項目另見[逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)。amount entry、日期/時間/幣別選擇器、分類 tiles、表格/清單密度和 dialog focus/ARIA 保留專屬樣式/後續驗收。不可將 source review 解讀成所有 controls 已逐頁 runtime computed-style 驗證。
 
 ## 6. 支出/還款特殊互動盤點
 

@@ -52,7 +52,7 @@ const ReceiptAttachmentPanel: React.FC<{ expense: Expense; openPickerRequest?: n
     <input ref={upload} aria-label={t('receiptArchiveChoose')} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={busy} onChange={handleFileChange} />
     <input ref={camera} aria-label={t('receiptTakePhoto')} type="file" accept="image/*" capture="environment" disabled={busy} onChange={handleFileChange} />
     <div className="ledger-row"><button type="button" disabled={busy} onClick={() => setShowSourcePicker(true)}>{t('receiptArchiveUpload')}</button><button type="button" disabled={busy} onClick={reload}>{t('receiptArchiveRefresh')}</button>
-      <label><input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />{t('receiptArchiveShowArchived')}</label></div>
+      <label className="ui-form-label"><input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />{t('receiptArchiveShowArchived')}</label></div>
     {!complete && <p role="status">{t('receiptArchiveIncomplete')}</p>}
     <ul>{rows.filter((row) => showArchived || !row.archived).map((row) => <li key={row.id} className="ledger-panel"><strong>{row.name}</strong> · {Math.ceil(row.byteSize / 1024)} KiB
       {row.optimized && <span> · {t('receiptArchiveOptimized')}</span>}

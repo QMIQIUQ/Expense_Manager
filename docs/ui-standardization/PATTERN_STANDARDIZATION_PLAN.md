@@ -2,7 +2,7 @@
 
 > 狀態：改動前 source audit 基準為 `main@a9a9d7c`；本分支 `codex/ui-standardization-inventory` 已在指定 screens 完成欄位/label/filter/switch 的呈現層標準化並更新文件。改動尚未合併到 main。這是範圍有限的 field consistency pass，不表示所有 production TSX 都已統一；逐頁剩餘差異、資料邏輯保護與未做的 interaction proposal 仍列於下文。
 
-共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐 production TSX 和 CSS 的目前 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
+共用 UI 規格和 preview 見 [視覺規格](VISUAL_STANDARDIZATION_SPEC.md)，逐頁控制類別/例外見 [逐畫面清單](UI_SCREEN_STYLE_CHECKLIST.md)，逐 production TSX 和 CSS 的 token 覆蓋見 [覆蓋矩陣](UI_STYLE_COVERAGE_MATRIX.md)。後續任何 UI 變更依 repo 根目錄的 `AGENTS.md` 和 [UI_STYLE_GUIDE](../UI_STYLE_GUIDE.md)。
 
 ## 1. 實作原則與不可變資料契約
 
@@ -119,16 +119,18 @@
 
 ## 9. Phase 7：CSS 清理、全面回歸與完成定義
 
-1. 本分支已完成所列 fields/labels/filters/actions 的 named variant 接入；舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
-2. 對照 CRUD audit 的每個可達流程、空/載入/validation/pending/success/needs-attention 逐一視覺與互動檢查。
-3. 在 320/390/768/1280px、全部主題、zh-TW/en、鍵盤和 screen reader semantics 下檢查 overflow、focus trap/return、labels/errors、touch target。
-4. 按改動範圍選擇元件測試/互動測試、延遲遠端、offline/reload、拒絕/rollback 和 replay-order 驗證。若觸及任何本機優先或金融行為，遵循 `docs/OFFLINE_SYNC_ARCHITECTURE.md` 並執行相應行為驗收；不能只靠靜態截圖。
-5. 本分支更新 `docs/UI_STYLE_GUIDE.md`、UI inventory、覆蓋矩陣、視覺規格與此計畫；CRUD audit、`FEATURES_AND_PAGES.md` 和 `docs/README.md` 未因呈現層改動而重寫。
-6. `npm run build` 和 `git diff --check` 通過。未執行 unit/component、Firebase Emulator、跨視窗/語系或 browser computed-style regression。後續完成互動改版時仍須做相應畫面與行為 review，任何未驗證項目需在驗收報告標明。
+1. 本分支已完成所列 fields/labels/filters/actions 的 named variant 接入；AST source scan 有 151 個一般欄位，其中 134 使用 named variants，剩下 17 個只在未掛載舊表單。舊 selector 和專屬布局仍保留。後續若要刪除無 consumer 的 selector/inline style，先用 `rg` 查找 class/token 使用點再逐項處理，不得一次搬移或重命名整份 `index.css`。
+2. 使用 [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md) 對照 Login、Dashboard/widgets、Expenses、Incomes、Categories、Budgets、Payment Methods、Scheduled Payments、Settings、Profile/Admin 和全域浮層；目前是 JSX/CSS source review，不等於每個狀態的 authenticated browser QA。
+3. 對照 CRUD audit 的每個可達流程、空/載入/validation/pending/success/needs-attention 逐一視覺與互動檢查。
+4. 在 320/390/768/1280px、全部主題、zh-TW/en、鍵盤和 screen reader semantics 下檢查 overflow、focus trap/return、labels/errors、touch target。
+5. 按改動範圍選擇元件測試/互動測試、延遲遠端、offline/reload、拒絕/rollback 和 replay-order 驗證。若觸及任何本機優先或金融行為，遵循 `docs/OFFLINE_SYNC_ARCHITECTURE.md` 並執行相應行為驗收；不能只靠靜態截圖。
+6. 更新 `docs/UI_STYLE_GUIDE.md`、逐畫面清單、UI inventory、覆蓋矩陣、視覺規格、此計畫和 `docs/README.md`；與本輪無關的資料流程文件不需重寫。
+7. 本輪只修改呈現層和文件，未碰本機優先/金融行為。`npm run build`、Markdown local-link scan 和 `git diff --check` 通過；未執行 unit/component、Firebase Emulator、跨視窗/語系或 authenticated browser computed-style regression。任何未驗證項目需在驗收報告標明。
 
 ## 10. 文件與流程關聯
 
 - [元件盤點與已採用規格](UI_COMPONENT_INVENTORY_AND_PLAN.md)：現況、數量、掛載狀態、已採用 token 和保留的 UX/F17 候選。
+- [逐畫面 UI 樣式清單](UI_SCREEN_STYLE_CHECKLIST.md)：每個可達畫面的控制類別、shared variants、語意例外和尚待 browser QA 的範圍。
 - [CRUD 流程盤點](CRUD_FLOW_AUDIT.md)：各項功能入口至新增/檢視/編輯/刪除及 overlay。
 - [互動候選](INTERACTION_PATTERN_CANDIDATES.md)：欄位、tabs、modal/drawer、同步回饋及外部參考。
 - [離線同步架構](../OFFLINE_SYNC_ARCHITECTURE.md)：IndexedDB outbox、交易和重播契約。

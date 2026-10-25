@@ -86,9 +86,9 @@ const IncomeBudgetSettingsModal: React.FC<Props> = ({ isOpen, onClose, budgets, 
         <label htmlFor="income-budget-percentage" className="ui-form-label ui-form-label--field">{t('incomeBudgetPercentage')}</label>
         <input id="income-budget-percentage" type="number" required min="0" max="100" step="0.01" value={percentage}
           className="ui-control--standard" disabled={saving} onChange={(event) => { setPercentage(event.target.value); setError(''); }} />
-        <label className="income-budget-checkbox"><input type="checkbox" checked={draft.includeReimbursements} disabled={saving}
+        <label className="income-budget-checkbox ui-form-label"><input type="checkbox" checked={draft.includeReimbursements} disabled={saving}
           onChange={(event) => setDraft((old) => ({ ...old, includeReimbursements: event.target.checked }))} />{t('incomeBudgetIncludeReimbursements')}</label>
-        <label className="income-budget-checkbox"><input type="checkbox" checked={draft.includeRepayments} disabled={saving}
+        <label className="income-budget-checkbox ui-form-label"><input type="checkbox" checked={draft.includeRepayments} disabled={saving}
           onChange={(event) => setDraft((old) => ({ ...old, includeRepayments: event.target.checked }))} />{t('incomeBudgetIncludeRepayments')}</label>
         <p className="income-budget-caption">{t('incomeBudgetSourceHint')}</p>
         <IncomeBudgetSummary state={preview} compact />

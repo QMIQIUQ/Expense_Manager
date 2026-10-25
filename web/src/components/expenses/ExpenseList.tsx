@@ -946,7 +946,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     }}
                     aria-label={t('allDates')}
                   />
-                  <label htmlFor="allDatesToggle" style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-primary)' }}>{t('allDates')}</label>
+                  <label className="ui-form-label" htmlFor="allDatesToggle" style={{ fontSize: 'var(--ui-font-14px)', color: 'var(--text-primary)' }}>{t('allDates')}</label>
                 </div>
                 {/* Use shared DatePicker for desktop calendar support */}
                 <div style={styles.dateFilterGroup}>

@@ -303,7 +303,7 @@ const FriendSpendingWidget: React.FC<WidgetProps> = ({ displayCurrency }) => {
               <code>{friend.friendUid}</code>
               <span>{friend.shareEnabledWithMe ? t('friendSharesWithYou') : t('friendNotSharing')}</span>
             </button>
-            <label className="friend-share-toggle">
+            <label className="friend-share-toggle ui-form-label ui-form-label--secondary">
               <input
                 type="checkbox"
                 checked={friend.shareEnabledByMe}

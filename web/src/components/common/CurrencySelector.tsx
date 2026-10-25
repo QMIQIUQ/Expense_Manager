@@ -173,7 +173,7 @@ const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   return (
     <div className={className} style={styles.container}>
       {showLabel && (
-        <label style={styles.label}>
+        <label className="ui-form-label" style={styles.label}>
           {resolvedLabel}
         </label>
       )}
