@@ -4,7 +4,7 @@
 
 本文檔整理 Expense Manager 網頁應用程式目前可見的功能、功能入口和程式分層。內容以 `web/src` 與 Firebase Functions 現行程式碼為準；未掛載的舊元件會另外標示。
 
-> 最後核對功能程式碼：`main@a9a9d7c`（2026-10-25）。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；收入聯動預算規則見 [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與待選方案見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md)，各操作入口及新增/檢視/編輯/刪除流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選外觀與修改順序見[互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md)及[逐階段標準化計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。
+> 最後核對功能程式碼與掛載：`main@9fce5d7`（2026-10-25）。此版本的 UI 更新只統一已列出的呈現樣式，沒有改動功能路由或 CRUD 流程。新增或移動功能時，請同步更新本文件及 [文件索引](README.md)。系統分層見 [系統架構](ARCHITECTURE.md)；主要 method 與資料流程見 [LOGIC_METHOD_FLOW.md](LOGIC_METHOD_FLOW.md)；收入聯動預算規則見 [INCOME_BUDGET_LINK_PLAN.md](INCOME_BUDGET_LINK_PLAN.md)；本機保存與同步規則見 [OFFLINE_SYNC_ARCHITECTURE.md](OFFLINE_SYNC_ARCHITECTURE.md)。UI 元件現況、樣式差異與逐畫面檢查見 [UI 元件盤點與計畫](ui-standardization/UI_COMPONENT_INVENTORY_AND_PLAN.md) 和 [UI 樣式清單](ui-standardization/UI_SCREEN_STYLE_CHECKLIST.md)；各操作入口及新增/檢視/編輯/刪除流程見 [CRUD 流程盤點](ui-standardization/CRUD_FLOW_AUDIT.md)，候選外觀與修改順序見[互動模式候選](ui-standardization/INTERACTION_PATTERN_CANDIDATES.md)及[逐階段標準化計畫](ui-standardization/PATTERN_STANDARDIZATION_PLAN.md)。
 
 ## 目錄 Table of Contents
 
@@ -707,4 +707,4 @@ interface Bank {
 
 ---
 
-**最後核對**: `main@a9a9d7c`（2026-10-25）
+**最後核對**: `main@9fce5d7`（2026-10-25）

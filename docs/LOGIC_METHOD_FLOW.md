@@ -1,6 +1,6 @@
 # 主要 Method 與端到端流程
 
-> 主要程式碼核對基準：`main@a9a9d7c`（2026-10-25）。本文件中的領域流程說明保留原有靜態盤點；離線 queue API 和已知狀態已按目前 main 更新。這次只做 source review，沒有執行測試、build 或 Firebase 實機同步；執行流程仍以當前 TypeScript source 為準。
+> 目前程式碼核對基準：`main@9fce5d7`（2026-10-25）。領域流程與離線 queue 的詳細 source-level 盤點原以 `main@a9a9d7c` 為基礎；後續 main 變更限於 UI 呈現樣式，沒有改動這些資料流程。沒有執行 Firebase 實機同步；執行流程仍以當前 TypeScript source 為準。
 
 ## 1. 程式職責與狀態擁有者
 

@@ -1,6 +1,6 @@
 # 離線功能概覽
 
-> 程式碼核對基準：`main@a9a9d7c`（2026-10-25）。本頁分開說明必要行為與目前使用者可見的離線狀態；共用規範存在不代表每一個舊 handler 都已接入相同 queue 路徑。
+> 程式碼核對基準：`main@9fce5d7`（2026-10-25）。本頁分開說明必要行為與目前使用者可見的離線狀態；此 main 更新只調整 UI 呈現，沒有改動離線 handlers；共用規範存在不代表每一個舊 handler 都已接入相同 queue 路徑。
 
 本頁提供離線流程摘要。程式分層、方法路由、Firebase IndexedDB 快取、app queue 重試與目前的靜態檢查發現，請看[離線保存與 Firebase 同步架構](OFFLINE_SYNC_ARCHITECTURE.md)及[主要 Method 流程](LOGIC_METHOD_FLOW.md)。
 

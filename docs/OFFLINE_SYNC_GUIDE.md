@@ -1,6 +1,6 @@
 # 本機先顯示與同步使用說明
 
-> 狀態說明以 `main@a9a9d7c` 為基準。app queue 由 IndexedDB 保存；Firebase SDK 自己的 IndexedDB pending writes 是另一條路徑。任何「已儲存在此裝置 / 已儲存離線」提示都應表示該操作已通過本機 outbox 持久化，而單純的列表即時更新不代表 queue 已接受。
+> 狀態說明核對至 `main@9fce5d7`。app queue 由 IndexedDB 保存；Firebase SDK 自己的 IndexedDB pending writes 是另一條路徑。此次 main UI 樣式更新未改變這些保存/同步行為。任何「已儲存在此裝置 / 已儲存離線」提示都應表示該操作已通過本機 outbox 持久化，而單純的列表即時更新不代表 queue 已接受。
 
 ## 操作結果怎麼看
 
